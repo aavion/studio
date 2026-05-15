@@ -1,0 +1,33 @@
+---
+name: Template
+about: Create a report or a feature request
+title: ''
+labels: ''
+assignees: dominikletica
+
+---
+
+## Summary
+Describe the problem, feature request, or question. Include context, goals, and why it matters.
+
+## Steps to Reproduce / Proposal
+1. 
+2. 
+3. 
+
+## Expected vs Actual Behaviour
+- **Expected:**
+- **Actual:**
+
+## Environment
+- aavion Studio version + APP_ENV (if known):
+- PHP version:
+- HTTP server (e.g. Apache2): 
+- Hosting setup (local, shared, container):
+- Browser (if UI related):
+
+## Additional Details
+- Logs, stack traces, or screenshots
+- Related docs/drafts or Worklog entries
+- Suggested solutions or workarounds
+- Other details that may help understand why this issue is important for you
