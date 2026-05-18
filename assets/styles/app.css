@@ -1,3 +1,7 @@
-body {
-    background-color: skyblue;
-}
+@import "tailwindcss";
+@import "./fonts.css";
+@import "./icons.css";
+@import "./illustrations.css";
+@import "./codemirror.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
