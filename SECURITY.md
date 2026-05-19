@@ -7,38 +7,31 @@
 
 ## Supported Versions
 
-### Developer Builds
-> Developer builds (releases with `dev`-tag) doesn't receive any support.  
+### dev-Channel
+> Developer builds (dev-*-branch or releases with `dev`-tag) doesn't receive any support.  
 > If you're facing any problems, please consider switching to a more stable build.
 
 | Version | Supported          |
 | ------- | ------------------ |
 | any     | :x:                |
 
-### Alpha Builds
-> Alpha builds (releases with `alpha`-tag) doesn't receive any support.  
-> If you're facing any problems, please consider switching to a more stable build.
-
-| Version | Supported          |
-| ------- | ------------------ |
-| any     | :x:                |
-
-### Beta Releases
-> Beta builds (releases with `beta`-tag) receive limited support via GitHub Issues.  
+### beta-Channel
+> Beta builds (beta-* branch or releases with `beta`-tag) receive limited support via GitHub Issues at least until the next version is publicly available.  
 > Feel free to report any problems or security concerns but don't expect any personal assistance.
 
 | Version | Supported          |
 | ------- | ------------------ |
 | any     | :warning:          |
 
-### Stable Releases
-> Stable releases are supported at least until the next major version is publicly available.
+### main-Channel
+> Stable builds (main-branch or stable releases) are supported at least until the next version is publicly available.
 > Please consider to keep your environment always up to date for security patches to apply.
 > If you're facing any problems, please feel free to report them to get assistance.
+> **Note:** Versions prior to the first major release are considered `dev` (see above).
 
 | Version | Supported          |
 | ------- | ------------------ |
-| < 1.0.0 | :x:                |
+| < 1.0.0 | :x: (see `dev`)    |
 
 ## Reporting a Vulnerability
 
