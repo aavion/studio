@@ -31,7 +31,7 @@
 - Every successful PR merge will bump the project version number by 0.0.1 and trigger an instant release (following the treatments described in the channel policy).
 
 ## Other Branches
-- Stale `feat-*` branches will be deleted after PR merge (or close).
+- Stale `feat-*` and `fix-*` branches will be deleted after PR merge (or close).
 - Old release-flag branches may get removed when no longer needed:
   - Retention for beta-releases: Only supported release-branches won't get deleted.
   - Retention for stable/main-releases: Only the latest release-branch per major version won't get deleted.
