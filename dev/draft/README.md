@@ -18,7 +18,7 @@ Use filename format: targeted.project.version-FeatureName.md (e.g. `0.1.0-Templa
 - Placeholder for index/crosslinks
 
 ## Expectations
-Placeholder for implementation guidlines
+Placeholder for implementation guidelines
 
 ## Future Plans
 Placeholder for planned features in future releases
