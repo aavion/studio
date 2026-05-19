@@ -3,7 +3,7 @@
 > **Status**: Draft  
 > **Updated**: 2026-05-19   
 > **Owner**: Core  
-> **Purpose:** Description of planned features and technical specification drafts  
+> **Purpose:** Description of planned features and technical specification drafts for use as guidance alongside implementation  
 
 ## Project Goal
 Placeholder
