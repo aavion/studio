@@ -1,4 +1,5 @@
 # Environment
+**Note:** Only applicable when working in a local environment. For cloud/container environments use linux defaults.
 
 ## Operating System
 - **OS**: MacOs Tahoe  
