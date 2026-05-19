@@ -12,7 +12,9 @@ Placeholder
 Placeholder
 
 ## Feature Drafts
-Placeholder for index/crosslinks
+**Note:** Use [template.md](template.md) for new feature drafts and link them here.
+
+- Placeholder for index/crosslinks
 
 ## Expectations
 Placeholder for implementation guidlines
