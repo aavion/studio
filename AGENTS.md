@@ -31,7 +31,7 @@
 - Maintainers keep `dev/CLASSMAP.md` up to date with every callable (services, commands, components, ...) so contributors can locate references without codewide searches.
 - Every code change must ship with corresponding documentation and tests:
   - Update feature notes, manuals, and class map entries in the same commit when behaviour changes.
-  - Add or adjust PHPUnit/functional coverage that proves the new behaviour—never skip tests.
+  - Add or adjust PHPUnit/functional coverage that proves the new behaviour – never skip tests.
   - Record the work and TODO state in `dev/WORKLOG.md` as part of the change, not afterwards.
 
 ## Testing Guidelines
@@ -43,7 +43,7 @@
 ## Commit & Pull Request Guidelines
 - Write present-tense imperative commit messages (`Add snapshot publish command`) scoped to one logical change.
 - Reference issues with `[#123]` or GitHub keywords when applicable.
-- Pull requests must include: change summary, testing notes, screenshots for UI updates, and mention of new/updated docs or tests.
+- Pull requests must include: change summary, testing notes and mention of new/updated docs or tests.
 - Keep PRs focused and call out follow-up work in the worklog (`dev/WORKLOG.md`) when deferring tasks.
 
 ## Session Workflow & Documentation
@@ -58,17 +58,18 @@
 - Until the first public major release (1.0.0), backwards compatibility is not required. Favour clean refactors over legacy shims and remove obsolete code; update callers and documentation immediately when behaviour changes.
 
 ## Security & Configuration Tips
-- Never commit secrets; store environment values in `.env.local` or Symfony’s secrets vault. Releases should rely on installer-generated `APP_SECRET`.
+- Never commit secrets; store environment values in `.env.local` or Symfony’s secrets vault. Releases should rely on installer-generated secrets.
 - Validate container wiring via `php bin/console lint:container` after introducing or refactoring services.
 - Review security rules in `config/packages/security.yaml` for each feature and ensure role/ACL updates are documented.
 
 ## References
 - Developer manual: `dev/manual/**`
+- User manual: `docs/**`
 - Worklog & session notes: `dev/WORKLOG.md`
 - Concept outlines: `dev/draft/**`
 - Environment recap: `.codex/ENVIRONMENT.md`
 - README entry point: `README.md`
-- Cache, helper scripts & snippets: store under `.codex/`
+- Agent's context-cache, helper scripts & snippets: store under `.codex/`
 - Tool registry: `.codex/README.md`
 - Style guide: `dev/STYLEGUIDE.md`
 - Documentation templates: `docs/assets/template.md` and `dev/manual/assets/template.md`
@@ -81,5 +82,5 @@
 - Flag any drift between code and feature drafts (`dev/draft/*.md`) and update or log follow-ups.
 - Review tests (unit/integration/UI) for completeness and determinism; ensure coverage for new logic.
 - Review translation coverage. Replace every user-facing string with apropriate translation keys and add German and English translation. Logs and CLI-Output dont need to be localzed. Focus on rendered Twig output. Use `.codex/render.php /<route>` if you want to review a specific route's rendered output. Use `.codex/compare_translations.php` to compare available keys between `translations/messages.en.yaml` and `translations/messages.de.yaml` and report missing keys in either of these files.
-- Revisit every markdown-file in `docs/` and check for coverage and completeness. Eliminate gaps when possible (also include `dev/manual/`). Make sure, documentation aligns with code changes and also check for gaps between existing documentation and codebase.
+- Revisit every markdown-file in `docs/` and check for coverage and completeness. Eliminate gaps when possible (also review `dev/manual/`). Make sure, documentation aligns with code changes and also check for gaps between existing documentation and codebase.
 - Run or schedule Markdown link checks; report broken references and update docs during review when possible.

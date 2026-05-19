@@ -6,7 +6,7 @@
 > **Purpose:** Changelog and release tracking.  
 
 ## Pending
-* 15.05.2026
+* 2026-05-15
   - Initial commit
 ## Releases
 * Not released yet

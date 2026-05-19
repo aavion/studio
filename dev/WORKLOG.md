@@ -13,5 +13,5 @@ Create a log entry for every commit, describing what's been done and tracking to
 ## To-Do
 - [ ] Placeholder
 ## Session Logs
-### 2026-15-05
+### 2026-05-15
 - [x] Initialized git repository for future use
