@@ -1,8 +1,10 @@
 # Welcome to aavion.studio
 
-> **Version**: Draft  
-> **Updated**: 2026-05-15  
+> **Version**: Unreleased  
+> **Updated**: 2026-05-19  
 > **Owner**: Dominik Letica  
-> **Short Description:** Placeholder   
+> **Short Description:** Feature-rich content-management-system (CMS) for project-websites   
 
-Placeholder
+**Note: This software is not yet ready-to-use. Clone at your own risk!**
+
+This README-file is a placeholder for future use.
