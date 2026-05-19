@@ -1,8 +1,8 @@
 # Changelog
 
-> **Status**: Draft  
-> **Updated**: 2026-05-15  
-> **Owner**: Core  
+> **Status**: Active  
+> **Updated**: 2026-05-19  
+> **Owner**: Dominik Letica  
 > **Purpose:** Changelog and release tracking.  
 
 ## Pending
