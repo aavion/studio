@@ -1,8 +1,8 @@
 # Security Policy
 
 > **Status**: Active  
-> **Updated**: 2026-05-15   
-> **Owner**: Core  
+> **Updated**: 2026-05-19   
+> **Owner**: Dominik Letica  
 > **Purpose:** Support and reporting policy.  
 
 ## Supported Versions
