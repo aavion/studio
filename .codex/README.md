@@ -1,8 +1,8 @@
 # Agents Working Directory
 
-> **Status**: N/A  
-> **Updated**: 2026-05-15  
-> **Owner**: OpenAI/Codex  
+> **Status**: Active  
+> **Updated**: 2026-05-19  
+> **Owner**: Dominik Letica, OpenAI/Codex  
 > **Purpose:** Provides a working directory for coding agents to cache additional information and reusable tools.  
 
 ## Index
