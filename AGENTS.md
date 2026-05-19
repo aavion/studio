@@ -2,7 +2,7 @@
 
 > **Status**: Active  
 > **Updated**: 2026-05-19  
-> **Owner**: Core  
+> **Owner**: Dominik Letica, OpenAI/Codex  
 > **Purpose:** Provide practical, repository-specific instructions for coding agents working on this Symfony application.
 
 ## Operating Principles
