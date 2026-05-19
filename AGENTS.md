@@ -7,6 +7,8 @@
 
 ## Operating Principles
 - Read the existing code and documentation before changing behavior. Prefer local patterns over new abstractions.
+- Make use of Symfony native packages and features whenever applicable to keep the codebase as lightweight, compatible and clean as possible.
+- Focus on modular implementations and keep file sizes small for better context handling and readability.
 - Keep changes focused on the user request. Do not refactor unrelated code unless it is required to complete the task safely.
 - Preserve user or collaborator changes. Never revert files you did not intentionally change unless the user explicitly asks for it.
 - Repository text must be English, including code comments, documentation, commit messages, UI copy source strings, and worklog entries.
