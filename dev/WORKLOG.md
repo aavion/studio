@@ -11,7 +11,7 @@
 ## Roadmap
 **Usage:** Use as guidance on what major changes to implement next. Keep the list up-to-date while proceding.
 
-- [ ] Placeholder
+- [ ] Create feature drafts and project outline
 
 ## To-Do
 **Usage:** Track deferred tasks and keep the list up-to-date.
@@ -24,6 +24,7 @@
 ### 2026-05-19
 - [x] Removed Symfony skeleton frontend demo code from the main asset entrypoint and deleted the example Stimulus controller.
 - [x] Moved ApexCharts and CodeMirror into dedicated Stimulus controllers with lazy lifecycle handling.
+- [x] Added basic documentation templates and guidelines.
 
 ### 2026-05-15
 - [x] Initialized git repository for future use
