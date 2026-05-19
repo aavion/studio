@@ -1,9 +1,10 @@
 # Update-features use this manifest to check for new updates for the specified channel.
-# You may alter the source repository (STUDIO_SOURCE), if you use a different fork.
-# STUDIO_CHANNEL defines the target branch inside the specified repository.
+# You may alter the source repository (MANIFEST_SOURCE), if you use a different fork.
+# MANIFEST_CHANNEL defines the target branch inside the specified repository.
 
 ##> aavion/studio manifest ###
-STUDIO_VERSION=0.0.0
-STUDIO_CHANNEL=dev-latest
-STUDIO_SOURCE=https://github.com/aavion/studio.git
+MANIFEST_VERSION=0.0.0
+MANIFEST_DATE=2026-05-19
+MANIFEST_CHANNEL=dev-latest
+MANIFEST_SOURCE=https://github.com/aavion/studio.git
 ###< aavion/studio manifest ###
