@@ -26,6 +26,8 @@
 
 | Identifier | Class/Template | Purpose | Docs | Test-Class |
 |------------|----------------|---------| ---- | ---------- |
+| Stimulus `chart` | `assets/controllers/chart_controller.js` | Lazily renders ApexCharts instances from Stimulus values and destroys them on disconnect. | N/A | N/A |
+| Stimulus `code-editor` | `assets/controllers/code_editor_controller.js` | Lazily mounts CodeMirror editors with CSS, HTML, JavaScript, JSX, JSON, Markdown, PHP, TypeScript, and TSX language support. | N/A | N/A |
 
 ## 6. Modules
 
@@ -37,4 +39,3 @@
 - Reference canonical developer or user docs when available instead of transient notes.
 - Include test class references to ease traceability (`tests/...`).
 - Mark deprecated entries clearly when refactoring.
-

@@ -13,5 +13,9 @@ Create a log entry for every commit, describing what's been done and tracking to
 ## To-Do
 - [ ] Placeholder
 ## Session Logs
-### 2026-15-05
+### 2026-05-19
+- [x] Removed Symfony skeleton frontend demo code from the main asset entrypoint and deleted the example Stimulus controller.
+- [x] Moved ApexCharts and CodeMirror into dedicated Stimulus controllers with lazy lifecycle handling.
+
+### 2026-05-15
 - [x] Initialized git repository for future use
