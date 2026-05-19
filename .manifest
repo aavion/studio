@@ -1,6 +1,5 @@
 ##> aavion/studio manifest ###
-STUDIO_VERSION=0.1.0
+STUDIO_VERSION=0.0.0
 STUDIO_CHANNEL=dev
 STUDIO_SOURCE=https://github.com/aavion/studio.git
-STUDIO_BRANCH=main
 ###< aavion/studio manifest ###
