@@ -19,7 +19,7 @@
 - [ ] Placeholder
 
 ## Session Logs
-** Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
+**Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-19
 - [x] Removed Symfony skeleton frontend demo code from the main asset entrypoint and deleted the example Stimulus controller.
