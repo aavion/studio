@@ -1,6 +1,6 @@
 # Security Policy
 
-> **Status**: Draft  
+> **Status**: Active  
 > **Updated**: 2026-05-15   
 > **Owner**: Core  
 > **Purpose:** Support and reporting policy.  
