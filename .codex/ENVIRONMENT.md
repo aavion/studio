@@ -1,4 +1,5 @@
 # Environment
+**Note:** Only applicable when working in a local environment. For cloud/container environments use linux defaults.
 
 ## Operating System
 - **OS**: MacOs Tahoe  
@@ -11,8 +12,6 @@
 - **python**: `/usr/bin/python3`
 - **composer**: `/opt/homebrew/bin/composer`
 - **symfony**: `/opt/homebrew/opt/symfony-cli/bin/symfony`
-- **node**: `/opt/homebrew/bin/node`
-- **npm**: `/opt/homebrew/bin/npm`
 - **perl**: `/usr/bin/perl`
 
 ## Helpful CLI patterns
