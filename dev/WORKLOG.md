@@ -54,7 +54,9 @@
 
 - [ ] **Future**
   - [ ] CommunityHub
+  - [ ] First-party modules and admin add-ons
   - [ ] Inline frontpage editor
+  - [ ] Neural-like index and semantic resolver
   - [ ] REI3 tickets integration
 
 ## To-Do
@@ -66,6 +68,10 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-20
+- Added a future first-party modules/admin add-ons draft covering LogViewer/statistics, TinyMCE editor provider, Importer UI, Exporter presets, breadcrumbs, and lightbox/gallery helper modules as optional maintained modules built on core contracts.
+- Added a final release-readiness checklist to the draft index and recorded the need for a repeatable release verification path covering setup, tests, translations, assets, smoke checks, backup/restore, security review, documentation, worklog, and class map alignment.
+- Clarified that resolver/reference index metadata also supports efficient variable fieldset assembly, and removed neural-index wording from active drafts so that topic remains isolated in the future draft.
+- Clarified resolver planning: the resolver index is a lean database-backed metadata/index structure rather than a duplicated resolved content store, runtime content should load from the database where practical, ref/query tokens must support field targets, CodeMirror autocomplete is preferred for resolver tokens, generic variant pretty URLs prefer `/slug/~variant`, and neural-like indexing is moved to a future draft.
 - Recorded configuration, lifecycle recovery, media delivery, admin settings, diff, audit/logging, API token, and captcha rate-limit decisions across the feature drafts, including DB-backed admin config precedence, rollback-on-failed theme/module activation, managed non-public file delivery, consolidated settings sections, path-based structured diffs, draft audit event coverage, and captcha rate-limit refunds.
 - Specified that newly discovered themes and modules remain inactive until explicitly activated/enabled, and added a manual admin rebuild-assets action that uses the same Tailwind and AssetMapper action-log workflow.
 - Documented that theme and module lifecycle changes with frontend contributions trigger explicit Tailwind build and AssetMapper compilation through the operational action-log workflow, while file watchers remain development-only convenience tooling.

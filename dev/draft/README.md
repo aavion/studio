@@ -78,7 +78,9 @@ The feature drafts should be created in dependency order. Start with architectur
 ### Future drafts
 
 - [Community hub](future-CommunityHub.md)
+- [First-party modules and admin add-ons](future-FirstPartyModulesAdminAddons.md)
 - [Inline frontpage editor](future-InlineFrontpageEditor.md)
+- [Neural-like index and semantic resolver](future-NeuralIndexSemanticResolver.md)
 - [REI3 tickets integration](future-Rei3TicketsIntegration.md)
 
 ## Expectations
@@ -107,6 +109,23 @@ When a change starts to require a broad refactor, split the work into smaller dr
 5. Update the class map, worklog, and relevant manuals when behavior or callable entry points change.
 6. Move completed draft references into the implemented section after code, tests, and documentation are aligned.
 
+## Release Readiness
+
+A release should be considered stable and presentable only when the implemented draft scope is usable end to end, not merely when code exists. Before a public release, verify:
+
+- Setup works from CLI and web setup without hidden local state.
+- Admin login, ACL protection, and administrator-only configuration are enforced.
+- Public rendering uses published content only and respects language, variant, visibility, and ACL rules.
+- Theme and module lifecycle workflows validate manifests, keep discovered packages inactive by default, rebuild assets, and recover from failures.
+- Content, schema, editor, draft/publish, resolver, media, navigation, import/export, backup/restore, and operational workflows have focused tests.
+- Operational actions expose understandable action logs, redacted diagnostics, and recovery paths.
+- Cache, asset, resolver/index, and delivery rebuilds are documented and available from admin or CLI workflows.
+- Translations are synchronized for all user-facing strings.
+- User-facing documentation and developer documentation are updated for implemented workflows.
+- Backup/restore has been tested in an isolated environment before release.
+- Security-sensitive behavior has been reviewed for secrets, protected config values, ACL leakage, public cache leakage, and log redaction.
+- The worklog, class map, and draft status reflect the actual implemented state.
+
 ## Implemented
 
 - No feature drafts have been implemented yet. This section should list completed drafts once their code, tests, documentation, and worklog entries are aligned.
@@ -116,5 +135,7 @@ When a change starts to require a broad refactor, split the work into smaller dr
 Future features are not part of the first implementation phase, but architecture decisions should avoid blocking them. They should remain possible without large rewrites of the content model, permission system, plugin module lifecycle, theme engine, editor experience, or API layer.
 
 - CommunityHub with comments, forums, profiles, and moderation workflows.
+- First-party modules such as LogViewer/statistics, TinyMCE editor provider, Importer UI, Exporter presets, breadcrumbs, and lightbox/gallery helpers.
 - Inline frontpage editing after the theme engine, structured content, and editor workflow are stable.
+- Neural-like semantic resolver suggestions after the deterministic resolver index, editor autocomplete, and search boundaries are stable.
 - REI3 tickets integration as a plugin module after plugin and API foundations exist.
