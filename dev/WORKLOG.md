@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-20
+- Replaced the root README placeholder with a compact project overview and added draft theme/module developer guidelines to the developer manual, including current extension, lifecycle, asset, and UI/UX constraints.
 - Added a future first-party modules/admin add-ons draft covering LogViewer/statistics, TinyMCE editor provider, Importer UI, Exporter presets, breadcrumbs, and lightbox/gallery helper modules as optional maintained modules built on core contracts.
 - Added a final release-readiness checklist to the draft index and recorded the need for a repeatable release verification path covering setup, tests, translations, assets, smoke checks, backup/restore, security review, documentation, worklog, and class map alignment.
 - Clarified that resolver/reference index metadata also supports efficient variable fieldset assembly, and removed neural-index wording from active drafts so that topic remains isolated in the future draft.
