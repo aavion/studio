@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-05-19  
+> **Updated**: 2026-05-20  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -11,7 +11,7 @@
 ## Roadmap
 **Usage:** Use as guidance on what major changes to implement next. Keep the list up-to-date while proceding.
 
-- [ ] Create feature drafts and project outline
+- [ ] Placeholder
 
 ## To-Do
 **Usage:** Track deferred tasks and keep the list up-to-date.
@@ -20,11 +20,6 @@
 
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
-
-### 2026-05-19
-- [x] Removed Symfony skeleton frontend demo code from the main asset entrypoint and deleted the example Stimulus controller.
-- [x] Moved ApexCharts and CodeMirror into dedicated Stimulus controllers with lazy lifecycle handling.
-- [x] Added basic documentation templates and guidelines.
 
 ### 2026-05-15
 - [x] Initialized git repository for future use

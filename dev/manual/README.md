@@ -1,8 +1,8 @@
 # Developer Documentaion
 
-> **Status**: Draft  
-> **Updated**: 2026-05-15  
+> **Status**: Placeholder  
+> **Updated**: 2026-05-20  
 > **Owner**: Core  
-> **Purpose:** Placeholder 
+> **Purpose:** Entrypoint for developer documentation on how to develop addon modules and themes to extend functionality. 
 
-Placeholder
+Placeholder for an upcoming feature.

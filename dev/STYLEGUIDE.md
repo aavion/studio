@@ -1,7 +1,7 @@
 # Documentation Style Guide
 
 > **Status**: Active  
-> **Updated**: 2026-05-15  
+> **Updated**: 2026-05-20  
 > **Owner**: Core  
 > **Purpose:** Provide consistent writing and formatting standards for all documentation (developer, user, codex notes).  
 

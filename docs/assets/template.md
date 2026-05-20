@@ -5,7 +5,6 @@
 > **Owner**: Core  
 > **Purpose:** {Purpose/Brief description}  
 
-
 ## Summary
 - What is this feature/section about?
 - Who is the intended audience?

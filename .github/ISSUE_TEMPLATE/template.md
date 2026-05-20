@@ -1,6 +1,6 @@
 ---
 name: Template
-about: Create a report or a feature request
+about: Report a bug, ask questions or submit a feature request
 title: ''
 labels: ''
 assignees: dominikletica

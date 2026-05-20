@@ -7,18 +7,16 @@
 
 ## Overview
 - Purpose and scope of this guide.
-- Modules or systems it touches.
-- Dependencies (services, configs, feature flags).
+- Prerequisites and dependencies.
 
-## Architecture Notes
-- High-level flow or diagrams (if applicable).
-- Key classes, interfaces, and events involved.
-- Configuration files or environment variables.
+## Architecture skeleton
+- Overview of files needed to create and what they should contain.
 
-## Implementation Steps
-1. Outline steps or phases to implement/extend the feature.
-2. Reference relevant services or draft documents.
-3. Highlight testing considerations.
+## Develpment Guide
+High-level guidance on how to develop and implement a new feature using sub-sections (###, ####). May contain pseudocode.
+
+## Glossar
+A glossary of usable classes, functions, and keys — along with implementation notes and restraints — presented in tabular form.
 
 ## Testing & Validation
 - Unit/integration test expectations.

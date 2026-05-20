@@ -1,4 +1,4 @@
-###> OS artifacts
+###> OS artifacts ###
 .DS_Store
 .AppleDouble
 .LSOverride
@@ -19,7 +19,7 @@ Desktop.ini
 $RECYCLE.BIN/
 *~
 .nfs*
-###< OS artifacts
+###< OS artifacts ###
 
 ###> symfony/framework-bundle ###
 /.env.local
@@ -42,7 +42,7 @@ $RECYCLE.BIN/
 /assets/vendor/
 ###< symfony/asset-mapper ###
 
-###> release artifacts
+###> release artifacts ###
 /build/
 /dist/
-###< release artifacts
+###< release artifacts ###

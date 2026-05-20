@@ -1,7 +1,7 @@
 # Using GitHub branches
 
 > **Status**: Active  
-> **Updated**: 2026-05-19   
+> **Updated**: 2026-05-20   
 > **Owner**: Dominik Letica  
 > **Purpose:** Guideline for using GitHub branches  
 

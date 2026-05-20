@@ -1,8 +1,8 @@
 # aavion.studio User Documentation
 
-> **Status**: Draft  
-> **Updated**: 2026-05-15  
+> **Status**: Placeholder  
+> **Updated**: 2026-05-20  
 > **Owner**: Core  
-> **Purpose:** Entrypoint for user facing documentation.
+> **Purpose:** Entrypoint for user documentation.
 
 Placeholder

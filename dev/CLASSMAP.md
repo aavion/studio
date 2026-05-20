@@ -1,7 +1,7 @@
 # Developer Class Map
 
 > **Status**: Active  
-> **Updated**: 2026-05-19  
+> **Updated**: 2026-05-20  
 > **Owner**: Core  
 > **Purpose:** This document tracks callable entry points (services, commands, controllers, Twig components, Stimulus controllers). Keep it up to date as new classes are added or interfaces change. This document is meant to evolve alongside the codebase—treat it as a living index for developers to quickly discover callables without grepping through the project.
 
@@ -15,8 +15,6 @@
 
 | Name | Class | Description | Docs | Test-Class |
 |------|-------|-------------|------| ---------- |
-| Stimulus `chart` | `assets/controllers/chart_controller.js` | Lazily renders ApexCharts instances from Stimulus values and destroys them on disconnect. | N/A | N/A |
-| Stimulus `code-editor` | `assets/controllers/code_editor_controller.js` | Lazily mounts CodeMirror editors with CSS, HTML, JavaScript, JSX, JSON, Markdown, PHP, TypeScript, and TSX language support. | N/A | N/A |
 
 ## 3. Console Commands
 

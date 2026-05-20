@@ -1,7 +1,7 @@
 # Repository Agent Guide
 
 > **Status**: Active  
-> **Updated**: 2026-05-19  
+> **Updated**: 2026-05-20  
 > **Owner**: Dominik Letica, OpenAI/Codex  
 > **Purpose:** Provide practical, repository-specific instructions for coding agents working on this Symfony application.
 
