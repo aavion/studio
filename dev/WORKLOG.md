@@ -11,12 +11,56 @@
 ## Roadmap
 **Usage:** Use as guidance on what major changes to implement next. Keep the list up-to-date while proceding.
 
-- [ ] Create feature drafts and project outline
+- [ ] **0.1.x Foundation**
+  - [ ] Core architecture
+  - [ ] Setup and test automation
+  - [ ] Error handling and validation
+  - [ ] Static/dynamic content model
+  - [ ] Theme engine
+  - [ ] System theme and design system
+  - Open: first deterministic SQL seed shape; `title`/`subtitle` JSON metadata vs indexed columns.
+
+- [ ] **0.2.x Security and extension baseline**
+  - [ ] Security/ACL baseline
+  - [ ] Admin interface and setup UI
+  - [ ] Event hooks and Messenger conventions
+  - [ ] Plugin module discovery and lifecycle
+  - Open: first role/ACL group model; first dashboard widgets; account/password recovery flow; immutable event payload default; module uninstall/data cleanup policy.
+
+- [ ] **0.3.x Structured authoring and resolver foundation**
+  - [ ] Schema-driven content fields
+  - [ ] Structured editor experience
+  - [ ] Draft and publish workflow
+  - [ ] Diff and review tools
+  - [ ] Media library and file management
+  - [ ] Navigation and sitemap builder
+  - [ ] Cross-reference index and resolver foundation
+  - Open: first minimal field type set; autosave/draft storage; commit vs publish separation; first diff engine; media MIME/upload/thumbnail/private-delivery strategy; menu types/depth/sitemap formats; resolver-token/query syntax, depth, loop protection, ACL behavior, and export/import normalization.
+
+- [ ] **0.4.x External interfaces and operations**
+  - [ ] Operational security and audit coverage
+  - [ ] API layer
+  - [ ] Frontend delivery and caching
+  - [ ] Operational admin workflows
+  - [ ] Import/export and LLM collaboration
+  - [ ] Backup and restore
+  - [ ] Contact, mail, logging, and statistics
+  - [ ] IconCaptcha integration
+  - Open: API write scope; public delivery snapshot vs cache-backed read model; operational action-log transport/storage; audit event coverage; backup/log/submission retention defaults; IconCaptcha implementation details.
+
+- [ ] **0.5.x Release lifecycle**
+  - [ ] Self-update and release workflow
+  - Open: package signature/checksum strategy; direct vs staged updates; rollback scope.
+
+- [ ] **Future**
+  - [ ] CommunityHub
+  - [ ] Inline frontpage editor
+  - [ ] REI3 tickets integration
 
 ## To-Do
 **Usage:** Track deferred tasks and keep the list up-to-date.
 
-- [ ] Review and resolve remaining `Decision required` items in the feature drafts.
+- [ ] Keep roadmap sub-items aligned with feature drafts when implementation changes scope, order, or dependencies.
 
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
@@ -41,6 +85,19 @@
 - Recorded missing language variant fallback behavior and expanded content metadata with audit, publication, visibility, ACL restriction, and ownership/responsibility fields; propagated ACL visibility implications to security, API, import/export, and search drafts.
 - Refined content metadata with order, optional deletion/trash metadata, optional editing lock metadata, and consistent language/variant field value mapping.
 - Added a proposed content data model table for content entities and field values, including a flexible JSON metadata payload with recommended `title` and `subtitle` keys; propagated metadata handling to schema fields, API, and import/export drafts.
+- Incorporated the remaining draft review decisions for theme package structure, theme `src/` classes, module translations and uninstall routines, schema versioning, Markdown editing, Messenger mode configuration, setup security, scoped API tokens, JSON-operation imports, backup dry-runs, GeoIP logging, and resolver-based search.
+- Added a separate IconCaptcha integration placeholder draft and linked it from the feature draft index so concrete captcha behavior can be reviewed later without blocking the generic captcha extension contract.
+- Expanded the content, schema, editor, cross-reference, and import/export drafts with variable fieldset relationships, controlled query fields, inline resolver-token planning, deterministic context gathering, and bounded LLM collaboration exports.
+- Added resolver-token export/import normalization notes so internal dynamic tokens can become LLM-readable tagged spans in exports and return to non-destructive internal tokens on import.
+- Deferred exact resolver-token and tagged-span syntax until implementation planning, when resolver depth, loop protection, query syntax, functions, validation, ACL behavior, and normalization rules can be designed together.
+- Reviewed the complete draft folder for version readiness and replaced the placeholder worklog roadmap with a staged 0.1.x, 0.2.x, 0.3.x, 0.4.x, 0.5.x, and future-feature roadmap, including dependencies and open decisions under each roadmap item.
+- Refined the roadmap into dependency-driven implementation phases, moving the security/ACL baseline directly after 0.1.x foundation work and separating structured authoring, operational workflows, and release lifecycle work into clearer stages.
+- Renamed feature draft files and index links to match the dependency-driven roadmap before `1.0.0`, avoiding historical version-prefix drift in documentation.
+- Condensed the worklog roadmap back into a quick checklist and kept implementation details in the feature drafts.
+- Added missing product-surface drafts for the system theme/design system, admin interface/setup UI, and media library/file management, then linked them from the draft index and roadmap.
+- Reviewed the old Symfony 7.3 prototype as inspiration only and added missing draft coverage for draft/publish workflow, frontend delivery/caching, admin command/help primitives, media quotas/scanner hooks, and expanded user account recovery/onboarding notes.
+- Added an operational admin workflows draft with an interactive action-log pattern for setup, imports, backups, updates, asset/cache rebuilds, and other long-running admin actions.
+- Added navigation/sitemap and diff/review drafts after the final old-project sweep, capturing the last useful product concepts before archiving the prototype.
 
 ### 2026-05-20
 - Cleaned-up repository for better readability and versioning-/branch-handling.

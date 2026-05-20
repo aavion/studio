@@ -33,7 +33,7 @@ Use filename format: targeted.project.version-FeatureName.md (e.g. `0.1.x-Templa
 
 ### Draft creation plan
 
-The feature drafts should be created in dependency order. Start with architecture and recoverable workflows, then define content and extension mechanisms, then add external interfaces and operational features, and finally define update and release lifecycle behavior.
+The feature drafts should be created in dependency order. Start with architecture and recoverable workflows, then add the security and extension baseline, then define structured content authoring, then add external interfaces and operational features, and finally define update and release lifecycle behavior.
 
 ### 0.1.x foundation drafts
 
@@ -42,26 +42,38 @@ The feature drafts should be created in dependency order. Start with architectur
 - [Setup and test automation](0.1.x-SetupTestAutomation.md)
 - [Static and dynamic content model](0.1.x-StaticDynamicContent.md)
 - [Theme engine](0.1.x-ThemeEngine.md)
+- [System theme and design system](0.1.x-SystemThemeDesignSystem.md)
 
-### 0.2.x extensibility and content drafts
+### 0.2.x security and extension baseline drafts
 
+- [Security and access control](0.2.x-SecurityAccessControl.md)
+- [Admin interface and setup UI](0.2.x-AdminInterfaceSetupUi.md)
 - [Plugin modules](0.2.x-PluginModules.md)
 - [Event hooks and buses](0.2.x-EventHooksBuses.md)
-- [Schema-driven content fields](0.2.x-SchemaContentFields.md)
-- [Editor experience](0.2.x-EditorExperience.md)
-- [Cross-reference index and search](0.2.x-CrossReferenceIndexSearch.md)
 
-### 0.3.x integration and operations drafts
+### 0.3.x structured content and editor drafts
 
-- [Security and access control](0.3.x-SecurityAccessControl.md)
-- [API layer](0.3.x-ApiLayer.md)
-- [Import, export, and collaboration](0.3.x-ImportExportCollaboration.md)
-- [Backup and restore](0.3.x-BackupRestore.md)
-- [Contact, mail, and logging](0.3.x-ContactMailLogging.md)
+- [Schema-driven content fields](0.3.x-SchemaContentFields.md)
+- [Editor experience](0.3.x-EditorExperience.md)
+- [Draft and publish workflow](0.3.x-DraftPublishWorkflow.md)
+- [Diff and review tools](0.3.x-DiffReviewTools.md)
+- [Media library and file management](0.3.x-MediaLibraryFileManagement.md)
+- [Navigation and sitemap builder](0.3.x-NavigationSitemapBuilder.md)
+- [Cross-reference index and search](0.3.x-CrossReferenceIndexSearch.md)
 
-### 0.4.x release lifecycle drafts
+### 0.4.x integration and operations drafts
 
-- [Self-update and release workflow](0.4.x-SelfUpdateReleaseWorkflow.md)
+- [IconCaptcha integration](0.4.x-IconCaptcha.md)
+- [API layer](0.4.x-ApiLayer.md)
+- [Frontend delivery and caching](0.4.x-FrontendDeliveryCaching.md)
+- [Operational admin workflows](0.4.x-OperationalAdminWorkflows.md)
+- [Import, export, and collaboration](0.4.x-ImportExportCollaboration.md)
+- [Backup and restore](0.4.x-BackupRestore.md)
+- [Contact, mail, and logging](0.4.x-ContactMailLogging.md)
+
+### 0.5.x release lifecycle drafts
+
+- [Self-update and release workflow](0.5.x-SelfUpdateReleaseWorkflow.md)
 
 ### Future drafts
 
