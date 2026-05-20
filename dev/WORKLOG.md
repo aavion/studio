@@ -35,7 +35,7 @@
   - [ ] Media library and file management
   - [ ] Navigation and sitemap builder
   - [ ] Cross-reference index and resolver foundation
-  - Open: first minimal field type set; autosave/draft storage; commit vs publish separation; first diff engine; media MIME/upload/thumbnail/private-delivery strategy; menu types/depth/sitemap formats; resolver-token/query syntax, depth, loop protection, ACL behavior, and export/import normalization.
+  - Open: first minimal field type set; autosave/draft storage; commit vs publish separation; media MIME/upload/thumbnail defaults and exact private-delivery strategy; menu types/depth/sitemap formats; resolver-token/query syntax, depth, loop protection, ACL behavior, and export/import normalization.
 
 - [ ] **0.4.x External interfaces and operations**
   - [ ] Operational security and audit coverage
@@ -46,7 +46,7 @@
   - [ ] Backup and restore
   - [ ] Contact, mail, logging, and statistics
   - [ ] IconCaptcha integration
-  - Open: API write scope; public delivery snapshot vs cache-backed read model; operational action-log transport/storage; audit event coverage; backup/log/submission retention defaults; IconCaptcha implementation details.
+  - Open: API write scope; public delivery snapshot vs cache-backed read model; operational action-log transport/storage; exact audit log channels/levels/retention; backup/log/submission retention defaults; IconCaptcha provider interface, secret rotation, and asset policy details.
 
 - [ ] **0.5.x Release lifecycle**
   - [ ] Self-update and release workflow
@@ -66,6 +66,13 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-20
+- Recorded configuration, lifecycle recovery, media delivery, admin settings, diff, audit/logging, API token, and captcha rate-limit decisions across the feature drafts, including DB-backed admin config precedence, rollback-on-failed theme/module activation, managed non-public file delivery, consolidated settings sections, path-based structured diffs, draft audit event coverage, and captcha rate-limit refunds.
+- Specified that newly discovered themes and modules remain inactive until explicitly activated/enabled, and added a manual admin rebuild-assets action that uses the same Tailwind and AssetMapper action-log workflow.
+- Documented that theme and module lifecycle changes with frontend contributions trigger explicit Tailwind build and AssetMapper compilation through the operational action-log workflow, while file watchers remain development-only convenience tooling.
+- Clarified GeoIP configuration behavior: MaxMind API keys are protected admin-managed database configuration, missing keys disable GeoIP lookup/updates/blocking gracefully, and logs continue with normalized empty location values.
+- Propagated Grav-plugin inspiration into the resolver, import/export, operational workflows, contact/logging, security, plugin modules, and IconCaptcha drafts, including two-pass resolver indexing, graph diagnostics, resolver-backed context exports, progressive abuse handling, provider-module fallback behavior, and global captcha form field decisions.
+- Expanded the IconCaptcha draft into a concrete optional provider module plan with module-owned assets, deterministic challenge derivation, one-shot validation, Symfony form/validator integration, safer rate-limit direction, failure codes, and implementation decisions.
+- Added `.codex/grav-plugin-inspiration-notes.md` with inspiration from the old Grav `refresolver` and `sec-lookup` plugins, covering resolver indexing, GeoIP/security logging, rate-limit redesign, and IconCaptcha concepts without changing feature drafts or copying old code.
 - Started shaping the project outline by drafting the project goal from the prepared feature quicknote.
 - Added the initial feature-draft roadmap, placeholder draft documents, and README index links for planned core, extension, operations, release, and future features.
 - Expanded the project outline with Symfony-first architecture notes, plugin extension categories, draft workflow guidance, implementation expectations, and future-feature constraints.
