@@ -22,6 +22,11 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-20
+- Started shaping the project outline by drafting the project goal from the prepared feature quicknote.
+- Added the initial feature-draft roadmap, placeholder draft documents, and README index links for planned core, extension, operations, release, and future features.
+- Expanded the project outline with Symfony-first architecture notes, plugin extension categories, draft workflow guidance, implementation expectations, and future-feature constraints.
+
+### 2026-05-20
 - Cleaned-up repository for better readability and versioning-/branch-handling.
 - Minor text-only fixes.
 
