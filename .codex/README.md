@@ -8,6 +8,9 @@
 ## Index
 
 - Info: [Environment](ENVIRONMENT.md)
+- Info: [Framework Version Recap](framework-version-recap.md)
+- Info: [Grav Plugin Inspiration Notes](grav-plugin-inspiration-notes.md)
+- Info: [Symfony Documentation Notes](symfony-docs-notes.md)
 - Tool: [Render Symfony Output](render.php)
 - Tool: [Compare Translation-Keys](compare_translations.php)
 
