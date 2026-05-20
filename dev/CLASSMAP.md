@@ -15,6 +15,8 @@
 
 | Name | Class | Description | Docs | Test-Class |
 |------|-------|-------------|------| ---------- |
+| Stimulus `chart` | `assets/controllers/chart_controller.js` | Lazily renders ApexCharts instances from Stimulus values and destroys them on disconnect. | N/A | N/A |
+| Stimulus `code-editor` | `assets/controllers/code_editor_controller.js` | Lazily mounts CodeMirror editors with CSS, HTML, JavaScript, JSX, JSON, Markdown, PHP, TypeScript, and TSX language support. | N/A | N/A |
 
 ## 3. Console Commands
 
