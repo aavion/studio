@@ -50,4 +50,16 @@ final readonly class OperationIssue
     {
         return $this->context;
     }
+
+    /**
+     * @return array{code: string, message: string, context: array<string, mixed>}
+     */
+    public function toArray(): array
+    {
+        return [
+            'code' => $this->code,
+            'message' => $this->message,
+            'context' => $this->context,
+        ];
+    }
 }

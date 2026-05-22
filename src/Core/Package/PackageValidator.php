@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Core\Filesystem\FileInventoryScanner;
 use App\Core\Lint\CssLinter;
 use App\Core\Lint\JavaScriptLinter;
 use App\Core\Lint\JsonLinter;
@@ -23,6 +24,7 @@ final class PackageValidator
         private readonly YamlLinter $yamlLinter = new YamlLinter(),
         private readonly CssLinter $cssLinter = new CssLinter(),
         private readonly JavaScriptLinter $javaScriptLinter = new JavaScriptLinter(),
+        private readonly FileInventoryScanner $fileInventoryScanner = new FileInventoryScanner(),
     ) {
     }
 
@@ -107,69 +109,22 @@ final class PackageValidator
         ];
     }
 
-    /**
-     * @return list<string>
-     */
     private function inspect(string $directory, int $depth): PackageInspection
     {
-        $inventory = [];
-        $this->collectInventory($directory, $directory, $depth, $inventory);
-        sort($inventory);
+        $inventory = $this->fileInventoryScanner->scan($directory, $depth);
 
         return new PackageInspection(
-            $inventory,
-            $this->filterFiles($inventory, static fn (string $path): bool => str_starts_with($path, 'templates/') && str_ends_with($path, '.twig')),
-            $this->filterFiles($inventory, static fn (string $path): bool => str_starts_with($path, 'assets/')),
-            $this->filterFiles($inventory, static fn (string $path): bool => str_ends_with($path, '.php')),
-            $this->filterFiles($inventory, static fn (string $path): bool => str_starts_with($path, 'src/') && str_ends_with($path, '.php')),
-            $this->filterFiles($inventory, static fn (string $path): bool => str_ends_with($path, '.twig')),
-            $this->filterFiles($inventory, static fn (string $path): bool => str_ends_with($path, '.json')),
-            $this->filterFiles($inventory, static fn (string $path): bool => str_ends_with($path, '.yaml') || str_ends_with($path, '.yml')),
-            $this->filterFiles($inventory, static fn (string $path): bool => str_ends_with($path, '.css')),
-            $this->filterFiles($inventory, static fn (string $path): bool => str_ends_with($path, '.js') || str_ends_with($path, '.mjs')),
+            $inventory->entries(),
+            $inventory->filesWhere(static fn (string $path): bool => str_starts_with($path, 'templates/') && str_ends_with($path, '.twig')),
+            $inventory->filesWhere(static fn (string $path): bool => str_starts_with($path, 'assets/')),
+            $inventory->filesWhere(static fn (string $path): bool => str_ends_with($path, '.php')),
+            $inventory->filesWhere(static fn (string $path): bool => str_starts_with($path, 'src/') && str_ends_with($path, '.php')),
+            $inventory->filesWhere(static fn (string $path): bool => str_ends_with($path, '.twig')),
+            $inventory->filesWhere(static fn (string $path): bool => str_ends_with($path, '.json')),
+            $inventory->filesWhere(static fn (string $path): bool => str_ends_with($path, '.yaml') || str_ends_with($path, '.yml')),
+            $inventory->filesWhere(static fn (string $path): bool => str_ends_with($path, '.css')),
+            $inventory->filesWhere(static fn (string $path): bool => str_ends_with($path, '.js') || str_ends_with($path, '.mjs')),
         );
-    }
-
-    /**
-     * @param list<string> $entries
-     */
-    private function collectInventory(string $root, string $directory, int $remainingDepth, array &$entries): void
-    {
-        if ($remainingDepth < 0) {
-            return;
-        }
-
-        $items = scandir($directory);
-        if (false === $items) {
-            return;
-        }
-
-        foreach ($items as $item) {
-            if ('.' === $item || '..' === $item) {
-                continue;
-            }
-
-            $path = $directory.DIRECTORY_SEPARATOR.$item;
-            $relativePath = ltrim(substr($path, strlen($root)), DIRECTORY_SEPARATOR);
-            $entries[] = is_dir($path) ? $relativePath.'/' : $relativePath;
-
-            if (is_dir($path)) {
-                $this->collectInventory($root, $path, $remainingDepth - 1, $entries);
-            }
-        }
-    }
-
-    /**
-     * @param list<string> $inventory
-     *
-     * @return list<string>
-     */
-    private function filterFiles(array $inventory, callable $filter): array
-    {
-        return array_values(array_filter(
-            $inventory,
-            static fn (string $path): bool => !str_ends_with($path, '/') && $filter($path),
-        ));
     }
 
     /**

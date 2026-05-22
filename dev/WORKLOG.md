@@ -68,35 +68,17 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-22
-- Prepared the first source namespace skeleton from the 0.1.x through 0.5.x feature drafts with documented `src/Core`, `src/Content`, `src/Theme`, `src/Module`, `src/Security`, `src/Editor`, `src/Integration`, and `src/Operations` boundaries.
-- Added the first shared Core workflow baseline with `OperationStatus`, `OperationIssue`, and `OperationResult` for recoverable operation states.
-- Added PHPUnit coverage for Core workflow issues and results, including success, invalid, review, blocked, failed, and invalid-construction guard behavior.
-- Added `bin/init` to verify PHP version and required extensions, resolve Composer with a `bin/composer` fallback, install Composer packages, install ImportMap assets, build Tailwind CSS, resolve Symfony's environment through `Dotenv::bootEnv()`, and compile the AssetMapper only for `prod`.
-- Updated `bin/init` to bootstrap with `composer install --no-dev --no-scripts`, then run the final Composer install with dev dependencies only for `dev` and `test`.
-- Added `--optimize-autoloader` to both Composer install phases in `bin/init`.
-- Removed redundant explicit `importmap:install` and `tailwind:build` calls from `bin/init` because Composer auto-scripts already execute ImportMap installation, public asset installation, and Tailwind builds.
-- Regenerated `assets/styles/illustrations.css` from the actual files in `assets/illustrations/undraw` to fix stale illustration class and filename mismatches.
-- Recorded the SVG theme-color limitation in the system theme draft: background SVGs do not inherit CSS custom properties, so dynamic unDraw coloring should use an allowlisted inline SVG renderer or Twig component later.
-- Added `bin/setup` as a non-mutating first-run setup skeleton with intentionally deferred repository initialization, installation data collection, configuration writing, and persistence preparation phases.
-- Added static PHPUnit coverage for the init script's presence, executable bit, PHP syntax, and required initialization steps.
-- Added static PHPUnit coverage for the setup skeleton.
-- Added a domain-neutral Core manifest parser, manifest value object, manifest key helper, manifest specification, and validator using recoverable `OperationResult` feedback.
-- Added namespace-based manifest specifications so callers can provide a namespace plus short allowed and required keys while validation still targets full keys such as `THEME_VERSION`.
-- Added PHPUnit coverage for manifest parsing, quoted values, duplicate keys, invalid keys, required keys, unknown keys, and open vs closed manifest specifications.
-- Added Core package discovery for `./.manifest`, `themes/*/.manifest`, `modules/*/.manifest`, and `var/cache/$APP_ENV/imports/*/.manifest`, with namespaced validation for app, theme, and module packages and neutral parsing for cached imports.
-- Added PHPUnit coverage for standard package source discovery, missing package directories, invalid namespaced theme manifests, and generic cached import manifests.
-- Added a domain-neutral package spec and validator for required files, required directories, and bounded package inventories before later dry-run planning.
-- Added PHPUnit coverage for package filesystem validation, missing file/directory diagnostics, inventory depth, and unsafe requirement paths.
-- Extended package validation with `PackageInspection` feature reporting for templates, assets, PHP files, `src/` PHP files, and Twig files, plus optional PHP and Twig syntax checks.
-- Added PHPUnit coverage for package feature inspection, PHP lint diagnostics, and Twig syntax diagnostics.
-- Added package preflight linting for JSON, YAML, CSS, and JavaScript files, plus a `withLintingChecks()` package spec shortcut that enables all supported syntax checks before later dry-run planning.
-- Added PHPUnit coverage for package lint feature reporting, all-check preflight linting, structured JSON/YAML/CSS/JavaScript diagnostics, and individual debug lint checks.
-- Extracted reusable string-based Core lint providers for PHP, Twig, JSON, YAML, CSS, and JavaScript so package preflight checks and future editor/debug UI can share the same diagnostics.
-- Refactored `PackageValidator` into a package-context adapter that reads files, delegates syntax checks to `App\Core\Lint` providers, and maps lint results into package-scoped issues.
-- Added PHPUnit coverage for reusable lint providers with valid and invalid virtual source buffers.
-- Simplified `public/.htaccess` to avoid `Options` and `DirectoryIndex` overrides, added Apache/nginx/IIS web server configuration templates, and documented the preferred `AllowOverride None` Apache deployment path.
-- Added static PHPUnit coverage to keep the Apache fallback file free of broad override directives and ensure web server templates remain present.
-- Updated the class map with the new Core workflow value objects.
+- Prepared the first Core architecture baseline from the 0.1.x through 0.5.x feature drafts, including source namespace boundaries, `bin/init` dependency bootstrapping, a non-mutating `bin/setup` skeleton, regenerated illustration CSS, and web server configuration templates for Apache, nginx, and IIS.
+- Added the shared Core package foundation: manifest parsing and namespace-based validation, package discovery for app/theme/module/import-cache manifests, package requirement validation, package feature inspection, and reusable lint providers for PHP, Twig, JSON, YAML, CSS, and JavaScript.
+- Added reusable Core primitives for filesystem-safe path handling and inventories, checksums, action logs, structured diffs, dry-run previews, deterministic action queues, operation execution, filesystem actions, process actions, and package-to-copy-queue planning.
+- Added structured `toArray()` exports across workflow, action-log, dry-run, diff, and operation result objects so future CLI, UI, importer, and action-log consumers can render the same payloads.
+- Added shared PHPUnit support helpers for temporary filesystem fixtures plus suite initialization and cleanup hooks for later demo and integration fixtures.
+- Documented deferred design decisions: dynamic SVG theme coloring needs an inline SVG/Twig renderer later, theme/module dependency maps belong to package-type installer workflows, and a third generic diagnostics model should wait until concrete UI or logging requirements appear.
+- Added `.codex/resolve_cloud_artifacts.php` for reviewed iCloud/Finder conflict cleanup and `.codex/clean_ignored_artifacts.php` for dry-run/apply removal of ignored build artifacts; documented both helper scripts in the agent tool registry.
+- Hardened the review baseline against symlink traversal and dereference risks by skipping symlinks in file inventories, rejecting symlink package copy sources, and blocking filesystem actions from reading or writing through symlink sources or targets.
+- Fixed Composer metadata review findings by replacing unbounded `symfony/apache-pack` and `symfonycasts/tailwind-bundle` constraints with caret constraints and refreshing the lock content hash.
+- Updated `dev/CLASSMAP.md`, relevant feature drafts, and PHPUnit coverage for the new Core architecture, package validation, linting, filesystem, integrity, action-log, diff, dry-run, operation, process, helper-script, and test-support behavior.
+- Verified the review state by cleaning ignored artifacts, running `bin/init` from a clean dependency state, and re-running PHPUnit, container linting, Composer validation, and whitespace checks.
 
 ### 2026-05-20
 - Created and consolidated the feature-draft roadmap for 0.1.x through 0.5.x plus future features, including core architecture, content modeling, themes, modules, security/ACL, editor workflows, resolver/search, media, import/export, operations, backup/restore, IconCaptcha, release lifecycle, and first-party module candidates.

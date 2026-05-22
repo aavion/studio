@@ -10,17 +10,19 @@ use App\Core\Package\PackageInspection;
 use App\Core\Package\PackageSource;
 use App\Core\Package\PackageSpec;
 use App\Core\Package\PackageValidator;
+use App\Tests\Support\FilesystemTestHelper;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 final class PackageValidatorTest extends TestCase
 {
+    use FilesystemTestHelper;
+
     private string $packageDir;
 
     protected function setUp(): void
     {
-        $this->packageDir = sys_get_temp_dir().'/studio-package-validator-'.bin2hex(random_bytes(6));
-        mkdir($this->packageDir, 0777, true);
+        $this->packageDir = $this->createTemporaryDirectory('studio-package-validator');
         file_put_contents($this->packageDir.'/.manifest', 'THEME_NAME=System');
     }
 
@@ -223,40 +225,6 @@ final class PackageValidatorTest extends TestCase
 
     private function writeFile(string $relativePath, string $contents): void
     {
-        $path = $this->packageDir.'/'.$relativePath;
-        $directory = dirname($path);
-
-        if (!is_dir($directory)) {
-            mkdir($directory, 0777, true);
-        }
-
-        file_put_contents($path, $contents);
-    }
-
-    private function removeDirectory(string $directory): void
-    {
-        if (!is_dir($directory)) {
-            return;
-        }
-
-        $entries = scandir($directory);
-        if (false === $entries) {
-            return;
-        }
-
-        foreach ($entries as $entry) {
-            if ('.' === $entry || '..' === $entry) {
-                continue;
-            }
-
-            $path = $directory.DIRECTORY_SEPARATOR.$entry;
-            if (is_dir($path)) {
-                $this->removeDirectory($path);
-            } else {
-                unlink($path);
-            }
-        }
-
-        rmdir($directory);
+        $this->writeTestFile($this->packageDir, $relativePath, $contents);
     }
 }

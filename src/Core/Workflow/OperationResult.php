@@ -141,4 +141,19 @@ final readonly class OperationResult
     {
         return $this->context;
     }
+
+    /**
+     * @return array{status: string, success: bool, recoverable: bool, value: TValue|null, issues: list<array{code: string, message: string, context: array<string, mixed>}>, context: array<string, mixed>}
+     */
+    public function toArray(): array
+    {
+        return [
+            'status' => $this->status->value,
+            'success' => $this->isSuccess(),
+            'recoverable' => $this->isRecoverable(),
+            'value' => $this->value,
+            'issues' => array_map(static fn (OperationIssue $issue): array => $issue->toArray(), $this->issues),
+            'context' => $this->context,
+        ];
+    }
 }

@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace App\Tests\Core\Package;
 
 use App\Core\Package\PackageDiscovery;
+use App\Tests\Support\FilesystemTestHelper;
 use PHPUnit\Framework\TestCase;
 
 final class PackageDiscoveryTest extends TestCase
 {
+    use FilesystemTestHelper;
+
     private string $projectDir;
 
     protected function setUp(): void
     {
-        $this->projectDir = sys_get_temp_dir().'/studio-package-discovery-'.bin2hex(random_bytes(6));
-        mkdir($this->projectDir, 0777, true);
+        $this->projectDir = $this->createTemporaryDirectory('studio-package-discovery');
     }
 
     protected function tearDown(): void
@@ -108,37 +110,6 @@ final class PackageDiscoveryTest extends TestCase
             $directory = $this->projectDir;
         }
 
-        if (!is_dir($directory)) {
-            mkdir($directory, 0777, true);
-        }
-
-        file_put_contents($directory.'/.manifest', $contents);
-    }
-
-    private function removeDirectory(string $directory): void
-    {
-        if (!is_dir($directory)) {
-            return;
-        }
-
-        $entries = scandir($directory);
-        if (false === $entries) {
-            return;
-        }
-
-        foreach ($entries as $entry) {
-            if ('.' === $entry || '..' === $entry) {
-                continue;
-            }
-
-            $path = $directory.DIRECTORY_SEPARATOR.$entry;
-            if (is_dir($path)) {
-                $this->removeDirectory($path);
-            } else {
-                unlink($path);
-            }
-        }
-
-        rmdir($directory);
+        $this->writeTestFile($directory, '.manifest', $contents);
     }
 }

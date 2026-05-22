@@ -58,6 +58,30 @@ final class OperationResultTest extends TestCase
         self::assertSame($issue, $result->firstIssue());
     }
 
+    public function testItExportsStructuredPayload(): void
+    {
+        $issue = OperationIssue::create('import.confirm_changes', 'Import changes require review.', [
+            'changes' => 3,
+        ]);
+
+        $result = OperationResult::requiresReview(['plan' => 'demo'], [$issue], [
+            'queue' => 'import',
+        ]);
+
+        self::assertSame([
+            'status' => 'requires_review',
+            'success' => false,
+            'recoverable' => true,
+            'value' => ['plan' => 'demo'],
+            'issues' => [[
+                'code' => 'import.confirm_changes',
+                'message' => 'Import changes require review.',
+                'context' => ['changes' => 3],
+            ]],
+            'context' => ['queue' => 'import'],
+        ], $result->toArray());
+    }
+
     public function testBlockedAndFailedResultsUseExpectedRecoverability(): void
     {
         $issue = OperationIssue::create('storage.unavailable', 'Configured storage is unavailable.');

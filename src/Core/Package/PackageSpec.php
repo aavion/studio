@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Core\Filesystem\PathGuard;
 use InvalidArgumentException;
 
 final readonly class PackageSpec
@@ -162,13 +163,7 @@ final readonly class PackageSpec
     private function assertRelativePaths(array $paths): void
     {
         foreach ($paths as $path) {
-            if ('' === trim($path)) {
-                throw new InvalidArgumentException('Package requirement path must not be empty.');
-            }
-
-            if (str_starts_with($path, '/') || str_contains($path, '..')) {
-                throw new InvalidArgumentException(sprintf('Package requirement path "%s" must be relative and stay inside the package.', $path));
-            }
+            $this->normalizeRequirementPath($path);
         }
     }
 
@@ -179,14 +174,22 @@ final readonly class PackageSpec
      */
     private function appendUnique(array $paths, string $path): array
     {
-        $path = trim($path, '/');
-        $this->assertRelativePaths([$path]);
+        $path = $this->normalizeRequirementPath($path);
 
         if (!in_array($path, $paths, true)) {
             $paths[] = $path;
         }
 
         return $paths;
+    }
+
+    private function normalizeRequirementPath(string $path): string
+    {
+        try {
+            return (new PathGuard())->relativePath($path);
+        } catch (InvalidArgumentException) {
+            throw new InvalidArgumentException(sprintf('Package requirement path "%s" must be relative and stay inside the package.', $path));
+        }
     }
 
     private function withLintCheck(string $check, bool $enabled): self
