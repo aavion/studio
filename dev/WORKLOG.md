@@ -83,6 +83,17 @@
 - Added a domain-neutral Core manifest parser, manifest value object, manifest key helper, manifest specification, and validator using recoverable `OperationResult` feedback.
 - Added namespace-based manifest specifications so callers can provide a namespace plus short allowed and required keys while validation still targets full keys such as `THEME_VERSION`.
 - Added PHPUnit coverage for manifest parsing, quoted values, duplicate keys, invalid keys, required keys, unknown keys, and open vs closed manifest specifications.
+- Added Core package discovery for `./.manifest`, `themes/*/.manifest`, `modules/*/.manifest`, and `var/cache/$APP_ENV/imports/*/.manifest`, with namespaced validation for app, theme, and module packages and neutral parsing for cached imports.
+- Added PHPUnit coverage for standard package source discovery, missing package directories, invalid namespaced theme manifests, and generic cached import manifests.
+- Added a domain-neutral package spec and validator for required files, required directories, and bounded package inventories before later dry-run planning.
+- Added PHPUnit coverage for package filesystem validation, missing file/directory diagnostics, inventory depth, and unsafe requirement paths.
+- Extended package validation with `PackageInspection` feature reporting for templates, assets, PHP files, `src/` PHP files, and Twig files, plus optional PHP and Twig syntax checks.
+- Added PHPUnit coverage for package feature inspection, PHP lint diagnostics, and Twig syntax diagnostics.
+- Added package preflight linting for JSON, YAML, CSS, and JavaScript files, plus a `withLintingChecks()` package spec shortcut that enables all supported syntax checks before later dry-run planning.
+- Added PHPUnit coverage for package lint feature reporting, all-check preflight linting, structured JSON/YAML/CSS/JavaScript diagnostics, and individual debug lint checks.
+- Extracted reusable string-based Core lint providers for PHP, Twig, JSON, YAML, CSS, and JavaScript so package preflight checks and future editor/debug UI can share the same diagnostics.
+- Refactored `PackageValidator` into a package-context adapter that reads files, delegates syntax checks to `App\Core\Lint` providers, and maps lint results into package-scoped issues.
+- Added PHPUnit coverage for reusable lint providers with valid and invalid virtual source buffers.
 - Updated the class map with the new Core workflow value objects.
 
 ### 2026-05-20
