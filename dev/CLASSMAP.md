@@ -9,6 +9,11 @@
 
 | Service ID | Class | Description | Docs | Test-Class |
 |------------|-------|-------------|------| ---------- |
+| N/A | `App\Core\Manifest\Manifest` | Value object for parsed `.manifest` key-value metadata. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Manifest/ManifestParserTest.php`, `tests/Core/Manifest/ManifestValidatorTest.php` |
+| N/A | `App\Core\Manifest\ManifestKey` | Shared manifest key syntax helper. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Manifest/ManifestParserTest.php`, `tests/Core/Manifest/ManifestSpecTest.php` |
+| N/A | `App\Core\Manifest\ManifestParser` | Neutral parser for `.manifest` `KEY=VALUE` syntax without domain-specific required keys. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Manifest/ManifestParserTest.php` |
+| N/A | `App\Core\Manifest\ManifestSpec` | Domain-neutral specification for required and allowed manifest keys. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Manifest/ManifestSpecTest.php`, `tests/Core/Manifest/ManifestValidatorTest.php` |
+| N/A | `App\Core\Manifest\ManifestValidator` | Validates parsed manifests against a supplied manifest specification. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Manifest/ManifestValidatorTest.php` |
 | N/A | `App\Core\Workflow\OperationIssue` | Value object for structured recoverable-operation issues. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationIssueTest.php` |
 | N/A | `App\Core\Workflow\OperationResult` | Value object for recoverable workflow results with success, invalid, review, blocked, and failed states. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
 | N/A | `App\Core\Workflow\OperationStatus` | Enum for shared recoverable workflow result states. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |

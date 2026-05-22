@@ -80,6 +80,9 @@
 - Added `bin/setup` as a non-mutating first-run setup skeleton with intentionally deferred repository initialization, installation data collection, configuration writing, and persistence preparation phases.
 - Added static PHPUnit coverage for the init script's presence, executable bit, PHP syntax, and required initialization steps.
 - Added static PHPUnit coverage for the setup skeleton.
+- Added a domain-neutral Core manifest parser, manifest value object, manifest key helper, manifest specification, and validator using recoverable `OperationResult` feedback.
+- Added namespace-based manifest specifications so callers can provide a namespace plus short allowed and required keys while validation still targets full keys such as `THEME_VERSION`.
+- Added PHPUnit coverage for manifest parsing, quoted values, duplicate keys, invalid keys, required keys, unknown keys, and open vs closed manifest specifications.
 - Updated the class map with the new Core workflow value objects.
 
 ### 2026-05-20
