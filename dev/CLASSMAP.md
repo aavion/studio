@@ -1,7 +1,7 @@
 # Developer Class Map
 
 > **Status**: Active  
-> **Updated**: 2026-05-20  
+> **Updated**: 2026-05-22
 > **Owner**: Core  
 > **Purpose:** This document tracks callable entry points (services, commands, controllers, Twig components, Stimulus controllers). Keep it up to date as new classes are added or interfaces change. This document is meant to evolve alongside the codebase—treat it as a living index for developers to quickly discover callables without grepping through the project.
 
@@ -9,6 +9,9 @@
 
 | Service ID | Class | Description | Docs | Test-Class |
 |------------|-------|-------------|------| ---------- |
+| N/A | `App\Core\Workflow\OperationIssue` | Value object for structured recoverable-operation issues. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationIssueTest.php` |
+| N/A | `App\Core\Workflow\OperationResult` | Value object for recoverable workflow results with success, invalid, review, blocked, and failed states. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
+| N/A | `App\Core\Workflow\OperationStatus` | Enum for shared recoverable workflow result states. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
 
 
 ## 2. Controllers
@@ -22,6 +25,7 @@
 
 | Command | Class | Description | Docs | Test-Class |
 |---------|-------|-------------|------| ---------- |
+| `bin/init` | `bin/init` | Initializes repository dependencies and assets for automated workflows without requiring a Symfony bootstrap before Composer is installed. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Operations/InitScriptTest.php` |
 
 ## 4. Components & Extensions
 
