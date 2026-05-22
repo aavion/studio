@@ -138,11 +138,8 @@ final class InitCommand
             return 1;
         }
 
-        $console = [PHP_BINARY, $this->projectDir.'/bin/console'];
-        $this->runRequiredCommand([...$console, 'importmap:install'], 'ImportMap dependencies are installed.');
-        $this->runRequiredCommand([...$console, 'tailwind:build'], 'Tailwind binary is available and CSS is compiled.');
-
         if ('prod' === $environment) {
+            $console = [PHP_BINARY, $this->projectDir.'/bin/console'];
             $this->runRequiredCommand([...$console, 'asset-map:compile'], 'Production asset map is compiled.');
         } else {
             $this->reporter->success(sprintf('Skipped asset-map compilation for "%s" environment.', $environment));
@@ -339,6 +336,17 @@ final class InitCommand
             }
 
             usleep(100000);
+        }
+
+        $output .= stream_get_contents($pipes[1]);
+        $errorOutput .= stream_get_contents($pipes[2]);
+
+        if ($streamOutput && '' !== $output) {
+            echo $output;
+        }
+
+        if ($streamOutput && '' !== $errorOutput) {
+            fwrite(STDERR, $errorOutput);
         }
 
         foreach ([1, 2] as $pipe) {

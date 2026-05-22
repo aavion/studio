@@ -26,6 +26,7 @@
 | Command | Class | Description | Docs | Test-Class |
 |---------|-------|-------------|------| ---------- |
 | `bin/init` | `bin/init` | Initializes repository dependencies and assets for automated workflows without requiring a Symfony bootstrap before Composer is installed. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Operations/InitScriptTest.php` |
+| `bin/setup` | `bin/setup` | Placeholder first-run setup entry point with deferred phases for repository initialization, configuration, persistence, and administrator setup. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Operations/SetupScriptTest.php` |
 
 ## 4. Components & Extensions
 

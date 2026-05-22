@@ -42,9 +42,9 @@ final class InitScriptTest extends TestCase
         self::assertStringContainsString("in_array(\$environment, ['dev', 'test'], true)", $contents);
         self::assertStringContainsString("'install', '--optimize-autoloader'", $contents);
         self::assertStringContainsString("'install', '--no-dev', '--optimize-autoloader'", $contents);
-        self::assertStringContainsString("'importmap:install'", $contents);
-        self::assertStringContainsString("'tailwind:build'", $contents);
         self::assertStringContainsString("'asset-map:compile'", $contents);
+        self::assertStringNotContainsString("'importmap:install'", $contents);
+        self::assertStringNotContainsString("'tailwind:build'", $contents);
         self::assertStringContainsString('bootEnv($this->projectDir.\'/.env\')', $contents);
     }
 }

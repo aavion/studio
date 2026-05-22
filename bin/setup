@@ -1,0 +1,63 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+final class SetupReporter
+{
+    public function info(string $message): void
+    {
+        echo '[INFO] '.$message.PHP_EOL;
+    }
+
+    public function success(string $message): void
+    {
+        echo '[OK] '.$message.PHP_EOL;
+    }
+}
+
+final class SetupCommand
+{
+    public function __construct(
+        private readonly string $projectDir,
+        private readonly SetupReporter $reporter,
+    ) {
+    }
+
+    public function run(): int
+    {
+        $this->reporter->info('Setup skeleton started.');
+        $this->initializeRepository();
+        $this->collectInstallationData();
+        $this->writeInitialConfiguration();
+        $this->preparePersistentState();
+        $this->reporter->success('Setup skeleton completed without changing project data.');
+
+        return 0;
+    }
+
+    private function initializeRepository(): void
+    {
+        $this->reporter->info('Repository initialization is delegated to bin/init when real setup begins.');
+    }
+
+    private function collectInstallationData(): void
+    {
+        $this->reporter->info('Installation data collection is intentionally deferred until setup has persistence targets.');
+    }
+
+    private function writeInitialConfiguration(): void
+    {
+        $this->reporter->info('Initial configuration writing is intentionally deferred.');
+    }
+
+    private function preparePersistentState(): void
+    {
+        $this->reporter->info('Database, administrator account, and seed setup are intentionally deferred.');
+    }
+}
+
+$projectDir = dirname(__DIR__);
+$reporter = new SetupReporter();
+
+exit((new SetupCommand($projectDir, $reporter))->run());

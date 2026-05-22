@@ -74,7 +74,12 @@
 - Added `bin/init` to verify PHP version and required extensions, resolve Composer with a `bin/composer` fallback, install Composer packages, install ImportMap assets, build Tailwind CSS, resolve Symfony's environment through `Dotenv::bootEnv()`, and compile the AssetMapper only for `prod`.
 - Updated `bin/init` to bootstrap with `composer install --no-dev --no-scripts`, then run the final Composer install with dev dependencies only for `dev` and `test`.
 - Added `--optimize-autoloader` to both Composer install phases in `bin/init`.
+- Removed redundant explicit `importmap:install` and `tailwind:build` calls from `bin/init` because Composer auto-scripts already execute ImportMap installation, public asset installation, and Tailwind builds.
+- Regenerated `assets/styles/illustrations.css` from the actual files in `assets/illustrations/undraw` to fix stale illustration class and filename mismatches.
+- Recorded the SVG theme-color limitation in the system theme draft: background SVGs do not inherit CSS custom properties, so dynamic unDraw coloring should use an allowlisted inline SVG renderer or Twig component later.
+- Added `bin/setup` as a non-mutating first-run setup skeleton with intentionally deferred repository initialization, installation data collection, configuration writing, and persistence preparation phases.
 - Added static PHPUnit coverage for the init script's presence, executable bit, PHP syntax, and required initialization steps.
+- Added static PHPUnit coverage for the setup skeleton.
 - Updated the class map with the new Core workflow value objects.
 
 ### 2026-05-20
