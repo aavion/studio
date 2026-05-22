@@ -1,58 +1,129 @@
 /* Auto-generated helper classes for unDraw illustrations */
+.illustration {
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    --primary-svg-color: var(--color-primary);
+}
+
 .illustration-3d-modeling {
-    background-image: url("../illustrations/undraw/3d_modeling.svg");
+    background-image: url("../illustrations/undraw/3d-modeling.svg");
+}
+
+.illustration-a-better-world {
+    background-image: url("../illustrations/undraw/a-better-world.svg");
 }
 
 .illustration-a-day-at-the-park {
-    background-image: url("../illustrations/undraw/a_day_at_the_park.svg");
+    background-image: url("../illustrations/undraw/a-day-at-the-park.svg");
+}
+
+.illustration-a-day-off {
+    background-image: url("../illustrations/undraw/a-day-off.svg");
+}
+
+.illustration-a-moment-to-relax {
+    background-image: url("../illustrations/undraw/a-moment-to-relax.svg");
 }
 
 .illustration-a-whole-year {
-    background-image: url("../illustrations/undraw/a_whole_year.svg");
+    background-image: url("../illustrations/undraw/a-whole-year.svg");
 }
 
 .illustration-about-me {
-    background-image: url("../illustrations/undraw/about_me.svg");
+    background-image: url("../illustrations/undraw/about-me.svg");
 }
 
 .illustration-about-us-page {
-    background-image: url("../illustrations/undraw/about_us_page.svg");
+    background-image: url("../illustrations/undraw/about-us-page.svg");
 }
 
 .illustration-absorbed-in {
-    background-image: url("../illustrations/undraw/absorbed_in.svg");
+    background-image: url("../illustrations/undraw/absorbed-in.svg");
+}
+
+.illustration-abstract {
+    background-image: url("../illustrations/undraw/abstract.svg");
 }
 
 .illustration-accept-request {
-    background-image: url("../illustrations/undraw/accept_request.svg");
+    background-image: url("../illustrations/undraw/accept-request.svg");
 }
 
-.illustration-accept-terms {
-    background-image: url("../illustrations/undraw/accept_terms.svg");
+.illustration-accept-tasks {
+    background-image: url("../illustrations/undraw/accept-tasks.svg");
+}
+
+.illustration-access-account {
+    background-image: url("../illustrations/undraw/access-account.svg");
+}
+
+.illustration-access-denied {
+    background-image: url("../illustrations/undraw/access-denied.svg");
 }
 
 .illustration-account {
     background-image: url("../illustrations/undraw/account.svg");
 }
 
+.illustration-active-options {
+    background-image: url("../illustrations/undraw/active-options.svg");
+}
+
 .illustration-active-support {
-    background-image: url("../illustrations/undraw/active_support.svg");
+    background-image: url("../illustrations/undraw/active-support.svg");
+}
+
+.illustration-activity-tracker {
+    background-image: url("../illustrations/undraw/activity-tracker.svg");
+}
+
+.illustration-add-color {
+    background-image: url("../illustrations/undraw/add-color.svg");
+}
+
+.illustration-add-content {
+    background-image: url("../illustrations/undraw/add-content.svg");
+}
+
+.illustration-add-document {
+    background-image: url("../illustrations/undraw/add-document.svg");
+}
+
+.illustration-add-file {
+    background-image: url("../illustrations/undraw/add-file.svg");
 }
 
 .illustration-add-files {
-    background-image: url("../illustrations/undraw/add_files.svg");
+    background-image: url("../illustrations/undraw/add-files.svg");
+}
+
+.illustration-add-friends {
+    background-image: url("../illustrations/undraw/add-friends.svg");
+}
+
+.illustration-add-information {
+    background-image: url("../illustrations/undraw/add-information.svg");
 }
 
 .illustration-add-notes {
-    background-image: url("../illustrations/undraw/add_notes.svg");
+    background-image: url("../illustrations/undraw/add-notes.svg");
+}
+
+.illustration-add-post {
+    background-image: url("../illustrations/undraw/add-post.svg");
+}
+
+.illustration-add-tasks {
+    background-image: url("../illustrations/undraw/add-tasks.svg");
 }
 
 .illustration-add-to-cart {
-    background-image: url("../illustrations/undraw/add_to_cart.svg");
+    background-image: url("../illustrations/undraw/add-to-cart.svg");
 }
 
 .illustration-add-user {
-    background-image: url("../illustrations/undraw/add_user.svg");
+    background-image: url("../illustrations/undraw/add-user.svg");
 }
 
 .illustration-address {
@@ -63,8 +134,20 @@
     background-image: url("../illustrations/undraw/adjustments.svg");
 }
 
+.illustration-advanced-customization {
+    background-image: url("../illustrations/undraw/advanced-customization.svg");
+}
+
+.illustration-adventure-map {
+    background-image: url("../illustrations/undraw/adventure-map.svg");
+}
+
 .illustration-adventure {
     background-image: url("../illustrations/undraw/adventure.svg");
+}
+
+.illustration-agree {
+    background-image: url("../illustrations/undraw/agree.svg");
 }
 
 .illustration-agreement {
@@ -72,15 +155,11 @@
 }
 
 .illustration-air-support {
-    background-image: url("../illustrations/undraw/air_support.svg");
+    background-image: url("../illustrations/undraw/air-support.svg");
 }
 
 .illustration-aircraft {
     background-image: url("../illustrations/undraw/aircraft.svg");
-}
-
-.illustration-airport {
-    background-image: url("../illustrations/undraw/airport.svg");
 }
 
 .illustration-alert {
@@ -92,11 +171,19 @@
 }
 
 .illustration-alien-science {
-    background-image: url("../illustrations/undraw/alien_science.svg");
+    background-image: url("../illustrations/undraw/alien-science.svg");
 }
 
 .illustration-all-the-data {
-    background-image: url("../illustrations/undraw/all_the_data.svg");
+    background-image: url("../illustrations/undraw/all-the-data.svg");
+}
+
+.illustration-among-nature {
+    background-image: url("../illustrations/undraw/among-nature.svg");
+}
+
+.illustration-amusement-park {
+    background-image: url("../illustrations/undraw/amusement-park.svg");
 }
 
 .illustration-analysis {
@@ -115,48 +202,124 @@
     background-image: url("../illustrations/undraw/android.svg");
 }
 
+.illustration-animating {
+    background-image: url("../illustrations/undraw/animating.svg");
+}
+
+.illustration-annotation {
+    background-image: url("../illustrations/undraw/annotation.svg");
+}
+
+.illustration-anonymous-feedback {
+    background-image: url("../illustrations/undraw/anonymous-feedback.svg");
+}
+
 .illustration-apartment-rent {
-    background-image: url("../illustrations/undraw/apartment_rent.svg");
+    background-image: url("../illustrations/undraw/apartment-rent.svg");
+}
+
+.illustration-app-data {
+    background-image: url("../illustrations/undraw/app-data.svg");
 }
 
 .illustration-app-installation {
-    background-image: url("../illustrations/undraw/app_installation.svg");
+    background-image: url("../illustrations/undraw/app-installation.svg");
+}
+
+.illustration-app-wireframe {
+    background-image: url("../illustrations/undraw/app-wireframe.svg");
+}
+
+.illustration-appreciate-it {
+    background-image: url("../illustrations/undraw/appreciate-it.svg");
 }
 
 .illustration-appreciation {
     background-image: url("../illustrations/undraw/appreciation.svg");
 }
 
+.illustration-approve {
+    background-image: url("../illustrations/undraw/approve.svg");
+}
+
+.illustration-apps {
+    background-image: url("../illustrations/undraw/apps.svg");
+}
+
 .illustration-around-the-world {
-    background-image: url("../illustrations/undraw/around_the_world.svg");
+    background-image: url("../illustrations/undraw/around-the-world.svg");
+}
+
+.illustration-arrived {
+    background-image: url("../illustrations/undraw/arrived.svg");
+}
+
+.illustration-art-lover {
+    background-image: url("../illustrations/undraw/art-lover.svg");
+}
+
+.illustration-art-museum {
+    background-image: url("../illustrations/undraw/art-museum.svg");
+}
+
+.illustration-art-thinking {
+    background-image: url("../illustrations/undraw/art-thinking.svg");
 }
 
 .illustration-art {
     background-image: url("../illustrations/undraw/art.svg");
 }
 
-.illustration-art-lover {
-    background-image: url("../illustrations/undraw/art_lover.svg");
+.illustration-articles {
+    background-image: url("../illustrations/undraw/articles.svg");
 }
 
 .illustration-artificial-intelligence {
-    background-image: url("../illustrations/undraw/artificial_intelligence.svg");
+    background-image: url("../illustrations/undraw/artificial-intelligence.svg");
 }
 
 .illustration-artist {
     background-image: url("../illustrations/undraw/artist.svg");
 }
 
+.illustration-ask-me-anything {
+    background-image: url("../illustrations/undraw/ask-me-anything.svg");
+}
+
+.illustration-asset-selection {
+    background-image: url("../illustrations/undraw/asset-selection.svg");
+}
+
 .illustration-astronaut {
     background-image: url("../illustrations/undraw/astronaut.svg");
 }
 
+.illustration-at-home {
+    background-image: url("../illustrations/undraw/at-home.svg");
+}
+
+.illustration-at-the-park {
+    background-image: url("../illustrations/undraw/at-the-park.svg");
+}
+
 .illustration-at-work {
-    background-image: url("../illustrations/undraw/at_work.svg");
+    background-image: url("../illustrations/undraw/at-work.svg");
+}
+
+.illustration-attached-file {
+    background-image: url("../illustrations/undraw/attached-file.svg");
 }
 
 .illustration-audio-conversation {
-    background-image: url("../illustrations/undraw/audio_conversation.svg");
+    background-image: url("../illustrations/undraw/audio-conversation.svg");
+}
+
+.illustration-audio-player {
+    background-image: url("../illustrations/undraw/audio-player.svg");
+}
+
+.illustration-augmented-reality {
+    background-image: url("../illustrations/undraw/augmented-reality.svg");
 }
 
 .illustration-authentication {
@@ -171,24 +334,32 @@
     background-image: url("../illustrations/undraw/awards.svg");
 }
 
+.illustration-awesome {
+    background-image: url("../illustrations/undraw/awesome.svg");
+}
+
 .illustration-baby {
     background-image: url("../illustrations/undraw/baby.svg");
 }
 
-.illustration-back-in-the-day {
-    background-image: url("../illustrations/undraw/back_in_the_day.svg");
-}
-
-.illustration-back-to-school {
-    background-image: url("../illustrations/undraw/back_to_school.svg");
+.illustration-back-home {
+    background-image: url("../illustrations/undraw/back-home.svg");
 }
 
 .illustration-balloons {
     background-image: url("../illustrations/undraw/balloons.svg");
 }
 
+.illustration-barbecue {
+    background-image: url("../illustrations/undraw/barbecue.svg");
+}
+
 .illustration-barber {
     background-image: url("../illustrations/undraw/barber.svg");
+}
+
+.illustration-barista {
+    background-image: url("../illustrations/undraw/barista.svg");
 }
 
 .illustration-basketball {
@@ -196,31 +367,43 @@
 }
 
 .illustration-be-the-hero {
-    background-image: url("../illustrations/undraw/be_the_hero.svg");
+    background-image: url("../illustrations/undraw/be-the-hero.svg");
 }
 
-.illustration-beach {
-    background-image: url("../illustrations/undraw/beach.svg");
+.illustration-beach-day {
+    background-image: url("../illustrations/undraw/beach-day.svg");
+}
+
+.illustration-bear-market {
+    background-image: url("../illustrations/undraw/bear-market.svg");
 }
 
 .illustration-beer-celebration {
-    background-image: url("../illustrations/undraw/beer_celebration.svg");
+    background-image: url("../illustrations/undraw/beer-celebration.svg");
+}
+
+.illustration-beer {
+    background-image: url("../illustrations/undraw/beer.svg");
 }
 
 .illustration-before-dawn {
-    background-image: url("../illustrations/undraw/before_dawn.svg");
+    background-image: url("../illustrations/undraw/before-dawn.svg");
 }
 
 .illustration-begin-chat {
-    background-image: url("../illustrations/undraw/begin_chat.svg");
+    background-image: url("../illustrations/undraw/begin-chat.svg");
 }
 
 .illustration-best-place {
-    background-image: url("../illustrations/undraw/best_place.svg");
+    background-image: url("../illustrations/undraw/best-place.svg");
 }
 
 .illustration-bibliophile {
     background-image: url("../illustrations/undraw/bibliophile.svg");
+}
+
+.illustration-bike-ride {
+    background-image: url("../illustrations/undraw/bike-ride.svg");
 }
 
 .illustration-biking {
@@ -228,23 +411,27 @@
 }
 
 .illustration-birthday-cake {
-    background-image: url("../illustrations/undraw/birthday_cake.svg");
+    background-image: url("../illustrations/undraw/birthday-cake.svg");
+}
+
+.illustration-birthday-girl {
+    background-image: url("../illustrations/undraw/birthday-girl.svg");
+}
+
+.illustration-bitcoin-p2p {
+    background-image: url("../illustrations/undraw/bitcoin-p2p.svg");
 }
 
 .illustration-bitcoin {
     background-image: url("../illustrations/undraw/bitcoin.svg");
 }
 
-.illustration-bitcoin-p2p {
-    background-image: url("../illustrations/undraw/bitcoin_p2p.svg");
-}
-
 .illustration-blank-canvas {
-    background-image: url("../illustrations/undraw/blank_canvas.svg");
+    background-image: url("../illustrations/undraw/blank-canvas.svg");
 }
 
 .illustration-blog-post {
-    background-image: url("../illustrations/undraw/blog_post.svg");
+    background-image: url("../illustrations/undraw/blog-post.svg");
 }
 
 .illustration-blogging {
@@ -255,8 +442,20 @@
     background-image: url("../illustrations/undraw/blooming.svg");
 }
 
+.illustration-body-text {
+    background-image: url("../illustrations/undraw/body-text.svg");
+}
+
 .illustration-book-lover {
-    background-image: url("../illustrations/undraw/book_lover.svg");
+    background-image: url("../illustrations/undraw/book-lover.svg");
+}
+
+.illustration-book-reading {
+    background-image: url("../illustrations/undraw/book-reading.svg");
+}
+
+.illustration-booked {
+    background-image: url("../illustrations/undraw/booked.svg");
 }
 
 .illustration-booking {
@@ -267,12 +466,28 @@
     background-image: url("../illustrations/undraw/bookmarks.svg");
 }
 
+.illustration-books {
+    background-image: url("../illustrations/undraw/books.svg");
+}
+
+.illustration-bookshelves {
+    background-image: url("../illustrations/undraw/bookshelves.svg");
+}
+
+.illustration-both-sides {
+    background-image: url("../illustrations/undraw/both-sides.svg");
+}
+
 .illustration-brainstorming {
     background-image: url("../illustrations/undraw/brainstorming.svg");
 }
 
+.illustration-breakfast {
+    background-image: url("../illustrations/undraw/breakfast.svg");
+}
+
 .illustration-breaking-barriers {
-    background-image: url("../illustrations/undraw/breaking_barriers.svg");
+    background-image: url("../illustrations/undraw/breaking-barriers.svg");
 }
 
 .illustration-broadcast {
@@ -280,7 +495,15 @@
 }
 
 .illustration-browser-stats {
-    background-image: url("../illustrations/undraw/browser_stats.svg");
+    background-image: url("../illustrations/undraw/browser-stats.svg");
+}
+
+.illustration-browsing-online {
+    background-image: url("../illustrations/undraw/browsing-online.svg");
+}
+
+.illustration-browsing {
+    background-image: url("../illustrations/undraw/browsing.svg");
 }
 
 .illustration-buddies {
@@ -292,31 +515,59 @@
 }
 
 .illustration-bug-fixing {
-    background-image: url("../illustrations/undraw/bug_fixing.svg");
+    background-image: url("../illustrations/undraw/bug-fixing.svg");
+}
+
+.illustration-build-wireframe {
+    background-image: url("../illustrations/undraw/build-wireframe.svg");
+}
+
+.illustration-build-your-home {
+    background-image: url("../illustrations/undraw/build-your-home.svg");
+}
+
+.illustration-building-blocks {
+    background-image: url("../illustrations/undraw/building-blocks.svg");
+}
+
+.illustration-building-websites {
+    background-image: url("../illustrations/undraw/building-websites.svg");
 }
 
 .illustration-building {
     background-image: url("../illustrations/undraw/building.svg");
 }
 
-.illustration-building-blocks {
-    background-image: url("../illustrations/undraw/building_blocks.svg");
-}
-
 .illustration-bus-stop {
-    background-image: url("../illustrations/undraw/bus_stop.svg");
+    background-image: url("../illustrations/undraw/bus-stop.svg");
 }
 
 .illustration-business-analytics {
-    background-image: url("../illustrations/undraw/business_analytics.svg");
+    background-image: url("../illustrations/undraw/business-analytics.svg");
+}
+
+.illustration-business-chat {
+    background-image: url("../illustrations/undraw/business-chat.svg");
 }
 
 .illustration-business-deal {
-    background-image: url("../illustrations/undraw/business_deal.svg");
+    background-image: url("../illustrations/undraw/business-deal.svg");
+}
+
+.illustration-business-decisions {
+    background-image: url("../illustrations/undraw/business-decisions.svg");
+}
+
+.illustration-business-man {
+    background-image: url("../illustrations/undraw/business-man.svg");
 }
 
 .illustration-business-plan {
-    background-image: url("../illustrations/undraw/business_plan.svg");
+    background-image: url("../illustrations/undraw/business-plan.svg");
+}
+
+.illustration-business-shop {
+    background-image: url("../illustrations/undraw/business-shop.svg");
 }
 
 .illustration-businessman {
@@ -327,8 +578,20 @@
     background-image: url("../illustrations/undraw/businesswoman.svg");
 }
 
-.illustration-by-my-car {
-    background-image: url("../illustrations/undraw/by_my_car.svg");
+.illustration-button-style {
+    background-image: url("../illustrations/undraw/button-style.svg");
+}
+
+.illustration-buy-house {
+    background-image: url("../illustrations/undraw/buy-house.svg");
+}
+
+.illustration-by-the-road {
+    background-image: url("../illustrations/undraw/by-the-road.svg");
+}
+
+.illustration-cabin {
+    background-image: url("../illustrations/undraw/cabin.svg");
 }
 
 .illustration-calculator {
@@ -363,20 +626,56 @@
     background-image: url("../illustrations/undraw/candidate.svg");
 }
 
-.illustration-career-progress {
-    background-image: url("../illustrations/undraw/career_progress.svg");
+.illustration-car-repair {
+    background-image: url("../illustrations/undraw/car-repair.svg");
 }
 
-.illustration-cautious-dog {
-    background-image: url("../illustrations/undraw/cautious_dog.svg");
+.illustration-card-postal {
+    background-image: url("../illustrations/undraw/card-postal.svg");
+}
+
+.illustration-career-development {
+    background-image: url("../illustrations/undraw/career-development.svg");
+}
+
+.illustration-career-progress {
+    background-image: url("../illustrations/undraw/career-progress.svg");
+}
+
+.illustration-cat {
+    background-image: url("../illustrations/undraw/cat.svg");
+}
+
+.illustration-celebrating {
+    background-image: url("../illustrations/undraw/celebrating.svg");
 }
 
 .illustration-celebration {
     background-image: url("../illustrations/undraw/celebration.svg");
 }
 
+.illustration-certificate {
+    background-image: url("../illustrations/undraw/certificate.svg");
+}
+
+.illustration-certification {
+    background-image: url("../illustrations/undraw/certification.svg");
+}
+
+.illustration-character-drawing {
+    background-image: url("../illustrations/undraw/character-drawing.svg");
+}
+
 .illustration-charts {
     background-image: url("../illustrations/undraw/charts.svg");
+}
+
+.illustration-chasing-love {
+    background-image: url("../illustrations/undraw/chasing-love.svg");
+}
+
+.illustration-chat-bot {
+    background-image: url("../illustrations/undraw/chat-bot.svg");
 }
 
 .illustration-chat {
@@ -387,8 +686,12 @@
     background-image: url("../illustrations/undraw/chatting.svg");
 }
 
+.illustration-check-boxes {
+    background-image: url("../illustrations/undraw/check-boxes.svg");
+}
+
 .illustration-checking-boxes {
-    background-image: url("../illustrations/undraw/checking_boxes.svg");
+    background-image: url("../illustrations/undraw/checking-boxes.svg");
 }
 
 .illustration-checklist {
@@ -415,36 +718,76 @@
     background-image: url("../illustrations/undraw/choose.svg");
 }
 
-.illustration-christmas-stocking {
-    background-image: url("../illustrations/undraw/christmas_stocking.svg");
+.illustration-choosing-house {
+    background-image: url("../illustrations/undraw/choosing-house.svg");
 }
 
-.illustration-christmas-tree {
-    background-image: url("../illustrations/undraw/christmas_tree.svg");
+.illustration-chore-list {
+    background-image: url("../illustrations/undraw/chore-list.svg");
+}
+
+.illustration-christmas-mode {
+    background-image: url("../illustrations/undraw/christmas-mode.svg");
+}
+
+.illustration-christmas-stocking {
+    background-image: url("../illustrations/undraw/christmas-stocking.svg");
 }
 
 .illustration-circles {
     background-image: url("../illustrations/undraw/circles.svg");
 }
 
+.illustration-circuit-board {
+    background-image: url("../illustrations/undraw/circuit-board.svg");
+}
+
+.illustration-circuit {
+    background-image: url("../illustrations/undraw/circuit.svg");
+}
+
 .illustration-city-driver {
-    background-image: url("../illustrations/undraw/city_driver.svg");
+    background-image: url("../illustrations/undraw/city-driver.svg");
 }
 
 .illustration-city-girl {
-    background-image: url("../illustrations/undraw/city_girl.svg");
+    background-image: url("../illustrations/undraw/city-girl.svg");
+}
+
+.illustration-city-life {
+    background-image: url("../illustrations/undraw/city-life.svg");
+}
+
+.illustration-clean-up {
+    background-image: url("../illustrations/undraw/clean-up.svg");
 }
 
 .illustration-click-here {
-    background-image: url("../illustrations/undraw/click_here.svg");
+    background-image: url("../illustrations/undraw/click-here.svg");
+}
+
+.illustration-close-tab {
+    background-image: url("../illustrations/undraw/close-tab.svg");
+}
+
+.illustration-cloud-docs {
+    background-image: url("../illustrations/undraw/cloud-docs.svg");
+}
+
+.illustration-cloud-files {
+    background-image: url("../illustrations/undraw/cloud-files.svg");
 }
 
 .illustration-cloud-hosting {
-    background-image: url("../illustrations/undraw/cloud_hosting.svg");
+    background-image: url("../illustrations/undraw/cloud-hosting.svg");
 }
 
 .illustration-cloud-sync {
-    background-image: url("../illustrations/undraw/cloud_sync.svg");
+    background-image: url("../illustrations/undraw/cloud-sync.svg");
+}
+
+.illustration-cms {
+    background-image: url("../illustrations/undraw/cms.svg");
 }
 
 .illustration-co-workers {
@@ -455,12 +798,20 @@
     background-image: url("../illustrations/undraw/co-working.svg");
 }
 
+.illustration-code-inspection {
+    background-image: url("../illustrations/undraw/code-inspection.svg");
+}
+
 .illustration-code-review {
-    background-image: url("../illustrations/undraw/code_review.svg");
+    background-image: url("../illustrations/undraw/code-review.svg");
+}
+
+.illustration-code-thinking {
+    background-image: url("../illustrations/undraw/code-thinking.svg");
 }
 
 .illustration-code-typing {
-    background-image: url("../illustrations/undraw/code_typing.svg");
+    background-image: url("../illustrations/undraw/code-typing.svg");
 }
 
 .illustration-coding {
@@ -468,15 +819,39 @@
 }
 
 .illustration-coffee-break {
-    background-image: url("../illustrations/undraw/coffee_break.svg");
+    background-image: url("../illustrations/undraw/coffee-break.svg");
+}
+
+.illustration-coffee-time {
+    background-image: url("../illustrations/undraw/coffee-time.svg");
+}
+
+.illustration-coffee-with-friends {
+    background-image: url("../illustrations/undraw/coffee-with-friends.svg");
+}
+
+.illustration-coffee {
+    background-image: url("../illustrations/undraw/coffee.svg");
+}
+
+.illustration-cohort-analysis {
+    background-image: url("../illustrations/undraw/cohort-analysis.svg");
 }
 
 .illustration-collab {
     background-image: url("../illustrations/undraw/collab.svg");
 }
 
+.illustration-collaborating {
+    background-image: url("../illustrations/undraw/collaborating.svg");
+}
+
 .illustration-collaboration {
     background-image: url("../illustrations/undraw/collaboration.svg");
+}
+
+.illustration-collaborators {
+    background-image: url("../illustrations/undraw/collaborators.svg");
 }
 
 .illustration-collecting {
@@ -487,28 +862,76 @@
     background-image: url("../illustrations/undraw/collection.svg");
 }
 
+.illustration-color-palette {
+    background-image: url("../illustrations/undraw/color-palette.svg");
+}
+
+.illustration-color-schemes {
+    background-image: url("../illustrations/undraw/color-schemes.svg");
+}
+
 .illustration-coming-home {
-    background-image: url("../illustrations/undraw/coming_home.svg");
+    background-image: url("../illustrations/undraw/coming-home.svg");
 }
 
 .illustration-community {
     background-image: url("../illustrations/undraw/community.svg");
 }
 
+.illustration-complete-design {
+    background-image: url("../illustrations/undraw/complete-design.svg");
+}
+
+.illustration-complete-task {
+    background-image: url("../illustrations/undraw/complete-task.svg");
+}
+
+.illustration-completed-steps {
+    background-image: url("../illustrations/undraw/completed-steps.svg");
+}
+
+.illustration-completed-tasks {
+    background-image: url("../illustrations/undraw/completed-tasks.svg");
+}
+
 .illustration-completed {
     background-image: url("../illustrations/undraw/completed.svg");
 }
 
+.illustration-completing {
+    background-image: url("../illustrations/undraw/completing.svg");
+}
+
 .illustration-compose-music {
-    background-image: url("../illustrations/undraw/compose_music.svg");
+    background-image: url("../illustrations/undraw/compose-music.svg");
+}
+
+.illustration-composition {
+    background-image: url("../illustrations/undraw/composition.svg");
+}
+
+.illustration-conceptual-idea {
+    background-image: url("../illustrations/undraw/conceptual-idea.svg");
+}
+
+.illustration-conference-call {
+    background-image: url("../illustrations/undraw/conference-call.svg");
+}
+
+.illustration-conference-speaker {
+    background-image: url("../illustrations/undraw/conference-speaker.svg");
 }
 
 .illustration-conference {
     background-image: url("../illustrations/undraw/conference.svg");
 }
 
-.illustration-conference-speaker {
-    background-image: url("../illustrations/undraw/conference_speaker.svg");
+.illustration-confidential-letter {
+    background-image: url("../illustrations/undraw/confidential-letter.svg");
+}
+
+.illustration-confirm {
+    background-image: url("../illustrations/undraw/confirm.svg");
 }
 
 .illustration-confirmation {
@@ -519,36 +942,52 @@
     background-image: url("../illustrations/undraw/confirmed.svg");
 }
 
+.illustration-connected-world {
+    background-image: url("../illustrations/undraw/connected-world.svg");
+}
+
 .illustration-connected {
     background-image: url("../illustrations/undraw/connected.svg");
 }
 
-.illustration-connected-world {
-    background-image: url("../illustrations/undraw/connected_world.svg");
+.illustration-connecting-teams {
+    background-image: url("../illustrations/undraw/connecting-teams.svg");
 }
 
-.illustration-connecting-teams {
-    background-image: url("../illustrations/undraw/connecting_teams.svg");
+.illustration-connection {
+    background-image: url("../illustrations/undraw/connection.svg");
 }
 
 .illustration-contact-us {
-    background-image: url("../illustrations/undraw/contact_us.svg");
+    background-image: url("../illustrations/undraw/contact-us.svg");
 }
 
 .illustration-container-ship {
-    background-image: url("../illustrations/undraw/container_ship.svg");
+    background-image: url("../illustrations/undraw/container-ship.svg");
 }
 
 .illustration-contemplating {
     background-image: url("../illustrations/undraw/contemplating.svg");
 }
 
+.illustration-content-creator {
+    background-image: url("../illustrations/undraw/content-creator.svg");
+}
+
+.illustration-content-structure {
+    background-image: url("../illustrations/undraw/content-structure.svg");
+}
+
+.illustration-content-team {
+    background-image: url("../illustrations/undraw/content-team.svg");
+}
+
 .illustration-content {
     background-image: url("../illustrations/undraw/content.svg");
 }
 
-.illustration-content-creator {
-    background-image: url("../illustrations/undraw/content_creator.svg");
+.illustration-contract {
+    background-image: url("../illustrations/undraw/contract.svg");
 }
 
 .illustration-contrast {
@@ -556,7 +995,7 @@
 }
 
 .illustration-control-panel {
-    background-image: url("../illustrations/undraw/control_panel.svg");
+    background-image: url("../illustrations/undraw/control-panel.svg");
 }
 
 .illustration-conversation {
@@ -568,15 +1007,27 @@
 }
 
 .illustration-cookie-love {
-    background-image: url("../illustrations/undraw/cookie_love.svg");
+    background-image: url("../illustrations/undraw/cookie-love.svg");
+}
+
+.illustration-cooking {
+    background-image: url("../illustrations/undraw/cooking.svg");
 }
 
 .illustration-coolness {
     background-image: url("../illustrations/undraw/coolness.svg");
 }
 
+.illustration-counting-stars {
+    background-image: url("../illustrations/undraw/counting-stars.svg");
+}
+
 .illustration-country-side {
-    background-image: url("../illustrations/undraw/country_side.svg");
+    background-image: url("../illustrations/undraw/country-side.svg");
+}
+
+.illustration-couple-love {
+    background-image: url("../illustrations/undraw/couple-love.svg");
 }
 
 .illustration-couple {
@@ -587,80 +1038,124 @@
     background-image: url("../illustrations/undraw/create.svg");
 }
 
+.illustration-creation-process {
+    background-image: url("../illustrations/undraw/creation-process.svg");
+}
+
 .illustration-creation {
     background-image: url("../illustrations/undraw/creation.svg");
 }
 
-.illustration-creation-process {
-    background-image: url("../illustrations/undraw/creation_process.svg");
+.illustration-creative-draft {
+    background-image: url("../illustrations/undraw/creative-draft.svg");
 }
 
 .illustration-creative-experiment {
-    background-image: url("../illustrations/undraw/creative_experiment.svg");
+    background-image: url("../illustrations/undraw/creative-experiment.svg");
+}
+
+.illustration-creative-process {
+    background-image: url("../illustrations/undraw/creative-process.svg");
 }
 
 .illustration-creative-team {
-    background-image: url("../illustrations/undraw/creative_team.svg");
+    background-image: url("../illustrations/undraw/creative-team.svg");
 }
 
 .illustration-creative-thinking {
-    background-image: url("../illustrations/undraw/creative_thinking.svg");
+    background-image: url("../illustrations/undraw/creative-thinking.svg");
 }
 
 .illustration-creative-woman {
-    background-image: url("../illustrations/undraw/creative_woman.svg");
+    background-image: url("../illustrations/undraw/creative-woman.svg");
 }
 
 .illustration-creativity {
     background-image: url("../illustrations/undraw/creativity.svg");
 }
 
-.illustration-credit-card {
-    background-image: url("../illustrations/undraw/credit_card.svg");
-}
-
 .illustration-credit-card-payment {
-    background-image: url("../illustrations/undraw/credit_card_payment.svg");
+    background-image: url("../illustrations/undraw/credit-card-payment.svg");
 }
 
 .illustration-credit-card-payments {
-    background-image: url("../illustrations/undraw/credit_card_payments.svg");
+    background-image: url("../illustrations/undraw/credit-card-payments.svg");
+}
+
+.illustration-credit-card {
+    background-image: url("../illustrations/undraw/credit-card.svg");
 }
 
 .illustration-crypto-flowers {
-    background-image: url("../illustrations/undraw/crypto_flowers.svg");
+    background-image: url("../illustrations/undraw/crypto-flowers.svg");
+}
+
+.illustration-crypto-portfolio {
+    background-image: url("../illustrations/undraw/crypto-portfolio.svg");
+}
+
+.illustration-current-location {
+    background-image: url("../illustrations/undraw/current-location.svg");
 }
 
 .illustration-customer-survey {
-    background-image: url("../illustrations/undraw/customer_survey.svg");
+    background-image: url("../illustrations/undraw/customer-survey.svg");
 }
 
 .illustration-dark-alley {
-    background-image: url("../illustrations/undraw/dark_alley.svg");
+    background-image: url("../illustrations/undraw/dark-alley.svg");
 }
 
 .illustration-dark-analytics {
-    background-image: url("../illustrations/undraw/dark_analytics.svg");
+    background-image: url("../illustrations/undraw/dark-analytics.svg");
+}
+
+.illustration-dark-mode {
+    background-image: url("../illustrations/undraw/dark-mode.svg");
 }
 
 .illustration-dashboard {
     background-image: url("../illustrations/undraw/dashboard.svg");
 }
 
+.illustration-data-extraction {
+    background-image: url("../illustrations/undraw/data-extraction.svg");
+}
+
+.illustration-data-input {
+    background-image: url("../illustrations/undraw/data-input.svg");
+}
+
+.illustration-data-points {
+    background-image: url("../illustrations/undraw/data-points.svg");
+}
+
+.illustration-data-processing {
+    background-image: url("../illustrations/undraw/data-processing.svg");
+}
+
+.illustration-data-report {
+    background-image: url("../illustrations/undraw/data-report.svg");
+}
+
+.illustration-data-reports {
+    background-image: url("../illustrations/undraw/data-reports.svg");
+}
+
+.illustration-data-trends {
+    background-image: url("../illustrations/undraw/data-trends.svg");
+}
+
 .illustration-data {
     background-image: url("../illustrations/undraw/data.svg");
 }
 
-.illustration-data-points {
-    background-image: url("../illustrations/undraw/data_points.svg");
+.illustration-date-night {
+    background-image: url("../illustrations/undraw/date-night.svg");
 }
 
-.illustration-data-report {
-    background-image: url("../illustrations/undraw/data_report.svg");
-}
-
-.illustration-data-trends {
-    background-image: url("../illustrations/undraw/data_trends.svg");
+.illustration-date-picker {
+    background-image: url("../illustrations/undraw/date-picker.svg");
 }
 
 .illustration-decide {
@@ -671,8 +1166,20 @@
     background-image: url("../illustrations/undraw/deconstructed.svg");
 }
 
+.illustration-decorate-christmas-tree {
+    background-image: url("../illustrations/undraw/decorate-christmas-tree.svg");
+}
+
 .illustration-deliveries {
     background-image: url("../illustrations/undraw/deliveries.svg");
+}
+
+.illustration-delivery-address {
+    background-image: url("../illustrations/undraw/delivery-address.svg");
+}
+
+.illustration-delivery-truck {
+    background-image: url("../illustrations/undraw/delivery-truck.svg");
 }
 
 .illustration-delivery {
@@ -683,48 +1190,112 @@
     background-image: url("../illustrations/undraw/departing.svg");
 }
 
-.illustration-depi {
-    background-image: url("../illustrations/undraw/depi.svg");
+.illustration-design-community {
+    background-image: url("../illustrations/undraw/design-community.svg");
 }
 
-.illustration-design-community {
-    background-image: url("../illustrations/undraw/design_community.svg");
+.illustration-design-components {
+    background-image: url("../illustrations/undraw/design-components.svg");
+}
+
+.illustration-design-data {
+    background-image: url("../illustrations/undraw/design-data.svg");
+}
+
+.illustration-design-feedback {
+    background-image: url("../illustrations/undraw/design-feedback.svg");
 }
 
 .illustration-design-inspiration {
-    background-image: url("../illustrations/undraw/design_inspiration.svg");
+    background-image: url("../illustrations/undraw/design-inspiration.svg");
+}
+
+.illustration-design-notes {
+    background-image: url("../illustrations/undraw/design-notes.svg");
+}
+
+.illustration-design-objectives {
+    background-image: url("../illustrations/undraw/design-objectives.svg");
 }
 
 .illustration-design-process {
-    background-image: url("../illustrations/undraw/design_process.svg");
+    background-image: url("../illustrations/undraw/design-process.svg");
+}
+
+.illustration-design-sprint {
+    background-image: url("../illustrations/undraw/design-sprint.svg");
+}
+
+.illustration-design-stats {
+    background-image: url("../illustrations/undraw/design-stats.svg");
+}
+
+.illustration-design-team {
+    background-image: url("../illustrations/undraw/design-team.svg");
 }
 
 .illustration-design-thinking {
-    background-image: url("../illustrations/undraw/design_thinking.svg");
+    background-image: url("../illustrations/undraw/design-thinking.svg");
 }
 
 .illustration-design-tools {
-    background-image: url("../illustrations/undraw/design_tools.svg");
+    background-image: url("../illustrations/undraw/design-tools.svg");
+}
+
+.illustration-designer-girl {
+    background-image: url("../illustrations/undraw/designer-girl.svg");
+}
+
+.illustration-designer-life {
+    background-image: url("../illustrations/undraw/designer-life.svg");
+}
+
+.illustration-designer-mindset {
+    background-image: url("../illustrations/undraw/designer-mindset.svg");
 }
 
 .illustration-designer {
     background-image: url("../illustrations/undraw/designer.svg");
 }
 
-.illustration-designer-girl {
-    background-image: url("../illustrations/undraw/designer_girl.svg");
-}
-
-.illustration-designer-life {
-    background-image: url("../illustrations/undraw/designer_life.svg");
-}
-
 .illustration-destination {
     background-image: url("../illustrations/undraw/destination.svg");
 }
 
+.illustration-destinations {
+    background-image: url("../illustrations/undraw/destinations.svg");
+}
+
+.illustration-detailed-analysis {
+    background-image: url("../illustrations/undraw/detailed-analysis.svg");
+}
+
+.illustration-detailed-examination {
+    background-image: url("../illustrations/undraw/detailed-examination.svg");
+}
+
+.illustration-detailed-information {
+    background-image: url("../illustrations/undraw/detailed-information.svg");
+}
+
+.illustration-details {
+    background-image: url("../illustrations/undraw/details.svg");
+}
+
+.illustration-dev-focus {
+    background-image: url("../illustrations/undraw/dev-focus.svg");
+}
+
+.illustration-dev-productivity {
+    background-image: url("../illustrations/undraw/dev-productivity.svg");
+}
+
+.illustration-develop-app {
+    background-image: url("../illustrations/undraw/develop-app.svg");
+}
+
 .illustration-developer-activity {
-    background-image: url("../illustrations/undraw/developer_activity.svg");
+    background-image: url("../illustrations/undraw/developer-activity.svg");
 }
 
 .illustration-development {
@@ -735,16 +1306,24 @@
     background-image: url("../illustrations/undraw/devices.svg");
 }
 
+.illustration-diary {
+    background-image: url("../illustrations/undraw/diary.svg");
+}
+
+.illustration-diet {
+    background-image: url("../illustrations/undraw/diet.svg");
+}
+
 .illustration-different-love {
-    background-image: url("../illustrations/undraw/different_love.svg");
+    background-image: url("../illustrations/undraw/different-love.svg");
 }
 
 .illustration-digital-currency {
-    background-image: url("../illustrations/undraw/digital_currency.svg");
+    background-image: url("../illustrations/undraw/digital-currency.svg");
 }
 
 .illustration-digital-nomad {
-    background-image: url("../illustrations/undraw/digital_nomad.svg");
+    background-image: url("../illustrations/undraw/digital-nomad.svg");
 }
 
 .illustration-directions {
@@ -753,6 +1332,10 @@
 
 .illustration-discount {
     background-image: url("../illustrations/undraw/discount.svg");
+}
+
+.illustration-discoverable {
+    background-image: url("../illustrations/undraw/discoverable.svg");
 }
 
 .illustration-doctor {
@@ -768,59 +1351,115 @@
 }
 
 .illustration-dog-walking {
-    background-image: url("../illustrations/undraw/dog_walking.svg");
+    background-image: url("../illustrations/undraw/dog-walking.svg");
+}
+
+.illustration-dog {
+    background-image: url("../illustrations/undraw/dog.svg");
 }
 
 .illustration-doll-play {
-    background-image: url("../illustrations/undraw/doll_play.svg");
+    background-image: url("../illustrations/undraw/doll-play.svg");
 }
 
 .illustration-domain-names {
-    background-image: url("../illustrations/undraw/domain_names.svg");
+    background-image: url("../illustrations/undraw/domain-names.svg");
+}
+
+.illustration-done-checking {
+    background-image: url("../illustrations/undraw/done-checking.svg");
 }
 
 .illustration-done {
     background-image: url("../illustrations/undraw/done.svg");
 }
 
-.illustration-done-checking {
-    background-image: url("../illustrations/undraw/done_checking.svg");
+.illustration-donut-love {
+    background-image: url("../illustrations/undraw/donut-love.svg");
 }
 
 .illustration-download {
     background-image: url("../illustrations/undraw/download.svg");
 }
 
+.illustration-drag {
+    background-image: url("../illustrations/undraw/drag.svg");
+}
+
+.illustration-dream-world {
+    background-image: url("../illustrations/undraw/dream-world.svg");
+}
+
 .illustration-dreamer {
     background-image: url("../illustrations/undraw/dreamer.svg");
 }
 
+.illustration-drink-coffee {
+    background-image: url("../illustrations/undraw/drink-coffee.svg");
+}
+
 .illustration-drone-delivery {
-    background-image: url("../illustrations/undraw/drone_delivery.svg");
+    background-image: url("../illustrations/undraw/drone-delivery.svg");
 }
 
 .illustration-drone-race {
-    background-image: url("../illustrations/undraw/drone_race.svg");
+    background-image: url("../illustrations/undraw/drone-race.svg");
+}
+
+.illustration-drone-surveillance {
+    background-image: url("../illustrations/undraw/drone-surveillance.svg");
+}
+
+.illustration-dropdown-menu {
+    background-image: url("../illustrations/undraw/dropdown-menu.svg");
 }
 
 .illustration-dua-lipa {
-    background-image: url("../illustrations/undraw/dua_lipa.svg");
+    background-image: url("../illustrations/undraw/dua-lipa.svg");
 }
 
-.illustration-easter-egg-hunt {
-    background-image: url("../illustrations/undraw/easter_egg_hunt.svg");
+.illustration-duplicate {
+    background-image: url("../illustrations/undraw/duplicate.svg");
 }
 
 .illustration-eating-together {
-    background-image: url("../illustrations/undraw/eating_together.svg");
+    background-image: url("../illustrations/undraw/eating-together.svg");
+}
+
+.illustration-eco-conscious {
+    background-image: url("../illustrations/undraw/eco-conscious.svg");
+}
+
+.illustration-edit-photo {
+    background-image: url("../illustrations/undraw/edit-photo.svg");
 }
 
 .illustration-editable {
     background-image: url("../illustrations/undraw/editable.svg");
 }
 
+.illustration-education {
+    background-image: url("../illustrations/undraw/education.svg");
+}
+
+.illustration-educator {
+    background-image: url("../illustrations/undraw/educator.svg");
+}
+
+.illustration-eiffel-tower {
+    background-image: url("../illustrations/undraw/eiffel-tower.svg");
+}
+
+.illustration-election-day {
+    background-image: url("../illustrations/undraw/election-day.svg");
+}
+
 .illustration-electric-car {
-    background-image: url("../illustrations/undraw/electric_car.svg");
+    background-image: url("../illustrations/undraw/electric-car.svg");
+}
+
+.illustration-electricity {
+    background-image: url("../illustrations/undraw/electricity.svg");
 }
 
 .illustration-elements {
@@ -828,19 +1467,39 @@
 }
 
 .illustration-email-campaign {
-    background-image: url("../illustrations/undraw/email_campaign.svg");
+    background-image: url("../illustrations/undraw/email-campaign.svg");
 }
 
 .illustration-email-capture {
-    background-image: url("../illustrations/undraw/email_capture.svg");
+    background-image: url("../illustrations/undraw/email-capture.svg");
 }
 
 .illustration-emails {
     background-image: url("../illustrations/undraw/emails.svg");
 }
 
+.illustration-empty-cart {
+    background-image: url("../illustrations/undraw/empty-cart.svg");
+}
+
+.illustration-empty-street {
+    background-image: url("../illustrations/undraw/empty-street.svg");
+}
+
 .illustration-empty {
     background-image: url("../illustrations/undraw/empty.svg");
+}
+
+.illustration-energizer {
+    background-image: url("../illustrations/undraw/energizer.svg");
+}
+
+.illustration-engineering-team {
+    background-image: url("../illustrations/undraw/engineering-team.svg");
+}
+
+.illustration-enter {
+    background-image: url("../illustrations/undraw/enter.svg");
 }
 
 .illustration-envelope {
@@ -849,6 +1508,14 @@
 
 .illustration-environment {
     background-image: url("../illustrations/undraw/environment.svg");
+}
+
+.illustration-environmental-study {
+    background-image: url("../illustrations/undraw/environmental-study.svg");
+}
+
+.illustration-escaping {
+    background-image: url("../illustrations/undraw/escaping.svg");
 }
 
 .illustration-ether {
@@ -864,43 +1531,91 @@
 }
 
 .illustration-everyday-design {
-    background-image: url("../illustrations/undraw/everyday_design.svg");
+    background-image: url("../illustrations/undraw/everyday-design.svg");
+}
+
+.illustration-everyday-life {
+    background-image: url("../illustrations/undraw/everyday-life.svg");
+}
+
+.illustration-everywhere-together {
+    background-image: url("../illustrations/undraw/everywhere-together.svg");
 }
 
 .illustration-exams {
     background-image: url("../illustrations/undraw/exams.svg");
 }
 
+.illustration-exciting-news {
+    background-image: url("../illustrations/undraw/exciting-news.svg");
+}
+
+.illustration-expecting {
+    background-image: url("../illustrations/undraw/expecting.svg");
+}
+
 .illustration-experience-design {
-    background-image: url("../illustrations/undraw/experience_design.svg");
+    background-image: url("../illustrations/undraw/experience-design.svg");
 }
 
 .illustration-experts {
     background-image: url("../illustrations/undraw/experts.svg");
 }
 
+.illustration-explore {
+    background-image: url("../illustrations/undraw/explore.svg");
+}
+
 .illustration-exploring {
     background-image: url("../illustrations/undraw/exploring.svg");
 }
 
+.illustration-export-files {
+    background-image: url("../illustrations/undraw/export-files.svg");
+}
+
+.illustration-factory {
+    background-image: url("../illustrations/undraw/factory.svg");
+}
+
 .illustration-fall-is-coming {
-    background-image: url("../illustrations/undraw/fall_is_coming.svg");
+    background-image: url("../illustrations/undraw/fall-is-coming.svg");
+}
+
+.illustration-fall {
+    background-image: url("../illustrations/undraw/fall.svg");
+}
+
+.illustration-family {
+    background-image: url("../illustrations/undraw/family.svg");
 }
 
 .illustration-fans {
     background-image: url("../illustrations/undraw/fans.svg");
 }
 
-.illustration-fashion-blogging {
-    background-image: url("../illustrations/undraw/fashion_blogging.svg");
+.illustration-faq {
+    background-image: url("../illustrations/undraw/faq.svg");
 }
 
-.illustration-fast-car {
-    background-image: url("../illustrations/undraw/fast_car.svg");
+.illustration-farm-girl {
+    background-image: url("../illustrations/undraw/farm-girl.svg");
+}
+
+.illustration-fashion-blogging {
+    background-image: url("../illustrations/undraw/fashion-blogging.svg");
+}
+
+.illustration-fashion-photoshoot {
+    background-image: url("../illustrations/undraw/fashion-photoshoot.svg");
 }
 
 .illustration-fast-loading {
-    background-image: url("../illustrations/undraw/fast_loading.svg");
+    background-image: url("../illustrations/undraw/fast-loading.svg");
+}
+
+.illustration-fast {
+    background-image: url("../illustrations/undraw/fast.svg");
 }
 
 .illustration-fatherhood {
@@ -908,35 +1623,75 @@
 }
 
 .illustration-features-overview {
-    background-image: url("../illustrations/undraw/features_overview.svg");
+    background-image: url("../illustrations/undraw/features-overview.svg");
+}
+
+.illustration-feedback {
+    background-image: url("../illustrations/undraw/feedback.svg");
 }
 
 .illustration-feeling-blue {
-    background-image: url("../illustrations/undraw/feeling_blue.svg");
+    background-image: url("../illustrations/undraw/feeling-blue.svg");
+}
+
+.illustration-feeling-happy {
+    background-image: url("../illustrations/undraw/feeling-happy.svg");
+}
+
+.illustration-feeling-of-joy {
+    background-image: url("../illustrations/undraw/feeling-of-joy.svg");
+}
+
+.illustration-feeling-proud {
+    background-image: url("../illustrations/undraw/feeling-proud.svg");
+}
+
+.illustration-female-avatar {
+    background-image: url("../illustrations/undraw/female-avatar.svg");
 }
 
 .illustration-festivities {
     background-image: url("../illustrations/undraw/festivities.svg");
 }
 
+.illustration-file-analysis {
+    background-image: url("../illustrations/undraw/file-analysis.svg");
+}
+
 .illustration-file-bundle {
-    background-image: url("../illustrations/undraw/file_bundle.svg");
+    background-image: url("../illustrations/undraw/file-bundle.svg");
+}
+
+.illustration-file-manager {
+    background-image: url("../illustrations/undraw/file-manager.svg");
 }
 
 .illustration-file-searching {
-    background-image: url("../illustrations/undraw/file_searching.svg");
+    background-image: url("../illustrations/undraw/file-searching.svg");
+}
+
+.illustration-file-sync {
+    background-image: url("../illustrations/undraw/file-sync.svg");
 }
 
 .illustration-file-synchronization {
-    background-image: url("../illustrations/undraw/file_synchronization.svg");
+    background-image: url("../illustrations/undraw/file-synchronization.svg");
 }
 
 .illustration-files-sent {
-    background-image: url("../illustrations/undraw/files_sent.svg");
+    background-image: url("../illustrations/undraw/files-sent.svg");
 }
 
 .illustration-filing-system {
-    background-image: url("../illustrations/undraw/filing_system.svg");
+    background-image: url("../illustrations/undraw/filing-system.svg");
+}
+
+.illustration-fill-forms {
+    background-image: url("../illustrations/undraw/fill-forms.svg");
+}
+
+.illustration-fill-in {
+    background-image: url("../illustrations/undraw/fill-in.svg");
 }
 
 .illustration-filter {
@@ -948,7 +1703,11 @@
 }
 
 .illustration-financial-data {
-    background-image: url("../illustrations/undraw/financial_data.svg");
+    background-image: url("../illustrations/undraw/financial-data.svg");
+}
+
+.illustration-fingerprint-login {
+    background-image: url("../illustrations/undraw/fingerprint-login.svg");
 }
 
 .illustration-fingerprint {
@@ -956,7 +1715,7 @@
 }
 
 .illustration-finish-line {
-    background-image: url("../illustrations/undraw/finish_line.svg");
+    background-image: url("../illustrations/undraw/finish-line.svg");
 }
 
 .illustration-fireworks {
@@ -968,15 +1727,35 @@
 }
 
 .illustration-fish-bowl {
-    background-image: url("../illustrations/undraw/fish_bowl.svg");
+    background-image: url("../illustrations/undraw/fish-bowl.svg");
 }
 
 .illustration-fishing {
     background-image: url("../illustrations/undraw/fishing.svg");
 }
 
+.illustration-fitness-stats {
+    background-image: url("../illustrations/undraw/fitness-stats.svg");
+}
+
 .illustration-fitness-tracker {
-    background-image: url("../illustrations/undraw/fitness_tracker.svg");
+    background-image: url("../illustrations/undraw/fitness-tracker.svg");
+}
+
+.illustration-fitting-piece {
+    background-image: url("../illustrations/undraw/fitting-piece.svg");
+}
+
+.illustration-fitting-pieces {
+    background-image: url("../illustrations/undraw/fitting-pieces.svg");
+}
+
+.illustration-fixing-bugs {
+    background-image: url("../illustrations/undraw/fixing-bugs.svg");
+}
+
+.illustration-flagged {
+    background-image: url("../illustrations/undraw/flagged.svg");
 }
 
 .illustration-floating {
@@ -987,8 +1766,20 @@
     background-image: url("../illustrations/undraw/flowers.svg");
 }
 
+.illustration-flutter-dev {
+    background-image: url("../illustrations/undraw/flutter-dev.svg");
+}
+
+.illustration-flying-drone {
+    background-image: url("../illustrations/undraw/flying-drone.svg");
+}
+
 .illustration-focus {
     background-image: url("../illustrations/undraw/focus.svg");
+}
+
+.illustration-folder-files {
+    background-image: url("../illustrations/undraw/folder-files.svg");
 }
 
 .illustration-folder {
@@ -996,7 +1787,7 @@
 }
 
 .illustration-follow-me-drone {
-    background-image: url("../illustrations/undraw/follow_me_drone.svg");
+    background-image: url("../illustrations/undraw/follow-me-drone.svg");
 }
 
 .illustration-followers {
@@ -1007,24 +1798,44 @@
     background-image: url("../illustrations/undraw/following.svg");
 }
 
-.illustration-for-sale {
-    background-image: url("../illustrations/undraw/for_sale.svg");
+.illustration-font {
+    background-image: url("../illustrations/undraw/font.svg");
 }
 
-.illustration-forever {
-    background-image: url("../illustrations/undraw/forever.svg");
+.illustration-for-review {
+    background-image: url("../illustrations/undraw/for-review.svg");
+}
+
+.illustration-for-sale {
+    background-image: url("../illustrations/undraw/for-sale.svg");
 }
 
 .illustration-forgot-password {
-    background-image: url("../illustrations/undraw/forgot_password.svg");
+    background-image: url("../illustrations/undraw/forgot-password.svg");
 }
 
 .illustration-forming-ideas {
-    background-image: url("../illustrations/undraw/forming_ideas.svg");
+    background-image: url("../illustrations/undraw/forming-ideas.svg");
+}
+
+.illustration-forms {
+    background-image: url("../illustrations/undraw/forms.svg");
 }
 
 .illustration-freelancer {
     background-image: url("../illustrations/undraw/freelancer.svg");
+}
+
+.illustration-fresh-notification {
+    background-image: url("../illustrations/undraw/fresh-notification.svg");
+}
+
+.illustration-friends-online {
+    background-image: url("../illustrations/undraw/friends-online.svg");
+}
+
+.illustration-friends {
+    background-image: url("../illustrations/undraw/friends.svg");
 }
 
 .illustration-friendship {
@@ -1032,11 +1843,27 @@
 }
 
 .illustration-frozen-figure {
-    background-image: url("../illustrations/undraw/frozen_figure.svg");
+    background-image: url("../illustrations/undraw/frozen-figure.svg");
+}
+
+.illustration-fun-moments {
+    background-image: url("../illustrations/undraw/fun-moments.svg");
+}
+
+.illustration-functions {
+    background-image: url("../illustrations/undraw/functions.svg");
+}
+
+.illustration-futuristic-interface {
+    background-image: url("../illustrations/undraw/futuristic-interface.svg");
 }
 
 .illustration-game-day {
-    background-image: url("../illustrations/undraw/game_day.svg");
+    background-image: url("../illustrations/undraw/game-day.svg");
+}
+
+.illustration-game-world {
+    background-image: url("../illustrations/undraw/game-world.svg");
 }
 
 .illustration-gaming {
@@ -1047,20 +1874,32 @@
     background-image: url("../illustrations/undraw/gardening.svg");
 }
 
+.illustration-gatsbyjs {
+    background-image: url("../illustrations/undraw/gatsbyjs.svg");
+}
+
 .illustration-gdpr {
     background-image: url("../illustrations/undraw/gdpr.svg");
 }
 
+.illustration-genius {
+    background-image: url("../illustrations/undraw/genius.svg");
+}
+
 .illustration-getting-coffee {
-    background-image: url("../illustrations/undraw/getting_coffee.svg");
+    background-image: url("../illustrations/undraw/getting-coffee.svg");
+}
+
+.illustration-gift-box {
+    background-image: url("../illustrations/undraw/gift-box.svg");
+}
+
+.illustration-gift-card {
+    background-image: url("../illustrations/undraw/gift-card.svg");
 }
 
 .illustration-gift {
     background-image: url("../illustrations/undraw/gift.svg");
-}
-
-.illustration-gift-card {
-    background-image: url("../illustrations/undraw/gift_card.svg");
 }
 
 .illustration-gifts {
@@ -1068,27 +1907,47 @@
 }
 
 .illustration-girls-just-wanna-have-fun {
-    background-image: url("../illustrations/undraw/girls_just_wanna_have_fun.svg");
+    background-image: url("../illustrations/undraw/girls-just-wanna-have-fun.svg");
 }
 
 .illustration-goal {
     background-image: url("../illustrations/undraw/goal.svg");
 }
 
+.illustration-goals {
+    background-image: url("../illustrations/undraw/goals.svg");
+}
+
+.illustration-going-offline {
+    background-image: url("../illustrations/undraw/going-offline.svg");
+}
+
 .illustration-going-up {
-    background-image: url("../illustrations/undraw/going_up.svg");
+    background-image: url("../illustrations/undraw/going-up.svg");
 }
 
 .illustration-golden-gate-bridge {
-    background-image: url("../illustrations/undraw/golden_gate_bridge.svg");
+    background-image: url("../illustrations/undraw/golden-gate-bridge.svg");
+}
+
+.illustration-golf {
+    background-image: url("../illustrations/undraw/golf.svg");
+}
+
+.illustration-gone-shopping {
+    background-image: url("../illustrations/undraw/gone-shopping.svg");
 }
 
 .illustration-good-doggy {
-    background-image: url("../illustrations/undraw/good_doggy.svg");
+    background-image: url("../illustrations/undraw/good-doggy.svg");
 }
 
 .illustration-good-team {
-    background-image: url("../illustrations/undraw/good_team.svg");
+    background-image: url("../illustrations/undraw/good-team.svg");
+}
+
+.illustration-google-docs {
+    background-image: url("../illustrations/undraw/google-docs.svg");
 }
 
 .illustration-grades {
@@ -1100,19 +1959,39 @@
 }
 
 .illustration-grand-slam {
-    background-image: url("../illustrations/undraw/grand_slam.svg");
+    background-image: url("../illustrations/undraw/grand-slam.svg");
 }
 
 .illustration-grandma {
     background-image: url("../illustrations/undraw/grandma.svg");
 }
 
+.illustration-gravitas {
+    background-image: url("../illustrations/undraw/gravitas.svg");
+}
+
+.illustration-greek-freak {
+    background-image: url("../illustrations/undraw/greek-freak.svg");
+}
+
+.illustration-grid-design {
+    background-image: url("../illustrations/undraw/grid-design.svg");
+}
+
 .illustration-group-chat {
-    background-image: url("../illustrations/undraw/group_chat.svg");
+    background-image: url("../illustrations/undraw/group-chat.svg");
+}
+
+.illustration-group-hangout {
+    background-image: url("../illustrations/undraw/group-hangout.svg");
 }
 
 .illustration-group-selfie {
-    background-image: url("../illustrations/undraw/group_selfie.svg");
+    background-image: url("../illustrations/undraw/group-selfie.svg");
+}
+
+.illustration-group-video {
+    background-image: url("../illustrations/undraw/group-video.svg");
 }
 
 .illustration-growing {
@@ -1120,7 +1999,27 @@
 }
 
 .illustration-growth-analytics {
-    background-image: url("../illustrations/undraw/growth_analytics.svg");
+    background-image: url("../illustrations/undraw/growth-analytics.svg");
+}
+
+.illustration-growth-chart {
+    background-image: url("../illustrations/undraw/growth-chart.svg");
+}
+
+.illustration-growth-curve {
+    background-image: url("../illustrations/undraw/growth-curve.svg");
+}
+
+.illustration-hacker-mind {
+    background-image: url("../illustrations/undraw/hacker-mind.svg");
+}
+
+.illustration-hacker-mindset {
+    background-image: url("../illustrations/undraw/hacker-mindset.svg");
+}
+
+.illustration-halloween {
+    background-image: url("../illustrations/undraw/halloween.svg");
 }
 
 .illustration-hamburger {
@@ -1128,47 +2027,87 @@
 }
 
 .illustration-hang-out {
-    background-image: url("../illustrations/undraw/hang_out.svg");
+    background-image: url("../illustrations/undraw/hang-out.svg");
 }
 
 .illustration-happy-2019 {
-    background-image: url("../illustrations/undraw/happy_2019.svg");
+    background-image: url("../illustrations/undraw/happy-2019.svg");
+}
+
+.illustration-happy-2021 {
+    background-image: url("../illustrations/undraw/happy-2021.svg");
+}
+
+.illustration-happy-announcement {
+    background-image: url("../illustrations/undraw/happy-announcement.svg");
 }
 
 .illustration-happy-birthday {
-    background-image: url("../illustrations/undraw/happy_birthday.svg");
+    background-image: url("../illustrations/undraw/happy-birthday.svg");
 }
 
 .illustration-happy-feeling {
-    background-image: url("../illustrations/undraw/happy_feeling.svg");
+    background-image: url("../illustrations/undraw/happy-feeling.svg");
+}
+
+.illustration-happy-music {
+    background-image: url("../illustrations/undraw/happy-music.svg");
+}
+
+.illustration-happy-new-year {
+    background-image: url("../illustrations/undraw/happy-new-year.svg");
 }
 
 .illustration-happy-news {
-    background-image: url("../illustrations/undraw/happy_news.svg");
+    background-image: url("../illustrations/undraw/happy-news.svg");
 }
 
 .illustration-happy-women-day {
-    background-image: url("../illustrations/undraw/happy_women_day.svg");
+    background-image: url("../illustrations/undraw/happy-women-day.svg");
 }
 
 .illustration-having-fun {
-    background-image: url("../illustrations/undraw/having_fun.svg");
+    background-image: url("../illustrations/undraw/having-fun.svg");
 }
 
 .illustration-healthy-habit {
-    background-image: url("../illustrations/undraw/healthy_habit.svg");
+    background-image: url("../illustrations/undraw/healthy-habit.svg");
+}
+
+.illustration-healthy-lifestyle {
+    background-image: url("../illustrations/undraw/healthy-lifestyle.svg");
+}
+
+.illustration-healthy-options {
+    background-image: url("../illustrations/undraw/healthy-options.svg");
 }
 
 .illustration-heartbroken {
     background-image: url("../illustrations/undraw/heartbroken.svg");
 }
 
+.illustration-heatmap {
+    background-image: url("../illustrations/undraw/heatmap.svg");
+}
+
+.illustration-heavy-box {
+    background-image: url("../illustrations/undraw/heavy-box.svg");
+}
+
 .illustration-hello {
     background-image: url("../illustrations/undraw/hello.svg");
 }
 
+.illustration-helpful-sign {
+    background-image: url("../illustrations/undraw/helpful-sign.svg");
+}
+
+.illustration-hey-by-basecamp {
+    background-image: url("../illustrations/undraw/hey-by-basecamp.svg");
+}
+
 .illustration-high-five {
-    background-image: url("../illustrations/undraw/high_five.svg");
+    background-image: url("../illustrations/undraw/high-five.svg");
 }
 
 .illustration-hiking {
@@ -1183,8 +2122,24 @@
     background-image: url("../illustrations/undraw/hiring.svg");
 }
 
+.illustration-hologram {
+    background-image: url("../illustrations/undraw/hologram.svg");
+}
+
+.illustration-home-cinema {
+    background-image: url("../illustrations/undraw/home-cinema.svg");
+}
+
 .illustration-home-run {
-    background-image: url("../illustrations/undraw/home_run.svg");
+    background-image: url("../illustrations/undraw/home-run.svg");
+}
+
+.illustration-home-screen {
+    background-image: url("../illustrations/undraw/home-screen.svg");
+}
+
+.illustration-home-settings {
+    background-image: url("../illustrations/undraw/home-settings.svg");
 }
 
 .illustration-hooked {
@@ -1192,11 +2147,15 @@
 }
 
 .illustration-horror-movie {
-    background-image: url("../illustrations/undraw/horror_movie.svg");
+    background-image: url("../illustrations/undraw/horror-movie.svg");
+}
+
+.illustration-hot-beverage {
+    background-image: url("../illustrations/undraw/hot-beverage.svg");
 }
 
 .illustration-house-searching {
-    background-image: url("../illustrations/undraw/house_searching.svg");
+    background-image: url("../illustrations/undraw/house-searching.svg");
 }
 
 .illustration-houses {
@@ -1204,83 +2163,171 @@
 }
 
 .illustration-i-can-fly {
-    background-image: url("../illustrations/undraw/i_can_fly.svg");
+    background-image: url("../illustrations/undraw/i-can-fly.svg");
+}
+
+.illustration-ice-cream {
+    background-image: url("../illustrations/undraw/ice-cream.svg");
+}
+
+.illustration-icon-design {
+    background-image: url("../illustrations/undraw/icon-design.svg");
+}
+
+.illustration-icons {
+    background-image: url("../illustrations/undraw/icons.svg");
+}
+
+.illustration-ideas-flow {
+    background-image: url("../illustrations/undraw/ideas-flow.svg");
+}
+
+.illustration-ideas {
+    background-image: url("../illustrations/undraw/ideas.svg");
+}
+
+.illustration-ideation {
+    background-image: url("../illustrations/undraw/ideation.svg");
+}
+
+.illustration-image-focus {
+    background-image: url("../illustrations/undraw/image-focus.svg");
 }
 
 .illustration-image-folder {
-    background-image: url("../illustrations/undraw/image_folder.svg");
+    background-image: url("../illustrations/undraw/image-folder.svg");
+}
+
+.illustration-image-options {
+    background-image: url("../illustrations/undraw/image-options.svg");
 }
 
 .illustration-image-post {
-    background-image: url("../illustrations/undraw/image_post.svg");
+    background-image: url("../illustrations/undraw/image-post.svg");
 }
 
 .illustration-image-upload {
-    background-image: url("../illustrations/undraw/image_upload.svg");
+    background-image: url("../illustrations/undraw/image-upload.svg");
+}
+
+.illustration-image-viewer {
+    background-image: url("../illustrations/undraw/image-viewer.svg");
 }
 
 .illustration-images {
     background-image: url("../illustrations/undraw/images.svg");
 }
 
+.illustration-imagination {
+    background-image: url("../illustrations/undraw/imagination.svg");
+}
+
 .illustration-in-love {
-    background-image: url("../illustrations/undraw/in_love.svg");
+    background-image: url("../illustrations/undraw/in-love.svg");
 }
 
 .illustration-in-no-time {
-    background-image: url("../illustrations/undraw/in_no_time.svg");
+    background-image: url("../illustrations/undraw/in-no-time.svg");
 }
 
 .illustration-in-progress {
-    background-image: url("../illustrations/undraw/in_progress.svg");
+    background-image: url("../illustrations/undraw/in-progress.svg");
+}
+
+.illustration-in-real-life {
+    background-image: url("../illustrations/undraw/in-real-life.svg");
 }
 
 .illustration-in-sync {
-    background-image: url("../illustrations/undraw/in_sync.svg");
+    background-image: url("../illustrations/undraw/in-sync.svg");
 }
 
 .illustration-in-the-office {
-    background-image: url("../illustrations/undraw/in_the_office.svg");
+    background-image: url("../illustrations/undraw/in-the-office.svg");
 }
 
 .illustration-in-the-pool {
-    background-image: url("../illustrations/undraw/in_the_pool.svg");
+    background-image: url("../illustrations/undraw/in-the-pool.svg");
 }
 
 .illustration-in-thought {
-    background-image: url("../illustrations/undraw/in_thought.svg");
+    background-image: url("../illustrations/undraw/in-thought.svg");
 }
 
 .illustration-inbox-cleanup {
-    background-image: url("../illustrations/undraw/inbox_cleanup.svg");
+    background-image: url("../illustrations/undraw/inbox-cleanup.svg");
+}
+
+.illustration-inbox {
+    background-image: url("../illustrations/undraw/inbox.svg");
+}
+
+.illustration-indoor-bike {
+    background-image: url("../illustrations/undraw/indoor-bike.svg");
 }
 
 .illustration-influencer {
     background-image: url("../illustrations/undraw/influencer.svg");
 }
 
+.illustration-information-tab {
+    background-image: url("../illustrations/undraw/information-tab.svg");
+}
+
+.illustration-informed-decision {
+    background-image: url("../illustrations/undraw/informed-decision.svg");
+}
+
+.illustration-injured {
+    background-image: url("../illustrations/undraw/injured.svg");
+}
+
+.illustration-innovative {
+    background-image: url("../illustrations/undraw/innovative.svg");
+}
+
 .illustration-insert-block {
-    background-image: url("../illustrations/undraw/insert_block.svg");
+    background-image: url("../illustrations/undraw/insert-block.svg");
+}
+
+.illustration-insert {
+    background-image: url("../illustrations/undraw/insert.svg");
+}
+
+.illustration-inspection {
+    background-image: url("../illustrations/undraw/inspection.svg");
+}
+
+.illustration-inspiration {
+    background-image: url("../illustrations/undraw/inspiration.svg");
+}
+
+.illustration-instant-analysis {
+    background-image: url("../illustrations/undraw/instant-analysis.svg");
+}
+
+.illustration-instant-information {
+    background-image: url("../illustrations/undraw/instant-information.svg");
 }
 
 .illustration-instant-support {
-    background-image: url("../illustrations/undraw/instant_support.svg");
+    background-image: url("../illustrations/undraw/instant-support.svg");
 }
 
 .illustration-instruction-manual {
-    background-image: url("../illustrations/undraw/instruction_manual.svg");
+    background-image: url("../illustrations/undraw/instruction-manual.svg");
 }
 
 .illustration-intense-feeling {
-    background-image: url("../illustrations/undraw/intense_feeling.svg");
+    background-image: url("../illustrations/undraw/intense-feeling.svg");
 }
 
-.illustration-interaction-design {
-    background-image: url("../illustrations/undraw/interaction_design.svg");
+.illustration-interior-design {
+    background-image: url("../illustrations/undraw/interior-design.svg");
 }
 
 .illustration-internet-on-the-go {
-    background-image: url("../illustrations/undraw/internet_on_the_go.svg");
+    background-image: url("../illustrations/undraw/internet-on-the-go.svg");
 }
 
 .illustration-interview {
@@ -1288,11 +2335,27 @@
 }
 
 .illustration-into-the-night {
-    background-image: url("../illustrations/undraw/into_the_night.svg");
+    background-image: url("../illustrations/undraw/into-the-night.svg");
+}
+
+.illustration-invest {
+    background-image: url("../illustrations/undraw/invest.svg");
 }
 
 .illustration-investing {
     background-image: url("../illustrations/undraw/investing.svg");
+}
+
+.illustration-investment-data {
+    background-image: url("../illustrations/undraw/investment-data.svg");
+}
+
+.illustration-investment {
+    background-image: url("../illustrations/undraw/investment.svg");
+}
+
+.illustration-investor-update {
+    background-image: url("../illustrations/undraw/investor-update.svg");
 }
 
 .illustration-invite {
@@ -1303,20 +2366,28 @@
     background-image: url("../illustrations/undraw/japan.svg");
 }
 
-.illustration-jason-mask {
-    background-image: url("../illustrations/undraw/jason_mask.svg");
+.illustration-javascript-frameworks {
+    background-image: url("../illustrations/undraw/javascript-frameworks.svg");
 }
 
-.illustration-javascript-frameworks {
-    background-image: url("../illustrations/undraw/javascript_frameworks.svg");
+.illustration-jewelry {
+    background-image: url("../illustrations/undraw/jewelry.svg");
 }
 
 .illustration-job-hunt {
-    background-image: url("../illustrations/undraw/job_hunt.svg");
+    background-image: url("../illustrations/undraw/job-hunt.svg");
+}
+
+.illustration-job-offers {
+    background-image: url("../illustrations/undraw/job-offers.svg");
 }
 
 .illustration-jogging {
     background-image: url("../illustrations/undraw/jogging.svg");
+}
+
+.illustration-join {
+    background-image: url("../illustrations/undraw/join.svg");
 }
 
 .illustration-journey {
@@ -1331,28 +2402,72 @@
     background-image: url("../illustrations/undraw/judge.svg");
 }
 
+.illustration-junior-soccer {
+    background-image: url("../illustrations/undraw/junior-soccer.svg");
+}
+
+.illustration-just-browsing {
+    background-image: url("../illustrations/undraw/just-browsing.svg");
+}
+
+.illustration-just-saying {
+    background-image: url("../illustrations/undraw/just-saying.svg");
+}
+
+.illustration-key-points {
+    background-image: url("../illustrations/undraw/key-points.svg");
+}
+
 .illustration-knowledge {
     background-image: url("../illustrations/undraw/knowledge.svg");
 }
 
 .illustration-landing-page {
-    background-image: url("../illustrations/undraw/landing_page.svg");
+    background-image: url("../illustrations/undraw/landing-page.svg");
+}
+
+.illustration-landscape-mode {
+    background-image: url("../illustrations/undraw/landscape-mode.svg");
+}
+
+.illustration-landscape-photographer {
+    background-image: url("../illustrations/undraw/landscape-photographer.svg");
 }
 
 .illustration-laravel-and-vue {
-    background-image: url("../illustrations/undraw/laravel_and_vue.svg");
+    background-image: url("../illustrations/undraw/laravel-and-vue.svg");
 }
 
 .illustration-late-at-night {
-    background-image: url("../illustrations/undraw/late_at_night.svg");
+    background-image: url("../illustrations/undraw/late-at-night.svg");
+}
+
+.illustration-launch-day {
+    background-image: url("../illustrations/undraw/launch-day.svg");
 }
 
 .illustration-launching {
     background-image: url("../illustrations/undraw/launching.svg");
 }
 
+.illustration-learning-sketching {
+    background-image: url("../illustrations/undraw/learning-sketching.svg");
+}
+
 .illustration-learning {
     background-image: url("../illustrations/undraw/learning.svg");
+}
+
+.illustration-letter {
+    background-image: url("../illustrations/undraw/letter.svg");
+}
+
+.illustration-light-the-fire {
+    background-image: url("../illustrations/undraw/light-the-fire.svg");
+}
+
+.illustration-lightbulb-moment {
+    background-image: url("../illustrations/undraw/lightbulb-moment.svg");
 }
 
 .illustration-lighthouse {
@@ -1360,19 +2475,51 @@
 }
 
 .illustration-like-dislike {
-    background-image: url("../illustrations/undraw/like_dislike.svg");
+    background-image: url("../illustrations/undraw/like-dislike.svg");
+}
+
+.illustration-link-shortener {
+    background-image: url("../illustrations/undraw/link-shortener.svg");
+}
+
+.illustration-listening {
+    background-image: url("../illustrations/undraw/listening.svg");
 }
 
 .illustration-live-collaboration {
-    background-image: url("../illustrations/undraw/live_collaboration.svg");
+    background-image: url("../illustrations/undraw/live-collaboration.svg");
+}
+
+.illustration-live-photo {
+    background-image: url("../illustrations/undraw/live-photo.svg");
+}
+
+.illustration-living {
+    background-image: url("../illustrations/undraw/living.svg");
 }
 
 .illustration-load-more {
-    background-image: url("../illustrations/undraw/load_more.svg");
+    background-image: url("../illustrations/undraw/load-more.svg");
 }
 
 .illustration-loading {
     background-image: url("../illustrations/undraw/loading.svg");
+}
+
+.illustration-location-review {
+    background-image: url("../illustrations/undraw/location-review.svg");
+}
+
+.illustration-location-search {
+    background-image: url("../illustrations/undraw/location-search.svg");
+}
+
+.illustration-location-tracking {
+    background-image: url("../illustrations/undraw/location-tracking.svg");
+}
+
+.illustration-logic {
+    background-image: url("../illustrations/undraw/logic.svg");
 }
 
 .illustration-login {
@@ -1383,28 +2530,40 @@
     background-image: url("../illustrations/undraw/logistics.svg");
 }
 
+.illustration-logo-design {
+    background-image: url("../illustrations/undraw/logo-design.svg");
+}
+
 .illustration-lost {
     background-image: url("../illustrations/undraw/lost.svg");
+}
+
+.illustration-love-is-in-the-air {
+    background-image: url("../illustrations/undraw/love-is-in-the-air.svg");
+}
+
+.illustration-love-it {
+    background-image: url("../illustrations/undraw/love-it.svg");
 }
 
 .illustration-love {
     background-image: url("../illustrations/undraw/love.svg");
 }
 
-.illustration-love-is-in-the-air {
-    background-image: url("../illustrations/undraw/love_is_in_the_air.svg");
+.illustration-loving-it {
+    background-image: url("../illustrations/undraw/loving-it.svg");
 }
 
-.illustration-loving-it {
-    background-image: url("../illustrations/undraw/loving_it.svg");
+.illustration-loving-story {
+    background-image: url("../illustrations/undraw/loving-story.svg");
+}
+
+.illustration-mail-sent {
+    background-image: url("../illustrations/undraw/mail-sent.svg");
 }
 
 .illustration-mail {
     background-image: url("../illustrations/undraw/mail.svg");
-}
-
-.illustration-mail-sent {
-    background-image: url("../illustrations/undraw/mail_sent.svg");
 }
 
 .illustration-mailbox {
@@ -1416,31 +2575,35 @@
 }
 
 .illustration-make-it-rain {
-    background-image: url("../illustrations/undraw/make_it_rain.svg");
+    background-image: url("../illustrations/undraw/make-it-rain.svg");
 }
 
 .illustration-maker-launch {
-    background-image: url("../illustrations/undraw/maker_launch.svg");
+    background-image: url("../illustrations/undraw/maker-launch.svg");
 }
 
 .illustration-makeup-artist {
-    background-image: url("../illustrations/undraw/makeup_artist.svg");
+    background-image: url("../illustrations/undraw/makeup-artist.svg");
 }
 
 .illustration-making-art {
-    background-image: url("../illustrations/undraw/making_art.svg");
+    background-image: url("../illustrations/undraw/making-art.svg");
+}
+
+.illustration-male-avatar {
+    background-image: url("../illustrations/undraw/male-avatar.svg");
+}
+
+.illustration-manage-chats {
+    background-image: url("../illustrations/undraw/manage-chats.svg");
+}
+
+.illustration-map-dark {
+    background-image: url("../illustrations/undraw/map-dark.svg");
 }
 
 .illustration-map {
     background-image: url("../illustrations/undraw/map.svg");
-}
-
-.illustration-map-dark {
-    background-image: url("../illustrations/undraw/map_dark.svg");
-}
-
-.illustration-map-light {
-    background-image: url("../illustrations/undraw/map_light.svg");
 }
 
 .illustration-marilyn {
@@ -1451,16 +2614,24 @@
     background-image: url("../illustrations/undraw/marketing.svg");
 }
 
+.illustration-master-plan {
+    background-image: url("../illustrations/undraw/master-plan.svg");
+}
+
 .illustration-mathematics {
     background-image: url("../illustrations/undraw/mathematics.svg");
 }
 
-.illustration-may-the-force {
-    background-image: url("../illustrations/undraw/may_the_force.svg");
+.illustration-media-player {
+    background-image: url("../illustrations/undraw/media-player.svg");
 }
 
-.illustration-media-player {
-    background-image: url("../illustrations/undraw/media_player.svg");
+.illustration-medical-care {
+    background-image: url("../illustrations/undraw/medical-care.svg");
+}
+
+.illustration-medical-research {
+    background-image: url("../illustrations/undraw/medical-research.svg");
 }
 
 .illustration-medicine {
@@ -1475,12 +2646,20 @@
     background-image: url("../illustrations/undraw/meditation.svg");
 }
 
+.illustration-meet-the-team {
+    background-image: url("../illustrations/undraw/meet-the-team.svg");
+}
+
 .illustration-meeting {
     background-image: url("../illustrations/undraw/meeting.svg");
 }
 
+.illustration-mello {
+    background-image: url("../illustrations/undraw/mello.svg");
+}
+
 .illustration-memory-storage {
-    background-image: url("../illustrations/undraw/memory_storage.svg");
+    background-image: url("../illustrations/undraw/memory-storage.svg");
 }
 
 .illustration-mention {
@@ -1488,19 +2667,23 @@
 }
 
 .illustration-message-sent {
-    background-image: url("../illustrations/undraw/message_sent.svg");
+    background-image: url("../illustrations/undraw/message-sent.svg");
 }
 
 .illustration-messages {
     background-image: url("../illustrations/undraw/messages.svg");
 }
 
-.illustration-messaging {
-    background-image: url("../illustrations/undraw/messaging.svg");
+.illustration-messaging-app {
+    background-image: url("../illustrations/undraw/messaging-app.svg");
 }
 
 .illustration-messaging-fun {
-    background-image: url("../illustrations/undraw/messaging_fun.svg");
+    background-image: url("../illustrations/undraw/messaging-fun.svg");
+}
+
+.illustration-messaging {
+    background-image: url("../illustrations/undraw/messaging.svg");
 }
 
 .illustration-messenger {
@@ -1511,12 +2694,16 @@
     background-image: url("../illustrations/undraw/metrics.svg");
 }
 
+.illustration-mic-drop {
+    background-image: url("../illustrations/undraw/mic-drop.svg");
+}
+
 .illustration-millennial-girl {
-    background-image: url("../illustrations/undraw/millennial_girl.svg");
+    background-image: url("../illustrations/undraw/millennial-girl.svg");
 }
 
 .illustration-mind-map {
-    background-image: url("../illustrations/undraw/mind_map.svg");
+    background-image: url("../illustrations/undraw/mind-map.svg");
 }
 
 .illustration-mindfulness {
@@ -1524,75 +2711,163 @@
 }
 
 .illustration-mint-tea {
-    background-image: url("../illustrations/undraw/mint_tea.svg");
+    background-image: url("../illustrations/undraw/mint-tea.svg");
+}
+
+.illustration-miro {
+    background-image: url("../illustrations/undraw/miro.svg");
 }
 
 .illustration-missed-chances {
-    background-image: url("../illustrations/undraw/missed_chances.svg");
+    background-image: url("../illustrations/undraw/missed-chances.svg");
 }
 
-.illustration-mission-impossible {
-    background-image: url("../illustrations/undraw/mission_impossible.svg");
+.illustration-mobile-analytics {
+    background-image: url("../illustrations/undraw/mobile-analytics.svg");
+}
+
+.illustration-mobile-app {
+    background-image: url("../illustrations/undraw/mobile-app.svg");
+}
+
+.illustration-mobile-application {
+    background-image: url("../illustrations/undraw/mobile-application.svg");
+}
+
+.illustration-mobile-apps {
+    background-image: url("../illustrations/undraw/mobile-apps.svg");
+}
+
+.illustration-mobile-browsers {
+    background-image: url("../illustrations/undraw/mobile-browsers.svg");
+}
+
+.illustration-mobile-development {
+    background-image: url("../illustrations/undraw/mobile-development.svg");
+}
+
+.illustration-mobile-devices {
+    background-image: url("../illustrations/undraw/mobile-devices.svg");
+}
+
+.illustration-mobile-encryption {
+    background-image: url("../illustrations/undraw/mobile-encryption.svg");
+}
+
+.illustration-mobile-feed {
+    background-image: url("../illustrations/undraw/mobile-feed.svg");
+}
+
+.illustration-mobile-images {
+    background-image: url("../illustrations/undraw/mobile-images.svg");
+}
+
+.illustration-mobile-inbox {
+    background-image: url("../illustrations/undraw/mobile-inbox.svg");
+}
+
+.illustration-mobile-interface {
+    background-image: url("../illustrations/undraw/mobile-interface.svg");
+}
+
+.illustration-mobile-life {
+    background-image: url("../illustrations/undraw/mobile-life.svg");
+}
+
+.illustration-mobile-login {
+    background-image: url("../illustrations/undraw/mobile-login.svg");
+}
+
+.illustration-mobile-marketing {
+    background-image: url("../illustrations/undraw/mobile-marketing.svg");
+}
+
+.illustration-mobile-messages {
+    background-image: url("../illustrations/undraw/mobile-messages.svg");
+}
+
+.illustration-mobile-pay {
+    background-image: url("../illustrations/undraw/mobile-pay.svg");
+}
+
+.illustration-mobile-payments {
+    background-image: url("../illustrations/undraw/mobile-payments.svg");
+}
+
+.illustration-mobile-photos {
+    background-image: url("../illustrations/undraw/mobile-photos.svg");
+}
+
+.illustration-mobile-posts {
+    background-image: url("../illustrations/undraw/mobile-posts.svg");
+}
+
+.illustration-mobile-prototyping {
+    background-image: url("../illustrations/undraw/mobile-prototyping.svg");
+}
+
+.illustration-mobile-search {
+    background-image: url("../illustrations/undraw/mobile-search.svg");
+}
+
+.illustration-mobile-testing {
+    background-image: url("../illustrations/undraw/mobile-testing.svg");
+}
+
+.illustration-mobile-user {
+    background-image: url("../illustrations/undraw/mobile-user.svg");
+}
+
+.illustration-mobile-ux {
+    background-image: url("../illustrations/undraw/mobile-ux.svg");
+}
+
+.illustration-mobile-web {
+    background-image: url("../illustrations/undraw/mobile-web.svg");
+}
+
+.illustration-mobile-wireframe {
+    background-image: url("../illustrations/undraw/mobile-wireframe.svg");
 }
 
 .illustration-mobile {
     background-image: url("../illustrations/undraw/mobile.svg");
 }
 
-.illustration-mobile-app {
-    background-image: url("../illustrations/undraw/mobile_app.svg");
+.illustration-modern-art {
+    background-image: url("../illustrations/undraw/modern-art.svg");
 }
 
-.illustration-mobile-apps {
-    background-image: url("../illustrations/undraw/mobile_apps.svg");
-}
-
-.illustration-mobile-browsers {
-    background-image: url("../illustrations/undraw/mobile_browsers.svg");
-}
-
-.illustration-mobile-life {
-    background-image: url("../illustrations/undraw/mobile_life.svg");
-}
-
-.illustration-mobile-login {
-    background-image: url("../illustrations/undraw/mobile_login.svg");
-}
-
-.illustration-mobile-marketing {
-    background-image: url("../illustrations/undraw/mobile_marketing.svg");
-}
-
-.illustration-mobile-payments {
-    background-image: url("../illustrations/undraw/mobile_payments.svg");
-}
-
-.illustration-mobile-testing {
-    background-image: url("../illustrations/undraw/mobile_testing.svg");
-}
-
-.illustration-mobile-user {
-    background-image: url("../illustrations/undraw/mobile_user.svg");
+.illustration-modern-design {
+    background-image: url("../illustrations/undraw/modern-design.svg");
 }
 
 .illustration-modern-life {
-    background-image: url("../illustrations/undraw/modern_life.svg");
+    background-image: url("../illustrations/undraw/modern-life.svg");
 }
 
 .illustration-modern-professional {
-    background-image: url("../illustrations/undraw/modern_professional.svg");
+    background-image: url("../illustrations/undraw/modern-professional.svg");
 }
 
 .illustration-modern-woman {
-    background-image: url("../illustrations/undraw/modern_woman.svg");
+    background-image: url("../illustrations/undraw/modern-woman.svg");
 }
 
 .illustration-moment-to-remember {
-    background-image: url("../illustrations/undraw/moment_to_remember.svg");
+    background-image: url("../illustrations/undraw/moment-to-remember.svg");
+}
+
+.illustration-moments {
+    background-image: url("../illustrations/undraw/moments.svg");
 }
 
 .illustration-monitor {
     background-image: url("../illustrations/undraw/monitor.svg");
+}
+
+.illustration-monster-artist {
+    background-image: url("../illustrations/undraw/monster-artist.svg");
 }
 
 .illustration-moonlight {
@@ -1600,11 +2875,11 @@
 }
 
 .illustration-more-music {
-    background-image: url("../illustrations/undraw/more_music.svg");
+    background-image: url("../illustrations/undraw/more-music.svg");
 }
 
-.illustration-morning-essentials {
-    background-image: url("../illustrations/undraw/morning_essentials.svg");
+.illustration-mornings {
+    background-image: url("../illustrations/undraw/mornings.svg");
 }
 
 .illustration-motherhood {
@@ -1612,11 +2887,15 @@
 }
 
 .illustration-movie-night {
-    background-image: url("../illustrations/undraw/movie_night.svg");
+    background-image: url("../illustrations/undraw/movie-night.svg");
 }
 
 .illustration-moving-forward {
-    background-image: url("../illustrations/undraw/moving_forward.svg");
+    background-image: url("../illustrations/undraw/moving-forward.svg");
+}
+
+.illustration-moving {
+    background-image: url("../illustrations/undraw/moving.svg");
 }
 
 .illustration-multitasking {
@@ -1627,24 +2906,120 @@
     background-image: url("../illustrations/undraw/music.svg");
 }
 
+.illustration-my-answer {
+    background-image: url("../illustrations/undraw/my-answer.svg");
+}
+
+.illustration-my-app {
+    background-image: url("../illustrations/undraw/my-app.svg");
+}
+
+.illustration-my-code-snippets {
+    background-image: url("../illustrations/undraw/my-code-snippets.svg");
+}
+
+.illustration-my-current-location {
+    background-image: url("../illustrations/undraw/my-current-location.svg");
+}
+
+.illustration-my-documents {
+    background-image: url("../illustrations/undraw/my-documents.svg");
+}
+
+.illustration-my-feed {
+    background-image: url("../illustrations/undraw/my-feed.svg");
+}
+
+.illustration-my-files {
+    background-image: url("../illustrations/undraw/my-files.svg");
+}
+
+.illustration-my-location {
+    background-image: url("../illustrations/undraw/my-location.svg");
+}
+
+.illustration-my-notifications {
+    background-image: url("../illustrations/undraw/my-notifications.svg");
+}
+
 .illustration-my-password {
-    background-image: url("../illustrations/undraw/my_password.svg");
+    background-image: url("../illustrations/undraw/my-password.svg");
+}
+
+.illustration-my-personal-files {
+    background-image: url("../illustrations/undraw/my-personal-files.svg");
+}
+
+.illustration-my-universe {
+    background-image: url("../illustrations/undraw/my-universe.svg");
+}
+
+.illustration-nakamoto {
+    background-image: url("../illustrations/undraw/nakamoto.svg");
+}
+
+.illustration-nature-benefits {
+    background-image: url("../illustrations/undraw/nature-benefits.svg");
 }
 
 .illustration-nature-fun {
-    background-image: url("../illustrations/undraw/nature_fun.svg");
+    background-image: url("../illustrations/undraw/nature-fun.svg");
+}
+
+.illustration-nature-on-screen {
+    background-image: url("../illustrations/undraw/nature-on-screen.svg");
+}
+
+.illustration-nature {
+    background-image: url("../illustrations/undraw/nature.svg");
 }
 
 .illustration-navigation {
     background-image: url("../illustrations/undraw/navigation.svg");
 }
 
-.illustration-nerd {
-    background-image: url("../illustrations/undraw/nerd.svg");
+.illustration-navigator {
+    background-image: url("../illustrations/undraw/navigator.svg");
+}
+
+.illustration-neighbors {
+    background-image: url("../illustrations/undraw/neighbors.svg");
+}
+
+.illustration-netflix {
+    background-image: url("../illustrations/undraw/netflix.svg");
+}
+
+.illustration-new-decade {
+    background-image: url("../illustrations/undraw/new-decade.svg");
+}
+
+.illustration-new-entries {
+    background-image: url("../illustrations/undraw/new-entries.svg");
+}
+
+.illustration-new-ideas {
+    background-image: url("../illustrations/undraw/new-ideas.svg");
 }
 
 .illustration-new-message {
-    background-image: url("../illustrations/undraw/new_message.svg");
+    background-image: url("../illustrations/undraw/new-message.svg");
+}
+
+.illustration-new-notifications {
+    background-image: url("../illustrations/undraw/new-notifications.svg");
+}
+
+.illustration-new-year-2021 {
+    background-image: url("../illustrations/undraw/new-year-2021.svg");
+}
+
+.illustration-new-year-2022 {
+    background-image: url("../illustrations/undraw/new-year-2022.svg");
+}
+
+.illustration-new-year-2023 {
+    background-image: url("../illustrations/undraw/new-year-2023.svg");
 }
 
 .illustration-news {
@@ -1655,8 +3030,24 @@
     background-image: url("../illustrations/undraw/newsletter.svg");
 }
 
+.illustration-newspaper {
+    background-image: url("../illustrations/undraw/newspaper.svg");
+}
+
+.illustration-next-option {
+    background-image: url("../illustrations/undraw/next-option.svg");
+}
+
+.illustration-next-tasks {
+    background-image: url("../illustrations/undraw/next-tasks.svg");
+}
+
+.illustration-nextjs {
+    background-image: url("../illustrations/undraw/nextjs.svg");
+}
+
 .illustration-night-calls {
-    background-image: url("../illustrations/undraw/night_calls.svg");
+    background-image: url("../illustrations/undraw/night-calls.svg");
 }
 
 .illustration-ninja {
@@ -1664,19 +3055,23 @@
 }
 
 .illustration-no-data {
-    background-image: url("../illustrations/undraw/no_data.svg");
+    background-image: url("../illustrations/undraw/no-data.svg");
 }
 
 .illustration-not-found {
-    background-image: url("../illustrations/undraw/not_found.svg");
+    background-image: url("../illustrations/undraw/not-found.svg");
 }
 
 .illustration-note-list {
-    background-image: url("../illustrations/undraw/note_list.svg");
+    background-image: url("../illustrations/undraw/note-list.svg");
 }
 
 .illustration-notebook {
     background-image: url("../illustrations/undraw/notebook.svg");
+}
+
+.illustration-noted {
+    background-image: url("../illustrations/undraw/noted.svg");
 }
 
 .illustration-notes {
@@ -1687,108 +3082,308 @@
     background-image: url("../illustrations/undraw/notify.svg");
 }
 
-.illustration-off-road {
-    background-image: url("../illustrations/undraw/off_road.svg");
+.illustration-nuxt-js {
+    background-image: url("../illustrations/undraw/nuxt-js.svg");
 }
 
-.illustration-old-day {
-    background-image: url("../illustrations/undraw/old_day.svg");
+.illustration-observations {
+    background-image: url("../illustrations/undraw/observations.svg");
+}
+
+.illustration-off-road {
+    background-image: url("../illustrations/undraw/off-road.svg");
+}
+
+.illustration-office-snack {
+    background-image: url("../illustrations/undraw/office-snack.svg");
+}
+
+.illustration-omega {
+    background-image: url("../illustrations/undraw/omega.svg");
 }
 
 .illustration-on-the-office {
-    background-image: url("../illustrations/undraw/on_the_office.svg");
+    background-image: url("../illustrations/undraw/on-the-office.svg");
 }
 
 .illustration-on-the-way {
-    background-image: url("../illustrations/undraw/on_the_way.svg");
+    background-image: url("../illustrations/undraw/on-the-way.svg");
 }
 
 .illustration-onboarding {
     background-image: url("../illustrations/undraw/onboarding.svg");
 }
 
+.illustration-online-ad {
+    background-image: url("../illustrations/undraw/online-ad.svg");
+}
+
+.illustration-online-art {
+    background-image: url("../illustrations/undraw/online-art.svg");
+}
+
+.illustration-online-article {
+    background-image: url("../illustrations/undraw/online-article.svg");
+}
+
+.illustration-online-articles {
+    background-image: url("../illustrations/undraw/online-articles.svg");
+}
+
+.illustration-online-banking {
+    background-image: url("../illustrations/undraw/online-banking.svg");
+}
+
+.illustration-online-calendar {
+    background-image: url("../illustrations/undraw/online-calendar.svg");
+}
+
+.illustration-online-chat {
+    background-image: url("../illustrations/undraw/online-chat.svg");
+}
+
+.illustration-online-collaboration {
+    background-image: url("../illustrations/undraw/online-collaboration.svg");
+}
+
+.illustration-online-connection {
+    background-image: url("../illustrations/undraw/online-connection.svg");
+}
+
+.illustration-online-cv {
+    background-image: url("../illustrations/undraw/online-cv.svg");
+}
+
+.illustration-online-dating {
+    background-image: url("../illustrations/undraw/online-dating.svg");
+}
+
+.illustration-online-discussion {
+    background-image: url("../illustrations/undraw/online-discussion.svg");
+}
+
+.illustration-online-everywhere {
+    background-image: url("../illustrations/undraw/online-everywhere.svg");
+}
+
+.illustration-online-friends {
+    background-image: url("../illustrations/undraw/online-friends.svg");
+}
+
+.illustration-online-gallery {
+    background-image: url("../illustrations/undraw/online-gallery.svg");
+}
+
+.illustration-online-groceries {
+    background-image: url("../illustrations/undraw/online-groceries.svg");
+}
+
+.illustration-online-information {
+    background-image: url("../illustrations/undraw/online-information.svg");
+}
+
+.illustration-online-learning {
+    background-image: url("../illustrations/undraw/online-learning.svg");
+}
+
+.illustration-online-media {
+    background-image: url("../illustrations/undraw/online-media.svg");
+}
+
+.illustration-online-message {
+    background-image: url("../illustrations/undraw/online-message.svg");
+}
+
+.illustration-online-messaging {
+    background-image: url("../illustrations/undraw/online-messaging.svg");
+}
+
+.illustration-online-organizer {
+    background-image: url("../illustrations/undraw/online-organizer.svg");
+}
+
+.illustration-online-page {
+    background-image: url("../illustrations/undraw/online-page.svg");
+}
+
+.illustration-online-party {
+    background-image: url("../illustrations/undraw/online-party.svg");
+}
+
+.illustration-online-payments {
+    background-image: url("../illustrations/undraw/online-payments.svg");
+}
+
+.illustration-online-popularity {
+    background-image: url("../illustrations/undraw/online-popularity.svg");
+}
+
+.illustration-online-posts {
+    background-image: url("../illustrations/undraw/online-posts.svg");
+}
+
+.illustration-online-reading {
+    background-image: url("../illustrations/undraw/online-reading.svg");
+}
+
+.illustration-online-resume {
+    background-image: url("../illustrations/undraw/online-resume.svg");
+}
+
+.illustration-online-shopping {
+    background-image: url("../illustrations/undraw/online-shopping.svg");
+}
+
+.illustration-online-stats {
+    background-image: url("../illustrations/undraw/online-stats.svg");
+}
+
+.illustration-online-test {
+    background-image: url("../illustrations/undraw/online-test.svg");
+}
+
+.illustration-online-transactions {
+    background-image: url("../illustrations/undraw/online-transactions.svg");
+}
+
+.illustration-online-video {
+    background-image: url("../illustrations/undraw/online-video.svg");
+}
+
+.illustration-online-wishes {
+    background-image: url("../illustrations/undraw/online-wishes.svg");
+}
+
+.illustration-online-world {
+    background-image: url("../illustrations/undraw/online-world.svg");
+}
+
 .illustration-online {
     background-image: url("../illustrations/undraw/online.svg");
 }
 
-.illustration-online-discussion {
-    background-image: url("../illustrations/undraw/online_discussion.svg");
-}
-
-.illustration-online-friends {
-    background-image: url("../illustrations/undraw/online_friends.svg");
-}
-
-.illustration-online-page {
-    background-image: url("../illustrations/undraw/online_page.svg");
-}
-
-.illustration-online-shopping {
-    background-image: url("../illustrations/undraw/online_shopping.svg");
-}
-
-.illustration-online-wishes {
-    background-image: url("../illustrations/undraw/online_wishes.svg");
-}
-
-.illustration-online-world {
-    background-image: url("../illustrations/undraw/online_world.svg");
-}
-
 .illustration-open-source {
-    background-image: url("../illustrations/undraw/open_source.svg");
+    background-image: url("../illustrations/undraw/open-source.svg");
+}
+
+.illustration-opened-tabs {
+    background-image: url("../illustrations/undraw/opened-tabs.svg");
 }
 
 .illustration-opened {
     background-image: url("../illustrations/undraw/opened.svg");
 }
 
-.illustration-operating-system {
-    background-image: url("../illustrations/undraw/operating_system.svg");
+.illustration-opinion {
+    background-image: url("../illustrations/undraw/opinion.svg");
+}
+
+.illustration-optimize-image {
+    background-image: url("../illustrations/undraw/optimize-image.svg");
+}
+
+.illustration-options {
+    background-image: url("../illustrations/undraw/options.svg");
+}
+
+.illustration-order-a-car {
+    background-image: url("../illustrations/undraw/order-a-car.svg");
 }
 
 .illustration-order-confirmed {
-    background-image: url("../illustrations/undraw/order_confirmed.svg");
+    background-image: url("../illustrations/undraw/order-confirmed.svg");
+}
+
+.illustration-order-delivered {
+    background-image: url("../illustrations/undraw/order-delivered.svg");
+}
+
+.illustration-order-ride {
+    background-image: url("../illustrations/undraw/order-ride.svg");
 }
 
 .illustration-ordinary-day {
-    background-image: url("../illustrations/undraw/ordinary_day.svg");
+    background-image: url("../illustrations/undraw/ordinary-day.svg");
 }
 
 .illustration-organize-photos {
-    background-image: url("../illustrations/undraw/organize_photos.svg");
+    background-image: url("../illustrations/undraw/organize-photos.svg");
 }
 
 .illustration-organize-resume {
-    background-image: url("../illustrations/undraw/organize_resume.svg");
+    background-image: url("../illustrations/undraw/organize-resume.svg");
+}
+
+.illustration-organized-content {
+    background-image: url("../illustrations/undraw/organized-content.svg");
 }
 
 .illustration-organizing-projects {
-    background-image: url("../illustrations/undraw/organizing_projects.svg");
+    background-image: url("../illustrations/undraw/organizing-projects.svg");
+}
+
+.illustration-os-upgrade {
+    background-image: url("../illustrations/undraw/os-upgrade.svg");
+}
+
+.illustration-our-neighborhood {
+    background-image: url("../illustrations/undraw/our-neighborhood.svg");
+}
+
+.illustration-our-solution {
+    background-image: url("../illustrations/undraw/our-solution.svg");
+}
+
+.illustration-outdoor-adventure {
+    background-image: url("../illustrations/undraw/outdoor-adventure.svg");
+}
+
+.illustration-outdoor-party {
+    background-image: url("../illustrations/undraw/outdoor-party.svg");
+}
+
+.illustration-outdoors {
+    background-image: url("../illustrations/undraw/outdoors.svg");
 }
 
 .illustration-outer-space {
-    background-image: url("../illustrations/undraw/outer_space.svg");
+    background-image: url("../illustrations/undraw/outer-space.svg");
+}
+
+.illustration-package-arrived {
+    background-image: url("../illustrations/undraw/package-arrived.svg");
 }
 
 .illustration-page-not-found {
-    background-image: url("../illustrations/undraw/page_not_found.svg");
+    background-image: url("../illustrations/undraw/page-not-found.svg");
 }
 
 .illustration-pair-programming {
-    background-image: url("../illustrations/undraw/pair_programming.svg");
+    background-image: url("../illustrations/undraw/pair-programming.svg");
 }
 
 .illustration-palette {
     background-image: url("../illustrations/undraw/palette.svg");
 }
 
+.illustration-pancakes {
+    background-image: url("../illustrations/undraw/pancakes.svg");
+}
+
 .illustration-party {
     background-image: url("../illustrations/undraw/party.svg");
 }
 
+.illustration-partying {
+    background-image: url("../illustrations/undraw/partying.svg");
+}
+
 .illustration-passing-by {
-    background-image: url("../illustrations/undraw/passing_by.svg");
+    background-image: url("../illustrations/undraw/passing-by.svg");
+}
+
+.illustration-pay-online {
+    background-image: url("../illustrations/undraw/pay-online.svg");
 }
 
 .illustration-payments {
@@ -1796,119 +3391,255 @@
 }
 
 .illustration-pedestrian-crossing {
-    background-image: url("../illustrations/undraw/pedestrian_crossing.svg");
+    background-image: url("../illustrations/undraw/pedestrian-crossing.svg");
 }
 
 .illustration-pen-tool {
-    background-image: url("../illustrations/undraw/pen_tool.svg");
+    background-image: url("../illustrations/undraw/pen-tool.svg");
+}
+
+.illustration-pending-approval {
+    background-image: url("../illustrations/undraw/pending-approval.svg");
 }
 
 .illustration-people-search {
-    background-image: url("../illustrations/undraw/people_search.svg");
+    background-image: url("../illustrations/undraw/people-search.svg");
+}
+
+.illustration-people {
+    background-image: url("../illustrations/undraw/people.svg");
 }
 
 .illustration-percentages {
     background-image: url("../illustrations/undraw/percentages.svg");
 }
 
+.illustration-performance-overview {
+    background-image: url("../illustrations/undraw/performance-overview.svg");
+}
+
 .illustration-personal-data {
-    background-image: url("../illustrations/undraw/personal_data.svg");
+    background-image: url("../illustrations/undraw/personal-data.svg");
+}
+
+.illustration-personal-documents {
+    background-image: url("../illustrations/undraw/personal-documents.svg");
+}
+
+.illustration-personal-email {
+    background-image: url("../illustrations/undraw/personal-email.svg");
+}
+
+.illustration-personal-file {
+    background-image: url("../illustrations/undraw/personal-file.svg");
+}
+
+.illustration-personal-finance {
+    background-image: url("../illustrations/undraw/personal-finance.svg");
+}
+
+.illustration-personal-goals {
+    background-image: url("../illustrations/undraw/personal-goals.svg");
+}
+
+.illustration-personal-info {
+    background-image: url("../illustrations/undraw/personal-info.svg");
+}
+
+.illustration-personal-information {
+    background-image: url("../illustrations/undraw/personal-information.svg");
+}
+
+.illustration-personal-notebook {
+    background-image: url("../illustrations/undraw/personal-notebook.svg");
 }
 
 .illustration-personal-notes {
-    background-image: url("../illustrations/undraw/personal_notes.svg");
+    background-image: url("../illustrations/undraw/personal-notes.svg");
+}
+
+.illustration-personal-opinions {
+    background-image: url("../illustrations/undraw/personal-opinions.svg");
 }
 
 .illustration-personal-settings {
-    background-image: url("../illustrations/undraw/personal_settings.svg");
+    background-image: url("../illustrations/undraw/personal-settings.svg");
 }
 
 .illustration-personal-site {
-    background-image: url("../illustrations/undraw/personal_site.svg");
+    background-image: url("../illustrations/undraw/personal-site.svg");
 }
 
 .illustration-personal-text {
-    background-image: url("../illustrations/undraw/personal_text.svg");
+    background-image: url("../illustrations/undraw/personal-text.svg");
 }
 
 .illustration-personal-trainer {
-    background-image: url("../illustrations/undraw/personal_trainer.svg");
+    background-image: url("../illustrations/undraw/personal-trainer.svg");
+}
+
+.illustration-personal-training {
+    background-image: url("../illustrations/undraw/personal-training.svg");
+}
+
+.illustration-personal-website {
+    background-image: url("../illustrations/undraw/personal-website.svg");
 }
 
 .illustration-personalization {
     background-image: url("../illustrations/undraw/personalization.svg");
 }
 
-.illustration-photo {
-    background-image: url("../illustrations/undraw/photo.svg");
+.illustration-pet-adoption {
+    background-image: url("../illustrations/undraw/pet-adoption.svg");
+}
+
+.illustration-phone-call {
+    background-image: url("../illustrations/undraw/phone-call.svg");
 }
 
 .illustration-photo-album {
-    background-image: url("../illustrations/undraw/photo_album.svg");
+    background-image: url("../illustrations/undraw/photo-album.svg");
+}
+
+.illustration-photo-session {
+    background-image: url("../illustrations/undraw/photo-session.svg");
 }
 
 .illustration-photo-sharing {
-    background-image: url("../illustrations/undraw/photo_sharing.svg");
+    background-image: url("../illustrations/undraw/photo-sharing.svg");
+}
+
+.illustration-photo {
+    background-image: url("../illustrations/undraw/photo.svg");
 }
 
 .illustration-photocopy {
     background-image: url("../illustrations/undraw/photocopy.svg");
 }
 
+.illustration-photograph {
+    background-image: url("../illustrations/undraw/photograph.svg");
+}
+
 .illustration-photos {
     background-image: url("../illustrations/undraw/photos.svg");
 }
 
+.illustration-pic-profile {
+    background-image: url("../illustrations/undraw/pic-profile.svg");
+}
+
+.illustration-picture {
+    background-image: url("../illustrations/undraw/picture.svg");
+}
+
 .illustration-pie-chart {
-    background-image: url("../illustrations/undraw/pie_chart.svg");
+    background-image: url("../illustrations/undraw/pie-chart.svg");
 }
 
 .illustration-pie-graph {
-    background-image: url("../illustrations/undraw/pie_graph.svg");
+    background-image: url("../illustrations/undraw/pie-graph.svg");
 }
 
 .illustration-pilates {
     background-image: url("../illustrations/undraw/pilates.svg");
 }
 
+.illustration-pitching {
+    background-image: url("../illustrations/undraw/pitching.svg");
+}
+
 .illustration-pizza-sharing {
-    background-image: url("../illustrations/undraw/pizza_sharing.svg");
+    background-image: url("../illustrations/undraw/pizza-sharing.svg");
+}
+
+.illustration-placeholders {
+    background-image: url("../illustrations/undraw/placeholders.svg");
 }
 
 .illustration-plain-credit-card {
-    background-image: url("../illustrations/undraw/plain_credit_card.svg");
+    background-image: url("../illustrations/undraw/plain-credit-card.svg");
+}
+
+.illustration-plans {
+    background-image: url("../illustrations/undraw/plans.svg");
+}
+
+.illustration-play-time {
+    background-image: url("../illustrations/undraw/play-time.svg");
 }
 
 .illustration-playful-cat {
-    background-image: url("../illustrations/undraw/playful_cat.svg");
+    background-image: url("../illustrations/undraw/playful-cat.svg");
+}
+
+.illustration-playing-cards {
+    background-image: url("../illustrations/undraw/playing-cards.svg");
+}
+
+.illustration-playing-fetch {
+    background-image: url("../illustrations/undraw/playing-fetch.svg");
+}
+
+.illustration-playing-golf {
+    background-image: url("../illustrations/undraw/playing-golf.svg");
+}
+
+.illustration-playlist {
+    background-image: url("../illustrations/undraw/playlist.svg");
+}
+
+.illustration-pleasant-surprise {
+    background-image: url("../illustrations/undraw/pleasant-surprise.svg");
+}
+
+.illustration-podcast-audience {
+    background-image: url("../illustrations/undraw/podcast-audience.svg");
 }
 
 .illustration-podcast {
     background-image: url("../illustrations/undraw/podcast.svg");
 }
 
-.illustration-podcast-audience {
-    background-image: url("../illustrations/undraw/podcast_audience.svg");
+.illustration-polaroid {
+    background-image: url("../illustrations/undraw/polaroid.svg");
+}
+
+.illustration-popular {
+    background-image: url("../illustrations/undraw/popular.svg");
+}
+
+.illustration-portfolio-feedback {
+    background-image: url("../illustrations/undraw/portfolio-feedback.svg");
+}
+
+.illustration-portfolio-update {
+    background-image: url("../illustrations/undraw/portfolio-update.svg");
+}
+
+.illustration-portfolio-website {
+    background-image: url("../illustrations/undraw/portfolio-website.svg");
 }
 
 .illustration-portfolio {
     background-image: url("../illustrations/undraw/portfolio.svg");
 }
 
-.illustration-portfolio-update {
-    background-image: url("../illustrations/undraw/portfolio_update.svg");
+.illustration-positive-attitude {
+    background-image: url("../illustrations/undraw/positive-attitude.svg");
+}
+
+.illustration-post-online {
+    background-image: url("../illustrations/undraw/post-online.svg");
 }
 
 .illustration-post {
     background-image: url("../illustrations/undraw/post.svg");
 }
 
-.illustration-post-online {
-    background-image: url("../illustrations/undraw/post_online.svg");
-}
-
 .illustration-posting-photo {
-    background-image: url("../illustrations/undraw/posting_photo.svg");
+    background-image: url("../illustrations/undraw/posting-photo.svg");
 }
 
 .illustration-posts {
@@ -1920,11 +3651,19 @@
 }
 
 .illustration-predictive-analytics {
-    background-image: url("../illustrations/undraw/predictive_analytics.svg");
+    background-image: url("../illustrations/undraw/predictive-analytics.svg");
+}
+
+.illustration-preferences-popup {
+    background-image: url("../illustrations/undraw/preferences-popup.svg");
 }
 
 .illustration-preferences {
     background-image: url("../illustrations/undraw/preferences.svg");
+}
+
+.illustration-preparation {
+    background-image: url("../illustrations/undraw/preparation.svg");
 }
 
 .illustration-presentation {
@@ -1932,51 +3671,91 @@
 }
 
 .illustration-press-play {
-    background-image: url("../illustrations/undraw/press_play.svg");
+    background-image: url("../illustrations/undraw/press-play.svg");
+}
+
+.illustration-pride {
+    background-image: url("../illustrations/undraw/pride.svg");
 }
 
 .illustration-printing-invoices {
-    background-image: url("../illustrations/undraw/printing_invoices.svg");
+    background-image: url("../illustrations/undraw/printing-invoices.svg");
+}
+
+.illustration-prioritise {
+    background-image: url("../illustrations/undraw/prioritise.svg");
+}
+
+.illustration-private-data {
+    background-image: url("../illustrations/undraw/private-data.svg");
 }
 
 .illustration-problem-solving {
-    background-image: url("../illustrations/undraw/problem_solving.svg");
+    background-image: url("../illustrations/undraw/problem-solving.svg");
 }
 
 .illustration-process {
     background-image: url("../illustrations/undraw/process.svg");
 }
 
+.illustration-processing-thoughts {
+    background-image: url("../illustrations/undraw/processing-thoughts.svg");
+}
+
 .illustration-processing {
     background-image: url("../illustrations/undraw/processing.svg");
 }
 
+.illustration-product-explainer {
+    background-image: url("../illustrations/undraw/product-explainer.svg");
+}
+
 .illustration-product-hunt {
-    background-image: url("../illustrations/undraw/product_hunt.svg");
+    background-image: url("../illustrations/undraw/product-hunt.svg");
+}
+
+.illustration-product-iteration {
+    background-image: url("../illustrations/undraw/product-iteration.svg");
+}
+
+.illustration-product-photography {
+    background-image: url("../illustrations/undraw/product-photography.svg");
 }
 
 .illustration-product-teardown {
-    background-image: url("../illustrations/undraw/product_teardown.svg");
+    background-image: url("../illustrations/undraw/product-teardown.svg");
 }
 
 .illustration-product-tour {
-    background-image: url("../illustrations/undraw/product_tour.svg");
+    background-image: url("../illustrations/undraw/product-tour.svg");
+}
+
+.illustration-professional-card {
+    background-image: url("../illustrations/undraw/professional-card.svg");
 }
 
 .illustration-professor {
     background-image: url("../illustrations/undraw/professor.svg");
 }
 
-.illustration-profile {
-    background-image: url("../illustrations/undraw/profile.svg");
+.illustration-profile-data {
+    background-image: url("../illustrations/undraw/profile-data.svg");
 }
 
-.illustration-profile-data {
-    background-image: url("../illustrations/undraw/profile_data.svg");
+.illustration-profile-details {
+    background-image: url("../illustrations/undraw/profile-details.svg");
+}
+
+.illustration-profile-image {
+    background-image: url("../illustrations/undraw/profile-image.svg");
 }
 
 .illustration-profile-pic {
-    background-image: url("../illustrations/undraw/profile_pic.svg");
+    background-image: url("../illustrations/undraw/profile-pic.svg");
+}
+
+.illustration-profile {
+    background-image: url("../illustrations/undraw/profile.svg");
 }
 
 .illustration-programmer {
@@ -1987,60 +3766,188 @@
     background-image: url("../illustrations/undraw/programming.svg");
 }
 
+.illustration-progress-data {
+    background-image: url("../illustrations/undraw/progress-data.svg");
+}
+
+.illustration-progress-indicator {
+    background-image: url("../illustrations/undraw/progress-indicator.svg");
+}
+
+.illustration-progress-overview {
+    background-image: url("../illustrations/undraw/progress-overview.svg");
+}
+
+.illustration-progress-tracking {
+    background-image: url("../illustrations/undraw/progress-tracking.svg");
+}
+
+.illustration-progressive-app {
+    background-image: url("../illustrations/undraw/progressive-app.svg");
+}
+
+.illustration-project-complete {
+    background-image: url("../illustrations/undraw/project-complete.svg");
+}
+
+.illustration-project-completed {
+    background-image: url("../illustrations/undraw/project-completed.svg");
+}
+
+.illustration-project-feedback {
+    background-image: url("../illustrations/undraw/project-feedback.svg");
+}
+
+.illustration-project-team {
+    background-image: url("../illustrations/undraw/project-team.svg");
+}
+
 .illustration-projections {
     background-image: url("../illustrations/undraw/projections.svg");
 }
 
 .illustration-prototyping-process {
-    background-image: url("../illustrations/undraw/prototyping_process.svg");
+    background-image: url("../illustrations/undraw/prototyping-process.svg");
+}
+
+.illustration-proud-coder {
+    background-image: url("../illustrations/undraw/proud-coder.svg");
+}
+
+.illustration-proud-self {
+    background-image: url("../illustrations/undraw/proud-self.svg");
+}
+
+.illustration-public-discussion {
+    background-image: url("../illustrations/undraw/public-discussion.svg");
+}
+
+.illustration-publish-article {
+    background-image: url("../illustrations/undraw/publish-article.svg");
+}
+
+.illustration-publish-post {
+    background-image: url("../illustrations/undraw/publish-post.svg");
+}
+
+.illustration-pull-request {
+    background-image: url("../illustrations/undraw/pull-request.svg");
+}
+
+.illustration-pumpkin {
+    background-image: url("../illustrations/undraw/pumpkin.svg");
 }
 
 .illustration-pure-love {
-    background-image: url("../illustrations/undraw/pure_love.svg");
+    background-image: url("../illustrations/undraw/pure-love.svg");
+}
+
+.illustration-push-notifications {
+    background-image: url("../illustrations/undraw/push-notifications.svg");
 }
 
 .illustration-qa-engineers {
-    background-image: url("../illustrations/undraw/qa_engineers.svg");
+    background-image: url("../illustrations/undraw/qa-engineers.svg");
+}
+
+.illustration-quality-time {
+    background-image: url("../illustrations/undraw/quality-time.svg");
 }
 
 .illustration-questions {
     background-image: url("../illustrations/undraw/questions.svg");
 }
 
-.illustration-queue {
-    background-image: url("../illustrations/undraw/queue.svg");
+.illustration-quick-chat {
+    background-image: url("../illustrations/undraw/quick-chat.svg");
+}
+
+.illustration-quiet-town {
+    background-image: url("../illustrations/undraw/quiet-town.svg");
 }
 
 .illustration-quitting-time {
-    background-image: url("../illustrations/undraw/quitting_time.svg");
+    background-image: url("../illustrations/undraw/quitting-time.svg");
+}
+
+.illustration-quiz {
+    background-image: url("../illustrations/undraw/quiz.svg");
 }
 
 .illustration-raining {
     background-image: url("../illustrations/undraw/raining.svg");
 }
 
+.illustration-random-thoughts {
+    background-image: url("../illustrations/undraw/random-thoughts.svg");
+}
+
 .illustration-react {
     background-image: url("../illustrations/undraw/react.svg");
+}
+
+.illustration-reading-book {
+    background-image: url("../illustrations/undraw/reading-book.svg");
+}
+
+.illustration-reading-list {
+    background-image: url("../illustrations/undraw/reading-list.svg");
+}
+
+.illustration-reading-time {
+    background-image: url("../illustrations/undraw/reading-time.svg");
 }
 
 .illustration-reading {
     background-image: url("../illustrations/undraw/reading.svg");
 }
 
-.illustration-reading-list {
-    background-image: url("../illustrations/undraw/reading_list.svg");
+.illustration-ready-for-waves {
+    background-image: url("../illustrations/undraw/ready-for-waves.svg");
+}
+
+.illustration-real-time-analytics {
+    background-image: url("../illustrations/undraw/real-time-analytics.svg");
+}
+
+.illustration-real-time-collaboration {
+    background-image: url("../illustrations/undraw/real-time-collaboration.svg");
 }
 
 .illustration-real-time-sync {
-    background-image: url("../illustrations/undraw/real-time_sync.svg");
+    background-image: url("../illustrations/undraw/real-time-sync.svg");
+}
+
+.illustration-receipt {
+    background-image: url("../illustrations/undraw/receipt.svg");
 }
 
 .illustration-recording {
     background-image: url("../illustrations/undraw/recording.svg");
 }
 
+.illustration-redesign-feedback {
+    background-image: url("../illustrations/undraw/redesign-feedback.svg");
+}
+
+.illustration-referral {
+    background-image: url("../illustrations/undraw/referral.svg");
+}
+
+.illustration-refreshing-beverage {
+    background-image: url("../illustrations/undraw/refreshing-beverage.svg");
+}
+
 .illustration-refreshing {
     background-image: url("../illustrations/undraw/refreshing.svg");
+}
+
+.illustration-regain-focus {
+    background-image: url("../illustrations/undraw/regain-focus.svg");
+}
+
+.illustration-relaunch-day {
+    background-image: url("../illustrations/undraw/relaunch-day.svg");
 }
 
 .illustration-relaxation {
@@ -2048,7 +3955,11 @@
 }
 
 .illustration-relaxing-at-home {
-    background-image: url("../illustrations/undraw/relaxing_at_home.svg");
+    background-image: url("../illustrations/undraw/relaxing-at-home.svg");
+}
+
+.illustration-relaxing-walk {
+    background-image: url("../illustrations/undraw/relaxing-walk.svg");
 }
 
 .illustration-reminder {
@@ -2059,8 +3970,32 @@
     background-image: url("../illustrations/undraw/reminders.svg");
 }
 
+.illustration-remote-design-team {
+    background-image: url("../illustrations/undraw/remote-design-team.svg");
+}
+
+.illustration-remote-meeting {
+    background-image: url("../illustrations/undraw/remote-meeting.svg");
+}
+
+.illustration-remote-team {
+    background-image: url("../illustrations/undraw/remote-team.svg");
+}
+
+.illustration-remotely {
+    background-image: url("../illustrations/undraw/remotely.svg");
+}
+
 .illustration-report {
     background-image: url("../illustrations/undraw/report.svg");
+}
+
+.illustration-researching {
+    background-image: url("../illustrations/undraw/researching.svg");
+}
+
+.illustration-respond {
+    background-image: url("../illustrations/undraw/respond.svg");
 }
 
 .illustration-responsive {
@@ -2075,20 +4010,44 @@
     background-image: url("../illustrations/undraw/result.svg");
 }
 
-.illustration-resume {
-    background-image: url("../illustrations/undraw/resume.svg");
+.illustration-resume-folder {
+    background-image: url("../illustrations/undraw/resume-folder.svg");
 }
 
-.illustration-resume-folder {
-    background-image: url("../illustrations/undraw/resume_folder.svg");
+.illustration-resume {
+    background-image: url("../illustrations/undraw/resume.svg");
 }
 
 .illustration-revenue {
     background-image: url("../illustrations/undraw/revenue.svg");
 }
 
+.illustration-review {
+    background-image: url("../illustrations/undraw/review.svg");
+}
+
+.illustration-reviewed-docs {
+    background-image: url("../illustrations/undraw/reviewed-docs.svg");
+}
+
+.illustration-reviews {
+    background-image: url("../illustrations/undraw/reviews.svg");
+}
+
 .illustration-ride-a-bicycle {
-    background-image: url("../illustrations/undraw/ride_a_bicycle.svg");
+    background-image: url("../illustrations/undraw/ride-a-bicycle.svg");
+}
+
+.illustration-ride-till-i-can-no-more {
+    background-image: url("../illustrations/undraw/ride-till-i-can-no-more.svg");
+}
+
+.illustration-right-direction {
+    background-image: url("../illustrations/undraw/right-direction.svg");
+}
+
+.illustration-right-places {
+    background-image: url("../illustrations/undraw/right-places.svg");
 }
 
 .illustration-rising {
@@ -2096,7 +4055,11 @@
 }
 
 .illustration-road-sign {
-    background-image: url("../illustrations/undraw/road_sign.svg");
+    background-image: url("../illustrations/undraw/road-sign.svg");
+}
+
+.illustration-road-to-knowledge {
+    background-image: url("../illustrations/undraw/road-to-knowledge.svg");
 }
 
 .illustration-robotics {
@@ -2104,11 +4067,15 @@
 }
 
 .illustration-romantic-getaway {
-    background-image: url("../illustrations/undraw/romantic_getaway.svg");
+    background-image: url("../illustrations/undraw/romantic-getaway.svg");
+}
+
+.illustration-runner-start {
+    background-image: url("../illustrations/undraw/runner-start.svg");
 }
 
 .illustration-running-wild {
-    background-image: url("../illustrations/undraw/running_wild.svg");
+    background-image: url("../illustrations/undraw/running-wild.svg");
 }
 
 .illustration-safe {
@@ -2116,11 +4083,23 @@
 }
 
 .illustration-santa-claus {
-    background-image: url("../illustrations/undraw/santa_claus.svg");
+    background-image: url("../illustrations/undraw/santa-claus.svg");
+}
+
+.illustration-santa-visit {
+    background-image: url("../illustrations/undraw/santa-visit.svg");
+}
+
+.illustration-save-to-bookmarks {
+    background-image: url("../illustrations/undraw/save-to-bookmarks.svg");
 }
 
 .illustration-savings {
     background-image: url("../illustrations/undraw/savings.svg");
+}
+
+.illustration-schedule-meeting {
+    background-image: url("../illustrations/undraw/schedule-meeting.svg");
 }
 
 .illustration-schedule {
@@ -2131,40 +4110,68 @@
     background-image: url("../illustrations/undraw/science.svg");
 }
 
+.illustration-scientist {
+    background-image: url("../illustrations/undraw/scientist.svg");
+}
+
 .illustration-scooter {
     background-image: url("../illustrations/undraw/scooter.svg");
 }
 
+.illustration-screen-time {
+    background-image: url("../illustrations/undraw/screen-time.svg");
+}
+
 .illustration-scrum-board {
-    background-image: url("../illustrations/undraw/scrum_board.svg");
+    background-image: url("../illustrations/undraw/scrum-board.svg");
 }
 
 .illustration-sculpting {
     background-image: url("../illustrations/undraw/sculpting.svg");
 }
 
+.illustration-search-app {
+    background-image: url("../illustrations/undraw/search-app.svg");
+}
+
+.illustration-search-engines {
+    background-image: url("../illustrations/undraw/search-engines.svg");
+}
+
 .illustration-search {
     background-image: url("../illustrations/undraw/search.svg");
 }
 
-.illustration-search-engines {
-    background-image: url("../illustrations/undraw/search_engines.svg");
+.illustration-searching {
+    background-image: url("../illustrations/undraw/searching.svg");
 }
 
-.illustration-secure-data {
-    background-image: url("../illustrations/undraw/secure_data.svg");
+.illustration-season-change {
+    background-image: url("../illustrations/undraw/season-change.svg");
+}
+
+.illustration-secure-files {
+    background-image: url("../illustrations/undraw/secure-files.svg");
+}
+
+.illustration-secure-login {
+    background-image: url("../illustrations/undraw/secure-login.svg");
 }
 
 .illustration-secure-server {
-    background-image: url("../illustrations/undraw/secure_server.svg");
+    background-image: url("../illustrations/undraw/secure-server.svg");
+}
+
+.illustration-security-on {
+    background-image: url("../illustrations/undraw/security-on.svg");
 }
 
 .illustration-security {
     background-image: url("../illustrations/undraw/security.svg");
 }
 
-.illustration-security-on {
-    background-image: url("../illustrations/undraw/security_on.svg");
+.illustration-segment-analysis {
+    background-image: url("../illustrations/undraw/segment-analysis.svg");
 }
 
 .illustration-segment {
@@ -2175,64 +4182,196 @@
     background-image: url("../illustrations/undraw/segmentation.svg");
 }
 
+.illustration-select-house {
+    background-image: url("../illustrations/undraw/select-house.svg");
+}
+
+.illustration-select-option {
+    background-image: url("../illustrations/undraw/select-option.svg");
+}
+
+.illustration-select-player {
+    background-image: url("../illustrations/undraw/select-player.svg");
+}
+
 .illustration-select {
     background-image: url("../illustrations/undraw/select.svg");
+}
+
+.illustration-selected-options {
+    background-image: url("../illustrations/undraw/selected-options.svg");
+}
+
+.illustration-selecting-team {
+    background-image: url("../illustrations/undraw/selecting-team.svg");
+}
+
+.illustration-selecting {
+    background-image: url("../illustrations/undraw/selecting.svg");
+}
+
+.illustration-selection {
+    background-image: url("../illustrations/undraw/selection.svg");
+}
+
+.illustration-selfie-time {
+    background-image: url("../illustrations/undraw/selfie-time.svg");
 }
 
 .illustration-selfie {
     background-image: url("../illustrations/undraw/selfie.svg");
 }
 
-.illustration-selfie-time {
-    background-image: url("../illustrations/undraw/selfie_time.svg");
+.illustration-send-gift {
+    background-image: url("../illustrations/undraw/send-gift.svg");
+}
+
+.illustration-sentiment-analysis {
+    background-image: url("../illustrations/undraw/sentiment-analysis.svg");
+}
+
+.illustration-server-cluster {
+    background-image: url("../illustrations/undraw/server-cluster.svg");
+}
+
+.illustration-server-down {
+    background-image: url("../illustrations/undraw/server-down.svg");
+}
+
+.illustration-server-push {
+    background-image: url("../illustrations/undraw/server-push.svg");
+}
+
+.illustration-server-status {
+    background-image: url("../illustrations/undraw/server-status.svg");
 }
 
 .illustration-server {
     background-image: url("../illustrations/undraw/server.svg");
 }
 
-.illustration-server-down {
-    background-image: url("../illustrations/undraw/server_down.svg");
+.illustration-services {
+    background-image: url("../illustrations/undraw/services.svg");
 }
 
-.illustration-server-status {
-    background-image: url("../illustrations/undraw/server_status.svg");
+.illustration-set-preferences {
+    background-image: url("../illustrations/undraw/set-preferences.svg");
+}
+
+.illustration-settings-tab {
+    background-image: url("../illustrations/undraw/settings-tab.svg");
 }
 
 .illustration-settings {
     background-image: url("../illustrations/undraw/settings.svg");
 }
 
+.illustration-setup-analytics {
+    background-image: url("../illustrations/undraw/setup-analytics.svg");
+}
+
+.illustration-setup-wizard {
+    background-image: url("../illustrations/undraw/setup-wizard.svg");
+}
+
 .illustration-setup {
     background-image: url("../illustrations/undraw/setup.svg");
 }
 
-.illustration-setup-analytics {
-    background-image: url("../illustrations/undraw/setup_analytics.svg");
+.illustration-share-link {
+    background-image: url("../illustrations/undraw/share-link.svg");
 }
 
-.illustration-setup-wizard {
-    background-image: url("../illustrations/undraw/setup_wizard.svg");
+.illustration-share-online {
+    background-image: url("../illustrations/undraw/share-online.svg");
+}
+
+.illustration-share-opinion {
+    background-image: url("../illustrations/undraw/share-opinion.svg");
+}
+
+.illustration-share {
+    background-image: url("../illustrations/undraw/share.svg");
+}
+
+.illustration-shared-goals {
+    background-image: url("../illustrations/undraw/shared-goals.svg");
+}
+
+.illustration-shared-workspace {
+    background-image: url("../illustrations/undraw/shared-workspace.svg");
+}
+
+.illustration-sharing-articles {
+    background-image: url("../illustrations/undraw/sharing-articles.svg");
+}
+
+.illustration-sharing-knowledge {
+    background-image: url("../illustrations/undraw/sharing-knowledge.svg");
+}
+
+.illustration-shopping-app {
+    background-image: url("../illustrations/undraw/shopping-app.svg");
+}
+
+.illustration-shopping-bags {
+    background-image: url("../illustrations/undraw/shopping-bags.svg");
 }
 
 .illustration-shopping {
     background-image: url("../illustrations/undraw/shopping.svg");
 }
 
+.illustration-short-bio {
+    background-image: url("../illustrations/undraw/short-bio.svg");
+}
+
+.illustration-showing-support {
+    background-image: url("../illustrations/undraw/showing-support.svg");
+}
+
+.illustration-sign-in {
+    background-image: url("../illustrations/undraw/sign-in.svg");
+}
+
+.illustration-sign-up {
+    background-image: url("../illustrations/undraw/sign-up.svg");
+}
+
+.illustration-signal-searching {
+    background-image: url("../illustrations/undraw/signal-searching.svg");
+}
+
+.illustration-site-content {
+    background-image: url("../illustrations/undraw/site-content.svg");
+}
+
 .illustration-site-stats {
-    background-image: url("../illustrations/undraw/site_stats.svg");
+    background-image: url("../illustrations/undraw/site-stats.svg");
+}
+
+.illustration-skateboard {
+    background-image: url("../illustrations/undraw/skateboard.svg");
 }
 
 .illustration-skateboarding {
     background-image: url("../illustrations/undraw/skateboarding.svg");
 }
 
-.illustration-sleep-analysis {
-    background-image: url("../illustrations/undraw/sleep_analysis.svg");
+.illustration-slider {
+    background-image: url("../illustrations/undraw/slider.svg");
+}
+
+.illustration-small-town {
+    background-image: url("../illustrations/undraw/small-town.svg");
 }
 
 .illustration-smart-home {
-    background-image: url("../illustrations/undraw/smart_home.svg");
+    background-image: url("../illustrations/undraw/smart-home.svg");
+}
+
+.illustration-smart-resize {
+    background-image: url("../illustrations/undraw/smart-resize.svg");
 }
 
 .illustration-smartwatch {
@@ -2240,63 +4379,135 @@
 }
 
 .illustration-smiley-face {
-    background-image: url("../illustrations/undraw/smiley_face.svg");
+    background-image: url("../illustrations/undraw/smiley-face.svg");
+}
+
+.illustration-snap-the-moment {
+    background-image: url("../illustrations/undraw/snap-the-moment.svg");
+}
+
+.illustration-snow-fun {
+    background-image: url("../illustrations/undraw/snow-fun.svg");
+}
+
+.illustration-snow-games {
+    background-image: url("../illustrations/undraw/snow-games.svg");
+}
+
+.illustration-snow-globe {
+    background-image: url("../illustrations/undraw/snow-globe.svg");
 }
 
 .illustration-snowman {
     background-image: url("../illustrations/undraw/snowman.svg");
 }
 
+.illustration-social-bio {
+    background-image: url("../illustrations/undraw/social-bio.svg");
+}
+
 .illustration-social-dashboard {
-    background-image: url("../illustrations/undraw/social_dashboard.svg");
+    background-image: url("../illustrations/undraw/social-dashboard.svg");
+}
+
+.illustration-social-distancing {
+    background-image: url("../illustrations/undraw/social-distancing.svg");
+}
+
+.illustration-social-expert {
+    background-image: url("../illustrations/undraw/social-expert.svg");
+}
+
+.illustration-social-friends {
+    background-image: url("../illustrations/undraw/social-friends.svg");
+}
+
+.illustration-social-girl {
+    background-image: url("../illustrations/undraw/social-girl.svg");
 }
 
 .illustration-social-growth {
-    background-image: url("../illustrations/undraw/social_growth.svg");
+    background-image: url("../illustrations/undraw/social-growth.svg");
 }
 
 .illustration-social-ideas {
-    background-image: url("../illustrations/undraw/social_ideas.svg");
+    background-image: url("../illustrations/undraw/social-ideas.svg");
 }
 
 .illustration-social-influencer {
-    background-image: url("../illustrations/undraw/social_influencer.svg");
+    background-image: url("../illustrations/undraw/social-influencer.svg");
+}
+
+.illustration-social-interaction {
+    background-image: url("../illustrations/undraw/social-interaction.svg");
 }
 
 .illustration-social-life {
-    background-image: url("../illustrations/undraw/social_life.svg");
+    background-image: url("../illustrations/undraw/social-life.svg");
 }
 
 .illustration-social-media {
-    background-image: url("../illustrations/undraw/social_media.svg");
+    background-image: url("../illustrations/undraw/social-media.svg");
 }
 
 .illustration-social-networking {
-    background-image: url("../illustrations/undraw/social_networking.svg");
+    background-image: url("../illustrations/undraw/social-networking.svg");
+}
+
+.illustration-social-notifications {
+    background-image: url("../illustrations/undraw/social-notifications.svg");
+}
+
+.illustration-social-serenity {
+    background-image: url("../illustrations/undraw/social-serenity.svg");
 }
 
 .illustration-social-share {
-    background-image: url("../illustrations/undraw/social_share.svg");
+    background-image: url("../illustrations/undraw/social-share.svg");
+}
+
+.illustration-social-sharing {
+    background-image: url("../illustrations/undraw/social-sharing.svg");
 }
 
 .illustration-social-strategy {
-    background-image: url("../illustrations/undraw/social_strategy.svg");
+    background-image: url("../illustrations/undraw/social-strategy.svg");
 }
 
 .illustration-social-thinking {
-    background-image: url("../illustrations/undraw/social_thinking.svg");
+    background-image: url("../illustrations/undraw/social-thinking.svg");
 }
 
 .illustration-social-tree {
-    background-image: url("../illustrations/undraw/social_tree.svg");
+    background-image: url("../illustrations/undraw/social-tree.svg");
 }
 
 .illustration-social-update {
-    background-image: url("../illustrations/undraw/social_update.svg");
+    background-image: url("../illustrations/undraw/social-update.svg");
+}
+
+.illustration-social-user {
+    background-image: url("../illustrations/undraw/social-user.svg");
 }
 
 .illustration-software-engineer {
-    background-image: url("../illustrations/undraw/software_engineer.svg");
+    background-image: url("../illustrations/undraw/software-engineer.svg");
+}
+
+.illustration-solution-mindset {
+    background-image: url("../illustrations/undraw/solution-mindset.svg");
+}
+
+.illustration-sorting-thoughts {
+    background-image: url("../illustrations/undraw/sorting-thoughts.svg");
+}
+
+.illustration-source-code {
+    background-image: url("../illustrations/undraw/source-code.svg");
+}
+
+.illustration-special-event {
+    background-image: url("../illustrations/undraw/special-event.svg");
 }
 
 .illustration-specs {
@@ -2304,15 +4515,27 @@
 }
 
 .illustration-speech-to-text {
-    background-image: url("../illustrations/undraw/speech_to_text.svg");
+    background-image: url("../illustrations/undraw/speech-to-text.svg");
 }
 
 .illustration-speed-test {
-    background-image: url("../illustrations/undraw/speed_test.svg");
+    background-image: url("../illustrations/undraw/speed-test.svg");
+}
+
+.illustration-split-testing {
+    background-image: url("../illustrations/undraw/split-testing.svg");
+}
+
+.illustration-spooky-self {
+    background-image: url("../illustrations/undraw/spooky-self.svg");
 }
 
 .illustration-spread-love {
-    background-image: url("../illustrations/undraw/spread_love.svg");
+    background-image: url("../illustrations/undraw/spread-love.svg");
+}
+
+.illustration-spreadsheet {
+    background-image: url("../illustrations/undraw/spreadsheet.svg");
 }
 
 .illustration-spreadsheets {
@@ -2320,11 +4543,27 @@
 }
 
 .illustration-stability-ball {
-    background-image: url("../illustrations/undraw/stability_ball.svg");
+    background-image: url("../illustrations/undraw/stability-ball.svg");
 }
 
-.illustration-starman {
-    background-image: url("../illustrations/undraw/starman.svg");
+.illustration-stand-out {
+    background-image: url("../illustrations/undraw/stand-out.svg");
+}
+
+.illustration-starlink {
+    background-image: url("../illustrations/undraw/starlink.svg");
+}
+
+.illustration-starry-window {
+    background-image: url("../illustrations/undraw/starry-window.svg");
+}
+
+.illustration-stars {
+    background-image: url("../illustrations/undraw/stars.svg");
+}
+
+.illustration-start-building {
+    background-image: url("../illustrations/undraw/start-building.svg");
 }
 
 .illustration-startled {
@@ -2332,11 +4571,19 @@
 }
 
 .illustration-startup-life {
-    background-image: url("../illustrations/undraw/startup_life.svg");
+    background-image: url("../illustrations/undraw/startup-life.svg");
 }
 
 .illustration-static-assets {
-    background-image: url("../illustrations/undraw/static_assets.svg");
+    background-image: url("../illustrations/undraw/static-assets.svg");
+}
+
+.illustration-static-website {
+    background-image: url("../illustrations/undraw/static-website.svg");
+}
+
+.illustration-statistic-chart {
+    background-image: url("../illustrations/undraw/statistic-chart.svg");
 }
 
 .illustration-statistics {
@@ -2344,51 +4591,91 @@
 }
 
 .illustration-status-update {
-    background-image: url("../illustrations/undraw/status_update.svg");
+    background-image: url("../illustrations/undraw/status-update.svg");
 }
 
 .illustration-staying-in {
-    background-image: url("../illustrations/undraw/staying_in.svg");
+    background-image: url("../illustrations/undraw/staying-in.svg");
 }
 
 .illustration-step-to-the-sun {
-    background-image: url("../illustrations/undraw/step_to_the_sun.svg");
+    background-image: url("../illustrations/undraw/step-to-the-sun.svg");
+}
+
+.illustration-stepping-up {
+    background-image: url("../illustrations/undraw/stepping-up.svg");
+}
+
+.illustration-steps {
+    background-image: url("../illustrations/undraw/steps.svg");
+}
+
+.illustration-stock-prices {
+    background-image: url("../illustrations/undraw/stock-prices.svg");
+}
+
+.illustration-stranded-traveler {
+    background-image: url("../illustrations/undraw/stranded-traveler.svg");
 }
 
 .illustration-street-food {
-    background-image: url("../illustrations/undraw/street_food.svg");
+    background-image: url("../illustrations/undraw/street-food.svg");
 }
 
 .illustration-stripe-payments {
-    background-image: url("../illustrations/undraw/stripe_payments.svg");
+    background-image: url("../illustrations/undraw/stripe-payments.svg");
 }
 
 .illustration-studying {
     background-image: url("../illustrations/undraw/studying.svg");
 }
 
+.illustration-subscribe {
+    background-image: url("../illustrations/undraw/subscribe.svg");
+}
+
 .illustration-subscriber {
     background-image: url("../illustrations/undraw/subscriber.svg");
+}
+
+.illustration-subscriptions {
+    background-image: url("../illustrations/undraw/subscriptions.svg");
+}
+
+.illustration-suburbs {
+    background-image: url("../illustrations/undraw/suburbs.svg");
 }
 
 .illustration-subway {
     background-image: url("../illustrations/undraw/subway.svg");
 }
 
+.illustration-success-factors {
+    background-image: url("../illustrations/undraw/success-factors.svg");
+}
+
 .illustration-successful-purchase {
-    background-image: url("../illustrations/undraw/successful_purchase.svg");
+    background-image: url("../illustrations/undraw/successful-purchase.svg");
+}
+
+.illustration-summer {
+    background-image: url("../illustrations/undraw/summer.svg");
+}
+
+.illustration-sunlight {
+    background-image: url("../illustrations/undraw/sunlight.svg");
 }
 
 .illustration-sunny-day {
-    background-image: url("../illustrations/undraw/sunny_day.svg");
+    background-image: url("../illustrations/undraw/sunny-day.svg");
 }
 
 .illustration-super-thank-you {
-    background-image: url("../illustrations/undraw/super_thank_you.svg");
+    background-image: url("../illustrations/undraw/super-thank-you.svg");
 }
 
 .illustration-super-woman {
-    background-image: url("../illustrations/undraw/super_woman.svg");
+    background-image: url("../illustrations/undraw/super-woman.svg");
 }
 
 .illustration-superhero {
@@ -2399,8 +4686,36 @@
     background-image: url("../illustrations/undraw/surfer.svg");
 }
 
+.illustration-surveillance {
+    background-image: url("../illustrations/undraw/surveillance.svg");
+}
+
+.illustration-survey {
+    background-image: url("../illustrations/undraw/survey.svg");
+}
+
+.illustration-sweet-home {
+    background-image: url("../illustrations/undraw/sweet-home.svg");
+}
+
+.illustration-swipe-options {
+    background-image: url("../illustrations/undraw/swipe-options.svg");
+}
+
 .illustration-swipe-profiles {
-    background-image: url("../illustrations/undraw/swipe_profiles.svg");
+    background-image: url("../illustrations/undraw/swipe-profiles.svg");
+}
+
+.illustration-swipe {
+    background-image: url("../illustrations/undraw/swipe.svg");
+}
+
+.illustration-switches {
+    background-image: url("../illustrations/undraw/switches.svg");
+}
+
+.illustration-sync-files {
+    background-image: url("../illustrations/undraw/sync-files.svg");
 }
 
 .illustration-sync {
@@ -2415,24 +4730,40 @@
     background-image: url("../illustrations/undraw/tabs.svg");
 }
 
+.illustration-tailwind-css {
+    background-image: url("../illustrations/undraw/tailwind-css.svg");
+}
+
+.illustration-take-out-boxes {
+    background-image: url("../illustrations/undraw/take-out-boxes.svg");
+}
+
 .illustration-taken {
     background-image: url("../illustrations/undraw/taken.svg");
 }
 
 .illustration-taking-notes {
-    background-image: url("../illustrations/undraw/taking_notes.svg");
+    background-image: url("../illustrations/undraw/taking-notes.svg");
 }
 
 .illustration-taking-selfie {
-    background-image: url("../illustrations/undraw/taking_selfie.svg");
+    background-image: url("../illustrations/undraw/taking-selfie.svg");
 }
 
 .illustration-target {
     background-image: url("../illustrations/undraw/target.svg");
 }
 
+.illustration-task-list {
+    background-image: url("../illustrations/undraw/task-list.svg");
+}
+
 .illustration-task {
     background-image: url("../illustrations/undraw/task.svg");
+}
+
+.illustration-tasks {
+    background-image: url("../illustrations/undraw/tasks.svg");
 }
 
 .illustration-tasting {
@@ -2447,28 +4778,80 @@
     background-image: url("../illustrations/undraw/teaching.svg");
 }
 
+.illustration-team-chat {
+    background-image: url("../illustrations/undraw/team-chat.svg");
+}
+
+.illustration-team-collaboration {
+    background-image: url("../illustrations/undraw/team-collaboration.svg");
+}
+
+.illustration-team-goals {
+    background-image: url("../illustrations/undraw/team-goals.svg");
+}
+
+.illustration-team-page {
+    background-image: url("../illustrations/undraw/team-page.svg");
+}
+
+.illustration-team-spirit {
+    background-image: url("../illustrations/undraw/team-spirit.svg");
+}
+
+.illustration-team-up {
+    background-image: url("../illustrations/undraw/team-up.svg");
+}
+
+.illustration-team-work {
+    background-image: url("../illustrations/undraw/team-work.svg");
+}
+
 .illustration-team {
     background-image: url("../illustrations/undraw/team.svg");
 }
 
-.illustration-team-page {
-    background-image: url("../illustrations/undraw/team_page.svg");
-}
-
-.illustration-team-spirit {
-    background-image: url("../illustrations/undraw/team_spirit.svg");
-}
-
-.illustration-team-work {
-    background-image: url("../illustrations/undraw/team_work.svg");
+.illustration-teamwork {
+    background-image: url("../illustrations/undraw/teamwork.svg");
 }
 
 .illustration-teddy-bear {
-    background-image: url("../illustrations/undraw/teddy_bear.svg");
+    background-image: url("../illustrations/undraw/teddy-bear.svg");
+}
+
+.illustration-term-sheet {
+    background-image: url("../illustrations/undraw/term-sheet.svg");
+}
+
+.illustration-terms {
+    background-image: url("../illustrations/undraw/terms.svg");
+}
+
+.illustration-text-field {
+    background-image: url("../illustrations/undraw/text-field.svg");
+}
+
+.illustration-text-files {
+    background-image: url("../illustrations/undraw/text-files.svg");
 }
 
 .illustration-texting {
     background-image: url("../illustrations/undraw/texting.svg");
+}
+
+.illustration-the-search {
+    background-image: url("../illustrations/undraw/the-search.svg");
+}
+
+.illustration-the-world-is-mine {
+    background-image: url("../illustrations/undraw/the-world-is-mine.svg");
+}
+
+.illustration-things-to-say {
+    background-image: url("../illustrations/undraw/things-to-say.svg");
+}
+
+.illustration-thought-process {
+    background-image: url("../illustrations/undraw/thought-process.svg");
 }
 
 .illustration-thoughts {
@@ -2476,55 +4859,95 @@
 }
 
 .illustration-through-the-desert {
-    background-image: url("../illustrations/undraw/through_the_desert.svg");
+    background-image: url("../illustrations/undraw/through-the-desert.svg");
+}
+
+.illustration-through-the-park {
+    background-image: url("../illustrations/undraw/through-the-park.svg");
+}
+
+.illustration-through-the-window {
+    background-image: url("../illustrations/undraw/through-the-window.svg");
+}
+
+.illustration-throw-away {
+    background-image: url("../illustrations/undraw/throw-away.svg");
 }
 
 .illustration-throw-down {
-    background-image: url("../illustrations/undraw/throw_down.svg");
+    background-image: url("../illustrations/undraw/throw-down.svg");
 }
 
 .illustration-time-management {
-    background-image: url("../illustrations/undraw/time_management.svg");
+    background-image: url("../illustrations/undraw/time-management.svg");
 }
 
 .illustration-timeline {
     background-image: url("../illustrations/undraw/timeline.svg");
 }
 
-.illustration-to-do {
-    background-image: url("../illustrations/undraw/to_do.svg");
+.illustration-to-do-list {
+    background-image: url("../illustrations/undraw/to-do-list.svg");
 }
 
-.illustration-to-do-list {
-    background-image: url("../illustrations/undraw/to_do_list.svg");
+.illustration-to-do {
+    background-image: url("../illustrations/undraw/to-do.svg");
+}
+
+.illustration-to-the-moon {
+    background-image: url("../illustrations/undraw/to-the-moon.svg");
 }
 
 .illustration-to-the-stars {
-    background-image: url("../illustrations/undraw/to_the_stars.svg");
+    background-image: url("../illustrations/undraw/to-the-stars.svg");
 }
 
 .illustration-together {
     background-image: url("../illustrations/undraw/together.svg");
 }
 
+.illustration-tourist-map {
+    background-image: url("../illustrations/undraw/tourist-map.svg");
+}
+
+.illustration-towing {
+    background-image: url("../illustrations/undraw/towing.svg");
+}
+
+.illustration-town {
+    background-image: url("../illustrations/undraw/town.svg");
+}
+
 .illustration-toy-car {
-    background-image: url("../illustrations/undraw/toy_car.svg");
+    background-image: url("../illustrations/undraw/toy-car.svg");
 }
 
 .illustration-track-and-field {
-    background-image: url("../illustrations/undraw/track_and_field.svg");
+    background-image: url("../illustrations/undraw/track-and-field.svg");
 }
 
 .illustration-transfer-files {
-    background-image: url("../illustrations/undraw/transfer_files.svg");
+    background-image: url("../illustrations/undraw/transfer-files.svg");
 }
 
 .illustration-transfer-money {
-    background-image: url("../illustrations/undraw/transfer_money.svg");
+    background-image: url("../illustrations/undraw/transfer-money.svg");
 }
 
 .illustration-travel-booking {
-    background-image: url("../illustrations/undraw/travel_booking.svg");
+    background-image: url("../illustrations/undraw/travel-booking.svg");
+}
+
+.illustration-travel-mode {
+    background-image: url("../illustrations/undraw/travel-mode.svg");
+}
+
+.illustration-travel-plans {
+    background-image: url("../illustrations/undraw/travel-plans.svg");
+}
+
+.illustration-travel-together {
+    background-image: url("../illustrations/undraw/travel-together.svg");
 }
 
 .illustration-travelers {
@@ -2540,7 +4963,15 @@
 }
 
 .illustration-tree-swing {
-    background-image: url("../illustrations/undraw/tree_swing.svg");
+    background-image: url("../illustrations/undraw/tree-swing.svg");
+}
+
+.illustration-trends {
+    background-image: url("../illustrations/undraw/trends.svg");
+}
+
+.illustration-trendy-interface {
+    background-image: url("../illustrations/undraw/trendy-interface.svg");
 }
 
 .illustration-trip {
@@ -2548,11 +4979,23 @@
 }
 
 .illustration-true-friends {
-    background-image: url("../illustrations/undraw/true_friends.svg");
+    background-image: url("../illustrations/undraw/true-friends.svg");
+}
+
+.illustration-true-love {
+    background-image: url("../illustrations/undraw/true-love.svg");
+}
+
+.illustration-tutorial-video {
+    background-image: url("../illustrations/undraw/tutorial-video.svg");
 }
 
 .illustration-tweetstorm {
     background-image: url("../illustrations/undraw/tweetstorm.svg");
+}
+
+.illustration-two-factor-authentication {
+    background-image: url("../illustrations/undraw/two-factor-authentication.svg");
 }
 
 .illustration-typewriter {
@@ -2568,27 +5011,55 @@
 }
 
 .illustration-under-construction {
-    background-image: url("../illustrations/undraw/under_construction.svg");
+    background-image: url("../illustrations/undraw/under-construction.svg");
+}
+
+.illustration-undraw-1000 {
+    background-image: url("../illustrations/undraw/undraw-1000.svg");
 }
 
 .illustration-unexpected-friends {
-    background-image: url("../illustrations/undraw/unexpected_friends.svg");
+    background-image: url("../illustrations/undraw/unexpected-friends.svg");
+}
+
+.illustration-unicorn {
+    background-image: url("../illustrations/undraw/unicorn.svg");
+}
+
+.illustration-unlock {
+    background-image: url("../illustrations/undraw/unlock.svg");
+}
+
+.illustration-up-to-date {
+    background-image: url("../illustrations/undraw/up-to-date.svg");
 }
 
 .illustration-update {
     background-image: url("../illustrations/undraw/update.svg");
 }
 
+.illustration-updated-resume {
+    background-image: url("../illustrations/undraw/updated-resume.svg");
+}
+
+.illustration-updated {
+    background-image: url("../illustrations/undraw/updated.svg");
+}
+
+.illustration-updates {
+    background-image: url("../illustrations/undraw/updates.svg");
+}
+
 .illustration-upgrade {
     background-image: url("../illustrations/undraw/upgrade.svg");
 }
 
-.illustration-upload {
-    background-image: url("../illustrations/undraw/upload.svg");
+.illustration-upload-image {
+    background-image: url("../illustrations/undraw/upload-image.svg");
 }
 
-.illustration-upload-image {
-    background-image: url("../illustrations/undraw/upload_image.svg");
+.illustration-upload {
+    background-image: url("../illustrations/undraw/upload.svg");
 }
 
 .illustration-uploading {
@@ -2599,120 +5070,272 @@
     background-image: url("../illustrations/undraw/upvote.svg");
 }
 
+.illustration-urban-design {
+    background-image: url("../illustrations/undraw/urban-design.svg");
+}
+
 .illustration-usability-testing {
-    background-image: url("../illustrations/undraw/usability_testing.svg");
+    background-image: url("../illustrations/undraw/usability-testing.svg");
 }
 
 .illustration-user-flow {
-    background-image: url("../illustrations/undraw/user_flow.svg");
+    background-image: url("../illustrations/undraw/user-flow.svg");
 }
 
 .illustration-vault {
     background-image: url("../illustrations/undraw/vault.svg");
 }
 
-.illustration-vehicle-sale {
-    background-image: url("../illustrations/undraw/vehicle_sale.svg");
+.illustration-verified {
+    background-image: url("../illustrations/undraw/verified.svg");
 }
 
 .illustration-version-control {
-    background-image: url("../illustrations/undraw/version_control.svg");
+    background-image: url("../illustrations/undraw/version-control.svg");
 }
 
 .illustration-video-call {
-    background-image: url("../illustrations/undraw/video_call.svg");
+    background-image: url("../illustrations/undraw/video-call.svg");
+}
+
+.illustration-video-files {
+    background-image: url("../illustrations/undraw/video-files.svg");
+}
+
+.illustration-video-game-night {
+    background-image: url("../illustrations/undraw/video-game-night.svg");
+}
+
+.illustration-video-influencer {
+    background-image: url("../illustrations/undraw/video-influencer.svg");
+}
+
+.illustration-video-streaming {
+    background-image: url("../illustrations/undraw/video-streaming.svg");
+}
+
+.illustration-video-upload {
+    background-image: url("../illustrations/undraw/video-upload.svg");
 }
 
 .illustration-videographer {
     background-image: url("../illustrations/undraw/videographer.svg");
 }
 
+.illustration-virtual-assistant {
+    background-image: url("../illustrations/undraw/virtual-assistant.svg");
+}
+
 .illustration-virtual-reality {
-    background-image: url("../illustrations/undraw/virtual_reality.svg");
+    background-image: url("../illustrations/undraw/virtual-reality.svg");
+}
+
+.illustration-visionary-technology {
+    background-image: url("../illustrations/undraw/visionary-technology.svg");
 }
 
 .illustration-visual-data {
-    background-image: url("../illustrations/undraw/visual_data.svg");
+    background-image: url("../illustrations/undraw/visual-data.svg");
+}
+
+.illustration-visualization {
+    background-image: url("../illustrations/undraw/visualization.svg");
+}
+
+.illustration-voice-assistant {
+    background-image: url("../illustrations/undraw/voice-assistant.svg");
 }
 
 .illustration-voice-control {
-    background-image: url("../illustrations/undraw/voice_control.svg");
+    background-image: url("../illustrations/undraw/voice-control.svg");
 }
 
 .illustration-voice-interface {
-    background-image: url("../illustrations/undraw/voice_interface.svg");
+    background-image: url("../illustrations/undraw/voice-interface.svg");
+}
+
+.illustration-void {
+    background-image: url("../illustrations/undraw/void.svg");
+}
+
+.illustration-voting {
+    background-image: url("../illustrations/undraw/voting.svg");
 }
 
 .illustration-vr-chat {
-    background-image: url("../illustrations/undraw/vr_chat.svg");
+    background-image: url("../illustrations/undraw/vr-chat.svg");
+}
+
+.illustration-wait-in-line {
+    background-image: url("../illustrations/undraw/wait-in-line.svg");
+}
+
+.illustration-waiting-for-you {
+    background-image: url("../illustrations/undraw/waiting-for-you.svg");
+}
+
+.illustration-walk-dreaming {
+    background-image: url("../illustrations/undraw/walk-dreaming.svg");
 }
 
 .illustration-walk-in-the-city {
-    background-image: url("../illustrations/undraw/walk_in_the_city.svg");
+    background-image: url("../illustrations/undraw/walk-in-the-city.svg");
 }
 
 .illustration-walking-around {
-    background-image: url("../illustrations/undraw/walking_around.svg");
+    background-image: url("../illustrations/undraw/walking-around.svg");
+}
+
+.illustration-walking-in-rain {
+    background-image: url("../illustrations/undraw/walking-in-rain.svg");
+}
+
+.illustration-walking-outside {
+    background-image: url("../illustrations/undraw/walking-outside.svg");
+}
+
+.illustration-walking-together {
+    background-image: url("../illustrations/undraw/walking-together.svg");
 }
 
 .illustration-wall-post {
-    background-image: url("../illustrations/undraw/wall_post.svg");
+    background-image: url("../illustrations/undraw/wall-post.svg");
 }
 
 .illustration-wallet {
     background-image: url("../illustrations/undraw/wallet.svg");
 }
 
+.illustration-wandering-mind {
+    background-image: url("../illustrations/undraw/wandering-mind.svg");
+}
+
 .illustration-warning {
     background-image: url("../illustrations/undraw/warning.svg");
+}
+
+.illustration-wash-hands {
+    background-image: url("../illustrations/undraw/wash-hands.svg");
+}
+
+.illustration-watch-application {
+    background-image: url("../illustrations/undraw/watch-application.svg");
+}
+
+.illustration-weather-app {
+    background-image: url("../illustrations/undraw/weather-app.svg");
+}
+
+.illustration-weather-notification {
+    background-image: url("../illustrations/undraw/weather-notification.svg");
 }
 
 .illustration-weather {
     background-image: url("../illustrations/undraw/weather.svg");
 }
 
-.illustration-weather-app {
-    background-image: url("../illustrations/undraw/weather_app.svg");
+.illustration-web-browsing {
+    background-image: url("../illustrations/undraw/web-browsing.svg");
+}
+
+.illustration-web-developer {
+    background-image: url("../illustrations/undraw/web-developer.svg");
+}
+
+.illustration-web-development {
+    background-image: url("../illustrations/undraw/web-development.svg");
 }
 
 .illustration-web-devices {
-    background-image: url("../illustrations/undraw/web_devices.svg");
+    background-image: url("../illustrations/undraw/web-devices.svg");
+}
+
+.illustration-web-search {
+    background-image: url("../illustrations/undraw/web-search.svg");
+}
+
+.illustration-web-shopping {
+    background-image: url("../illustrations/undraw/web-shopping.svg");
+}
+
+.illustration-website-builder {
+    background-image: url("../illustrations/undraw/website-builder.svg");
 }
 
 .illustration-website-setup {
-    background-image: url("../illustrations/undraw/website_setup.svg");
+    background-image: url("../illustrations/undraw/website-setup.svg");
 }
 
 .illustration-wedding {
     background-image: url("../illustrations/undraw/wedding.svg");
 }
 
+.illustration-welcome-cats {
+    background-image: url("../illustrations/undraw/welcome-cats.svg");
+}
+
 .illustration-welcome {
     background-image: url("../illustrations/undraw/welcome.svg");
 }
 
+.illustration-welcoming {
+    background-image: url("../illustrations/undraw/welcoming.svg");
+}
+
+.illustration-well-done {
+    background-image: url("../illustrations/undraw/well-done.svg");
+}
+
+.illustration-wilderness {
+    background-image: url("../illustrations/undraw/wilderness.svg");
+}
+
 .illustration-wind-turbine {
-    background-image: url("../illustrations/undraw/wind_turbine.svg");
+    background-image: url("../illustrations/undraw/wind-turbine.svg");
 }
 
 .illustration-window-shopping {
-    background-image: url("../illustrations/undraw/window_shopping.svg");
+    background-image: url("../illustrations/undraw/window-shopping.svg");
 }
 
 .illustration-windows {
     background-image: url("../illustrations/undraw/windows.svg");
 }
 
+.illustration-windy-day {
+    background-image: url("../illustrations/undraw/windy-day.svg");
+}
+
+.illustration-wine-tasting {
+    background-image: url("../illustrations/undraw/wine-tasting.svg");
+}
+
 .illustration-winners {
     background-image: url("../illustrations/undraw/winners.svg");
 }
 
-.illustration-winter-designer {
-    background-image: url("../illustrations/undraw/winter_designer.svg");
+.illustration-winter-activities {
+    background-image: url("../illustrations/undraw/winter-activities.svg");
 }
 
-.illustration-winter-olympics {
-    background-image: url("../illustrations/undraw/winter_olympics.svg");
+.illustration-winter-designer {
+    background-image: url("../illustrations/undraw/winter-designer.svg");
+}
+
+.illustration-winter-magic {
+    background-image: url("../illustrations/undraw/winter-magic.svg");
+}
+
+.illustration-winter-road {
+    background-image: url("../illustrations/undraw/winter-road.svg");
+}
+
+.illustration-winter-skating {
+    background-image: url("../illustrations/undraw/winter-skating.svg");
+}
+
+.illustration-winter-walk {
+    background-image: url("../illustrations/undraw/winter-walk.svg");
 }
 
 .illustration-wireframing {
@@ -2727,8 +5350,8 @@
     background-image: url("../illustrations/undraw/wishlist.svg");
 }
 
-.illustration-witch {
-    background-image: url("../illustrations/undraw/witch.svg");
+.illustration-with-love {
+    background-image: url("../illustrations/undraw/with-love.svg");
 }
 
 .illustration-woman {
@@ -2736,11 +5359,11 @@
 }
 
 .illustration-women-day {
-    background-image: url("../illustrations/undraw/women_day.svg");
+    background-image: url("../illustrations/undraw/women-day.svg");
 }
 
 .illustration-word-of-mouth {
-    background-image: url("../illustrations/undraw/word_of_mouth.svg");
+    background-image: url("../illustrations/undraw/word-of-mouth.svg");
 }
 
 .illustration-wordpress {
@@ -2748,23 +5371,43 @@
 }
 
 .illustration-work-chat {
-    background-image: url("../illustrations/undraw/work_chat.svg");
+    background-image: url("../illustrations/undraw/work-chat.svg");
+}
+
+.illustration-work-from-anywhere {
+    background-image: url("../illustrations/undraw/work-from-anywhere.svg");
+}
+
+.illustration-work-in-progress {
+    background-image: url("../illustrations/undraw/work-in-progress.svg");
 }
 
 .illustration-work-time {
-    background-image: url("../illustrations/undraw/work_time.svg");
+    background-image: url("../illustrations/undraw/work-time.svg");
+}
+
+.illustration-work-together {
+    background-image: url("../illustrations/undraw/work-together.svg");
+}
+
+.illustration-working-from-anywhere {
+    background-image: url("../illustrations/undraw/working-from-anywhere.svg");
+}
+
+.illustration-working-late {
+    background-image: url("../illustrations/undraw/working-late.svg");
+}
+
+.illustration-working-out {
+    background-image: url("../illustrations/undraw/working-out.svg");
+}
+
+.illustration-working-remotely {
+    background-image: url("../illustrations/undraw/working-remotely.svg");
 }
 
 .illustration-working {
     background-image: url("../illustrations/undraw/working.svg");
-}
-
-.illustration-working-late {
-    background-image: url("../illustrations/undraw/working_late.svg");
-}
-
-.illustration-working-remotely {
-    background-image: url("../illustrations/undraw/working_remotely.svg");
 }
 
 .illustration-workout {
@@ -2775,19 +5418,38 @@
     background-image: url("../illustrations/undraw/world.svg");
 }
 
+.illustration-writer {
+    background-image: url("../illustrations/undraw/writer.svg");
+}
+
+.illustration-xmas-snowman {
+    background-image: url("../illustrations/undraw/xmas-snowman.svg");
+}
+
 .illustration-xmas-surprise {
-    background-image: url("../illustrations/undraw/xmas_surprise.svg");
+    background-image: url("../illustrations/undraw/xmas-surprise.svg");
 }
 
 .illustration-yacht {
     background-image: url("../illustrations/undraw/yacht.svg");
 }
 
+.illustration-year-2022 {
+    background-image: url("../illustrations/undraw/year-2022.svg");
+}
+
+.illustration-yoga {
+    background-image: url("../illustrations/undraw/yoga.svg");
+}
+
 .illustration-young-and-happy {
-    background-image: url("../illustrations/undraw/young_and_happy.svg");
+    background-image: url("../illustrations/undraw/young-and-happy.svg");
 }
 
 .illustration-youtube-tutorial {
-    background-image: url("../illustrations/undraw/youtube_tutorial.svg");
+    background-image: url("../illustrations/undraw/youtube-tutorial.svg");
 }
 
+.illustration-zoom-in {
+    background-image: url("../illustrations/undraw/zoom-in.svg");
+}

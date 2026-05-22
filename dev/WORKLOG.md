@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-05-20  
+> **Updated**: 2026-05-22
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -66,6 +66,19 @@
 
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
+
+### 2026-05-22
+- Prepared the first Core architecture baseline from the 0.1.x through 0.5.x feature drafts, including source namespace boundaries, `bin/init` dependency bootstrapping, a non-mutating `bin/setup` skeleton, regenerated illustration CSS, and web server configuration templates for Apache, nginx, and IIS.
+- Added the shared Core package foundation: manifest parsing and namespace-based validation, package discovery for app/theme/module/import-cache manifests, package requirement validation, package feature inspection, and reusable lint providers for PHP, Twig, JSON, YAML, CSS, and JavaScript.
+- Added reusable Core primitives for filesystem-safe path handling and inventories, checksums, action logs, structured diffs, dry-run previews, deterministic action queues, operation execution, filesystem actions, process actions, and package-to-copy-queue planning.
+- Added structured `toArray()` exports across workflow, action-log, dry-run, diff, and operation result objects so future CLI, UI, importer, and action-log consumers can render the same payloads.
+- Added shared PHPUnit support helpers for temporary filesystem fixtures plus suite initialization and cleanup hooks for later demo and integration fixtures.
+- Documented deferred design decisions: dynamic SVG theme coloring needs an inline SVG/Twig renderer later, theme/module dependency maps belong to package-type installer workflows, and a third generic diagnostics model should wait until concrete UI or logging requirements appear.
+- Added `.codex/resolve_cloud_artifacts.php` for reviewed iCloud/Finder conflict cleanup and `.codex/clean_ignored_artifacts.php` for dry-run/apply removal of ignored build artifacts; documented both helper scripts in the agent tool registry.
+- Hardened the review baseline against traversal, symlink, and status-downgrade risks by validating package source paths, skipping symlinks in discovery and inventories, rejecting symlink package copy sources, blocking filesystem actions from reading or writing through symlink sources or targets and parents, preserving failed or blocked queue status when continuing after action errors, and keeping Apache/IIS front-controller redirects base-path-aware.
+- Fixed Composer metadata review findings by replacing unbounded `symfony/apache-pack` and `symfonycasts/tailwind-bundle` constraints with caret constraints and refreshing the lock content hash.
+- Updated `dev/CLASSMAP.md`, relevant feature drafts, and PHPUnit coverage for the new Core architecture, package validation, linting, filesystem, integrity, action-log, diff, dry-run, operation, process, helper-script, and test-support behavior.
+- Verified the review state by cleaning ignored artifacts, running `bin/init` from a clean dependency state, and re-running PHPUnit, container linting, Composer validation, and whitespace checks.
 
 ### 2026-05-20
 - Created and consolidated the feature-draft roadmap for 0.1.x through 0.5.x plus future features, including core architecture, content modeling, themes, modules, security/ACL, editor workflows, resolver/search, media, import/export, operations, backup/restore, IconCaptcha, release lifecycle, and first-party module candidates.

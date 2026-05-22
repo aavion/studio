@@ -37,6 +37,10 @@ $RECYCLE.BIN/
 /.phpunit.cache/
 ###< phpunit/phpunit ###
 
+###> local agent config ###
+/.codex/config.toml
+###< local agent config ###
+
 ###> symfony/asset-mapper ###
 /public/assets/
 /assets/vendor/

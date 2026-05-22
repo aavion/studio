@@ -13,13 +13,15 @@
         "doctrine/dbal": "^4.4.3",
         "doctrine/doctrine-bundle": "^3.2.2",
         "doctrine/doctrine-migrations-bundle": "^4.0",
-        "doctrine/orm": "^3.6.5",
+        "doctrine/orm": "^3.6.6",
         "geoip2/geoip2": "^3.3",
         "justinrainbow/json-schema": "^6.8.2",
         "league/flysystem-bundle": "^3.7",
+        "mck89/peast": "^1.17.6",
         "phpdocumentor/reflection-docblock": "^6.0.3",
         "phpstan/phpdoc-parser": "^2.3.2",
-        "symfony/apache-pack": ">=1.0.1",
+        "sabberworm/php-css-parser": "^9.3",
+        "symfony/apache-pack": "^1.0.1",
         "symfony/asset": "8.0.*",
         "symfony/asset-mapper": "8.0.*",
         "symfony/console": "8.0.*",
@@ -49,10 +51,10 @@
         "symfony/validator": "8.0.*",
         "symfony/web-link": "8.0.*",
         "symfony/yaml": "8.0.*",
-        "symfonycasts/tailwind-bundle": ">=0.12",
+        "symfonycasts/tailwind-bundle": "^0.12",
         "twig/extra-bundle": "^3.24",
-        "twig/intl-extra": "^3.24",
-        "twig/twig": "^2.12|^3.25"
+        "twig/intl-extra": "^3.26",
+        "twig/twig": "^2.12|^3.26"
     },
     "config": {
         "allow-plugins": {
@@ -113,7 +115,7 @@
     "name": "aavion/studio",
     "description": "A Symfony 8 application",
     "require-dev": {
-        "phpunit/phpunit": "^13.1.10",
+        "phpunit/phpunit": "^13.1.11",
         "symfony/browser-kit": "8.0.*",
         "symfony/css-selector": "8.0.*",
         "symfony/debug-bundle": "8.0.*",

@@ -1,0 +1,430 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Symfony\Component\Dotenv\Dotenv;
+
+final class InitReporter
+{
+    /** @var list<string> */
+    private array $successes = [];
+
+    /** @var list<string> */
+    private array $warnings = [];
+
+    /** @var list<string> */
+    private array $failures = [];
+
+    public function success(string $message): void
+    {
+        $this->successes[] = $message;
+        echo "[OK] ".$message.PHP_EOL;
+    }
+
+    public function warning(string $message): void
+    {
+        $this->warnings[] = $message;
+        echo "[WARN] ".$message.PHP_EOL;
+    }
+
+    public function failure(string $message): void
+    {
+        $this->failures[] = $message;
+        fwrite(STDERR, "[FAIL] ".$message.PHP_EOL);
+    }
+
+    public function hasFailures(): bool
+    {
+        return [] !== $this->failures;
+    }
+
+    public function printSummary(): void
+    {
+        echo PHP_EOL.'Initialization summary'.PHP_EOL;
+        echo '  Successes: '.count($this->successes).PHP_EOL;
+        echo '  Warnings:  '.count($this->warnings).PHP_EOL;
+        echo '  Failures:  '.count($this->failures).PHP_EOL;
+
+        if ([] !== $this->failures) {
+            echo PHP_EOL.'Failures'.PHP_EOL;
+            foreach ($this->failures as $failure) {
+                echo '  - '.$failure.PHP_EOL;
+            }
+        }
+
+        if ([] !== $this->warnings) {
+            echo PHP_EOL.'Warnings'.PHP_EOL;
+            foreach ($this->warnings as $warning) {
+                echo '  - '.$warning.PHP_EOL;
+            }
+        }
+    }
+}
+
+final class InitCommand
+{
+    private const REQUIRED_ENV_KEYS = [
+        'APP_ENV',
+        'APP_SECRET',
+        'DATABASE_URL',
+        'DEFAULT_URI',
+    ];
+
+    public function __construct(
+        private readonly string $projectDir,
+        private readonly InitReporter $reporter,
+    ) {
+    }
+
+    public function run(): int
+    {
+        $this->checkCliRuntime();
+        $this->checkRequiredPhpVersion();
+        $this->checkRequiredPhpExtensions();
+
+        if ($this->reporter->hasFailures()) {
+            $this->reporter->printSummary();
+
+            return 1;
+        }
+
+        $composer = $this->resolveComposerCommand();
+        if (null === $composer) {
+            $this->reporter->printSummary();
+
+            return 1;
+        }
+
+        $this->runRequiredCommand(
+            [...$composer, 'install', '--no-dev', '--no-scripts', '--optimize-autoloader'],
+            'Production Composer packages are available for bootstrap.',
+        );
+
+        if (!$this->hasVendorAutoload()) {
+            $this->reporter->failure('Composer install finished without creating vendor/autoload.php.');
+            $this->reporter->printSummary();
+
+            return 1;
+        }
+
+        require_once $this->projectDir.'/vendor/autoload.php';
+
+        $environment = $this->loadSymfonyEnvironment();
+        $this->checkEnvironmentConfiguration($environment);
+        $this->checkWebServerContext();
+
+        if ($this->reporter->hasFailures()) {
+            $this->reporter->printSummary();
+
+            return 1;
+        }
+
+        if (in_array($environment, ['dev', 'test'], true)) {
+            $this->runRequiredCommand(
+                [...$composer, 'install', '--optimize-autoloader'],
+                'Composer packages with development dependencies are installed.',
+            );
+        } else {
+            $this->runRequiredCommand(
+                [...$composer, 'install', '--no-dev', '--optimize-autoloader'],
+                'Production Composer packages are installed.',
+            );
+        }
+
+        if ($this->reporter->hasFailures()) {
+            $this->reporter->printSummary();
+
+            return 1;
+        }
+
+        if ('prod' === $environment) {
+            $console = [PHP_BINARY, $this->projectDir.'/bin/console'];
+            $this->runRequiredCommand([...$console, 'asset-map:compile'], 'Production asset map is compiled.');
+        } else {
+            $this->reporter->success(sprintf('Skipped asset-map compilation for "%s" environment.', $environment));
+        }
+
+        $this->reporter->printSummary();
+
+        return $this->reporter->hasFailures() ? 1 : 0;
+    }
+
+    private function checkCliRuntime(): void
+    {
+        if ('cli' !== PHP_SAPI) {
+            $this->reporter->failure(sprintf('bin/init must run through PHP CLI, current SAPI is "%s".', PHP_SAPI));
+
+            return;
+        }
+
+        $this->reporter->success(sprintf('Running with PHP CLI %s.', PHP_VERSION));
+    }
+
+    private function checkRequiredPhpVersion(): void
+    {
+        $requiredVersion = $this->readMinimumPhpVersion();
+        if (null === $requiredVersion) {
+            $this->reporter->warning('Could not determine a minimum PHP version from composer.json.');
+
+            return;
+        }
+
+        if (version_compare(PHP_VERSION, $requiredVersion, '<')) {
+            $this->reporter->failure(sprintf(
+                'PHP %s or newer is required by composer.json, current version is %s.',
+                $requiredVersion,
+                PHP_VERSION,
+            ));
+
+            return;
+        }
+
+        $this->reporter->success(sprintf('PHP version satisfies composer.json requirement >=%s.', $requiredVersion));
+    }
+
+    private function checkRequiredPhpExtensions(): void
+    {
+        $missingExtensions = [];
+        foreach ($this->readRequiredPhpExtensions() as $extension) {
+            if (!extension_loaded($extension)) {
+                $missingExtensions[] = $extension;
+            }
+        }
+
+        if ([] !== $missingExtensions) {
+            $this->reporter->failure('Missing required PHP extension(s): '.implode(', ', $missingExtensions).'.');
+
+            return;
+        }
+
+        $this->reporter->success('Required PHP extensions are enabled.');
+    }
+
+    /**
+     * @return list<string>|null
+     */
+    private function resolveComposerCommand(): ?array
+    {
+        if (0 === $this->runCommand(['composer', '--version'], false)) {
+            $this->reporter->success('System Composer is available.');
+
+            return ['composer'];
+        }
+
+        $bundledComposer = $this->projectDir.'/bin/composer';
+        if (is_file($bundledComposer) && 0 === $this->runCommand([PHP_BINARY, $bundledComposer, '--version'], false)) {
+            $this->reporter->success('Using bundled Composer from bin/composer.');
+
+            return [PHP_BINARY, $bundledComposer];
+        }
+
+        $this->reporter->failure('Composer is unavailable. Install Composer or restore the bundled bin/composer fallback.');
+
+        return null;
+    }
+
+    private function loadSymfonyEnvironment(): string
+    {
+        (new Dotenv())->bootEnv($this->projectDir.'/.env');
+
+        $environment = $_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? 'dev';
+        $debug = $_SERVER['APP_DEBUG'] ?? $_ENV['APP_DEBUG'] ?? '0';
+
+        $this->reporter->success(sprintf(
+            'Symfony environment resolved to "%s" with APP_DEBUG=%s.',
+            $environment,
+            $debug,
+        ));
+
+        return $environment;
+    }
+
+    private function checkEnvironmentConfiguration(string $environment): void
+    {
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $environment)) {
+            $this->reporter->failure(sprintf('APP_ENV "%s" contains unsupported characters.', $environment));
+        }
+
+        foreach (self::REQUIRED_ENV_KEYS as $key) {
+            $value = $_SERVER[$key] ?? $_ENV[$key] ?? null;
+            if (null === $value || '' === trim((string) $value)) {
+                $this->reporter->failure(sprintf('Required environment variable %s is not set.', $key));
+            }
+        }
+
+        $debug = $_SERVER['APP_DEBUG'] ?? $_ENV['APP_DEBUG'] ?? null;
+        if (null !== $debug && !in_array((string) $debug, ['0', '1', 'true', 'false'], true)) {
+            $this->reporter->failure(sprintf('APP_DEBUG must be boolean-like, got "%s".', (string) $debug));
+        }
+
+        $this->reporter->success('Environment configuration has no obvious init-level conflicts.');
+    }
+
+    private function checkWebServerContext(): void
+    {
+        $serverSoftware = $_SERVER['SERVER_SOFTWARE'] ?? $_ENV['SERVER_SOFTWARE'] ?? null;
+        if (is_string($serverSoftware) && '' !== trim($serverSoftware)) {
+            $this->reporter->success(sprintf('Detected web server context: %s.', $serverSoftware));
+
+            return;
+        }
+
+        $this->reporter->warning('No web server context detected while running from CLI; this is expected for automated init runs.');
+    }
+
+    private function runRequiredCommand(array $command, string $successMessage): void
+    {
+        $exitCode = $this->runCommand($command, true);
+        if (0 === $exitCode) {
+            $this->reporter->success($successMessage);
+
+            return;
+        }
+
+        $this->reporter->failure(sprintf(
+            'Command failed with exit code %d: %s',
+            $exitCode,
+            $this->formatCommand($command),
+        ));
+    }
+
+    /**
+     * @param list<string> $command
+     */
+    private function runCommand(array $command, bool $streamOutput): int
+    {
+        if ($streamOutput) {
+            echo PHP_EOL.'$ '.$this->formatCommand($command).PHP_EOL;
+        }
+
+        $descriptors = [
+            0 => ['file', 'php://stdin', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+
+        $process = proc_open($command, $descriptors, $pipes, $this->projectDir);
+        if (!is_resource($process)) {
+            return 1;
+        }
+
+        foreach ([1, 2] as $pipe) {
+            stream_set_blocking($pipes[$pipe], false);
+        }
+
+        $output = '';
+        $errorOutput = '';
+
+        while (true) {
+            $status = proc_get_status($process);
+            $output .= stream_get_contents($pipes[1]);
+            $errorOutput .= stream_get_contents($pipes[2]);
+
+            if ($streamOutput && '' !== $output) {
+                echo $output;
+                $output = '';
+            }
+
+            if ($streamOutput && '' !== $errorOutput) {
+                fwrite(STDERR, $errorOutput);
+                $errorOutput = '';
+            }
+
+            if (!$status['running']) {
+                break;
+            }
+
+            usleep(100000);
+        }
+
+        $output .= stream_get_contents($pipes[1]);
+        $errorOutput .= stream_get_contents($pipes[2]);
+
+        if ($streamOutput && '' !== $output) {
+            echo $output;
+        }
+
+        if ($streamOutput && '' !== $errorOutput) {
+            fwrite(STDERR, $errorOutput);
+        }
+
+        foreach ([1, 2] as $pipe) {
+            fclose($pipes[$pipe]);
+        }
+
+        return proc_close($process);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function readRequiredPhpExtensions(): array
+    {
+        $composer = $this->readComposerJson();
+        $requires = $composer['require'] ?? [];
+        $extensions = [];
+
+        foreach ($requires as $package => $constraint) {
+            if (str_starts_with($package, 'ext-')) {
+                $extensions[] = substr($package, 4);
+            }
+        }
+
+        sort($extensions);
+
+        return $extensions;
+    }
+
+    private function readMinimumPhpVersion(): ?string
+    {
+        $composer = $this->readComposerJson();
+        $constraint = $composer['require']['php'] ?? null;
+        if (!is_string($constraint) || !preg_match('/>=\s*([0-9]+(?:\.[0-9]+){1,2})/', $constraint, $matches)) {
+            return null;
+        }
+
+        return $matches[1];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function readComposerJson(): array
+    {
+        $path = $this->projectDir.'/composer.json';
+        $contents = file_get_contents($path);
+        if (false === $contents) {
+            $this->reporter->failure('Unable to read composer.json.');
+
+            return [];
+        }
+
+        $decoded = json_decode($contents, true);
+        if (!is_array($decoded)) {
+            $this->reporter->failure('composer.json is not valid JSON.');
+
+            return [];
+        }
+
+        return $decoded;
+    }
+
+    private function hasVendorAutoload(): bool
+    {
+        return is_file($this->projectDir.'/vendor/autoload.php');
+    }
+
+    /**
+     * @param list<string> $command
+     */
+    private function formatCommand(array $command): string
+    {
+        return implode(' ', array_map('escapeshellarg', $command));
+    }
+}
+
+$projectDir = dirname(__DIR__);
+$reporter = new InitReporter();
+
+exit((new InitCommand($projectDir, $reporter))->run());
