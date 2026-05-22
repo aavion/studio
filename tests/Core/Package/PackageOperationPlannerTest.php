@@ -26,7 +26,7 @@ final class PackageOperationPlannerTest extends TestCase
     {
         $this->packageDir = $this->createTemporaryDirectory('studio-package-planner-source');
         $this->targetDir = $this->createTemporaryDirectory('studio-package-planner-target');
-        file_put_contents($this->packageDir.'/.manifest', 'PACKAGE_NAME=Demo');
+        $this->writePackageFile('.manifest', 'PACKAGE_NAME=Demo');
     }
 
     protected function tearDown(): void
@@ -99,10 +99,7 @@ final class PackageOperationPlannerTest extends TestCase
     public function testItReportsSymbolicSourceFilesBeforeCreatingQueue(): void
     {
         $this->writePackageFile('real.txt', 'real');
-
-        if (!@symlink($this->packageDir.'/real.txt', $this->packageDir.'/linked.txt')) {
-            self::markTestSkipped('Symbolic links are not available in this environment.');
-        }
+        $this->createSymlinkOrSkip($this->packageDir.'/real.txt', $this->packageDir.'/linked.txt');
 
         $result = (new PackageOperationPlanner())->copyFiles(
             $this->candidate(),

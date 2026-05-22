@@ -55,10 +55,7 @@ final class FilesystemOperationActionTest extends TestCase
     public function testEnsureDirectoryBlocksSymbolicParentDirectories(): void
     {
         mkdir($this->root.'/external', 0775, true);
-
-        if (!@symlink($this->root.'/external', $this->root.'/linked')) {
-            self::markTestSkipped('Symbolic links are not available in this environment.');
-        }
+        $this->createSymlinkOrSkip($this->root.'/external', $this->root.'/linked');
 
         $result = (new EnsureDirectoryAction($this->root, 'linked/nested'))->execute();
 
@@ -114,10 +111,7 @@ final class FilesystemOperationActionTest extends TestCase
     public function testWriteFileBlocksSymbolicTargets(): void
     {
         $this->writeTestFile($this->root, 'real.txt', 'real');
-
-        if (!@symlink($this->root.'/real.txt', $this->root.'/linked.txt')) {
-            self::markTestSkipped('Symbolic links are not available in this environment.');
-        }
+        $this->createSymlinkOrSkip($this->root.'/real.txt', $this->root.'/linked.txt');
 
         $result = (new WriteFileAction($this->root, 'linked.txt', 'new', overwrite: true))->execute();
 
@@ -129,10 +123,7 @@ final class FilesystemOperationActionTest extends TestCase
     public function testWriteFileDryRunDoesNotReadSymbolicTargets(): void
     {
         $this->writeTestFile($this->root, 'real.txt', 'real');
-
-        if (!@symlink($this->root.'/real.txt', $this->root.'/linked.txt')) {
-            self::markTestSkipped('Symbolic links are not available in this environment.');
-        }
+        $this->createSymlinkOrSkip($this->root.'/real.txt', $this->root.'/linked.txt');
 
         $dryRun = (new WriteFileAction($this->root, 'linked.txt', 'new', overwrite: true))->dryRun();
 
@@ -144,10 +135,7 @@ final class FilesystemOperationActionTest extends TestCase
     public function testWriteFileBlocksSymbolicParentDirectories(): void
     {
         mkdir($this->root.'/external', 0775, true);
-
-        if (!@symlink($this->root.'/external', $this->root.'/linked')) {
-            self::markTestSkipped('Symbolic links are not available in this environment.');
-        }
+        $this->createSymlinkOrSkip($this->root.'/external', $this->root.'/linked');
 
         $result = (new WriteFileAction($this->root, 'linked/config.php', 'payload'))->execute();
 
@@ -192,10 +180,7 @@ final class FilesystemOperationActionTest extends TestCase
     public function testCopyFileBlocksSymbolicSources(): void
     {
         $this->writeTestFile($this->root, 'real.txt', 'real');
-
-        if (!@symlink($this->root.'/real.txt', $this->root.'/linked.txt')) {
-            self::markTestSkipped('Symbolic links are not available in this environment.');
-        }
+        $this->createSymlinkOrSkip($this->root.'/real.txt', $this->root.'/linked.txt');
 
         $result = (new CopyFileAction($this->root, 'linked.txt', $this->root, 'target.txt'))->execute();
 
@@ -207,10 +192,7 @@ final class FilesystemOperationActionTest extends TestCase
     {
         $this->writeTestFile($this->root, 'source.txt', 'source');
         $this->writeTestFile($this->root, 'real.txt', 'real');
-
-        if (!@symlink($this->root.'/real.txt', $this->root.'/linked.txt')) {
-            self::markTestSkipped('Symbolic links are not available in this environment.');
-        }
+        $this->createSymlinkOrSkip($this->root.'/real.txt', $this->root.'/linked.txt');
 
         $result = (new CopyFileAction($this->root, 'source.txt', $this->root, 'linked.txt', overwrite: true))->execute();
 
@@ -223,10 +205,7 @@ final class FilesystemOperationActionTest extends TestCase
     {
         $this->writeTestFile($this->root, 'source.txt', 'source');
         mkdir($this->root.'/external', 0775, true);
-
-        if (!@symlink($this->root.'/external', $this->root.'/linked')) {
-            self::markTestSkipped('Symbolic links are not available in this environment.');
-        }
+        $this->createSymlinkOrSkip($this->root.'/external', $this->root.'/linked');
 
         $result = (new CopyFileAction($this->root, 'source.txt', $this->root, 'linked/target.txt'))->execute();
 
@@ -239,14 +218,8 @@ final class FilesystemOperationActionTest extends TestCase
     {
         $this->writeTestFile($this->root, 'source-real.txt', 'source');
         $this->writeTestFile($this->root, 'target-real.txt', 'target');
-
-        if (!@symlink($this->root.'/source-real.txt', $this->root.'/source-link.txt')) {
-            self::markTestSkipped('Symbolic links are not available in this environment.');
-        }
-
-        if (!@symlink($this->root.'/target-real.txt', $this->root.'/target-link.txt')) {
-            self::markTestSkipped('Symbolic links are not available in this environment.');
-        }
+        $this->createSymlinkOrSkip($this->root.'/source-real.txt', $this->root.'/source-link.txt');
+        $this->createSymlinkOrSkip($this->root.'/target-real.txt', $this->root.'/target-link.txt');
 
         $dryRun = (new CopyFileAction($this->root, 'source-link.txt', $this->root, 'target-link.txt', overwrite: true))->dryRun();
 

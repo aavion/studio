@@ -12,10 +12,33 @@ trait FilesystemTestHelper
 {
     private function createTemporaryDirectory(string $prefix): string
     {
-        $directory = sys_get_temp_dir().'/'.$prefix.'-'.bin2hex(random_bytes(6));
+        $root = TestSuiteLifecycle::temporaryRoot();
+
+        if (!is_dir($root)) {
+            mkdir($root, 0777, true);
+        }
+
+        $directory = $root.'/'.$prefix.'-'.bin2hex(random_bytes(6));
         mkdir($directory, 0777, true);
 
         return $directory;
+    }
+
+    private function projectRoot(): string
+    {
+        return dirname(__DIR__, 2);
+    }
+
+    private function fixturePath(string $relativePath = ''): string
+    {
+        $path = $this->projectRoot().'/tests/Fixtures';
+        $relativePath = trim($relativePath, '/');
+
+        if ('' === $relativePath) {
+            return $path;
+        }
+
+        return $path.'/'.$relativePath;
     }
 
     private function writeTestFile(string $root, string $relativePath, string $contents): void
@@ -28,6 +51,13 @@ trait FilesystemTestHelper
         }
 
         file_put_contents($path, $contents);
+    }
+
+    private function createSymlinkOrSkip(string $target, string $link): void
+    {
+        if (!@symlink($target, $link)) {
+            self::markTestSkipped('Symbolic links are not available in this environment.');
+        }
     }
 
     private function removeDirectory(string $directory): void

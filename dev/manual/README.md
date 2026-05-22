@@ -9,8 +9,23 @@ This manual is a draft while the CMS core is still being implemented. It should 
 
 ## Draft guides
 
+- [Action log and audit snippets](action-log-audit-snippets.md)
+- [Admin UI snippets](admin-ui-snippets.md)
+- [Content and schema snippets](content-schema-snippets.md)
+- [Core architecture snippets](core-architecture-snippets.md)
+- [Extension boundary notes](extension-boundary-notes.md)
+- [Frontend asset snippets](frontend-asset-snippets.md)
+- [Import dry-run snippets](import-dry-run-snippets.md)
+- [Local agent tooling snippets](local-agent-tooling-snippets.md)
+- [Operation issue catalog](operation-issue-catalog.md)
+- [Package lifecycle snippets](package-lifecycle-snippets.md)
+- [Release and update snippets](release-update-snippets.md)
+- [Security guard snippets](security-guard-snippets.md)
+- [Setup and init snippets](setup-init-snippets.md)
+- [Test fixture snippets](test-fixture-snippets.md)
 - [Theme and module developer guidelines](theme-module-developer-guidelines.md)
 - [Web server configuration](web-server-configuration.md)
+- [Webserver deployment notes](webserver-deployment-notes.md)
 
 ## Related references
 

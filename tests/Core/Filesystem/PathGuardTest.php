@@ -69,10 +69,7 @@ final class PathGuardTest extends TestCase
         try {
             mkdir($root.'/external', 0775, true);
             mkdir($root.'/target', 0775, true);
-
-            if (!@symlink($root.'/external', $root.'/target/linked')) {
-                self::markTestSkipped('Symbolic links are not available in this environment.');
-            }
+            $this->createSymlinkOrSkip($root.'/external', $root.'/target/linked');
 
             self::assertSame('target/linked', (new PathGuard())->symlinkAncestor($root, 'target/linked/file.txt'));
             self::assertNull((new PathGuard())->symlinkAncestor($root, 'target/file.txt'));

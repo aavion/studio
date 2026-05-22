@@ -54,7 +54,7 @@ final class PackageSourceTest extends TestCase
         mkdir($this->projectDir.'/themes', 0775, true);
         mkdir($this->projectDir.'/themes/system', 0775, true);
         mkdir($this->projectDir.'/external', 0775, true);
-        symlink($this->projectDir.'/external', $this->projectDir.'/themes/external-link');
+        $this->createSymlinkOrSkip($this->projectDir.'/external', $this->projectDir.'/themes/external-link');
 
         $directories = PackageSource::children('theme', 'themes')->candidateDirectories($this->projectDir);
 

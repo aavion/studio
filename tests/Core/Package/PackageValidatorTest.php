@@ -23,7 +23,7 @@ final class PackageValidatorTest extends TestCase
     protected function setUp(): void
     {
         $this->packageDir = $this->createTemporaryDirectory('studio-package-validator');
-        file_put_contents($this->packageDir.'/.manifest', 'THEME_NAME=System');
+        $this->writeFile('.manifest', 'THEME_NAME=System');
     }
 
     protected function tearDown(): void
