@@ -11,7 +11,7 @@ The application must be served from the `public/` directory. Requests for real p
 
 Use `config/webserver/apache-vhost.conf` as the preferred starting point for Apache deployments. It keeps rewrite behavior in the virtual host and uses `AllowOverride None`, so Apache does not need broad `.htaccess` overrides.
 
-The generated `public/.htaccess` is intentionally minimal and is only a shared-hosting fallback. It requires rewrite overrides, but it does not use `Options` or `DirectoryIndex`, so deployments should not need `AllowOverride All` just to satisfy Symfony's fallback file.
+The generated `public/.htaccess` is intentionally minimal and is only a shared-hosting fallback. It requires rewrite overrides, keeps redirects aware of Apache alias or subdirectory base paths, and does not use `Options` or `DirectoryIndex`, so deployments should not need `AllowOverride All` just to satisfy Symfony's fallback file.
 
 Required Apache modules:
 

@@ -14,6 +14,9 @@ final class WebServerConfigurationTest extends TestCase
 
         self::assertIsString($contents);
         self::assertStringContainsString('RewriteEngine On', $contents);
+        self::assertStringContainsString('E=BASE:%1', $contents);
+        self::assertStringContainsString('%{ENV:BASE}/$1', $contents);
+        self::assertStringContainsString('%{ENV:BASE}/index.php', $contents);
         self::assertStringNotContainsString('Options ', $contents);
         self::assertStringNotContainsString('DirectoryIndex', $contents);
     }
