@@ -173,6 +173,17 @@ final readonly class CopyFileAction implements OperationActionInterface
     private function ensureParentDirectory(string $target): OperationResult
     {
         $parent = dirname($target);
+        $symlinkAncestor = $this->pathGuard->symlinkAncestor($this->targetRoot, $this->targetRelativePath);
+
+        if (null !== $symlinkAncestor) {
+            return OperationResult::blocked([
+                OperationIssue::create('filesystem.parent_symlink', 'Cannot copy file because a parent directory is a symbolic link.', [
+                    'source' => $this->sourceRelativePath,
+                    'target' => $this->targetRelativePath,
+                    'parent' => $symlinkAncestor,
+                ]),
+            ]);
+        }
 
         if (is_dir($parent)) {
             return OperationResult::success();

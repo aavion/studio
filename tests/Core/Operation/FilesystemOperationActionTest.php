@@ -52,6 +52,21 @@ final class FilesystemOperationActionTest extends TestCase
         self::assertSame('filesystem.directory_conflict', $result->firstIssue()?->code());
     }
 
+    public function testEnsureDirectoryBlocksSymbolicParentDirectories(): void
+    {
+        mkdir($this->root.'/external', 0775, true);
+
+        if (!@symlink($this->root.'/external', $this->root.'/linked')) {
+            self::markTestSkipped('Symbolic links are not available in this environment.');
+        }
+
+        $result = (new EnsureDirectoryAction($this->root, 'linked/nested'))->execute();
+
+        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame('filesystem.parent_symlink', $result->firstIssue()?->code());
+        self::assertDirectoryDoesNotExist($this->root.'/external/nested');
+    }
+
     public function testWriteFileCreatesParentDirectoriesAndReportsDryRunDiff(): void
     {
         $action = new WriteFileAction($this->root, 'config/generated.php', '<?php return [];');
@@ -126,6 +141,21 @@ final class FilesystemOperationActionTest extends TestCase
         self::assertSame('', $dryRun->diffs()[0]->payload()['before']);
     }
 
+    public function testWriteFileBlocksSymbolicParentDirectories(): void
+    {
+        mkdir($this->root.'/external', 0775, true);
+
+        if (!@symlink($this->root.'/external', $this->root.'/linked')) {
+            self::markTestSkipped('Symbolic links are not available in this environment.');
+        }
+
+        $result = (new WriteFileAction($this->root, 'linked/config.php', 'payload'))->execute();
+
+        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame('filesystem.parent_symlink', $result->firstIssue()?->code());
+        self::assertFileDoesNotExist($this->root.'/external/config.php');
+    }
+
     public function testCopyFileCreatesParentDirectories(): void
     {
         $this->writeTestFile($this->root, 'source.txt', 'payload');
@@ -187,6 +217,22 @@ final class FilesystemOperationActionTest extends TestCase
         self::assertSame(OperationStatus::Blocked, $result->status());
         self::assertSame('filesystem.target_symlink', $result->firstIssue()?->code());
         self::assertSame('real', file_get_contents($this->root.'/real.txt'));
+    }
+
+    public function testCopyFileBlocksSymbolicParentDirectories(): void
+    {
+        $this->writeTestFile($this->root, 'source.txt', 'source');
+        mkdir($this->root.'/external', 0775, true);
+
+        if (!@symlink($this->root.'/external', $this->root.'/linked')) {
+            self::markTestSkipped('Symbolic links are not available in this environment.');
+        }
+
+        $result = (new CopyFileAction($this->root, 'source.txt', $this->root, 'linked/target.txt'))->execute();
+
+        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame('filesystem.parent_symlink', $result->firstIssue()?->code());
+        self::assertFileDoesNotExist($this->root.'/external/target.txt');
     }
 
     public function testCopyFileDryRunDoesNotReadSymbolicSourcesOrTargets(): void

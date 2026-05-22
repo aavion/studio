@@ -26,6 +26,6 @@ The nginx template uses `try_files` for static files and routes dynamic requests
 
 ## IIS
 
-The `public/web.config` file provides the IIS URL Rewrite rules for the front controller. IIS deployments require PHP FastCGI and the IIS URL Rewrite module.
+The `public/web.config` file provides the IIS URL Rewrite rules for the front controller. IIS deployments require PHP FastCGI and the IIS URL Rewrite module. The `index.php` canonical redirect preserves the current IIS virtual directory prefix instead of redirecting to the site root.
 
 If IIS blocks `HTTP_AUTHORIZATION` server variables, allow the variable in the IIS URL Rewrite settings or remove the `serverVariables` section and pass authorization headers at the FastCGI/reverse-proxy layer instead.

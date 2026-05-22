@@ -50,6 +50,32 @@ final class PathGuard
         return rtrim($root, DIRECTORY_SEPARATOR.'/\\').DIRECTORY_SEPARATOR.$this->relativePath($relativePath);
     }
 
+    public function symlinkAncestor(string $root, string $relativePath): ?string
+    {
+        $relativePath = $this->relativePath($relativePath);
+        $segments = explode('/', $relativePath);
+
+        array_pop($segments);
+
+        if ([] === $segments) {
+            return null;
+        }
+
+        $path = rtrim($root, DIRECTORY_SEPARATOR.'/\\');
+        $relativeSegments = [];
+
+        foreach ($segments as $segment) {
+            $path .= DIRECTORY_SEPARATOR.$segment;
+            $relativeSegments[] = $segment;
+
+            if (is_link($path)) {
+                return implode('/', $relativeSegments);
+            }
+        }
+
+        return null;
+    }
+
     public function isRelativePath(string $path): bool
     {
         try {

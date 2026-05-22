@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Tests\Core\Filesystem;
 
 use App\Core\Filesystem\PathGuard;
+use App\Tests\Support\FilesystemTestHelper;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class PathGuardTest extends TestCase
 {
+    use FilesystemTestHelper;
+
     /**
      * @return iterable<string, array{0: string, 1: string}>
      */
@@ -57,5 +60,24 @@ final class PathGuardTest extends TestCase
             '/project/public/assets/app.css',
             (new PathGuard())->join('/project/public', './assets/app.css'),
         );
+    }
+
+    public function testItDetectsSymlinkAncestors(): void
+    {
+        $root = $this->createTemporaryDirectory('studio-path-guard');
+
+        try {
+            mkdir($root.'/external', 0775, true);
+            mkdir($root.'/target', 0775, true);
+
+            if (!@symlink($root.'/external', $root.'/target/linked')) {
+                self::markTestSkipped('Symbolic links are not available in this environment.');
+            }
+
+            self::assertSame('target/linked', (new PathGuard())->symlinkAncestor($root, 'target/linked/file.txt'));
+            self::assertNull((new PathGuard())->symlinkAncestor($root, 'target/file.txt'));
+        } finally {
+            $this->removeDirectory($root);
+        }
     }
 }

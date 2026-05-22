@@ -54,11 +54,21 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
     public function execute(): OperationResult
     {
         $target = $this->targetPath();
+        $symlinkAncestor = $this->pathGuard->symlinkAncestor($this->root, $this->relativePath);
 
         if (is_link($target)) {
             return OperationResult::blocked([
                 OperationIssue::create('filesystem.target_symlink', 'Cannot create directory because the target path is a symbolic link.', [
                     'path' => $this->relativePath,
+                ]),
+            ]);
+        }
+
+        if (null !== $symlinkAncestor) {
+            return OperationResult::blocked([
+                OperationIssue::create('filesystem.parent_symlink', 'Cannot create directory because a parent directory is a symbolic link.', [
+                    'path' => $this->relativePath,
+                    'parent' => $symlinkAncestor,
                 ]),
             ]);
         }

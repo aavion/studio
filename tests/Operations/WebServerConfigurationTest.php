@@ -30,4 +30,14 @@ final class WebServerConfigurationTest extends TestCase
         self::assertFileExists($root.'/public/web.config');
         self::assertFileExists($root.'/dev/manual/web-server-configuration.md');
     }
+
+    public function testIisFrontControllerRedirectPreservesBasePath(): void
+    {
+        $contents = file_get_contents(dirname(__DIR__, 2).'/public/web.config');
+
+        self::assertIsString($contents);
+        self::assertStringContainsString('input="{REQUEST_URI}" pattern="^(.*/)index\.php/?(.*)$"', $contents);
+        self::assertStringContainsString('url="{C:1}{C:2}"', $contents);
+        self::assertStringNotContainsString('url="/{R:1}"', $contents);
+    }
 }

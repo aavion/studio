@@ -128,6 +128,16 @@ final readonly class WriteFileAction implements OperationActionInterface
     private function ensureParentDirectory(string $target): OperationResult
     {
         $parent = dirname($target);
+        $symlinkAncestor = $this->pathGuard->symlinkAncestor($this->root, $this->relativePath);
+
+        if (null !== $symlinkAncestor) {
+            return OperationResult::blocked([
+                OperationIssue::create('filesystem.parent_symlink', 'Cannot write file because a parent directory is a symbolic link.', [
+                    'path' => $this->relativePath,
+                    'parent' => $symlinkAncestor,
+                ]),
+            ]);
+        }
 
         if (is_dir($parent)) {
             return OperationResult::success();
