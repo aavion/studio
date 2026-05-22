@@ -94,6 +94,8 @@
 - Extracted reusable string-based Core lint providers for PHP, Twig, JSON, YAML, CSS, and JavaScript so package preflight checks and future editor/debug UI can share the same diagnostics.
 - Refactored `PackageValidator` into a package-context adapter that reads files, delegates syntax checks to `App\Core\Lint` providers, and maps lint results into package-scoped issues.
 - Added PHPUnit coverage for reusable lint providers with valid and invalid virtual source buffers.
+- Simplified `public/.htaccess` to avoid `Options` and `DirectoryIndex` overrides, added Apache/nginx/IIS web server configuration templates, and documented the preferred `AllowOverride None` Apache deployment path.
+- Added static PHPUnit coverage to keep the Apache fallback file free of broad override directives and ensure web server templates remain present.
 - Updated the class map with the new Core workflow value objects.
 
 ### 2026-05-20
