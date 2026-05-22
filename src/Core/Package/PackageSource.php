@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Core\Filesystem\PathGuard;
 use App\Core\Manifest\ManifestSpec;
 use InvalidArgumentException;
 
 final readonly class PackageSource
 {
+    private string $relativePath;
+
     private function __construct(
         private string $name,
-        private string $relativePath,
+        string $relativePath,
         private bool $children,
         private ?ManifestSpec $spec = null,
     ) {
@@ -22,6 +25,9 @@ final readonly class PackageSource
         if ('' === trim($relativePath)) {
             throw new InvalidArgumentException('Package source path must not be empty.');
         }
+
+        $relativePath = trim($relativePath);
+        $this->relativePath = '.' === $relativePath ? '.' : (new PathGuard())->relativePath($relativePath);
     }
 
     public static function single(string $name, string $relativePath, ?ManifestSpec $spec = null): self
@@ -54,14 +60,15 @@ final readonly class PackageSource
      */
     public function candidateDirectories(string $projectDir): array
     {
-        $basePath = rtrim($projectDir, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$this->relativePath;
-        $basePath = rtrim($basePath, DIRECTORY_SEPARATOR);
+        $basePath = '.' === $this->relativePath
+            ? rtrim($projectDir, DIRECTORY_SEPARATOR)
+            : (new PathGuard())->join($projectDir, $this->relativePath);
 
         if (!$this->children) {
-            return is_dir($basePath) ? [$basePath] : [];
+            return is_dir($basePath) && !is_link($basePath) ? [$basePath] : [];
         }
 
-        if (!is_dir($basePath)) {
+        if (!is_dir($basePath) || is_link($basePath)) {
             return [];
         }
 
@@ -77,7 +84,7 @@ final readonly class PackageSource
             }
 
             $path = $basePath.DIRECTORY_SEPARATOR.$entry;
-            if (is_dir($path)) {
+            if (is_dir($path) && !is_link($path)) {
                 $children[] = $path;
             }
         }

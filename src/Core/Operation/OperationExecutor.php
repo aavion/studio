@@ -31,6 +31,7 @@ final class OperationExecutor
         $log = ActionLog::create();
         $issues = [];
         $context = $queue->context();
+        $status = OperationStatus::Success;
 
         foreach ($queue as $action) {
             $entry = ActionLogEntry::pending($action->label(), [
@@ -51,6 +52,7 @@ final class OperationExecutor
             }
 
             array_push($issues, ...$result->issues());
+            $status = $this->highestSeverity($status, $result->status());
             $log = $log->add($entry->finish(
                 $this->statusForResult($result),
                 $result->issues(),
@@ -63,7 +65,7 @@ final class OperationExecutor
         }
 
         if ([] !== $issues) {
-            return new OperationExecution($log, OperationResult::requiresReview(null, $issues, $context));
+            return new OperationExecution($log, $this->resultForIssues($status, $issues, $context));
         }
 
         return new OperationExecution($log, OperationResult::success(context: $context));
@@ -95,6 +97,22 @@ final class OperationExecutor
             OperationStatus::Blocked => OperationResult::blocked($issues, $context),
             OperationStatus::Failed => OperationResult::failed($issues, $context),
             OperationStatus::Success => OperationResult::success(context: $context),
+        };
+    }
+
+    private function highestSeverity(OperationStatus $current, OperationStatus $next): OperationStatus
+    {
+        return $this->severity($next) > $this->severity($current) ? $next : $current;
+    }
+
+    private function severity(OperationStatus $status): int
+    {
+        return match ($status) {
+            OperationStatus::Success => 0,
+            OperationStatus::RequiresReview => 1,
+            OperationStatus::Invalid => 2,
+            OperationStatus::Blocked => 3,
+            OperationStatus::Failed => 4,
         };
     }
 }

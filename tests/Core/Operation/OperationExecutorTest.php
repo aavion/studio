@@ -100,6 +100,40 @@ final class OperationExecutorTest extends TestCase
         ], $execution->actionLog()->statusCounts());
     }
 
+    public function testItPreservesFailedStatusWhenContinuingAfterFailures(): void
+    {
+        $issue = OperationIssue::create('import.failed', 'Import failed.');
+
+        $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('continue failed', [
+            new TestOperationAction('write_file', 'Write file', OperationResult::failed([$issue])),
+            new TestOperationAction('compile_assets', 'Compile assets', OperationResult::success()),
+        ], stopOnFailure: false));
+
+        self::assertSame(OperationStatus::Failed, $execution->result()->status());
+        self::assertSame([$issue], $execution->result()->issues());
+        self::assertSame([
+            'failed' => 1,
+            'success' => 1,
+        ], $execution->actionLog()->statusCounts());
+    }
+
+    public function testItPreservesBlockedStatusWhenContinuingAfterBlockedActions(): void
+    {
+        $issue = OperationIssue::create('import.blocked', 'Import blocked.');
+
+        $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('continue blocked', [
+            new TestOperationAction('copy_file', 'Copy file', OperationResult::blocked([$issue])),
+            new TestOperationAction('compile_assets', 'Compile assets', OperationResult::success()),
+        ], stopOnFailure: false));
+
+        self::assertSame(OperationStatus::Blocked, $execution->result()->status());
+        self::assertSame([$issue], $execution->result()->issues());
+        self::assertSame([
+            'failed' => 1,
+            'success' => 1,
+        ], $execution->actionLog()->statusCounts());
+    }
+
     public function testActionQueueCanDisableStopOnFailure(): void
     {
         $issue = OperationIssue::create('import.review', 'Import requires review.');
