@@ -71,6 +71,9 @@
         }
     },
     "autoload-dev": {
+        "exclude-from-classmap": [
+            "tests/Fixtures/"
+        ],
         "psr-4": {
             "App\\Tests\\": "tests/"
         }
