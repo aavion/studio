@@ -66,14 +66,14 @@
         "sort-packages": true
     },
     "autoload": {
+        "exclude-from-classmap": [
+            "tests/Fixtures/"
+        ],
         "psr-4": {
             "App\\": "src/"
         }
     },
     "autoload-dev": {
-        "exclude-from-classmap": [
-            "tests/Fixtures/"
-        ],
         "psr-4": {
             "App\\Tests\\": "tests/"
         }
