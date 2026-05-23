@@ -3,7 +3,7 @@
 > **Status**: Future  
 > **Updated**: 2026-05-20   
 > **Owner**: Core  
-> **Purpose:** Future draft for optional first-party modules that extend admin UI, editor integrations, import/export workflows, navigation helpers, media presentation, logging views, and statistics dashboards.
+> **Purpose:** Future draft for optional first-party modules that extend admin UI, editor integrations, import/export workflows, navigation helpers, media presentation, logging views, and statistics dashboards.  
 
 ## Overview
 - Defines first-party module candidates that may ship with or near the core product without becoming hard-coded core behavior.

@@ -8,6 +8,8 @@ use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunDiff;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Filesystem\PathGuard;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
@@ -82,7 +84,7 @@ final readonly class CopyFileAction implements OperationActionInterface
 
         if (is_link($source)) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.source_symlink', 'Cannot copy file because the source path is a symbolic link.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_SOURCE_SYMLINK, MessageKey::FILESYSTEM_SOURCE_SYMLINK, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
                 ]),
@@ -91,7 +93,7 @@ final readonly class CopyFileAction implements OperationActionInterface
 
         if (!is_file($source)) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.source_missing', 'Cannot copy file because the source file does not exist.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_SOURCE_MISSING, MessageKey::FILESYSTEM_SOURCE_MISSING, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
                 ]),
@@ -100,7 +102,7 @@ final readonly class CopyFileAction implements OperationActionInterface
 
         if (is_link($target)) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.target_symlink', 'Cannot copy file because the target path is a symbolic link.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_TARGET_SYMLINK, MessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
                 ]),
@@ -109,7 +111,7 @@ final readonly class CopyFileAction implements OperationActionInterface
 
         if (is_dir($target)) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.file_conflict', 'Cannot copy file because a directory already exists at the target path.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_FILE_CONFLICT, MessageKey::FILESYSTEM_FILE_CONFLICT, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
                 ]),
@@ -120,7 +122,7 @@ final readonly class CopyFileAction implements OperationActionInterface
 
         if ($targetExists && !$this->overwrite) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.file_exists', 'Cannot copy file because the target already exists and overwrite is disabled.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_FILE_EXISTS, MessageKey::FILESYSTEM_FILE_EXISTS, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
                 ]),
@@ -135,7 +137,7 @@ final readonly class CopyFileAction implements OperationActionInterface
 
         if (!copy($source, $target)) {
             return OperationResult::failed([
-                OperationIssue::create('filesystem.file_copy_failed', 'File could not be copied.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_FILE_COPY_FAILED, MessageKey::FILESYSTEM_FILE_COPY_FAILED, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
                 ]),
@@ -177,7 +179,7 @@ final readonly class CopyFileAction implements OperationActionInterface
 
         if (null !== $symlinkAncestor) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.parent_symlink', 'Cannot copy file because a parent directory is a symbolic link.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_PARENT_SYMLINK, MessageKey::FILESYSTEM_PARENT_SYMLINK, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
                     'parent' => $symlinkAncestor,
@@ -191,7 +193,7 @@ final readonly class CopyFileAction implements OperationActionInterface
 
         if (!$this->createParentDirectories) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.parent_missing', 'Cannot copy file because the parent directory does not exist.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_PARENT_MISSING, MessageKey::FILESYSTEM_PARENT_MISSING, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
                     'parent' => dirname($this->targetRelativePath),
@@ -201,7 +203,7 @@ final readonly class CopyFileAction implements OperationActionInterface
 
         if (!mkdir($parent, 0775, true) && !is_dir($parent)) {
             return OperationResult::failed([
-                OperationIssue::create('filesystem.parent_create_failed', 'Parent directory could not be created.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_PARENT_CREATE_FAILED, MessageKey::FILESYSTEM_PARENT_CREATE_FAILED, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
                     'parent' => dirname($this->targetRelativePath),

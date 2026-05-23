@@ -7,6 +7,8 @@ namespace App\Core\Package;
 use App\Core\Manifest\ManifestParser;
 use App\Core\Manifest\ManifestSpec;
 use App\Core\Manifest\ManifestValidator;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 
@@ -48,9 +50,9 @@ final readonly class PackageDiscovery
                 $contents = file_get_contents($manifestPath);
                 if (false === $contents) {
                     $issues[] = OperationIssue::create(
-                        'package.manifest_unreadable',
-                        'Package manifest could not be read.',
-                        ['path' => $manifestPath, 'source' => $source->name()],
+                        MessageCode::PACKAGE_MANIFEST_UNREADABLE,
+                        MessageKey::PACKAGE_MANIFEST_UNREADABLE,
+                        context: ['path' => $manifestPath, 'source' => $source->name()],
                     );
 
                     continue;
@@ -61,7 +63,8 @@ final readonly class PackageDiscovery
                     foreach ($parseResult->issues() as $issue) {
                         $issues[] = OperationIssue::create(
                             $issue->code(),
-                            $issue->message(),
+                            $issue->translationKey(),
+                            $issue->parameters(),
                             ['path' => $manifestPath, 'source' => $source->name()] + $issue->context(),
                         );
                     }
@@ -78,7 +81,8 @@ final readonly class PackageDiscovery
                         foreach ($validationResult->issues() as $issue) {
                             $issues[] = OperationIssue::create(
                                 $issue->code(),
-                                $issue->message(),
+                                $issue->translationKey(),
+                                $issue->parameters(),
                                 ['path' => $manifestPath, 'source' => $source->name()] + $issue->context(),
                             );
                         }

@@ -3,7 +3,7 @@
 > **Status**: Future  
 > **Updated**: 2026-05-20   
 > **Owner**: Core  
-> **Purpose:** Future draft placeholder for semantic reference suggestions, weighted context discovery, and neural-like indexing on top of the deterministic resolver foundation.
+> **Purpose:** Future draft placeholder for semantic reference suggestions, weighted context discovery, and neural-like indexing on top of the deterministic resolver foundation.  
 
 ## Overview
 - Defines a later resolver enhancement outside the first deterministic resolver implementation.

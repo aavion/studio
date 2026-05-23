@@ -1,9 +1,9 @@
 # Framework version recap
 
 > **Status:** Active  
-> **Updated:** 2026-05-22
+> **Updated:** 2026-05-22  
 > **Owner:** Codex  
-> **Purpose:** Offline working notes for this repository's framework and bundle versions, based on official documentation checks. Use this before implementing Symfony, Doctrine, Twig, frontend, or test changes.
+> **Purpose:** Offline working notes for this repository's framework and bundle versions, based on official documentation checks. Use this before implementing Symfony, Doctrine, Twig, frontend, or test changes.  
 
 ## Project baseline
 

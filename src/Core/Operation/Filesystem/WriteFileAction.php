@@ -8,6 +8,8 @@ use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunDiff;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Filesystem\PathGuard;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
@@ -68,7 +70,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (is_link($target)) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.target_symlink', 'Cannot write file because the target path is a symbolic link.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_TARGET_SYMLINK, MessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
                     'path' => $this->relativePath,
                 ]),
             ]);
@@ -76,7 +78,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (is_dir($target)) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.file_conflict', 'Cannot write file because a directory already exists at the target path.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_FILE_CONFLICT, MessageKey::FILESYSTEM_FILE_CONFLICT, context: [
                     'path' => $this->relativePath,
                 ]),
             ]);
@@ -84,7 +86,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if ($exists && !$this->overwrite) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.file_exists', 'Cannot write file because the target already exists and overwrite is disabled.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_FILE_EXISTS, MessageKey::FILESYSTEM_FILE_EXISTS, context: [
                     'path' => $this->relativePath,
                 ]),
             ]);
@@ -100,7 +102,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (false === $bytes) {
             return OperationResult::failed([
-                OperationIssue::create('filesystem.file_write_failed', 'File could not be written.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_FILE_WRITE_FAILED, MessageKey::FILESYSTEM_FILE_WRITE_FAILED, context: [
                     'path' => $this->relativePath,
                 ]),
             ]);
@@ -132,7 +134,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (null !== $symlinkAncestor) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.parent_symlink', 'Cannot write file because a parent directory is a symbolic link.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_PARENT_SYMLINK, MessageKey::FILESYSTEM_PARENT_SYMLINK, context: [
                     'path' => $this->relativePath,
                     'parent' => $symlinkAncestor,
                 ]),
@@ -145,7 +147,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (!$this->createParentDirectories) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.parent_missing', 'Cannot write file because the parent directory does not exist.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_PARENT_MISSING, MessageKey::FILESYSTEM_PARENT_MISSING, context: [
                     'path' => $this->relativePath,
                     'parent' => dirname($this->relativePath),
                 ]),
@@ -154,7 +156,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (!mkdir($parent, 0775, true) && !is_dir($parent)) {
             return OperationResult::failed([
-                OperationIssue::create('filesystem.parent_create_failed', 'Parent directory could not be created.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_PARENT_CREATE_FAILED, MessageKey::FILESYSTEM_PARENT_CREATE_FAILED, context: [
                     'path' => $this->relativePath,
                     'parent' => dirname($this->relativePath),
                 ]),

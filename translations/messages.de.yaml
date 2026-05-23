@@ -1,0 +1,97 @@
+message:
+  manifest:
+    unreadable: 'Manifest-Datei "%path%" kann nicht gelesen werden.'
+    invalid_line: 'Manifest-Zeile %line% ist kein gültiger KEY=VALUE-Eintrag.'
+    invalid_key: 'Manifest-Key "%key%" ist ungültig.'
+    duplicate_key: 'Manifest-Key "%key%" ist doppelt vorhanden.'
+    missing_required_key: 'Erforderlicher Manifest-Key "%key%" fehlt.'
+    unknown_key: 'Manifest-Key "%key%" wird hier nicht unterstützt.'
+  package:
+    identifier:
+      invalid: 'Paket-Identifier "%identifier%" enthält nicht unterstützte Zeichen.'
+    manifest_unreadable: 'Paket-Manifest "%path%" kann nicht gelesen werden.'
+    required_file_missing: 'Erforderliche Paketdatei "%path%" fehlt.'
+    required_directory_missing: 'Erforderliches Paketverzeichnis "%path%" fehlt.'
+    file_unreadable: 'Paketdatei "%path%" kann nicht gelesen werden.'
+    php_syntax_error: 'PHP-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    twig_syntax_error: 'Twig-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    json_syntax_error: 'JSON-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    yaml_syntax_error: 'YAML-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    css_syntax_error: 'CSS-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    javascript_syntax_error: 'JavaScript-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    copy_source_missing: 'Paket-Kopierquelle "%path%" fehlt.'
+    copy_source_symlink: 'Paket-Kopierquelle "%path%" darf kein Symlink sein.'
+  lint:
+    php_unreadable: 'PHP-Quelle kann nicht gelesen werden.'
+    php_syntax_error: 'PHP-Syntaxprüfung fehlgeschlagen.'
+    twig_syntax_error: 'Twig-Syntaxprüfung fehlgeschlagen.'
+    json_syntax_error: 'JSON-Syntaxprüfung fehlgeschlagen.'
+    yaml_syntax_error: 'YAML-Syntaxprüfung fehlgeschlagen.'
+    css_syntax_error: 'CSS-Syntaxprüfung fehlgeschlagen.'
+    javascript_syntax_error: 'JavaScript-Syntaxprüfung fehlgeschlagen.'
+  filesystem:
+    source_missing: 'Quellpfad "%source%" fehlt.'
+    source_symlink: 'Quellpfad "%source%" darf kein Symlink sein.'
+    target_symlink: 'Zielpfad "%target%" darf kein Symlink sein.'
+    parent_symlink: 'Übergeordneter Pfad "%path%" darf kein Symlink sein.'
+    file_exists: 'Datei "%path%" existiert bereits.'
+    file_conflict: 'Pfad "%path%" existiert bereits als Datei.'
+    directory_conflict: 'Pfad "%path%" existiert bereits als Verzeichnis.'
+    parent_missing: 'Übergeordnetes Verzeichnis "%path%" fehlt.'
+    parent_create_failed: 'Übergeordnetes Verzeichnis "%path%" konnte nicht erstellt werden.'
+    file_write_failed: 'Datei "%path%" konnte nicht geschrieben werden.'
+    file_copy_failed: 'Datei "%target%" konnte nicht kopiert werden.'
+    directory_create_failed: 'Verzeichnis "%path%" konnte nicht erstellt werden.'
+  operation:
+    exception: 'Operation ist mit einer unerwarteten Exception fehlgeschlagen.'
+  process:
+    command_failed: 'Befehl "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
+  access:
+    level:
+      invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
+    group_identifier:
+      invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein.'
+  config:
+    key:
+      invalid: 'Konfigurations-Key "%key%" muss aus kleingeschriebenen Segmenten mit Punkten bestehen.'
+  user:
+    username:
+      invalid: 'Username "%username%" ist ungültig.'
+    email:
+      invalid: 'E-Mail-Adresse "%email%" ist ungültig.'
+  api_key:
+    prefix:
+      invalid: 'API-Key-Präfix "%prefix%" ist ungültig.'
+  menu:
+    identifier:
+      invalid: 'Menü-Identifier "%identifier%" muss lowercase snake_case sein.'
+  content:
+    slug:
+      invalid_format: 'Content-Slug "%slug%" darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.'
+      reserved: 'Content-Slug "%slug%" kollidiert mit einem reservierten Routenpräfix.'
+    path:
+      empty_or_padded: 'Content-Pfad "%path%" ist leer oder enthält führende oder abschließende Leerzeichen.'
+      unclean: 'Content-Pfad "%path%" enthält nicht unterstützte URL-Zeichen.'
+      empty_segment: 'Content-Pfad "%path%" enthält ein leeres Segment.'
+      reserved_prefix: 'Content-Pfad "%path%" beginnt mit dem reservierten Präfix "%prefix%".'
+      traversal: 'Content-Pfad "%path%" enthält das Traversal-Segment "%segment%".'
+      variant_invalid: 'Content-Pfad "%path%" enthält die ungültige Variante "%variant%".'
+    uid:
+      invalid_format: '%label% "%uid%" muss eine kleingeschriebene UUID sein.'
+    string_list:
+      empty: '%label% muss mindestens einen Wert enthalten.'
+      invalid: '%label% darf nur nicht-leere Strings enthalten.'
+    metadata:
+      key_empty: 'Metadata-Key darf nicht leer sein.'
+      reserved_schema_field: 'Metadata-Key "%field_identifier%" ist für Schema-Feldwerte reserviert.'
+    field_value:
+      version_invalid: 'Feldwert-Version %version% muss positiv sein.'
+    locale_token:
+      invalid_format: '%label% "%token%" ist kein gültiges Locale-Token.'
+    field_identifier:
+      invalid_format: 'Feldidentifier "%field_identifier%" muss lowercase snake_case sein.'
+    schema:
+      identifier_invalid: 'Content-Schema-Identifier "%identifier%" muss lowercase snake_case sein.'
+      version_invalid: 'Content-Schema-Version %version% muss positiv sein.'
+      required_field_missing: 'Content-Schema fehlt das erforderliche Feld "%field_identifier%".'
+      field_duplicate: 'Content-Schema-Feld "%field_identifier%" ist doppelt vorhanden.'

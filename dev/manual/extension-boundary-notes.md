@@ -3,7 +3,7 @@
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
 > **Owner**: Core  
-> **Purpose:** Record which responsibilities belong to neutral Core primitives and which should remain in theme, module, installer, or lifecycle workflows.
+> **Purpose:** Record which responsibilities belong to neutral Core primitives and which should remain in theme, module, installer, or lifecycle workflows.  
 
 ## Overview
 

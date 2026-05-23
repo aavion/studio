@@ -3,7 +3,7 @@
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
 > **Owner**: Core  
-> **Purpose:** Track reusable test fixtures, intentionally invalid packages, and when to prefer repository fixtures over temporary test data.
+> **Purpose:** Track reusable test fixtures, intentionally invalid packages, and when to prefer repository fixtures over temporary test data.  
 
 ## Overview
 

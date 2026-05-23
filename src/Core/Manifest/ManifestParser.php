@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Manifest;
 
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 
@@ -20,7 +22,7 @@ final class ManifestParser
 
         if (false === $lines) {
             return OperationResult::invalid([
-                OperationIssue::create('manifest.unreadable', 'Manifest contents could not be split into lines.'),
+                OperationIssue::create(MessageCode::MANIFEST_UNREADABLE, MessageKey::MANIFEST_UNREADABLE),
             ]);
         }
 
@@ -34,9 +36,9 @@ final class ManifestParser
 
             if (!str_contains($line, '=')) {
                 $issues[] = OperationIssue::create(
-                    'manifest.invalid_line',
-                    'Manifest line must use KEY=VALUE format.',
-                    ['line' => $lineNumber],
+                    MessageCode::MANIFEST_INVALID_LINE,
+                    MessageKey::MANIFEST_INVALID_LINE,
+                    context: ['line' => $lineNumber],
                 );
 
                 continue;
@@ -48,9 +50,9 @@ final class ManifestParser
 
             if (!ManifestKey::isValid($key)) {
                 $issues[] = OperationIssue::create(
-                    'manifest.invalid_key',
-                    'Manifest key must use uppercase letters, numbers, and underscores.',
-                    ['line' => $lineNumber, 'key' => $key],
+                    MessageCode::MANIFEST_INVALID_KEY,
+                    MessageKey::MANIFEST_INVALID_KEY,
+                    context: ['line' => $lineNumber, 'key' => $key],
                 );
 
                 continue;
@@ -58,9 +60,9 @@ final class ManifestParser
 
             if (array_key_exists($key, $values)) {
                 $issues[] = OperationIssue::create(
-                    'manifest.duplicate_key',
-                    'Manifest key is defined more than once.',
-                    ['line' => $lineNumber, 'key' => $key],
+                    MessageCode::MANIFEST_DUPLICATE_KEY,
+                    MessageKey::MANIFEST_DUPLICATE_KEY,
+                    context: ['line' => $lineNumber, 'key' => $key],
                 );
 
                 continue;

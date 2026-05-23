@@ -1,0 +1,97 @@
+message:
+  manifest:
+    unreadable: 'Manifest file "%path%" cannot be read.'
+    invalid_line: 'Manifest line %line% is not a valid KEY=VALUE entry.'
+    invalid_key: 'Manifest key "%key%" is invalid.'
+    duplicate_key: 'Manifest key "%key%" is duplicated.'
+    missing_required_key: 'Required manifest key "%key%" is missing.'
+    unknown_key: 'Manifest key "%key%" is not supported here.'
+  package:
+    identifier:
+      invalid: 'Package identifier "%identifier%" contains unsupported characters.'
+    manifest_unreadable: 'Package manifest "%path%" cannot be read.'
+    required_file_missing: 'Required package file "%path%" is missing.'
+    required_directory_missing: 'Required package directory "%path%" is missing.'
+    file_unreadable: 'Package file "%path%" cannot be read.'
+    php_syntax_error: 'PHP syntax check failed for "%path%".'
+    twig_syntax_error: 'Twig syntax check failed for "%path%".'
+    json_syntax_error: 'JSON syntax check failed for "%path%".'
+    yaml_syntax_error: 'YAML syntax check failed for "%path%".'
+    css_syntax_error: 'CSS syntax check failed for "%path%".'
+    javascript_syntax_error: 'JavaScript syntax check failed for "%path%".'
+    copy_source_missing: 'Package copy source "%path%" is missing.'
+    copy_source_symlink: 'Package copy source "%path%" must not be a symlink.'
+  lint:
+    php_unreadable: 'PHP source cannot be read.'
+    php_syntax_error: 'PHP syntax check failed.'
+    twig_syntax_error: 'Twig syntax check failed.'
+    json_syntax_error: 'JSON syntax check failed.'
+    yaml_syntax_error: 'YAML syntax check failed.'
+    css_syntax_error: 'CSS syntax check failed.'
+    javascript_syntax_error: 'JavaScript syntax check failed.'
+  filesystem:
+    source_missing: 'Source path "%source%" is missing.'
+    source_symlink: 'Source path "%source%" must not be a symlink.'
+    target_symlink: 'Target path "%target%" must not be a symlink.'
+    parent_symlink: 'Parent path "%path%" must not be a symlink.'
+    file_exists: 'File "%path%" already exists.'
+    file_conflict: 'Path "%path%" already exists as a file.'
+    directory_conflict: 'Path "%path%" already exists as a directory.'
+    parent_missing: 'Parent directory "%path%" is missing.'
+    parent_create_failed: 'Parent directory "%path%" could not be created.'
+    file_write_failed: 'File "%path%" could not be written.'
+    file_copy_failed: 'File "%target%" could not be copied.'
+    directory_create_failed: 'Directory "%path%" could not be created.'
+  operation:
+    exception: 'Operation failed with an unexpected exception.'
+  process:
+    command_failed: 'Command "%command%" failed with exit code %exit_code%.'
+  access:
+    level:
+      invalid: 'Access level %level% must be between 0 and 9.'
+    group_identifier:
+      invalid: 'ACL group identifier "%identifier%" must be lowercase snake_case.'
+  config:
+    key:
+      invalid: 'Configuration key "%key%" must use dotted lowercase segments.'
+  user:
+    username:
+      invalid: 'Username "%username%" is invalid.'
+    email:
+      invalid: 'Email address "%email%" is invalid.'
+  api_key:
+    prefix:
+      invalid: 'API key prefix "%prefix%" is invalid.'
+  menu:
+    identifier:
+      invalid: 'Menu identifier "%identifier%" must be lowercase snake_case.'
+  content:
+    slug:
+      invalid_format: 'Content slug "%slug%" must use lowercase letters, numbers, and hyphens.'
+      reserved: 'Content slug "%slug%" conflicts with a reserved route prefix.'
+    path:
+      empty_or_padded: 'Content path "%path%" is empty or padded with whitespace.'
+      unclean: 'Content path "%path%" contains unsupported URL characters.'
+      empty_segment: 'Content path "%path%" contains an empty segment.'
+      reserved_prefix: 'Content path "%path%" starts with reserved prefix "%prefix%".'
+      traversal: 'Content path "%path%" contains traversal segment "%segment%".'
+      variant_invalid: 'Content path "%path%" contains invalid variant "%variant%".'
+    uid:
+      invalid_format: '%label% "%uid%" must be a lowercase UUID.'
+    string_list:
+      empty: '%label% must contain at least one value.'
+      invalid: '%label% must contain only non-empty strings.'
+    metadata:
+      key_empty: 'Metadata key must not be empty.'
+      reserved_schema_field: 'Metadata key "%field_identifier%" is reserved for schema field values.'
+    field_value:
+      version_invalid: 'Field value version %version% must be positive.'
+    locale_token:
+      invalid_format: '%label% "%token%" is not a valid locale token.'
+    field_identifier:
+      invalid_format: 'Field identifier "%field_identifier%" must be lowercase snake_case.'
+    schema:
+      identifier_invalid: 'Content schema identifier "%identifier%" must be lowercase snake_case.'
+      version_invalid: 'Content schema version %version% must be positive.'
+      required_field_missing: 'Content schema is missing required field "%field_identifier%".'
+      field_duplicate: 'Content schema field "%field_identifier%" is duplicated.'

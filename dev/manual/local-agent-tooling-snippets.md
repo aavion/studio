@@ -3,7 +3,7 @@
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
 > **Owner**: Core  
-> **Purpose:** Track local Codex helper scripts and operational notes for agent-assisted development.
+> **Purpose:** Track local Codex helper scripts and operational notes for agent-assisted development.  
 
 ## Overview
 

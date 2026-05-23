@@ -12,6 +12,8 @@ use App\Core\Lint\LinterInterface;
 use App\Core\Lint\PhpLinter;
 use App\Core\Lint\TwigLinter;
 use App\Core\Lint\YamlLinter;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 
@@ -39,9 +41,9 @@ final class PackageValidator
             $absolutePath = $candidate->directory().DIRECTORY_SEPARATOR.$path;
             if (!is_file($absolutePath)) {
                 $issues[] = OperationIssue::create(
-                    'package.required_file_missing',
-                    'Required package file is missing.',
-                    $this->context($candidate, $path, $absolutePath),
+                    MessageCode::PACKAGE_REQUIRED_FILE_MISSING,
+                    MessageKey::PACKAGE_REQUIRED_FILE_MISSING,
+                    context: $this->context($candidate, $path, $absolutePath),
                 );
             }
         }
@@ -50,9 +52,9 @@ final class PackageValidator
             $absolutePath = $candidate->directory().DIRECTORY_SEPARATOR.$path;
             if (!is_dir($absolutePath)) {
                 $issues[] = OperationIssue::create(
-                    'package.required_directory_missing',
-                    'Required package directory is missing.',
-                    $this->context($candidate, $path, $absolutePath),
+                    MessageCode::PACKAGE_REQUIRED_DIRECTORY_MISSING,
+                    MessageKey::PACKAGE_REQUIRED_DIRECTORY_MISSING,
+                    context: $this->context($candidate, $path, $absolutePath),
                 );
             }
         }
@@ -60,27 +62,27 @@ final class PackageValidator
         $inspection = $this->inspect($candidate->directory(), $spec->inventoryDepth());
 
         if ($spec->lintPhpFiles()) {
-            array_push($issues, ...$this->lintFiles($candidate, $inspection->phpFiles(), $this->phpLinter, 'package.php_syntax_error', 'Package PHP file has a syntax error.'));
+            array_push($issues, ...$this->lintFiles($candidate, $inspection->phpFiles(), $this->phpLinter, MessageCode::PACKAGE_PHP_SYNTAX_ERROR, MessageKey::PACKAGE_PHP_SYNTAX_ERROR));
         }
 
         if ($spec->lintTwigFiles()) {
-            array_push($issues, ...$this->lintFiles($candidate, $inspection->twigFiles(), $this->twigLinter, 'package.twig_syntax_error', 'Package Twig file has a syntax error.'));
+            array_push($issues, ...$this->lintFiles($candidate, $inspection->twigFiles(), $this->twigLinter, MessageCode::PACKAGE_TWIG_SYNTAX_ERROR, MessageKey::PACKAGE_TWIG_SYNTAX_ERROR));
         }
 
         if ($spec->lintJsonFiles()) {
-            array_push($issues, ...$this->lintFiles($candidate, $inspection->jsonFiles(), $this->jsonLinter, 'package.json_syntax_error', 'Package JSON file has a syntax error.'));
+            array_push($issues, ...$this->lintFiles($candidate, $inspection->jsonFiles(), $this->jsonLinter, MessageCode::PACKAGE_JSON_SYNTAX_ERROR, MessageKey::PACKAGE_JSON_SYNTAX_ERROR));
         }
 
         if ($spec->lintYamlFiles()) {
-            array_push($issues, ...$this->lintFiles($candidate, $inspection->yamlFiles(), $this->yamlLinter, 'package.yaml_syntax_error', 'Package YAML file has a syntax error.'));
+            array_push($issues, ...$this->lintFiles($candidate, $inspection->yamlFiles(), $this->yamlLinter, MessageCode::PACKAGE_YAML_SYNTAX_ERROR, MessageKey::PACKAGE_YAML_SYNTAX_ERROR));
         }
 
         if ($spec->lintCssFiles()) {
-            array_push($issues, ...$this->lintFiles($candidate, $inspection->cssFiles(), $this->cssLinter, 'package.css_syntax_error', 'Package CSS file has a syntax error.'));
+            array_push($issues, ...$this->lintFiles($candidate, $inspection->cssFiles(), $this->cssLinter, MessageCode::PACKAGE_CSS_SYNTAX_ERROR, MessageKey::PACKAGE_CSS_SYNTAX_ERROR));
         }
 
         if ($spec->lintJavaScriptFiles()) {
-            array_push($issues, ...$this->lintFiles($candidate, $inspection->javaScriptFiles(), $this->javaScriptLinter, 'package.javascript_syntax_error', 'Package JavaScript file has a syntax error.'));
+            array_push($issues, ...$this->lintFiles($candidate, $inspection->javaScriptFiles(), $this->javaScriptLinter, MessageCode::PACKAGE_JAVASCRIPT_SYNTAX_ERROR, MessageKey::PACKAGE_JAVASCRIPT_SYNTAX_ERROR));
         }
 
         if ([] !== $issues) {
@@ -132,7 +134,7 @@ final class PackageValidator
      *
      * @return list<OperationIssue>
      */
-    private function lintFiles(PackageCandidate $candidate, array $files, LinterInterface $linter, string $issueCode, string $issueMessage): array
+    private function lintFiles(PackageCandidate $candidate, array $files, LinterInterface $linter, string $issueCode, string $translationKey): array
     {
         $issues = [];
 
@@ -150,8 +152,8 @@ final class PackageValidator
             foreach ($lintResult->issues() as $lintIssue) {
                 $issues[] = OperationIssue::create(
                     $issueCode,
-                    $issueMessage,
-                    $this->lintContext($candidate, $file, $path, $lintIssue->context()),
+                    $translationKey,
+                    context: $this->lintContext($candidate, $file, $path, $lintIssue->context()),
                 );
             }
         }
@@ -178,9 +180,9 @@ final class PackageValidator
     private function unreadableFileIssue(PackageCandidate $candidate, string $file, string $path): OperationIssue
     {
         return OperationIssue::create(
-            'package.file_unreadable',
-            'Package file could not be read.',
-            $this->lintContext($candidate, $file, $path),
+            MessageCode::PACKAGE_FILE_UNREADABLE,
+            MessageKey::PACKAGE_FILE_UNREADABLE,
+            context: $this->lintContext($candidate, $file, $path),
         );
     }
 }

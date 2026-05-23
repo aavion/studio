@@ -2,8 +2,8 @@
 
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
-> **Owner**: Operations  
-> **Purpose:** Capture action-log, audit, and operational event notes before persistence and UI are implemented.
+> **Owner**: Core  
+> **Purpose:** Capture action-log, audit, and operational event notes before persistence and UI are implemented.  
 
 ## Overview
 

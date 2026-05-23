@@ -8,6 +8,8 @@ use App\Core\ActionLog\ActionLog;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\DryRun\DryRunPlan;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 use App\Core\Workflow\OperationStatus;
@@ -42,7 +44,7 @@ final class OperationExecutor
                 $result = $action->execute();
             } catch (Throwable $error) {
                 $result = OperationResult::failed([
-                    OperationIssue::create('operation.exception', 'Operation action threw an exception.', [
+                    OperationIssue::create(MessageCode::OPERATION_EXCEPTION, MessageKey::OPERATION_EXCEPTION, context: [
                         'action' => $action->label(),
                         'type' => $action->type(),
                         'exception' => $error::class,

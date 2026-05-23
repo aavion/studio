@@ -2,8 +2,8 @@
 
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
-> **Owner**: UI  
-> **Purpose:** Collect early admin interface and operational UI notes before the system theme and admin screens are implemented.
+> **Owner**: Core  
+> **Purpose:** Collect early admin interface and operational UI notes before the system theme and admin screens are implemented.  
 
 ## Overview
 

@@ -16,3 +16,5 @@
 
 ## Helpful CLI patterns
 - Lint PHP file: `php -l <path>`
+- Test DB migrations: `php bin/console doctrine:migrations:migrate --no-interaction --env=test`
+- If Composer vendor packages are incomplete or missing files in this iCloud workspace, remove `vendor/` and run `bin/init` instead of repairing packages one by one.

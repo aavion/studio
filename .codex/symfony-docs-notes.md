@@ -3,7 +3,7 @@
 > **Status:** Active  
 > **Updated:** 2026-05-20  
 > **Owner:** Codex  
-> **Purpose:** Cache official Symfony documentation references used while drafting architecture and feature specifications.
+> **Purpose:** Cache official Symfony documentation references used while drafting architecture and feature specifications.  
 
 ## References checked
 

@@ -2,8 +2,8 @@
 
 > **Status**: Draft  
 > **Updated**: 2026-05-22  
-> **Owner**: Operations  
-> **Purpose:** Describe the supported web server entry points for local, staging, and production deployments.
+> **Owner**: Core  
+> **Purpose:** Describe the supported web server entry points for local, staging, and production deployments.  
 
 The application must be served from the `public/` directory. Requests for real public files should be served directly by the web server; all other requests should be routed to `public/index.php`.
 

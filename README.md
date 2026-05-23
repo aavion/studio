@@ -4,7 +4,7 @@
 > **Status**: Active development  
 > **Updated**: 2026-05-20  
 > **Owner**: Dominik Letica  
-> **Purpose:** Symfony 8 based content-management system for structured project websites.
+> **Purpose:** Symfony 8 based content-management system for structured project websites.  
 
 **Note:** This repository is not ready for production use yet.
 

@@ -3,7 +3,7 @@
 > **Status**: Future  
 > **Updated**: 2026-05-20   
 > **Owner**: Core  
-> **Purpose:** Future draft placeholder for direct frontpage editing after the core editor and theme engine exist.
+> **Purpose:** Future draft placeholder for direct frontpage editing after the core editor and theme engine exist.  
 
 ## Overview
 - Defines a later inline editing experience for rendered pages.

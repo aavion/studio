@@ -1,0 +1,56 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Core\Message;
+
+final class MessageCode
+{
+    public const SUCCESS = 'SUCCESS';
+    public const E_INVALID_ARGUMENT = 'E_INVALID_ARGUMENT';
+    public const E_OPERATION_FAILED = 'E_OPERATION_FAILED';
+
+    public const MANIFEST_UNREADABLE = 'manifest.unreadable';
+    public const MANIFEST_INVALID_LINE = 'manifest.invalid_line';
+    public const MANIFEST_INVALID_KEY = 'manifest.invalid_key';
+    public const MANIFEST_DUPLICATE_KEY = 'manifest.duplicate_key';
+    public const MANIFEST_MISSING_REQUIRED_KEY = 'manifest.missing_required_key';
+    public const MANIFEST_UNKNOWN_KEY = 'manifest.unknown_key';
+
+    public const PACKAGE_MANIFEST_UNREADABLE = 'package.manifest_unreadable';
+    public const PACKAGE_REQUIRED_FILE_MISSING = 'package.required_file_missing';
+    public const PACKAGE_REQUIRED_DIRECTORY_MISSING = 'package.required_directory_missing';
+    public const PACKAGE_FILE_UNREADABLE = 'package.file_unreadable';
+    public const PACKAGE_PHP_SYNTAX_ERROR = 'package.php_syntax_error';
+    public const PACKAGE_TWIG_SYNTAX_ERROR = 'package.twig_syntax_error';
+    public const PACKAGE_JSON_SYNTAX_ERROR = 'package.json_syntax_error';
+    public const PACKAGE_YAML_SYNTAX_ERROR = 'package.yaml_syntax_error';
+    public const PACKAGE_CSS_SYNTAX_ERROR = 'package.css_syntax_error';
+    public const PACKAGE_JAVASCRIPT_SYNTAX_ERROR = 'package.javascript_syntax_error';
+    public const PACKAGE_COPY_SOURCE_MISSING = 'package.copy_source_missing';
+    public const PACKAGE_COPY_SOURCE_SYMLINK = 'package.copy_source_symlink';
+
+    public const LINT_PHP_UNREADABLE = 'lint.php_unreadable';
+    public const LINT_PHP_SYNTAX_ERROR = 'lint.php_syntax_error';
+    public const LINT_TWIG_SYNTAX_ERROR = 'lint.twig_syntax_error';
+    public const LINT_JSON_SYNTAX_ERROR = 'lint.json_syntax_error';
+    public const LINT_YAML_SYNTAX_ERROR = 'lint.yaml_syntax_error';
+    public const LINT_CSS_SYNTAX_ERROR = 'lint.css_syntax_error';
+    public const LINT_JAVASCRIPT_SYNTAX_ERROR = 'lint.javascript_syntax_error';
+
+    public const FILESYSTEM_SOURCE_MISSING = 'filesystem.source_missing';
+    public const FILESYSTEM_SOURCE_SYMLINK = 'filesystem.source_symlink';
+    public const FILESYSTEM_TARGET_SYMLINK = 'filesystem.target_symlink';
+    public const FILESYSTEM_PARENT_SYMLINK = 'filesystem.parent_symlink';
+    public const FILESYSTEM_FILE_EXISTS = 'filesystem.file_exists';
+    public const FILESYSTEM_FILE_CONFLICT = 'filesystem.file_conflict';
+    public const FILESYSTEM_DIRECTORY_CONFLICT = 'filesystem.directory_conflict';
+    public const FILESYSTEM_PARENT_MISSING = 'filesystem.parent_missing';
+    public const FILESYSTEM_PARENT_CREATE_FAILED = 'filesystem.parent_create_failed';
+    public const FILESYSTEM_FILE_WRITE_FAILED = 'filesystem.file_write_failed';
+    public const FILESYSTEM_FILE_COPY_FAILED = 'filesystem.file_copy_failed';
+    public const FILESYSTEM_DIRECTORY_CREATE_FAILED = 'filesystem.directory_create_failed';
+
+    public const OPERATION_EXCEPTION = 'operation.exception';
+    public const PROCESS_COMMAND_FAILED = 'process.command_failed';
+}

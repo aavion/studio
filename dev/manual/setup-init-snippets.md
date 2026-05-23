@@ -2,8 +2,8 @@
 
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
-> **Owner**: Operations  
-> **Purpose:** Capture setup and init behavior notes before the first-run installer and automation workflows are finalized.
+> **Owner**: Core  
+> **Purpose:** Capture setup and init behavior notes before the first-run installer and automation workflows are finalized.  
 
 ## Overview
 

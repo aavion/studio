@@ -2,7 +2,7 @@
 
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
-> **Owner**: Operations  
+> **Owner**: Core  
 > **Purpose:** Collect deployment edge cases and review notes for Apache, nginx, IIS, and front-controller routing.
 
 ## Overview

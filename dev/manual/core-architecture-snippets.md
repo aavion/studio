@@ -1,13 +1,25 @@
 # Core architecture snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-22  
+> **Updated**: 2026-05-23  
 > **Owner**: Core  
-> **Purpose:** Collect practical implementation snippets, notes, and pseudocode for the first Core architecture before they are consolidated into contributor and user manuals.
+> **Purpose:** Collect practical implementation snippets, notes, and pseudocode for the first Core architecture before they are consolidated into contributor and user manuals.  
 
 ## Overview
 
 This page is a working notebook for Core concepts that are already implemented but still likely to evolve before the first release candidate. Keep snippets small, concrete, and close to the code. Prefer adding notes here over prematurely maintaining parallel end-user and contributor guides.
+
+## Database baseline
+
+The initial Core database baseline includes reusable operational tables beyond content itself:
+
+- `config_entry` stores global typed key/value configuration.
+- `acl_group`, `user_account`, and `user_acl_group` prepare multi-group access control with access levels `0` through `9`.
+- `api_key` stores hashed API keys with read-only, read-write, or revoked status.
+- `extension_package` tracks installed or discovered theme/module packages.
+- `site_menu` and `site_menu_item` reserve the future menu model with target and view ACL metadata.
+
+Structured logs remain filesystem-oriented. Database tables should hold state that needs querying or relationships; operational access, error, and security logs should use stable structured log records so they can later be converted or streamed as JSONL for UI filtering.
 
 ## Operation results and issues
 
@@ -98,7 +110,23 @@ Intentionally invalid fixture packages live under `tests/Fixtures/packages-inval
 
 ## Issue-code notes
 
-Issue codes are stable developer-facing identifiers, not translated UI messages. Keep them deterministic and namespaced by subsystem:
+Messages have two stable identifiers:
+
+- `MessageCode` is machine-readable and useful for logs, branching, API clients, CLI exits, and module/theme integrations.
+- `MessageKey` is translation-facing and should resolve to localized UI, CLI, or log text later.
+
+Runtime code should use `Message`, `MessageCode`, and `MessageKey` instead of embedding user-facing text in exceptions or operation payloads.
+
+Core enforces a narrow transport shape:
+
+```text
+code
+translation_key
+parameters
+context
+```
+
+Codes must either be generic uppercase tokens such as `E_INVALID_ARGUMENT` or namespaced lowercase tokens such as `package.required_file_missing`. Translation keys must start with `message.`. Translation parameter names must use Symfony-friendly placeholder keys such as `%slug%`; free-form diagnostic data belongs in `context`.
 
 | Prefix | Examples | Notes |
 |--------|----------|-------|
@@ -108,6 +136,15 @@ Issue codes are stable developer-facing identifiers, not translated UI messages.
 | `operation.*` | `operation.exception` | Executor-level failures and exception mapping. |
 
 Later UI layers can map these codes to translated messages while preserving the raw code for logs, audits, and debugging.
+
+```php
+$issue = OperationIssue::create(
+    MessageCode::PACKAGE_REQUIRED_FILE_MISSING,
+    MessageKey::PACKAGE_REQUIRED_FILE_MISSING,
+    ['%file%' => 'templates/base.html.twig'],
+    ['file' => 'templates/base.html.twig'],
+);
+```
 
 ## References
 

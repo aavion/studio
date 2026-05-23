@@ -3,7 +3,7 @@
 > **Status**: Future  
 > **Updated**: 2026-05-20   
 > **Owner**: Core  
-> **Purpose:** Future draft placeholder for a plugin-module integration with REI3 tickets.
+> **Purpose:** Future draft placeholder for a plugin-module integration with REI3 tickets.  
 
 ## Overview
 - Defines a later integration feature that should live outside the core CMS.

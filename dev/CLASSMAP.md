@@ -1,9 +1,9 @@
 # Developer Class Map
 
 > **Status**: Active  
-> **Updated**: 2026-05-22
+> **Updated**: 2026-05-22  
 > **Owner**: Core  
-> **Purpose:** This document tracks callable entry points (services, commands, controllers, Twig components, Stimulus controllers). Keep it up to date as new classes are added or interfaces change. This document is meant to evolve alongside the codebase—treat it as a living index for developers to quickly discover callables without grepping through the project.
+> **Purpose:** This document tracks callable entry points (services, commands, controllers, Twig components, Stimulus controllers). Keep it up to date as new classes are added or interfaces change. This document is meant to evolve alongside the codebase—treat it as a living index for developers to quickly discover callables without grepping through the project.  
 
 ## 1. Services
 
@@ -51,6 +51,12 @@
 | N/A | `App\Core\Lint\PhpLinter` | Reusable string-based PHP syntax linter backed by `php -l` through a temporary file. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Lint/LinterTest.php` |
 | N/A | `App\Core\Lint\TwigLinter` | Reusable string-based Twig syntax linter using Twig's parser. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Lint/LinterTest.php` |
 | N/A | `App\Core\Lint\YamlLinter` | Reusable string-based YAML syntax linter using Symfony YAML. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Lint/LinterTest.php` |
+| N/A | `App\Core\Access\AccessLevel` | Shared access-level constants and validation for public, editor, manager, and admin tiers. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Core\Config\ConfigValueType` | Enum for typed database-backed configuration values. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Core\Message\Message` | Universal message value object carrying code, translation key, parameters, and context for logs, output, validation, and future localization. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Message/MessageTest.php` |
+| N/A | `App\Core\Message\MessageCode` | Constants for core-owned machine-readable message codes while allowing third-party modules to provide their own codes. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Message/MessageCodeTest.php` |
+| N/A | `App\Core\Message\MessageException` | InvalidArgumentException subtype carrying a structured message with code, translation key, parameters, and context. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Message/MessageExceptionTest.php` |
+| N/A | `App\Core\Message\MessageKey` | Core-owned translation-key catalogue for operation issues, logs, output, validation, and future localization. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Message/MessageKeyTest.php` |
 | N/A | `App\Core\Package\PackageCandidate` | Value object for a discovered manifest-backed package candidate. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageDiscoveryTest.php` |
 | N/A | `App\Core\Package\PackageDiscovery` | Discovers application, theme, module, and cached import manifests from standard package locations. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageDiscoveryTest.php` |
 | N/A | `App\Core\Package\PackageInspection` | Value object describing package inventory and detected feature surfaces such as templates, assets, PHP, Twig, JSON, YAML, CSS, and JavaScript files. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageValidatorTest.php` |
@@ -58,9 +64,32 @@
 | N/A | `App\Core\Package\PackageSource` | Defines a normalized, project-root-scoped package discovery source and its optional manifest specification. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageDiscoveryTest.php`, `tests/Core/Package/PackageSourceTest.php` |
 | N/A | `App\Core\Package\PackageSpec` | Domain-neutral package filesystem and optional preflight linting specification. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageValidatorTest.php` |
 | N/A | `App\Core\Package\PackageValidator` | Validates discovered package candidates for required files, directories, feature inventory, and optional syntax checks before dry-run planning. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageValidatorTest.php` |
+| N/A | `App\Core\Package\ExtensionPackageType` | Enum for managed extension package types such as theme and module. | `dev/draft/0.2.x-PluginModules.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Core\Package\ExtensionPackageStatus` | Enum for managed extension package activation states. | `dev/draft/0.2.x-PluginModules.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Core\Workflow\OperationIssue` | Value object for structured recoverable-operation issues. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationIssueTest.php` |
 | N/A | `App\Core\Workflow\OperationResult` | Value object for recoverable workflow results with success, invalid, review, blocked, and failed states. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
 | N/A | `App\Core\Workflow\OperationStatus` | Enum for shared recoverable workflow result states. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
+| N/A | `App\Security\ApiKeyStatus` | Enum for API key permission status such as read-only, read-write, and revoked. | `dev/draft/0.4.x-ApiLayer.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Content\ContentStatus` | Enum for content workflow states such as draft, scheduled, published, and archived. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Entity/ContentItemTest.php` |
+| N/A | `App\Content\ContentVisibility` | Enum for public/private content visibility state. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Entity/ContentItemTest.php` |
+| N/A | `App\Content\Routing\ContentSlug` | Value object for strict lowercase ASCII content slug validation. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Routing/ContentSlugTest.php` |
+| N/A | `App\Content\Routing\ContentRouteGuard` | Guard for reserved public route prefixes and normalized content paths. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Routing/ContentRouteGuardTest.php` |
+| N/A | `App\Content\Schema\ContentSchemaField` | Constants for reserved required base field identifiers that every content schema must define. | `dev/draft/0.3.x-SchemaContentFields.md` | `tests/Content/Schema/ContentSchemaFieldTest.php` |
+| N/A | `App\Content\Schema\ContentSchemaSource` | Enum for schema sources such as preset, custom, and module. | `dev/draft/0.3.x-SchemaContentFields.md` | `tests/Entity/ContentSchemaTest.php` |
+| N/A | `App\Entity\ConfigEntry` | Database-backed global configuration key/value entry with typed JSON-compatible values. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Entity\AclGroup` | ACL group with translatable name and 0-9 access level. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Entity\UserAccount` | User account model with profile JSON and many-to-many ACL group membership. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Entity\ApiKey` | API key model storing hashes, prefixes, owner, and read/write or revoked status. | `dev/draft/0.4.x-ApiLayer.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Entity\ExtensionPackage` | Theme/module package management record with manifest/install metadata and activation state. | `dev/draft/0.2.x-PluginModules.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Entity\SiteMenu` | Future menu container with translatable labels and ordered menu items. | `dev/draft/0.3.x-NavigationSitemapBuilder.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Entity\SiteMenuItem` | Future menu item with target metadata and view ACL override fields. | `dev/draft/0.3.x-NavigationSitemapBuilder.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Entity\ContentSchema` | Database-backed content type definition with nullable active schema version for disable/staging/cleanup flows. | `dev/draft/0.3.x-SchemaContentFields.md` | `tests/Entity/ContentSchemaTest.php` |
+| N/A | `App\Entity\ContentSchemaVersion` | Versioned schema definition with fieldset JSON, optional custom Twig, ACL use/edit/manage rules, and required title/subtitle validation. | `dev/draft/0.3.x-SchemaContentFields.md` | `tests/Entity/ContentSchemaTest.php` |
+| N/A | `App\Entity\ContentItem` | Doctrine entity for durable content identity, routing, workflow, variants, ACL metadata, audit timestamps, and flexible metadata. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Entity/ContentItemTest.php` |
+| N/A | `App\Entity\ContentRevision` | Versioned content revision linking content items to the exact schema version that validated its fieldset. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Entity/ContentItemTest.php`, `tests/Entity/ContentFieldValueTest.php` |
+| N/A | `App\Entity\ContentFieldValue` | Doctrine entity for localized, variant-aware schema field values attached to content revisions. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Entity/ContentFieldValueTest.php` |
+| N/A | `App\Repository\ContentItemRepository` | Repository entry point for content item lookups, including published slug lookup. | `dev/draft/0.1.x-StaticDynamicContent.md` | N/A |
+| N/A | `App\Repository\ContentFieldValueRepository` | Repository entry point for field values in a content/version/language/variant context. | `dev/draft/0.1.x-StaticDynamicContent.md` | N/A |
 
 
 ## 2. Controllers

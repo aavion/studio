@@ -3,7 +3,7 @@
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
 > **Owner**: Core  
-> **Purpose:** Collect package discovery, validation, dry-run, review, execution, and action-log notes before the installer lifecycle is implemented.
+> **Purpose:** Collect package discovery, validation, dry-run, review, execution, and action-log notes before the installer lifecycle is implemented.  
 
 ## Overview
 

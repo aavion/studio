@@ -6,6 +6,8 @@ namespace App\Core\Operation\Process;
 
 use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
@@ -90,7 +92,7 @@ final readonly class RunCommandAction implements OperationActionInterface
 
         if (!$process->isSuccessful()) {
             return OperationResult::failed([
-                OperationIssue::create('process.command_failed', 'Command exited with a non-zero status.', $context),
+                OperationIssue::create(MessageCode::PROCESS_COMMAND_FAILED, MessageKey::PROCESS_COMMAND_FAILED, context: $context),
             ], $context);
         }
 

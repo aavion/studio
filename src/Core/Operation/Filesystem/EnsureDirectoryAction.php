@@ -7,6 +7,8 @@ namespace App\Core\Operation\Filesystem;
 use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Filesystem\PathGuard;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
@@ -58,7 +60,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
 
         if (is_link($target)) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.target_symlink', 'Cannot create directory because the target path is a symbolic link.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_TARGET_SYMLINK, MessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
                     'path' => $this->relativePath,
                 ]),
             ]);
@@ -66,7 +68,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
 
         if (null !== $symlinkAncestor) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.parent_symlink', 'Cannot create directory because a parent directory is a symbolic link.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_PARENT_SYMLINK, MessageKey::FILESYSTEM_PARENT_SYMLINK, context: [
                     'path' => $this->relativePath,
                     'parent' => $symlinkAncestor,
                 ]),
@@ -75,7 +77,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
 
         if (is_file($target)) {
             return OperationResult::blocked([
-                OperationIssue::create('filesystem.directory_conflict', 'Cannot create directory because a file already exists at the target path.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_DIRECTORY_CONFLICT, MessageKey::FILESYSTEM_DIRECTORY_CONFLICT, context: [
                     'path' => $this->relativePath,
                 ]),
             ]);
@@ -93,7 +95,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
 
         if (!mkdir($target, $this->mode, true) && !is_dir($target)) {
             return OperationResult::failed([
-                OperationIssue::create('filesystem.directory_create_failed', 'Directory could not be created.', [
+                OperationIssue::create(MessageCode::FILESYSTEM_DIRECTORY_CREATE_FAILED, MessageKey::FILESYSTEM_DIRECTORY_CREATE_FAILED, context: [
                     'path' => $this->relativePath,
                 ]),
             ]);

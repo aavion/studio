@@ -2,8 +2,8 @@
 
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
-> **Owner**: Release  
-> **Purpose:** Capture package update, release, checksum, rollback, and compatibility notes before the self-update workflow is implemented.
+> **Owner**: Core  
+> **Purpose:** Capture package update, release, checksum, rollback, and compatibility notes before the self-update workflow is implemented.  
 
 ## Overview
 

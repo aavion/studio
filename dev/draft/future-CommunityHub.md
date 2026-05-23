@@ -3,7 +3,7 @@
 > **Status**: Future  
 > **Updated**: 2026-05-20   
 > **Owner**: Core  
-> **Purpose:** Future draft placeholder for comments, forums, profiles, and community-facing interaction features.
+> **Purpose:** Future draft placeholder for comments, forums, profiles, and community-facing interaction features.  
 
 ## Overview
 - Defines a later community feature area outside the first core release.

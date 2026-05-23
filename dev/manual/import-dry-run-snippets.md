@@ -3,7 +3,7 @@
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
 > **Owner**: Core  
-> **Purpose:** Capture early dry-run and diff ideas for future package, JSON, database, and operation imports.
+> **Purpose:** Capture early dry-run and diff ideas for future package, JSON, database, and operation imports.  
 
 ## Overview
 
@@ -38,13 +38,17 @@ Entity import is not implemented yet, but it should interact with the same struc
 
 ```php
 $before = [
-    'title' => 'Old title',
     'slug' => 'old-title',
+    'field_values' => [
+        'title' => 'Old title',
+    ],
 ];
 
 $after = [
-    'title' => 'New title',
     'slug' => 'new-title',
+    'field_values' => [
+        'title' => 'New title',
+    ],
 ];
 
 $diff = (new KeyValueDiffGenerator())->diff($before, $after, [

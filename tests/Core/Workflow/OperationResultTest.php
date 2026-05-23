@@ -29,7 +29,7 @@ final class OperationResultTest extends TestCase
 
     public function testInvalidResultCarriesIssues(): void
     {
-        $issue = OperationIssue::create('content.title_missing', 'Content title is required.');
+        $issue = OperationIssue::create('content.title_missing', 'message.content.title.required');
 
         $result = OperationResult::invalid([$issue], [
             'content_type' => 'page',
@@ -47,7 +47,7 @@ final class OperationResultTest extends TestCase
 
     public function testRequiresReviewResultCanCarryAReviewPlan(): void
     {
-        $issue = OperationIssue::create('import.confirm_changes', 'Import changes require review.');
+        $issue = OperationIssue::create('import.confirm_changes', 'message.import.confirm_changes');
         $plan = ['changes' => 3];
 
         $result = OperationResult::requiresReview($plan, [$issue]);
@@ -60,7 +60,9 @@ final class OperationResultTest extends TestCase
 
     public function testItExportsStructuredPayload(): void
     {
-        $issue = OperationIssue::create('import.confirm_changes', 'Import changes require review.', [
+        $issue = OperationIssue::create('import.confirm_changes', 'message.import.confirm_changes', [
+            '%changes%' => 3,
+        ], [
             'changes' => 3,
         ]);
 
@@ -75,7 +77,8 @@ final class OperationResultTest extends TestCase
             'value' => ['plan' => 'demo'],
             'issues' => [[
                 'code' => 'import.confirm_changes',
-                'message' => 'Import changes require review.',
+                'translation_key' => 'message.import.confirm_changes',
+                'parameters' => ['%changes%' => 3],
                 'context' => ['changes' => 3],
             ]],
             'context' => ['queue' => 'import'],
@@ -84,7 +87,7 @@ final class OperationResultTest extends TestCase
 
     public function testBlockedAndFailedResultsUseExpectedRecoverability(): void
     {
-        $issue = OperationIssue::create('storage.unavailable', 'Configured storage is unavailable.');
+        $issue = OperationIssue::create('storage.unavailable', 'message.storage.unavailable');
 
         $blocked = OperationResult::blocked([$issue]);
         $failed = OperationResult::failed([$issue]);

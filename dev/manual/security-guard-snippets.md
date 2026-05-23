@@ -3,7 +3,7 @@
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
 > **Owner**: Core  
-> **Purpose:** Collect implementation notes for filesystem, package, operation, and configuration guards before they become formal security documentation.
+> **Purpose:** Collect implementation notes for filesystem, package, operation, and configuration guards before they become formal security documentation.  
 
 ## Overview
 

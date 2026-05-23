@@ -34,7 +34,7 @@ final class ActionLogTest extends TestCase
 
     public function testItRecordsIssues(): void
     {
-        $issue = OperationIssue::create('setup.warning', 'Setup warning.');
+        $issue = OperationIssue::create('setup.warning', 'message.setup.warning');
 
         $entry = ActionLogEntry::pending('setup')
             ->start(new DateTimeImmutable('2026-05-22 10:00:00'))
@@ -62,7 +62,7 @@ final class ActionLogTest extends TestCase
 
     public function testItExportsStructuredPayload(): void
     {
-        $issue = OperationIssue::create('setup.warning', 'Setup warning.');
+        $issue = OperationIssue::create('setup.warning', 'message.setup.warning');
         $startedAt = new DateTimeImmutable('2026-05-22 10:00:00.000000');
         $finishedAt = new DateTimeImmutable('2026-05-22 10:00:00.250000');
         $entry = ActionLogEntry::pending('setup', ['phase' => 'init'])
@@ -84,7 +84,8 @@ final class ActionLogTest extends TestCase
             'duration_ms' => 250,
             'issues' => [[
                 'code' => 'setup.warning',
-                'message' => 'Setup warning.',
+                'translation_key' => 'message.setup.warning',
+                'parameters' => [],
                 'context' => [],
             ]],
             'context' => [

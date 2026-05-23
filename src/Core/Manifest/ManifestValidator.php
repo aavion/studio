@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Manifest;
 
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 
@@ -19,9 +21,9 @@ final class ManifestValidator
         foreach ($spec->requiredKeys() as $requiredKey) {
             if (!$manifest->has($requiredKey) || '' === trim((string) $manifest->get($requiredKey))) {
                 $issues[] = OperationIssue::create(
-                    'manifest.missing_required_key',
-                    'Required manifest key is missing.',
-                    ['key' => $requiredKey],
+                    MessageCode::MANIFEST_MISSING_REQUIRED_KEY,
+                    MessageKey::MANIFEST_MISSING_REQUIRED_KEY,
+                    context: ['key' => $requiredKey],
                 );
             }
         }
@@ -31,9 +33,9 @@ final class ManifestValidator
             foreach ($manifest->keys() as $key) {
                 if (!in_array($key, $allowedKeys, true)) {
                     $issues[] = OperationIssue::create(
-                        'manifest.unknown_key',
-                        'Manifest key is not allowed by this specification.',
-                        ['key' => $key],
+                        MessageCode::MANIFEST_UNKNOWN_KEY,
+                        MessageKey::MANIFEST_UNKNOWN_KEY,
+                        context: ['key' => $key],
                     );
                 }
             }
