@@ -79,7 +79,7 @@
 | N/A | `App\Entity\ConfigEntry` | Database-backed global configuration key/value entry with typed JSON-compatible values. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Entity\AclGroup` | ACL group with translatable name and 0-9 access level. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Entity\UserAccount` | User account model with profile JSON and many-to-many ACL group membership. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Entity/CoreDatabaseModelTest.php` |
-| N/A | `App\Entity\ApiKey` | API key model storing hashes, prefixes, owner, and read/write or revoked status. | `dev/draft/0.4.x-ApiLayer.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Entity\ApiKey` | API key model storing prefix, HMAC lookup hash, encrypted key payload, owner, and read/write or revoked status. | `dev/draft/0.4.x-ApiLayer.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Entity\ExtensionPackage` | Theme/module package management record with manifest/install metadata and activation state. | `dev/draft/0.2.x-PluginModules.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Entity\SiteMenu` | Future menu container with translatable labels and ordered menu items. | `dev/draft/0.3.x-NavigationSitemapBuilder.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Entity\SiteMenuItem` | Future menu item with target metadata and view ACL override fields. | `dev/draft/0.3.x-NavigationSitemapBuilder.md` | `tests/Entity/CoreDatabaseModelTest.php` |

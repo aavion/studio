@@ -14,7 +14,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'api_key')]
-#[ORM\UniqueConstraint(name: 'uniq_api_key_hash', columns: ['key_hash'])]
+#[ORM\UniqueConstraint(name: 'uniq_api_key_hmac_hash', columns: ['hmac_hash'])]
+#[ORM\Index(name: 'idx_api_key_prefix', columns: ['prefix'])]
 #[ORM\Index(name: 'idx_api_key_user_status', columns: ['user_uid', 'status'])]
 class ApiKey
 {
@@ -22,11 +23,14 @@ class ApiKey
     #[ORM\Column(length: 36)]
     private string $uid;
 
-    #[ORM\Column(length: 255)]
-    private string $keyHash;
-
     #[ORM\Column(length: 16)]
-    private string $keyPrefix;
+    private string $prefix;
+
+    #[ORM\Column(length: 64)]
+    private string $hmacHash;
+
+    #[ORM\Column(type: 'text')]
+    private string $encryptedKey;
 
     #[ORM\ManyToOne(targetEntity: UserAccount::class)]
     #[ORM\JoinColumn(name: 'user_uid', referencedColumnName: 'uid', nullable: false, onDelete: 'CASCADE')]
@@ -43,15 +47,17 @@ class ApiKey
 
     public function __construct(
         string $uid,
-        string $keyHash,
-        string $keyPrefix,
+        string $prefix,
+        string $hmacHash,
+        string $encryptedKey,
         UserAccount $user,
         ApiKeyStatus $status = ApiKeyStatus::ReadOnly,
         ?DateTimeImmutable $createdAt = null,
     ) {
         $this->uid = Uid::assert($uid, 'API key UID');
-        $this->keyHash = $keyHash;
-        $this->keyPrefix = self::assertKeyPrefix($keyPrefix);
+        $this->prefix = self::assertPrefix($prefix);
+        $this->hmacHash = self::assertHmacHash($hmacHash);
+        $this->encryptedKey = self::assertEncryptedKey($encryptedKey);
         $this->user = $user;
         $this->status = $status;
         $this->createdAt = $createdAt ?? new DateTimeImmutable();
@@ -62,9 +68,19 @@ class ApiKey
         return $this->uid;
     }
 
-    public function keyPrefix(): string
+    public function prefix(): string
     {
-        return $this->keyPrefix;
+        return $this->prefix;
+    }
+
+    public function hmacHash(): string
+    {
+        return $this->hmacHash;
+    }
+
+    public function encryptedKey(): string
+    {
+        return $this->encryptedKey;
     }
 
     public function status(): ApiKeyStatus
@@ -78,14 +94,32 @@ class ApiKey
         $this->revokedAt = $revokedAt ?? new DateTimeImmutable();
     }
 
-    private static function assertKeyPrefix(string $keyPrefix): string
+    private static function assertPrefix(string $prefix): string
     {
-        if (1 !== preg_match('/^[A-Za-z0-9_-]{4,16}$/', $keyPrefix)) {
+        if (1 !== preg_match('/^[A-Za-z0-9_-]{4,16}$/', $prefix)) {
             throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::API_KEY_PREFIX_INVALID, [
-                '%prefix%' => $keyPrefix,
+                '%prefix%' => $prefix,
             ]);
         }
 
-        return $keyPrefix;
+        return $prefix;
+    }
+
+    private static function assertHmacHash(string $hmacHash): string
+    {
+        if (1 !== preg_match('/^[a-f0-9]{64}$/', $hmacHash)) {
+            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::API_KEY_HMAC_HASH_INVALID);
+        }
+
+        return $hmacHash;
+    }
+
+    private static function assertEncryptedKey(string $encryptedKey): string
+    {
+        if ('' === trim($encryptedKey)) {
+            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::API_KEY_ENCRYPTED_KEY_EMPTY);
+        }
+
+        return $encryptedKey;
     }
 }

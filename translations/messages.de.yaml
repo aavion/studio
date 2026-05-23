@@ -62,6 +62,10 @@ message:
   api_key:
     prefix:
       invalid: 'API-Key-Präfix "%prefix%" ist ungültig.'
+    hmac_hash:
+      invalid: 'Der API-Key-HMAC-Hash muss ein kleingeschriebener SHA-256-Hex-Digest sein.'
+    encrypted_key:
+      empty: 'Die verschlüsselte API-Key-Payload darf nicht leer sein.'
   menu:
     identifier:
       invalid: 'Menü-Identifier "%identifier%" muss lowercase snake_case sein.'

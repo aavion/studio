@@ -1,7 +1,7 @@
 # Test fixture snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-23  
+> **Updated**: 2026-05-24  
 > **Owner**: Core  
 > **Purpose:** Track reusable test fixtures, intentionally invalid packages, and when to prefer repository fixtures over temporary test data.  
 
@@ -58,7 +58,18 @@ Use `App\Tests\Support\FilesystemTestHelper` for temporary directories, fixture 
 
 `App\Tests\Support\TestSuiteLifecycle` is wired from `tests/bootstrap.php`. It currently reserves a shared suite temporary root at `sys_get_temp_dir().'/studio-test-suite'`, runs a no-op `initialize()` step, and registers shutdown cleanup for that root.
 
-The lifecycle is intentionally underused for now. Keep it visible because it is the right home for later shared test setup such as:
+The lifecycle initializes `env:test` directly. Before PHPUnit runs, it clears `var/test`, applies the current Doctrine baseline migration to `var/test/test.db`, and calls `App\Tests\Support\TestDatabaseSeeder` to load deterministic demo data. This keeps the test suite independent from `bin/setup`.
+
+The current database seed includes:
+
+- global content configuration defaults;
+- preset ACL groups for public, editor, manager, and admin access levels;
+- a deterministic admin account (`admin` with the current `APP_SECRET` as password) plus read-write, read-only, and revoked API keys;
+- active `static_page` and `article` schemas;
+- published home, about, and article content with active revisions and localized field values;
+- a main navigation menu pointing to the seeded content.
+
+Keep lifecycle setup visible because it is the right home for shared test setup such as:
 
 - generated demo databases;
 - generated package caches;
@@ -66,7 +77,7 @@ The lifecycle is intentionally underused for now. Keep it visible because it is 
 - expensive integration fixtures;
 - suite-wide cleanup that should run after PHPUnit exits.
 
-Prefer per-test temporary directories through `FilesystemTestHelper` until setup becomes expensive or shared state is clearly useful. Do not put hidden test requirements into `TestSuiteLifecycle` without documenting them here.
+Prefer per-test temporary directories through `FilesystemTestHelper` for filesystem state. Do not put hidden test requirements into `TestSuiteLifecycle` without documenting them here and covering them with operations tests.
 
 ## References
 

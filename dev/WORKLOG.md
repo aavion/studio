@@ -18,7 +18,7 @@
   - [ ] Static/dynamic content model
   - [ ] Theme engine
   - [ ] System theme and design system
-  - Open: first deterministic SQL seed shape.
+  - Open: first release-readiness verification shape.
 
 - [ ] **0.2.x Security and extension baseline**
   - [ ] Security/ACL baseline
@@ -65,10 +65,13 @@
 - [ ] Keep roadmap sub-items aligned with feature drafts when implementation changes scope, order, or dependencies.
 - [ ] Before the first stable `1.0.0` release, keep Doctrine migrations consolidated into one current baseline migration.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
-- [ ] Later, seed the SQLite test database with deterministic demo data for functional and UI coverage.
 
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
+
+### 2026-05-24
+- Added deterministic SQLite demo seeds to the PHPUnit bootstrap lifecycle, covering config defaults, ACL groups, admin/API records, preset schemas, published content with active revisions and localized fields, and the main navigation menu; the seeded admin login uses `admin` with the current `APP_SECRET` as password, and API keys cover read-write, read-only, and revoked states.
+- Added operations coverage for seeded ACL, schema, content, field, and menu data, and updated setup/test documentation to clarify that `env:test` no longer depends on `bin/setup`.
 
 ### 2026-05-23
 - Added the first persistent Core/content database baseline in migration `Version20260523210000`: global config, ACL groups, users, API keys, extension packages, menus, database-backed schemas, schema versions, content items, revisions, and revision-scoped field values.

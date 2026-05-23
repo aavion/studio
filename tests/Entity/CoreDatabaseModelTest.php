@@ -45,15 +45,20 @@ final class CoreDatabaseModelTest extends TestCase
         );
         $user->addGroup($editor);
         $user->addGroup($manager);
+        $hmacHash = hash_hmac('sha256', 'plain-key', 'app-secret');
         $apiKey = new ApiKey(
             '44444444-4444-4444-4444-444444444444',
-            'sha256:secret',
             'abcd1234',
+            $hmacHash,
+            'v1.test.encrypted-key',
             $user,
             ApiKeyStatus::ReadWrite,
         );
 
         self::assertSame(AccessLevel::MANAGER, $user->maxAccessLevel());
+        self::assertSame('abcd1234', $apiKey->prefix());
+        self::assertSame($hmacHash, $apiKey->hmacHash());
+        self::assertSame('v1.test.encrypted-key', $apiKey->encryptedKey());
         self::assertSame(ApiKeyStatus::ReadWrite, $apiKey->status());
 
         $apiKey->revoke();

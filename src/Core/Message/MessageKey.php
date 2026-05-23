@@ -56,6 +56,8 @@ final class MessageKey
     public const USERNAME_INVALID = 'message.user.username.invalid';
     public const USER_EMAIL_INVALID = 'message.user.email.invalid';
     public const API_KEY_PREFIX_INVALID = 'message.api_key.prefix.invalid';
+    public const API_KEY_HMAC_HASH_INVALID = 'message.api_key.hmac_hash.invalid';
+    public const API_KEY_ENCRYPTED_KEY_EMPTY = 'message.api_key.encrypted_key.empty';
     public const PACKAGE_IDENTIFIER_INVALID = 'message.package.identifier.invalid';
     public const MENU_IDENTIFIER_INVALID = 'message.menu.identifier.invalid';
 

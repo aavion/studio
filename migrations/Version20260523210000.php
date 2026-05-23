@@ -67,14 +67,16 @@ final class Version20260523210000 extends AbstractMigration
 
         $apiKey = $schema->createTable('api_key');
         $apiKey->addColumn('uid', 'string', ['length' => 36]);
-        $apiKey->addColumn('key_hash', 'string', ['length' => 255]);
-        $apiKey->addColumn('key_prefix', 'string', ['length' => 16]);
+        $apiKey->addColumn('prefix', 'string', ['length' => 16]);
+        $apiKey->addColumn('hmac_hash', 'string', ['length' => 64]);
+        $apiKey->addColumn('encrypted_key', 'text');
         $apiKey->addColumn('user_uid', 'string', ['length' => 36]);
         $apiKey->addColumn('status', 'string', ['length' => 255]);
         $apiKey->addColumn('created_at', 'datetime_immutable');
         $apiKey->addColumn('revoked_at', 'datetime_immutable', ['notnull' => false]);
         $apiKey->setPrimaryKey(['uid']);
-        $apiKey->addUniqueIndex(['key_hash'], 'uniq_api_key_hash');
+        $apiKey->addUniqueIndex(['hmac_hash'], 'uniq_api_key_hmac_hash');
+        $apiKey->addIndex(['prefix'], 'idx_api_key_prefix');
         $apiKey->addIndex(['user_uid', 'status'], 'idx_api_key_user_status');
         $apiKey->addForeignKeyConstraint('user_account', ['user_uid'], ['uid'], ['onDelete' => 'CASCADE'], 'fk_api_key_user');
 

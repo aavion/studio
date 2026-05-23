@@ -15,7 +15,7 @@ The initial Core database baseline includes reusable operational tables beyond c
 
 - `config_entry` stores global typed key/value configuration.
 - `acl_group`, `user_account`, and `user_acl_group` prepare multi-group access control with access levels `0` through `9`.
-- `api_key` stores hashed API keys with read-only, read-write, or revoked status.
+- `api_key` stores a display prefix, HMAC lookup hash, encrypted key payload, and read-only, read-write, or revoked status.
 - `extension_package` tracks installed or discovered theme/module packages.
 - `site_menu` and `site_menu_item` reserve the future menu model with target and view ACL metadata.
 

@@ -96,6 +96,8 @@ Validation rules:
 | `message.user.username.invalid` | Username does not match the supported account-name format. | `%username%` |
 | `message.user.email.invalid` | User email address is invalid. | `%email%` |
 | `message.api_key.prefix.invalid` | API key prefix does not match the safe display format. | `%prefix%` |
+| `message.api_key.hmac_hash.invalid` | API key HMAC hash is not a lowercase SHA-256 hex digest. | N/A |
+| `message.api_key.encrypted_key.empty` | Encrypted API key payload is empty. | N/A |
 | `message.package.identifier.invalid` | Managed package identifier contains unsupported characters. | `%identifier%` |
 | `message.menu.identifier.invalid` | Menu identifier is not lowercase snake_case. | `%identifier%` |
 

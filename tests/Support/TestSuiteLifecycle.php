@@ -42,6 +42,8 @@ final class TestSuiteLifecycle
             '--no-interaction',
             '--env=test',
         ]);
+
+        TestDatabaseSeeder::seed($testVarDirectory.'/test.db');
     }
 
     /**
