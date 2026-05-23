@@ -36,8 +36,11 @@ final class ContentSchemaTest extends TestCase
                 ],
             ],
             useMinLevel: AccessLevel::PUBLIC,
+            useGroupIdentifiers: ['project_team'],
             editMinLevel: AccessLevel::EDITOR,
+            editGroupIdentifiers: ['editor_override'],
             manageMinLevel: AccessLevel::MANAGER,
+            manageGroupIdentifiers: ['manager_override'],
         );
 
         $version->activate('admin');
@@ -48,6 +51,11 @@ final class ContentSchemaTest extends TestCase
         self::assertSame($version, $schema->activeVersion());
         self::assertSame(1, $version->version());
         self::assertSame(AccessLevel::PUBLIC, $version->useMinLevel());
+        self::assertSame(['project_team'], $version->useGroupIdentifiers());
+        self::assertSame(AccessLevel::EDITOR, $version->editMinLevel());
+        self::assertSame(['editor_override'], $version->editGroupIdentifiers());
+        self::assertSame(AccessLevel::MANAGER, $version->manageMinLevel());
+        self::assertSame(['manager_override'], $version->manageGroupIdentifiers());
         self::assertNotSame('', $version->definitionHash());
     }
 

@@ -7,6 +7,7 @@ namespace App\Tests\Core\Workflow;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
 use App\Core\Workflow\OperationIssue;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -23,6 +24,7 @@ final class OperationIssueTest extends TestCase
 
         self::assertSame(MessageCode::MANIFEST_MISSING_REQUIRED_KEY, $issue->code());
         self::assertSame(MessageKey::MANIFEST_MISSING_REQUIRED_KEY, $issue->translationKey());
+        self::assertSame(MessageLevel::Warning, $issue->level());
         self::assertSame(MessageKey::MANIFEST_MISSING_REQUIRED_KEY, $issue->message()->translationKey());
         self::assertSame(['%key%' => 'MODULE_NAME'], $issue->parameters());
         self::assertSame(['key' => 'MODULE_NAME'], $issue->context());

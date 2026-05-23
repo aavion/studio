@@ -37,6 +37,8 @@ Validation rules:
 | `manifest.duplicate_key` | Manifest key appears more than once. | `line`, `key` |
 | `manifest.missing_required_key` | Required manifest key is absent or empty. | `key` |
 | `manifest.unknown_key` | Closed manifest spec rejected an undeclared key. | `key` |
+| `manifest.parsed` | Manifest parsing completed. | `keys`, `key_count` |
+| `manifest.validated` | Manifest validation completed. | `required_keys`, `allowed_keys` |
 | `package.manifest_unreadable` | Manifest file exists but cannot be read. | `path`, `source` |
 | `package.required_file_missing` | Required package file is absent. | `source`, `package`, `requirement`, `path` |
 | `package.required_directory_missing` | Required package directory is absent. | `source`, `package`, `requirement`, `path` |
@@ -49,6 +51,9 @@ Validation rules:
 | `package.javascript_syntax_error` | JavaScript linter found a syntax error. | `source`, `package`, `file`, `path` |
 | `package.copy_source_missing` | Planned package copy source does not exist. | `source`, `package`, `file`, `path` |
 | `package.copy_source_symlink` | Planned package copy source is a symlink. | `source`, `package`, `file`, `path` |
+| `package.discovery_completed` | Package discovery completed successfully. | `candidate_count` |
+| `package.validation_completed` | Package validation completed successfully. | `source`, `package`, `inventory_count` |
+| `package.copy_plan_created` | Package copy plan was created successfully. | `source`, `package`, `target_root`, `target_prefix`, `files` |
 | `filesystem.source_missing` | Filesystem copy source is missing. | `source`, `target` |
 | `filesystem.source_symlink` | Filesystem copy source is a symlink. | `source`, `target` |
 | `filesystem.target_symlink` | Filesystem target path is a symlink. | `path`, `source`, `target` |
@@ -61,8 +66,13 @@ Validation rules:
 | `filesystem.file_write_failed` | File write returned failure. | `path` |
 | `filesystem.file_copy_failed` | File copy returned failure. | `source`, `target` |
 | `filesystem.directory_create_failed` | Directory creation returned failure. | `path` |
+| `filesystem.file_written` | File write completed. | `path`, `bytes`, `overwritten` |
+| `filesystem.file_copied` | File copy completed. | `source`, `target`, `bytes`, `overwritten` |
+| `filesystem.directory_ready` | Directory exists or was created. | `path`, `created` |
+| `filesystem.parent_directory_ready` | Parent directory exists or was created. | `path`, `source`, `target`, `parent`, `created` |
 | `operation.exception` | Operation action threw an exception. | `action`, `type`, `exception`, `message` |
-| `process.command_failed` | Process action exited with a non-zero status. | `command`, `exit_code`, `output`, `error_output` |
+| `process.command_failed` | Process action exited with a non-zero status. | `command`, `exit_code`, `output_excerpt`, `error_excerpt` |
+| `process.command_completed` | Process action exited successfully. | `command`, `exit_code`, `output_excerpt`, `error_excerpt` |
 | `E_INVALID_ARGUMENT` | Input or domain argument failed validation. | varies by translation key |
 | `SUCCESS` | Generic success marker for success messages. | varies by translation key |
 
@@ -70,6 +80,16 @@ Validation rules:
 
 | Translation key | Meaning | Common parameters |
 |-----------------|---------|-------------------|
+| `message.manifest.parsed` | Manifest parsing completed. | N/A |
+| `message.manifest.validated` | Manifest validation completed. | N/A |
+| `message.package.discovery_completed` | Package discovery completed successfully. | `%count%` |
+| `message.package.validation_completed` | Package validation completed successfully. | `%package%` |
+| `message.package.copy_plan_created` | Package copy plan was created successfully. | `%count%` |
+| `message.filesystem.file_written` | File write completed. | `%path%` |
+| `message.filesystem.file_copied` | File copy completed. | `%target%` |
+| `message.filesystem.directory_ready` | Directory exists or was created. | `%path%` |
+| `message.filesystem.parent_directory_ready` | Parent directory exists or was created. | `%path%` |
+| `message.process.command_completed` | Process action exited successfully. | `%command%`, `%exit_code%` |
 | `message.content.slug.invalid_format` | Content slug does not match the public slug rules. | `%slug%` |
 | `message.content.slug.reserved` | Content slug conflicts with a reserved system route prefix. | `%slug%` |
 | `message.content.path.empty_or_padded` | Content path is empty or padded with whitespace. | `%path%` |
@@ -90,6 +110,8 @@ Validation rules:
 | `message.content.schema.version_invalid` | Content schema version is not positive. | `%version%` |
 | `message.content.schema.required_field_missing` | Content schema is missing a required base field. | `%field_identifier%` |
 | `message.content.schema.field_duplicate` | Content schema contains a duplicate field identifier. | `%field_identifier%` |
+| `message.access.granted` | ACL resolver granted the requested capability. | `%capability%`, `%required_level%`, `%actor_level%` |
+| `message.access.denied` | ACL resolver denied the requested capability. | `%capability%`, `%required_level%`, `%actor_level%` |
 | `message.access.level.invalid` | Access level is outside the supported 0-9 range. | `%level%` |
 | `message.access.group_identifier.invalid` | ACL group identifier is not lowercase snake_case. | `%identifier%` |
 | `message.config.key.invalid` | Configuration key does not use dotted lowercase segments. | `%key%` |
@@ -98,6 +120,18 @@ Validation rules:
 | `message.api_key.prefix.invalid` | API key prefix does not match the safe display format. | `%prefix%` |
 | `message.api_key.hmac_hash.invalid` | API key HMAC hash is not a lowercase SHA-256 hex digest. | N/A |
 | `message.api_key.encrypted_key.empty` | Encrypted API key payload is empty. | N/A |
+| `message.api_key.status.invalid` | API key status is not one of the supported lifecycle states. | `%status%` |
+| `message.api_key.status.read_write` | API key status label for read-write keys. | N/A |
+| `message.api_key.status.read_only` | API key status label for read-only keys. | N/A |
+| `message.api_key.status.revoked` | API key status label for revoked keys. | N/A |
+| `message.api_key.created` | API key creation completed. | `%prefix%` |
+| `message.api_key.revoked` | API key revocation completed. | `%prefix%` |
+| `message.api_key.revealed` | API key reveal completed after reauthentication. | `%prefix%` |
+| `message.api_key.not_found` | API key lookup did not find a matching record. | `%prefix%` |
+| `message.api_key.authentication_failed` | API key authentication failed. | N/A |
+| `message.api_key.reauthentication_required` | API key reveal requires reauthentication. | N/A |
+| `message.api_key.permission.write_required` | API key lacks write permission for the requested operation. | N/A |
+| `message.api_key.permission.revoked` | API key is revoked and cannot authenticate. | N/A |
 | `message.package.identifier.invalid` | Managed package identifier contains unsupported characters. | `%identifier%` |
 | `message.menu.identifier.invalid` | Menu identifier is not lowercase snake_case. | `%identifier%` |
 

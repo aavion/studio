@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Operation;
 
+use App\Core\Message\MessageLevel;
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\OperationExecutor;
 use App\Core\Operation\Process\RunCommandAction;
@@ -36,6 +37,7 @@ final class RunCommandActionTest extends TestCase
         self::assertTrue($execution->result()->isSuccess());
         self::assertSame('hello', $execution->actionLog()->entries()[0]->context()['output_excerpt']);
         self::assertSame(0, $execution->actionLog()->entries()[0]->context()['exit_code']);
+        self::assertSame(MessageLevel::Info, $execution->actionLog()->entries()[0]->messages()[0]->level());
     }
 
     public function testItMapsNonZeroExitCodesToFailedResults(): void

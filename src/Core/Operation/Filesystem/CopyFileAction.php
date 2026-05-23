@@ -8,8 +8,10 @@ use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunDiff;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Filesystem\PathGuard;
+use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
@@ -87,7 +89,7 @@ final readonly class CopyFileAction implements OperationActionInterface
                 OperationIssue::create(MessageCode::FILESYSTEM_SOURCE_SYMLINK, MessageKey::FILESYSTEM_SOURCE_SYMLINK, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
-                ]),
+                ], level: MessageLevel::Warning),
             ]);
         }
 
@@ -96,7 +98,7 @@ final readonly class CopyFileAction implements OperationActionInterface
                 OperationIssue::create(MessageCode::FILESYSTEM_SOURCE_MISSING, MessageKey::FILESYSTEM_SOURCE_MISSING, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
-                ]),
+                ], level: MessageLevel::Warning),
             ]);
         }
 
@@ -105,7 +107,7 @@ final readonly class CopyFileAction implements OperationActionInterface
                 OperationIssue::create(MessageCode::FILESYSTEM_TARGET_SYMLINK, MessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
-                ]),
+                ], level: MessageLevel::Warning),
             ]);
         }
 
@@ -114,7 +116,7 @@ final readonly class CopyFileAction implements OperationActionInterface
                 OperationIssue::create(MessageCode::FILESYSTEM_FILE_CONFLICT, MessageKey::FILESYSTEM_FILE_CONFLICT, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
-                ]),
+                ], level: MessageLevel::Warning),
             ]);
         }
 
@@ -125,7 +127,7 @@ final readonly class CopyFileAction implements OperationActionInterface
                 OperationIssue::create(MessageCode::FILESYSTEM_FILE_EXISTS, MessageKey::FILESYSTEM_FILE_EXISTS, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
-                ]),
+                ], level: MessageLevel::Warning),
             ]);
         }
 
@@ -140,7 +142,7 @@ final readonly class CopyFileAction implements OperationActionInterface
                 OperationIssue::create(MessageCode::FILESYSTEM_FILE_COPY_FAILED, MessageKey::FILESYSTEM_FILE_COPY_FAILED, context: [
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
-                ]),
+                ], level: MessageLevel::Error),
             ]);
         }
 
@@ -156,6 +158,16 @@ final readonly class CopyFileAction implements OperationActionInterface
             'target' => $this->targetRelativePath,
             'bytes' => false === $bytes ? 0 : $bytes,
             'overwritten' => $targetExists,
+        ], [
+            ...$parentResult->messages(),
+            Message::debug(MessageCode::FILESYSTEM_FILE_COPIED, MessageKey::FILESYSTEM_FILE_COPIED, [
+                '%target%' => $this->targetRelativePath,
+            ], [
+                'source' => $this->sourceRelativePath,
+                'target' => $this->targetRelativePath,
+                'bytes' => false === $bytes ? 0 : $bytes,
+                'overwritten' => $targetExists,
+            ]),
         ]);
     }
 
@@ -183,12 +195,21 @@ final readonly class CopyFileAction implements OperationActionInterface
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
                     'parent' => $symlinkAncestor,
-                ]),
+                ], level: MessageLevel::Warning),
             ]);
         }
 
         if (is_dir($parent)) {
-            return OperationResult::success();
+            return OperationResult::success(messages: [
+                Message::debug(MessageCode::FILESYSTEM_PARENT_DIRECTORY_READY, MessageKey::FILESYSTEM_PARENT_DIRECTORY_READY, [
+                    '%path%' => dirname($this->targetRelativePath),
+                ], [
+                    'source' => $this->sourceRelativePath,
+                    'target' => $this->targetRelativePath,
+                    'parent' => dirname($this->targetRelativePath),
+                    'created' => false,
+                ]),
+            ]);
         }
 
         if (!$this->createParentDirectories) {
@@ -197,7 +218,7 @@ final readonly class CopyFileAction implements OperationActionInterface
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
                     'parent' => dirname($this->targetRelativePath),
-                ]),
+                ], level: MessageLevel::Warning),
             ]);
         }
 
@@ -207,10 +228,19 @@ final readonly class CopyFileAction implements OperationActionInterface
                     'source' => $this->sourceRelativePath,
                     'target' => $this->targetRelativePath,
                     'parent' => dirname($this->targetRelativePath),
-                ]),
+                ], level: MessageLevel::Error),
             ]);
         }
 
-        return OperationResult::success();
+        return OperationResult::success(messages: [
+            Message::debug(MessageCode::FILESYSTEM_PARENT_DIRECTORY_READY, MessageKey::FILESYSTEM_PARENT_DIRECTORY_READY, [
+                '%path%' => dirname($this->targetRelativePath),
+            ], [
+                'source' => $this->sourceRelativePath,
+                'target' => $this->targetRelativePath,
+                'parent' => dirname($this->targetRelativePath),
+                'created' => true,
+            ]),
+        ]);
     }
 }

@@ -185,6 +185,40 @@ class ContentSchemaVersion
         return $this->useMinLevel;
     }
 
+    /**
+     * @return list<string>|null
+     */
+    public function useGroupIdentifiers(): ?array
+    {
+        return $this->useGroupIdentifiers;
+    }
+
+    public function editMinLevel(): ?int
+    {
+        return $this->editMinLevel;
+    }
+
+    /**
+     * @return list<string>|null
+     */
+    public function editGroupIdentifiers(): ?array
+    {
+        return $this->editGroupIdentifiers;
+    }
+
+    public function manageMinLevel(): ?int
+    {
+        return $this->manageMinLevel;
+    }
+
+    /**
+     * @return list<string>|null
+     */
+    public function manageGroupIdentifiers(): ?array
+    {
+        return $this->manageGroupIdentifiers;
+    }
+
     public function activate(?string $activatedBy = null, ?DateTimeImmutable $activatedAt = null): void
     {
         $this->activatedBy = $activatedBy;

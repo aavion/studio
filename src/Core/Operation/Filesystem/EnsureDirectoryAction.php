@@ -7,8 +7,10 @@ namespace App\Core\Operation\Filesystem;
 use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Filesystem\PathGuard;
+use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
@@ -62,7 +64,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
             return OperationResult::blocked([
                 OperationIssue::create(MessageCode::FILESYSTEM_TARGET_SYMLINK, MessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
                     'path' => $this->relativePath,
-                ]),
+                ], level: MessageLevel::Warning),
             ]);
         }
 
@@ -71,7 +73,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
                 OperationIssue::create(MessageCode::FILESYSTEM_PARENT_SYMLINK, MessageKey::FILESYSTEM_PARENT_SYMLINK, context: [
                     'path' => $this->relativePath,
                     'parent' => $symlinkAncestor,
-                ]),
+                ], level: MessageLevel::Warning),
             ]);
         }
 
@@ -79,7 +81,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
             return OperationResult::blocked([
                 OperationIssue::create(MessageCode::FILESYSTEM_DIRECTORY_CONFLICT, MessageKey::FILESYSTEM_DIRECTORY_CONFLICT, context: [
                     'path' => $this->relativePath,
-                ]),
+                ], level: MessageLevel::Warning),
             ]);
         }
 
@@ -90,6 +92,13 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
             ], [
                 'path' => $this->relativePath,
                 'created' => false,
+            ], [
+                Message::debug(MessageCode::FILESYSTEM_DIRECTORY_READY, MessageKey::FILESYSTEM_DIRECTORY_READY, [
+                    '%path%' => $this->relativePath,
+                ], [
+                    'path' => $this->relativePath,
+                    'created' => false,
+                ]),
             ]);
         }
 
@@ -97,17 +106,24 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
             return OperationResult::failed([
                 OperationIssue::create(MessageCode::FILESYSTEM_DIRECTORY_CREATE_FAILED, MessageKey::FILESYSTEM_DIRECTORY_CREATE_FAILED, context: [
                     'path' => $this->relativePath,
-                ]),
+                ], level: MessageLevel::Error),
             ]);
         }
 
         return OperationResult::success([
             'path' => $this->relativePath,
             'created' => true,
-        ], [
-            'path' => $this->relativePath,
-            'created' => true,
-        ]);
+            ], [
+                'path' => $this->relativePath,
+                'created' => true,
+            ], [
+                Message::info(MessageCode::FILESYSTEM_DIRECTORY_READY, MessageKey::FILESYSTEM_DIRECTORY_READY, [
+                    '%path%' => $this->relativePath,
+                ], [
+                    'path' => $this->relativePath,
+                    'created' => true,
+                ]),
+            ]);
     }
 
     private function targetPath(): string

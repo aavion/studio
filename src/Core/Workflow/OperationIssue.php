@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Workflow;
 
 use App\Core\Message\Message;
+use App\Core\Message\MessageLevel;
 
 final readonly class OperationIssue
 {
@@ -16,9 +17,14 @@ final readonly class OperationIssue
      * @param array<string, mixed> $context
      * @param array<string, mixed> $parameters
      */
-    public static function create(string $code, string $translationKey, array $parameters = [], array $context = []): self
-    {
-        return new self(Message::create($code, $translationKey, $parameters, $context));
+    public static function create(
+        string $code,
+        string $translationKey,
+        array $parameters = [],
+        array $context = [],
+        ?MessageLevel $level = null,
+    ): self {
+        return new self(Message::create($code, $translationKey, $parameters, $context, $level));
     }
 
     public static function fromMessage(Message $message): self
@@ -41,6 +47,11 @@ final readonly class OperationIssue
         return $this->message->translationKey();
     }
 
+    public function level(): MessageLevel
+    {
+        return $this->message->level();
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -58,11 +69,12 @@ final readonly class OperationIssue
     }
 
     /**
-     * @return array{code: string, translation_key: string, parameters: array<string, mixed>, context: array<string, mixed>}
+     * @return array{level: string, code: string, translation_key: string, parameters: array<string, mixed>, context: array<string, mixed>}
      */
     public function toArray(): array
     {
         return [
+            'level' => $this->level()->value,
             'code' => $this->code(),
             'translation_key' => $this->translationKey(),
             'parameters' => $this->parameters(),

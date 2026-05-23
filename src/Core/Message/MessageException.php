@@ -17,9 +17,14 @@ final class MessageException extends InvalidArgumentException
      * @param array<string, mixed> $parameters
      * @param array<string, mixed> $context
      */
-    public static function forMessage(string $code, string $translationKey, array $parameters = [], array $context = []): self
-    {
-        return new self(Message::create($code, $translationKey, $parameters, $context));
+    public static function forMessage(
+        string $code,
+        string $translationKey,
+        array $parameters = [],
+        array $context = [],
+        ?MessageLevel $level = null,
+    ): self {
+        return new self(Message::create($code, $translationKey, $parameters, $context, $level));
     }
 
     public static function fromMessage(Message $message): self
@@ -40,6 +45,11 @@ final class MessageException extends InvalidArgumentException
     public function messageKey(): string
     {
         return $this->messageObject->translationKey();
+    }
+
+    public function level(): MessageLevel
+    {
+        return $this->messageObject->level();
     }
 
     /**

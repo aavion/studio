@@ -10,6 +10,7 @@ use App\Core\ActionLog\ActionLogStatus;
 use App\Core\DryRun\DryRunPlan;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 use App\Core\Workflow\OperationStatus;
@@ -32,6 +33,7 @@ final class OperationExecutor
     {
         $log = ActionLog::create();
         $issues = [];
+        $messages = [];
         $context = $queue->context();
         $status = OperationStatus::Success;
 
@@ -49,28 +51,30 @@ final class OperationExecutor
                         'type' => $action->type(),
                         'exception' => $error::class,
                         'message' => $error->getMessage(),
-                    ]),
+                    ], level: MessageLevel::Error),
                 ]);
             }
 
             array_push($issues, ...$result->issues());
+            array_push($messages, ...$result->messages());
             $status = $this->highestSeverity($status, $result->status());
             $log = $log->add($entry->finish(
                 $this->statusForResult($result),
                 $result->issues(),
                 $result->context(),
+                messages: $result->messages(),
             ));
 
             if (!$result->isSuccess() && $queue->stopOnFailure()) {
-                return new OperationExecution($log, $this->resultForIssues($result->status(), $issues, $context));
+                return new OperationExecution($log, $this->resultForIssues($result->status(), $issues, $context, $messages));
             }
         }
 
         if ([] !== $issues) {
-            return new OperationExecution($log, $this->resultForIssues($status, $issues, $context));
+            return new OperationExecution($log, $this->resultForIssues($status, $issues, $context, $messages));
         }
 
-        return new OperationExecution($log, OperationResult::success(context: $context));
+        return new OperationExecution($log, OperationResult::success(context: $context, messages: $messages));
     }
 
     /**
@@ -91,14 +95,14 @@ final class OperationExecutor
      *
      * @return OperationResult<mixed>
      */
-    private function resultForIssues(OperationStatus $status, array $issues, array $context = []): OperationResult
+    private function resultForIssues(OperationStatus $status, array $issues, array $context = [], array $messages = []): OperationResult
     {
         return match ($status) {
-            OperationStatus::Invalid => OperationResult::invalid($issues, $context),
-            OperationStatus::RequiresReview => OperationResult::requiresReview(null, $issues, $context),
-            OperationStatus::Blocked => OperationResult::blocked($issues, $context),
-            OperationStatus::Failed => OperationResult::failed($issues, $context),
-            OperationStatus::Success => OperationResult::success(context: $context),
+            OperationStatus::Invalid => OperationResult::invalid($issues, $context, $messages),
+            OperationStatus::RequiresReview => OperationResult::requiresReview(null, $issues, $context, $messages),
+            OperationStatus::Blocked => OperationResult::blocked($issues, $context, $messages),
+            OperationStatus::Failed => OperationResult::failed($issues, $context, $messages),
+            OperationStatus::Success => OperationResult::success(context: $context, messages: $messages),
         };
     }
 

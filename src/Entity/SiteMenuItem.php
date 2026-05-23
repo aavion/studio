@@ -104,6 +104,14 @@ class SiteMenuItem
     }
 
     /**
+     * @return list<string>|null
+     */
+    public function viewGroupIdentifiers(): ?array
+    {
+        return $this->viewGroupIdentifiers;
+    }
+
+    /**
      * @param list<string>|null $values
      *
      * @return list<string>|null

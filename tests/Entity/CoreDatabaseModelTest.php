@@ -60,6 +60,15 @@ final class CoreDatabaseModelTest extends TestCase
         self::assertSame($hmacHash, $apiKey->hmacHash());
         self::assertSame('v1.test.encrypted-key', $apiKey->encryptedKey());
         self::assertSame(ApiKeyStatus::ReadWrite, $apiKey->status());
+        self::assertSame(MessageKey::API_KEY_STATUS_READ_WRITE, ApiKeyStatus::ReadWrite->messageKey());
+        self::assertSame(MessageKey::API_KEY_STATUS_READ_ONLY, ApiKeyStatus::ReadOnly->messageKey());
+        self::assertSame(MessageKey::API_KEY_STATUS_REVOKED, ApiKeyStatus::Revoked->messageKey());
+        self::assertTrue(ApiKeyStatus::ReadWrite->isActive());
+        self::assertTrue(ApiKeyStatus::ReadWrite->allowsWrite());
+        self::assertTrue(ApiKeyStatus::ReadOnly->isActive());
+        self::assertFalse(ApiKeyStatus::ReadOnly->allowsWrite());
+        self::assertFalse(ApiKeyStatus::Revoked->isActive());
+        self::assertFalse(ApiKeyStatus::Revoked->allowsWrite());
 
         $apiKey->revoke();
 
@@ -84,6 +93,7 @@ final class CoreDatabaseModelTest extends TestCase
             'content',
             '88888888-8888-8888-8888-888888888888',
             viewMinLevel: AccessLevel::PUBLIC,
+            viewGroupIdentifiers: ['project_team'],
         );
         $menu->addItem($item);
 
@@ -96,6 +106,7 @@ final class CoreDatabaseModelTest extends TestCase
         self::assertSame(ExtensionPackageStatus::Active, $package->status());
         self::assertSame('main', $menu->identifier());
         self::assertSame(AccessLevel::PUBLIC, $item->viewMinLevel());
+        self::assertSame(['project_team'], $item->viewGroupIdentifiers());
     }
 
     public function testItRejectsInvalidMenuAccessGroupIdentifiers(): void

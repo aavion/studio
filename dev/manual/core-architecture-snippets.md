@@ -23,7 +23,7 @@ Structured logs remain filesystem-oriented. Database tables should hold state th
 
 ## Operation results and issues
 
-Use `OperationResult` for recoverable workflows. Hard failures, blocked actions, validation errors, and review-required states should stay structured and inspectable by future CLI, UI, importer, and action-log consumers.
+Use `OperationResult` for recoverable workflows. Hard failures, blocked actions, validation errors, and review-required states should stay structured and inspectable by future CLI, UI, importer, and action-log consumers. Use issues for `WARN` or `ERROR` diagnostics that affect the result state; use messages for `INFO` or `DEBUG` events that should remain filterable in logs without turning into problems.
 
 ```php
 $issue = OperationIssue::create('package.required_file_missing', 'Required package file is missing.', [
@@ -63,7 +63,7 @@ $plan = $executor->planQueue($queue);
 $execution = $executor->executeQueue($queue);
 ```
 
-Use the dry-run plan for previews. Use the execution result and action log for final status, diagnostics, and UI summaries.
+Use the dry-run plan for previews. Use the execution result and action log for final status, diagnostics, UI summaries, and level-filtered log inspection. Successful high-level actions should generally emit `INFO`; noisy per-file or per-manifest details should emit `DEBUG`.
 
 ## Package validation flow
 
@@ -110,8 +110,9 @@ Intentionally invalid fixture packages live under `tests/Fixtures/packages-inval
 
 ## Issue-code notes
 
-Messages have two stable identifiers:
+Messages have a stable log level and two stable identifiers:
 
+- `MessageLevel` is log-filterable and uses `ERROR`, `WARN`, `INFO`, or `DEBUG`.
 - `MessageCode` is machine-readable and useful for logs, branching, API clients, CLI exits, and module/theme integrations.
 - `MessageKey` is translation-facing and should resolve to localized UI, CLI, or log text later.
 
@@ -120,13 +121,34 @@ Runtime code should use `Message`, `MessageCode`, and `MessageKey` instead of em
 Core enforces a narrow transport shape:
 
 ```text
+level
 code
 translation_key
 parameters
 context
 ```
 
-Codes must either be generic uppercase tokens such as `E_INVALID_ARGUMENT` or namespaced lowercase tokens such as `package.required_file_missing`. Translation keys must start with `message.`. Translation parameter names must use Symfony-friendly placeholder keys such as `%slug%`; free-form diagnostic data belongs in `context`.
+Codes must either be generic uppercase tokens such as `E_INVALID_ARGUMENT` or namespaced lowercase tokens such as `package.required_file_missing`. Translation keys must start with `message.`. Translation parameter names must use Symfony-friendly placeholder keys such as `%slug%`; free-form diagnostic data belongs in `context`. Default message levels are `INFO` for success, `WARN` for `E_INVALID_ARGUMENT` and other diagnostics, and `ERROR` for other `E_*` codes unless the caller sets a level explicitly.
+
+## ACL resolver flow
+
+The shared ACL resolver evaluates normalized actors against capability-specific rules. Pass rules from nearest scope to broadest scope. The first explicit rule wins; inherited rules are skipped. If every rule inherits, the resolver falls back to the capability default: `view` and `use` require level `0`, `edit` requires level `3`, and `manage` requires level `6`.
+
+```php
+$actor = AccessActor::fromUserAccount($user);
+$resolver = new AccessResolver();
+
+$decision = $resolver->decide(
+    $actor,
+    AccessCapability::View,
+    AccessRule::from($content->viewMinLevel(), $content->viewGroupIdentifiers()),
+    AccessRule::from($parent->viewMinLevel(), $parent->viewGroupIdentifiers()),
+);
+
+if (!$decision->isGranted()) {
+    return OperationResult::blocked([OperationIssue::fromMessage($decision->message())]);
+}
+```
 
 | Prefix | Examples | Notes |
 |--------|----------|-------|
@@ -134,6 +156,7 @@ Codes must either be generic uppercase tokens such as `E_INVALID_ARGUMENT` or na
 | `package.*` | `package.required_file_missing`, `package.copy_source_symlink` | Discovery, validation, linting, and package planning diagnostics. |
 | `filesystem.*` | `filesystem.parent_symlink`, `filesystem.file_exists` | Root-scoped filesystem operation guards. |
 | `operation.*` | `operation.exception` | Executor-level failures and exception mapping. |
+| `process.*` | `process.command_completed`, `process.command_failed` | Process execution result diagnostics. |
 
 Later UI layers can map these codes to translated messages while preserving the raw code for logs, audits, and debugging.
 

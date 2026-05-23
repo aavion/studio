@@ -12,8 +12,10 @@ use App\Core\Lint\LinterInterface;
 use App\Core\Lint\PhpLinter;
 use App\Core\Lint\TwigLinter;
 use App\Core\Lint\YamlLinter;
+use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 
@@ -43,7 +45,9 @@ final class PackageValidator
                 $issues[] = OperationIssue::create(
                     MessageCode::PACKAGE_REQUIRED_FILE_MISSING,
                     MessageKey::PACKAGE_REQUIRED_FILE_MISSING,
+                    ['%path%' => $absolutePath],
                     context: $this->context($candidate, $path, $absolutePath),
+                    level: MessageLevel::Warning,
                 );
             }
         }
@@ -54,7 +58,9 @@ final class PackageValidator
                 $issues[] = OperationIssue::create(
                     MessageCode::PACKAGE_REQUIRED_DIRECTORY_MISSING,
                     MessageKey::PACKAGE_REQUIRED_DIRECTORY_MISSING,
+                    ['%path%' => $absolutePath],
                     context: $this->context($candidate, $path, $absolutePath),
+                    level: MessageLevel::Warning,
                 );
             }
         }
@@ -92,9 +98,19 @@ final class PackageValidator
             ]);
         }
 
-        return OperationResult::success($candidate, [
+        $context = [
             'inventory' => $inspection->inventory(),
             'inspection' => $inspection,
+        ];
+
+        return OperationResult::success($candidate, $context, [
+            Message::info(MessageCode::PACKAGE_VALIDATION_COMPLETED, MessageKey::PACKAGE_VALIDATION_COMPLETED, [
+                '%package%' => $candidate->directory(),
+            ], [
+                'source' => $candidate->source()->name(),
+                'package' => $candidate->directory(),
+                'inventory_count' => count($inspection->inventory()),
+            ]),
         ]);
     }
 
@@ -153,7 +169,9 @@ final class PackageValidator
                 $issues[] = OperationIssue::create(
                     $issueCode,
                     $translationKey,
+                    ['%path%' => $path],
                     context: $this->lintContext($candidate, $file, $path, $lintIssue->context()),
+                    level: MessageLevel::Warning,
                 );
             }
         }
@@ -182,7 +200,9 @@ final class PackageValidator
         return OperationIssue::create(
             MessageCode::PACKAGE_FILE_UNREADABLE,
             MessageKey::PACKAGE_FILE_UNREADABLE,
+            ['%path%' => $path],
             context: $this->lintContext($candidate, $file, $path),
+            level: MessageLevel::Error,
         );
     }
 }

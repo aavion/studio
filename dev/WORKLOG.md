@@ -71,6 +71,9 @@
 
 ### 2026-05-24
 - Added deterministic SQLite demo seeds to the PHPUnit bootstrap lifecycle, covering config defaults, ACL groups, admin/API records, preset schemas, published content with active revisions and localized fields, and the main navigation menu; the seeded admin login uses `admin` with the current `APP_SECRET` as password, and API keys cover read-write, read-only, and revoked states.
+- Switched API-key persistence to display prefixes, APP_SECRET-derived HMAC lookup hashes, and APP_SECRET-derived encrypted payloads, then added API-key status semantics and reusable message catalogue keys for status labels and common API-key feedback.
+- Added log-filterable message levels and the first shared ACL resolver primitives for actors, capabilities, inherited rules, effective decisions, and granted/denied resolver messages.
+- Extended operation results and action-log entries with non-blocking messages, then classified manifest, package, filesystem, process, operation, validation, and ACL output across `ERROR`, `WARN`, `INFO`, and `DEBUG` levels.
 - Added operations coverage for seeded ACL, schema, content, field, and menu data, and updated setup/test documentation to clarify that `env:test` no longer depends on `bin/setup`.
 
 ### 2026-05-23

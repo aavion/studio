@@ -10,6 +10,7 @@ use App\Core\Operation\Filesystem\CopyFileAction;
 use App\Core\Operation\Filesystem\EnsureDirectoryAction;
 use App\Core\Operation\Filesystem\WriteFileAction;
 use App\Core\Operation\OperationExecutor;
+use App\Core\Message\MessageLevel;
 use App\Core\Workflow\OperationStatus;
 use App\Tests\Support\FilesystemTestHelper;
 use InvalidArgumentException;
@@ -39,6 +40,7 @@ final class FilesystemOperationActionTest extends TestCase
         self::assertTrue($execution->result()->isSuccess());
         self::assertDirectoryExists($this->root.'/var/cache/imports');
         self::assertTrue($execution->actionLog()->entries()[0]->context()['created']);
+        self::assertSame(MessageLevel::Info, $execution->actionLog()->entries()[0]->messages()[0]->level());
         self::assertSame(['var/cache/imports'], $action->dryRun()->paths());
     }
 
@@ -80,6 +82,7 @@ final class FilesystemOperationActionTest extends TestCase
         self::assertSame('<?php return [];', file_get_contents($this->root.'/config/generated.php'));
         self::assertSame(strlen('<?php return [];'), $result->value()['bytes']);
         self::assertFalse($result->value()['overwritten']);
+        self::assertSame(MessageLevel::Debug, $result->messages()[0]->level());
     }
 
     public function testWriteFileBlocksExistingFileWithoutOverwrite(): void
@@ -154,6 +157,7 @@ final class FilesystemOperationActionTest extends TestCase
         self::assertTrue($result->isSuccess());
         self::assertSame('payload', file_get_contents($this->root.'/nested/target.txt'));
         self::assertSame(7, $result->value()['bytes']);
+        self::assertSame(MessageLevel::Debug, $result->messages()[0]->level());
         self::assertSame(['source.txt', 'nested/target.txt'], $action->dryRun()->paths());
     }
 

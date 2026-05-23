@@ -1,0 +1,97 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Core\Access;
+
+use App\Core\Access\AccessActor;
+use App\Core\Access\AccessCapability;
+use App\Core\Access\AccessLevel;
+use App\Core\Access\AccessResolver;
+use App\Core\Access\AccessRule;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
+use App\Entity\AclGroup;
+use App\Entity\UserAccount;
+use PHPUnit\Framework\TestCase;
+
+final class AccessResolverTest extends TestCase
+{
+    public function testItUsesDefaultCapabilityLevelsWhenAllRulesInherit(): void
+    {
+        $resolver = new AccessResolver();
+        $actor = AccessActor::anonymous();
+
+        $viewDecision = $resolver->decide($actor, AccessCapability::View, AccessRule::inherit());
+        $editDecision = $resolver->decide($actor, AccessCapability::Edit, AccessRule::inherit());
+
+        self::assertTrue($viewDecision->isGranted());
+        self::assertSame('default', $viewDecision->ruleSource());
+        self::assertSame(MessageCode::ACCESS_GRANTED, $viewDecision->message()->code());
+        self::assertSame(MessageKey::ACCESS_GRANTED, $viewDecision->message()->translationKey());
+        self::assertSame(MessageLevel::Info, $viewDecision->message()->level());
+
+        self::assertFalse($editDecision->isGranted());
+        self::assertSame(AccessLevel::EDITOR, $editDecision->rule()->minLevel());
+        self::assertSame(MessageCode::ACCESS_DENIED, $editDecision->message()->code());
+        self::assertSame(MessageLevel::Warning, $editDecision->message()->level());
+    }
+
+    public function testItGrantsAccessByMinimumLevelOrExplicitGroupMembership(): void
+    {
+        $resolver = new AccessResolver();
+        $editor = AccessActor::fromAccess(AccessLevel::EDITOR);
+        $projectMember = AccessActor::fromAccess(AccessLevel::PUBLIC, ['project_team']);
+        $anonymous = AccessActor::anonymous();
+        $rule = AccessRule::from(AccessLevel::MANAGER, ['project_team']);
+
+        self::assertFalse($resolver->decide($editor, AccessCapability::Manage, $rule)->isGranted());
+        self::assertTrue($resolver->decide($projectMember, AccessCapability::Manage, $rule)->isGranted());
+        self::assertFalse($resolver->decide($anonymous, AccessCapability::Manage, $rule)->isGranted());
+    }
+
+    public function testNearestExplicitRuleWinsBeforeInheritedFallbacks(): void
+    {
+        $resolver = new AccessResolver();
+        $manager = AccessActor::fromAccess(AccessLevel::MANAGER);
+
+        $decision = $resolver->decide(
+            $manager,
+            AccessCapability::View,
+            AccessRule::inherit(),
+            AccessRule::from(AccessLevel::ADMIN),
+            AccessRule::from(AccessLevel::PUBLIC),
+        );
+
+        self::assertFalse($decision->isGranted());
+        self::assertSame('rule_1', $decision->ruleSource());
+        self::assertSame(AccessLevel::ADMIN, $decision->rule()->minLevel());
+    }
+
+    public function testEmptyRuleWithoutLevelStillInherits(): void
+    {
+        $resolver = new AccessResolver();
+        $anonymous = AccessActor::anonymous();
+
+        $decision = $resolver->decide($anonymous, AccessCapability::View, AccessRule::from(null, []));
+
+        self::assertTrue($decision->isGranted());
+        self::assertSame('default', $decision->ruleSource());
+    }
+
+    public function testItBuildsActorsFromUserAccounts(): void
+    {
+        $editorGroup = new AclGroup('11111111-1111-1111-1111-111111111111', 'editor', ['en' => 'Editor'], AccessLevel::EDITOR);
+        $projectGroup = new AclGroup('22222222-2222-2222-2222-222222222222', 'project_team', ['en' => 'Project'], AccessLevel::PUBLIC);
+        $user = new UserAccount('33333333-3333-3333-3333-333333333333', 'dominik', 'dom@example.test', 'hash');
+        $user->addGroup($projectGroup);
+        $user->addGroup($editorGroup);
+
+        $actor = AccessActor::fromUserAccount($user);
+
+        self::assertSame(AccessLevel::EDITOR, $actor->accessLevel());
+        self::assertSame(['editor', 'project_team'], $actor->groupIdentifiers());
+        self::assertTrue($actor->hasGroupIdentifier('project_team'));
+    }
+}

@@ -6,6 +6,8 @@ message:
     duplicate_key: 'Manifest-Key "%key%" ist doppelt vorhanden.'
     missing_required_key: 'Erforderlicher Manifest-Key "%key%" fehlt.'
     unknown_key: 'Manifest-Key "%key%" wird hier nicht unterstützt.'
+    parsed: 'Manifest wurde geparst.'
+    validated: 'Manifest wurde validiert.'
   package:
     identifier:
       invalid: 'Paket-Identifier "%identifier%" enthält nicht unterstützte Zeichen.'
@@ -21,6 +23,9 @@ message:
     javascript_syntax_error: 'JavaScript-Syntaxprüfung für "%path%" fehlgeschlagen.'
     copy_source_missing: 'Paket-Kopierquelle "%path%" fehlt.'
     copy_source_symlink: 'Paket-Kopierquelle "%path%" darf kein Symlink sein.'
+    discovery_completed: 'Paket-Discovery hat %count% Kandidat(en) gefunden.'
+    validation_completed: 'Paket "%package%" hat die Validierung bestanden.'
+    copy_plan_created: 'Paket-Kopierplan enthält %count% Datei(en).'
   lint:
     php_unreadable: 'PHP-Quelle kann nicht gelesen werden.'
     php_syntax_error: 'PHP-Syntaxprüfung fehlgeschlagen.'
@@ -42,11 +47,18 @@ message:
     file_write_failed: 'Datei "%path%" konnte nicht geschrieben werden.'
     file_copy_failed: 'Datei "%target%" konnte nicht kopiert werden.'
     directory_create_failed: 'Verzeichnis "%path%" konnte nicht erstellt werden.'
+    file_written: 'Datei "%path%" wurde geschrieben.'
+    file_copied: 'Datei "%target%" wurde kopiert.'
+    directory_ready: 'Verzeichnis "%path%" ist bereit.'
+    parent_directory_ready: 'Übergeordnetes Verzeichnis "%path%" ist bereit.'
   operation:
     exception: 'Operation ist mit einer unerwarteten Exception fehlgeschlagen.'
   process:
     command_failed: 'Befehl "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
+    command_completed: 'Befehl "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'
   access:
+    granted: 'Zugriff für "%capability%" erlaubt.'
+    denied: 'Zugriff für "%capability%" verweigert: erforderlich ist Level %required_level%; Actor hat Level %actor_level%.'
     level:
       invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
     group_identifier:
@@ -66,6 +78,20 @@ message:
       invalid: 'Der API-Key-HMAC-Hash muss ein kleingeschriebener SHA-256-Hex-Digest sein.'
     encrypted_key:
       empty: 'Die verschlüsselte API-Key-Payload darf nicht leer sein.'
+    status:
+      invalid: 'API-Key-Status "%status%" ist ungültig.'
+      read_write: 'Lesen und schreiben'
+      read_only: 'Nur lesen'
+      revoked: 'Widerrufen'
+    created: 'API-Key "%prefix%" wurde erstellt.'
+    revoked: 'API-Key "%prefix%" wurde widerrufen.'
+    revealed: 'API-Key "%prefix%" wurde angezeigt.'
+    not_found: 'API-Key "%prefix%" wurde nicht gefunden.'
+    authentication_failed: 'API-Key-Authentifizierung fehlgeschlagen.'
+    reauthentication_required: 'Zum Anzeigen dieses API-Keys ist eine erneute Authentifizierung erforderlich.'
+    permission:
+      write_required: 'Dieser API-Key erlaubt keinen Schreibzugriff.'
+      revoked: 'Dieser API-Key wurde widerrufen.'
   menu:
     identifier:
       invalid: 'Menü-Identifier "%identifier%" muss lowercase snake_case sein.'

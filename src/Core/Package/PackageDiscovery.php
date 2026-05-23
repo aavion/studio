@@ -7,8 +7,10 @@ namespace App\Core\Package;
 use App\Core\Manifest\ManifestParser;
 use App\Core\Manifest\ManifestSpec;
 use App\Core\Manifest\ManifestValidator;
+use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 
@@ -38,6 +40,7 @@ final readonly class PackageDiscovery
         $projectDir = rtrim($projectDir, DIRECTORY_SEPARATOR);
         $candidates = [];
         $issues = [];
+        $messages = [];
 
         foreach ($sources as $source) {
             foreach ($source->candidateDirectories($projectDir) as $directory) {
@@ -52,7 +55,9 @@ final readonly class PackageDiscovery
                     $issues[] = OperationIssue::create(
                         MessageCode::PACKAGE_MANIFEST_UNREADABLE,
                         MessageKey::PACKAGE_MANIFEST_UNREADABLE,
+                        ['%path%' => $manifestPath],
                         context: ['path' => $manifestPath, 'source' => $source->name()],
+                        level: MessageLevel::Error,
                     );
 
                     continue;
@@ -66,6 +71,7 @@ final readonly class PackageDiscovery
                             $issue->translationKey(),
                             $issue->parameters(),
                             ['path' => $manifestPath, 'source' => $source->name()] + $issue->context(),
+                            $issue->level(),
                         );
                     }
 
@@ -73,6 +79,10 @@ final readonly class PackageDiscovery
                 }
 
                 $manifest = $parseResult->value();
+                foreach ($parseResult->messages() as $message) {
+                    $messages[] = $message->withContext(['path' => $manifestPath, 'source' => $source->name()]);
+                }
+
                 $spec = $source->spec();
 
                 if (null !== $spec) {
@@ -84,10 +94,15 @@ final readonly class PackageDiscovery
                                 $issue->translationKey(),
                                 $issue->parameters(),
                                 ['path' => $manifestPath, 'source' => $source->name()] + $issue->context(),
+                                $issue->level(),
                             );
                         }
 
                         continue;
+                    }
+
+                    foreach ($validationResult->messages() as $message) {
+                        $messages[] = $message->withContext(['path' => $manifestPath, 'source' => $source->name()]);
                     }
                 }
 
@@ -96,10 +111,19 @@ final readonly class PackageDiscovery
         }
 
         if ([] !== $issues) {
-            return OperationResult::invalid($issues, ['candidates' => $candidates]);
+            return OperationResult::invalid($issues, ['candidates' => $candidates], $messages);
         }
 
-        return OperationResult::success($candidates);
+        return OperationResult::success($candidates, [
+            'candidate_count' => count($candidates),
+        ], [
+            ...$messages,
+            Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+                '%count%' => count($candidates),
+            ], [
+                'candidate_count' => count($candidates),
+            ]),
+        ]);
     }
 
     /**

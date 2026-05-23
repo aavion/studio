@@ -7,6 +7,10 @@ namespace App\Tests\Core\ActionLog;
 use App\Core\ActionLog\ActionLog;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
 use App\Core\Workflow\OperationIssue;
 use DateTimeImmutable;
 use InvalidArgumentException;
@@ -63,11 +67,12 @@ final class ActionLogTest extends TestCase
     public function testItExportsStructuredPayload(): void
     {
         $issue = OperationIssue::create('setup.warning', 'message.setup.warning');
+        $message = Message::debug(MessageCode::MANIFEST_PARSED, MessageKey::MANIFEST_PARSED);
         $startedAt = new DateTimeImmutable('2026-05-22 10:00:00.000000');
         $finishedAt = new DateTimeImmutable('2026-05-22 10:00:00.250000');
         $entry = ActionLogEntry::pending('setup', ['phase' => 'init'])
             ->start($startedAt)
-            ->finish(ActionLogStatus::Warning, [$issue], ['exit_code' => 0], $finishedAt);
+            ->finish(ActionLogStatus::Warning, [$issue], ['exit_code' => 0], $finishedAt, [$message]);
 
         $payload = ActionLog::create()->add($entry)->toArray();
 
@@ -83,8 +88,16 @@ final class ActionLogTest extends TestCase
             'finished_at' => '2026-05-22T10:00:00+00:00',
             'duration_ms' => 250,
             'issues' => [[
+                'level' => 'WARN',
                 'code' => 'setup.warning',
                 'translation_key' => 'message.setup.warning',
+                'parameters' => [],
+                'context' => [],
+            ]],
+            'messages' => [[
+                'level' => MessageLevel::Debug->value,
+                'code' => MessageCode::MANIFEST_PARSED,
+                'translation_key' => MessageKey::MANIFEST_PARSED,
                 'parameters' => [],
                 'context' => [],
             ]],

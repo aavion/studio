@@ -6,6 +6,8 @@ namespace App\Core\Manifest;
 
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Message\Message;
+use App\Core\Message\MessageLevel;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 
@@ -23,7 +25,9 @@ final class ManifestValidator
                 $issues[] = OperationIssue::create(
                     MessageCode::MANIFEST_MISSING_REQUIRED_KEY,
                     MessageKey::MANIFEST_MISSING_REQUIRED_KEY,
+                    ['%key%' => $requiredKey],
                     context: ['key' => $requiredKey],
+                    level: MessageLevel::Warning,
                 );
             }
         }
@@ -35,7 +39,9 @@ final class ManifestValidator
                     $issues[] = OperationIssue::create(
                         MessageCode::MANIFEST_UNKNOWN_KEY,
                         MessageKey::MANIFEST_UNKNOWN_KEY,
+                        ['%key%' => $key],
                         context: ['key' => $key],
+                        level: MessageLevel::Warning,
                     );
                 }
             }
@@ -45,6 +51,14 @@ final class ManifestValidator
             return OperationResult::invalid($issues);
         }
 
-        return OperationResult::success($manifest);
+        return OperationResult::success($manifest, [
+            'required_keys' => $spec->requiredKeys(),
+            'allowed_keys' => $spec->allowedKeys(),
+        ], [
+            Message::debug(MessageCode::MANIFEST_VALIDATED, MessageKey::MANIFEST_VALIDATED, context: [
+                'required_keys' => $spec->requiredKeys(),
+                'allowed_keys' => $spec->allowedKeys(),
+            ]),
+        ]);
     }
 }

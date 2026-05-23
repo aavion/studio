@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Workflow;
 
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 use App\Core\Workflow\OperationStatus;
@@ -14,8 +18,13 @@ final class OperationResultTest extends TestCase
 {
     public function testSuccessResultCarriesValueAndContext(): void
     {
+        $message = Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+            '%count%' => 1,
+        ]);
         $result = OperationResult::success('theme-default', [
             'source' => 'system',
+        ], [
+            $message,
         ]);
 
         self::assertSame(OperationStatus::Success, $result->status());
@@ -24,6 +33,8 @@ final class OperationResultTest extends TestCase
         self::assertSame('theme-default', $result->value());
         self::assertFalse($result->hasIssues());
         self::assertNull($result->firstIssue());
+        self::assertSame([$message], $result->messages());
+        self::assertSame(MessageLevel::Info->value, $result->toArray()['messages'][0]['level']);
         self::assertSame(['source' => 'system'], $result->context());
     }
 
@@ -76,11 +87,13 @@ final class OperationResultTest extends TestCase
             'recoverable' => true,
             'value' => ['plan' => 'demo'],
             'issues' => [[
+                'level' => 'WARN',
                 'code' => 'import.confirm_changes',
                 'translation_key' => 'message.import.confirm_changes',
                 'parameters' => ['%changes%' => 3],
                 'context' => ['changes' => 3],
             ]],
+            'messages' => [],
             'context' => ['queue' => 'import'],
         ], $result->toArray());
     }

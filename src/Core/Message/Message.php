@@ -8,6 +8,8 @@ use InvalidArgumentException;
 
 final readonly class Message
 {
+    private MessageLevel $level;
+
     /**
      * @param array<string, mixed> $parameters
      * @param array<string, mixed> $context
@@ -17,6 +19,7 @@ final readonly class Message
         private string $translationKey,
         private array $parameters = [],
         private array $context = [],
+        ?MessageLevel $level = null,
     ) {
         if (!$this->isValidCode($code)) {
             throw new InvalidArgumentException(sprintf('Invalid message code "%s".', $code));
@@ -27,15 +30,57 @@ final readonly class Message
         }
 
         $this->assertParameterKeys($parameters);
+        $this->level = $level ?? self::defaultLevelForCode($code);
     }
 
     /**
      * @param array<string, mixed> $parameters
      * @param array<string, mixed> $context
      */
-    public static function create(string $code, string $translationKey, array $parameters = [], array $context = []): self
+    public static function create(
+        string $code,
+        string $translationKey,
+        array $parameters = [],
+        array $context = [],
+        ?MessageLevel $level = null,
+    ): self {
+        return new self($code, $translationKey, $parameters, $context, $level);
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $context
+     */
+    public static function error(string $code, string $translationKey, array $parameters = [], array $context = []): self
     {
-        return new self($code, $translationKey, $parameters, $context);
+        return new self($code, $translationKey, $parameters, $context, MessageLevel::Error);
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $context
+     */
+    public static function warning(string $code, string $translationKey, array $parameters = [], array $context = []): self
+    {
+        return new self($code, $translationKey, $parameters, $context, MessageLevel::Warning);
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $context
+     */
+    public static function info(string $code, string $translationKey, array $parameters = [], array $context = []): self
+    {
+        return new self($code, $translationKey, $parameters, $context, MessageLevel::Info);
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $context
+     */
+    public static function debug(string $code, string $translationKey, array $parameters = [], array $context = []): self
+    {
+        return new self($code, $translationKey, $parameters, $context, MessageLevel::Debug);
     }
 
     /**
@@ -44,7 +89,7 @@ final readonly class Message
      */
     public static function success(string $translationKey, array $parameters = [], array $context = []): self
     {
-        return new self(MessageCode::SUCCESS, $translationKey, $parameters, $context);
+        return new self(MessageCode::SUCCESS, $translationKey, $parameters, $context, MessageLevel::Info);
     }
 
     public function code(): string
@@ -55,6 +100,11 @@ final readonly class Message
     public function translationKey(): string
     {
         return $this->translationKey;
+    }
+
+    public function level(): MessageLevel
+    {
+        return $this->level;
     }
 
     /**
@@ -81,20 +131,38 @@ final readonly class Message
         return new self($this->code, $this->translationKey, $this->parameters, [
             ...$this->context,
             ...$context,
-        ]);
+        ], $this->level);
     }
 
     /**
-     * @return array{code: string, translation_key: string, parameters: array<string, mixed>, context: array<string, mixed>}
+     * @return array{level: string, code: string, translation_key: string, parameters: array<string, mixed>, context: array<string, mixed>}
      */
     public function toArray(): array
     {
         return [
+            'level' => $this->level->value,
             'code' => $this->code,
             'translation_key' => $this->translationKey,
             'parameters' => $this->parameters,
             'context' => $this->context,
         ];
+    }
+
+    private static function defaultLevelForCode(string $code): MessageLevel
+    {
+        if (MessageCode::SUCCESS === $code) {
+            return MessageLevel::Info;
+        }
+
+        if (MessageCode::E_INVALID_ARGUMENT === $code) {
+            return MessageLevel::Warning;
+        }
+
+        if (str_starts_with($code, 'E_')) {
+            return MessageLevel::Error;
+        }
+
+        return MessageLevel::Warning;
     }
 
     private function isValidCode(string $code): bool

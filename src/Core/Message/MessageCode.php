@@ -50,7 +50,19 @@ final class MessageCode
     public const FILESYSTEM_FILE_WRITE_FAILED = 'filesystem.file_write_failed';
     public const FILESYSTEM_FILE_COPY_FAILED = 'filesystem.file_copy_failed';
     public const FILESYSTEM_DIRECTORY_CREATE_FAILED = 'filesystem.directory_create_failed';
+    public const FILESYSTEM_FILE_WRITTEN = 'filesystem.file_written';
+    public const FILESYSTEM_FILE_COPIED = 'filesystem.file_copied';
+    public const FILESYSTEM_DIRECTORY_READY = 'filesystem.directory_ready';
+    public const FILESYSTEM_PARENT_DIRECTORY_READY = 'filesystem.parent_directory_ready';
 
     public const OPERATION_EXCEPTION = 'operation.exception';
     public const PROCESS_COMMAND_FAILED = 'process.command_failed';
+    public const PROCESS_COMMAND_COMPLETED = 'process.command_completed';
+    public const MANIFEST_PARSED = 'manifest.parsed';
+    public const MANIFEST_VALIDATED = 'manifest.validated';
+    public const PACKAGE_DISCOVERY_COMPLETED = 'package.discovery_completed';
+    public const PACKAGE_VALIDATION_COMPLETED = 'package.validation_completed';
+    public const PACKAGE_COPY_PLAN_CREATED = 'package.copy_plan_created';
+    public const ACCESS_GRANTED = 'access.granted';
+    public const ACCESS_DENIED = 'access.denied';
 }
