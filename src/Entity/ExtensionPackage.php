@@ -109,9 +109,22 @@ class ExtensionPackage
         return $this->packageName;
     }
 
+    public function path(): string
+    {
+        return $this->path;
+    }
+
     public function status(): ExtensionPackageStatus
     {
         return $this->status;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function metadata(): array
+    {
+        return $this->metadata;
     }
 
     private static function assertPackageName(string $packageName): string

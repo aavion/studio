@@ -29,18 +29,24 @@ final class OperationExecutor
         return $plan;
     }
 
-    public function executeQueue(ActionQueue $queue): OperationExecution
+    public function executeQueue(ActionQueue $queue, ?callable $onEntry = null, ?callable $onStart = null): OperationExecution
     {
         $log = ActionLog::create();
         $issues = [];
         $messages = [];
         $context = $queue->context();
         $status = OperationStatus::Success;
+        $index = 0;
+        $total = count($queue);
 
         foreach ($queue as $action) {
+            ++$index;
             $entry = ActionLogEntry::pending($action->label(), [
                 'type' => $action->type(),
             ])->start();
+            if (null !== $onStart) {
+                $onStart($entry, $index, $total, $action);
+            }
 
             try {
                 $result = $action->execute();
@@ -58,12 +64,16 @@ final class OperationExecutor
             array_push($issues, ...$result->issues());
             array_push($messages, ...$result->messages());
             $status = $this->highestSeverity($status, $result->status());
-            $log = $log->add($entry->finish(
+            $finishedEntry = $entry->finish(
                 $this->statusForResult($result),
                 $result->issues(),
                 $result->context(),
                 messages: $result->messages(),
-            ));
+            );
+            $log = $log->add($finishedEntry);
+            if (null !== $onEntry) {
+                $onEntry($finishedEntry, $index, $total, $result);
+            }
 
             if (!$result->isSuccess() && $queue->stopOnFailure()) {
                 return new OperationExecution($log, $this->resultForIssues($result->status(), $issues, $context, $messages));

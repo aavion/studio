@@ -68,6 +68,31 @@ final class OperationExecutorTest extends TestCase
         self::assertSame('Second action', $execution->actionLog()->entries()[1]->name());
     }
 
+    public function testItReportsActionStartAndFinishCallbacksWithProgress(): void
+    {
+        $started = [];
+        $finished = [];
+        $executor = new OperationExecutor();
+
+        $executor->executeQueue(ActionQueue::create('callbacks', [
+            new TestOperationAction('first', 'First action', OperationResult::success()),
+            new TestOperationAction('second', 'Second action', OperationResult::success()),
+        ]), function ($entry, int $index, int $total, $result) use (&$finished): void {
+            $finished[] = [$entry->name(), $index, $total, $result->isSuccess()];
+        }, function ($entry, int $index, int $total, $action) use (&$started): void {
+            $started[] = [$entry->name(), $index, $total, $action->type()];
+        });
+
+        self::assertSame([
+            ['First action', 1, 2, 'first'],
+            ['Second action', 2, 2, 'second'],
+        ], $started);
+        self::assertSame([
+            ['First action', 1, 2, true],
+            ['Second action', 2, 2, true],
+        ], $finished);
+    }
+
     public function testItStopsOnFailureByDefault(): void
     {
         $issue = OperationIssue::create('import.failed', 'message.import.failed');

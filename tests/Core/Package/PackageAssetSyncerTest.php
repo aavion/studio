@@ -1,0 +1,159 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Core\Package;
+
+use App\Core\Package\PackageAssetSyncPackage;
+use App\Core\Package\PackageAssetSyncer;
+use App\Core\Package\PackageScope;
+use App\Core\Workflow\OperationStatus;
+use App\Tests\Support\FilesystemTestHelper;
+use PHPUnit\Framework\TestCase;
+
+final class PackageAssetSyncerTest extends TestCase
+{
+    use FilesystemTestHelper;
+
+    private string $root;
+
+    protected function setUp(): void
+    {
+        $this->root = $this->createTemporaryDirectory('studio-package-assets');
+        $this->writeTestFile($this->root, 'assets/packages/.gitignore', "*\n!.gitignore\n!README.md\n");
+        $this->writeTestFile($this->root, 'assets/packages/README.md', "Package asset mirror.\n");
+        $this->writeTestFile($this->root, 'assets/packages/stale/old.css', 'old');
+    }
+
+    protected function tearDown(): void
+    {
+        $this->removeDirectory($this->root);
+    }
+
+    public function testItMirrorsPackageAssetsAndRebuildsRegistries(): void
+    {
+        $this->writeTestFile($this->root, 'packages/demo/assets/module.css', '.icon { background-image: url("./images/icon.svg"); }');
+        $this->writeTestFile($this->root, 'packages/demo/assets/module.js', 'import helper from "./lib/helper.js";');
+        $this->writeTestFile($this->root, 'packages/demo/assets/images/icon.svg', '<svg></svg>');
+        $this->writeTestFile($this->root, 'packages/demo/assets/lib/helper.js', 'export default {};');
+        $this->writeTestFile($this->root, 'packages/demo/assets/vendor/library/index.js', 'import "./chunk.js";');
+        $this->writeTestFile($this->root, 'packages/demo/templates/widget.html.twig', '<div class="demo"></div>');
+
+        $result = (new PackageAssetSyncer($this->root))->sync([
+            new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
+        ]);
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame(5, $result->context()['mirrored_assets']);
+        self::assertFileDoesNotExist($this->root.'/assets/packages/stale/old.css');
+        self::assertFileExists($this->root.'/assets/packages/.gitignore');
+        self::assertFileExists($this->root.'/assets/packages/README.md');
+        self::assertSame('<svg></svg>', file_get_contents($this->root.'/assets/packages/demo/images/icon.svg'));
+        self::assertStringContainsString('url("../packages/demo/images/icon.svg")', (string) file_get_contents($this->root.'/assets/packages/demo/module.css'));
+        self::assertSame('import "./chunk.js";', file_get_contents($this->root.'/assets/packages/demo/vendor/library/index.js'));
+
+        $cssRegistry = (string) file_get_contents($this->root.'/assets/styles/packages/extension.css');
+        $javaScriptRegistry = (string) file_get_contents($this->root.'/assets/js/packages/extension.js');
+
+        self::assertStringContainsString('@source "../../../packages/demo/templates";', $cssRegistry);
+        self::assertStringContainsString('@import "../../packages/demo/module.css";', $cssRegistry);
+        self::assertStringContainsString('import "../../packages/demo/module.js";', $javaScriptRegistry);
+        self::assertStringNotContainsString('vendor/library/index.js', $javaScriptRegistry);
+    }
+
+    public function testItRoutesFrontendAndBackendThemeAssetsToSeparateBuckets(): void
+    {
+        $this->writeTestFile($this->root, 'packages/dual/assets/frontend/app.css', '.front {}');
+        $this->writeTestFile($this->root, 'packages/dual/assets/backend/app.css', '.back {}');
+
+        (new PackageAssetSyncer($this->root))->sync([
+            new PackageAssetSyncPackage('dual', 'packages/dual', [PackageScope::FrontendTheme, PackageScope::BackendTheme]),
+        ]);
+
+        self::assertStringContainsString('@import "../../packages/dual/frontend/app.css";', (string) file_get_contents($this->root.'/assets/styles/packages/frontend-theme.css'));
+        self::assertStringContainsString('@import "../../packages/dual/backend/app.css";', (string) file_get_contents($this->root.'/assets/styles/packages/backend-theme.css'));
+        self::assertStringNotContainsString('dual/frontend/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+    }
+
+    public function testItRegistersTemplateOnlyPackagesAsTailwindSources(): void
+    {
+        $this->writeTestFile($this->root, 'packages/templates-only/templates/widget.html.twig', '<div class="package-widget"></div>');
+
+        $result = (new PackageAssetSyncer($this->root))->sync([
+            new PackageAssetSyncPackage('templates-only', 'packages/templates-only', [PackageScope::Module]),
+        ]);
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame(0, $result->context()['mirrored_assets']);
+        self::assertSame(1, $result->context()['tailwind_sources']);
+        self::assertStringContainsString('@source "../../../packages/templates-only/templates";', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+    }
+
+    public function testItRemovesDeactivatedPackageMirrorAndRegistryEntries(): void
+    {
+        $this->writeTestFile($this->root, 'packages/demo/assets/module.css', '.demo {}');
+        $this->writeTestFile($this->root, 'packages/demo/assets/module.js', 'console.log("demo");');
+        $this->writeTestFile($this->root, 'packages/demo/templates/widget.html.twig', '<div class="demo"></div>');
+
+        $syncer = new PackageAssetSyncer($this->root);
+        $syncer->sync([
+            new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
+        ]);
+
+        self::assertDirectoryExists($this->root.'/assets/packages/demo');
+        self::assertStringContainsString('packages/demo/templates', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringContainsString('packages/demo/module.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringContainsString('packages/demo/module.js', (string) file_get_contents($this->root.'/assets/js/packages/extension.js'));
+
+        $syncer->sync([]);
+
+        self::assertDirectoryDoesNotExist($this->root.'/assets/packages/demo');
+        self::assertStringNotContainsString('packages/demo', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringNotContainsString('packages/demo', (string) file_get_contents($this->root.'/assets/js/packages/extension.js'));
+    }
+
+    public function testItFailsWhenMirrorDirectoryIsASymlink(): void
+    {
+        $this->removeDirectory($this->root.'/assets/packages');
+        mkdir($this->root.'/external-mirror', 0775, true);
+        $this->createSymlinkOrSkip($this->root.'/external-mirror', $this->root.'/assets/packages');
+
+        $result = (new PackageAssetSyncer($this->root))->sync([]);
+        unlink($this->root.'/assets/packages');
+        mkdir($this->root.'/assets/packages', 0775, true);
+
+        self::assertSame(OperationStatus::Failed, $result->status());
+        self::assertSame('package.asset_sync_failed', $result->firstIssue()?->code());
+    }
+
+    public function testItFailsWhenPackageAssetRootIsBelowASymlink(): void
+    {
+        mkdir($this->root.'/external-package/assets', 0775, true);
+        $this->writeTestFile($this->root, 'external-package/assets/module.css', '.demo {}');
+        mkdir($this->root.'/packages', 0775, true);
+        $this->createSymlinkOrSkip($this->root.'/external-package', $this->root.'/packages/demo');
+
+        $result = (new PackageAssetSyncer($this->root))->sync([
+            new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
+        ]);
+        unlink($this->root.'/packages/demo');
+
+        self::assertSame(OperationStatus::Failed, $result->status());
+        self::assertSame('package.asset_sync_failed', $result->firstIssue()?->code());
+    }
+
+    public function testItFailsWhenPackageTemplateRootIsASymlink(): void
+    {
+        mkdir($this->root.'/packages/demo', 0775, true);
+        mkdir($this->root.'/external-templates', 0775, true);
+        $this->createSymlinkOrSkip($this->root.'/external-templates', $this->root.'/packages/demo/templates');
+
+        $result = (new PackageAssetSyncer($this->root))->sync([
+            new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
+        ]);
+        unlink($this->root.'/packages/demo/templates');
+
+        self::assertSame(OperationStatus::Failed, $result->status());
+        self::assertSame('package.asset_sync_failed', $result->firstIssue()?->code());
+    }
+}

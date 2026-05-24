@@ -30,6 +30,17 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Core\Package\PackageAssetSyncer:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Core\Package\ActivePackageAssetProviderInterface:
+        alias: App\Core\Package\ActivePackageAssetProvider
+
+    App\Core\Asset\AssetRebuildQueueFactory:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\Security\MaintenanceModeSubscriber:
         arguments:
             $maintenanceEnabled: '%env(bool:APP_MAINTENANCE)%'

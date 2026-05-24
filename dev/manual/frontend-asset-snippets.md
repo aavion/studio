@@ -1,7 +1,7 @@
 # Frontend asset snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-23  
+> **Updated**: 2026-05-24  
 > **Owner**: Core  
 > **Purpose:** Record early notes for AssetMapper, ImportMap, Tailwind, theme assets, illustrations, and package asset rebuilds.  
 
@@ -19,9 +19,9 @@ Composer auto-scripts currently handle:
 
 `bin/init` should avoid duplicating those commands and only run `asset-map:compile` in `prod`.
 
-The global package-aware rebuild entry point should be `php bin/console studio:assets:rebuild`. Package lifecycle workflows and manual admin recovery actions should call this command through the operational ActionLog runner, not rebuild assets during normal page requests.
+The global package-aware rebuild entry point is `php bin/console studio:assets:rebuild`. Package lifecycle workflows and manual admin recovery actions should call this command through the operational ActionLog runner, not rebuild assets during normal page requests.
 
-The command should publish a planned step count before execution. The planned order is:
+The command publishes a planned step count in dry-run mode and reports current step progress during execution. The order is:
 
 1. mirror active package assets and rewrite generated package asset registries;
 2. run `assets:install`;
@@ -31,6 +31,8 @@ The command should publish a planned step count before execution. The planned or
 6. run `cache:clear` as the finalizer.
 
 `cache:clear` intentionally runs last. The rebuild should run in a CLI worker or subprocess with persisted ActionLog entries, while the UI reads progress through streaming or `/api/live/operations/{operationId}/log?cursor=<number>`. If clearing the cache briefly interrupts polling, the UI can resume from the stored cursor. The command must not depend on the current HTTP request continuing after cache invalidation.
+
+Use `php bin/console studio:packages:assets:sync` when only the active package mirror and generated registry files need to be refreshed without running the full Symfony asset lifecycle.
 
 ## Theme asset notes
 

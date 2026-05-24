@@ -42,6 +42,7 @@
   - [ ] API layer
   - [ ] Frontend delivery and caching
   - [ ] Operational admin workflows
+  - [ ] Scheduler
   - [ ] Import/export and LLM collaboration
   - [ ] Backup and restore
   - [ ] Contact, mail, logging, and statistics
@@ -79,7 +80,10 @@
 - Reworked the extension model around one package lifecycle with `PACKAGE_SCOPE` values, single-active frontend/backend theme and provider scopes, many-active module scopes, all-or-nothing multi-scope activation, `packages/` discovery, package-owned assets, and package-owned data cleanup rules.
 - Added the native package-scoped view foundation: frontend/backend layout and partial trees, frontend error/user templates, backend operation templates, generic content fallback rendering with safe Markdown support, namespaced macro templates, system package metadata from the root `.manifest`, and event-collected Twig view context for future package contributions.
 - Added the package asset aggregation baseline: stable CSS/JS registry buckets imported by `app.css`/`app.js`, package asset mirror location under `assets/packages/`, inspection for static package assets, CSS/JS path rewriting for package-authored assets, registry builder coverage for Tailwind `@source`, CSS `@import`, and JavaScript import generation, and the documented `studio:assets:rebuild` operation order with final cache clear for ActionLog resilience.
+- Implemented the explicit package-aware asset rebuild commands: `studio:packages:assets:sync` mirrors active package assets and rewrites registries, while `studio:assets:rebuild` runs package sync, `assets:install`, `importmap:install`, `tailwind:build`, production-only `public/assets` cleanup plus `asset-map:compile`, and final `cache:clear` through the shared operation executor with dry-run, progress, and JSON output support.
+- Hardened package asset rebuild failure handling: dry-runs can still show the planned rebuild when package storage is unavailable, real runs stop before mutation, package/mirror symlinks are rejected, and filesystem read/write/copy/remove failures now become structured operation failures.
 - Added the shared raw JSON output renderer for small `/api/live/**` flows such as captcha seeds, polling, and operation status checks, and recorded ActionLog polling fallback semantics with numeric `cursor`, optional `cursor_max`, and server-recommended `next_poll_ms`.
+- Added a Scheduler feature draft for future `bin/scheduler` and protected `/scheduler/**` execution, API-key access, Admin UI task definitions, due-task summaries, retry behavior, automatic disablement after three consecutive failures, and package-provided maintenance tasks.
 
 ### 2026-05-23
 - Added the first persistent Core/content database baseline in migration `Version20260523210000`: global config, ACL groups, users, API keys, extension packages, menus, database-backed schemas, schema versions, content items, revisions, and revision-scoped field values.

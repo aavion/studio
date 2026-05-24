@@ -24,6 +24,8 @@ message:
     scope_invalid: 'Paket-Scope "%scope%" wird nicht unterstützt.'
     copy_source_missing: 'Paket-Kopierquelle "%path%" fehlt.'
     copy_source_symlink: 'Paket-Kopierquelle "%path%" darf kein Symlink sein.'
+    asset_sync_completed: 'Paket-Asset-Sync hat %assets% Asset(s) aus %packages% Paket(en) gespiegelt.'
+    asset_sync_failed: 'Paket-Asset-Sync fehlgeschlagen: %message%'
     discovery_completed: 'Paket-Discovery hat %count% Kandidat(en) gefunden.'
     validation_completed: 'Paket "%package%" hat die Validierung bestanden.'
     copy_plan_created: 'Paket-Kopierplan enthält %count% Datei(en).'
@@ -50,6 +52,7 @@ message:
     directory_create_failed: 'Verzeichnis "%path%" konnte nicht erstellt werden.'
     file_written: 'Datei "%path%" wurde geschrieben.'
     file_copied: 'Datei "%target%" wurde kopiert.'
+    path_removed: 'Pfad "%path%" wurde entfernt.'
     directory_ready: 'Verzeichnis "%path%" ist bereit.'
     parent_directory_ready: 'Übergeordnetes Verzeichnis "%path%" ist bereit.'
   operation:

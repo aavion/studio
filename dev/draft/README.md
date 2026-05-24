@@ -67,6 +67,7 @@ The feature drafts should be created in dependency order. Start with architectur
 - [API layer](0.4.x-ApiLayer.md)
 - [Frontend delivery and caching](0.4.x-FrontendDeliveryCaching.md)
 - [Operational admin workflows](0.4.x-OperationalAdminWorkflows.md)
+- [Scheduler](0.4.x-Scheduler.md)
 - [Import, export, and collaboration](0.4.x-ImportExportCollaboration.md)
 - [Backup and restore](0.4.x-BackupRestore.md)
 - [Contact, mail, and logging](0.4.x-ContactMailLogging.md)

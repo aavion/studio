@@ -28,6 +28,8 @@ final class MessageKey
     public const PACKAGE_SCOPE_INVALID = 'message.package.scope_invalid';
     public const PACKAGE_COPY_SOURCE_MISSING = 'message.package.copy_source_missing';
     public const PACKAGE_COPY_SOURCE_SYMLINK = 'message.package.copy_source_symlink';
+    public const PACKAGE_ASSET_SYNC_COMPLETED = 'message.package.asset_sync_completed';
+    public const PACKAGE_ASSET_SYNC_FAILED = 'message.package.asset_sync_failed';
     public const PACKAGE_DISCOVERY_COMPLETED = 'message.package.discovery_completed';
     public const PACKAGE_VALIDATION_COMPLETED = 'message.package.validation_completed';
     public const PACKAGE_COPY_PLAN_CREATED = 'message.package.copy_plan_created';
@@ -54,6 +56,7 @@ final class MessageKey
     public const FILESYSTEM_DIRECTORY_CREATE_FAILED = 'message.filesystem.directory_create_failed';
     public const FILESYSTEM_FILE_WRITTEN = 'message.filesystem.file_written';
     public const FILESYSTEM_FILE_COPIED = 'message.filesystem.file_copied';
+    public const FILESYSTEM_PATH_REMOVED = 'message.filesystem.path_removed';
     public const FILESYSTEM_DIRECTORY_READY = 'message.filesystem.directory_ready';
     public const FILESYSTEM_PARENT_DIRECTORY_READY = 'message.filesystem.parent_directory_ready';
 

@@ -8,6 +8,7 @@ use App\Core\DryRun\DryRunRisk;
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\Filesystem\CopyFileAction;
 use App\Core\Operation\Filesystem\EnsureDirectoryAction;
+use App\Core\Operation\Filesystem\RemovePathAction;
 use App\Core\Operation\Filesystem\WriteFileAction;
 use App\Core\Operation\OperationExecutor;
 use App\Core\Message\MessageLevel;
@@ -233,6 +234,45 @@ final class FilesystemOperationActionTest extends TestCase
         self::assertFalse($dryRun->context()['target_exists']);
         self::assertSame('', $dryRun->diffs()[0]->payload()['before']);
         self::assertSame('', $dryRun->diffs()[0]->payload()['after']);
+    }
+
+    public function testRemovePathRemovesNestedDirectories(): void
+    {
+        $this->writeTestFile($this->root, 'public/assets/app.css', 'css');
+        $this->writeTestFile($this->root, 'public/assets/images/logo.svg', '<svg></svg>');
+
+        $action = new RemovePathAction($this->root, 'public/assets');
+        $result = $action->execute();
+
+        self::assertTrue($result->isSuccess());
+        self::assertTrue($result->value()['removed']);
+        self::assertDirectoryDoesNotExist($this->root.'/public/assets');
+        self::assertSame(DryRunRisk::High, $action->dryRun()->risk());
+    }
+
+    public function testRemovePathBlocksSymbolicTargets(): void
+    {
+        $this->writeTestFile($this->root, 'real.txt', 'real');
+        $this->createSymlinkOrSkip($this->root.'/real.txt', $this->root.'/linked.txt');
+
+        $result = (new RemovePathAction($this->root, 'linked.txt'))->execute();
+
+        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame('filesystem.target_symlink', $result->firstIssue()?->code());
+        self::assertSame('real', file_get_contents($this->root.'/real.txt'));
+    }
+
+    public function testRemovePathBlocksSymbolicParentDirectories(): void
+    {
+        mkdir($this->root.'/external', 0775, true);
+        $this->writeTestFile($this->root, 'external/assets/app.css', 'css');
+        $this->createSymlinkOrSkip($this->root.'/external', $this->root.'/public');
+
+        $result = (new RemovePathAction($this->root, 'public/assets'))->execute();
+
+        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame('filesystem.parent_symlink', $result->firstIssue()?->code());
+        self::assertFileExists($this->root.'/external/assets/app.css');
     }
 
     public function testFilesystemActionsRejectTraversalPaths(): void
