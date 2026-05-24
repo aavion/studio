@@ -26,4 +26,43 @@ final class ContentItemRepository extends ServiceEntityRepository
             'status' => ContentStatus::Published,
         ]);
     }
+
+    public function findOneContentBySlug(string $slug): ?ContentItem
+    {
+        return $this->findOneBy([
+            'slug' => $slug,
+        ]);
+    }
+
+    public function findOnePublishedBySlugAndParentUid(string $slug, ?string $parentUid): ?ContentItem
+    {
+        return $this->findOneBy([
+            'slug' => $slug,
+            'parentUid' => $parentUid,
+            'status' => ContentStatus::Published,
+        ]);
+    }
+
+    public function findOneContentBySlugAndParentUid(string $slug, ?string $parentUid): ?ContentItem
+    {
+        return $this->findOneBy([
+            'slug' => $slug,
+            'parentUid' => $parentUid,
+        ]);
+    }
+
+    public function findOnePublishedByCustomUrl(string $customUrl): ?ContentItem
+    {
+        return $this->findOneBy([
+            'customUrl' => $customUrl,
+            'status' => ContentStatus::Published,
+        ]);
+    }
+
+    public function findOneContentByCustomUrl(string $customUrl): ?ContentItem
+    {
+        return $this->findOneBy([
+            'customUrl' => $customUrl,
+        ]);
+    }
 }

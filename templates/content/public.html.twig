@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ content_view.title ?? content_view.content.slug }}{% endblock %}
+
+{% block body %}
+    {% set body = content_view.field('body') %}
+
+    <main data-content-uid="{{ content_view.content.uid }}" data-content-revision="{{ content_view.revision.uid }}">
+        <article>
+            <h1>{{ content_view.title }}</h1>
+
+            {% if content_view.subtitle %}
+                <p>{{ content_view.subtitle }}</p>
+            {% endif %}
+
+            {% if body is iterable and body.html is defined %}
+                {{ body.html|raw }}
+            {% elseif body is not empty %}
+                <pre>{{ body|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+            {% endif %}
+        </article>
+    </main>
+{% endblock %}

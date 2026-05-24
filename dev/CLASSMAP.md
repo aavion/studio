@@ -1,7 +1,7 @@
 # Developer Class Map
 
 > **Status**: Active  
-> **Updated**: 2026-05-22  
+> **Updated**: 2026-05-24  
 > **Owner**: Core  
 > **Purpose:** This document tracks callable entry points (services, commands, controllers, Twig components, Stimulus controllers). Keep it up to date as new classes are added or interfaces change. This document is meant to evolve alongside the codebase—treat it as a living index for developers to quickly discover callables without grepping through the project.  
 
@@ -78,6 +78,12 @@
 | N/A | `App\Security\ApiKeyStatus` | Enum for API key permission status, translated status labels, and simple read/write activity semantics. | `dev/draft/0.4.x-ApiLayer.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Content\ContentStatus` | Enum for content workflow states such as draft, scheduled, published, and archived. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Entity/ContentItemTest.php` |
 | N/A | `App\Content\ContentVisibility` | Enum for public/private content visibility state. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Entity/ContentItemTest.php` |
+| N/A | `App\Content\Read\ContentReadContext` | Value object for requested and resolved language/variant context on public content reads. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Read/PublishedContentResolverTest.php` |
+| N/A | `App\Content\Read\ContentReadContextResolver` | Resolves content read language fallback and variant availability. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Read/PublishedContentResolverTest.php` |
+| N/A | `App\Content\Read\PublishedContentResolveResult` | Result object for public content resolution, distinguishing resolved content from missing, unpublished, unavailable, private, and denied states. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Read/PublishedContentResolverTest.php` |
+| N/A | `App\Content\Read\PublishedContentResolveStatus` | Enum for public content resolution states used by controllers to map missing/unpublished content to `404` and denied/private content to `403`. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Read/PublishedContentResolverTest.php` |
+| N/A | `App\Content\Read\PublishedContentResolver` | Public read resolver for published content by slug, custom URL, or hierarchy path with active revision, visibility, language, variant, view ACL checks, and explicit resolution status. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Read/PublishedContentResolverTest.php` |
+| N/A | `App\Content\Read\PublishedContentView` | Read model exposing a content item, active revision, resolved read context, field values, and access decision. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Read/PublishedContentResolverTest.php` |
 | N/A | `App\Content\Routing\ContentSlug` | Value object for strict lowercase ASCII content slug validation. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Routing/ContentSlugTest.php` |
 | N/A | `App\Content\Routing\ContentRouteGuard` | Guard for reserved public route prefixes and normalized content paths. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Routing/ContentRouteGuardTest.php` |
 | N/A | `App\Content\Schema\ContentSchemaField` | Constants for reserved required base field identifiers that every content schema must define. | `dev/draft/0.3.x-SchemaContentFields.md` | `tests/Content/Schema/ContentSchemaFieldTest.php` |
@@ -94,7 +100,7 @@
 | N/A | `App\Entity\ContentItem` | Doctrine entity for durable content identity, routing, workflow, variants, ACL metadata, audit timestamps, and flexible metadata. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Entity/ContentItemTest.php` |
 | N/A | `App\Entity\ContentRevision` | Versioned content revision linking content items to the exact schema version that validated its fieldset. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Entity/ContentItemTest.php`, `tests/Entity/ContentFieldValueTest.php` |
 | N/A | `App\Entity\ContentFieldValue` | Doctrine entity for localized, variant-aware schema field values attached to content revisions. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Entity/ContentFieldValueTest.php` |
-| N/A | `App\Repository\ContentItemRepository` | Repository entry point for content item lookups, including published slug lookup. | `dev/draft/0.1.x-StaticDynamicContent.md` | N/A |
+| N/A | `App\Repository\ContentItemRepository` | Repository entry point for content item lookups, including unrestricted and published slug, parent-scoped slug, and custom URL lookups. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Read/PublishedContentResolverTest.php` |
 | N/A | `App\Repository\ContentFieldValueRepository` | Repository entry point for field values in a content/version/language/variant context. | `dev/draft/0.1.x-StaticDynamicContent.md` | N/A |
 
 
@@ -102,6 +108,7 @@
 
 | Name | Class | Description | Docs | Test-Class |
 |------|-------|-------------|------| ---------- |
+| Route `content_home`, `content_show` | `App\Controller\PublicContentController` | Low-priority public content delivery controller for root and catch-all content paths. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Controller/PublicContentControllerTest.php` |
 | Stimulus `chart` | `assets/controllers/chart_controller.js` | Lazily renders ApexCharts instances from Stimulus values and destroys them on disconnect. | N/A | N/A |
 | Stimulus `code-editor` | `assets/controllers/code_editor_controller.js` | Lazily mounts CodeMirror editors with CSS, HTML, JavaScript, JSX, JSON, Markdown, PHP, TypeScript, and TSX language support. | N/A | N/A |
 
