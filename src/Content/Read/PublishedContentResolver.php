@@ -10,18 +10,27 @@ use App\Core\Access\AccessActor;
 use App\Core\Access\AccessCapability;
 use App\Core\Access\AccessResolver;
 use App\Core\Access\AccessRule;
+use App\Content\Routing\ContentPathLookup;
+use App\Content\Routing\ContentRoutePath;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Entity\ContentItem;
 use App\Repository\ContentFieldValueRepository;
 use App\Repository\ContentItemRepository;
 
-final readonly class PublishedContentResolver
+final class PublishedContentResolver
 {
+    private ContentPathLookup $pathLookup;
+
     public function __construct(
         private ContentItemRepository $contentItems,
         private ContentFieldValueRepository $fieldValues,
         private ContentReadContextResolver $contextResolver = new ContentReadContextResolver(),
         private AccessResolver $accessResolver = new AccessResolver(),
+        ?ContentPathLookup $pathLookup = null,
     ) {
+        $this->pathLookup = $pathLookup ?? new ContentPathLookup($contentItems);
     }
 
     public function findBySlug(string $slug, AccessActor $actor, string $language = 'en', string $variant = 'default'): ?PublishedContentView
@@ -41,32 +50,10 @@ final readonly class PublishedContentResolver
 
     public function resolveByPath(string $path, AccessActor $actor, string $language = 'en', string $variant = 'default'): PublishedContentResolveResult
     {
-        $path = $this->normalizePath($path);
-        $content = $this->contentItems->findOneContentByCustomUrl($path);
+        $routePath = ContentRoutePath::fromPath($path);
+        $variant = $routePath->variant() ?? $variant;
 
-        if (null === $content) {
-            $content = $this->findByHierarchyPath($path);
-        }
-
-        return $this->resolve($content, $actor, $language, $variant);
-    }
-
-    private function findByHierarchyPath(string $path): ?ContentItem
-    {
-        $parentUid = null;
-        $content = null;
-
-        foreach ($this->pathSegments($path) as $segment) {
-            $content = $this->contentItems->findOneContentBySlugAndParentUid($segment, $parentUid);
-
-            if (null === $content) {
-                return null;
-            }
-
-            $parentUid = $content->uid();
-        }
-
-        return $content;
+        return $this->resolve($this->pathLookup->findByPath($path), $actor, $language, $variant);
     }
 
     private function resolve(?ContentItem $content, AccessActor $actor, string $language, string $variant): PublishedContentResolveResult
@@ -112,7 +99,42 @@ final readonly class PublishedContentResolver
                 $this->fieldsFor($revision->uid(), $context),
                 $decision,
             ),
+            $this->messagesForContext($content, $context),
         );
+    }
+
+    /**
+     * @return list<Message>
+     */
+    private function messagesForContext(ContentItem $content, ContentReadContext $context): array
+    {
+        $messages = [];
+
+        if ($context->languageFallbackUsed()) {
+            $messages[] = Message::warning(MessageCode::CONTENT_LANGUAGE_FALLBACK, MessageKey::CONTENT_LANGUAGE_FALLBACK, [
+                '%requested_language%' => $context->requestedLanguage(),
+                '%resolved_language%' => $context->language(),
+            ], [
+                'content_uid' => $content->uid(),
+                'slug' => $content->slug(),
+                'requested_language' => $context->requestedLanguage(),
+                'resolved_language' => $context->language(),
+            ]);
+        }
+
+        if ($context->variantFallbackUsed()) {
+            $messages[] = Message::warning(MessageCode::CONTENT_VARIANT_FALLBACK, MessageKey::CONTENT_VARIANT_FALLBACK, [
+                '%requested_variant%' => $context->requestedVariant(),
+                '%resolved_variant%' => $context->variant(),
+            ], [
+                'content_uid' => $content->uid(),
+                'slug' => $content->slug(),
+                'requested_variant' => $context->requestedVariant(),
+                'resolved_variant' => $context->variant(),
+            ]);
+        }
+
+        return $messages;
     }
 
     private function aclRestrictionsAllow(ContentItem $content, AccessActor $actor): bool
@@ -144,25 +166,5 @@ final readonly class PublishedContentResolver
         }
 
         return $fields;
-    }
-
-    private function normalizePath(string $path): string
-    {
-        if ('/' === $path) {
-            return '/';
-        }
-
-        return '/'.trim($path, '/');
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function pathSegments(string $path): array
-    {
-        return array_values(array_filter(
-            explode('/', trim($path, '/')),
-            static fn (string $segment): bool => '' !== $segment,
-        ));
     }
 }

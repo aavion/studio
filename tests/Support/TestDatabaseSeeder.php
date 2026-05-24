@@ -45,6 +45,30 @@ final class TestDatabaseSeeder
             'modified_by' => 'system',
         ]);
         self::insert($pdo, 'config_entry', [
+            'config_key' => 'localization.default_language',
+            'value' => self::json('en'),
+            'value_type' => 'string',
+            'sensitive' => 0,
+            'modified_at' => self::NOW,
+            'modified_by' => 'system',
+        ]);
+        self::insert($pdo, 'config_entry', [
+            'config_key' => 'localization.route_prefixes_enabled',
+            'value' => self::json(false),
+            'value_type' => 'boolean',
+            'sensitive' => 0,
+            'modified_at' => self::NOW,
+            'modified_by' => 'system',
+        ]);
+        self::insert($pdo, 'config_entry', [
+            'config_key' => 'content.home_path',
+            'value' => self::json('/home'),
+            'value_type' => 'string',
+            'sensitive' => 0,
+            'modified_at' => self::NOW,
+            'modified_by' => 'system',
+        ]);
+        self::insert($pdo, 'config_entry', [
             'config_key' => 'content.enabled_locales',
             'value' => self::json(['en', 'de']),
             'value_type' => 'json',
@@ -237,7 +261,7 @@ final class TestDatabaseSeeder
             'schema_uid' => '10000000-0000-0000-0000-000000000001',
             'schema_version_uid' => '10000000-0000-0000-0000-000000000101',
             'slug' => 'home',
-            'custom_url' => '/',
+            'custom_url' => null,
             'sort_order' => 10,
             'metadata' => ['template_hint' => 'home'],
             'fields' => [
@@ -300,7 +324,7 @@ final class TestDatabaseSeeder
      *     schema_uid: string,
      *     schema_version_uid: string,
      *     slug: string,
-     *     custom_url: string,
+     *     custom_url: ?string,
      *     sort_order: int,
      *     metadata: array<string, mixed>,
      *     fields: array<string, array<string, mixed>>

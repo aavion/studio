@@ -70,6 +70,7 @@ final class SetupRunnerTest extends TestCase
         $title = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'site.title'")->fetchColumn();
         $url = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'site.url'")->fetchColumn();
         $language = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'localization.default_language'")->fetchColumn();
+        $homePath = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'content.home_path'")->fetchColumn();
         $defaultAclGroup = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.default_acl_group'")->fetchColumn();
         $aclGroups = $pdo->query('SELECT identifier, access_level, locked, allow_empty FROM acl_group ORDER BY access_level')->fetchAll(PDO::FETCH_ASSOC);
         $passwordHash = $pdo->query("SELECT password_hash FROM user_account WHERE username = 'admin'")->fetchColumn();
@@ -79,6 +80,7 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('Example Studio', json_decode((string) $title, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame('https://example.test', json_decode((string) $url, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame('de', json_decode((string) $language, true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame('/home', json_decode((string) $homePath, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame('registered', json_decode((string) $defaultAclGroup, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame([
             ['identifier' => 'registered', 'access_level' => 1, 'locked' => 1, 'allow_empty' => 1],
@@ -184,6 +186,7 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('success', $entries[0]['status']);
         self::assertSame('skipped', $entries[1]['status']);
         self::assertSame('de', $entries[4]['context']['settings']['localization.default_language']);
+        self::assertSame('/home', $entries[4]['context']['settings']['content.home_path']);
         self::assertSame('registered', $entries[4]['context']['settings']['user.default_acl_group']);
     }
 

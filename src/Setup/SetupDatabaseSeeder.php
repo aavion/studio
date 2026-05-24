@@ -27,9 +27,11 @@ final readonly class SetupDatabaseSeeder
         $this->upsertConfig($connection, 'site.title', $input->siteTitle(), ConfigValueType::String, $now);
         $this->upsertConfig($connection, 'site.url', $input->defaultUri(), ConfigValueType::String, $now);
         $this->upsertConfig($connection, 'localization.default_language', $input->language(), ConfigValueType::String, $now);
+        $this->upsertConfig($connection, 'localization.route_prefixes_enabled', false, ConfigValueType::Boolean, $now);
+        $this->upsertConfig($connection, 'content.home_path', '/home', ConfigValueType::String, $now);
         $this->upsertConfig($connection, 'user.default_acl_group', 'registered', ConfigValueType::String, $now);
 
-        return ['settings' => ['site.title', 'site.url', 'localization.default_language', 'user.default_acl_group']];
+        return ['settings' => ['site.title', 'site.url', 'localization.default_language', 'localization.route_prefixes_enabled', 'content.home_path', 'user.default_acl_group']];
     }
 
     /**

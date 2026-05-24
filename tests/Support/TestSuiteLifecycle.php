@@ -11,8 +11,11 @@ use SplFileInfo;
 
 final class TestSuiteLifecycle
 {
+    private static mixed $testDatabaseLock = null;
+
     public static function initialize(): void
     {
+        self::acquireTestDatabaseLock(dirname(__DIR__, 2));
         self::initializeTestDatabase();
     }
 
@@ -44,6 +47,33 @@ final class TestSuiteLifecycle
         ]);
 
         TestDatabaseSeeder::seed($testVarDirectory.'/test.db');
+    }
+
+    private static function acquireTestDatabaseLock(string $projectRoot): void
+    {
+        if (is_resource(self::$testDatabaseLock)) {
+            return;
+        }
+
+        $varDirectory = $projectRoot.'/var';
+
+        if (!is_dir($varDirectory) && !mkdir($varDirectory, 0777, true) && !is_dir($varDirectory)) {
+            throw new RuntimeException('Unable to create var for the PHPUnit lifecycle lock.');
+        }
+
+        $lock = fopen($varDirectory.'/test-suite.lock', 'c');
+
+        if (!is_resource($lock)) {
+            throw new RuntimeException('Unable to create the PHPUnit lifecycle lock file.');
+        }
+
+        if (!flock($lock, LOCK_EX | LOCK_NB)) {
+            fclose($lock);
+
+            throw new RuntimeException('Another PHPUnit process is already using var/test. Run the test suite sequentially.');
+        }
+
+        self::$testDatabaseLock = $lock;
     }
 
     /**

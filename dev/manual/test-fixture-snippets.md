@@ -56,9 +56,9 @@ Use `App\Tests\Support\FilesystemTestHelper` for temporary directories, fixture 
 
 ## Lifecycle hooks
 
-`App\Tests\Support\TestSuiteLifecycle` is wired from `tests/bootstrap.php`. It currently reserves a shared suite temporary root at `sys_get_temp_dir().'/studio-test-suite'`, runs a no-op `initialize()` step, and registers shutdown cleanup for that root.
+`App\Tests\Support\TestSuiteLifecycle` is wired from `tests/bootstrap.php`. It reserves a shared suite temporary root at `sys_get_temp_dir().'/studio-test-suite'`, initializes the test database, and registers shutdown cleanup for that root.
 
-The lifecycle initializes `env:test` directly. Before PHPUnit runs, it clears `var/test`, applies the current Doctrine baseline migration to `var/test/test.db`, and calls `App\Tests\Support\TestDatabaseSeeder` to load deterministic demo data. This keeps the test suite independent from `bin/setup`.
+The lifecycle initializes `env:test` directly. Before PHPUnit runs, it acquires a non-blocking suite lock, clears `var/test`, applies the current Doctrine baseline migration to `var/test/test.db`, and calls `App\Tests\Support\TestDatabaseSeeder` to load deterministic demo data. Concurrent PHPUnit processes are rejected with a clear message because they would otherwise mutate the shared SQLite test database. This keeps the test suite independent from `bin/setup`.
 
 The current database seed includes:
 

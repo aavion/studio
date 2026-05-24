@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Content\Routing;
 
-use App\Core\Message\MessageException;
 use App\Core\Message\MessageCode;
+use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 
 final readonly class ContentRouteGuard
@@ -15,7 +15,10 @@ final readonly class ContentRouteGuard
      */
     public const DEFAULT_RESERVED_PREFIXES = [
         'admin',
+        'editor',
         'setup',
+        ContentSystemRoute::PREFIX,
+        'user',
         'api',
         'assets',
         '_profiler',
@@ -34,8 +37,10 @@ final readonly class ContentRouteGuard
     /**
      * @param list<string> $reservedPrefixes
      */
-    public function __construct(array $reservedPrefixes = self::DEFAULT_RESERVED_PREFIXES)
-    {
+    public function __construct(
+        array $reservedPrefixes = self::DEFAULT_RESERVED_PREFIXES,
+        private ?ContentRouteLocalization $localization = null,
+    ) {
         $this->reservedPrefixes = array_values(array_unique($reservedPrefixes));
     }
 
@@ -43,7 +48,7 @@ final readonly class ContentRouteGuard
     {
         $slug = $slug instanceof ContentSlug ? $slug : ContentSlug::fromString($slug);
 
-        if (in_array($slug->value(), $this->reservedPrefixes, true)) {
+        if (in_array($slug->value(), $this->reservedPrefixes(), true)) {
             throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_SLUG_RESERVED, [
                 '%slug%' => $slug->value(),
             ]);
@@ -58,18 +63,32 @@ final readonly class ContentRouteGuard
         $segments = explode('/', ltrim($path, '/'));
         $firstSegment = $segments[0] ?? '';
 
-        if (in_array($firstSegment, $this->reservedPrefixes, true)) {
+        if (in_array($firstSegment, $this->reservedPrefixes(), true)) {
             throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_PATH_RESERVED_PREFIX, [
                 '%path%' => $path,
                 '%prefix%' => $firstSegment,
             ]);
         }
 
-        foreach ($segments as $segment) {
-            $this->assertPathSegment($segment, $path);
+        foreach ($segments as $index => $segment) {
+            $this->assertPathSegment($segment, $path, $index === array_key_last($segments));
         }
 
         return $path;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function reservedPrefixes(): array
+    {
+        $prefixes = $this->reservedPrefixes;
+
+        if (true === $this->localization?->isEnabled()) {
+            array_push($prefixes, ...$this->localization->availableLanguages());
+        }
+
+        return array_values(array_unique($prefixes));
     }
 
     private function normalizePath(string $path): string
@@ -97,7 +116,7 @@ final readonly class ContentRouteGuard
         return $path;
     }
 
-    private function assertPathSegment(string $segment, string $path): void
+    private function assertPathSegment(string $segment, string $path, bool $isLastSegment): void
     {
         if ('.' === $segment || '..' === $segment) {
             throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_PATH_TRAVERSAL, [
@@ -109,7 +128,7 @@ final readonly class ContentRouteGuard
         if (str_starts_with($segment, '~')) {
             $variant = substr($segment, 1);
 
-            if (!ContentSlug::isValid($variant)) {
+            if (!$isLastSegment || !ContentSlug::isValid($variant)) {
                 throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_PATH_VARIANT_INVALID, [
                     '%path%' => $path,
                     '%variant%' => $variant,

@@ -6,6 +6,7 @@ namespace App\Tests\Entity;
 
 use App\Content\ContentStatus;
 use App\Content\ContentVisibility;
+use App\Content\Routing\ContentSystemRoute;
 use App\Content\Schema\ContentSchemaSource;
 use App\Core\Access\AccessLevel;
 use App\Core\Message\MessageKey;
@@ -76,6 +77,15 @@ final class ContentItemTest extends TestCase
         self::assertSame(['default', 'compact'], $content->availableVariants());
         self::assertSame(ContentVisibility::Private, $content->visibility());
         self::assertSame(['Administrators', 'Editors'], $content->aclRestrictions());
+    }
+
+    public function testItAllowsTheVirtualSystemParent(): void
+    {
+        $content = new ContentItem('11111111-1111-1111-1111-111111111111', 'footer');
+
+        $content->moveTo(ContentSystemRoute::VIRTUAL_PARENT_UID);
+
+        self::assertSame(ContentSystemRoute::VIRTUAL_PARENT_UID, $content->parentUid());
     }
 
     public function testItActivatesRevisionAndAttachesFieldValuesThroughRevision(): void

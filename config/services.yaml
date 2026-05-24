@@ -26,5 +26,13 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Localization\TranslationLanguageCatalog:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Security\MaintenanceModeSubscriber:
+        arguments:
+            $maintenanceEnabled: '%env(bool:APP_MAINTENANCE)%'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

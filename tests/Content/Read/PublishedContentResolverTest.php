@@ -8,6 +8,9 @@ use App\Content\Read\PublishedContentResolver;
 use App\Content\Read\PublishedContentResolveStatus;
 use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageLevel;
+use App\Core\Message\MessageKey;
 use App\Repository\ContentFieldValueRepository;
 use App\Repository\ContentItemRepository;
 use Doctrine\DBAL\Connection;
@@ -43,9 +46,9 @@ final class PublishedContentResolverTest extends KernelTestCase
         parent::tearDown();
     }
 
-    public function testItResolvesSeededPublishedContentByCustomPath(): void
+    public function testItResolvesSeededHomeContentByHierarchyPath(): void
     {
-        $view = $this->resolver->findByPath('/', AccessActor::anonymous(), 'de');
+        $view = $this->resolver->findByPath('/home', AccessActor::anonymous(), 'de');
 
         self::assertNotNull($view);
         self::assertSame('home', $view->content()->slug());
@@ -66,15 +69,22 @@ final class PublishedContentResolverTest extends KernelTestCase
         self::assertSame('en', $view->context()->language());
         self::assertTrue($view->context()->languageFallbackUsed());
         self::assertSame('About Studio', $view->title());
+        self::assertSame(MessageCode::CONTENT_LANGUAGE_FALLBACK, $this->resolver->resolveBySlug('about', AccessActor::anonymous(), 'fr')->messages()[0]->code());
+        self::assertSame(MessageKey::CONTENT_LANGUAGE_FALLBACK, $this->resolver->resolveBySlug('about', AccessActor::anonymous(), 'fr')->messages()[0]->translationKey());
     }
 
-    public function testItReturnsNullWhenRequestedVariantIsMissing(): void
+    public function testItFallsBackToDefaultVariantWhenRequestedVariantIsMissing(): void
     {
-        self::assertNull($this->resolver->findBySlug('home', AccessActor::anonymous(), variant: 'compact'));
-        self::assertSame(
-            PublishedContentResolveStatus::ContextUnavailable,
-            $this->resolver->resolveBySlug('home', AccessActor::anonymous(), variant: 'compact')->status(),
-        );
+        $result = $this->resolver->resolveBySlug('home', AccessActor::anonymous(), variant: 'compact');
+        $view = $result->view();
+
+        self::assertSame(PublishedContentResolveStatus::Resolved, $result->status());
+        self::assertNotNull($view);
+        self::assertSame('compact', $view->context()->requestedVariant());
+        self::assertSame('default', $view->context()->variant());
+        self::assertTrue($view->context()->variantFallbackUsed());
+        self::assertSame(MessageCode::CONTENT_VARIANT_FALLBACK, $result->messages()[0]->code());
+        self::assertSame(MessageLevel::Warning, $result->messages()[0]->level());
     }
 
     public function testItResolvesPublishedContentByHierarchyPath(): void
@@ -90,6 +100,46 @@ final class PublishedContentResolverTest extends KernelTestCase
         self::assertNotNull($view);
         self::assertSame('about', $view->content()->slug());
         self::assertSame('About Studio', $view->title());
+    }
+
+    public function testItResolvesInternalSystemHierarchyWhenCalledDirectly(): void
+    {
+        $this->connection->update('content_item', [
+            'slug' => 'footer',
+            'parent_uid' => 'system',
+            'custom_url' => null,
+        ], ['slug' => 'about']);
+        $this->entityManager->clear();
+
+        $view = $this->resolver->findByPath('/system/footer', AccessActor::anonymous());
+
+        self::assertNotNull($view);
+        self::assertSame('footer', $view->content()->slug());
+        self::assertSame('About Studio', $view->title());
+    }
+
+    public function testItResolvesRouteVariantSuffix(): void
+    {
+        $revisionUid = (string) $this->connection->fetchOne("SELECT active_revision_uid FROM content_item WHERE slug = 'home'");
+        $this->connection->update('content_item', [
+            'available_variants' => json_encode(['default', 'compact'], JSON_THROW_ON_ERROR),
+        ], ['slug' => 'home']);
+        $this->connection->insert('content_field_value', [
+            'uid' => '40000000-0000-0000-0000-000000000401',
+            'revision_uid' => $revisionUid,
+            'language' => 'en',
+            'variant' => 'compact',
+            'field_identifier' => 'title',
+            'field_content' => json_encode('Compact Home', JSON_THROW_ON_ERROR),
+        ]);
+        $this->entityManager->clear();
+
+        $view = $this->resolver->findByPath('/home/~compact', AccessActor::anonymous());
+
+        self::assertNotNull($view);
+        self::assertSame('compact', $view->context()->requestedVariant());
+        self::assertSame('compact', $view->context()->variant());
+        self::assertSame('Compact Home', $view->title());
     }
 
     public function testItAppliesViewAclRules(): void

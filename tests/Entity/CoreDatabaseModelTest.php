@@ -61,6 +61,9 @@ final class CoreDatabaseModelTest extends TestCase
         );
 
         self::assertSame(AccessLevel::MANAGER, $user->maxAccessLevel());
+        self::assertSame('dominique', $user->getUserIdentifier());
+        self::assertSame('hash', $user->getPassword());
+        self::assertSame([], $user->getRoles());
         self::assertSame(UserAccountStatus::Active, $user->status());
         self::assertSame(['language' => 'default'], $user->settings());
         self::assertTrue($editor->isLocked());

@@ -51,6 +51,8 @@ final readonly class SetupDryRunPlanner
                     'site.title' => $input->siteTitle(),
                     'site.url' => $input->defaultUri(),
                     'localization.default_language' => $input->language(),
+                    'localization.route_prefixes_enabled' => false,
+                    'content.home_path' => '/home',
                     'user.default_acl_group' => 'registered',
                 ],
             ], ActionLogStatus::Skipped],

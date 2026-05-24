@@ -146,6 +146,10 @@ message:
       reserved_prefix: 'Content path "%path%" starts with reserved prefix "%prefix%".'
       traversal: 'Content path "%path%" contains traversal segment "%segment%".'
       variant_invalid: 'Content path "%path%" contains invalid variant "%variant%".'
+    language:
+      fallback: 'Requested content language "%requested_language%" is unavailable; rendering "%resolved_language%" instead.'
+    variant:
+      fallback: 'Requested content variant "%requested_variant%" is unavailable; rendering "%resolved_variant%" instead.'
     uid:
       invalid_format: '%label% "%uid%" must be a lowercase UUID.'
     string_list:

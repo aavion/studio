@@ -23,4 +23,9 @@ final class TestSuiteLifecycleTest extends TestCase
 
         self::assertDirectoryDoesNotExist($root);
     }
+
+    public function testBootstrapCreatesTestDatabaseLockFile(): void
+    {
+        self::assertFileExists(dirname(__DIR__, 2).'/var/test-suite.lock');
+    }
 }

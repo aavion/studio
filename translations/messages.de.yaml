@@ -146,6 +146,10 @@ message:
       reserved_prefix: 'Content-Pfad "%path%" beginnt mit dem reservierten Präfix "%prefix%".'
       traversal: 'Content-Pfad "%path%" enthält das Traversal-Segment "%segment%".'
       variant_invalid: 'Content-Pfad "%path%" enthält die ungültige Variante "%variant%".'
+    language:
+      fallback: 'Die angefragte Content-Sprache "%requested_language%" ist nicht verfügbar; stattdessen wird "%resolved_language%" gerendert.'
+    variant:
+      fallback: 'Die angefragte Content-Variante "%requested_variant%" ist nicht verfügbar; stattdessen wird "%resolved_variant%" gerendert.'
     uid:
       invalid_format: '%label% "%uid%" muss eine kleingeschriebene UUID sein.'
     string_list:

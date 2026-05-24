@@ -8,17 +8,19 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Uid;
+use App\Security\AccessLevelAwareUserInterface;
 use App\Security\UserAccountStatus;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'user_account')]
 #[ORM\UniqueConstraint(name: 'uniq_user_account_username', columns: ['username'])]
 #[ORM\UniqueConstraint(name: 'uniq_user_account_email', columns: ['email'])]
 #[ORM\Index(name: 'idx_user_account_status', columns: ['status'])]
-class UserAccount
+class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\Column(length: 36)]
@@ -97,6 +99,24 @@ class UserAccount
     public function passwordHash(): string
     {
         return $this->passwordHash;
+    }
+
+    public function getPassword(): ?string
+    {
+        return $this->passwordHash;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getRoles(): array
+    {
+        return [];
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->username;
     }
 
     /**

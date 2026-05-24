@@ -17,7 +17,7 @@ final class ContentRouteGuardTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(MessageKey::CONTENT_SLUG_RESERVED);
 
-        (new ContentRouteGuard())->assertSlugAllowed('admin');
+        (new ContentRouteGuard())->assertSlugAllowed('system');
     }
 
     public function testItNormalizesAndAcceptsContentPaths(): void
@@ -27,7 +27,27 @@ final class ContentRouteGuardTest extends TestCase
         self::assertSame('/projects/demo/~compact', $path);
     }
 
+    public function testItRejectsVariantMarkersBeforeTheLastPathSegment(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage(MessageKey::CONTENT_PATH_VARIANT_INVALID);
+
+        (new ContentRouteGuard())->assertPathAllowed('/projects/~compact/demo');
+    }
+
     public function testItRejectsReservedPathPrefixes(): void
+    {
+        foreach (['system', 'user', 'setup', 'admin', 'editor'] as $prefix) {
+            try {
+                (new ContentRouteGuard())->assertPathAllowed(sprintf('/%s/example', $prefix));
+                self::fail(sprintf('Expected prefix "%s" to be reserved.', $prefix));
+            } catch (InvalidArgumentException $exception) {
+                self::assertStringContainsString(MessageKey::CONTENT_PATH_RESERVED_PREFIX, $exception->getMessage());
+            }
+        }
+    }
+
+    public function testItRejectsReservedApiPathPrefix(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(MessageKey::CONTENT_PATH_RESERVED_PREFIX);

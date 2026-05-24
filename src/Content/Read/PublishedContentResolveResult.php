@@ -4,17 +4,26 @@ declare(strict_types=1);
 
 namespace App\Content\Read;
 
+use App\Core\Message\Message;
+
 final readonly class PublishedContentResolveResult
 {
+    /**
+     * @param list<Message> $messages
+     */
     private function __construct(
         private PublishedContentResolveStatus $status,
         private ?PublishedContentView $view = null,
+        private array $messages = [],
     ) {
     }
 
-    public static function resolved(PublishedContentView $view): self
+    /**
+     * @param list<Message> $messages
+     */
+    public static function resolved(PublishedContentView $view, array $messages = []): self
     {
-        return new self(PublishedContentResolveStatus::Resolved, $view);
+        return new self(PublishedContentResolveStatus::Resolved, $view, $messages);
     }
 
     public static function notFound(): self
@@ -52,6 +61,14 @@ final readonly class PublishedContentResolveResult
         return $this->view;
     }
 
+    /**
+     * @return list<Message>
+     */
+    public function messages(): array
+    {
+        return $this->messages;
+    }
+
     public function isResolved(): bool
     {
         return PublishedContentResolveStatus::Resolved === $this->status;
@@ -59,9 +76,11 @@ final readonly class PublishedContentResolveResult
 
     public function isForbidden(): bool
     {
-        return in_array($this->status, [
-            PublishedContentResolveStatus::NotPublic,
-            PublishedContentResolveStatus::Denied,
-        ], true);
+        return PublishedContentResolveStatus::NotPublic === $this->status;
+    }
+
+    public function isUnauthorized(): bool
+    {
+        return PublishedContentResolveStatus::Denied === $this->status;
     }
 }

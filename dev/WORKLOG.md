@@ -9,13 +9,13 @@
 **ALWAYS KEEP UP-TO-DATE!**
 
 ## Roadmap
-**Usage:** Use as guidance on what major changes to implement next. Keep the list up-to-date while proceding.
+**Usage:** Use as guidance on what major changes to implement next. Keep the list up-to-date while proceeding.
 
 - [ ] **0.1.x Foundation**
-  - [ ] Core architecture
-  - [ ] Setup and test automation
-  - [ ] Error handling and validation
-  - [ ] Static/dynamic content model
+  - [x] Core architecture
+  - [x] Setup and test automation
+  - [x] Error handling and validation
+  - [x] Static/dynamic content model
   - [ ] Theme engine
   - [ ] System theme and design system
   - Open: first release-readiness verification shape.
@@ -70,15 +70,12 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-24
-- Added the shared first-run setup runner and `bin/setup` CLI adapter, covering translated interactive setup prompts, installer language discovery, dry-run planning, env override writing, APP_SECRET/default URI/database URL handling, `composer dump-env {APP_ENV}` with bundled Composer fallback, Doctrine migration execution, default site settings, ACL/admin seeding with the `registered` level 1 group, halt-on-error ActionLog results, and callable setup tests.
-- Added setup password recovery via `bin/setup --reset-password`, interactive admin password confirmation, user account settings/status fields, reusable state markers for current/last lifecycle metadata, and the documented split between fast lookup markers and future audit history.
-- Added the first low-priority public content routes and controller, rendering seeded content through the published read layer with route-prefix guarding, language/variant query support, `404`/`403` status mapping, and functional coverage for root, custom paths, missing content, unpublished content, missing variants, private content, ACL denial, and reserved prefixes.
-- Added the first public content read layer with published slug/custom URL/hierarchy path lookup, active-revision field assembly, language fallback, missing-variant unavailable-context handling, explicit resolution statuses, visibility checks, direct view ACL enforcement, and coverage against the seeded SQLite content data.
-- Added deterministic SQLite demo seeds to the PHPUnit bootstrap lifecycle, covering config defaults, ACL groups, admin/API records, preset schemas, published content with active revisions and localized fields, and the main navigation menu; the seeded admin login uses `admin` with the current `APP_SECRET` as password, and API keys cover read-write, read-only, and revoked states.
-- Switched API-key persistence to display prefixes, APP_SECRET-derived HMAC lookup hashes, and APP_SECRET-derived encrypted payloads, then added API-key status semantics and reusable message catalogue keys for status labels and common API-key feedback.
-- Added log-filterable message levels and the first shared ACL resolver primitives for actors, capabilities, inherited rules, effective decisions, and granted/denied resolver messages.
-- Extended operation results and action-log entries with non-blocking messages, then classified manifest, package, filesystem, process, operation, validation, and ACL output across `ERROR`, `WARN`, `INFO`, and `DEBUG` levels.
-- Added operations coverage for seeded ACL, schema, content, field, and menu data, and updated setup/test documentation to clarify that `env:test` no longer depends on `bin/setup`.
+- Completed the first-run/setup baseline: translated interactive `bin/setup`, dry-run planning, env override writing, `composer dump-env {APP_ENV}` with bundled Composer fallback, Doctrine migration execution, default settings, admin seeding, password reset, password confirmation, localized ActionLog output, and callable setup tests.
+- Completed the deterministic test-data baseline: PHPUnit now owns `var/test`, applies the baseline migration to SQLite, seeds config, ACL groups, users, API keys, schema/content/menu demo data, and rejects concurrent test-suite runs before shared state can be mutated.
+- Completed the first content delivery slice: public read resolver, active-revision field assembly, custom/hierarchy/internal `/system` path lookup, virtual `system` parent support, public controller routes, reserved route prefixes, configured `content.home_path`, `404`/`401`/`403` status mapping, internal/external redirects, redirect loop protection, root-redirect handling, and route `~variant` suffix validation/fallback.
+- Completed localization and maintenance foundations: translation-catalogue language discovery, `localization.route_prefixes_enabled`, browser/default language redirects, language-prefix route protection, language fallback warnings, `APP_MAINTENANCE` `503` enforcement, access-level 9 bypass, and admin/login/asset bypass paths.
+- Completed shared security/message foundations: ACL actors, capabilities, effective decisions, level-plus-group rules, roleless access-level user bridge, message severities for log filtering, API-key prefix/HMAC/encrypted payload fields, API-key status semantics, and synchronized English/German message keys.
+- Updated architecture documentation and class maps for setup, content routing, security, test lifecycle, error-page fallback, `admin/` versus `editor/` route surfaces, and the future external media/file resolver with hidden upstream URLs, optional HTTP-auth metadata, and SSRF-safe boundaries.
 
 ### 2026-05-23
 - Added the first persistent Core/content database baseline in migration `Version20260523210000`: global config, ACL groups, users, API keys, extension packages, menus, database-backed schemas, schema versions, content items, revisions, and revision-scoped field values.

@@ -93,6 +93,18 @@ state_marker
 
 `title` and `subtitle` are reserved required base fields in every content schema. They are stored as `content_field_value` rows through the variable fieldset, not as dedicated `content_item` columns and not in `content_item.metadata`.
 
+`parent_uid` usually stores another content UID. The reserved value `system` is the only virtual parent marker and is used for internal `/system/...` content routes. These entities may be resolved by internal services, but the public catch-all route must reject direct browser delivery for the `system` prefix.
+
+`redirect_target` currently stores the redirect target string. Code may expose this as `redirectRoute()` while the database column keeps its pre-rename name until the routing model is reshaped. Internal targets such as `/system/footer` render the target content without changing the browser URL. External `http://` or `https://` targets return `302 Found`; other URI schemes are rejected.
+
+Error-page handling should use a layered fallback later: when an error such as `404`, `403`, `429`, `451`, or maintenance-mode `503` occurs, the handler should first look for a matching internal content entity such as `/system/error-pages/404` or `/system/error-pages/503`; if none exists or it cannot be rendered, the active system theme should provide the default error page.
+
+Generic route variants use a trailing marker segment such as `/article/~compact`. The marker is not part of the content hierarchy; lookup resolves `/article` and passes `compact` as the requested variant. Missing variants fall back to the default variant when possible and add a warning message to the resolve result for later logging.
+
+The public start page is configured through `content.home_path`, defaulting to `/home`. Root URLs such as `/` and localized roots such as `/de` render that path internally; the content model therefore does not require an empty slug or reserved homepage slug.
+
+Localized public routes are controlled by `localization.route_prefixes_enabled`. When enabled, the best matching browser language from `Accept-Language` is used for unprefixed redirects when available; otherwise `localization.default_language` is used. For example, `/` redirects to `/de` and `/about` redirects to `/de/about` when `de` is selected. Available prefixes are discovered from `translations/messages.*.yaml`, and active language prefixes are reserved content slugs while localized routing is enabled.
+
 `state_marker` is the reusable fast-lookup layer for current/last lifecycle metadata across content items, revisions, schemas, schema versions, users, and ACL groups. For example, content publication uses `marker_key=published`, `marker_at`, and `marker_by`; user login self-audit uses `marker_key=last_login`, `marker_by=NULL`, and `marker_value` for the IPv4/IPv6 address. It is intentionally not a full audit log; long history belongs to the later audit/logging layer.
 
 `active_version_uid` and `active_revision_uid` are nullable on purpose. `NULL` disables a schema or content entity from normal use/rendering while keeping the record available for admin recovery, staging, or cleanup retention.

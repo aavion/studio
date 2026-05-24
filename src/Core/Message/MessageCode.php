@@ -65,6 +65,8 @@ final class MessageCode
     public const PACKAGE_COPY_PLAN_CREATED = 'package.copy_plan_created';
     public const ACCESS_GRANTED = 'access.granted';
     public const ACCESS_DENIED = 'access.denied';
+    public const CONTENT_LANGUAGE_FALLBACK = 'content.language_fallback';
+    public const CONTENT_VARIANT_FALLBACK = 'content.variant_fallback';
     public const SETUP_STEP_FAILED = 'setup.step_failed';
     public const SETUP_LANGUAGE_SELECTED = 'setup.language_selected';
     public const SETUP_AVAILABLE_LANGUAGES = 'setup.available_languages';

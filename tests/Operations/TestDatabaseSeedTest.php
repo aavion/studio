@@ -131,8 +131,14 @@ final class TestDatabaseSeedTest extends TestCase
             ->fetch(PDO::FETCH_ASSOC);
 
         self::assertIsArray($content);
-        self::assertSame('/', $content['custom_url']);
+        self::assertNull($content['custom_url']);
         self::assertNotNull($content['active_revision_uid']);
+
+        $homePath = $this->pdo
+            ->query("SELECT value FROM config_entry WHERE config_key = 'content.home_path'")
+            ->fetchColumn();
+
+        self::assertSame('/home', json_decode((string) $homePath, true, flags: JSON_THROW_ON_ERROR));
 
         $titleJson = $this->pdo
             ->query("SELECT fv.field_content FROM content_field_value fv INNER JOIN content_item ci ON ci.active_revision_uid = fv.revision_uid WHERE ci.slug = 'home' AND fv.language = 'en' AND fv.variant = 'default' AND fv.field_identifier = 'title'")

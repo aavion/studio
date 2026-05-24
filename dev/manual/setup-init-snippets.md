@@ -40,7 +40,7 @@ Symfony environment resolution should match Symfony precedence as closely as pra
 - optional password recovery with `bin/setup --reset-password={username}` or `bin/setup --reset-password:{username}`;
 - env override writing and `composer dump-env`;
 - Doctrine migration execution;
-- database-backed default settings, including `localization.default_language`;
+- database-backed default settings, including `localization.default_language`, disabled `localization.route_prefixes_enabled`, and `content.home_path`;
 - dry-run planning without writing env files, running commands, or seeding the database;
 - setup action logs with halt-on-error results.
 
@@ -56,14 +56,7 @@ Automation workflows should call `bin/init` before reviews or tests when a fresh
 
 ## Test suite lifecycle note
 
-`App\Tests\Support\TestSuiteLifecycle` is already wired into `tests/bootstrap.php`, but it is intentionally light. It should stay available for later demo/test setup that must run once per PHPUnit process, while ordinary tests should continue to prefer isolated temporary directories.
-
-Potential future uses:
-
-- prepare reusable generated fixtures;
-- create a demo database snapshot;
-- warm package import caches;
-- clean shared test artifacts after shutdown.
+`App\Tests\Support\TestSuiteLifecycle` is wired into `tests/bootstrap.php`. It owns `env:test` database setup, rejects concurrent PHPUnit processes with a non-blocking lock, clears `var/test`, applies migrations, and seeds deterministic demo data once per PHPUnit process. It also keeps shutdown cleanup available for shared test artifacts. Ordinary filesystem tests should continue to prefer isolated temporary directories.
 
 ## References
 

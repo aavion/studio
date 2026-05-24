@@ -38,4 +38,9 @@ final readonly class ContentReadContext
     {
         return $this->variant;
     }
+
+    public function variantFallbackUsed(): bool
+    {
+        return $this->requestedVariant !== $this->variant;
+    }
 }

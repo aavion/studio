@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Content\ContentStatus;
 use App\Content\ContentVisibility;
 use App\Content\Routing\ContentSlug;
+use App\Content\Routing\ContentSystemRoute;
 use App\Content\Schema\ContentSchemaField;
 use App\Core\Access\AccessLevel;
 use App\Core\Message\MessageCode;
@@ -179,7 +180,7 @@ class ContentItem
 
     public function moveTo(?string $parentUid, int $sortOrder = 0): void
     {
-        $this->parentUid = null === $parentUid ? null : self::assertUid($parentUid, 'Parent content UID');
+        $this->parentUid = null === $parentUid ? null : self::assertParentUid($parentUid);
         $this->sortOrder = $sortOrder;
     }
 
@@ -203,9 +204,19 @@ class ContentItem
         return $this->redirectTarget;
     }
 
+    public function redirectRoute(): ?string
+    {
+        return $this->redirectTarget;
+    }
+
     public function setRedirectTarget(?string $redirectTarget): void
     {
         $this->redirectTarget = $redirectTarget;
+    }
+
+    public function setRedirectRoute(?string $redirectRoute): void
+    {
+        $this->redirectTarget = $redirectRoute;
     }
 
     public function schemaUid(): ?string
@@ -453,6 +464,15 @@ class ContentItem
         }
 
         return $uid;
+    }
+
+    private static function assertParentUid(string $parentUid): string
+    {
+        if (ContentSystemRoute::VIRTUAL_PARENT_UID === $parentUid) {
+            return $parentUid;
+        }
+
+        return self::assertUid($parentUid, 'Parent content UID');
     }
 
     /**

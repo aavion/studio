@@ -21,12 +21,13 @@ final readonly class ContentReadContextResolver
         $language = '' === $language ? $this->defaultLanguage : $language;
         $variant = '' === $variant ? $this->defaultVariant : $variant;
         $resolvedLanguage = $this->resolveLanguage($content->availableLanguages(), $language);
+        $resolvedVariant = $this->resolveVariant($content->availableVariants(), $variant);
 
-        if (null === $resolvedLanguage || !in_array($variant, $content->availableVariants(), true)) {
+        if (null === $resolvedLanguage || null === $resolvedVariant) {
             return null;
         }
 
-        return new ContentReadContext($language, $resolvedLanguage, $variant, $variant);
+        return new ContentReadContext($language, $resolvedLanguage, $variant, $resolvedVariant);
     }
 
     /**
@@ -43,5 +44,21 @@ final readonly class ContentReadContextResolver
         }
 
         return $availableLanguages[0] ?? null;
+    }
+
+    /**
+     * @param list<string> $availableVariants
+     */
+    private function resolveVariant(array $availableVariants, string $requestedVariant): ?string
+    {
+        if (in_array($requestedVariant, $availableVariants, true)) {
+            return $requestedVariant;
+        }
+
+        if (in_array($this->defaultVariant, $availableVariants, true)) {
+            return $this->defaultVariant;
+        }
+
+        return $availableVariants[0] ?? null;
     }
 }
