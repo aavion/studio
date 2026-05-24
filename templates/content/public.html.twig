@@ -1,23 +1,20 @@
-{% extends 'base.html.twig' %}
+{% extends 'layouts/public.html.twig' %}
 
 {% block title %}{{ content_view.title ?? content_view.content.slug }}{% endblock %}
 
-{% block body %}
-    {% set body = content_view.field('body') %}
+{% block public_body %}
+    <main class="studio-content-page" data-content-uid="{{ content_view.content.uid }}" data-content-revision="{{ content_view.revision.uid }}">
+        <article class="studio-content-article">
+            <header class="studio-content-header">
+                <div class="studio-kicker">{{ content_view.content.slug }}</div>
+                <h1>{{ content_view.title }}</h1>
 
-    <main data-content-uid="{{ content_view.content.uid }}" data-content-revision="{{ content_view.revision.uid }}">
-        <article>
-            <h1>{{ content_view.title }}</h1>
+                {% if content_view.subtitle %}
+                    <p class="studio-content-subtitle">{{ content_view.subtitle }}</p>
+                {% endif %}
+            </header>
 
-            {% if content_view.subtitle %}
-                <p>{{ content_view.subtitle }}</p>
-            {% endif %}
-
-            {% if body is iterable and body.html is defined %}
-                {{ body.html|raw }}
-            {% elseif body is not empty %}
-                <pre>{{ body|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
-            {% endif %}
+            {% include 'content/partials/_generic-fields.html.twig' with {content_view: content_view} only %}
         </article>
     </main>
 {% endblock %}

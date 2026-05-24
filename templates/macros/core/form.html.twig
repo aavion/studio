@@ -1,0 +1,16 @@
+{% macro field_row(label, control, help = null, errors = []) %}
+    <div class="studio-form-row">
+        <label class="studio-form-label">{{ label }}</label>
+        <div class="studio-form-control">{{ control|raw }}</div>
+        {% if help %}
+            <p class="studio-form-help">{{ help }}</p>
+        {% endif %}
+        {% if errors is not empty %}
+            <ul class="studio-form-errors">
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+{% endmacro %}

@@ -3,5 +3,11 @@
 @import "./icons.css";
 @import "./illustrations.css";
 @import "./codemirror.css";
+@import "./theme/base.css";
+@import "./public/base.css";
+@import "./system/base.css";
+@import "./admin/base.css";
+@import "./editor/base.css";
+@import "./setup/base.css";
 
 @custom-variant dark (&:where(.dark, .dark *));

@@ -1,0 +1,15 @@
+{% if value is same as(null) %}
+    <span class="studio-muted">{{ 'ui.content.empty_value'|trans }}</span>
+{% elseif value is same as(true) or value is same as(false) %}
+    {{ value ? 'true' : 'false' }}
+{% elseif value is iterable %}
+    {% if value.html is defined %}
+        <div class="studio-rich-text">{{ value.html|raw }}</div>
+    {% elseif value.markdown is defined %}
+        <div class="studio-rich-text">{{ value.markdown|studio_markdown }}</div>
+    {% else %}
+        <pre class="studio-code-block">{{ value|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+    {% endif %}
+{% else %}
+    <div class="studio-rich-text">{{ value|studio_markdown }}</div>
+{% endif %}

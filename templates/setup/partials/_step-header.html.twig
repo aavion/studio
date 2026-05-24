@@ -1,0 +1,9 @@
+<header class="studio-page-header">
+    <div>
+        <div class="studio-kicker">{{ eyebrow|default('ui.setup.area'|trans) }}</div>
+        <h1>{{ title }}</h1>
+    </div>
+    {% if step is defined and step is not empty %}
+        <span class="studio-badge studio-badge-neutral">{{ step }}</span>
+    {% endif %}
+</header>

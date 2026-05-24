@@ -1,7 +1,7 @@
 # Theme and module developer guidelines (Developer Guide)
 
 > **Status**: Draft  
-> **Updated**: 2026-05-20   
+> **Updated**: 2026-05-24  
 > **Owner**: Core  
 > **Purpose:** Draft guidance for developing themes, plugin modules, admin UI extensions, and first-party add-ons while the extension system is still being designed.  
 
@@ -27,7 +27,7 @@ Use this guide as a working reference when building the system theme, admin UI, 
 
 ## Theme guidelines
 
-Themes should render public-facing project content. They should not override system/admin templates in early releases.
+Themes should render public-facing project content. They should not override system/admin/editor/setup templates in early releases. If a public theme package contains those paths, the theme engine should ignore them and report diagnostics. Later manifest capabilities may deliberately allow dedicated system UI themes, but normal public themes stay limited to public rendering.
 
 Expected package shape:
 
@@ -45,6 +45,8 @@ Current constraints:
 - Themes are discovered as inactive/available and require explicit activation.
 - Theme PHP classes may define their own namespace and integrate only through documented hooks, tagged services, or Twig extensions.
 - Template overrides follow the original folder structure and only affect allowed public template areas.
+- Themes may be partial. Missing templates and assets fall back to the native public baseline shipped with the project.
+- Theme macro/function files are aggregated under a provider namespace. They must not replace native macro namespaces required by fallback templates.
 - The active theme provides outer layout and generic fieldset fallback rendering.
 - Database-backed schema Twig is separate from theme template resolution.
 - Failed activation should roll back to the previous active theme where practical.
@@ -71,6 +73,7 @@ Current constraints:
 - Modules are discovered as inactive/available and require explicit enablement.
 - Disabled modules must not contribute services, routes, templates, assets, migrations, permissions, providers, subscribers, or handlers.
 - Modules may contribute routes, services, templates, assets, field types, editor actions, API resources, permissions, migrations, event subscribers, message handlers, or replaceable providers only through documented extension points.
+- Modules may extend admin, editor, setup, operation, or system UI through documented extension points, but they should not rely on unrestricted template overrides.
 - Module-owned domain data should prefer module-owned tables and migrations.
 - Modules with frontend or admin assets must participate in the asset rebuild workflow.
 - Modules need uninstall/remove behavior, including explicit confirmation before deleting module-owned data.

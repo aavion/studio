@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'ui.error.503.title'|trans }}{% endblock %}
+{% block body_class %}studio-body studio-system studio-system-lightweight{% endblock %}
+
+{% block body %}
+    <main class="studio-error-page studio-error-lightweight">
+        <div class="studio-kicker">503</div>
+        <h1>{{ 'ui.error.503.title'|trans }}</h1>
+        <p>{{ 'ui.error.503.message'|trans }}</p>
+    </main>
+{% endblock %}

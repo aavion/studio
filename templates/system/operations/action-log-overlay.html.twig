@@ -1,0 +1,16 @@
+<section class="studio-action-log-overlay" aria-labelledby="studio-action-log-heading">
+    <header class="studio-action-log-header">
+        <h2 id="studio-action-log-heading">{{ 'ui.operations.action_log.title'|trans }}</h2>
+        <p>{{ 'ui.operations.action_log.subtitle'|trans }}</p>
+    </header>
+
+    {% include 'system/operations/partials/_action-log-summary.html.twig' with {summary: summary|default({})} only %}
+
+    <ol class="studio-action-log-list">
+        {% for entry in entries|default([]) %}
+            {% include 'system/operations/partials/_action-log-entry.html.twig' with {entry: entry} only %}
+        {% else %}
+            <li class="studio-muted">{{ 'ui.operations.action_log.empty'|trans }}</li>
+        {% endfor %}
+    </ol>
+</section>

@@ -169,3 +169,54 @@ message:
       version_invalid: 'Content schema version %version% must be positive.'
       required_field_missing: 'Content schema is missing required field "%field_identifier%".'
       field_duplicate: 'Content schema field "%field_identifier%" is duplicated.'
+ui:
+  app:
+    name: 'aavion Studio'
+  admin:
+    area: 'Administration'
+    navigation: 'Admin navigation'
+  editor:
+    area: 'Editor'
+  setup:
+    area: 'Setup'
+  content:
+    fields: 'Content fields'
+    field: 'Field'
+    value: 'Value'
+    empty_value: 'Empty'
+  error:
+    403:
+      title: 'Access denied'
+      message: 'This route is protected or not available for direct access.'
+    404:
+      title: 'Page not found'
+      message: 'The requested page could not be found or is not published.'
+    429:
+      title: 'Too many requests'
+      message: 'Please wait a moment before trying again.'
+    500:
+      title: 'Something went wrong'
+      message: 'The system could not complete the request.'
+    503:
+      title: 'Maintenance mode'
+      message: 'The site is temporarily unavailable while maintenance is active.'
+  operations:
+    action_log:
+      title: 'Action log'
+      subtitle: 'Follow the steps of this operation.'
+      summary: 'Summary'
+      entry: 'Operation step'
+      empty: 'No operation steps are available.'
+  user:
+    login:
+      title: 'Sign in'
+      placeholder: 'The sign-in form will be provided by the authentication flow.'
+    register:
+      title: 'Create account'
+      placeholder: 'The registration form will be provided by the user flow.'
+    profile:
+      title: 'Profile'
+      placeholder: 'The profile view will be provided by the user flow.'
+    password_reset:
+      title: 'Reset password'
+      placeholder: 'The password reset form will be provided by the user flow.'

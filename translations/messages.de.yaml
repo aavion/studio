@@ -169,3 +169,54 @@ message:
       version_invalid: 'Content-Schema-Version %version% muss positiv sein.'
       required_field_missing: 'Content-Schema fehlt das erforderliche Feld "%field_identifier%".'
       field_duplicate: 'Content-Schema-Feld "%field_identifier%" ist doppelt vorhanden.'
+ui:
+  app:
+    name: 'aavion Studio'
+  admin:
+    area: 'Administration'
+    navigation: 'Admin-Navigation'
+  editor:
+    area: 'Editor'
+  setup:
+    area: 'Setup'
+  content:
+    fields: 'Content-Felder'
+    field: 'Feld'
+    value: 'Wert'
+    empty_value: 'Leer'
+  error:
+    403:
+      title: 'Zugriff verweigert'
+      message: 'Diese Route ist geschützt oder nicht für direkten Zugriff verfügbar.'
+    404:
+      title: 'Seite nicht gefunden'
+      message: 'Die angefragte Seite wurde nicht gefunden oder ist nicht veröffentlicht.'
+    429:
+      title: 'Zu viele Anfragen'
+      message: 'Bitte warte einen Moment, bevor du es erneut versuchst.'
+    500:
+      title: 'Etwas ist schiefgelaufen'
+      message: 'Das System konnte die Anfrage nicht abschließen.'
+    503:
+      title: 'Wartungsmodus'
+      message: 'Die Seite ist vorübergehend nicht verfügbar, solange die Wartung aktiv ist.'
+  operations:
+    action_log:
+      title: 'Action-Log'
+      subtitle: 'Verfolge die Schritte dieser Operation.'
+      summary: 'Zusammenfassung'
+      entry: 'Operationsschritt'
+      empty: 'Es sind keine Operationsschritte verfügbar.'
+  user:
+    login:
+      title: 'Anmelden'
+      placeholder: 'Das Anmeldeformular wird durch den Authentifizierungsflow bereitgestellt.'
+    register:
+      title: 'Account erstellen'
+      placeholder: 'Das Registrierungsformular wird durch den Nutzerflow bereitgestellt.'
+    profile:
+      title: 'Profil'
+      placeholder: 'Die Profilansicht wird durch den Nutzerflow bereitgestellt.'
+    password_reset:
+      title: 'Passwort zurücksetzen'
+      placeholder: 'Das Passwort-Reset-Formular wird durch den Nutzerflow bereitgestellt.'

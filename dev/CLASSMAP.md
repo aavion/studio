@@ -42,6 +42,7 @@
 | N/A | `App\Core\Operation\Filesystem\EnsureDirectoryAction` | Root-scoped operation action for creating missing directories with ActionLog context. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Operation/FilesystemOperationActionTest.php` |
 | N/A | `App\Core\Operation\Filesystem\WriteFileAction` | Root-scoped operation action for writing files with parent-directory creation, dry-run diffs, and overwrite protection. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Operation/FilesystemOperationActionTest.php` |
 | N/A | `App\Core\Operation\Process\RunCommandAction` | Operation action for running argument-list commands with dry-run metadata, exit-code mapping, and output excerpts. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Operation/RunCommandActionTest.php` |
+| N/A | `App\Core\Output\JsonOutputRenderer` | Shared raw JSON response renderer for `/api/live/**` UI flows, captcha seeds, polling, and future small JSON endpoints. | `dev/draft/0.4.x-OperationalAdminWorkflows.md` | `tests/Core/Output/JsonOutputRendererTest.php` |
 | N/A | `App\Core\Lint\CssLinter` | Reusable string-based CSS syntax linter using the strict Sabberworm CSS parser. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Lint/LinterTest.php` |
 | N/A | `App\Core\Lint\JavaScriptLinter` | Reusable string-based JavaScript module syntax linter using Peast. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Lint/LinterTest.php` |
 | N/A | `App\Core\Lint\JsonLinter` | Reusable string-based JSON syntax linter. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Lint/LinterTest.php` |
@@ -139,6 +140,12 @@
 | N/A | `App\Repository\ContentItemRepository` | Repository entry point for content item lookups, including unrestricted and published slug, parent-scoped slug, and custom URL lookups. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Read/PublishedContentResolverTest.php` |
 | N/A | `App\Repository\ContentFieldValueRepository` | Repository entry point for field values in a content/version/language/variant context. | `dev/draft/0.1.x-StaticDynamicContent.md` | N/A |
 | N/A | `App\Localization\TranslationLanguageCatalog` | Discovers available application languages from synchronized translation catalogues. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Localization/TranslationLanguageCatalogTest.php`, `tests/Controller/PublicContentControllerTest.php` |
+| N/A | `App\Theme\MarkdownRenderer` | Small safe Markdown renderer for native fallback templates and generic content field rendering. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/MarkdownRendererTest.php`, `tests/Theme/Twig/ThemeTwigExtensionTest.php` |
+| N/A | `App\Theme\SystemThemeMetadataProvider` | Exposes immutable native system-theme metadata from the root `.manifest` for future theme chooser UI and Twig context. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/SystemThemeMetadataProviderTest.php` |
+| N/A | `App\Theme\ThemeMacroRegistry` | Provides namespaced core macro template paths and future theme/module macro namespace slots. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/ThemeMacroRegistryTest.php`, `tests/Theme/Twig/ThemeTwigExtensionTest.php` |
+| Event payload | `App\Theme\ThemeViewContextEvent` | Event used by extensions to add universal Twig view context before rendering. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/ThemeViewContextProviderTest.php` |
+| N/A | `App\Theme\ThemeViewContextProvider` | Builds the universal Twig view context with system-theme metadata, macro namespaces, and event-collected extension variables. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/ThemeViewContextProviderTest.php`, `tests/Theme/Twig/ThemeTwigExtensionTest.php` |
+| Twig extension | `App\Theme\Twig\ThemeTwigExtension` | Exposes `studio_theme`, theme context helpers, macro namespace helpers, and the `studio_markdown` filter to Twig. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/Twig/ThemeTwigExtensionTest.php` |
 
 
 ## 2. Controllers
@@ -160,6 +167,13 @@
 
 | Identifier | Class/Template | Purpose | Docs | Test-Class |
 |------------|----------------|---------| ---- | ---------- |
+| Layout templates | `templates/layouts/*.html.twig` | Native public, system, admin, editor, and setup layout skeletons. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | `tests/Controller/PublicContentControllerTest.php` |
+| System area partials | `templates/admin/partials/*.html.twig`, `templates/editor/partials/*.html.twig`, `templates/setup/partials/*.html.twig` | Reserved system-owned admin, editor, and setup partial trees for first UI slices. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | N/A |
+| Content fallback | `templates/content/public.html.twig`, `templates/content/partials/*.html.twig` | Native public fallback renderer for content fields, body Markdown/HTML, and generic field tables. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Controller/PublicContentControllerTest.php` |
+| Macro registry templates | `templates/macros/**/*.html.twig` | Namespaced native Twig macro templates and aggregator entrypoint. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/Twig/ThemeTwigExtensionTest.php` |
+| System error pages | `templates/system/error-pages/*.html.twig` | Native system-owned fallback templates for HTTP error pages including lightweight `429` and `503`. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | N/A |
+| Action-log overlay | `templates/system/operations/action-log-overlay.html.twig` | Native system-owned action-log overlay skeleton with summary and entry partials. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | N/A |
+| User system templates | `templates/system/user/*.html.twig` | System-owned placeholder templates for login, registration, profile, and password reset routes. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | N/A |
 
 ## 6. Modules
 

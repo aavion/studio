@@ -1,0 +1,31 @@
+{% set fields = content_view.fields %}
+{% set body = fields.body ?? null %}
+{% set visible_fields = fields|filter((value, field) => field not in ['title', 'subtitle', 'body']) %}
+
+{% if body is not empty %}
+    <section class="studio-content-body">
+        {% include 'content/partials/_field-value.html.twig' with {value: body} only %}
+    </section>
+{% endif %}
+
+{% if visible_fields is not empty %}
+    <section class="studio-content-fields" aria-labelledby="studio-content-fields-heading">
+        <h2 id="studio-content-fields-heading">{{ 'ui.content.fields'|trans }}</h2>
+        <table class="studio-field-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ 'ui.content.field'|trans }}</th>
+                    <th scope="col">{{ 'ui.content.value'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for field, value in visible_fields %}
+                    <tr>
+                        <th scope="row">{{ field }}</th>
+                        <td>{% include 'content/partials/_field-value.html.twig' with {value: value} only %}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+{% endif %}

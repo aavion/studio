@@ -1,0 +1,12 @@
+{% extends 'layouts/system.html.twig' %}
+
+{% block system_body %}
+    <div class="studio-admin-shell">
+        <aside class="studio-admin-sidebar" aria-label="{{ 'ui.admin.navigation'|trans }}">
+            {% block admin_sidebar %}{% endblock %}
+        </aside>
+        <section class="studio-admin-content">
+            {% block admin_body %}{% endblock %}
+        </section>
+    </div>
+{% endblock %}
