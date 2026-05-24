@@ -10,6 +10,7 @@ enum ContentStatus: string
     case Scheduled = 'scheduled';
     case Published = 'published';
     case Archived = 'archived';
+    case Deleted = 'deleted';
 
     public function isPubliclyRenderable(): bool
     {

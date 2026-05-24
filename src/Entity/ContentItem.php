@@ -14,7 +14,6 @@ use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 use App\Repository\ContentItemRepository;
-use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -117,42 +116,6 @@ class ContentItem
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $manageGroupIdentifiers = null;
 
-    #[ORM\Column]
-    private DateTimeImmutable $createdAt;
-
-    #[ORM\Column(length: 180, nullable: true)]
-    private ?string $createdBy = null;
-
-    #[ORM\Column]
-    private DateTimeImmutable $modifiedAt;
-
-    #[ORM\Column(length: 180, nullable: true)]
-    private ?string $modifiedBy = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?DateTimeImmutable $publishedAt = null;
-
-    #[ORM\Column(length: 180, nullable: true)]
-    private ?string $publishedBy = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?DateTimeImmutable $archivedAt = null;
-
-    #[ORM\Column(length: 180, nullable: true)]
-    private ?string $archivedBy = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?DateTimeImmutable $deletedAt = null;
-
-    #[ORM\Column(length: 180, nullable: true)]
-    private ?string $deletedBy = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?DateTimeImmutable $lockedAt = null;
-
-    #[ORM\Column(length: 180, nullable: true)]
-    private ?string $lockedBy = null;
-
     /**
      * @var array<string, mixed>
      */
@@ -172,16 +135,10 @@ class ContentItem
         string $uid,
         string $slug,
         array $metadata = [],
-        ?string $createdBy = null,
-        ?DateTimeImmutable $createdAt = null,
     ) {
         $this->uid = self::assertUid($uid, 'Content UID');
         $this->slug = ContentSlug::fromString($slug)->value();
         $this->metadata = self::assertMetadata($metadata);
-        $this->createdBy = $createdBy;
-        $this->modifiedBy = $createdBy;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->modifiedAt = $this->createdAt;
         $this->revisions = new ArrayCollection();
     }
 
@@ -195,10 +152,9 @@ class ContentItem
         return $this->slug;
     }
 
-    public function rename(string $slug, ?string $modifiedBy = null, ?DateTimeImmutable $modifiedAt = null): void
+    public function rename(string $slug): void
     {
         $this->slug = ContentSlug::fromString($slug)->value();
-        $this->touch($modifiedBy, $modifiedAt);
     }
 
     public function status(): ContentStatus
@@ -206,20 +162,14 @@ class ContentItem
         return $this->status;
     }
 
-    public function publish(?string $publishedBy = null, ?DateTimeImmutable $publishedAt = null): void
+    public function publish(): void
     {
         $this->status = ContentStatus::Published;
-        $this->publishedBy = $publishedBy;
-        $this->publishedAt = $publishedAt ?? new DateTimeImmutable();
-        $this->touch($publishedBy, $this->publishedAt);
     }
 
-    public function archive(?string $archivedBy = null, ?DateTimeImmutable $archivedAt = null): void
+    public function archive(): void
     {
         $this->status = ContentStatus::Archived;
-        $this->archivedBy = $archivedBy;
-        $this->archivedAt = $archivedAt ?? new DateTimeImmutable();
-        $this->touch($archivedBy, $this->archivedAt);
     }
 
     public function parentUid(): ?string
@@ -227,11 +177,10 @@ class ContentItem
         return $this->parentUid;
     }
 
-    public function moveTo(?string $parentUid, int $sortOrder = 0, ?string $modifiedBy = null): void
+    public function moveTo(?string $parentUid, int $sortOrder = 0): void
     {
         $this->parentUid = null === $parentUid ? null : self::assertUid($parentUid, 'Parent content UID');
         $this->sortOrder = $sortOrder;
-        $this->touch($modifiedBy);
     }
 
     public function sortOrder(): int
@@ -244,10 +193,9 @@ class ContentItem
         return $this->customUrl;
     }
 
-    public function setCustomUrl(?string $customUrl, ?string $modifiedBy = null): void
+    public function setCustomUrl(?string $customUrl): void
     {
         $this->customUrl = $customUrl;
-        $this->touch($modifiedBy);
     }
 
     public function redirectTarget(): ?string
@@ -255,10 +203,9 @@ class ContentItem
         return $this->redirectTarget;
     }
 
-    public function setRedirectTarget(?string $redirectTarget, ?string $modifiedBy = null): void
+    public function setRedirectTarget(?string $redirectTarget): void
     {
         $this->redirectTarget = $redirectTarget;
-        $this->touch($modifiedBy);
     }
 
     public function schemaUid(): ?string
@@ -271,10 +218,9 @@ class ContentItem
         return $this->schema;
     }
 
-    public function setSchema(?ContentSchema $schema, ?string $modifiedBy = null): void
+    public function setSchema(?ContentSchema $schema): void
     {
         $this->schema = $schema;
-        $this->touch($modifiedBy);
     }
 
     public function schemaVersion(): ?int
@@ -292,7 +238,7 @@ class ContentItem
         return $this->activeRevision;
     }
 
-    public function activateRevision(ContentRevision $revision, ?string $modifiedBy = null): void
+    public function activateRevision(ContentRevision $revision): void
     {
         if ($revision->content() !== $this) {
             $revision->attachTo($this);
@@ -303,13 +249,11 @@ class ContentItem
         $this->schema = $revision->schema();
         $this->schemaVersion = $revision->schemaVersion()->version();
         $this->version = $revision->version();
-        $this->touch($modifiedBy);
     }
 
-    public function disableActiveRevision(?string $modifiedBy = null): void
+    public function disableActiveRevision(): void
     {
         $this->activeRevision = null;
-        $this->touch($modifiedBy);
     }
 
     public function version(): int
@@ -317,10 +261,9 @@ class ContentItem
         return $this->version;
     }
 
-    public function bumpVersion(?string $modifiedBy = null): void
+    public function bumpVersion(): void
     {
         ++$this->version;
-        $this->touch($modifiedBy);
     }
 
     /**
@@ -334,10 +277,9 @@ class ContentItem
     /**
      * @param list<string> $languages
      */
-    public function setAvailableLanguages(array $languages, ?string $modifiedBy = null): void
+    public function setAvailableLanguages(array $languages): void
     {
         $this->availableLanguages = self::assertNonEmptyStringList($languages, 'Available languages');
-        $this->touch($modifiedBy);
     }
 
     /**
@@ -351,10 +293,9 @@ class ContentItem
     /**
      * @param list<string> $variants
      */
-    public function setAvailableVariants(array $variants, ?string $modifiedBy = null): void
+    public function setAvailableVariants(array $variants): void
     {
         $this->availableVariants = self::assertNonEmptyStringList($variants, 'Available variants');
-        $this->touch($modifiedBy);
     }
 
     public function visibility(): ContentVisibility
@@ -362,10 +303,9 @@ class ContentItem
         return $this->visibility;
     }
 
-    public function setVisibility(ContentVisibility $visibility, ?string $modifiedBy = null): void
+    public function setVisibility(ContentVisibility $visibility): void
     {
         $this->visibility = $visibility;
-        $this->touch($modifiedBy);
     }
 
     /**
@@ -379,20 +319,18 @@ class ContentItem
     /**
      * @param list<string> $aclRestrictions
      */
-    public function setAclRestrictions(array $aclRestrictions, ?string $modifiedBy = null): void
+    public function setAclRestrictions(array $aclRestrictions): void
     {
         $this->aclRestrictions = self::assertStringList($aclRestrictions, 'ACL restrictions');
-        $this->touch($modifiedBy);
     }
 
     /**
      * @param list<string>|null $groupIdentifiers
      */
-    public function setViewRule(?int $minLevel, ?array $groupIdentifiers = null, ?string $modifiedBy = null): void
+    public function setViewRule(?int $minLevel, ?array $groupIdentifiers = null): void
     {
         $this->viewMinLevel = AccessLevel::assert($minLevel);
         $this->viewGroupIdentifiers = self::assertOptionalGroupIdentifierList($groupIdentifiers);
-        $this->touch($modifiedBy);
     }
 
     public function viewMinLevel(): ?int
@@ -411,11 +349,10 @@ class ContentItem
     /**
      * @param list<string>|null $groupIdentifiers
      */
-    public function setEditRule(?int $minLevel, ?array $groupIdentifiers = null, ?string $modifiedBy = null): void
+    public function setEditRule(?int $minLevel, ?array $groupIdentifiers = null): void
     {
         $this->editMinLevel = AccessLevel::assert($minLevel);
         $this->editGroupIdentifiers = self::assertOptionalGroupIdentifierList($groupIdentifiers);
-        $this->touch($modifiedBy);
     }
 
     public function editMinLevel(): ?int
@@ -434,11 +371,10 @@ class ContentItem
     /**
      * @param list<string>|null $groupIdentifiers
      */
-    public function setManageRule(?int $minLevel, ?array $groupIdentifiers = null, ?string $modifiedBy = null): void
+    public function setManageRule(?int $minLevel, ?array $groupIdentifiers = null): void
     {
         $this->manageMinLevel = AccessLevel::assert($minLevel);
         $this->manageGroupIdentifiers = self::assertOptionalGroupIdentifierList($groupIdentifiers);
-        $this->touch($modifiedBy);
     }
 
     public function manageMinLevel(): ?int
@@ -454,83 +390,9 @@ class ContentItem
         return $this->manageGroupIdentifiers;
     }
 
-    public function createdAt(): DateTimeImmutable
+    public function markDeleted(): void
     {
-        return $this->createdAt;
-    }
-
-    public function createdBy(): ?string
-    {
-        return $this->createdBy;
-    }
-
-    public function modifiedAt(): DateTimeImmutable
-    {
-        return $this->modifiedAt;
-    }
-
-    public function modifiedBy(): ?string
-    {
-        return $this->modifiedBy;
-    }
-
-    public function publishedAt(): ?DateTimeImmutable
-    {
-        return $this->publishedAt;
-    }
-
-    public function publishedBy(): ?string
-    {
-        return $this->publishedBy;
-    }
-
-    public function archivedAt(): ?DateTimeImmutable
-    {
-        return $this->archivedAt;
-    }
-
-    public function archivedBy(): ?string
-    {
-        return $this->archivedBy;
-    }
-
-    public function deletedAt(): ?DateTimeImmutable
-    {
-        return $this->deletedAt;
-    }
-
-    public function deletedBy(): ?string
-    {
-        return $this->deletedBy;
-    }
-
-    public function markDeleted(?string $deletedBy = null, ?DateTimeImmutable $deletedAt = null): void
-    {
-        $this->deletedBy = $deletedBy;
-        $this->deletedAt = $deletedAt ?? new DateTimeImmutable();
-        $this->touch($deletedBy, $this->deletedAt);
-    }
-
-    public function lockedAt(): ?DateTimeImmutable
-    {
-        return $this->lockedAt;
-    }
-
-    public function lockedBy(): ?string
-    {
-        return $this->lockedBy;
-    }
-
-    public function lock(string $lockedBy, ?DateTimeImmutable $lockedAt = null): void
-    {
-        $this->lockedBy = $lockedBy;
-        $this->lockedAt = $lockedAt ?? new DateTimeImmutable();
-    }
-
-    public function unlock(): void
-    {
-        $this->lockedBy = null;
-        $this->lockedAt = null;
+        $this->status = ContentStatus::Deleted;
     }
 
     /**
@@ -544,10 +406,9 @@ class ContentItem
     /**
      * @param array<string, mixed> $metadata
      */
-    public function replaceMetadata(array $metadata, ?string $modifiedBy = null): void
+    public function replaceMetadata(array $metadata): void
     {
         $this->metadata = self::assertMetadata($metadata);
-        $this->touch($modifiedBy);
     }
 
     public function metadataValue(string $key): mixed
@@ -555,7 +416,7 @@ class ContentItem
         return $this->metadata[$key] ?? null;
     }
 
-    public function setMetadataValue(string $key, mixed $value, ?string $modifiedBy = null): void
+    public function setMetadataValue(string $key, mixed $value): void
     {
         if ('' === trim($key)) {
             throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_METADATA_KEY_EMPTY);
@@ -564,7 +425,6 @@ class ContentItem
         self::assertMetadataKey($key);
 
         $this->metadata[$key] = $value;
-        $this->touch($modifiedBy);
     }
 
     /**
@@ -581,12 +441,6 @@ class ContentItem
             $this->revisions->add($revision);
             $revision->attachTo($this);
         }
-    }
-
-    private function touch(?string $modifiedBy = null, ?DateTimeImmutable $modifiedAt = null): void
-    {
-        $this->modifiedBy = $modifiedBy;
-        $this->modifiedAt = $modifiedAt ?? new DateTimeImmutable();
     }
 
     private static function assertUid(string $uid, string $label): string

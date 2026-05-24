@@ -92,6 +92,7 @@ final class SetupCliInputFactoryTest extends TestCase
             'db-secret',
             'owner',
             'owner-secret',
+            'owner-secret',
             'owner@example.test',
             'app-secret',
             '',
@@ -115,6 +116,7 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertStringContainsString('Installer language', $output);
         self::assertStringContainsString('Seitentitel', $output);
         self::assertStringContainsString('Datenbank-Treiber', $output);
+        self::assertStringContainsString('Admin-Passwort bestätigen', $output);
     }
 
     /**

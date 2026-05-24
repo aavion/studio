@@ -79,7 +79,7 @@ final class TestDatabaseSeeder
             ['00000000-0000-0000-0000-000000000109', 'admin', ['en' => 'Admin', 'de' => 'Administration'], AccessLevel::ADMIN, true, false],
         ];
 
-        foreach ($groups as [$uid, $identifier, $name, $accessLevel, $locked, $allowEmpty]) {
+        foreach ($groups as $index => [$uid, $identifier, $name, $accessLevel, $locked, $allowEmpty]) {
             self::insert($pdo, 'acl_group', [
                 'uid' => $uid,
                 'identifier' => $identifier,
@@ -89,6 +89,7 @@ final class TestDatabaseSeeder
                 'allow_empty' => $allowEmpty ? 1 : 0,
                 'metadata' => self::json(['preset' => true]),
             ]);
+            self::seedStateMarker($pdo, sprintf('00000000-0000-0000-0000-00000000091%d', $index), 'acl_group', $uid, 'created', 'test_seed', null, ['identifier' => $identifier]);
         }
 
         self::insert($pdo, 'user_account', [
@@ -101,7 +102,12 @@ final class TestDatabaseSeeder
                 'locale' => 'en',
                 'seed_password' => 'APP_SECRET',
             ]),
+            'settings' => self::json(['language' => 'default']),
+            'status' => 'active',
         ]);
+        self::seedStateMarker($pdo, '00000000-0000-0000-0000-000000000901', 'user_account', '00000000-0000-0000-0000-000000000201', 'created', 'test_seed');
+        self::seedStateMarker($pdo, '00000000-0000-0000-0000-000000000902', 'user_account', '00000000-0000-0000-0000-000000000201', 'password_changed', 'test_seed');
+        self::seedStateMarker($pdo, '00000000-0000-0000-0000-000000000903', 'user_account', '00000000-0000-0000-0000-000000000201', 'status_changed', 'test_seed', 'active');
 
         self::insert($pdo, 'user_acl_group', [
             'user_uid' => '00000000-0000-0000-0000-000000000201',
@@ -124,6 +130,28 @@ final class TestDatabaseSeeder
                 'revoked_at' => $revokedAt,
             ]);
         }
+    }
+
+    private static function seedStateMarker(
+        PDO $pdo,
+        string $uid,
+        string $subjectType,
+        string $subjectUid,
+        string $markerKey,
+        ?string $markerBy = null,
+        ?string $markerValue = null,
+        array $metadata = [],
+    ): void {
+        self::insert($pdo, 'state_marker', [
+            'uid' => $uid,
+            'subject_type' => $subjectType,
+            'subject_uid' => $subjectUid,
+            'marker_key' => $markerKey,
+            'marker_at' => self::NOW,
+            'marker_by' => $markerBy,
+            'marker_value' => $markerValue,
+            'metadata' => self::json($metadata),
+        ]);
     }
 
     private static function seedExtensions(PDO $pdo): void
@@ -164,7 +192,7 @@ final class TestDatabaseSeeder
             ],
         ];
 
-        foreach ($schemas as $schema) {
+        foreach ($schemas as $index => $schema) {
             self::insert($pdo, 'content_schema', [
                 'uid' => $schema['schema_uid'],
                 'identifier' => $schema['identifier'],
@@ -174,11 +202,9 @@ final class TestDatabaseSeeder
                 'labels' => self::json($schema['labels']),
                 'descriptions' => self::json($schema['description']),
                 'metadata' => self::json(['seed' => true]),
-                'created_at' => self::NOW,
-                'created_by' => 'system',
-                'modified_at' => self::NOW,
-                'modified_by' => 'system',
             ]);
+            self::seedStateMarker($pdo, sprintf('00000000-0000-0000-0000-00000000092%d', $index * 3), 'content_schema', $schema['schema_uid'], 'created', 'system', null, ['identifier' => $schema['identifier']]);
+            self::seedStateMarker($pdo, sprintf('00000000-0000-0000-0000-00000000092%d', $index * 3 + 1), 'content_schema', $schema['schema_uid'], 'modified', 'system', null, ['identifier' => $schema['identifier']]);
 
             self::insert($pdo, 'content_schema_version', [
                 'uid' => $schema['version_uid'],
@@ -196,11 +222,8 @@ final class TestDatabaseSeeder
                 'manage_min_level' => 6,
                 'manage_group_identifiers' => null,
                 'metadata' => self::json(['seed' => true]),
-                'created_at' => self::NOW,
-                'created_by' => 'system',
-                'activated_at' => self::NOW,
-                'activated_by' => 'system',
             ]);
+            self::seedStateMarker($pdo, sprintf('00000000-0000-0000-0000-00000000092%d', $index * 3 + 2), 'content_schema_version', $schema['version_uid'], 'activated', 'system', '1', ['schema_uid' => $schema['schema_uid']]);
 
             self::update($pdo, 'content_schema', ['active_version_uid' => $schema['version_uid']], ['uid' => $schema['schema_uid']]);
         }
@@ -307,18 +330,6 @@ final class TestDatabaseSeeder
             'edit_group_identifiers' => null,
             'manage_min_level' => 6,
             'manage_group_identifiers' => null,
-            'created_at' => self::NOW,
-            'created_by' => 'system',
-            'modified_at' => self::NOW,
-            'modified_by' => 'system',
-            'published_at' => self::NOW,
-            'published_by' => 'system',
-            'archived_at' => null,
-            'archived_by' => null,
-            'deleted_at' => null,
-            'deleted_by' => null,
-            'locked_at' => null,
-            'locked_by' => null,
             'metadata' => self::json($item['metadata']),
         ]);
 
@@ -328,8 +339,6 @@ final class TestDatabaseSeeder
             'version' => 1,
             'schema_uid' => $item['schema_uid'],
             'schema_version_uid' => $item['schema_version_uid'],
-            'created_at' => self::NOW,
-            'created_by' => 'system',
             'change_summary' => 'Seeded initial revision.',
             'metadata' => self::json(['seed' => true]),
         ]);
@@ -351,6 +360,10 @@ final class TestDatabaseSeeder
         }
 
         self::update($pdo, 'content_item', ['active_revision_uid' => $item['revision_uid']], ['uid' => $item['content_uid']]);
+        $suffix = substr($item['content_uid'], -1);
+        self::seedStateMarker($pdo, sprintf('00000000-0000-0000-0000-00000000094%s', $suffix), 'content_item', $item['content_uid'], 'created', 'system', null, ['slug' => $item['slug']]);
+        self::seedStateMarker($pdo, sprintf('00000000-0000-0000-0000-00000000095%s', $suffix), 'content_item', $item['content_uid'], 'published', 'system', 'published', ['revision_uid' => $item['revision_uid']]);
+        self::seedStateMarker($pdo, sprintf('00000000-0000-0000-0000-00000000096%s', $suffix), 'content_revision', $item['revision_uid'], 'created', 'system', null, ['content_uid' => $item['content_uid']]);
     }
 
     private static function seedMenus(PDO $pdo): void

@@ -84,12 +84,28 @@ message:
       database_password: 'Database password'
       admin_username: 'Admin username'
       admin_password: 'Admin password'
+      admin_password_confirm: 'Confirm admin password'
       admin_email: 'Admin email'
       app_secret: 'APP_SECRET (leave empty to generate one)'
       invalid_choice: 'Unsupported value. Choose one of: %choices%'
+      password_mismatch: 'Passwords do not match.'
+      password_reset_continue: 'Reset the password for "%username%"?'
+      password_reset_new_password: 'New password'
+      password_reset_confirm_password: 'Confirm new password'
+    password_reset:
+      database_url_missing: 'DATABASE_URL is required for password reset.'
+      user_not_found: 'User "%username%" was not found.'
+      cancelled: 'Password reset was cancelled.'
+      completed: 'Password for "%username%" was changed.'
+      confirm_required: 'Use --confirm for non-interactive password resets.'
   config:
     key:
       invalid: 'Configuration key "%key%" must use dotted lowercase segments.'
+  state:
+    subject_type:
+      invalid: 'State subject type "%subject_type%" must be lowercase snake_case.'
+    marker_key:
+      invalid: 'State marker key "%marker_key%" must be lowercase snake_case.'
   user:
     username:
       invalid: 'Username "%username%" is invalid.'

@@ -81,7 +81,12 @@ final class MessageCode
     public const SETUP_PROMPT_DATABASE_PASSWORD = 'setup.prompt.database_password';
     public const SETUP_PROMPT_ADMIN_USERNAME = 'setup.prompt.admin_username';
     public const SETUP_PROMPT_ADMIN_PASSWORD = 'setup.prompt.admin_password';
+    public const SETUP_PROMPT_ADMIN_PASSWORD_CONFIRM = 'setup.prompt.admin_password_confirm';
     public const SETUP_PROMPT_ADMIN_EMAIL = 'setup.prompt.admin_email';
     public const SETUP_PROMPT_APP_SECRET = 'setup.prompt.app_secret';
     public const SETUP_PROMPT_INVALID_CHOICE = 'setup.prompt.invalid_choice';
+    public const SETUP_PROMPT_PASSWORD_MISMATCH = 'setup.prompt.password_mismatch';
+    public const SETUP_PROMPT_PASSWORD_RESET_CONTINUE = 'setup.prompt.password_reset_continue';
+    public const SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD = 'setup.prompt.password_reset_new_password';
+    public const SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD = 'setup.prompt.password_reset_confirm_password';
 }

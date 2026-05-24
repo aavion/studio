@@ -84,12 +84,28 @@ message:
       database_password: 'Datenbankpasswort'
       admin_username: 'Admin-Username'
       admin_password: 'Admin-Passwort'
+      admin_password_confirm: 'Admin-Passwort bestätigen'
       admin_email: 'Admin-E-Mail'
       app_secret: 'APP_SECRET (leer lassen, um einen zu generieren)'
       invalid_choice: 'Nicht unterstützter Wert. Wähle einen der folgenden Werte: %choices%'
+      password_mismatch: 'Die Passwörter stimmen nicht überein.'
+      password_reset_continue: 'Passwort für "%username%" zurücksetzen?'
+      password_reset_new_password: 'Neues Passwort'
+      password_reset_confirm_password: 'Neues Passwort bestätigen'
+    password_reset:
+      database_url_missing: 'DATABASE_URL wird für den Passwort-Reset benötigt.'
+      user_not_found: 'Nutzer "%username%" wurde nicht gefunden.'
+      cancelled: 'Passwort-Reset wurde abgebrochen.'
+      completed: 'Passwort für "%username%" wurde geändert.'
+      confirm_required: 'Nutze --confirm für nicht-interaktive Passwort-Resets.'
   config:
     key:
       invalid: 'Konfigurations-Key "%key%" muss aus kleingeschriebenen Segmenten mit Punkten bestehen.'
+  state:
+    subject_type:
+      invalid: 'State-Subject-Type "%subject_type%" muss lowercase snake_case sein.'
+    marker_key:
+      invalid: 'State-Marker-Key "%marker_key%" muss lowercase snake_case sein.'
   user:
     username:
       invalid: 'Username "%username%" ist ungültig.'

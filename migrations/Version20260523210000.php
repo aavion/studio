@@ -36,6 +36,22 @@ final class Version20260523210000 extends AbstractMigration
         $config->addColumn('modified_by', 'string', ['length' => 180, 'notnull' => false]);
         $config->setPrimaryKey(['config_key']);
 
+        $stateMarker = $schema->createTable('state_marker');
+        $stateMarker->addColumn('uid', 'string', ['length' => 36]);
+        $stateMarker->addColumn('subject_type', 'string', ['length' => 80]);
+        $stateMarker->addColumn('subject_uid', 'string', ['length' => 36]);
+        $stateMarker->addColumn('marker_key', 'string', ['length' => 80]);
+        $stateMarker->addColumn('marker_at', 'datetime_immutable');
+        $stateMarker->addColumn('marker_by', 'string', ['length' => 180, 'notnull' => false]);
+        $stateMarker->addColumn('marker_value', 'string', ['length' => 255, 'notnull' => false]);
+        $stateMarker->addColumn('metadata', 'json');
+        $stateMarker->setPrimaryKey(['uid']);
+        $stateMarker->addUniqueIndex(['subject_type', 'subject_uid', 'marker_key'], 'uniq_state_marker_subject_key');
+        $stateMarker->addIndex(['subject_type', 'subject_uid'], 'idx_state_marker_subject');
+        $stateMarker->addIndex(['subject_type', 'marker_key', 'marker_at'], 'idx_state_marker_lookup');
+        $stateMarker->addIndex(['marker_key', 'marker_at'], 'idx_state_marker_key_at');
+        $stateMarker->addIndex(['subject_type', 'marker_by'], 'idx_state_marker_by');
+
         $aclGroup = $schema->createTable('acl_group');
         $aclGroup->addColumn('uid', 'string', ['length' => 36]);
         $aclGroup->addColumn('identifier', 'string', ['length' => 80]);
@@ -54,9 +70,12 @@ final class Version20260523210000 extends AbstractMigration
         $user->addColumn('email', 'string', ['length' => 180]);
         $user->addColumn('password_hash', 'string', ['length' => 255]);
         $user->addColumn('profile', 'json');
+        $user->addColumn('settings', 'json');
+        $user->addColumn('status', 'string', ['length' => 32]);
         $user->setPrimaryKey(['uid']);
         $user->addUniqueIndex(['username'], 'uniq_user_account_username');
         $user->addUniqueIndex(['email'], 'uniq_user_account_email');
+        $user->addIndex(['status'], 'idx_user_account_status');
 
         $userGroup = $schema->createTable('user_acl_group');
         $userGroup->addColumn('user_uid', 'string', ['length' => 36]);
@@ -130,10 +149,6 @@ final class Version20260523210000 extends AbstractMigration
         $contentSchema->addColumn('labels', 'json');
         $contentSchema->addColumn('descriptions', 'json');
         $contentSchema->addColumn('metadata', 'json');
-        $contentSchema->addColumn('created_at', 'datetime_immutable');
-        $contentSchema->addColumn('created_by', 'string', ['length' => 180, 'notnull' => false]);
-        $contentSchema->addColumn('modified_at', 'datetime_immutable');
-        $contentSchema->addColumn('modified_by', 'string', ['length' => 180, 'notnull' => false]);
         $contentSchema->setPrimaryKey(['uid']);
         $contentSchema->addUniqueIndex(['identifier'], 'uniq_content_schema_identifier');
         $contentSchema->addIndex(['source'], 'idx_content_schema_source');
@@ -155,10 +170,6 @@ final class Version20260523210000 extends AbstractMigration
         $schemaVersion->addColumn('manage_min_level', 'integer', ['notnull' => false]);
         $schemaVersion->addColumn('manage_group_identifiers', 'json', ['notnull' => false]);
         $schemaVersion->addColumn('metadata', 'json');
-        $schemaVersion->addColumn('created_at', 'datetime_immutable');
-        $schemaVersion->addColumn('created_by', 'string', ['length' => 180, 'notnull' => false]);
-        $schemaVersion->addColumn('activated_at', 'datetime_immutable', ['notnull' => false]);
-        $schemaVersion->addColumn('activated_by', 'string', ['length' => 180, 'notnull' => false]);
         $schemaVersion->setPrimaryKey(['uid']);
         $schemaVersion->addUniqueIndex(['schema_uid', 'version'], 'uniq_content_schema_version');
         $schemaVersion->addIndex(['schema_uid'], 'idx_content_schema_version_schema');
@@ -187,18 +198,6 @@ final class Version20260523210000 extends AbstractMigration
         $content->addColumn('edit_group_identifiers', 'json', ['notnull' => false]);
         $content->addColumn('manage_min_level', 'integer', ['notnull' => false]);
         $content->addColumn('manage_group_identifiers', 'json', ['notnull' => false]);
-        $content->addColumn('created_at', 'datetime_immutable');
-        $content->addColumn('created_by', 'string', ['length' => 180, 'notnull' => false]);
-        $content->addColumn('modified_at', 'datetime_immutable');
-        $content->addColumn('modified_by', 'string', ['length' => 180, 'notnull' => false]);
-        $content->addColumn('published_at', 'datetime_immutable', ['notnull' => false]);
-        $content->addColumn('published_by', 'string', ['length' => 180, 'notnull' => false]);
-        $content->addColumn('archived_at', 'datetime_immutable', ['notnull' => false]);
-        $content->addColumn('archived_by', 'string', ['length' => 180, 'notnull' => false]);
-        $content->addColumn('deleted_at', 'datetime_immutable', ['notnull' => false]);
-        $content->addColumn('deleted_by', 'string', ['length' => 180, 'notnull' => false]);
-        $content->addColumn('locked_at', 'datetime_immutable', ['notnull' => false]);
-        $content->addColumn('locked_by', 'string', ['length' => 180, 'notnull' => false]);
         $content->addColumn('metadata', 'json');
         $content->setPrimaryKey(['uid']);
         $content->addIndex(['slug'], 'idx_content_item_slug');
@@ -219,8 +218,6 @@ final class Version20260523210000 extends AbstractMigration
         $revision->addColumn('version', 'integer');
         $revision->addColumn('schema_uid', 'string', ['length' => 36]);
         $revision->addColumn('schema_version_uid', 'string', ['length' => 36]);
-        $revision->addColumn('created_at', 'datetime_immutable');
-        $revision->addColumn('created_by', 'string', ['length' => 180, 'notnull' => false]);
         $revision->addColumn('change_summary', 'string', ['length' => 255, 'notnull' => false]);
         $revision->addColumn('metadata', 'json');
         $revision->setPrimaryKey(['uid']);
@@ -228,7 +225,6 @@ final class Version20260523210000 extends AbstractMigration
         $revision->addIndex(['content_uid'], 'idx_content_revision_content');
         $revision->addIndex(['schema_uid'], 'idx_content_revision_schema');
         $revision->addIndex(['schema_version_uid'], 'idx_content_revision_schema_version');
-        $revision->addIndex(['created_at'], 'idx_content_revision_created_at');
         $revision->addForeignKeyConstraint('content_item', ['content_uid'], ['uid'], ['onDelete' => 'CASCADE'], 'fk_content_revision_content');
         $revision->addForeignKeyConstraint('content_schema', ['schema_uid'], ['uid'], ['onDelete' => 'RESTRICT'], 'fk_content_revision_schema');
         $revision->addForeignKeyConstraint('content_schema_version', ['schema_version_uid'], ['uid'], ['onDelete' => 'RESTRICT'], 'fk_content_revision_schema_version');
@@ -269,6 +265,7 @@ final class Version20260523210000 extends AbstractMigration
         $schema->dropTable('user_account');
         $schema->dropTable('acl_group');
         $schema->dropTable('config_entry');
+        $schema->dropTable('state_marker');
         $schema->dropTable('messenger_messages');
     }
 }

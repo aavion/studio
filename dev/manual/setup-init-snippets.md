@@ -37,6 +37,7 @@ Symfony environment resolution should match Symfony precedence as closely as pra
 - database URL compilation for SQLite, MySQL/MariaDB, and PostgreSQL;
 - secret generation;
 - admin account creation;
+- optional password recovery with `bin/setup --reset-password={username}` or `bin/setup --reset-password:{username}`;
 - env override writing and `composer dump-env`;
 - Doctrine migration execution;
 - database-backed default settings, including `localization.default_language`;
@@ -44,6 +45,8 @@ Symfony environment resolution should match Symfony precedence as closely as pra
 - setup action logs with halt-on-error results.
 
 Use `--no-interaction` for scripted CLI setup with defaults and explicit options. `--json` is also non-interactive so automation receives machine-readable output only.
+
+Interactive CLI setup asks for the admin password twice. Non-interactive setup uses the provided `--admin-password` value directly. Password reset displays the matched user's UID, username, email, and status before prompting for confirmation and the new password; scripted reset runs should pass `--confirm` and `--new-password`.
 
 ## Automation notes
 

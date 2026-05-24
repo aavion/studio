@@ -43,7 +43,7 @@ final class ContentSchemaTest extends TestCase
             manageGroupIdentifiers: ['manager_override'],
         );
 
-        $version->activate('admin');
+        $version->activate();
 
         self::assertSame('static_page', $schema->identifier());
         self::assertTrue($schema->locked());

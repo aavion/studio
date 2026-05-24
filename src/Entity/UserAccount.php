@@ -8,6 +8,7 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Uid;
+use App\Security\UserAccountStatus;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -16,6 +17,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'user_account')]
 #[ORM\UniqueConstraint(name: 'uniq_user_account_username', columns: ['username'])]
 #[ORM\UniqueConstraint(name: 'uniq_user_account_email', columns: ['email'])]
+#[ORM\Index(name: 'idx_user_account_status', columns: ['status'])]
 class UserAccount
 {
     #[ORM\Id]
@@ -38,6 +40,15 @@ class UserAccount
     private array $profile = [];
 
     /**
+     * @var array<string, mixed>
+     */
+    #[ORM\Column(type: 'json')]
+    private array $settings = ['language' => 'default'];
+
+    #[ORM\Column(enumType: UserAccountStatus::class)]
+    private UserAccountStatus $status = UserAccountStatus::Active;
+
+    /**
      * @var Collection<int, AclGroup>
      */
     #[ORM\ManyToMany(targetEntity: AclGroup::class)]
@@ -49,13 +60,22 @@ class UserAccount
     /**
      * @param array<string, mixed> $profile
      */
-    public function __construct(string $uid, string $username, string $email, string $passwordHash, array $profile = [])
-    {
+    public function __construct(
+        string $uid,
+        string $username,
+        string $email,
+        string $passwordHash,
+        array $profile = [],
+        array $settings = ['language' => 'default'],
+        UserAccountStatus $status = UserAccountStatus::Active,
+    ) {
         $this->uid = Uid::assert($uid, 'User UID');
         $this->username = self::assertUsername($username);
         $this->email = self::assertEmail($email);
         $this->passwordHash = $passwordHash;
         $this->profile = $profile;
+        $this->settings = $settings;
+        $this->status = $status;
         $this->groups = new ArrayCollection();
     }
 
@@ -85,6 +105,29 @@ class UserAccount
     public function profile(): array
     {
         return $this->profile;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function settings(): array
+    {
+        return $this->settings;
+    }
+
+    public function status(): UserAccountStatus
+    {
+        return $this->status;
+    }
+
+    public function changePassword(string $passwordHash): void
+    {
+        $this->passwordHash = $passwordHash;
+    }
+
+    public function changeStatus(UserAccountStatus $status): void
+    {
+        $this->status = $status;
     }
 
     /**

@@ -58,12 +58,22 @@ final class TestDatabaseSeedTest extends TestCase
 
     public function testItUsesAppSecretAsSeededAdminPassword(): void
     {
-        $hash = $this->pdo
-            ->query("SELECT password_hash FROM user_account WHERE username = 'admin'")
-            ->fetchColumn();
+        $user = $this->pdo
+            ->query("SELECT password_hash, settings, status, uid FROM user_account WHERE username = 'admin'")
+            ->fetch(PDO::FETCH_ASSOC);
+        $markers = $this->pdo
+            ->query("SELECT marker_key, marker_value FROM state_marker WHERE subject_type = 'user_account' AND subject_uid = '00000000-0000-0000-0000-000000000201' ORDER BY marker_key")
+            ->fetchAll(PDO::FETCH_KEY_PAIR);
 
-        self::assertIsString($hash);
-        self::assertTrue(password_verify((string) $_SERVER['APP_SECRET'], $hash));
+        self::assertIsArray($user);
+        self::assertTrue(password_verify((string) $_SERVER['APP_SECRET'], (string) $user['password_hash']));
+        self::assertSame(['language' => 'default'], json_decode((string) $user['settings'], true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame('active', $user['status']);
+        self::assertSame([
+            'created' => null,
+            'password_changed' => null,
+            'status_changed' => 'active',
+        ], $markers);
     }
 
     public function testItSeedsApiKeysForEachLifecycleStatus(): void

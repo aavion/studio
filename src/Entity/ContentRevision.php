@@ -8,7 +8,6 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Uid;
-use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -19,7 +18,6 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_content_revision_content', columns: ['content_uid'])]
 #[ORM\Index(name: 'idx_content_revision_schema', columns: ['schema_uid'])]
 #[ORM\Index(name: 'idx_content_revision_schema_version', columns: ['schema_version_uid'])]
-#[ORM\Index(name: 'idx_content_revision_created_at', columns: ['created_at'])]
 class ContentRevision
 {
     #[ORM\Id]
@@ -40,12 +38,6 @@ class ContentRevision
     #[ORM\ManyToOne(targetEntity: ContentSchemaVersion::class)]
     #[ORM\JoinColumn(name: 'schema_version_uid', referencedColumnName: 'uid', nullable: false, onDelete: 'RESTRICT')]
     private ContentSchemaVersion $schemaVersion;
-
-    #[ORM\Column]
-    private DateTimeImmutable $createdAt;
-
-    #[ORM\Column(length: 180, nullable: true)]
-    private ?string $createdBy = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $changeSummary = null;
@@ -70,20 +62,16 @@ class ContentRevision
         ContentItem $content,
         int $version,
         ContentSchemaVersion $schemaVersion,
-        ?string $createdBy = null,
         ?string $changeSummary = null,
         array $metadata = [],
-        ?DateTimeImmutable $createdAt = null,
     ) {
         $this->uid = Uid::assert($uid, 'Content revision UID');
         $this->content = $content;
         $this->version = self::assertVersion($version);
         $this->schema = $schemaVersion->schema();
         $this->schemaVersion = $schemaVersion;
-        $this->createdBy = $createdBy;
         $this->changeSummary = $changeSummary;
         $this->metadata = $metadata;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
         $this->fieldValues = new ArrayCollection();
     }
 

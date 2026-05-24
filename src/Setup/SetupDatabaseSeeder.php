@@ -6,11 +6,16 @@ namespace App\Setup;
 
 use App\Core\Access\AccessLevel;
 use App\Core\Config\ConfigValueType;
+use App\Core\State\StateMarkerKey;
+use App\Core\State\StateSubjectType;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DriverManager;
 
 final readonly class SetupDatabaseSeeder
 {
+    public function __construct(private SetupDatabaseConnectionFactory $connectionFactory = new SetupDatabaseConnectionFactory())
+    {
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -43,9 +48,13 @@ final readonly class SetupDatabaseSeeder
 
         foreach ($groups as [$uid, $identifier, $name, $accessLevel, $locked, $allowEmpty]) {
             $this->upsertAclGroup($connection, $uid, $identifier, $name, $accessLevel, $locked, $allowEmpty);
+            $this->upsertStateMarker($connection, StateSubjectType::ACL_GROUP, $uid, StateMarkerKey::CREATED, $now, 'setup', null, ['identifier' => $identifier]);
         }
 
         $userUid = $this->upsertAdmin($connection, $input, $now);
+        $this->upsertStateMarker($connection, StateSubjectType::USER_ACCOUNT, $userUid, StateMarkerKey::CREATED, $now, 'setup');
+        $this->upsertStateMarker($connection, StateSubjectType::USER_ACCOUNT, $userUid, StateMarkerKey::PASSWORD_CHANGED, $now, 'setup');
+        $this->upsertStateMarker($connection, StateSubjectType::USER_ACCOUNT, $userUid, StateMarkerKey::STATUS_CHANGED, $now, 'setup', 'active');
 
         $this->ensureUserGroup($connection, $userUid, (string) $connection->fetchOne('SELECT uid FROM acl_group WHERE identifier = ?', ['admin']));
 
@@ -102,6 +111,8 @@ final readonly class SetupDatabaseSeeder
             'email' => $input->adminEmail(),
             'password_hash' => password_hash($input->adminPassword(), PASSWORD_DEFAULT),
             'profile' => json_encode(['created_by' => 'setup', 'updated_at' => $now], JSON_THROW_ON_ERROR),
+            'settings' => json_encode(['language' => 'default'], JSON_THROW_ON_ERROR),
+            'status' => 'active',
         ];
 
         if (is_string($existingUid) && '' !== $existingUid) {
@@ -123,30 +134,42 @@ final readonly class SetupDatabaseSeeder
         }
     }
 
-    private function connection(string $projectDir, string $databaseUrl): Connection
-    {
-        return DriverManager::getConnection($this->connectionParameters(str_replace('%kernel.project_dir%', $projectDir, $databaseUrl)));
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    private function upsertStateMarker(
+        Connection $connection,
+        string $subjectType,
+        string $subjectUid,
+        string $markerKey,
+        string $markerAt,
+        ?string $markerBy = null,
+        ?string $markerValue = null,
+        array $metadata = [],
+    ): void {
+        $values = [
+            'marker_at' => $markerAt,
+            'marker_by' => $markerBy,
+            'marker_value' => $markerValue,
+            'metadata' => json_encode($metadata, JSON_THROW_ON_ERROR),
+        ];
+        $where = [
+            'subject_type' => $subjectType,
+            'subject_uid' => $subjectUid,
+            'marker_key' => $markerKey,
+        ];
+
+        $connection->fetchOne(
+            'SELECT uid FROM state_marker WHERE subject_type = ? AND subject_uid = ? AND marker_key = ?',
+            [$subjectType, $subjectUid, $markerKey],
+        )
+            ? $connection->update('state_marker', $values, $where)
+            : $connection->insert('state_marker', ['uid' => $this->uuid(), ...$where, ...$values]);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function connectionParameters(string $databaseUrl): array
+    private function connection(string $projectDir, string $databaseUrl): Connection
     {
-        if (str_starts_with($databaseUrl, 'sqlite:///')) {
-            return ['driver' => 'pdo_sqlite', 'path' => preg_replace('#^sqlite:///#', '/', $databaseUrl)];
-        }
-
-        $scheme = (string) parse_url($databaseUrl, PHP_URL_SCHEME);
-
-        return [
-            'url' => $databaseUrl,
-            'driver' => match ($scheme) {
-                'mysql', 'mariadb' => 'pdo_mysql',
-                'pgsql', 'postgres', 'postgresql' => 'pdo_pgsql',
-                default => throw new SetupStepFailedException(sprintf('Unsupported database URL scheme "%s".', $scheme)),
-            },
-        ];
+        return $this->connectionFactory->create($projectDir, $databaseUrl);
     }
 
     private function uuid(): string

@@ -41,6 +41,7 @@ final class SetupScriptTest extends TestCase
         self::assertStringContainsString('SetupRunner', $contents);
         self::assertStringContainsString('SetupCliInputFactory', $contents);
         self::assertStringContainsString('dry-run', $contents);
+        self::assertStringContainsString('reset-password', $contents);
         self::assertStringContainsString('no-interaction', $contents);
         self::assertStringContainsString('json_encode', $contents);
     }

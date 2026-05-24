@@ -27,8 +27,6 @@ content_schema
   labels
   descriptions
   metadata
-  created_at / created_by
-  modified_at / modified_by
 
 content_schema_version
   uid
@@ -43,8 +41,6 @@ content_schema_version
   edit_min_level / edit_group_identifiers
   manage_min_level / manage_group_identifiers
   metadata
-  created_at / created_by
-  activated_at / activated_by
 
 content_item
   uid
@@ -65,12 +61,6 @@ content_item
   view_min_level / view_group_identifiers
   edit_min_level / edit_group_identifiers
   manage_min_level / manage_group_identifiers
-  created_at / created_by
-  modified_at / modified_by
-  published_at / published_by
-  archived_at / archived_by
-  deleted_at / deleted_by
-  locked_at / locked_by
   metadata
 
 content_revision
@@ -79,7 +69,6 @@ content_revision
   version
   schema_uid
   schema_version_uid
-  created_at / created_by
   change_summary
   metadata
 
@@ -90,9 +79,21 @@ content_field_value
   variant
   field_identifier
   field_content
+
+state_marker
+  uid
+  subject_type
+  subject_uid
+  marker_key
+  marker_at
+  marker_by
+  marker_value
+  metadata
 ```
 
 `title` and `subtitle` are reserved required base fields in every content schema. They are stored as `content_field_value` rows through the variable fieldset, not as dedicated `content_item` columns and not in `content_item.metadata`.
+
+`state_marker` is the reusable fast-lookup layer for current/last lifecycle metadata across content items, revisions, schemas, schema versions, users, and ACL groups. For example, content publication uses `marker_key=published`, `marker_at`, and `marker_by`; user login self-audit uses `marker_key=last_login`, `marker_by=NULL`, and `marker_value` for the IPv4/IPv6 address. It is intentionally not a full audit log; long history belongs to the later audit/logging layer.
 
 `active_version_uid` and `active_revision_uid` are nullable on purpose. `NULL` disables a schema or content entity from normal use/rendering while keeping the record available for admin recovery, staging, or cleanup retention.
 

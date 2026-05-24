@@ -8,7 +8,6 @@ use App\Content\Schema\ContentSchemaSource;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
-use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -55,18 +54,6 @@ class ContentSchema
     #[ORM\Column(type: 'json')]
     private array $metadata = [];
 
-    #[ORM\Column]
-    private DateTimeImmutable $createdAt;
-
-    #[ORM\Column(length: 180, nullable: true)]
-    private ?string $createdBy = null;
-
-    #[ORM\Column]
-    private DateTimeImmutable $modifiedAt;
-
-    #[ORM\Column(length: 180, nullable: true)]
-    private ?string $modifiedBy = null;
-
     /**
      * @var Collection<int, ContentSchemaVersion>
      */
@@ -86,8 +73,6 @@ class ContentSchema
         bool $locked = false,
         array $descriptions = [],
         array $metadata = [],
-        ?string $createdBy = null,
-        ?DateTimeImmutable $createdAt = null,
     ) {
         $this->uid = Uid::assert($uid, 'Content schema UID');
         $this->identifier = Identifier::assertSnakeCase($identifier, MessageKey::CONTENT_SCHEMA_IDENTIFIER_INVALID, '%identifier%');
@@ -96,10 +81,6 @@ class ContentSchema
         $this->locked = $locked;
         $this->descriptions = $descriptions;
         $this->metadata = $metadata;
-        $this->createdBy = $createdBy;
-        $this->modifiedBy = $createdBy;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->modifiedAt = $this->createdAt;
         $this->versions = new ArrayCollection();
     }
 
@@ -133,7 +114,7 @@ class ContentSchema
         return $this->activeVersion;
     }
 
-    public function activateVersion(ContentSchemaVersion $version, ?string $modifiedBy = null): void
+    public function activateVersion(ContentSchemaVersion $version): void
     {
         if ($version->schema() !== $this) {
             $version->attachTo($this);
@@ -141,13 +122,11 @@ class ContentSchema
 
         $this->addVersion($version);
         $this->activeVersion = $version;
-        $this->touch($modifiedBy);
     }
 
-    public function disable(?string $modifiedBy = null): void
+    public function disable(): void
     {
         $this->activeVersion = null;
-        $this->touch($modifiedBy);
     }
 
     public function addVersion(ContentSchemaVersion $version): void
@@ -166,9 +145,4 @@ class ContentSchema
         return $this->versions;
     }
 
-    private function touch(?string $modifiedBy = null): void
-    {
-        $this->modifiedBy = $modifiedBy;
-        $this->modifiedAt = new DateTimeImmutable();
-    }
 }

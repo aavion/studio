@@ -11,7 +11,6 @@ use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
-use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -89,18 +88,6 @@ class ContentSchemaVersion
     #[ORM\Column(type: 'json')]
     private array $metadata = [];
 
-    #[ORM\Column]
-    private DateTimeImmutable $createdAt;
-
-    #[ORM\Column(length: 180, nullable: true)]
-    private ?string $createdBy = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?DateTimeImmutable $activatedAt = null;
-
-    #[ORM\Column(length: 180, nullable: true)]
-    private ?string $activatedBy = null;
-
     /**
      * @param array<string, string> $title
      * @param array<string, string> $description
@@ -125,8 +112,6 @@ class ContentSchemaVersion
         ?int $manageMinLevel = null,
         ?array $manageGroupIdentifiers = null,
         array $metadata = [],
-        ?string $createdBy = null,
-        ?DateTimeImmutable $createdAt = null,
     ) {
         $this->uid = Uid::assert($uid, 'Content schema version UID');
         $this->schema = $schema;
@@ -143,8 +128,6 @@ class ContentSchemaVersion
         $this->manageMinLevel = AccessLevel::assert($manageMinLevel);
         $this->manageGroupIdentifiers = self::assertOptionalGroupIdentifierList($manageGroupIdentifiers);
         $this->metadata = $metadata;
-        $this->createdBy = $createdBy;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
     }
 
     public function uid(): string
@@ -219,11 +202,9 @@ class ContentSchemaVersion
         return $this->manageGroupIdentifiers;
     }
 
-    public function activate(?string $activatedBy = null, ?DateTimeImmutable $activatedAt = null): void
+    public function activate(): void
     {
-        $this->activatedBy = $activatedBy;
-        $this->activatedAt = $activatedAt ?? new DateTimeImmutable();
-        $this->schema->activateVersion($this, $activatedBy);
+        $this->schema->activateVersion($this);
     }
 
     private static function assertVersion(int $version): int

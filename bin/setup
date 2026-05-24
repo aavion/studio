@@ -4,8 +4,12 @@
 declare(strict_types=1);
 
 use App\Core\ActionLog\ActionLog;
+use App\Core\Message\MessageKey;
 use App\Setup\SetupCliInputFactory;
+use App\Setup\SetupCliPrompter;
+use App\Setup\SetupLanguageCatalog;
 use App\Setup\SetupMessageTranslator;
+use App\Setup\SetupPasswordResetRunner;
 use App\Setup\SetupRunner;
 use Symfony\Component\Dotenv\Dotenv;
 
@@ -34,9 +38,18 @@ $options = getopt('', [
     'admin-email:',
     'app-secret:',
     'dry-run',
+    'reset-password::',
+    'new-password:',
+    'confirm',
     'no-interaction',
     'json',
 ]);
+
+$resetUsername = resetPasswordUsername($_SERVER['argv'] ?? [], $options);
+
+if (null !== $resetUsername) {
+    exit(handlePasswordReset($projectDir, $options, $resetUsername));
+}
 
 $input = (new SetupCliInputFactory($projectDir))->create($options);
 $translator = new SetupMessageTranslator();
@@ -147,4 +160,127 @@ function translationParameters(mixed $parameters): array
     }
 
     return $translated;
+}
+
+/**
+ * @param list<string> $argv
+ * @param array<string, string|false> $options
+ */
+function resetPasswordUsername(array $argv, array $options): ?string
+{
+    if (array_key_exists('reset-password', $options)) {
+        return is_string($options['reset-password']) ? $options['reset-password'] : '';
+    }
+
+    foreach ($argv as $argument) {
+        if (str_starts_with($argument, '--reset-password:')) {
+            return substr($argument, strlen('--reset-password:'));
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @param array<string, string|false> $options
+ */
+function handlePasswordReset(string $projectDir, array $options, string $username): int
+{
+    $translator = new SetupMessageTranslator();
+    $language = is_string($options['language'] ?? null)
+        ? $options['language']
+        : (new SetupLanguageCatalog())->defaultLanguage($projectDir);
+    $databaseUrl = is_string($options['database-url'] ?? null) && '' !== $options['database-url']
+        ? $options['database-url']
+        : (string) ($_SERVER['DATABASE_URL'] ?? $_ENV['DATABASE_URL'] ?? '');
+
+    if ('' === trim($username)) {
+        echo '[ERROR] --reset-password requires a username.'.PHP_EOL;
+
+        return 1;
+    }
+
+    if ('' === trim($databaseUrl)) {
+        echo '[ERROR] '.$translator->translate($projectDir, $language, MessageKey::SETUP_PASSWORD_RESET_DATABASE_URL_MISSING).PHP_EOL;
+
+        return 1;
+    }
+
+    $runner = new SetupPasswordResetRunner();
+    $user = $runner->findUser($projectDir, $databaseUrl, $username);
+
+    if (null === $user) {
+        echo '[ERROR] '.$translator->translate($projectDir, $language, MessageKey::SETUP_PASSWORD_RESET_USER_NOT_FOUND, [
+            '%username%' => $username,
+        ]).PHP_EOL;
+
+        return 1;
+    }
+
+    echo 'UID: '.$user->uid().PHP_EOL;
+    echo 'Username: '.$user->username().PHP_EOL;
+    echo 'Email: '.$user->email().PHP_EOL;
+    echo 'Status: '.$user->status().PHP_EOL;
+
+    $prompter = new SetupCliPrompter($projectDir);
+    $interactive = $prompter->isInteractive($options);
+
+    if (!$interactive && !array_key_exists('confirm', $options)) {
+        echo '[ERROR] '.$translator->translate($projectDir, $language, MessageKey::SETUP_PASSWORD_RESET_CONFIRM_REQUIRED).PHP_EOL;
+
+        return 1;
+    }
+
+    if ($interactive && !$prompter->confirm($language, MessageKey::SETUP_PROMPT_PASSWORD_RESET_CONTINUE, false, [
+        '%username%' => $user->username(),
+    ])) {
+        echo '[OK] '.$translator->translate($projectDir, $language, MessageKey::SETUP_PASSWORD_RESET_CANCELLED).PHP_EOL;
+
+        return 0;
+    }
+
+    $newPassword = $prompter->confirmedValue(
+        $options,
+        'new-password',
+        '',
+        $interactive,
+        $language,
+        MessageKey::SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD,
+        MessageKey::SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD,
+    );
+
+    if ('' === $newPassword) {
+        echo '[ERROR] '.$translator->translate($projectDir, $language, MessageKey::SETUP_PROMPT_PASSWORD_MISMATCH).PHP_EOL;
+
+        return 1;
+    }
+
+    $result = $runner->reset($projectDir, $databaseUrl, $user->username(), $newPassword);
+
+    echo sprintf(
+        '[%s] %s',
+        $result->isSuccess() ? 'OK' : 'ERROR',
+        $translator->translate($projectDir, $language, $result->isSuccess() ? MessageKey::SETUP_PASSWORD_RESET_COMPLETED : MessageKey::SETUP_OUTPUT_FAILED, [
+            '%username%' => $user->username(),
+        ]),
+    ).PHP_EOL;
+
+    $log = $result->value();
+    if (!$log instanceof ActionLog && isset($result->context()['action_log'])) {
+        $log = $result->context()['action_log'];
+    }
+
+    foreach (logEntries($log) as $entry) {
+        echo sprintf('[%s] %s', strtoupper((string) ($entry['status'] ?? 'unknown')), (string) ($entry['name'] ?? 'setup_step')).PHP_EOL;
+
+        foreach (($entry['messages'] ?? []) as $message) {
+            echo sprintf(
+                '  * %s: %s',
+                strtoupper((string) ($message['level'] ?? 'info')),
+                translatedPayload($message, $translator, $projectDir, $language),
+            ).PHP_EOL;
+        }
+    }
+
+    return $result->isSuccess() ? 0 : 1;
 }

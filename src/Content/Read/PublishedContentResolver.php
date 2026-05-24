@@ -75,7 +75,7 @@ final readonly class PublishedContentResolver
             return PublishedContentResolveResult::notFound();
         }
 
-        if (ContentStatus::Published !== $content->status() || null !== $content->deletedAt()) {
+        if (ContentStatus::Published !== $content->status()) {
             return PublishedContentResolveResult::notPublished();
         }
 

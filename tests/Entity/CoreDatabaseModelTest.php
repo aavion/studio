@@ -15,8 +15,11 @@ use App\Entity\ConfigEntry;
 use App\Entity\ExtensionPackage;
 use App\Entity\SiteMenu;
 use App\Entity\SiteMenuItem;
+use App\Entity\StateMarker;
 use App\Entity\UserAccount;
 use App\Security\ApiKeyStatus;
+use App\Security\UserAccountStatus;
+use DateTimeImmutable;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
@@ -58,6 +61,8 @@ final class CoreDatabaseModelTest extends TestCase
         );
 
         self::assertSame(AccessLevel::MANAGER, $user->maxAccessLevel());
+        self::assertSame(UserAccountStatus::Active, $user->status());
+        self::assertSame(['language' => 'default'], $user->settings());
         self::assertTrue($editor->isLocked());
         self::assertFalse($editor->allowsEmptyMembership());
         self::assertSame('abcd1234', $apiKey->prefix());
@@ -77,6 +82,35 @@ final class CoreDatabaseModelTest extends TestCase
         $apiKey->revoke();
 
         self::assertSame(ApiKeyStatus::Revoked, $apiKey->status());
+
+        $user->changePassword('new-hash');
+        $user->changeStatus(UserAccountStatus::Inactive);
+
+        self::assertSame('new-hash', $user->passwordHash());
+        self::assertSame(UserAccountStatus::Inactive, $user->status());
+    }
+
+    public function testItModelsReusableStateMarkers(): void
+    {
+        $markedAt = new DateTimeImmutable('2026-05-24 12:00:00');
+        $marker = new StateMarker(
+            '99999999-9999-9999-9999-999999999999',
+            'user_account',
+            '33333333-3333-3333-3333-333333333333',
+            'last_login',
+            $markedAt,
+            null,
+            '127.0.0.1',
+            ['source' => 'test'],
+        );
+
+        self::assertSame('user_account', $marker->subjectType());
+        self::assertSame('33333333-3333-3333-3333-333333333333', $marker->subjectUid());
+        self::assertSame('last_login', $marker->markerKey());
+        self::assertSame($markedAt, $marker->markerAt());
+        self::assertNull($marker->markerBy());
+        self::assertSame('127.0.0.1', $marker->markerValue());
+        self::assertSame(['source' => 'test'], $marker->metadata());
     }
 
     public function testItModelsConfigPackagesAndMenus(): void

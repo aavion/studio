@@ -48,6 +48,59 @@ final class SetupCliPrompter
     }
 
     /**
+     * @param array<string, string|false> $options
+     */
+    public function confirmedValue(
+        array $options,
+        string $name,
+        string $default,
+        bool $interactive,
+        string $language,
+        string $key,
+        string $confirmKey,
+    ): string {
+        $value = $this->value($options, $name, $default, $interactive, $language, $key);
+
+        if (!$interactive || isset($options[$name])) {
+            return $value;
+        }
+
+        do {
+            $confirmation = $this->prompt($language, $confirmKey, '');
+            if ($confirmation === $value) {
+                return $value;
+            }
+
+            $this->write($this->translator->translate($this->projectDir, $language, MessageKey::SETUP_PROMPT_PASSWORD_MISMATCH));
+            $value = $this->prompt($language, $key, '');
+        } while (true);
+    }
+
+    /**
+     * @param array<string, string> $parameters
+     */
+    public function confirm(string $language, string $key, bool $default = false, array $parameters = []): bool
+    {
+        $defaultLabel = $default ? 'yes' : 'no';
+
+        do {
+            $value = strtolower($this->prompt($language, $key, $defaultLabel, $parameters));
+
+            if (in_array($value, ['y', 'yes', 'j', 'ja'], true)) {
+                return true;
+            }
+
+            if (in_array($value, ['n', 'no', 'nein'], true)) {
+                return false;
+            }
+
+            $this->write($this->translator->translate($this->projectDir, $language, MessageKey::SETUP_PROMPT_INVALID_CHOICE, [
+                '%choices%' => 'yes, no',
+            ]));
+        } while (true);
+    }
+
+    /**
      * @param list<string> $choices
      */
     public function choice(string $language, string $key, array $choices, string $default): string

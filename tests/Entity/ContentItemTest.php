@@ -14,7 +14,6 @@ use App\Entity\ContentItem;
 use App\Entity\ContentRevision;
 use App\Entity\ContentSchema;
 use App\Entity\ContentSchemaVersion;
-use DateTimeImmutable;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
@@ -22,13 +21,10 @@ final class ContentItemTest extends TestCase
 {
     public function testItCreatesDraftContentWithMetadataDefaults(): void
     {
-        $createdAt = new DateTimeImmutable('2026-05-23 20:00:00');
         $content = new ContentItem(
             '11111111-1111-1111-1111-111111111111',
             'hello-world',
             ['seo_robots' => 'index,follow'],
-            'admin',
-            $createdAt,
         );
 
         self::assertSame('11111111-1111-1111-1111-111111111111', $content->uid());
@@ -38,31 +34,21 @@ final class ContentItemTest extends TestCase
         self::assertSame(['en'], $content->availableLanguages());
         self::assertSame(['default'], $content->availableVariants());
         self::assertSame('index,follow', $content->metadataValue('seo_robots'));
-        self::assertSame($createdAt, $content->createdAt());
-        self::assertSame($createdAt, $content->modifiedAt());
-        self::assertSame('admin', $content->createdBy());
-        self::assertSame('admin', $content->modifiedBy());
     }
 
     public function testItTracksPublishArchiveAndVersionState(): void
     {
         $content = new ContentItem('11111111-1111-1111-1111-111111111111', 'release-note');
 
-        $publishedAt = new DateTimeImmutable('2026-05-23 21:00:00');
-        $content->publish('editor', $publishedAt);
+        $content->publish('editor');
         $content->bumpVersion('editor');
 
         self::assertSame(ContentStatus::Published, $content->status());
         self::assertSame(2, $content->version());
-        self::assertSame($publishedAt, $content->publishedAt());
-        self::assertSame('editor', $content->publishedBy());
 
-        $archivedAt = new DateTimeImmutable('2026-05-23 22:00:00');
-        $content->archive('admin', $archivedAt);
+        $content->archive('admin');
 
         self::assertSame(ContentStatus::Archived, $content->status());
-        self::assertSame($archivedAt, $content->archivedAt());
-        self::assertSame('admin', $content->archivedBy());
     }
 
     public function testItStoresHierarchyRoutingAndAccessMetadata(): void
@@ -75,12 +61,12 @@ final class ContentItemTest extends TestCase
             ['en' => 'Article'],
         );
 
-        $content->moveTo('22222222-2222-2222-2222-222222222222', 20, 'editor');
-        $content->setSchema($schema, 'editor');
-        $content->setAvailableLanguages(['en', 'de', 'en'], 'editor');
-        $content->setAvailableVariants(['default', 'compact'], 'editor');
-        $content->setVisibility(ContentVisibility::Private, 'editor');
-        $content->setAclRestrictions(['Administrators', 'Editors'], 'editor');
+        $content->moveTo('22222222-2222-2222-2222-222222222222', 20);
+        $content->setSchema($schema);
+        $content->setAvailableLanguages(['en', 'de', 'en']);
+        $content->setAvailableVariants(['default', 'compact']);
+        $content->setVisibility(ContentVisibility::Private);
+        $content->setAclRestrictions(['Administrators', 'Editors']);
 
         self::assertSame('22222222-2222-2222-2222-222222222222', $content->parentUid());
         self::assertSame(20, $content->sortOrder());
@@ -101,7 +87,6 @@ final class ContentItemTest extends TestCase
             $content,
             2,
             $schemaVersion,
-            'editor',
         );
         $fieldValue = new ContentFieldValue(
             '22222222-2222-2222-2222-222222222222',
@@ -113,7 +98,7 @@ final class ContentItemTest extends TestCase
         );
 
         $revision->addFieldValue($fieldValue);
-        $content->activateRevision($revision, 'editor');
+        $content->activateRevision($revision);
 
         self::assertCount(1, $content->revisions());
         self::assertSame('33333333-3333-3333-3333-333333333333', $content->activeRevisionUid());
@@ -130,9 +115,9 @@ final class ContentItemTest extends TestCase
     {
         $content = new ContentItem('11111111-1111-1111-1111-111111111111', 'private-project');
 
-        $content->setViewRule(AccessLevel::EDITOR, ['project_team'], 'admin');
-        $content->setEditRule(AccessLevel::MANAGER, null, 'admin');
-        $content->setManageRule(null, ['admins'], 'admin');
+        $content->setViewRule(AccessLevel::EDITOR, ['project_team']);
+        $content->setEditRule(AccessLevel::MANAGER);
+        $content->setManageRule(null, ['admins']);
 
         self::assertSame(AccessLevel::EDITOR, $content->viewMinLevel());
         self::assertSame(['project_team'], $content->viewGroupIdentifiers());
@@ -149,7 +134,7 @@ final class ContentItemTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
 
-        $content->setViewRule(AccessLevel::EDITOR, ['Project Team'], 'admin');
+        $content->setViewRule(AccessLevel::EDITOR, ['Project Team']);
     }
 
     public function testItRejectsInvalidUids(): void

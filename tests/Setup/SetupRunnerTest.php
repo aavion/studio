@@ -73,6 +73,7 @@ final class SetupRunnerTest extends TestCase
         $defaultAclGroup = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.default_acl_group'")->fetchColumn();
         $aclGroups = $pdo->query('SELECT identifier, access_level, locked, allow_empty FROM acl_group ORDER BY access_level')->fetchAll(PDO::FETCH_ASSOC);
         $passwordHash = $pdo->query("SELECT password_hash FROM user_account WHERE username = 'admin'")->fetchColumn();
+        $stateMarkers = $pdo->query("SELECT marker_key, marker_value FROM state_marker WHERE subject_type = 'user_account' ORDER BY marker_key")->fetchAll(PDO::FETCH_KEY_PAIR);
         $groups = $pdo->query("SELECT g.identifier FROM acl_group g INNER JOIN user_acl_group ug ON ug.group_uid = g.uid INNER JOIN user_account u ON u.uid = ug.user_uid WHERE u.username = 'admin' ORDER BY g.access_level")->fetchAll(PDO::FETCH_COLUMN);
 
         self::assertSame('Example Studio', json_decode((string) $title, true, flags: JSON_THROW_ON_ERROR));
@@ -92,6 +93,11 @@ final class SetupRunnerTest extends TestCase
         ], $aclGroups));
         self::assertIsString($passwordHash);
         self::assertTrue(password_verify('secret-password', $passwordHash));
+        self::assertSame([
+            'created' => null,
+            'password_changed' => null,
+            'status_changed' => 'active',
+        ], $stateMarkers);
         self::assertSame(['admin'], $groups);
     }
 
@@ -265,7 +271,8 @@ final class SetupRunnerTest extends TestCase
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL, modified_at DATETIME NOT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
         $pdo->exec('CREATE TABLE acl_group (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(80) NOT NULL UNIQUE, name CLOB NOT NULL, access_level INTEGER NOT NULL, locked BOOLEAN NOT NULL, allow_empty BOOLEAN NOT NULL, metadata CLOB NOT NULL)');
-        $pdo->exec('CREATE TABLE user_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(180) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, profile CLOB NOT NULL)');
+        $pdo->exec('CREATE TABLE state_marker (uid VARCHAR(36) NOT NULL PRIMARY KEY, subject_type VARCHAR(80) NOT NULL, subject_uid VARCHAR(36) NOT NULL, marker_key VARCHAR(80) NOT NULL, marker_at DATETIME NOT NULL, marker_by VARCHAR(180) DEFAULT NULL, marker_value VARCHAR(255) DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(subject_type, subject_uid, marker_key))');
+        $pdo->exec('CREATE TABLE user_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(180) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, profile CLOB NOT NULL, settings CLOB NOT NULL, status VARCHAR(32) NOT NULL)');
         $pdo->exec('CREATE TABLE user_acl_group (user_uid VARCHAR(36) NOT NULL, group_uid VARCHAR(36) NOT NULL, PRIMARY KEY(user_uid, group_uid))');
     }
 
