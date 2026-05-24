@@ -99,7 +99,7 @@ state_marker
 
 `/api/live/**` is reserved for small application-owned JSON flows such as captcha seeds, polling endpoints, and live operation status. These routes should use Symfony controllers and the shared JSON output renderer instead of the public content catch-all. Long-lived external API contracts belong under versioned prefixes such as `/api/v1/**`.
 
-Error-page handling should use a layered fallback later: when an error such as `404`, `403`, `429`, `451`, or maintenance-mode `503` occurs, the handler should first look for a matching internal content entity such as `/system/error-pages/404` or `/system/error-pages/503`; if none exists or it cannot be rendered, the active system theme should provide the default error page.
+Error-page handling uses a layered fallback: when an error such as `404`, `403`, `429`, `451`, or maintenance-mode `503` occurs, `HttpErrorRenderer` first looks for a matching internal content entity such as `/system/error-pages/404` or `/system/error-pages/503`; if none exists or it cannot be rendered, it falls back to `@frontend/error-pages/{status}.html.twig`, then `@frontend/error-pages/default.html.twig`. Direct browser requests to `/system/**` remain blocked by the route guard, but internal rendering may resolve those entities.
 
 Generic route variants use a trailing marker segment such as `/article/~compact`. The marker is not part of the content hierarchy; lookup resolves `/article` and passes `compact` as the requested variant. Missing variants fall back to the default variant when possible and add a warning message to the resolve result for later logging.
 

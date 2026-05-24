@@ -35,6 +35,7 @@ final class TestSuiteLifecycle
         $testVarDirectory = $projectRoot.'/var/test';
 
         self::removeDirectory($testVarDirectory);
+        self::removeDirectory($projectRoot.'/var/cache/test');
 
         if (!mkdir($testVarDirectory, 0777, true) && !is_dir($testVarDirectory)) {
             throw new RuntimeException('Unable to create var/test for the SQLite test database.');

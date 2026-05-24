@@ -13,8 +13,8 @@ final class PackageScopeTest extends TestCase
     public function testItParsesDotenvStyleScopeLists(): void
     {
         self::assertSame(
-            [PackageScope::FrontendTheme, PackageScope::Module],
-            PackageScope::fromManifestValue('[frontend-theme, module]'),
+            [PackageScope::FrontendTheme, PackageScope::SystemTemplate, PackageScope::Module],
+            PackageScope::fromManifestValue('[frontend-theme, system-template, module]'),
         );
     }
 

@@ -13,9 +13,9 @@ final readonly class PackageMacroRegistry
     {
         return [
             'core' => [
-                'content' => 'macros/core/content.html.twig',
-                'form' => 'macros/core/form.html.twig',
-                'ui' => 'macros/core/ui.html.twig',
+                'content' => '@root/macros/core/content.html.twig',
+                'form' => '@root/macros/core/form.html.twig',
+                'ui' => '@root/macros/core/ui.html.twig',
             ],
             'package' => [],
         ];

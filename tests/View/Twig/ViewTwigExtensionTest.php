@@ -20,6 +20,6 @@ final class ViewTwigExtensionTest extends KernelTestCase
         )->render();
 
         self::assertArrayHasKey('studio_view', $globals);
-        self::assertSame('System|macros/core/ui.html.twig|<p><strong>ok</strong></p>', $html);
+        self::assertSame('System|@root/macros/core/ui.html.twig|<p><strong>ok</strong></p>', $html);
     }
 }

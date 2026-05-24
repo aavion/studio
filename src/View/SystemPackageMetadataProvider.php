@@ -33,7 +33,7 @@ final class SystemPackageMetadataProvider
             'name' => 'System',
             'immutable' => true,
             'virtual' => true,
-            'scopes' => ['frontend-theme', 'backend-theme'],
+            'scopes' => ['frontend-theme', 'backend-theme', 'system-template'],
             'version' => $manifest->get('APP_VERSION'),
             'date' => $manifest->get('APP_DATE'),
             'channel' => $manifest->get('APP_CHANNEL'),

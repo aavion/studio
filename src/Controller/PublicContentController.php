@@ -13,13 +13,11 @@ use App\Content\Routing\ContentRoutePath;
 use App\Content\Routing\ContentRouteGuard;
 use App\Core\Access\AccessActor;
 use App\Core\Message\MessageException;
+use App\View\Http\HttpErrorRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class PublicContentController extends AbstractController
@@ -29,6 +27,7 @@ final class PublicContentController extends AbstractController
         private readonly ContentRedirectResolver $redirectResolver,
         private readonly ContentRouteLocalization $localization,
         private readonly ContentRouteGuard $routeGuard,
+        private readonly HttpErrorRenderer $httpError,
     ) {
     }
 
@@ -53,7 +52,7 @@ final class PublicContentController extends AbstractController
                 try {
                     $this->routeGuard->assertPathAllowed($localized->contentPath());
                 } catch (MessageException $exception) {
-                    throw new AccessDeniedHttpException(previous: $exception);
+                    return $this->httpError->forbidden($request, $exception);
                 }
             }
 
@@ -68,7 +67,7 @@ final class PublicContentController extends AbstractController
             try {
                 $path = $this->routeGuard->assertPathAllowed($localized->contentPath());
             } catch (MessageException $exception) {
-                throw new AccessDeniedHttpException(previous: $exception);
+                return $this->httpError->forbidden($request, $exception);
             }
         }
 
@@ -96,7 +95,7 @@ final class PublicContentController extends AbstractController
             ContentRedirectResolveStatus::LoopDetected,
             ContentRedirectResolveStatus::HopLimitExceeded,
         ], true)) {
-            throw new NotFoundHttpException();
+            return $this->httpError->notFound($request);
         }
 
         return $this->renderContentRoute($path, $language, $request);
@@ -120,24 +119,24 @@ final class PublicContentController extends AbstractController
         $view = $result->view();
 
         if (null !== $view) {
-            return $this->render('content/public.html.twig', [
+            return $this->render('@frontend/content/entity.html.twig', [
                 'content_view' => $view,
             ]);
         }
 
         if (PublishedContentResolveStatus::ContextUnavailable === $result->status()) {
-            throw new NotFoundHttpException();
+            return $this->httpError->notFound($request);
         }
 
         if ($result->isUnauthorized()) {
-            throw new HttpException(Response::HTTP_UNAUTHORIZED);
+            return $this->httpError->unauthorized($request);
         }
 
         if ($result->isForbidden()) {
-            throw new AccessDeniedHttpException();
+            return $this->httpError->forbidden($request);
         }
 
-        throw new NotFoundHttpException();
+        return $this->httpError->notFound($request);
     }
 
     private function pathWithVariant(string $path, ?string $variant): string

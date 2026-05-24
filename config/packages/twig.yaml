@@ -1,5 +1,9 @@
 twig:
     file_name_pattern: '*.twig'
+    paths:
+        '%kernel.project_dir%/templates/frontend': frontend
+        '%kernel.project_dir%/templates/backend': backend
+        '%kernel.project_dir%/templates': root
 
 when@test:
     twig:

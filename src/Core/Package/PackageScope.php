@@ -10,6 +10,7 @@ enum PackageScope: string
 {
     case FrontendTheme = 'frontend-theme';
     case BackendTheme = 'backend-theme';
+    case SystemTemplate = 'system-template';
     case Module = 'module';
     case CaptchaProvider = 'captcha-provider';
     case EditorProvider = 'editor-provider';
@@ -49,7 +50,7 @@ enum PackageScope: string
     public function isSingleActive(): bool
     {
         return match ($this) {
-            self::FrontendTheme, self::BackendTheme, self::CaptchaProvider, self::EditorProvider => true,
+            self::FrontendTheme, self::BackendTheme, self::SystemTemplate, self::CaptchaProvider, self::EditorProvider => true,
             self::Module => false,
         };
     }

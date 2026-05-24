@@ -4,7 +4,7 @@
 
 {% if body is not empty %}
     <section class="studio-content-body">
-        {% include 'content/partials/_field-value.html.twig' with {value: body} only %}
+        {% include '@frontend/content/partials/_field-value.html.twig' with {value: body} only %}
     </section>
 {% endif %}
 
@@ -22,7 +22,7 @@
                 {% for field, value in visible_fields %}
                     <tr>
                         <th scope="row">{{ field }}</th>
-                        <td>{% include 'content/partials/_field-value.html.twig' with {value: value} only %}</td>
+                        <td>{% include '@frontend/content/partials/_field-value.html.twig' with {value: value} only %}</td>
                     </tr>
                 {% endfor %}
             </tbody>

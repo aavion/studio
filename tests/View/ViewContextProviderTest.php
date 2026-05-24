@@ -27,7 +27,7 @@ final class ViewContextProviderTest extends TestCase
         ))->context();
 
         self::assertSame('System', $context['system_package']['name']);
-        self::assertSame('macros/core/content.html.twig', $context['macro_namespaces']['core']['content']);
+        self::assertSame('@root/macros/core/content.html.twig', $context['macro_namespaces']['core']['content']);
         self::assertSame(['enabled' => true], $context['package_demo']);
     }
 }

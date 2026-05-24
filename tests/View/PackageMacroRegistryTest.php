@@ -13,8 +13,8 @@ final class PackageMacroRegistryTest extends TestCase
     {
         $registry = new PackageMacroRegistry();
 
-        self::assertSame('macros/core/ui.html.twig', $registry->template('core', 'ui'));
-        self::assertSame('macros/core/form.html.twig', $registry->template('core', 'form'));
+        self::assertSame('@root/macros/core/ui.html.twig', $registry->template('core', 'ui'));
+        self::assertSame('@root/macros/core/form.html.twig', $registry->template('core', 'form'));
         self::assertNull($registry->template('package', 'missing'));
     }
 }

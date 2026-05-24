@@ -189,6 +189,12 @@ ui:
     value: 'Value'
     empty_value: 'Empty'
   error:
+    default:
+      title: 'Request failed'
+      message: 'The system could not complete the request.'
+    401:
+      title: 'Sign in required'
+      message: 'This content is only available after signing in with sufficient access.'
     403:
       title: 'Access denied'
       message: 'This route is protected or not available for direct access.'

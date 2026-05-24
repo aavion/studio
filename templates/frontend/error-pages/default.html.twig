@@ -1,0 +1,16 @@
+{% extends '@frontend/frontend.html.twig' %}
+
+{% set status_code = http_error.status_code|default(status_code|default(500)) %}
+{% set status_title = (http_error.title_key|default('ui.error.default.title'))|trans %}
+{% set status_message = (http_error.message_key|default('ui.error.default.message'))|trans %}
+
+{% block title %}{{ status_title }}{% endblock %}
+
+{% block frontend_body %}
+    <section class="studio-error-page">
+        <div class="studio-kicker">{{ status_code }}</div>
+        <h1>{{ status_title }}</h1>
+        <p>{{ status_message }}</p>
+        {% include '@frontend/error-pages/partials/_debug.html.twig' with {http_error: http_error|default(null)} only %}
+    </section>
+{% endblock %}

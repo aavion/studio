@@ -1,10 +1,14 @@
-{% extends 'layouts/frontend.html.twig' %}
+{% extends '@frontend/frontend.html.twig' %}
 
 {% block title %}{{ 'ui.user.login.title'|trans }}{% endblock %}
 
 {% block frontend_body %}
     <section class="studio-auth-panel">
         <h1>{{ 'ui.user.login.title'|trans }}</h1>
+        {% if http_error is defined and http_error.status_code|default(null) == 401 %}
+            <p class="studio-auth-notice">{{ http_error.message_key|trans }}</p>
+        {% endif %}
         <p>{{ 'ui.user.login.placeholder'|trans }}</p>
+        {% include '@frontend/error-pages/partials/_debug.html.twig' with {http_error: http_error|default(null)} only %}
     </section>
 {% endblock %}

@@ -1,4 +1,4 @@
-{% extends 'layouts/frontend.html.twig' %}
+{% extends '@frontend/frontend.html.twig' %}
 
 {% block title %}{{ content_view.title ?? content_view.content.slug }}{% endblock %}
 
@@ -14,7 +14,7 @@
                 {% endif %}
             </header>
 
-            {% include 'content/partials/_generic-fields.html.twig' with {content_view: content_view} only %}
+            {% include '@frontend/content/partials/_generic-fields.html.twig' with {content_view: content_view} only %}
         </article>
     </main>
 {% endblock %}

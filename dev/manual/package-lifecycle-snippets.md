@@ -1,7 +1,7 @@
 # Package lifecycle snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-24  
+> **Updated**: 2026-05-25  
 > **Owner**: Core  
 > **Purpose:** Collect package discovery, validation, dry-run, review, execution, and action-log notes before the installer lifecycle is implemented.  
 
@@ -50,7 +50,7 @@ Required package manifest keys:
 
 Optional keys include `PACKAGE_SOURCE`, `PACKAGE_CHANNEL`, `PACKAGE_IMAGE`, `PACKAGE_NAMESPACE`, `PACKAGE_DESCRIPTION`, `PACKAGE_LICENSE`, and `PACKAGE_HOMEPAGE`.
 
-Current allowed scopes are `frontend-theme`, `backend-theme`, `module`, `captcha-provider`, and `editor-provider`. Frontend themes, backend themes, and provider scopes are single-active scopes: activating a new package with the same single-active scope deactivates the previously active package. Module packages may be active in parallel.
+Current allowed scopes are `frontend-theme`, `backend-theme`, `system-template`, `module`, `captcha-provider`, and `editor-provider`. Frontend themes, backend themes, system-template packages, and provider scopes are single-active scopes: activating a new package with the same single-active scope deactivates the previously active package. Module packages may be active in parallel.
 
 ## Validation
 
@@ -97,6 +97,8 @@ Active package assets are exposed through generated registries rather than direc
 
 Static package assets such as images, fonts, SVGs, videos, and vendored dependency files are mirrored but not registered as standalone CSS/JS entries. They are served by AssetMapper only when referenced through mirrored package CSS, JavaScript, or templates. Source paths under `packages/<slug>/...` must not leak into public output.
 
+Template overrides are scope-bound. `frontend-theme` may override `templates/frontend/**`; `backend-theme` may override `templates/backend/**`; `system-template` may override root-level shared templates such as `templates/base.html.twig` and `templates/macros/**`. Packages may reference root templates through `@root/...` for fallback behavior even without `system-template`, but they must not replace root templates unless the scope is present.
+
 Asset ordering should be deterministic: native system assets first, active module/provider package assets next, active frontend theme package assets next, and active backend theme package assets last so scoped theme overrides win where CSS/JS order matters. Project-local or entity-local assets remain closer to the rendered element and may be more specific by design.
 
 Use `php bin/console studio:assets:rebuild` as the global rebuild operation after package activation, deactivation, update, uninstall, or manual admin recovery. It should run as an ActionLog-backed operation with persisted step entries and progress metadata. The package mirror and registry rewrite step runs before Tailwind. `cache:clear` runs last so the live operation UI is not invalidated before the rebuild has already produced mirrored assets, registries, Tailwind output, and production asset-map output.
@@ -110,7 +112,7 @@ Use `php bin/console studio:assets:rebuild` as the global rebuild operation afte
 - Package-owned data deletion needs explicit confirmation and action-log coverage.
 - Package-owned database tables should use collision-resistant names such as `pkg_<slug>_<table>`.
 - Deactivation must not drop data. Uninstall may offer data removal through a package purge routine.
-- Theme/provider scopes are single-active; module scopes are many-active.
+- Theme, system-template, and provider scopes are single-active; module scopes are many-active.
 
 ## References
 

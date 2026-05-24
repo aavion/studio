@@ -17,7 +17,7 @@ final class SystemPackageMetadataProviderTest extends TestCase
         self::assertSame('System', $metadata['name']);
         self::assertTrue($metadata['immutable']);
         self::assertTrue($metadata['virtual']);
-        self::assertSame(['frontend-theme', 'backend-theme'], $metadata['scopes']);
+        self::assertSame(['frontend-theme', 'backend-theme', 'system-template'], $metadata['scopes']);
         self::assertSame('0.0.0', $metadata['version']);
         self::assertArrayHasKey('APP_SOURCE', $metadata['manifest']);
     }

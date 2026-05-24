@@ -1,7 +1,7 @@
 # Frontend asset snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-24  
+> **Updated**: 2026-05-25  
 > **Owner**: Core  
 > **Purpose:** Record early notes for AssetMapper, ImportMap, Tailwind, theme assets, illustrations, and package asset rebuilds.  
 
@@ -54,6 +54,8 @@ The deterministic order is:
 3. active frontend theme package CSS/JS;
 4. active backend theme package CSS/JS;
 5. project-local or entity-local assets where a renderer explicitly adds them.
+
+Template and asset scopes should mirror each other. Frontend-specific package assets belong to the frontend-theme bucket, backend-specific package assets belong to the backend-theme bucket, and shared module/provider assets belong to the extension bucket. Packages with `system-template` scope may affect shared root templates, but their CSS/JS still needs an explicit package asset contribution bucket so the rebuild order remains deterministic.
 
 Packages may ship self-contained third-party CSS or JavaScript inside their own `assets/` directory. The lifecycle mirrors those files as package assets instead of injecting package-managed third-party dependencies into the global importmap.
 

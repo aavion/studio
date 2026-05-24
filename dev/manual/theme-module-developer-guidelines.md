@@ -1,7 +1,7 @@
 # Package developer guidelines (Developer Guide)
 
 > **Status**: Draft  
-> **Updated**: 2026-05-24  
+> **Updated**: 2026-05-25  
 > **Owner**: Core  
 > **Purpose:** Draft guidance for developing packages, scoped themes, modules, providers, admin UI extensions, and first-party add-ons while the extension system is still being designed.  
 
@@ -55,9 +55,9 @@ PACKAGE_DEPENDENCIES=[]
 
 Current constraints:
 
-- Allowed scopes start as `frontend-theme`, `backend-theme`, `module`, `captcha-provider`, and `editor-provider`.
+- Allowed scopes start as `frontend-theme`, `backend-theme`, `system-template`, `module`, `captcha-provider`, and `editor-provider`.
 - A package is always activated or deactivated as one unit. Scopes describe capabilities, not separately switchable sub-packages.
-- Only one `frontend-theme`, one `backend-theme`, and one provider package of each provider type may be active at the same time.
+- Only one `frontend-theme`, one `backend-theme`, one `system-template`, and one provider package of each provider type may be active at the same time.
 - Multiple `module` packages may be active at the same time.
 - Activating a new single-active scope deactivates the previously active package for that scope. If that package also had module behavior, the module behavior is deactivated with it.
 - Disabled packages must not contribute services, routes, templates, assets, migrations, permissions, providers, subscribers, or handlers.
@@ -70,6 +70,8 @@ Current constraints:
 `package.php` is optional. It must never be included during discovery and should only be loaded after a package is valid and active. Packages are trusted code; only administrators may install them. A package should use a package-owned root namespace derived from or declared for the package slug.
 
 Package assets must be self-contained. Packages should vendor their external dependencies inside their own package directory instead of requiring the project importmap to manage third-party dependency lifecycles across packages. Active package CSS and JavaScript are aggregated through the generated package asset registries; packages should not expect templates to add arbitrary direct `<link>` or `<script>` tags for package-level assets. Static assets such as images, fonts, videos, and SVGs should be referenced from package CSS, JavaScript, or templates after the lifecycle mirrors them into the AssetMapper-visible package path.
+
+Template paths use logical Twig namespaces. Frontend packages target `templates/frontend/**` and reference templates as `@frontend/...`. Backend packages target `templates/backend/**` and reference templates as `@backend/...`. Shared fallbacks use `@root/...`; packages may reference root templates, but only packages with `system-template` scope may override root-level shared files such as `base.html.twig` or `macros/**`.
 
 ## Admin UI and UX guidelines
 

@@ -1,0 +1,16 @@
+{% extends '@root/base.html.twig' %}
+
+{% block body_class %}studio-body studio-backend{% endblock %}
+
+{% block body %}
+    <main class="studio-backend-shell">
+        <div class="studio-admin-shell">
+            <aside class="studio-admin-sidebar" aria-label="{{ 'ui.admin.navigation'|trans }}">
+                {% block admin_sidebar %}{% endblock %}
+            </aside>
+            <section class="studio-admin-content">
+                {% block admin_body %}{% endblock %}
+            </section>
+        </div>
+    </main>
+{% endblock %}

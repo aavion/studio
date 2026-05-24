@@ -53,7 +53,10 @@ final class PackageAssetRegistryBuilder
         return match ($scope) {
             PackageScope::FrontendTheme => self::BUCKET_FRONTEND_THEME,
             PackageScope::BackendTheme => self::BUCKET_BACKEND_THEME,
-            PackageScope::Module, PackageScope::CaptchaProvider, PackageScope::EditorProvider => self::BUCKET_EXTENSION,
+            PackageScope::SystemTemplate,
+            PackageScope::Module,
+            PackageScope::CaptchaProvider,
+            PackageScope::EditorProvider => self::BUCKET_EXTENSION,
         };
     }
 

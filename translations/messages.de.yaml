@@ -189,6 +189,12 @@ ui:
     value: 'Wert'
     empty_value: 'Leer'
   error:
+    default:
+      title: 'Anfrage fehlgeschlagen'
+      message: 'Das System konnte die Anfrage nicht abschließen.'
+    401:
+      title: 'Anmeldung erforderlich'
+      message: 'Dieser Inhalt ist erst nach einer Anmeldung mit ausreichender Berechtigung verfügbar.'
     403:
       title: 'Zugriff verweigert'
       message: 'Diese Route ist geschützt oder nicht für direkten Zugriff verfügbar.'

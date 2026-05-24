@@ -1,0 +1,11 @@
+{% extends '@root/base.html.twig' %}
+
+{% block body_class %}studio-body studio-backend{% endblock %}
+
+{% block body %}
+    <main class="studio-backend-shell">
+        <section class="studio-editor-shell">
+            {% block editor_body %}{% endblock %}
+        </section>
+    </main>
+{% endblock %}

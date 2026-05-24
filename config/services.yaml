@@ -49,5 +49,17 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\View\Template\PackageTemplatePathResolver:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\View\Http\HttpErrorRenderer:
+        arguments:
+            $debug: '%kernel.debug%'
+
+    App\View\Http\HttpErrorSubscriber:
+        arguments:
+            $debug: '%kernel.debug%'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

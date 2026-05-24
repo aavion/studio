@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-05-24  
+> **Updated**: 2026-05-25  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -69,6 +69,14 @@
 
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
+
+### 2026-05-25
+- Tightened the package-scoped template contract around canonical Twig namespaces: `@frontend`, `@backend`, and `@root`.
+- Reorganized native placeholder templates into frontend/backend areas, leaving the template root for `base.html.twig` and shared macro helpers.
+- Added the generic frontend error fallback template and kept 429/503 lightweight through the root wrapper.
+- Added `system-template` as a package scope and introduced a template path resolver that lets packages reference `@root` while allowing root overrides only for packages with that scope.
+- Added the central HTTP error renderer with `/system/error-pages/{status}` content fallback, frontend status/default templates, anonymous `401` login rendering, and a production exception subscriber for HTTP exceptions.
+- Updated feature drafts, developer snippets, class map, translations, and tests for the new template namespace and package-scope contract.
 
 ### 2026-05-24
 - Completed the first-run/setup baseline: translated interactive `bin/setup`, dry-run planning, env override writing, `composer dump-env {APP_ENV}` with bundled Composer fallback, Doctrine migration execution, default settings, admin seeding, password reset, password confirmation, localized ActionLog output, and callable setup tests.

@@ -302,7 +302,7 @@ final readonly class PackageAssetSyncer
 
     private function primaryScope(PackageAssetSyncPackage $package): PackageScope
     {
-        foreach ([PackageScope::Module, PackageScope::CaptchaProvider, PackageScope::EditorProvider, PackageScope::FrontendTheme, PackageScope::BackendTheme] as $scope) {
+        foreach ([PackageScope::Module, PackageScope::SystemTemplate, PackageScope::CaptchaProvider, PackageScope::EditorProvider, PackageScope::FrontendTheme, PackageScope::BackendTheme] as $scope) {
             if ($package->hasScope($scope)) {
                 return $scope;
             }
