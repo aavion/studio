@@ -22,7 +22,7 @@ final class PackageFixtureTest extends TestCase
         $result = (new PackageDiscovery())->discover($root, 'test');
 
         self::assertTrue($result->isSuccess());
-        self::assertSame(['app', 'theme', 'module', 'import'], array_map(
+        self::assertSame(['app', 'package', 'package', 'import'], array_map(
             static fn (PackageCandidate $candidate): string => $candidate->source()->name(),
             $result->value(),
         ));
@@ -55,7 +55,7 @@ final class PackageFixtureTest extends TestCase
             $byDirectory[basename($candidate->directory())] = $candidate;
         }
 
-        $missingResult = (new PackageValidator())->validate($byDirectory['missing-theme-files'], PackageSpec::create()
+        $missingResult = (new PackageValidator())->validate($byDirectory['missing-package-files'], PackageSpec::create()
             ->requireDirectory('templates')
             ->requireDirectory('assets'));
 
@@ -83,15 +83,8 @@ final class PackageFixtureTest extends TestCase
         return match ($source) {
             'app' => PackageSpec::create()
                 ->requireFile('.manifest'),
-            'theme' => PackageSpec::create()
+            'package' => PackageSpec::create()
                 ->requireFile('.manifest')
-                ->requireDirectory('templates')
-                ->requireDirectory('assets')
-                ->withLintingChecks(),
-            'module' => PackageSpec::create()
-                ->requireFile('.manifest')
-                ->requireDirectory('src')
-                ->requireDirectory('config')
                 ->withLintingChecks(),
             'import' => PackageSpec::create()
                 ->requireFile('.manifest')

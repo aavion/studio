@@ -29,8 +29,7 @@ Core can provide:
 
 Installer or package-type lifecycle code should decide:
 
-- theme activation;
-- module enablement;
+- package activation and deactivation;
 - dependency maps;
 - version compatibility;
 - migrations;
@@ -64,8 +63,8 @@ Dependency maps are intentionally deferred. They should likely include:
 - required core version;
 - required PHP extensions;
 - required Composer packages;
-- required modules/themes;
-- conflicting modules/themes;
+- required packages;
+- conflicting packages;
 - optional integrations.
 
 Do not make `PackageValidator` enforce dependency maps until installer workflows can decide how to display, resolve, and roll back dependency decisions.
@@ -73,6 +72,6 @@ Do not make `PackageValidator` enforce dependency maps until installer workflows
 ## References
 
 - [Package lifecycle snippets](package-lifecycle-snippets.md)
-- [Theme and module developer guidelines](theme-module-developer-guidelines.md)
-- [Plugin modules draft](../draft/0.2.x-PluginModules.md)
+- [Package developer guidelines](theme-module-developer-guidelines.md)
+- [Package modules and providers draft](../draft/0.2.x-PluginModules.md)
 - [Self-update and release workflow draft](../draft/0.5.x-SelfUpdateReleaseWorkflow.md)

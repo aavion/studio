@@ -16,8 +16,8 @@ Valid package fixtures live under `tests/Fixtures/packages/` and mirror the stan
 ```text
 tests/Fixtures/packages/
   .manifest
-  themes/demo-theme/
-  modules/demo-module/
+  packages/demo-theme/
+  packages/demo-module/
   var/cache/test/imports/demo-import/
 ```
 

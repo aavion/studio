@@ -8,7 +8,7 @@ use App\Core\Access\AccessLevel;
 use App\Core\Config\ConfigValueType;
 use App\Core\Message\MessageKey;
 use App\Core\Package\ExtensionPackageStatus;
-use App\Core\Package\ExtensionPackageType;
+use App\Core\Package\PackageScope;
 use App\Entity\AclGroup;
 use App\Entity\ApiKey;
 use App\Entity\ConfigEntry;
@@ -121,9 +121,9 @@ final class CoreDatabaseModelTest extends TestCase
         $config = new ConfigEntry('content.cleanup.trash_retention_days', 30, ConfigValueType::Integer);
         $package = new ExtensionPackage(
             '55555555-5555-5555-5555-555555555555',
-            ExtensionPackageType::Theme,
-            'demo_theme',
-            'themes/demo',
+            [PackageScope::FrontendTheme, PackageScope::Module],
+            'demo_package',
+            'packages/demo',
             ExtensionPackageStatus::Active,
         );
         $menu = new SiteMenu('66666666-6666-6666-6666-666666666666', 'main', ['en' => 'Main']);
@@ -143,7 +143,9 @@ final class CoreDatabaseModelTest extends TestCase
         $config->replaceValue(0.75, ConfigValueType::Float);
         self::assertSame(0.75, $config->value());
         self::assertSame(ConfigValueType::Float, $config->valueType());
-        self::assertSame(ExtensionPackageType::Theme, $package->type());
+        self::assertSame([PackageScope::FrontendTheme, PackageScope::Module], $package->scopes());
+        self::assertSame(['frontend-theme', 'module'], $package->scopeValues());
+        self::assertTrue($package->hasScope(PackageScope::FrontendTheme));
         self::assertSame(ExtensionPackageStatus::Active, $package->status());
         self::assertSame('main', $menu->identifier());
         self::assertSame(AccessLevel::PUBLIC, $item->viewMinLevel());

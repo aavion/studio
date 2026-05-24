@@ -3,11 +3,14 @@
 @import "./icons.css";
 @import "./illustrations.css";
 @import "./codemirror.css";
-@import "./theme/base.css";
-@import "./public/base.css";
-@import "./system/base.css";
-@import "./admin/base.css";
-@import "./editor/base.css";
-@import "./setup/base.css";
+@import "./tokens/base.css";
+@import "./frontend/base.css";
+@import "./backend/base.css";
+@import "./backend/admin/base.css";
+@import "./backend/editor/base.css";
+@import "./backend/setup/base.css";
+@import "./packages/extension.css";
+@import "./packages/frontend-theme.css";
+@import "./packages/backend-theme.css";
 
 @custom-variant dark (&:where(.dark, .dark *));

@@ -15,8 +15,7 @@ Use action logs for:
 
 - init and setup runs;
 - package imports;
-- theme activation;
-- module enablement;
+- package activation and deactivation;
 - asset rebuilds;
 - backups;
 - restores;

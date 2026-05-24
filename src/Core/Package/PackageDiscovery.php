@@ -106,6 +106,24 @@ final readonly class PackageDiscovery
                     }
                 }
 
+                if ('package' === $source->name()) {
+                    $scopeValue = $manifest->get('PACKAGE_SCOPE', '');
+
+                    try {
+                        PackageScope::fromManifestValue($scopeValue);
+                    } catch (\InvalidArgumentException $exception) {
+                        $issues[] = OperationIssue::create(
+                            MessageCode::PACKAGE_SCOPE_INVALID,
+                            MessageKey::PACKAGE_SCOPE_INVALID,
+                            ['%scope%' => $scopeValue],
+                            ['path' => $manifestPath, 'source' => $source->name(), 'scope' => $scopeValue],
+                            MessageLevel::Warning,
+                        );
+
+                        continue;
+                    }
+                }
+
                 $candidates[] = new PackageCandidate($source, $directory, $manifestPath, $manifest);
             }
         }
@@ -137,16 +155,26 @@ final readonly class PackageDiscovery
                 ['VERSION', 'DATE', 'CHANNEL', 'SOURCE'],
                 ['VERSION'],
             )),
-            PackageSource::children('theme', 'themes', ManifestSpec::forNamespace(
-                'THEME',
-                ['VERSION', 'AUTHOR', 'NAME'],
-                ['NAME', 'VERSION'],
-            )),
-            PackageSource::children('module', 'modules', ManifestSpec::forNamespace(
-                'MODULE',
-                ['VERSION', 'AUTHOR', 'NAME'],
-                ['NAME', 'VERSION'],
-            )),
+            PackageSource::children('package', 'packages', ManifestSpec::create()
+                ->allowOnly(
+                    'PACKAGE_AUTHOR',
+                    'PACKAGE_NAME',
+                    'PACKAGE_VERSION',
+                    'PACKAGE_SCOPE',
+                    'PACKAGE_DEPENDENCIES',
+                    'PACKAGE_SOURCE',
+                    'PACKAGE_CHANNEL',
+                    'PACKAGE_IMAGE',
+                    'PACKAGE_NAMESPACE',
+                    'PACKAGE_DESCRIPTION',
+                    'PACKAGE_LICENSE',
+                    'PACKAGE_HOMEPAGE',
+                )
+                ->require('PACKAGE_AUTHOR')
+                ->require('PACKAGE_NAME')
+                ->require('PACKAGE_VERSION')
+                ->require('PACKAGE_SCOPE')
+                ->require('PACKAGE_DEPENDENCIES')),
             PackageSource::children('import', 'var/cache/'.$environment.'/imports'),
         ];
     }

@@ -21,6 +21,7 @@ message:
     yaml_syntax_error: 'YAML syntax check failed for "%path%".'
     css_syntax_error: 'CSS syntax check failed for "%path%".'
     javascript_syntax_error: 'JavaScript syntax check failed for "%path%".'
+    scope_invalid: 'Package scope "%scope%" is not supported.'
     copy_source_missing: 'Package copy source "%path%" is missing.'
     copy_source_symlink: 'Package copy source "%path%" must not be a symlink.'
     discovery_completed: 'Package discovery found %count% candidate(s).'

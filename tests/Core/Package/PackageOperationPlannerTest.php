@@ -45,7 +45,7 @@ final class PackageOperationPlannerTest extends TestCase
             $this->targetDir,
             ['templates/base.html.twig', 'assets/app.css', 'assets/app.css'],
             'import package files',
-            'themes/system',
+            'packages/system',
         );
 
         self::assertTrue($result->isSuccess());
@@ -53,7 +53,7 @@ final class PackageOperationPlannerTest extends TestCase
             'assets/app.css',
             'templates/base.html.twig',
         ], $result->value()->context()['files']);
-        self::assertSame('themes/system', $result->value()->context()['target_prefix']);
+        self::assertSame('packages/system', $result->value()->context()['target_prefix']);
         self::assertCount(2, $result->value());
 
         $plan = (new OperationExecutor())->planQueue($result->value());
@@ -62,7 +62,7 @@ final class PackageOperationPlannerTest extends TestCase
         self::assertSame(['copy_file' => 2], $plan->actionCounts());
         self::assertSame([
             'assets/app.css',
-            'themes/system/assets/app.css',
+            'packages/system/assets/app.css',
         ], $plan->actions()[0]->paths());
     }
 
@@ -74,13 +74,13 @@ final class PackageOperationPlannerTest extends TestCase
             $this->candidate(),
             $this->targetDir,
             ['assets/app.css'],
-            targetPrefix: 'themes/system',
+            targetPrefix: 'packages/system',
         )->value();
 
         $execution = (new OperationExecutor())->executeQueue($queue);
 
         self::assertTrue($execution->result()->isSuccess());
-        self::assertSame('body { color: red; }', file_get_contents($this->targetDir.'/themes/system/assets/app.css'));
+        self::assertSame('body { color: red; }', file_get_contents($this->targetDir.'/packages/system/assets/app.css'));
     }
 
     public function testItReportsMissingSourceFilesBeforeCreatingQueue(): void

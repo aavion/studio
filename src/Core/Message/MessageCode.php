@@ -27,6 +27,7 @@ final class MessageCode
     public const PACKAGE_YAML_SYNTAX_ERROR = 'package.yaml_syntax_error';
     public const PACKAGE_CSS_SYNTAX_ERROR = 'package.css_syntax_error';
     public const PACKAGE_JAVASCRIPT_SYNTAX_ERROR = 'package.javascript_syntax_error';
+    public const PACKAGE_SCOPE_INVALID = 'package.scope_invalid';
     public const PACKAGE_COPY_SOURCE_MISSING = 'package.copy_source_missing';
     public const PACKAGE_COPY_SOURCE_SYMLINK = 'package.copy_source_symlink';
 

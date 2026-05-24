@@ -1,8 +1,8 @@
-{% extends 'layouts/public.html.twig' %}
+{% extends 'layouts/frontend.html.twig' %}
 
 {% block title %}{{ content_view.title ?? content_view.content.slug }}{% endblock %}
 
-{% block public_body %}
+{% block frontend_body %}
     <main class="studio-content-page" data-content-uid="{{ content_view.content.uid }}" data-content-revision="{{ content_view.revision.uid }}">
         <article class="studio-content-article">
             <header class="studio-content-header">

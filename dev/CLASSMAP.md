@@ -67,14 +67,17 @@
 | N/A | `App\Core\Message\MessageKey` | Core-owned translation-key catalogue for operation issues, logs, output, validation, and future localization. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Message/MessageKeyTest.php` |
 | N/A | `App\Core\Message\MessageLevel` | Enum for log-filterable message levels: error, warning, info, and debug. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Message/MessageTest.php` |
 | N/A | `App\Core\Package\PackageCandidate` | Value object for a discovered manifest-backed package candidate. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageDiscoveryTest.php` |
-| N/A | `App\Core\Package\PackageDiscovery` | Discovers application, theme, module, and cached import manifests from standard package locations. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageDiscoveryTest.php` |
+| N/A | `App\Core\Package\PackageAssetContribution` | Value object for CSS, JavaScript, static asset, and Tailwind-source contributions from active packages. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Core/Package/PackageAssetRegistryBuilderTest.php` |
+| N/A | `App\Core\Package\PackageAssetPathRewriter` | Rewrites package-authored CSS URLs and JavaScript imports from private package source paths to public mirrored package asset paths. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Core/Package/PackageAssetPathRewriterTest.php` |
+| N/A | `App\Core\Package\PackageAssetRegistryBuilder` | Builds deterministic generated CSS and JavaScript registries for active package asset buckets. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Core/Package/PackageAssetRegistryBuilderTest.php` |
+| N/A | `App\Core\Package\PackageDiscovery` | Discovers application, scoped package, and cached import manifests from standard package locations. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageDiscoveryTest.php` |
 | N/A | `App\Core\Package\PackageInspection` | Value object describing package inventory and detected feature surfaces such as templates, assets, PHP, Twig, JSON, YAML, CSS, and JavaScript files. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageValidatorTest.php` |
 | N/A | `App\Core\Package\PackageOperationPlanner` | Translates selected package files into deterministic ActionQueues without installing or classifying packages. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageOperationPlannerTest.php` |
 | N/A | `App\Core\Package\PackageSource` | Defines a normalized, project-root-scoped package discovery source and its optional manifest specification. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageDiscoveryTest.php`, `tests/Core/Package/PackageSourceTest.php` |
 | N/A | `App\Core\Package\PackageSpec` | Domain-neutral package filesystem and optional preflight linting specification. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageValidatorTest.php` |
 | N/A | `App\Core\Package\PackageValidator` | Validates discovered package candidates for required files, directories, feature inventory, and optional syntax checks before dry-run planning. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageValidatorTest.php` |
-| N/A | `App\Core\Package\ExtensionPackageType` | Enum for managed extension package types such as theme and module. | `dev/draft/0.2.x-PluginModules.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Core\Package\ExtensionPackageStatus` | Enum for managed extension package activation states. | `dev/draft/0.2.x-PluginModules.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Core\Package\PackageScope` | Enum for allowed package scopes such as frontend theme, backend theme, module, captcha provider, and editor provider. | `dev/draft/0.2.x-PluginModules.md` | `tests/Core/Package/PackageScopeTest.php`, `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Core\Workflow\OperationIssue` | Value object for structured recoverable-operation issues backed by leveled messages. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationIssueTest.php` |
 | N/A | `App\Core\Workflow\OperationResult` | Value object for recoverable workflow results with success, invalid, review, blocked, failed states, issues, messages, and context. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
 | N/A | `App\Core\Workflow\OperationStatus` | Enum for shared recoverable workflow result states. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
@@ -129,7 +132,7 @@
 | N/A | `App\Entity\AclGroup` | ACL group with translatable name, 0-9 access level, and UI guard flags for locked or non-empty groups. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Entity\UserAccount` | User account model with profile/settings JSON, account status, many-to-many ACL group membership, and a roleless Symfony user bridge; lifecycle metadata lives in state markers. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Entity\ApiKey` | API key model storing prefix, HMAC lookup hash, encrypted key payload, owner, and read/write or revoked status. | `dev/draft/0.4.x-ApiLayer.md` | `tests/Entity/CoreDatabaseModelTest.php` |
-| N/A | `App\Entity\ExtensionPackage` | Theme/module package management record with manifest/install metadata and activation state. | `dev/draft/0.2.x-PluginModules.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Entity\ExtensionPackage` | Scoped package management record with manifest/install metadata, activation state, and scope list. | `dev/draft/0.2.x-PluginModules.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Entity\SiteMenu` | Future menu container with translatable labels and ordered menu items. | `dev/draft/0.3.x-NavigationSitemapBuilder.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Entity\SiteMenuItem` | Future menu item with target metadata and view ACL override fields. | `dev/draft/0.3.x-NavigationSitemapBuilder.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Entity\ContentSchema` | Database-backed content type definition with nullable active schema version for disable/staging/cleanup flows. | `dev/draft/0.3.x-SchemaContentFields.md` | `tests/Entity/ContentSchemaTest.php` |
@@ -140,12 +143,12 @@
 | N/A | `App\Repository\ContentItemRepository` | Repository entry point for content item lookups, including unrestricted and published slug, parent-scoped slug, and custom URL lookups. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Read/PublishedContentResolverTest.php` |
 | N/A | `App\Repository\ContentFieldValueRepository` | Repository entry point for field values in a content/version/language/variant context. | `dev/draft/0.1.x-StaticDynamicContent.md` | N/A |
 | N/A | `App\Localization\TranslationLanguageCatalog` | Discovers available application languages from synchronized translation catalogues. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Localization/TranslationLanguageCatalogTest.php`, `tests/Controller/PublicContentControllerTest.php` |
-| N/A | `App\Theme\MarkdownRenderer` | Small safe Markdown renderer for native fallback templates and generic content field rendering. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/MarkdownRendererTest.php`, `tests/Theme/Twig/ThemeTwigExtensionTest.php` |
-| N/A | `App\Theme\SystemThemeMetadataProvider` | Exposes immutable native system-theme metadata from the root `.manifest` for future theme chooser UI and Twig context. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/SystemThemeMetadataProviderTest.php` |
-| N/A | `App\Theme\ThemeMacroRegistry` | Provides namespaced core macro template paths and future theme/module macro namespace slots. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/ThemeMacroRegistryTest.php`, `tests/Theme/Twig/ThemeTwigExtensionTest.php` |
-| Event payload | `App\Theme\ThemeViewContextEvent` | Event used by extensions to add universal Twig view context before rendering. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/ThemeViewContextProviderTest.php` |
-| N/A | `App\Theme\ThemeViewContextProvider` | Builds the universal Twig view context with system-theme metadata, macro namespaces, and event-collected extension variables. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/ThemeViewContextProviderTest.php`, `tests/Theme/Twig/ThemeTwigExtensionTest.php` |
-| Twig extension | `App\Theme\Twig\ThemeTwigExtension` | Exposes `studio_theme`, theme context helpers, macro namespace helpers, and the `studio_markdown` filter to Twig. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/Twig/ThemeTwigExtensionTest.php` |
+| N/A | `App\View\MarkdownRenderer` | Small safe Markdown renderer for native fallback templates and generic content field rendering. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/MarkdownRendererTest.php`, `tests/View/Twig/ViewTwigExtensionTest.php` |
+| N/A | `App\View\SystemPackageMetadataProvider` | Exposes immutable virtual system package metadata from the root `.manifest` for future package chooser UI and Twig context. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/SystemPackageMetadataProviderTest.php` |
+| N/A | `App\View\PackageMacroRegistry` | Provides namespaced core macro template paths and future package macro namespace slots. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/PackageMacroRegistryTest.php`, `tests/View/Twig/ViewTwigExtensionTest.php` |
+| Event payload | `App\View\ViewContextEvent` | Event used by active package extensions to add universal Twig view context before rendering. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/ViewContextProviderTest.php` |
+| N/A | `App\View\ViewContextProvider` | Builds the universal Twig view context with system package metadata, macro namespaces, and event-collected extension variables. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/ViewContextProviderTest.php`, `tests/View/Twig/ViewTwigExtensionTest.php` |
+| Twig extension | `App\View\Twig\ViewTwigExtension` | Exposes `studio_view`, view context helpers, macro namespace helpers, and the `studio_markdown` filter to Twig. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/Twig/ViewTwigExtensionTest.php` |
 
 
 ## 2. Controllers
@@ -167,17 +170,17 @@
 
 | Identifier | Class/Template | Purpose | Docs | Test-Class |
 |------------|----------------|---------| ---- | ---------- |
-| Layout templates | `templates/layouts/*.html.twig` | Native public, system, admin, editor, and setup layout skeletons. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | `tests/Controller/PublicContentControllerTest.php` |
-| System area partials | `templates/admin/partials/*.html.twig`, `templates/editor/partials/*.html.twig`, `templates/setup/partials/*.html.twig` | Reserved system-owned admin, editor, and setup partial trees for first UI slices. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | N/A |
+| Layout templates | `templates/layouts/*.html.twig` | Native frontend, backend, admin, editor, and setup layout skeletons. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | `tests/Controller/PublicContentControllerTest.php` |
+| Backend area partials | `templates/backend/admin/partials/*.html.twig`, `templates/backend/editor/partials/*.html.twig`, `templates/backend/setup/partials/*.html.twig` | Reserved backend-scoped admin, editor, and setup partial trees for first UI slices. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | N/A |
 | Content fallback | `templates/content/public.html.twig`, `templates/content/partials/*.html.twig` | Native public fallback renderer for content fields, body Markdown/HTML, and generic field tables. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Controller/PublicContentControllerTest.php` |
-| Macro registry templates | `templates/macros/**/*.html.twig` | Namespaced native Twig macro templates and aggregator entrypoint. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Theme/Twig/ThemeTwigExtensionTest.php` |
-| System error pages | `templates/system/error-pages/*.html.twig` | Native system-owned fallback templates for HTTP error pages including lightweight `429` and `503`. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | N/A |
-| Action-log overlay | `templates/system/operations/action-log-overlay.html.twig` | Native system-owned action-log overlay skeleton with summary and entry partials. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | N/A |
-| User system templates | `templates/system/user/*.html.twig` | System-owned placeholder templates for login, registration, profile, and password reset routes. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | N/A |
+| Macro registry templates | `templates/macros/**/*.html.twig` | Namespaced native Twig macro templates and aggregator entrypoint. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/Twig/ViewTwigExtensionTest.php` |
+| Frontend error pages | `templates/frontend/error-pages/*.html.twig` | Native frontend-scoped fallback templates for HTTP error pages including lightweight `429` and `503`. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | N/A |
+| Action-log overlay | `templates/backend/operations/action-log-overlay.html.twig` | Native backend-scoped action-log overlay skeleton with summary and entry partials. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | N/A |
+| Frontend user templates | `templates/frontend/user/*.html.twig` | Frontend-scoped placeholder templates for login, registration, profile, and password reset routes. | `dev/draft/0.1.x-SystemThemeDesignSystem.md` | N/A |
 
-## 6. Modules
+## 6. Packages
 
-| Module | Manifest Path | Services | Routes | Assets | Description | Docs | Test-Class |
+| Package | Manifest Path | Services | Routes | Assets | Description | Docs | Test-Class |
 |--------|---------------|----------|--------|--------| ----------- | ---- | ---------- |
 
 ## Maintenance Tips

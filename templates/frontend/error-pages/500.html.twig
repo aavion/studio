@@ -1,0 +1,11 @@
+{% extends 'layouts/frontend.html.twig' %}
+
+{% block title %}{{ 'ui.error.500.title'|trans }}{% endblock %}
+
+{% block frontend_body %}
+    <section class="studio-error-page">
+        <div class="studio-kicker">500</div>
+        <h1>{{ 'ui.error.500.title'|trans }}</h1>
+        <p>{{ 'ui.error.500.message'|trans }}</p>
+    </section>
+{% endblock %}

@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\View;
+
+final readonly class PackageMacroRegistry
+{
+    /**
+     * @return array<string, array<string, string>>
+     */
+    public function namespaces(): array
+    {
+        return [
+            'core' => [
+                'content' => 'macros/core/content.html.twig',
+                'form' => 'macros/core/form.html.twig',
+                'ui' => 'macros/core/ui.html.twig',
+            ],
+            'package' => [],
+        ];
+    }
+
+    public function template(string $provider, string $namespace): ?string
+    {
+        $namespaces = $this->namespaces();
+
+        return $namespaces[$provider][$namespace] ?? null;
+    }
+}

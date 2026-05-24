@@ -47,7 +47,7 @@ Rollback scope needs a concrete policy:
 - files plus database migrations;
 - config changes;
 - assets/cache;
-- module-owned data.
+- package-owned data.
 
 Avoid promising rollback until each operation type has an inverse action or snapshot strategy.
 

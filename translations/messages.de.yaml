@@ -21,6 +21,7 @@ message:
     yaml_syntax_error: 'YAML-Syntaxprüfung für "%path%" fehlgeschlagen.'
     css_syntax_error: 'CSS-Syntaxprüfung für "%path%" fehlgeschlagen.'
     javascript_syntax_error: 'JavaScript-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    scope_invalid: 'Paket-Scope "%scope%" wird nicht unterstützt.'
     copy_source_missing: 'Paket-Kopierquelle "%path%" fehlt.'
     copy_source_symlink: 'Paket-Kopierquelle "%path%" darf kein Symlink sein.'
     discovery_completed: 'Paket-Discovery hat %count% Kandidat(en) gefunden.'

@@ -17,17 +17,17 @@ final class OperationIssueTest extends TestCase
     public function testItStoresCodeMessageAndContext(): void
     {
         $issue = OperationIssue::create(MessageCode::MANIFEST_MISSING_REQUIRED_KEY, MessageKey::MANIFEST_MISSING_REQUIRED_KEY, [
-            '%key%' => 'MODULE_NAME',
+            '%key%' => 'PACKAGE_NAME',
         ], [
-            'key' => 'MODULE_NAME',
+            'key' => 'PACKAGE_NAME',
         ]);
 
         self::assertSame(MessageCode::MANIFEST_MISSING_REQUIRED_KEY, $issue->code());
         self::assertSame(MessageKey::MANIFEST_MISSING_REQUIRED_KEY, $issue->translationKey());
         self::assertSame(MessageLevel::Warning, $issue->level());
         self::assertSame(MessageKey::MANIFEST_MISSING_REQUIRED_KEY, $issue->message()->translationKey());
-        self::assertSame(['%key%' => 'MODULE_NAME'], $issue->parameters());
-        self::assertSame(['key' => 'MODULE_NAME'], $issue->context());
+        self::assertSame(['%key%' => 'PACKAGE_NAME'], $issue->parameters());
+        self::assertSame(['key' => 'PACKAGE_NAME'], $issue->context());
     }
 
     public function testItCanBeCreatedFromAMessage(): void

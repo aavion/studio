@@ -1,7 +1,7 @@
 # Core architecture snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-23  
+> **Updated**: 2026-05-24  
 > **Owner**: Core  
 > **Purpose:** Collect practical implementation snippets, notes, and pseudocode for the first Core architecture before they are consolidated into contributor and user manuals.  
 
@@ -16,7 +16,7 @@ The initial Core database baseline includes reusable operational tables beyond c
 - `config_entry` stores global typed key/value configuration.
 - `acl_group`, `user_account`, and `user_acl_group` prepare multi-group access control with access levels `0` through `9`; public level `0` is not stored as a group.
 - `api_key` stores a display prefix, HMAC lookup hash, encrypted key payload, and read-only, read-write, or revoked status.
-- `extension_package` tracks installed or discovered theme/module packages.
+- `extension_package` tracks installed or discovered packages and their scope list.
 - `site_menu` and `site_menu_item` reserve the future menu model with target and view ACL metadata.
 
 Structured logs remain filesystem-oriented. Database tables should hold state that needs querying or relationships; operational access, error, and security logs should use stable structured log records so they can later be converted or streamed as JSONL for UI filtering.
@@ -55,8 +55,8 @@ $queue = ActionQueue::create('install package', context: [
 ]);
 
 $queue = $queue
-    ->add(new EnsureDirectoryAction($projectDir, 'themes/demo'))
-    ->add(new CopyFileAction($candidate->directory(), 'templates/base.html.twig', $projectDir, 'themes/demo/templates/base.html.twig'));
+    ->add(new EnsureDirectoryAction($projectDir, 'packages/demo'))
+    ->add(new CopyFileAction($candidate->directory(), 'templates/base.html.twig', $projectDir, 'packages/demo/templates/base.html.twig'));
 
 $executor = new OperationExecutor();
 $plan = $executor->planQueue($queue);
@@ -67,7 +67,7 @@ Use the dry-run plan for previews. Use the execution result and action log for f
 
 ## Package validation flow
 
-Discovery should only find manifest-backed candidates. Validation should be caller-specific, because required files differ between app, theme, module, cached import, and future installer workflows.
+Discovery should only find manifest-backed candidates. Validation should be caller-specific, because required files differ between app, extension packages, cached imports, and future installer workflows.
 
 ```php
 $discovery = new PackageDiscovery();
@@ -77,20 +77,20 @@ if (!$result->isSuccess()) {
     return $result;
 }
 
-$themeSpec = PackageSpec::create()
+$packageSpec = PackageSpec::create()
     ->requireFile('.manifest')
-    ->requireDirectory('templates')
-    ->requireDirectory('assets')
     ->withLintingChecks();
 
 foreach ($result->value() as $candidate) {
-    if ('theme' !== $candidate->source()->name()) {
+    if ('package' !== $candidate->source()->name()) {
         continue;
     }
 
-    $validationResult = (new PackageValidator())->validate($candidate, $themeSpec);
+    $validationResult = (new PackageValidator())->validate($candidate, $packageSpec);
 }
 ```
+
+Current package manifests use `PACKAGE_*` keys. `PACKAGE_SCOPE` accepts a DotEnv-style list such as `[frontend-theme, module]` or a single value such as `module`.
 
 ## Fixture packages
 
@@ -99,8 +99,8 @@ Reusable valid dummy packages live under `tests/Fixtures/packages/`. They intent
 ```text
 tests/Fixtures/packages/
   .manifest
-  themes/demo-theme/.manifest
-  modules/demo-module/.manifest
+  packages/demo-theme/.manifest
+  packages/demo-module/.manifest
   var/cache/test/imports/demo-import/.manifest
 ```
 
@@ -113,7 +113,7 @@ Intentionally invalid fixture packages live under `tests/Fixtures/packages-inval
 Messages have a stable log level and two stable identifiers:
 
 - `MessageLevel` is log-filterable and uses `ERROR`, `WARN`, `INFO`, or `DEBUG`.
-- `MessageCode` is machine-readable and useful for logs, branching, API clients, CLI exits, and module/theme integrations.
+- `MessageCode` is machine-readable and useful for logs, branching, API clients, CLI exits, and package integrations.
 - `MessageKey` is translation-facing and should resolve to localized UI, CLI, or log text later.
 
 Runtime code should use `Message`, `MessageCode`, and `MessageKey` instead of embedding user-facing text in exceptions or operation payloads.
@@ -173,4 +173,4 @@ $issue = OperationIssue::create(
 
 - [Core architecture draft](../draft/0.1.x-CoreArchitecture.md)
 - [Error handling and validation draft](../draft/0.1.x-ErrorHandlingValidation.md)
-- [Theme and module developer guidelines](theme-module-developer-guidelines.md)
+- [Package developer guidelines](theme-module-developer-guidelines.md)

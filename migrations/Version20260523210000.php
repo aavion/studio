@@ -57,8 +57,8 @@ final class Version20260523210000 extends AbstractMigration
         $aclGroup->addColumn('identifier', 'string', ['length' => 80]);
         $aclGroup->addColumn('name', 'json');
         $aclGroup->addColumn('access_level', 'integer');
-        $aclGroup->addColumn('locked', 'boolean', ['default' => false]);
-        $aclGroup->addColumn('allow_empty', 'boolean', ['default' => true]);
+        $aclGroup->addColumn('locked', 'boolean');
+        $aclGroup->addColumn('allow_empty', 'boolean');
         $aclGroup->addColumn('metadata', 'json');
         $aclGroup->setPrimaryKey(['uid']);
         $aclGroup->addUniqueIndex(['identifier'], 'uniq_acl_group_identifier');
@@ -71,7 +71,7 @@ final class Version20260523210000 extends AbstractMigration
         $user->addColumn('password_hash', 'string', ['length' => 255]);
         $user->addColumn('profile', 'json');
         $user->addColumn('settings', 'json');
-        $user->addColumn('status', 'string', ['length' => 32]);
+        $user->addColumn('status', 'string', ['length' => 255]);
         $user->setPrimaryKey(['uid']);
         $user->addUniqueIndex(['username'], 'uniq_user_account_username');
         $user->addUniqueIndex(['email'], 'uniq_user_account_email');
@@ -103,7 +103,7 @@ final class Version20260523210000 extends AbstractMigration
 
         $extension = $schema->createTable('extension_package');
         $extension->addColumn('uid', 'string', ['length' => 36]);
-        $extension->addColumn('package_type', 'string', ['length' => 255]);
+        $extension->addColumn('package_scopes', 'json');
         $extension->addColumn('package_name', 'string', ['length' => 120]);
         $extension->addColumn('path', 'string', ['length' => 512]);
         $extension->addColumn('manifest_version', 'string', ['length' => 40, 'notnull' => false]);
@@ -112,7 +112,7 @@ final class Version20260523210000 extends AbstractMigration
         $extension->addColumn('metadata', 'json');
         $extension->addColumn('modified_at', 'datetime_immutable');
         $extension->setPrimaryKey(['uid']);
-        $extension->addUniqueIndex(['package_type', 'package_name'], 'uniq_extension_package_type_name');
+        $extension->addUniqueIndex(['package_name'], 'uniq_extension_package_name');
         $extension->addIndex(['status'], 'idx_extension_package_status');
 
         $menu = $schema->createTable('site_menu');

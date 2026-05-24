@@ -2,7 +2,7 @@
 
 > **Version**: 0.0.0-dev  
 > **Status**: Active development  
-> **Updated**: 2026-05-20  
+> **Updated**: 2026-05-24  
 > **Owner**: Dominik Letica  
 > **Purpose:** Symfony 8 based content-management system for structured project websites.  
 
@@ -13,14 +13,14 @@ aavion.studio is an experimental CMS foundation for project websites that need s
 The intended direction is a Symfony-native application with:
 
 - schema-driven content and variable fieldsets;
-- public themes and a separate system/admin theme;
-- first-party and third-party plugin modules;
+- package-scoped frontend themes, backend themes, modules, captcha providers, and editor providers;
+- first-party and third-party packages under one lifecycle;
 - explicit event hooks, provider contracts, and replaceable services;
 - draft, publish, preview, diff, import, export, and backup workflows;
 - ACL-aware content, media, API, resolver, and search behavior;
 - operational admin tools with action logs and recoverable failure handling.
 
-The project favors native Symfony components and bundles over custom framework code. Core features should stay small and inspectable, while modules and themes can extend or replace behavior through documented contracts.
+The project favors native Symfony components and bundles over custom framework code. Core features should stay small and inspectable, while packages can extend or replace behavior through documented contracts.
 
 ## Current state
 

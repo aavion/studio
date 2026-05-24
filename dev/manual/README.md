@@ -23,7 +23,7 @@ This manual is a draft while the CMS core is still being implemented. It should 
 - [Security guard snippets](security-guard-snippets.md)
 - [Setup and init snippets](setup-init-snippets.md)
 - [Test fixture snippets](test-fixture-snippets.md)
-- [Theme and module developer guidelines](theme-module-developer-guidelines.md)
+- [Package developer guidelines](theme-module-developer-guidelines.md)
 - [Web server configuration](web-server-configuration.md)
 - [Webserver deployment notes](webserver-deployment-notes.md)
 

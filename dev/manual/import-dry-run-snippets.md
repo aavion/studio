@@ -13,7 +13,7 @@ Import workflows should be reviewable before they mutate files, entities, assets
 
 ```php
 $planner = new PackageOperationPlanner();
-$queueResult = $planner->copyFiles($candidate, $projectDir, $files, targetPrefix: 'themes/demo');
+$queueResult = $planner->copyFiles($candidate, $projectDir, $files, targetPrefix: 'packages/demo');
 
 if (!$queueResult->isSuccess()) {
     return $queueResult;

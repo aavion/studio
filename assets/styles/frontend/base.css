@@ -1,0 +1,111 @@
+.studio-frontend-shell {
+    min-height: 100vh;
+}
+
+.studio-frontend-lightweight {
+    background: #ffffff;
+}
+
+.studio-error-page,
+.studio-auth-panel {
+    display: grid;
+    gap: 0.75rem;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: clamp(2rem, 8vw, 5rem);
+    border: 1px solid var(--color-studio-line);
+    border-radius: var(--studio-radius);
+    background: var(--color-studio-paper);
+    box-shadow: var(--studio-shadow-soft);
+}
+
+.studio-error-lightweight {
+    min-height: 100vh;
+    place-content: center;
+    border: 0;
+    box-shadow: none;
+}
+
+.studio-error-page h1,
+.studio-auth-panel h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 4vw, 3rem);
+    line-height: 1.05;
+}
+
+.studio-error-page p,
+.studio-auth-panel p {
+    margin: 0;
+    color: var(--color-studio-muted);
+    line-height: 1.7;
+}
+
+.studio-content-page {
+    width: min(100% - 2rem, 960px);
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 5rem) 0;
+}
+
+.studio-content-article {
+    display: grid;
+    gap: 2rem;
+}
+
+.studio-content-header {
+    display: grid;
+    gap: 0.75rem;
+    max-width: 720px;
+}
+
+.studio-content-header h1 {
+    margin: 0;
+    color: #121826;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 800;
+    line-height: 1;
+}
+
+.studio-content-subtitle {
+    margin: 0;
+    color: var(--color-studio-muted);
+    font-size: 1.125rem;
+    line-height: 1.7;
+}
+
+.studio-content-body {
+    max-width: 760px;
+    font-size: 1rem;
+    line-height: 1.75;
+}
+
+.studio-content-fields {
+    display: grid;
+    gap: 1rem;
+}
+
+.studio-content-fields h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.studio-field-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--color-studio-line);
+    background: var(--color-studio-paper);
+}
+
+.studio-field-table th,
+.studio-field-table td {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid var(--color-studio-line);
+    text-align: left;
+    vertical-align: top;
+}
+
+.studio-field-table tbody tr:last-child th,
+.studio-field-table tbody tr:last-child td {
+    border-bottom: 0;
+}

@@ -23,7 +23,7 @@ final class PackageValidatorTest extends TestCase
     protected function setUp(): void
     {
         $this->packageDir = $this->createTemporaryDirectory('studio-package-validator');
-        $this->writeFile('.manifest', 'THEME_NAME=System');
+        $this->writeFile('.manifest', 'PACKAGE_NAME=System');
     }
 
     protected function tearDown(): void
@@ -56,9 +56,11 @@ final class PackageValidatorTest extends TestCase
         $this->writeFile('templates/base.html.twig', '<main></main>');
         $this->writeFile('assets/app.css', 'body {}');
         $this->writeFile('assets/app.js', 'export default true;');
+        $this->writeFile('assets/images/logo.svg', '<svg></svg>');
+        $this->writeFile('assets/fonts/demo.woff2', 'font');
         $this->writeFile('config/package.yaml', 'enabled: true');
         $this->writeFile('config/package.json', '{"enabled": true}');
-        $this->writeFile('src/ThemeExtension.php', '<?php class ThemeExtension {}');
+        $this->writeFile('src/PackageExtension.php', '<?php class PackageExtension {}');
         $this->writeFile('tools/helper.php', '<?php return true;');
 
         $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
@@ -78,14 +80,16 @@ final class PackageValidatorTest extends TestCase
         self::assertTrue($inspection->hasYamlFiles());
         self::assertTrue($inspection->hasCssFiles());
         self::assertTrue($inspection->hasJavaScriptFiles());
+        self::assertTrue($inspection->hasStaticAssetFiles());
         self::assertSame(['templates/base.html.twig'], $inspection->templateFiles());
-        self::assertSame(['assets/app.css', 'assets/app.js'], $inspection->assetFiles());
-        self::assertSame(['src/ThemeExtension.php'], $inspection->sourcePhpFiles());
-        self::assertSame(['src/ThemeExtension.php', 'tools/helper.php'], $inspection->phpFiles());
+        self::assertSame(['assets/app.css', 'assets/app.js', 'assets/fonts/demo.woff2', 'assets/images/logo.svg'], $inspection->assetFiles());
+        self::assertSame(['src/PackageExtension.php'], $inspection->sourcePhpFiles());
+        self::assertSame(['src/PackageExtension.php', 'tools/helper.php'], $inspection->phpFiles());
         self::assertSame(['config/package.json'], $inspection->jsonFiles());
         self::assertSame(['config/package.yaml'], $inspection->yamlFiles());
         self::assertSame(['assets/app.css'], $inspection->cssFiles());
         self::assertSame(['assets/app.js'], $inspection->javaScriptFiles());
+        self::assertSame(['assets/fonts/demo.woff2', 'assets/images/logo.svg'], $inspection->staticAssetFiles());
     }
 
     public function testItReportsMissingRequiredFilesAndDirectories(): void
@@ -216,10 +220,10 @@ final class PackageValidatorTest extends TestCase
     private function candidate(): PackageCandidate
     {
         return new PackageCandidate(
-            PackageSource::children('theme', 'themes'),
+            PackageSource::children('package', 'packages'),
             $this->packageDir,
             $this->packageDir.'/.manifest',
-            new Manifest(['THEME_NAME' => 'System']),
+            new Manifest(['PACKAGE_NAME' => 'System']),
         );
     }
 

@@ -29,7 +29,7 @@ Future operational screens should reuse common patterns:
 | Import review | Diffs, risks, affected paths/entities, confirmation. |
 | Action log | Timeline, status counts, issues, context payload. |
 | Backup/restore | Snapshot metadata, checksums, retention, restore plan. |
-| Module/theme lifecycle | Discovery state, activation status, dependencies, rollback notes. |
+| Package lifecycle | Discovery state, activation status, scopes, dependencies, rollback notes. |
 
 ## Accessibility notes
 
@@ -45,7 +45,7 @@ Keep these as baseline checks:
 
 ## References
 
-- [Theme and module developer guidelines](theme-module-developer-guidelines.md)
+- [Package developer guidelines](theme-module-developer-guidelines.md)
 - [System theme and design system draft](../draft/0.1.x-SystemThemeDesignSystem.md)
 - [Admin interface and setup UI draft](../draft/0.2.x-AdminInterfaceSetupUi.md)
 - [Operational admin workflows draft](../draft/0.4.x-OperationalAdminWorkflows.md)

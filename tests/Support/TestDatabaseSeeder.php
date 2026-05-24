@@ -182,9 +182,9 @@ final class TestDatabaseSeeder
     {
         self::insert($pdo, 'extension_package', [
             'uid' => '00000000-0000-0000-0000-000000000401',
-            'package_type' => 'theme',
-            'package_name' => 'studio_default',
-            'path' => 'themes/studio-default',
+            'package_scopes' => self::json(['frontend-theme', 'backend-theme']),
+            'package_name' => 'system',
+            'path' => '.',
             'manifest_version' => '1',
             'installed_version' => '0.1.0-dev',
             'status' => 'active',

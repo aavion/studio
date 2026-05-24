@@ -24,7 +24,7 @@ final readonly class ContentRouteGuard
         '_profiler',
         '_wdt',
         'build',
-        'modules',
+        'packages',
         'media',
         'files',
     ];

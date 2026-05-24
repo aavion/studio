@@ -1,0 +1,9 @@
+{% extends 'base.html.twig' %}
+
+{% block body_class %}studio-body studio-frontend{% endblock %}
+
+{% block body %}
+    <div class="studio-frontend-shell">
+        {% block frontend_body %}{% endblock %}
+    </div>
+{% endblock %}

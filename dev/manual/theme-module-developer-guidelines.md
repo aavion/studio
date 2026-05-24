@@ -1,83 +1,75 @@
-# Theme and module developer guidelines (Developer Guide)
+# Package developer guidelines (Developer Guide)
 
 > **Status**: Draft  
 > **Updated**: 2026-05-24  
 > **Owner**: Core  
-> **Purpose:** Draft guidance for developing themes, plugin modules, admin UI extensions, and first-party add-ons while the extension system is still being designed.  
+> **Purpose:** Draft guidance for developing packages, scoped themes, modules, providers, admin UI extensions, and first-party add-ons while the extension system is still being designed.  
 
 ## Overview
 
-This guide captures the current direction for theme and module development. It is intentionally marked as a draft: contracts, folder names, lifecycle hooks, and UI constraints may change while the CMS core is implemented.
+This guide captures the current direction for package development. It is intentionally marked as a draft: contracts, folder names, lifecycle hooks, and UI constraints may change while the CMS core is implemented.
 
-Use this guide as a working reference when building the system theme, admin UI, public themes, and first first-party modules. Prefer the feature drafts when they contain more specific decisions.
+Use this guide as a working reference when building the native system packages, admin UI, public themes, and first-party packages. Prefer the feature drafts when they contain more specific decisions.
 
 ## Extension principles
 
 - Use Symfony-native integration points first: services, tagged services, Twig, routes, forms, validators, voters, EventDispatcher, Messenger, Doctrine migrations, AssetMapper, Tailwind, and translations.
-- Keep modules and themes inactive after discovery until an administrator explicitly activates or enables them.
+- Keep packages inactive after discovery until an administrator explicitly activates them.
 - Validate manifests before loading classes, routes, templates, migrations, permissions, assets, or providers.
 - Keep extension points explicit:
   - **Observe:** react without changing the result.
   - **Extend:** add contributions through documented hooks or tagged services.
   - **Replace:** select one implementation through a contract, resolver, decoration, or configuration.
 - Prefer resolver/provider contracts for one-active-provider behavior, such as captcha or editor providers.
-- Keep module and theme assets namespaced.
+- Keep package assets namespaced.
 - Trigger Tailwind build and AssetMapper compilation after lifecycle changes with frontend contributions.
 - Keep package secrets out of manifests, logs, screenshots, fixtures, and committed configuration.
 
-## Theme guidelines
+## Package scopes
 
-Themes should render public-facing project content. They should not override system/admin/editor/setup templates in early releases. If a public theme package contains those paths, the theme engine should ignore them and report diagnostics. Later manifest capabilities may deliberately allow dedicated system UI themes, but normal public themes stay limited to public rendering.
+Packages live under `packages/<package-slug>/` and use `PACKAGE_*` manifest keys. `PACKAGE_SCOPE` is a DotEnv-style list such as `[frontend-theme, module]`, or a single value such as `module`.
 
 Expected package shape:
 
 ```text
-themes/<theme-name>/
+packages/<package-slug>/
   .manifest
+  package.php
   src/
   templates/
   assets/
-  translations/
-```
-
-Current constraints:
-
-- Themes are discovered as inactive/available and require explicit activation.
-- Theme PHP classes may define their own namespace and integrate only through documented hooks, tagged services, or Twig extensions.
-- Template overrides follow the original folder structure and only affect allowed public template areas.
-- Themes may be partial. Missing templates and assets fall back to the native public baseline shipped with the project.
-- Theme macro/function files are aggregated under a provider namespace. They must not replace native macro namespaces required by fallback templates.
-- The active theme provides outer layout and generic fieldset fallback rendering.
-- Database-backed schema Twig is separate from theme template resolution.
-- Failed activation should roll back to the previous active theme where practical.
-
-## Module guidelines
-
-Modules should add optional behavior without forcing the core to anticipate every future use case.
-
-Expected package shape:
-
-```text
-modules/<module-name>/
-  .manifest
-  src/
   config/
-  templates/
-  assets/
-  translations/
   migrations/
+  translations/
+```
+
+Required manifest keys:
+
+```text
+PACKAGE_AUTHOR=Aavion
+PACKAGE_NAME=Example Package
+PACKAGE_VERSION=1.0.0
+PACKAGE_SCOPE=[frontend-theme, module]
+PACKAGE_DEPENDENCIES=[]
 ```
 
 Current constraints:
 
-- Modules are discovered as inactive/available and require explicit enablement.
-- Disabled modules must not contribute services, routes, templates, assets, migrations, permissions, providers, subscribers, or handlers.
-- Modules may contribute routes, services, templates, assets, field types, editor actions, API resources, permissions, migrations, event subscribers, message handlers, or replaceable providers only through documented extension points.
-- Modules may extend admin, editor, setup, operation, or system UI through documented extension points, but they should not rely on unrestricted template overrides.
-- Module-owned domain data should prefer module-owned tables and migrations.
-- Modules with frontend or admin assets must participate in the asset rebuild workflow.
-- Modules need uninstall/remove behavior, including explicit confirmation before deleting module-owned data.
-- Failed enablement or disablement should roll back to the previous state where practical.
+- Allowed scopes start as `frontend-theme`, `backend-theme`, `module`, `captcha-provider`, and `editor-provider`.
+- A package is always activated or deactivated as one unit. Scopes describe capabilities, not separately switchable sub-packages.
+- Only one `frontend-theme`, one `backend-theme`, and one provider package of each provider type may be active at the same time.
+- Multiple `module` packages may be active at the same time.
+- Activating a new single-active scope deactivates the previously active package for that scope. If that package also had module behavior, the module behavior is deactivated with it.
+- Disabled packages must not contribute services, routes, templates, assets, migrations, permissions, providers, subscribers, or handlers.
+- Packages may contribute routes, services, templates, assets, field types, editor actions, API resources, permissions, migrations, event subscribers, message handlers, or replaceable providers only through documented extension points.
+- Package-owned domain data should prefer package-owned tables and migrations, using collision-resistant table names such as `pkg_<slug>_<table>`.
+- Packages with frontend or admin assets must participate in the asset rebuild workflow.
+- Packages need uninstall/remove behavior, including explicit confirmation before deleting package-owned data.
+- Failed activation or deactivation should roll back to the previous state where practical.
+
+`package.php` is optional. It must never be included during discovery and should only be loaded after a package is valid and active. Packages are trusted code; only administrators may install them. A package should use a package-owned root namespace derived from or declared for the package slug.
+
+Package assets must be self-contained. Packages should vendor their external dependencies inside their own package directory instead of requiring the project importmap to manage third-party dependency lifecycles across packages. Active package CSS and JavaScript are aggregated through the generated package asset registries; packages should not expect templates to add arbitrary direct `<link>` or `<script>` tags for package-level assets. Static assets such as images, fonts, videos, and SVGs should be referenced from package CSS, JavaScript, or templates after the lifecycle mirrors them into the AssetMapper-visible package path.
 
 ## Admin UI and UX guidelines
 
@@ -95,13 +87,13 @@ Use these UI rules as the current baseline:
 - Use translated labels, help text, empty states, validation messages, flash messages, and action labels.
 - Preserve submitted input on validation failure.
 - Show destructive actions behind confirmation and review screens where needed.
-- Use the shared action-log pattern for setup, imports, backups, updates, asset rebuilds, module/theme lifecycle changes, and other long-running operations.
+- Use the shared action-log pattern for setup, imports, backups, updates, asset rebuilds, package lifecycle changes, and other long-running operations.
 - Keep navigation and dashboard contributions permission-aware.
 - Meet baseline accessibility expectations: semantic landmarks, keyboard navigation, visible focus, color contrast, labels, error association, and reduced-motion safety.
 
-## Provider and editor modules
+## Provider Packages
 
-Provider modules should implement a documented contract and be selectable through core-owned configuration.
+Provider packages should implement a documented contract and be selectable through core-owned configuration.
 
 Examples:
 
@@ -109,15 +101,15 @@ Examples:
 - Editor providers such as a future TinyMCE module.
 - Search, storage, export, or media adapters.
 
-Provider modules should define required capabilities before they are allowed to replace a default. For editor providers, this may include Markdown/rich-text behavior, resolver-token insertion, autocomplete, validation feedback, diff integration, and asset lifecycle support.
+Provider packages should define required capabilities before they are allowed to replace a default. For editor providers, this may include Markdown/rich-text behavior, resolver-token insertion, autocomplete, validation feedback, diff integration, and asset lifecycle support.
 
 ## Testing and validation
 
-Theme and module work should include tests for:
+Package work should include tests for:
 
 - manifest parsing and validation;
 - inactive discovery state;
-- activation or enablement behavior;
+- activation behavior;
 - rollback on failed lifecycle actions;
 - asset rebuild triggers and command order;
 - route, service, template, provider, and permission contributions;
@@ -129,8 +121,7 @@ Run relevant verification commands once the implementation exists:
 
 ```bash
 php bin/console lint:container
-php bin/console tailwind:build
-php bin/console asset-map:compile
+php bin/console studio:assets:rebuild
 php bin/phpunit
 php .codex/compare_translations.php
 ```
@@ -140,6 +131,6 @@ php .codex/compare_translations.php
 - [Feature draft index](../draft/README.md)
 - [Core architecture draft](../draft/0.1.x-CoreArchitecture.md)
 - [Theme engine draft](../draft/0.1.x-ThemeEngine.md)
-- [Plugin modules draft](../draft/0.2.x-PluginModules.md)
+- [Package modules and providers draft](../draft/0.2.x-PluginModules.md)
 - [System theme and design system draft](../draft/0.1.x-SystemThemeDesignSystem.md)
 - [Operational admin workflows draft](../draft/0.4.x-OperationalAdminWorkflows.md)

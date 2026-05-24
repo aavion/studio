@@ -17,6 +17,7 @@ final readonly class PackageInspection
      * @param list<string> $yamlFiles
      * @param list<string> $cssFiles
      * @param list<string> $javaScriptFiles
+     * @param list<string> $staticAssetFiles
      */
     public function __construct(
         private array $inventory,
@@ -29,6 +30,7 @@ final readonly class PackageInspection
         private array $yamlFiles,
         private array $cssFiles,
         private array $javaScriptFiles,
+        private array $staticAssetFiles,
     ) {
     }
 
@@ -112,6 +114,14 @@ final readonly class PackageInspection
         return $this->javaScriptFiles;
     }
 
+    /**
+     * @return list<string>
+     */
+    public function staticAssetFiles(): array
+    {
+        return $this->staticAssetFiles;
+    }
+
     public function hasTemplates(): bool
     {
         return [] !== $this->templateFiles;
@@ -155,5 +165,10 @@ final readonly class PackageInspection
     public function hasJavaScriptFiles(): bool
     {
         return [] !== $this->javaScriptFiles;
+    }
+
+    public function hasStaticAssetFiles(): bool
+    {
+        return [] !== $this->staticAssetFiles;
     }
 }

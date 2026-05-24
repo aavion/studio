@@ -6,7 +6,7 @@ namespace App\Entity;
 
 use App\Core\Message\MessageKey;
 use App\Core\Package\ExtensionPackageStatus;
-use App\Core\Package\ExtensionPackageType;
+use App\Core\Package\PackageScope;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
 use App\Core\Validation\Uid;
@@ -15,7 +15,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'extension_package')]
-#[ORM\UniqueConstraint(name: 'uniq_extension_package_type_name', columns: ['package_type', 'package_name'])]
+#[ORM\UniqueConstraint(name: 'uniq_extension_package_name', columns: ['package_name'])]
 #[ORM\Index(name: 'idx_extension_package_status', columns: ['status'])]
 class ExtensionPackage
 {
@@ -23,8 +23,11 @@ class ExtensionPackage
     #[ORM\Column(length: 36)]
     private string $uid;
 
-    #[ORM\Column(name: 'package_type', enumType: ExtensionPackageType::class)]
-    private ExtensionPackageType $type;
+    /**
+     * @var list<string>
+     */
+    #[ORM\Column(name: 'package_scopes', type: 'json')]
+    private array $scopeValues;
 
     #[ORM\Column(name: 'package_name', length: 120)]
     private string $packageName;
@@ -51,11 +54,12 @@ class ExtensionPackage
     private DateTimeImmutable $modifiedAt;
 
     /**
+     * @param list<PackageScope|string> $scopes
      * @param array<string, mixed> $metadata
      */
     public function __construct(
         string $uid,
-        ExtensionPackageType $type,
+        array $scopes,
         string $packageName,
         string $path,
         ExtensionPackageStatus $status = ExtensionPackageStatus::Inactive,
@@ -63,7 +67,7 @@ class ExtensionPackage
         ?DateTimeImmutable $modifiedAt = null,
     ) {
         $this->uid = Uid::assert($uid, 'Extension package UID');
-        $this->type = $type;
+        $this->scopeValues = self::normalizeScopes($scopes);
         $this->packageName = self::assertPackageName($packageName);
         $this->path = $path;
         $this->status = $status;
@@ -76,9 +80,28 @@ class ExtensionPackage
         return $this->uid;
     }
 
-    public function type(): ExtensionPackageType
+    /**
+     * @return list<PackageScope>
+     */
+    public function scopes(): array
     {
-        return $this->type;
+        return array_map(
+            static fn (string $scope): PackageScope => PackageScope::from($scope),
+            $this->scopeValues,
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function scopeValues(): array
+    {
+        return $this->scopeValues;
+    }
+
+    public function hasScope(PackageScope $scope): bool
+    {
+        return in_array($scope->value, $this->scopeValues, true);
     }
 
     public function packageName(): string
@@ -100,5 +123,34 @@ class ExtensionPackage
         }
 
         return $packageName;
+    }
+
+    /**
+     * @param list<PackageScope|string> $scopes
+     *
+     * @return list<string>
+     */
+    private static function normalizeScopes(array $scopes): array
+    {
+        $normalized = [];
+
+        foreach ($scopes as $scope) {
+            $case = $scope instanceof PackageScope ? $scope : PackageScope::tryFrom($scope);
+            if (null === $case) {
+                throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::PACKAGE_SCOPE_INVALID, [
+                    '%scope%' => is_scalar($scope) ? (string) $scope : get_debug_type($scope),
+                ]);
+            }
+
+            $normalized[$case->value] = $case->value;
+        }
+
+        if ([] === $normalized) {
+            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::PACKAGE_SCOPE_INVALID, [
+                '%scope%' => '',
+            ]);
+        }
+
+        return array_values($normalized);
     }
 }

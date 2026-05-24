@@ -17,7 +17,7 @@ This feature should not be implemented during the first core phase. Current arch
 
 ## Technical Specifications
 - Future implementation should prefer plugin-module boundaries.
-- Community domain data should use module-owned tables instead of generic content fieldsets.
+- Community domain data should use package-owned tables instead of generic content fieldsets.
 - Permissions, moderation actions, and public forms should build on the security, captcha, rate-limit, and event-hook drafts.
 - Notifications should use Messenger and documented lifecycle events where applicable.
 - Public profile and forum routes should not conflict with reserved core route prefixes.

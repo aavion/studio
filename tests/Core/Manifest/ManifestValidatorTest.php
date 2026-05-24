@@ -87,31 +87,31 @@ final class ManifestValidatorTest extends TestCase
     public function testItValidatesNamespacedRequiredKeys(): void
     {
         $manifest = new Manifest([
-            'THEME_AUTHOR' => 'Aavion',
-            'THEME_NAME' => 'System',
+            'PACKAGE_AUTHOR' => 'Aavion',
+            'PACKAGE_NAME' => 'System',
         ]);
-        $spec = ManifestSpec::forNamespace('THEME', ['VERSION', 'AUTHOR', 'NAME'], ['NAME', 'VERSION']);
+        $spec = ManifestSpec::forNamespace('PACKAGE', ['VERSION', 'AUTHOR', 'NAME'], ['NAME', 'VERSION']);
 
         $result = (new ManifestValidator())->validate($manifest, $spec);
 
         self::assertFalse($result->isSuccess());
         self::assertSame('manifest.missing_required_key', $result->firstIssue()?->code());
-        self::assertSame(['key' => 'THEME_VERSION'], $result->firstIssue()?->context());
+        self::assertSame(['key' => 'PACKAGE_VERSION'], $result->firstIssue()?->context());
     }
 
     public function testItRejectsUnknownNamespacedKeys(): void
     {
         $manifest = new Manifest([
-            'THEME_VERSION' => '1.0.0',
-            'THEME_NAME' => 'System',
-            'THEME_UNDECLARED' => 'value',
+            'PACKAGE_VERSION' => '1.0.0',
+            'PACKAGE_NAME' => 'System',
+            'PACKAGE_UNDECLARED' => 'value',
         ]);
-        $spec = ManifestSpec::forNamespace('THEME', ['VERSION', 'AUTHOR', 'NAME'], ['NAME', 'VERSION']);
+        $spec = ManifestSpec::forNamespace('PACKAGE', ['VERSION', 'AUTHOR', 'NAME'], ['NAME', 'VERSION']);
 
         $result = (new ManifestValidator())->validate($manifest, $spec);
 
         self::assertFalse($result->isSuccess());
         self::assertSame('manifest.unknown_key', $result->firstIssue()?->code());
-        self::assertSame(['key' => 'THEME_UNDECLARED'], $result->firstIssue()?->context());
+        self::assertSame(['key' => 'PACKAGE_UNDECLARED'], $result->firstIssue()?->context());
     }
 }

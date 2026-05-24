@@ -16,16 +16,16 @@
   - [x] Setup and test automation
   - [x] Error handling and validation
   - [x] Static/dynamic content model
-  - [ ] Theme engine
-  - [ ] System theme and design system
+  - [ ] Package-scoped theme engine
+  - [ ] Native frontend/backend system package and design system
   - Open: first release-readiness verification shape.
 
 - [ ] **0.2.x Security and extension baseline**
   - [ ] Security/ACL baseline
   - [ ] Admin interface and setup UI
   - [ ] Event hooks and Messenger conventions
-  - [ ] Plugin module discovery and lifecycle
-  - Open: first role/ACL group model; first dashboard widgets; account/password recovery flow; immutable event payload default; module uninstall/data cleanup policy.
+  - [ ] Package discovery and lifecycle
+  - Open: first role/ACL group model; first dashboard widgets; account/password recovery flow; immutable event payload default; package uninstall/data cleanup policy.
 
 - [ ] **0.3.x Structured authoring and resolver foundation**
   - [ ] Schema-driven content fields
@@ -76,8 +76,9 @@
 - Completed localization and maintenance foundations: translation-catalogue language discovery, `localization.route_prefixes_enabled`, browser/default language redirects, language-prefix route protection, language fallback warnings, `APP_MAINTENANCE` `503` enforcement, access-level 9 bypass, and admin/login/asset bypass paths.
 - Completed shared security/message foundations: ACL actors, capabilities, effective decisions, level-plus-group rules, roleless access-level user bridge, message severities for log filtering, API-key prefix/HMAC/encrypted payload fields, API-key status semantics, and synchronized English/German message keys.
 - Updated architecture documentation and class maps for setup, content routing, security, test lifecycle, error-page fallback, `admin/` versus `editor/` route surfaces, and the future external media/file resolver with hidden upstream URLs, optional HTTP-auth metadata, and SSRF-safe boundaries.
-- Recorded the first theme/system-theme boundary decisions: native templates provide both system UI and public fallback rendering, public themes are partial and cannot override system/admin/editor/setup paths by default, user-route templates stay system-owned for the first release, operation templates live under `templates/system/operations/**`, and macros/functions are aggregated by provider namespace.
-- Added the native theme foundation: public/system/admin/editor/setup layout skeletons and partial trees, system error/user/operation templates, generic content fallback rendering with safe Markdown support, namespaced macro templates, theme metadata from the root `.manifest`, and event-collected Twig view context for future theme/module contributions.
+- Reworked the extension model around one package lifecycle with `PACKAGE_SCOPE` values, single-active frontend/backend theme and provider scopes, many-active module scopes, all-or-nothing multi-scope activation, `packages/` discovery, package-owned assets, and package-owned data cleanup rules.
+- Added the native package-scoped view foundation: frontend/backend layout and partial trees, frontend error/user templates, backend operation templates, generic content fallback rendering with safe Markdown support, namespaced macro templates, system package metadata from the root `.manifest`, and event-collected Twig view context for future package contributions.
+- Added the package asset aggregation baseline: stable CSS/JS registry buckets imported by `app.css`/`app.js`, package asset mirror location under `assets/packages/`, inspection for static package assets, CSS/JS path rewriting for package-authored assets, registry builder coverage for Tailwind `@source`, CSS `@import`, and JavaScript import generation, and the documented `studio:assets:rebuild` operation order with final cache clear for ActionLog resilience.
 - Added the shared raw JSON output renderer for small `/api/live/**` flows such as captcha seeds, polling, and operation status checks, and recorded ActionLog polling fallback semantics with numeric `cursor`, optional `cursor_max`, and server-recommended `next_poll_ms`.
 
 ### 2026-05-23
