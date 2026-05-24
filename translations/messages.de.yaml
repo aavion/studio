@@ -63,6 +63,30 @@ message:
       invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
     group_identifier:
       invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein.'
+  setup:
+    step_failed: 'Setup-Schritt "%step%" ist fehlgeschlagen: %message%'
+    language_selected: 'Installer-Sprache "%language%" ausgewählt.'
+    available_languages: 'Verfügbare Installer-Sprachen: %languages%'
+    dry_run: 'Nur Dry-Run; es wurden keine Änderungen geschrieben.'
+    output:
+      success: 'Setup erfolgreich abgeschlossen.'
+      failed: 'Setup fehlgeschlagen.'
+    prompt:
+      language: 'Installer-Sprache (%choices%)'
+      site_title: 'Seitentitel'
+      default_uri: 'Seiten-URL'
+      database_driver: 'Datenbank-Treiber (%choices%)'
+      database_url: 'Datenbank-URL'
+      database_host: 'Datenbank-Host'
+      database_port: 'Datenbank-Port'
+      database_name: 'Datenbankname'
+      database_user: 'Datenbanknutzer'
+      database_password: 'Datenbankpasswort'
+      admin_username: 'Admin-Username'
+      admin_password: 'Admin-Passwort'
+      admin_email: 'Admin-E-Mail'
+      app_secret: 'APP_SECRET (leer lassen, um einen zu generieren)'
+      invalid_choice: 'Nicht unterstützter Wert. Wähle einen der folgenden Werte: %choices%'
   config:
     key:
       invalid: 'Konfigurations-Key "%key%" muss aus kleingeschriebenen Segmenten mit Punkten bestehen.'

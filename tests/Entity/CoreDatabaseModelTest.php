@@ -29,6 +29,8 @@ final class CoreDatabaseModelTest extends TestCase
             'editor',
             ['en' => 'Editor'],
             AccessLevel::EDITOR,
+            true,
+            false,
         );
         $manager = new AclGroup(
             '22222222-2222-2222-2222-222222222222',
@@ -56,6 +58,8 @@ final class CoreDatabaseModelTest extends TestCase
         );
 
         self::assertSame(AccessLevel::MANAGER, $user->maxAccessLevel());
+        self::assertTrue($editor->isLocked());
+        self::assertFalse($editor->allowsEmptyMembership());
         self::assertSame('abcd1234', $apiKey->prefix());
         self::assertSame($hmacHash, $apiKey->hmacHash());
         self::assertSame('v1.test.encrypted-key', $apiKey->encryptedKey());

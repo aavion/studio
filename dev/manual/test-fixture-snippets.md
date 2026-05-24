@@ -63,7 +63,7 @@ The lifecycle initializes `env:test` directly. Before PHPUnit runs, it clears `v
 The current database seed includes:
 
 - global content configuration defaults;
-- preset ACL groups for public, editor, manager, and admin access levels;
+- preset ACL groups for registered, editor, manager, and admin access levels; public access remains level `0` without a persisted group;
 - a deterministic admin account (`admin` with the current `APP_SECRET` as password) plus read-write, read-only, and revoked API keys;
 - active `static_page` and `article` schemas;
 - published home, about, and article content with active revisions and localized field values;

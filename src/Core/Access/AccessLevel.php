@@ -11,6 +11,7 @@ use App\Core\Message\MessageKey;
 final class AccessLevel
 {
     public const PUBLIC = 0;
+    public const REGISTERED = 1;
     public const EDITOR = 3;
     public const MANAGER = 6;
     public const ADMIN = 9;

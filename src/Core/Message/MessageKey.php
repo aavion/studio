@@ -62,6 +62,27 @@ final class MessageKey
 
     public const ACCESS_GRANTED = 'message.access.granted';
     public const ACCESS_DENIED = 'message.access.denied';
+    public const SETUP_STEP_FAILED = 'message.setup.step_failed';
+    public const SETUP_LANGUAGE_SELECTED = 'message.setup.language_selected';
+    public const SETUP_AVAILABLE_LANGUAGES = 'message.setup.available_languages';
+    public const SETUP_DRY_RUN = 'message.setup.dry_run';
+    public const SETUP_OUTPUT_SUCCESS = 'message.setup.output.success';
+    public const SETUP_OUTPUT_FAILED = 'message.setup.output.failed';
+    public const SETUP_PROMPT_LANGUAGE = 'message.setup.prompt.language';
+    public const SETUP_PROMPT_SITE_TITLE = 'message.setup.prompt.site_title';
+    public const SETUP_PROMPT_DEFAULT_URI = 'message.setup.prompt.default_uri';
+    public const SETUP_PROMPT_DATABASE_DRIVER = 'message.setup.prompt.database_driver';
+    public const SETUP_PROMPT_DATABASE_URL = 'message.setup.prompt.database_url';
+    public const SETUP_PROMPT_DATABASE_HOST = 'message.setup.prompt.database_host';
+    public const SETUP_PROMPT_DATABASE_PORT = 'message.setup.prompt.database_port';
+    public const SETUP_PROMPT_DATABASE_NAME = 'message.setup.prompt.database_name';
+    public const SETUP_PROMPT_DATABASE_USER = 'message.setup.prompt.database_user';
+    public const SETUP_PROMPT_DATABASE_PASSWORD = 'message.setup.prompt.database_password';
+    public const SETUP_PROMPT_ADMIN_USERNAME = 'message.setup.prompt.admin_username';
+    public const SETUP_PROMPT_ADMIN_PASSWORD = 'message.setup.prompt.admin_password';
+    public const SETUP_PROMPT_ADMIN_EMAIL = 'message.setup.prompt.admin_email';
+    public const SETUP_PROMPT_APP_SECRET = 'message.setup.prompt.app_secret';
+    public const SETUP_PROMPT_INVALID_CHOICE = 'message.setup.prompt.invalid_choice';
     public const ACCESS_LEVEL_INVALID = 'message.access.level.invalid';
     public const ACCESS_GROUP_IDENTIFIER_INVALID = 'message.access.group_identifier.invalid';
     public const CONFIG_KEY_INVALID = 'message.config.key.invalid';

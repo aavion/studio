@@ -54,7 +54,7 @@
 | N/A | `App\Core\Access\AccessActor` | Normalized access subject for anonymous users, user accounts, and future API/module contexts. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Core/Access/AccessResolverTest.php` |
 | N/A | `App\Core\Access\AccessCapability` | Enum for view, use, edit, and manage ACL capabilities plus their default access levels. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Core/Access/AccessResolverTest.php` |
 | N/A | `App\Core\Access\AccessDecision` | Structured ACL decision containing the effective rule, rule source, grant state, and message. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Core/Access/AccessResolverTest.php` |
-| N/A | `App\Core\Access\AccessLevel` | Shared access-level constants and validation for public, editor, manager, and admin tiers. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Core/Access/AccessResolverTest.php`, `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Core\Access\AccessLevel` | Shared access-level constants and validation for public, registered, editor, manager, and admin tiers. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Core/Access/AccessResolverTest.php`, `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Core\Access\AccessResolver` | Resolves inherited level-plus-group ACL rules for actors and capabilities. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Core/Access/AccessResolverTest.php` |
 | N/A | `App\Core\Access\AccessRule` | Value object for explicit or inherited min-level plus group ACL rules. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Core/Access/AccessResolverTest.php` |
 | N/A | `App\Core\Config\ConfigValueType` | Enum for typed database-backed configuration values. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Entity/CoreDatabaseModelTest.php` |
@@ -76,6 +76,23 @@
 | N/A | `App\Core\Workflow\OperationResult` | Value object for recoverable workflow results with success, invalid, review, blocked, failed states, issues, messages, and context. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
 | N/A | `App\Core\Workflow\OperationStatus` | Enum for shared recoverable workflow result states. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
 | N/A | `App\Security\ApiKeyStatus` | Enum for API key permission status, translated status labels, and simple read/write activity semantics. | `dev/draft/0.4.x-ApiLayer.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| N/A | `App\Setup\DatabaseDriver` | Enum for setup-supported database families: MySQL/MariaDB, SQLite, and PostgreSQL. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\DatabaseUrlFactory` | Builds the Doctrine database URL from setup input defaults or explicit database connection fields. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\SetupCliInputFactory` | Builds setup input from CLI options, environment defaults, or translated interactive prompts. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupCliInputFactoryTest.php` |
+| N/A | `App\Setup\SetupCliPrompter` | Handles translated CLI prompt rendering, choice validation, and TTY detection for setup input collection. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupCliInputFactoryTest.php` |
+| N/A | `App\Setup\SetupComposerCommandResolver` | Resolves the system Composer command or bundled `bin/composer` fallback for setup subprocesses. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\SetupCommandExecutorInterface` | Abstraction for setup subprocess calls so CLI and future UI setup can share command execution behavior. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\SetupCommandResult` | Value object for setup subprocess exit code, output, and error output. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\SetupDatabaseSeeder` | DBAL-backed setup seeder for site settings, default ACL groups, admin account, and admin group memberships. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\SetupDryRunPlanner` | Builds setup dry-run ActionLog steps describing planned writes, commands, settings, and admin seed data without mutating state. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\SetupEnvironmentWriter` | Writes setup environment overrides into `.env.{APP_ENV}.local` while preserving unrelated keys. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\SetupInput` | Callable setup input DTO for installer language, site metadata, database connection data, admin credentials, APP_SECRET handling, and dry-run mode. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\SetupLanguageCatalog` | Discovers available setup languages from synchronized translation catalogues. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\SetupLanguageSelector` | Validates selected setup language and returns translation-ready ActionLog messages for CLI or future UI output. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\SetupMessageTranslator` | Reads setup-facing translation catalogue entries for CLI prompts and localized setup output. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupCliInputFactoryTest.php` |
+| N/A | `App\Setup\SetupRunner` | Shared first-run setup runner that validates installer language, writes env overrides, dumps env config, runs migrations, seeds default settings, and creates the admin user with ActionLog output and dry-run planning. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\SetupSensitiveValueMasker` | Masks setup secrets in ActionLog contexts, especially database URL passwords in dry-run output. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
+| N/A | `App\Setup\SetupStepFailedException` | Setup-specific RuntimeException for failed subprocess or setup execution steps. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Setup/SetupRunnerTest.php` |
 | N/A | `App\Content\ContentStatus` | Enum for content workflow states such as draft, scheduled, published, and archived. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Entity/ContentItemTest.php` |
 | N/A | `App\Content\ContentVisibility` | Enum for public/private content visibility state. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Entity/ContentItemTest.php` |
 | N/A | `App\Content\Read\ContentReadContext` | Value object for requested and resolved language/variant context on public content reads. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Content/Read/PublishedContentResolverTest.php` |
@@ -117,7 +134,7 @@
 | Command | Class | Description | Docs | Test-Class |
 |---------|-------|-------------|------| ---------- |
 | `bin/init` | `bin/init` | Initializes repository dependencies and assets for automated workflows without requiring a Symfony bootstrap before Composer is installed. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Operations/InitScriptTest.php` |
-| `bin/setup` | `bin/setup` | Placeholder first-run setup entry point with deferred phases for repository initialization, configuration, persistence, and administrator setup. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Operations/SetupScriptTest.php` |
+| `bin/setup` | `bin/setup` | CLI adapter for the shared setup runner with defaults and optional JSON output for automation. | `dev/draft/0.1.x-SetupTestAutomation.md` | `tests/Operations/SetupScriptTest.php`, `tests/Setup/SetupRunnerTest.php` |
 
 ## 4. Components & Extensions
 

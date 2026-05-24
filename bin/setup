@@ -3,61 +3,148 @@
 
 declare(strict_types=1);
 
-final class SetupReporter
-{
-    public function info(string $message): void
-    {
-        echo '[INFO] '.$message.PHP_EOL;
-    }
+use App\Core\ActionLog\ActionLog;
+use App\Setup\SetupCliInputFactory;
+use App\Setup\SetupMessageTranslator;
+use App\Setup\SetupRunner;
+use Symfony\Component\Dotenv\Dotenv;
 
-    public function success(string $message): void
-    {
-        echo '[OK] '.$message.PHP_EOL;
-    }
-}
-
-final class SetupCommand
-{
-    public function __construct(
-        private readonly string $projectDir,
-        private readonly SetupReporter $reporter,
-    ) {
-    }
-
-    public function run(): int
-    {
-        $this->reporter->info('Setup skeleton started.');
-        $this->initializeRepository();
-        $this->collectInstallationData();
-        $this->writeInitialConfiguration();
-        $this->preparePersistentState();
-        $this->reporter->success('Setup skeleton completed without changing project data.');
-
-        return 0;
-    }
-
-    private function initializeRepository(): void
-    {
-        $this->reporter->info('Repository initialization is delegated to bin/init when real setup begins.');
-    }
-
-    private function collectInstallationData(): void
-    {
-        $this->reporter->info('Installation data collection is intentionally deferred until setup has persistence targets.');
-    }
-
-    private function writeInitialConfiguration(): void
-    {
-        $this->reporter->info('Initial configuration writing is intentionally deferred.');
-    }
-
-    private function preparePersistentState(): void
-    {
-        $this->reporter->info('Database, administrator account, and seed setup are intentionally deferred.');
-    }
-}
+require dirname(__DIR__).'/vendor/autoload.php';
 
 $projectDir = dirname(__DIR__);
-$reporter = new SetupReporter();
 
-exit((new SetupCommand($projectDir, $reporter))->run());
+if (is_file($projectDir.'/.env')) {
+    (new Dotenv())->bootEnv($projectDir.'/.env');
+}
+
+$options = getopt('', [
+    'env:',
+    'language:',
+    'site-title:',
+    'url:',
+    'db-driver:',
+    'database-url:',
+    'db-host:',
+    'db-port:',
+    'db-name:',
+    'db-user:',
+    'db-password:',
+    'admin-username:',
+    'admin-password:',
+    'admin-email:',
+    'app-secret:',
+    'dry-run',
+    'no-interaction',
+    'json',
+]);
+
+$input = (new SetupCliInputFactory($projectDir))->create($options);
+$translator = new SetupMessageTranslator();
+$language = $input->language();
+
+$result = (new SetupRunner($projectDir))->run($input);
+$payload = $result->toArray();
+
+if ($result->value() instanceof ActionLog) {
+    $payload['value'] = $result->value()->toArray();
+}
+
+if (array_key_exists('json', $options)) {
+    echo json_encode($payload, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR).PHP_EOL;
+
+    exit($result->isSuccess() ? 0 : 1);
+}
+
+echo sprintf(
+    '[%s] %s',
+    $result->isSuccess() ? 'OK' : 'ERROR',
+    $translator->translate($projectDir, $language, $result->isSuccess() ? 'message.setup.output.success' : 'message.setup.output.failed'),
+).PHP_EOL;
+
+$log = $result->value();
+
+if (!$log instanceof ActionLog && isset($result->context()['action_log'])) {
+    $log = $result->context()['action_log'];
+}
+
+foreach (logEntries($log) as $entry) {
+    echo sprintf('[%s] %s', strtoupper((string) ($entry['status'] ?? 'unknown')), (string) ($entry['name'] ?? 'setup_step')).PHP_EOL;
+
+    foreach (($entry['context'] ?? []) as $key => $value) {
+        echo sprintf('  %s: %s', (string) $key, formatCliValue($value)).PHP_EOL;
+    }
+
+    foreach (($entry['messages'] ?? []) as $message) {
+        echo sprintf(
+            '  * %s: %s',
+            strtoupper((string) ($message['level'] ?? 'info')),
+            translatedPayload($message, $translator, $projectDir, $language),
+        ).PHP_EOL;
+    }
+
+    foreach (($entry['issues'] ?? []) as $issue) {
+        echo sprintf('  - %s: %s', (string) ($issue['code'] ?? 'issue'), translatedPayload($issue, $translator, $projectDir, $language)) . PHP_EOL;
+    }
+}
+
+exit($result->isSuccess() ? 0 : 1);
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function logEntries(mixed $log): array
+{
+    if ($log instanceof ActionLog) {
+        return $log->toArray()['entries'];
+    }
+
+    if (is_array($log) && isset($log['entries']) && is_array($log['entries'])) {
+        return $log['entries'];
+    }
+
+    return [];
+}
+
+function formatCliValue(mixed $value): string
+{
+    if (is_scalar($value) || null === $value) {
+        return (string) ($value ?? 'null');
+    }
+
+    return json_encode($value, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+}
+
+/**
+ * @param array<string, mixed> $payload
+ */
+function translatedPayload(array $payload, SetupMessageTranslator $translator, string $projectDir, string $language): string
+{
+    $key = $payload['translation_key'] ?? null;
+
+    if (!is_string($key) || '' === $key) {
+        return (string) ($payload['code'] ?? '');
+    }
+
+    return $translator->translate($projectDir, $language, $key, translationParameters($payload['parameters'] ?? []));
+}
+
+/**
+ * @return array<string, string>
+ */
+function translationParameters(mixed $parameters): array
+{
+    if (!is_array($parameters)) {
+        return [];
+    }
+
+    $translated = [];
+    foreach ($parameters as $key => $value) {
+        if (!is_string($key)) {
+            continue;
+        }
+
+        $translated[$key] = is_scalar($value) || null === $value ? (string) $value : formatCliValue($value);
+    }
+
+    return $translated;
+}

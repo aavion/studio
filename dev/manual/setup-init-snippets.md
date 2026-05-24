@@ -1,13 +1,13 @@
 # Setup and init snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-23  
+> **Updated**: 2026-05-24  
 > **Owner**: Core  
 > **Purpose:** Capture setup and init behavior notes before the first-run installer and automation workflows are finalized.  
 
 ## Overview
 
-`bin/init` prepares the repository for automated workflows. `bin/setup` is a placeholder for later first-run application setup.
+`bin/init` prepares the repository for automated workflows. `bin/setup` performs first-run application setup through the shared `App\Setup\SetupRunner` service.
 
 ## Init responsibilities
 
@@ -29,15 +29,21 @@ Symfony environment resolution should match Symfony precedence as closely as pra
 
 ## Setup responsibilities
 
-`bin/setup` should remain separate from `bin/init`. Later setup can handle:
+`bin/setup` remains separate from `bin/init`. Setup currently handles:
 
-- installation data collection;
-- database configuration checks;
+- installer language selection from discovered translation catalogues;
+- translated interactive CLI prompts when `bin/setup` runs in a TTY;
+- site title and default URL values;
+- database URL compilation for SQLite, MySQL/MariaDB, and PostgreSQL;
 - secret generation;
 - admin account creation;
-- initial content or demo data;
-- persistence preparation;
-- setup action logs.
+- env override writing and `composer dump-env`;
+- Doctrine migration execution;
+- database-backed default settings, including `localization.default_language`;
+- dry-run planning without writing env files, running commands, or seeding the database;
+- setup action logs with halt-on-error results.
+
+Use `--no-interaction` for scripted CLI setup with defaults and explicit options. `--json` is also non-interactive so automation receives machine-readable output only.
 
 ## Automation notes
 

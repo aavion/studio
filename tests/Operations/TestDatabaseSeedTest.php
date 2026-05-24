@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Operations;
 
+use App\Core\Access\AccessLevel;
 use App\Tests\Support\FilesystemTestHelper;
 use PDO;
 use PHPUnit\Framework\TestCase;
@@ -27,21 +28,32 @@ final class TestDatabaseSeedTest extends TestCase
     public function testItSeedsAclGroupsAndAdminUser(): void
     {
         $groups = $this->pdo
-            ->query('SELECT identifier, access_level FROM acl_group ORDER BY access_level')
-            ->fetchAll(PDO::FETCH_KEY_PAIR);
+            ->query('SELECT identifier, access_level, locked, allow_empty FROM acl_group ORDER BY access_level')
+            ->fetchAll(PDO::FETCH_ASSOC);
 
         self::assertSame([
-            'public' => 0,
-            'editor' => 3,
-            'manager' => 6,
-            'admin' => 9,
-        ], array_map('intval', $groups));
+            ['identifier' => 'registered', 'access_level' => AccessLevel::REGISTERED, 'locked' => 1, 'allow_empty' => 1],
+            ['identifier' => 'editor', 'access_level' => AccessLevel::EDITOR, 'locked' => 0, 'allow_empty' => 1],
+            ['identifier' => 'manager', 'access_level' => AccessLevel::MANAGER, 'locked' => 0, 'allow_empty' => 1],
+            ['identifier' => 'admin', 'access_level' => AccessLevel::ADMIN, 'locked' => 1, 'allow_empty' => 0],
+        ], array_map(static fn (array $row): array => [
+            'identifier' => $row['identifier'],
+            'access_level' => (int) $row['access_level'],
+            'locked' => (int) $row['locked'],
+            'allow_empty' => (int) $row['allow_empty'],
+        ], $groups));
 
         $adminGroups = $this->pdo
             ->query("SELECT g.identifier FROM acl_group g INNER JOIN user_acl_group ug ON ug.group_uid = g.uid INNER JOIN user_account u ON u.uid = ug.user_uid WHERE u.username = 'admin' ORDER BY g.access_level")
             ->fetchAll(PDO::FETCH_COLUMN);
 
-        self::assertSame(['editor', 'manager', 'admin'], $adminGroups);
+        self::assertSame(['admin'], $adminGroups);
+
+        $defaultAclGroup = $this->pdo
+            ->query("SELECT value FROM config_entry WHERE config_key = 'user.default_acl_group'")
+            ->fetchColumn();
+
+        self::assertSame('registered', json_decode((string) $defaultAclGroup, true, flags: JSON_THROW_ON_ERROR));
     }
 
     public function testItUsesAppSecretAsSeededAdminPassword(): void

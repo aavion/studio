@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Support;
 
+use App\Core\Access\AccessLevel;
 use PDO;
 use RuntimeException;
 
@@ -27,6 +28,14 @@ final class TestDatabaseSeeder
 
     private static function seedConfig(PDO $pdo): void
     {
+        self::insert($pdo, 'config_entry', [
+            'config_key' => 'user.default_acl_group',
+            'value' => self::json('registered'),
+            'value_type' => 'string',
+            'sensitive' => 0,
+            'modified_at' => self::NOW,
+            'modified_by' => 'system',
+        ]);
         self::insert($pdo, 'config_entry', [
             'config_key' => 'content.default_locale',
             'value' => self::json('en'),
@@ -64,18 +73,20 @@ final class TestDatabaseSeeder
     private static function seedAcl(PDO $pdo): void
     {
         $groups = [
-            ['00000000-0000-0000-0000-000000000100', 'public', ['en' => 'Public', 'de' => 'Oeffentlich'], 0],
-            ['00000000-0000-0000-0000-000000000103', 'editor', ['en' => 'Editor', 'de' => 'Redaktion'], 3],
-            ['00000000-0000-0000-0000-000000000106', 'manager', ['en' => 'Manager', 'de' => 'Management'], 6],
-            ['00000000-0000-0000-0000-000000000109', 'admin', ['en' => 'Admin', 'de' => 'Administration'], 9],
+            ['00000000-0000-0000-0000-000000000101', 'registered', ['en' => 'Registered', 'de' => 'Registriert'], AccessLevel::REGISTERED, true, true],
+            ['00000000-0000-0000-0000-000000000103', 'editor', ['en' => 'Editor', 'de' => 'Redaktion'], AccessLevel::EDITOR, false, true],
+            ['00000000-0000-0000-0000-000000000106', 'manager', ['en' => 'Manager', 'de' => 'Management'], AccessLevel::MANAGER, false, true],
+            ['00000000-0000-0000-0000-000000000109', 'admin', ['en' => 'Admin', 'de' => 'Administration'], AccessLevel::ADMIN, true, false],
         ];
 
-        foreach ($groups as [$uid, $identifier, $name, $accessLevel]) {
+        foreach ($groups as [$uid, $identifier, $name, $accessLevel, $locked, $allowEmpty]) {
             self::insert($pdo, 'acl_group', [
                 'uid' => $uid,
                 'identifier' => $identifier,
                 'name' => self::json($name),
                 'access_level' => $accessLevel,
+                'locked' => $locked ? 1 : 0,
+                'allow_empty' => $allowEmpty ? 1 : 0,
                 'metadata' => self::json(['preset' => true]),
             ]);
         }
@@ -92,12 +103,10 @@ final class TestDatabaseSeeder
             ]),
         ]);
 
-        foreach (['00000000-0000-0000-0000-000000000103', '00000000-0000-0000-0000-000000000106', '00000000-0000-0000-0000-000000000109'] as $groupUid) {
-            self::insert($pdo, 'user_acl_group', [
-                'user_uid' => '00000000-0000-0000-0000-000000000201',
-                'group_uid' => $groupUid,
-            ]);
-        }
+        self::insert($pdo, 'user_acl_group', [
+            'user_uid' => '00000000-0000-0000-0000-000000000201',
+            'group_uid' => '00000000-0000-0000-0000-000000000109',
+        ]);
 
         foreach ([
             ['00000000-0000-0000-0000-000000000301', 'seedrw', 'test_seed_read_write_key', 'read_write', null],

@@ -63,6 +63,30 @@ message:
       invalid: 'Access level %level% must be between 0 and 9.'
     group_identifier:
       invalid: 'ACL group identifier "%identifier%" must be lowercase snake_case.'
+  setup:
+    step_failed: 'Setup step "%step%" failed: %message%'
+    language_selected: 'Installer language "%language%" selected.'
+    available_languages: 'Available installer languages: %languages%'
+    dry_run: 'Dry run only; no changes were written.'
+    output:
+      success: 'Setup completed successfully.'
+      failed: 'Setup failed.'
+    prompt:
+      language: 'Installer language (%choices%)'
+      site_title: 'Site title'
+      default_uri: 'Site URL'
+      database_driver: 'Database driver (%choices%)'
+      database_url: 'Database URL'
+      database_host: 'Database host'
+      database_port: 'Database port'
+      database_name: 'Database name'
+      database_user: 'Database user'
+      database_password: 'Database password'
+      admin_username: 'Admin username'
+      admin_password: 'Admin password'
+      admin_email: 'Admin email'
+      app_secret: 'APP_SECRET (leave empty to generate one)'
+      invalid_choice: 'Unsupported value. Choose one of: %choices%'
   config:
     key:
       invalid: 'Configuration key "%key%" must use dotted lowercase segments.'

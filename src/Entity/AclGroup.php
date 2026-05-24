@@ -32,6 +32,12 @@ class AclGroup
     #[ORM\Column]
     private int $accessLevel;
 
+    #[ORM\Column]
+    private bool $locked;
+
+    #[ORM\Column]
+    private bool $allowEmpty;
+
     /**
      * @var array<string, mixed>
      */
@@ -42,12 +48,21 @@ class AclGroup
      * @param array<string, string> $name
      * @param array<string, mixed> $metadata
      */
-    public function __construct(string $uid, string $identifier, array $name, int $accessLevel, array $metadata = [])
-    {
+    public function __construct(
+        string $uid,
+        string $identifier,
+        array $name,
+        int $accessLevel,
+        bool $locked = false,
+        bool $allowEmpty = true,
+        array $metadata = [],
+    ) {
         $this->uid = Uid::assert($uid, 'ACL group UID');
         $this->identifier = Identifier::assertSnakeCase($identifier, MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, '%identifier%');
         $this->name = $name;
         $this->accessLevel = AccessLevel::assert($accessLevel);
+        $this->locked = $locked;
+        $this->allowEmpty = $allowEmpty;
         $this->metadata = $metadata;
     }
 
@@ -72,5 +87,15 @@ class AclGroup
     public function accessLevel(): int
     {
         return $this->accessLevel;
+    }
+
+    public function isLocked(): bool
+    {
+        return $this->locked;
+    }
+
+    public function allowsEmptyMembership(): bool
+    {
+        return $this->allowEmpty;
     }
 }

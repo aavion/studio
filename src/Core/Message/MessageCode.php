@@ -65,4 +65,23 @@ final class MessageCode
     public const PACKAGE_COPY_PLAN_CREATED = 'package.copy_plan_created';
     public const ACCESS_GRANTED = 'access.granted';
     public const ACCESS_DENIED = 'access.denied';
+    public const SETUP_STEP_FAILED = 'setup.step_failed';
+    public const SETUP_LANGUAGE_SELECTED = 'setup.language_selected';
+    public const SETUP_AVAILABLE_LANGUAGES = 'setup.available_languages';
+    public const SETUP_DRY_RUN = 'setup.dry_run';
+    public const SETUP_PROMPT_LANGUAGE = 'setup.prompt.language';
+    public const SETUP_PROMPT_SITE_TITLE = 'setup.prompt.site_title';
+    public const SETUP_PROMPT_DEFAULT_URI = 'setup.prompt.default_uri';
+    public const SETUP_PROMPT_DATABASE_DRIVER = 'setup.prompt.database_driver';
+    public const SETUP_PROMPT_DATABASE_URL = 'setup.prompt.database_url';
+    public const SETUP_PROMPT_DATABASE_HOST = 'setup.prompt.database_host';
+    public const SETUP_PROMPT_DATABASE_PORT = 'setup.prompt.database_port';
+    public const SETUP_PROMPT_DATABASE_NAME = 'setup.prompt.database_name';
+    public const SETUP_PROMPT_DATABASE_USER = 'setup.prompt.database_user';
+    public const SETUP_PROMPT_DATABASE_PASSWORD = 'setup.prompt.database_password';
+    public const SETUP_PROMPT_ADMIN_USERNAME = 'setup.prompt.admin_username';
+    public const SETUP_PROMPT_ADMIN_PASSWORD = 'setup.prompt.admin_password';
+    public const SETUP_PROMPT_ADMIN_EMAIL = 'setup.prompt.admin_email';
+    public const SETUP_PROMPT_APP_SECRET = 'setup.prompt.app_secret';
+    public const SETUP_PROMPT_INVALID_CHOICE = 'setup.prompt.invalid_choice';
 }
