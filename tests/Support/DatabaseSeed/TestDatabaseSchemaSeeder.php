@@ -1,0 +1,119 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Support\DatabaseSeed;
+
+final class TestDatabaseSchemaSeeder
+{
+    public static function seed(TestDatabaseSeedWriter $writer): void
+    {
+        foreach (self::schemas() as $index => $schema) {
+            $writer->insert('content_schema', [
+                'uid' => $schema['schema_uid'],
+                'identifier' => $schema['identifier'],
+                'source' => 'preset',
+                'locked' => 1,
+                'active_version_uid' => null,
+                'labels' => $writer->json($schema['labels']),
+                'descriptions' => $writer->json($schema['description']),
+                'metadata' => $writer->json(['seed' => true]),
+            ]);
+            $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000092%d', $index * 3), 'content_schema', $schema['schema_uid'], 'created', 'system', null, ['identifier' => $schema['identifier']]);
+            $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000092%d', $index * 3 + 1), 'content_schema', $schema['schema_uid'], 'modified', 'system', null, ['identifier' => $schema['identifier']]);
+
+            $writer->insert('content_schema_version', [
+                'uid' => $schema['version_uid'],
+                'schema_uid' => $schema['schema_uid'],
+                'version' => 1,
+                'title' => $writer->json($schema['title']),
+                'description' => $writer->json($schema['description']),
+                'definition' => $writer->json($schema['definition']),
+                'custom_twig' => null,
+                'definition_hash' => hash('sha256', $writer->json($schema['definition'])),
+                'use_min_level' => 0,
+                'use_group_identifiers' => null,
+                'edit_min_level' => 3,
+                'edit_group_identifiers' => null,
+                'manage_min_level' => 6,
+                'manage_group_identifiers' => null,
+                'metadata' => $writer->json(['seed' => true]),
+            ]);
+            $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000092%d', $index * 3 + 2), 'content_schema_version', $schema['version_uid'], 'activated', 'system', '1', ['schema_uid' => $schema['schema_uid']]);
+
+            $writer->update('content_schema', ['active_version_uid' => $schema['version_uid']], ['uid' => $schema['schema_uid']]);
+        }
+    }
+
+    /**
+     * @return list<array{
+     *     schema_uid: string,
+     *     version_uid: string,
+     *     identifier: string,
+     *     labels: array<string, string>,
+     *     title: array<string, string>,
+     *     description: array<string, string>,
+     *     definition: array<string, mixed>
+     * }>
+     */
+    private static function schemas(): array
+    {
+        return [
+            [
+                'schema_uid' => '10000000-0000-0000-0000-000000000001',
+                'version_uid' => '10000000-0000-0000-0000-000000000101',
+                'identifier' => 'static_page',
+                'labels' => ['en' => 'Static page', 'de' => 'Statische Seite'],
+                'title' => ['en' => 'Static page schema', 'de' => 'Schema fuer statische Seiten'],
+                'description' => ['en' => 'General pages with a rich text body.', 'de' => 'Allgemeine Seiten mit Rich-Text-Inhalt.'],
+                'definition' => self::staticPageDefinition(),
+            ],
+            [
+                'schema_uid' => '10000000-0000-0000-0000-000000000002',
+                'version_uid' => '10000000-0000-0000-0000-000000000102',
+                'identifier' => 'article',
+                'labels' => ['en' => 'Article', 'de' => 'Artikel'],
+                'title' => ['en' => 'Article schema', 'de' => 'Artikelschema'],
+                'description' => ['en' => 'Editorial articles with teaser and tags.', 'de' => 'Redaktionelle Artikel mit Teaser und Tags.'],
+                'definition' => self::articleDefinition(),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function staticPageDefinition(): array
+    {
+        return [
+            'fields' => [
+                ['identifier' => 'title', 'type' => 'text', 'required' => true, 'localized' => true],
+                ['identifier' => 'subtitle', 'type' => 'text', 'required' => true, 'localized' => true],
+                ['identifier' => 'body', 'type' => 'rich_text', 'required' => true, 'localized' => true],
+                ['identifier' => 'seo_title', 'type' => 'text', 'required' => false, 'localized' => true],
+            ],
+            'order' => ['title', 'subtitle', 'body', 'seo_title'],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function articleDefinition(): array
+    {
+        return [
+            'fields' => [
+                ['identifier' => 'title', 'type' => 'text', 'required' => true, 'localized' => true],
+                ['identifier' => 'subtitle', 'type' => 'text', 'required' => true, 'localized' => true],
+                ['identifier' => 'teaser', 'type' => 'text', 'required' => true, 'localized' => true],
+                ['identifier' => 'body', 'type' => 'rich_text', 'required' => true, 'localized' => true],
+                ['identifier' => 'tags', 'type' => 'string_list', 'required' => false, 'localized' => false],
+            ],
+            'order' => ['title', 'subtitle', 'teaser', 'body', 'tags'],
+        ];
+    }
+
+    private function __construct()
+    {
+    }
+}
