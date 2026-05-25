@@ -103,6 +103,45 @@ final class SetupRunnerTest extends TestCase
         self::assertSame(['admin'], $groups);
     }
 
+    public function testItPreservesExistingAclGroupPrimaryKeysWhenSetupIsRerun(): void
+    {
+        $databasePath = $this->root.'/var/setup.db';
+        $this->createSchema($databasePath);
+        $pdo = new PDO('sqlite:'.$databasePath);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $existingAdminGroupUid = '99999999-0000-0000-0000-000000000105';
+        $existingAdminUserUid = '99999999-0000-0000-0000-000000000201';
+        $pdo->prepare('INSERT INTO acl_group (uid, identifier, name, access_level, locked, allow_empty, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            ->execute([$existingAdminGroupUid, 'admin', '{"en":"Legacy Admin"}', 8, 0, 1, '{}']);
+        $pdo->prepare('INSERT INTO user_account (uid, username, email, password_hash, profile, settings, status) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            ->execute([$existingAdminUserUid, 'legacy-admin', 'legacy-admin@example.test', password_hash('legacy-secret', PASSWORD_DEFAULT), '{}', '{}', 'active']);
+        $pdo->prepare('INSERT INTO user_acl_group (user_uid, group_uid) VALUES (?, ?)')
+            ->execute([$existingAdminUserUid, $existingAdminGroupUid]);
+
+        $runner = new SetupRunner($this->root, new RecordingSetupCommandExecutor());
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Example Studio',
+            defaultUri: 'https://example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///'.$databasePath,
+            adminUsername: 'admin',
+            adminPassword: 'secret-password',
+            adminEmail: 'admin@example.test',
+            appSecret: 'test-secret',
+        ));
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame($existingAdminGroupUid, $pdo->query("SELECT uid FROM acl_group WHERE identifier = 'admin'")->fetchColumn());
+        self::assertSame(9, (int) $pdo->query("SELECT access_level FROM acl_group WHERE identifier = 'admin'")->fetchColumn());
+        self::assertSame(1, (int) $pdo->query("SELECT locked FROM acl_group WHERE identifier = 'admin'")->fetchColumn());
+        self::assertSame(0, (int) $pdo->query("SELECT allow_empty FROM acl_group WHERE identifier = 'admin'")->fetchColumn());
+        self::assertSame(1, (int) $pdo->query("SELECT COUNT(*) FROM user_acl_group WHERE user_uid = '$existingAdminUserUid' AND group_uid = '$existingAdminGroupUid'")->fetchColumn());
+        self::assertSame(1, (int) $pdo->query("SELECT COUNT(*) FROM state_marker WHERE subject_type = 'acl_group' AND subject_uid = '$existingAdminGroupUid'")->fetchColumn());
+    }
+
     public function testItStopsOnCommandFailureAndReturnsActionLogContext(): void
     {
         $executor = new RecordingSetupCommandExecutor(failureAt: 2, failure: new SetupCommandResult(1, '', 'dump-env failed'));

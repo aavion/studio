@@ -49,8 +49,8 @@ final readonly class SetupDatabaseSeeder
         ];
 
         foreach ($groups as [$uid, $identifier, $name, $accessLevel, $locked, $allowEmpty]) {
-            $this->upsertAclGroup($connection, $uid, $identifier, $name, $accessLevel, $locked, $allowEmpty);
-            $this->upsertStateMarker($connection, StateSubjectType::ACL_GROUP, $uid, StateMarkerKey::CREATED, $now, 'setup', null, ['identifier' => $identifier]);
+            $groupUid = $this->upsertAclGroup($connection, $uid, $identifier, $name, $accessLevel, $locked, $allowEmpty);
+            $this->upsertStateMarker($connection, StateSubjectType::ACL_GROUP, $groupUid, StateMarkerKey::CREATED, $now, 'setup', null, ['identifier' => $identifier]);
         }
 
         $userUid = $this->upsertAdmin($connection, $input, $now);
@@ -89,9 +89,8 @@ final readonly class SetupDatabaseSeeder
         int $accessLevel,
         bool $locked,
         bool $allowEmpty,
-    ): void {
+    ): string {
         $values = [
-            'uid' => $uid,
             'identifier' => $identifier,
             'name' => json_encode($name, JSON_THROW_ON_ERROR),
             'access_level' => $accessLevel,
@@ -99,10 +98,17 @@ final readonly class SetupDatabaseSeeder
             'allow_empty' => $allowEmpty ? 1 : 0,
             'metadata' => json_encode(['seeded_by' => 'setup'], JSON_THROW_ON_ERROR),
         ];
+        $existingUid = $connection->fetchOne('SELECT uid FROM acl_group WHERE identifier = ?', [$identifier]);
 
-        $connection->fetchOne('SELECT uid FROM acl_group WHERE identifier = ?', [$identifier])
-            ? $connection->update('acl_group', $values, ['identifier' => $identifier])
-            : $connection->insert('acl_group', $values);
+        if (is_string($existingUid) && '' !== $existingUid) {
+            $connection->update('acl_group', $values, ['uid' => $existingUid]);
+
+            return $existingUid;
+        }
+
+        $connection->insert('acl_group', ['uid' => $uid, ...$values]);
+
+        return $uid;
     }
 
     private function upsertAdmin(Connection $connection, SetupInput $input, string $now): string

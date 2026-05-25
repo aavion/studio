@@ -82,6 +82,7 @@
 - Added CodeMirror as the native base editor provider with generic, Markdown-backed rich-text fallback, CSS, HTML, JavaScript, JSON, PHP, TypeScript, and code template stubs.
 - Expanded the native template scaffold with frontend/backend layout variants and granular layout, navigation, typography, feedback, action button, toolbar, and form field partials for early theme override points.
 - Hardened root-level content routing by storing `/` as the non-null root parent sentinel, keeping `(parent_uid, slug)` uniqueness portable across supported databases.
+- Hardened setup ACL group seeding so reruns preserve existing group primary keys and keep user-group associations intact.
 - Updated feature drafts, developer snippets, class map, translations, and tests for the new template namespace and package-scope contract.
 
 ### 2026-05-24
