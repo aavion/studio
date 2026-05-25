@@ -19,6 +19,12 @@ final readonly class SetupLanguageCatalog
             }
         }
 
+        foreach (glob($projectDir.'/translations/languages/*', GLOB_ONLYDIR) ?: [] as $path) {
+            if (1 === preg_match('/^[a-z][a-z0-9]*(?:[_-][a-zA-Z0-9]+)*$/', basename($path))) {
+                $languages[] = basename($path);
+            }
+        }
+
         $languages = array_values(array_unique($languages));
         sort($languages);
 

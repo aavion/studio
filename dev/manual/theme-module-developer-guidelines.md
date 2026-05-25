@@ -40,7 +40,7 @@ packages/<package-slug>/
   assets/
   config/
   migrations/
-  translations/
+  languages/
 ```
 
 Required manifest keys:
@@ -72,6 +72,12 @@ Current constraints:
 When `PACKAGE_NAMESPACE` is declared, PHP files below `src/` must use that namespace or one of its child namespaces. The active runtime loader includes only `package.php`; that file may define a flat bootstrap class, register a small callable, or require further files below `src/`. Loader failures are caught by the lifecycle layer, recorded as structured diagnostics, and mark the package `faulty` so a broken active package does not keep breaking requests.
 
 Package assets must be self-contained. Packages should vendor their external dependencies inside their own package directory instead of requiring the project importmap to manage third-party dependency lifecycles across packages. Active package CSS and JavaScript are aggregated through the generated package asset registries; packages should not expect templates to add arbitrary direct `<link>` or `<script>` tags for package-level assets. Static assets such as images, fonts, videos, and SVGs should be referenced from package CSS, JavaScript, or templates after the lifecycle mirrors them into the AssetMapper-visible package path.
+
+Area-specific package assets follow the same boundary as template namespaces. A package with `frontend-theme` should put frontend-only entrypoints under `assets/frontend/**`; a package with `backend-theme` should put backend-only entrypoints under `assets/backend/**`. Root-level package assets and other package asset subdirectories are shared/global and enter the extension registry only when the package also declares a global scope such as `module`, `captcha-provider`, `editor-provider`, or `system-template`.
+
+Package asset registries control deterministic rebuild order, but Tailwind currently emits one application stylesheet. CSS that belongs to one rendered area should therefore stay scoped to that area's root class, such as `.studio-frontend` or `.studio-backend`, unless the package intentionally contributes global module/provider styling.
+
+Package translations are package-scoped. A package may ship `languages/<locale>/*.yaml`; when it does, `languages/en/*.yaml` is required as the fallback source. Only active package language files are aggregated into the generated runtime `messages` catalogue during the package rebuild queue, so inactive packages cannot override or leak copy. Package-owned translation keys must stay namespaced below `pkg.<package-slug>.*`.
 
 Database-backed schema Twig is not visible to Tailwind file scanning by itself. Schema rendering needs a later aggregation layer that extracts or stores CSS class usage from active schema Twig and exposes it to the Tailwind rebuild before production builds depend on schema-authored classes.
 

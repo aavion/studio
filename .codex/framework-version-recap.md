@@ -84,7 +84,7 @@ Checked official Symfony docs for AssetMapper, service tags, service decoration,
 
 - Keep deterministic translation keys in synchronized English and German catalogues.
 - Symfony supports ICU MessageFormat with `+intl-icu` catalogue suffixes when ICU syntax is needed.
-- Existing project rules use `translations/messages.en.yaml` and `translations/messages.de.yaml`; keep them synchronized with `.codex/compare_translations.php`.
+- Existing project rules keep translation sources modular under `translations/languages/{locale}/*.yaml`; generated runtime catalogues use Symfony's default `messages` domain, and source catalogue pairs stay synchronized with `.codex/compare_translations.php`.
 
 ### AssetMapper, Importmap, Stimulus, and Turbo
 

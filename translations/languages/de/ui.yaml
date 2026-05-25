@@ -1,0 +1,56 @@
+ui:
+  app:
+    name: 'aavion Studio'
+  navigation:
+    skip_to_content: 'Zum Inhalt springen'
+  frontend:
+    navigation: 'Hauptnavigation'
+    footer: '%app%'
+  content:
+    fields: 'Content-Felder'
+    field: 'Feld'
+    value: 'Wert'
+    empty_value: 'Leer'
+  form:
+    required: 'Erforderlich'
+    submit: 'Absenden'
+  empty_state:
+    title: 'Nichts anzuzeigen'
+  user:
+    login:
+      title: 'Anmelden'
+      placeholder: 'Nutze deine Zugangsdaten, um fortzufahren.'
+      username: 'Username'
+      password: 'Passwort'
+      submit: 'Anmelden'
+    register:
+      title: 'Account erstellen'
+      placeholder: 'Registrierung wird verfügbar, sobald Nutzer-Flows aktiviert sind.'
+    password_reset:
+      title: 'Passwort zurücksetzen'
+      placeholder: 'Passwort-Reset wird verfügbar, sobald Mail-Flows aktiviert sind.'
+    profile:
+      title: 'Profil'
+      placeholder: 'Profileinstellungen werden verfügbar, sobald Account-Flows aktiviert sind.'
+  error:
+    default:
+      title: 'Anfrage fehlgeschlagen'
+      message: 'Das System konnte die Anfrage nicht abschließen.'
+    401:
+      title: 'Anmeldung erforderlich'
+      message: 'Dieser Inhalt ist erst nach einer Anmeldung mit ausreichender Berechtigung verfügbar.'
+    403:
+      title: 'Zugriff verweigert'
+      message: 'Diese Route ist geschützt oder nicht für direkten Zugriff verfügbar.'
+    404:
+      title: 'Seite nicht gefunden'
+      message: 'Die angefragte Seite wurde nicht gefunden oder ist nicht veröffentlicht.'
+    429:
+      title: 'Zu viele Anfragen'
+      message: 'Bitte warte einen Moment, bevor du es erneut versuchst.'
+    500:
+      title: 'Etwas ist schiefgelaufen'
+      message: 'Das System konnte die Anfrage nicht abschließen.'
+    503:
+      title: 'Wartungsmodus'
+      message: 'Die Seite ist vorübergehend nicht verfügbar, solange die Wartung aktiv ist.'

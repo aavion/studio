@@ -291,6 +291,48 @@ final class PackageValidatorTest extends TestCase
         self::assertTrue($result->isSuccess());
     }
 
+    public function testItAcceptsPackageTranslationFilesInOwnedNamespace(): void
+    {
+        $packageSlug = basename($this->packageDir);
+        $this->writeFile('languages/en/messages.yaml', sprintf("pkg:\n  %s:\n    title: Demo\n", $packageSlug));
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4)->withYamlLinting(),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItRequiresEnglishWhenPackageTranslationsExist(): void
+    {
+        $packageSlug = basename($this->packageDir);
+        $this->writeFile('languages/de/messages.yaml', sprintf("pkg:\n  %s:\n    title: Demo\n", $packageSlug));
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4)->withYamlLinting(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.translation_english_missing', $result->firstIssue()?->code());
+        self::assertSame('languages/en', $result->firstIssue()?->context()['file']);
+    }
+
+    public function testItRejectsPackageTranslationFilesOutsideOwnedNamespace(): void
+    {
+        $this->writeFile('languages/en/messages.yaml', "ui:\n  app:\n    name: Demo\n");
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4)->withYamlLinting(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.translation_namespace_invalid', $result->firstIssue()?->code());
+        self::assertSame('languages/en/messages.yaml', $result->firstIssue()?->context()['file']);
+    }
+
     public function testItReportsStructuredSyntaxErrors(): void
     {
         $this->writeFile('config/broken.json', '{');

@@ -21,7 +21,7 @@
 - `config/` contains framework configuration. Environment-specific overrides belong in `.env.local*` files only.
 - `templates/` contains Twig views; `public/` exposes built assets and `index.php`.
 - `tests/` mirrors production code for PHPUnit unit, integration, functional, and end-to-end coverage.
-- `translations/` contains synchronized English and German catalogues.
+- `translations/` contains modular source catalogues and generated runtime catalogues.
 - `docs/` contains user-facing documentation; `dev/manual/` contains developer documentation; `dev/draft/` contains concepts and feature outlines.
 - `dev/WORKLOG.md` tracks sessions, completed work, TODOs, and deferred follow-ups.
 - `dev/CLASSMAP.md` indexes relevant callables and their tests.
@@ -37,7 +37,7 @@
 ## Change Expectations
 - Behavior changes must include matching tests, documentation updates, worklog notes, and class map updates when callables change.
 - Documentation-only changes should follow `dev/STYLEGUIDE.md`; tests are not required unless examples or tooling behavior change.
-- Translation changes must keep `translations/messages.en.yaml` and `translations/messages.de.yaml` synchronized.
+- Translation changes must keep matching source catalogue files and keys synchronized across all locale directories under `translations/languages/`; runtime `translations/messages.*.yaml` files are generated from those sources.
 - Refactors before the first public `1.0.0` release may remove obsolete code instead of keeping compatibility shims, but callers, tests, docs, and class map entries must be updated immediately.
 - If a requested narrow change exposes unrelated drift, fix it only when it blocks the task; otherwise record the follow-up in `dev/WORKLOG.md`.
 
@@ -51,7 +51,7 @@
 - `php bin/console doctrine:migrations:migrate` applies schema migrations.
 - `php bin/phpunit` runs the full PHPUnit suite.
 - `php bin/phpunit --coverage-text` runs PHPUnit with quick coverage feedback before PRs.
-- `php .codex/compare_translations.php` compares English and German translation keys.
+- `php .codex/compare_translations.php` compares source catalogue files and keys across all locale directories.
 - `php .codex/render.php /<route>` renders a route for Twig and translation review.
 
 ## Verification Matrix
@@ -76,7 +76,7 @@
 ## Translations
 - Every user-facing string in Twig, PHP, or JavaScript must use a deterministic translation key.
 - Translation keys follow `namespace.section.token`, for example `installer.environment.form.instance_name`.
-- Keep `translations/messages.en.yaml` and `translations/messages.de.yaml` in sync in the same change.
+- Keep matching translation source catalogue files and keys in sync across all locale directories in the same change. Source files live under `translations/languages/{locale}/*.yaml`, with English used as the comparison reference when available and the message-layer source named `message.yaml`; runtime `translations/messages.{locale}.yaml` catalogues are generated for Symfony's default domain.
 - User-facing strings include labels, buttons, links, placeholders, help text, validation messages, flash messages, empty states, error pages, and navigation text.
 - Logs, developer exceptions, CLI output, test names, and internal debug strings do not need localization.
 - For rendered Twig review, use `.codex/render.php /<route>` and then `.codex/compare_translations.php`.

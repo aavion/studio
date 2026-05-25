@@ -39,6 +39,7 @@ final class SetupScriptTest extends TestCase
         self::assertStringContainsString('Dotenv', $contents);
         self::assertStringContainsString('bootEnv', $contents);
         self::assertStringContainsString('SetupRunner', $contents);
+        self::assertStringNotContainsString('CoreTranslationBootstrapper', $contents);
         self::assertStringContainsString('SetupCliInputFactory', $contents);
         self::assertStringContainsString('dry-run', $contents);
         self::assertStringContainsString('reset-password', $contents);

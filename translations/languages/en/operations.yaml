@@ -1,0 +1,8 @@
+ui:
+  operations:
+    action_log:
+      title: 'Action log'
+      subtitle: 'Follow the steps of this operation.'
+      summary: 'Summary'
+      entry: 'Operation step'
+      empty: 'No operation steps are available.'

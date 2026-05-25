@@ -1,0 +1,6 @@
+ui:
+  backend:
+    navigation: 'Backend-Navigation'
+  admin:
+    area: 'Administration'
+    navigation: 'Admin-Navigation'

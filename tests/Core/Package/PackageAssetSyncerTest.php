@@ -73,6 +73,8 @@ final class PackageAssetSyncerTest extends TestCase
     {
         $this->writeTestFile($this->root, 'packages/dual/assets/frontend/app.css', '.front {}');
         $this->writeTestFile($this->root, 'packages/dual/assets/backend/app.css', '.back {}');
+        $this->writeTestFile($this->root, 'packages/dual/assets/shared/app.css', '.shared {}');
+        $this->writeTestFile($this->root, 'packages/dual/assets/theme.css', '.root {}');
 
         (new PackageAssetSyncer($this->root))->sync([
             new PackageAssetSyncPackage('dual', 'packages/dual', [PackageScope::FrontendTheme, PackageScope::BackendTheme]),
@@ -80,7 +82,41 @@ final class PackageAssetSyncerTest extends TestCase
 
         self::assertStringContainsString('@import "../../packages/dual/frontend/app.css";', (string) file_get_contents($this->root.'/assets/styles/packages/frontend-theme.css'));
         self::assertStringContainsString('@import "../../packages/dual/backend/app.css";', (string) file_get_contents($this->root.'/assets/styles/packages/backend-theme.css'));
+        self::assertStringNotContainsString('dual/theme.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringNotContainsString('dual/shared/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
         self::assertStringNotContainsString('dual/frontend/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringNotContainsString('dual/theme.css', (string) file_get_contents($this->root.'/assets/styles/packages/frontend-theme.css'));
+        self::assertStringNotContainsString('dual/theme.css', (string) file_get_contents($this->root.'/assets/styles/packages/backend-theme.css'));
+    }
+
+    public function testItAllowsSharedAssetsOnlyForGlobalPackageScopes(): void
+    {
+        $this->writeTestFile($this->root, 'packages/theme-module/assets/frontend/app.css', '.front {}');
+        $this->writeTestFile($this->root, 'packages/theme-module/assets/theme.css', '.global {}');
+
+        (new PackageAssetSyncer($this->root))->sync([
+            new PackageAssetSyncPackage('theme-module', 'packages/theme-module', [PackageScope::FrontendTheme, PackageScope::Module]),
+        ]);
+
+        self::assertStringContainsString('@import "../../packages/theme-module/frontend/app.css";', (string) file_get_contents($this->root.'/assets/styles/packages/frontend-theme.css'));
+        self::assertStringContainsString('@import "../../packages/theme-module/theme.css";', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+    }
+
+    public function testItDoesNotRouteAreaAssetsForPackagesWithoutMatchingThemeScope(): void
+    {
+        $this->writeTestFile($this->root, 'packages/module/assets/frontend/app.css', '.front {}');
+        $this->writeTestFile($this->root, 'packages/module/assets/backend/app.css', '.back {}');
+        $this->writeTestFile($this->root, 'packages/module/assets/theme.css', '.global {}');
+
+        (new PackageAssetSyncer($this->root))->sync([
+            new PackageAssetSyncPackage('module', 'packages/module', [PackageScope::Module]),
+        ]);
+
+        self::assertStringContainsString('@import "../../packages/module/theme.css";', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringNotContainsString('module/frontend/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringNotContainsString('module/backend/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringNotContainsString('module/frontend/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/frontend-theme.css'));
+        self::assertStringNotContainsString('module/backend/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/backend-theme.css'));
     }
 
     public function testItRegistersModuleJavaScriptEntrypoints(): void

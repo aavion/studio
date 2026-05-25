@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-05-25  
+> **Updated**: 2026-05-26  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -70,7 +70,18 @@
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
+### 2026-05-26
+- Reworked translation handling from domain-specific runtime catalogues to language-grouped source files under `translations/languages/{locale}` with generated Symfony default-domain `translations/messages.{locale}.yaml` runtime catalogues.
+- Added a container-free core translation bootstrapper for `bin/init` and `bin/setup`, plus a package-aware runtime aggregator in the asset rebuild queue that includes only active package `languages/<locale>/*.yaml` files.
+- Added package translation fallback and namespace validation so package-owned language files require English fallback catalogues and must stay below `pkg.<package-slug>.*`, preventing package copy from overriding core UI/message keys through aggregation.
+- Hardened translation source aggregation against accidental core key collisions in both the early `bin/init` bootstrapper and `.codex/compare_translations.php`, so multiple source files may share roots like `ui` only when their final key paths remain disjoint.
+- Updated Twig templates to use the default Symfony `|trans` domain again, and aligned translation comparison tooling, docs, class map, and tests with the generated runtime catalogue model.
+
 ### 2026-05-25
+- Added the first system UI foundation slice: global design tokens split into focused token files, shared system primitives, refined frontend/backend/admin/editor/setup shell styles, temporary `/demo/frontend` and `/demo/backend` preview routes, demo-domain translations, and tests for both demo shells.
+- Aligned package asset scope handling with template ownership so `assets/frontend/**` enters frontend-theme registries only for packages with `frontend-theme`, `assets/backend/**` enters backend-theme registries only for packages with `backend-theme`, and root/shared package assets enter the global extension registry only for packages with a global runtime scope.
+- Updated the translation comparison helper so it checks modular source catalogue files and keys across all locale directories under `translations/languages/{locale}`.
+- Split core translation sources into language-grouped `message`, `ui`, `admin`, `editor`, `setup`, `operations`, and `demo` files, then generated Symfony default-domain `messages.{locale}.yaml` runtime catalogues; active package language files are aggregated into the same runtime catalogue during the package rebuild queue.
 - Added dependency-resolution debug feedback to package activation planning so activation previews and executions expose the resolved dependency graph without adding request-time runtime-loader log noise.
 - Rebalanced `WARN` versus `ERROR` semantics so package-faulty states, invalid manifests, missing required package files/directories, package syntax/namespace/template validation failures, dependency blockers, and package-copy blockers require attention as `ERROR`, while content fallbacks, access denials, and non-applicable lifecycle operations remain `WARN`.
 - Reviewed message log levels across the current message producers, added `MessageLevel::Exception` plus `Message::exception()` for caught `Throwable` diagnostics, moved high-level completed lifecycle/operation messages to `SUCCESS`, and downgraded noisy successful access/validation diagnostics to `DEBUG`.

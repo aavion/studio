@@ -12,7 +12,9 @@
             } only %}
             <section class="studio-admin-content">
                 {% include '@backend/partials/layout/_topbar.html.twig' with {area_key: 'ui.admin.area'} only %}
-                {% block admin_body %}{% endblock %}
+                <div class="studio-admin-content-inner">
+                    {% block admin_body %}{% endblock %}
+                </div>
             </section>
         </div>
     </main>

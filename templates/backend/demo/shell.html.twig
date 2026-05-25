@@ -1,0 +1,121 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'demo.backend.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        <ul class="studio-backend-nav">
+            <li><a href="{{ path('demo_backend') }}" aria-current="page">{{ 'demo.backend.nav_overview'|trans }}</a></li>
+            <li><a href="#editor-demo">{{ 'ui.editor.area'|trans }}</a></li>
+            <li><a href="#setup-demo">{{ 'ui.setup.area'|trans }}</a></li>
+            <li><a href="{{ path('demo_frontend') }}">{{ 'demo.frontend.title'|trans }}</a></li>
+        </ul>
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% set action_buttons %}
+        {% include '@backend/partials/actions/_button-group.html.twig' with {
+            actions: [
+                {label: 'demo.actions.primary'|trans, href: path('demo_frontend'), variant: 'primary'},
+                {label: 'demo.actions.secondary'|trans, href: '#setup-demo', variant: 'secondary'},
+            ],
+        } only %}
+    {% endset %}
+
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'demo.kicker'|trans,
+        title: 'demo.backend.title'|trans,
+        actions: action_buttons,
+    } only %}
+
+    <div class="studio-demo-grid">
+        <section class="studio-panel">
+            <h2>{{ 'demo.backend.overview_title'|trans }}</h2>
+            <p class="studio-muted">{{ 'demo.backend.overview_text'|trans }}</p>
+            <div class="studio-page-actions">
+                <span class="studio-badge studio-badge-success">{{ 'demo.badges.success'|trans }}</span>
+                <span class="studio-badge studio-badge-warning">{{ 'demo.badges.warning'|trans }}</span>
+                <span class="studio-badge studio-badge-exception">{{ 'demo.badges.exception'|trans }}</span>
+            </div>
+        </section>
+
+        {% include '@backend/partials/feedback/_empty-state.html.twig' with {
+            title: 'demo.empty.title'|trans,
+            message: 'demo.empty.message'|trans,
+        } only %}
+    </div>
+
+    <section class="studio-panel">
+        <h2>{{ 'demo.table.title'|trans }}</h2>
+        <table class="studio-table">
+            <thead>
+                <tr>
+                    <th>{{ 'demo.table.name'|trans }}</th>
+                    <th>{{ 'demo.table.scope'|trans }}</th>
+                    <th>{{ 'demo.table.status'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ 'demo.table.system'|trans }}</td>
+                    <td><span class="studio-badge studio-badge-neutral">system-template</span></td>
+                    <td><span class="studio-badge studio-badge-success">{{ 'demo.badges.success'|trans }}</span></td>
+                </tr>
+                <tr>
+                    <td>{{ 'demo.table.theme'|trans }}</td>
+                    <td><span class="studio-badge studio-badge-info">frontend-theme</span></td>
+                    <td><span class="studio-badge studio-badge-warning">{{ 'demo.badges.warning'|trans }}</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="editor-demo" class="studio-editor-workspace">
+        <aside class="studio-editor-panel">
+            {% include '@backend/editor/partials/_workspace-header.html.twig' with {
+                title: 'demo.editor.title'|trans,
+                status: 'demo.badges.info'|trans,
+            } only %}
+        </aside>
+        <div class="studio-editor-canvas">
+            {% include '@backend/partials/forms/_field.html.twig' with {
+                id: 'demo_backend_title',
+                label: 'demo.form.title_label'|trans,
+                required: true,
+                help: 'demo.form.help'|trans,
+                control: '<input id="demo_backend_title" class="studio-control" value="' ~ ('demo.form.value'|trans|e('html_attr')) ~ '">',
+            } only %}
+            {% include '@backend/partials/forms/_field.html.twig' with {
+                id: 'demo_backend_body',
+                label: 'demo.form.body_label'|trans,
+                control: '<textarea id="demo_backend_body" class="studio-control" rows="5">' ~ ('demo.form.body_value'|trans|e) ~ '</textarea>',
+            } only %}
+        </div>
+    </section>
+
+    <section id="setup-demo" class="studio-panel">
+        {% include '@backend/setup/partials/_step-header.html.twig' with {
+            title: 'demo.setup.title'|trans,
+            step: 'demo.setup.step'|trans,
+        } only %}
+        <ol class="studio-setup-steps">
+            <li class="studio-setup-step">
+                <span class="studio-badge studio-badge-success">{{ 'demo.badges.success'|trans }}</span>
+                <span>{{ 'demo.setup.item_environment'|trans }}</span>
+            </li>
+            <li class="studio-setup-step">
+                <span class="studio-badge studio-badge-info">{{ 'demo.badges.info'|trans }}</span>
+                <span>{{ 'demo.setup.item_packages'|trans }}</span>
+            </li>
+        </ol>
+    </section>
+
+    {% include '@backend/operations/action-log-overlay.html.twig' with {
+        summary: {status: 'demo.badges.success'|trans},
+        entries: [
+            {label: 'demo.operations.discovery'|trans, status: 'demo.badges.success'|trans},
+            {label: 'demo.operations.assets'|trans, status: 'demo.badges.info'|trans},
+        ],
+    } only %}
+{% endblock %}

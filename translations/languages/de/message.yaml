@@ -1,0 +1,232 @@
+message:
+  manifest:
+    unreadable: 'Manifest-Datei "%path%" kann nicht gelesen werden.'
+    invalid_line: 'Manifest-Zeile %line% ist kein gültiger KEY=VALUE-Eintrag.'
+    invalid_key: 'Manifest-Key "%key%" ist ungültig.'
+    duplicate_key: 'Manifest-Key "%key%" ist doppelt vorhanden.'
+    missing_required_key: 'Erforderlicher Manifest-Key "%key%" fehlt.'
+    unknown_key: 'Manifest-Key "%key%" wird hier nicht unterstützt.'
+    parsed: 'Manifest wurde geparst.'
+    validated: 'Manifest wurde validiert.'
+  package:
+    identifier:
+      invalid: 'Paket-Identifier "%identifier%" enthält nicht unterstützte Zeichen.'
+    manifest_unreadable: 'Paket-Manifest "%path%" kann nicht gelesen werden.'
+    required_file_missing: 'Erforderliche Paketdatei "%path%" fehlt.'
+    required_directory_missing: 'Erforderliches Paketverzeichnis "%path%" fehlt.'
+    file_unreadable: 'Paketdatei "%path%" kann nicht gelesen werden.'
+    php_syntax_error: 'PHP-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    php_namespace_invalid: 'PHP-Quelle "%path%" muss den Paket-Namespace "%expected_namespace%" verwenden.'
+    twig_syntax_error: 'Twig-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    translation_english_missing: 'Paket-Translation-Quellen für "%package%" müssen mindestens einen englischen Katalog unter "languages/en" enthalten.'
+    translation_namespace_invalid: 'Paket-Translation-Datei "%path%" muss Keys unterhalb von "pkg.%package%" definieren.'
+    json_syntax_error: 'JSON-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    yaml_syntax_error: 'YAML-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    css_syntax_error: 'CSS-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    javascript_syntax_error: 'JavaScript-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    scope_invalid: 'Paket-Scope "%scope%" wird nicht unterstützt.'
+    template_path_invalid: 'Paket-Template "%path%" ist durch Root-, Provider- oder Makro-Namespace-Regeln für Paket-Scope "%scope%" nicht erlaubt.'
+    copy_source_missing: 'Paket-Kopierquelle "%path%" fehlt.'
+    copy_source_symlink: 'Paket-Kopierquelle "%path%" darf kein Symlink sein.'
+    asset_sync_completed: 'Paket-Asset-Sync hat %assets% Asset(s) aus %packages% Paket(en) gespiegelt.'
+    asset_sync_failed: 'Paket-Asset-Sync fehlgeschlagen: %message%'
+    asset_rebuild_queued: 'Paket-Asset-Rebuild wurde durch "%trigger%" eingereiht.'
+    asset_rebuild_queue_failed: 'Paket-Asset-Rebuild konnte durch "%trigger%" nicht eingereiht werden.'
+    discovery_queued: 'Paket-Discovery wurde durch "%trigger%" eingereiht.'
+    discovery_queue_failed: 'Paket-Discovery konnte durch "%trigger%" nicht eingereiht werden.'
+    discovery_completed: 'Paket-Discovery hat %count% Kandidat(en) gefunden.'
+    validation_completed: 'Paket "%package%" hat die Validierung bestanden.'
+    copy_plan_created: 'Paket-Kopierplan enthält %count% Datei(en).'
+    registry:
+      sync_completed: 'Paket-Registry-Sync hat %count% Änderung(en) erfasst.'
+      registered: 'Paket "%package%" wurde inaktiv registriert.'
+      updated: 'Registry-Metadaten für Paket "%package%" wurden aktualisiert.'
+      removed: 'Paket "%package%" fehlt im Dateisystem und wurde als entfernt markiert.'
+      faulty: 'Paket "%package%" hat die Validierung nicht bestanden und wurde als fehlerhaft markiert.'
+    lifecycle:
+      not_found: 'Paket "%package%" ist nicht registriert.'
+      status_blocked: 'Paket "%package%" kann den Lifecycle-Status nicht wechseln, solange es "%status%" ist.'
+      activated: 'Paket "%package%" wurde aktiviert.'
+      deactivated: 'Paket "%package%" wurde deaktiviert.'
+      cleanup_completed: 'Paket "%package%"-Cleanup abgeschlossen.'
+      removed: 'Paket "%package%" wurde entfernt.'
+      purged: 'Registry-Eintrag für Paket "%package%" wurde gelöscht.'
+      fault_reset: 'Fehlerstatus für Paket "%package%" wurde nach der Validierung zurückgesetzt.'
+      runtime_failure: 'Paket "%package%" wurde nach einem Runtime-Fehler als fehlerhaft markiert.'
+      php_load_failed: 'PHP-Loader für Paket "%package%" ist fehlgeschlagen und das Paket wurde als fehlerhaft markiert.'
+      rolled_back: 'Paket-Lifecycle-Änderungen wurden für %count% Paket(e) zurückgerollt.'
+    dependency:
+      missing: 'Paket-Abhängigkeit "%package%" für "%required_by%" ist nicht installiert.'
+      version_unsatisfied: 'Paket-Abhängigkeit "%package%" erfordert mindestens Version %required_version%; installiert ist %installed_version%.'
+      status_blocked: 'Paket-Abhängigkeit "%package%" kann nicht genutzt werden, solange sie "%status%" ist.'
+      resolved: 'Paket "%package%" hat %count% Abhängigkeits-Eintrag(e) aufgelöst.'
+  translation:
+    aggregate_completed: 'Translation-Aggregation hat %files% Datei(en) für %locales% Locale(s) aus Core und %packages% aktiven Paket(en) zusammengeführt.'
+    aggregate_failed: 'Translation-Aggregation konnte "%path%" nicht schreiben.'
+  event:
+    hook:
+      invalid: 'Event-Hook "%event%" ist keine gültige öffentliche Hook-Definition.'
+      unregistered: 'Event-Hook "%event%" ist nicht als öffentlicher Paket-Hook registriert.'
+      listener_failed: 'Event-Hook "%event%" ist beim Benachrichtigen eines Listeners fehlgeschlagen.'
+      view_context:
+        summary: 'Erweitert den universellen Twig-View-Kontext vor dem Rendering.'
+      content_render_context:
+        summary: 'Erweitert den Twig-Kontext für ein öffentliches Content-Rendering.'
+      content_rendered:
+        summary: 'Passt den generierten HTML-Output eines öffentlichen Content-Renderings an, bevor die Response zurückgegeben wird.'
+      navigation_builder:
+        summary: 'Erweitert Navigationspunkte, bevor Baumhierarchie, Sortierung und Render-Slices aufgelöst werden.'
+      response_headers:
+        summary: 'Passt HTTP-Response-Header an, bevor die Response gesendet wird.'
+      output_generated:
+        summary: 'Passt generierten HTML-Output nach dem Rendering und vor dem Senden der Response an.'
+      package_asset_sync_started:
+        summary: 'Beobachtet die aktiven Pakete, bevor Paket-Assets synchronisiert werden.'
+      package_asset_registry_build:
+        summary: 'Ergänzt Paket-Asset-Registry-Beiträge, bevor CSS- und JavaScript-Registries geschrieben werden.'
+      package_asset_sync_completed:
+        summary: 'Beobachtet Paket-Asset-Sync-Metriken nach dem Schreiben der Registries.'
+  lint:
+    php_unreadable: 'PHP-Quelle kann nicht gelesen werden.'
+    php_syntax_error: 'PHP-Syntaxprüfung fehlgeschlagen.'
+    twig_syntax_error: 'Twig-Syntaxprüfung fehlgeschlagen.'
+    json_syntax_error: 'JSON-Syntaxprüfung fehlgeschlagen.'
+    yaml_syntax_error: 'YAML-Syntaxprüfung fehlgeschlagen.'
+    css_syntax_error: 'CSS-Syntaxprüfung fehlgeschlagen.'
+    javascript_syntax_error: 'JavaScript-Syntaxprüfung fehlgeschlagen.'
+  filesystem:
+    source_missing: 'Quellpfad "%source%" fehlt.'
+    source_symlink: 'Quellpfad "%source%" darf kein Symlink sein.'
+    target_symlink: 'Zielpfad "%target%" darf kein Symlink sein.'
+    parent_symlink: 'Übergeordneter Pfad "%path%" darf kein Symlink sein.'
+    file_exists: 'Datei "%path%" existiert bereits.'
+    file_conflict: 'Pfad "%path%" existiert bereits als Datei.'
+    directory_conflict: 'Pfad "%path%" existiert bereits als Verzeichnis.'
+    parent_missing: 'Übergeordnetes Verzeichnis "%path%" fehlt.'
+    parent_create_failed: 'Übergeordnetes Verzeichnis "%path%" konnte nicht erstellt werden.'
+    file_write_failed: 'Datei "%path%" konnte nicht geschrieben werden.'
+    file_copy_failed: 'Datei "%target%" konnte nicht kopiert werden.'
+    directory_create_failed: 'Verzeichnis "%path%" konnte nicht erstellt werden.'
+    file_written: 'Datei "%path%" wurde geschrieben.'
+    file_copied: 'Datei "%target%" wurde kopiert.'
+    path_removed: 'Pfad "%path%" wurde entfernt.'
+    directory_ready: 'Verzeichnis "%path%" ist bereit.'
+    parent_directory_ready: 'Übergeordnetes Verzeichnis "%path%" ist bereit.'
+  operation:
+    exception: 'Operation ist mit einer unerwarteten Exception fehlgeschlagen.'
+  process:
+    command_failed: 'Befehl "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
+    command_completed: 'Befehl "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'
+  access:
+    granted: 'Zugriff für "%capability%" erlaubt.'
+    denied: 'Zugriff für "%capability%" verweigert: erforderlich ist Level %required_level%; Actor hat Level %actor_level%.'
+    level:
+      invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
+    group_identifier:
+      invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein.'
+  setup:
+    step_failed: 'Setup-Schritt "%step%" ist fehlgeschlagen: %message%'
+    language_selected: 'Installer-Sprache "%language%" ausgewählt.'
+    available_languages: 'Verfügbare Installer-Sprachen: %languages%'
+    dry_run: 'Nur Dry-Run; es wurden keine Änderungen geschrieben.'
+    output:
+      success: 'Setup erfolgreich abgeschlossen.'
+      failed: 'Setup fehlgeschlagen.'
+    prompt:
+      language: 'Installer-Sprache (%choices%)'
+      site_title: 'Seitentitel'
+      default_uri: 'Seiten-URL'
+      database_driver: 'Datenbank-Treiber (%choices%)'
+      database_url: 'Datenbank-URL'
+      database_host: 'Datenbank-Host'
+      database_port: 'Datenbank-Port'
+      database_name: 'Datenbankname'
+      database_user: 'Datenbanknutzer'
+      database_password: 'Datenbankpasswort'
+      admin_username: 'Admin-Username'
+      admin_password: 'Admin-Passwort'
+      admin_password_confirm: 'Admin-Passwort bestätigen'
+      admin_email: 'Admin-E-Mail'
+      app_secret: 'APP_SECRET (leer lassen, um einen zu generieren)'
+      invalid_choice: 'Nicht unterstützter Wert. Wähle einen der folgenden Werte: %choices%'
+      password_mismatch: 'Die Passwörter stimmen nicht überein.'
+      password_reset_continue: 'Passwort für "%username%" zurücksetzen?'
+      password_reset_new_password: 'Neues Passwort'
+      password_reset_confirm_password: 'Neues Passwort bestätigen'
+    password_reset:
+      database_url_missing: 'DATABASE_URL wird für den Passwort-Reset benötigt.'
+      user_not_found: 'Nutzer "%username%" wurde nicht gefunden.'
+      cancelled: 'Passwort-Reset wurde abgebrochen.'
+      completed: 'Passwort für "%username%" wurde geändert.'
+      confirm_required: 'Nutze --confirm für nicht-interaktive Passwort-Resets.'
+  config:
+    key:
+      invalid: 'Konfigurations-Key "%key%" muss aus kleingeschriebenen Segmenten mit Punkten bestehen.'
+  state:
+    subject_type:
+      invalid: 'State-Subject-Type "%subject_type%" muss lowercase snake_case sein.'
+    marker_key:
+      invalid: 'State-Marker-Key "%marker_key%" muss lowercase snake_case sein.'
+  user:
+    username:
+      invalid: 'Username "%username%" ist ungültig.'
+    email:
+      invalid: 'E-Mail-Adresse "%email%" ist ungültig.'
+  api_key:
+    prefix:
+      invalid: 'API-Key-Präfix "%prefix%" ist ungültig.'
+    hmac_hash:
+      invalid: 'Der API-Key-HMAC-Hash muss ein kleingeschriebener SHA-256-Hex-Digest sein.'
+    encrypted_key:
+      empty: 'Die verschlüsselte API-Key-Payload darf nicht leer sein.'
+    status:
+      invalid: 'API-Key-Status "%status%" ist ungültig.'
+      read_write: 'Lesen und schreiben'
+      read_only: 'Nur lesen'
+      revoked: 'Widerrufen'
+    created: 'API-Key "%prefix%" wurde erstellt.'
+    revoked: 'API-Key "%prefix%" wurde widerrufen.'
+    revealed: 'API-Key "%prefix%" wurde angezeigt.'
+    not_found: 'API-Key "%prefix%" wurde nicht gefunden.'
+    authentication_failed: 'API-Key-Authentifizierung fehlgeschlagen.'
+    reauthentication_required: 'Zum Anzeigen dieses API-Keys ist eine erneute Authentifizierung erforderlich.'
+    permission:
+      write_required: 'Dieser API-Key erlaubt keinen Schreibzugriff.'
+      revoked: 'Dieser API-Key wurde widerrufen.'
+  menu:
+    identifier:
+      invalid: 'Menü-Identifier "%identifier%" muss lowercase snake_case sein.'
+  content:
+    slug:
+      invalid_format: 'Content-Slug "%slug%" darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.'
+      reserved: 'Content-Slug "%slug%" kollidiert mit einem reservierten Routenpräfix.'
+    path:
+      empty_or_padded: 'Content-Pfad "%path%" ist leer oder enthält führende oder abschließende Leerzeichen.'
+      unclean: 'Content-Pfad "%path%" enthält nicht unterstützte URL-Zeichen.'
+      empty_segment: 'Content-Pfad "%path%" enthält ein leeres Segment.'
+      reserved_prefix: 'Content-Pfad "%path%" beginnt mit dem reservierten Präfix "%prefix%".'
+      traversal: 'Content-Pfad "%path%" enthält das Traversal-Segment "%segment%".'
+      variant_invalid: 'Content-Pfad "%path%" enthält die ungültige Variante "%variant%".'
+    language:
+      fallback: 'Die angefragte Content-Sprache "%requested_language%" ist nicht verfügbar; stattdessen wird "%resolved_language%" gerendert.'
+    variant:
+      fallback: 'Die angefragte Content-Variante "%requested_variant%" ist nicht verfügbar; stattdessen wird "%resolved_variant%" gerendert.'
+    uid:
+      invalid_format: '%label% "%uid%" muss eine kleingeschriebene UUID sein.'
+    string_list:
+      empty: '%label% muss mindestens einen Wert enthalten.'
+      invalid: '%label% darf nur nicht-leere Strings enthalten.'
+    metadata:
+      key_empty: 'Metadata-Key darf nicht leer sein.'
+      reserved_schema_field: 'Metadata-Key "%field_identifier%" ist für Schema-Feldwerte reserviert.'
+    field_value:
+      version_invalid: 'Feldwert-Version %version% muss positiv sein.'
+    locale_token:
+      invalid_format: '%label% "%token%" ist kein gültiges Locale-Token.'
+    field_identifier:
+      invalid_format: 'Feldidentifier "%field_identifier%" muss lowercase snake_case sein.'
+    schema:
+      identifier_invalid: 'Content-Schema-Identifier "%identifier%" muss lowercase snake_case sein.'
+      version_invalid: 'Content-Schema-Version %version% muss positiv sein.'
+      required_field_missing: 'Content-Schema fehlt das erforderliche Feld "%field_identifier%".'
+      field_duplicate: 'Content-Schema-Feld "%field_identifier%" ist doppelt vorhanden.'

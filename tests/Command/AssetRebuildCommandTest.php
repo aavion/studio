@@ -12,6 +12,7 @@ use App\Core\Package\ActivePackageAssetProviderInterface;
 use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageAssetSyncer;
 use App\Core\Package\PackageScope;
+use App\Core\Translation\TranslationCatalogueAggregator;
 use App\Tests\Support\FilesystemTestHelper;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
 use PHPUnit\Framework\TestCase;
@@ -41,7 +42,11 @@ final class AssetRebuildCommandTest extends TestCase
         $command = new AssetRebuildCommand(
             $this->kernel('test'),
             new FailingPackageAssetProvider(),
-            new AssetRebuildQueueFactory($this->root, new PackageAssetSyncer($this->root)),
+            new AssetRebuildQueueFactory(
+                $this->root,
+                new PackageAssetSyncer($this->root),
+                new TranslationCatalogueAggregator($this->root),
+            ),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
         );
         $tester = new CommandTester($command);
@@ -51,7 +56,7 @@ final class AssetRebuildCommandTest extends TestCase
 
         self::assertSame(Command::SUCCESS, $exitCode);
         self::assertSame('asset rebuild', $payload['name']);
-        self::assertCount(5, $payload['actions']);
+        self::assertCount(6, $payload['actions']);
         self::assertSame(RuntimeException::class, $payload['context']['package_provider_error']['exception']);
     }
 
@@ -104,7 +109,11 @@ final class AssetRebuildCommandTest extends TestCase
             new StaticPackageAssetProvider([
                 new PackageAssetSyncPackage('broken', 'packages/broken', [PackageScope::Module]),
             ]),
-            new AssetRebuildQueueFactory($this->root, new PackageAssetSyncer($this->root)),
+            new AssetRebuildQueueFactory(
+                $this->root,
+                new PackageAssetSyncer($this->root),
+                new TranslationCatalogueAggregator($this->root),
+            ),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
         );
         $tester = new CommandTester($command);

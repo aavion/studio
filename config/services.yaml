@@ -38,6 +38,10 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Core\Translation\TranslationCatalogueAggregator:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\Core\Package\PackageRegistryHandler:
         arguments:
             $projectDir: '%kernel.project_dir%'

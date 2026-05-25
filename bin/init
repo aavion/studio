@@ -3,6 +3,7 @@
 
 declare(strict_types=1);
 
+use App\Localization\CoreTranslationBootstrapper;
 use Symfony\Component\Dotenv\Dotenv;
 
 final class InitReporter
@@ -109,6 +110,8 @@ final class InitCommand
         }
 
         require_once $this->projectDir.'/vendor/autoload.php';
+
+        $this->generateCoreTranslations();
 
         $environment = $this->loadSymfonyEnvironment();
         $this->checkEnvironmentConfiguration($environment);
@@ -238,6 +241,23 @@ final class InitCommand
         ));
 
         return $environment;
+    }
+
+    private function generateCoreTranslations(): void
+    {
+        $result = (new CoreTranslationBootstrapper())->generate($this->projectDir);
+
+        if ($result['success']) {
+            $this->reporter->success(sprintf(
+                'Core translation catalogues generated for %d locale(s) from %d source file(s).',
+                count($result['locales']),
+                $result['files'],
+            ));
+
+            return;
+        }
+
+        $this->reporter->failure('Core translation catalogue generation failed: '.($result['error'] ?? 'unknown error'));
     }
 
     private function checkEnvironmentConfiguration(string $environment): void

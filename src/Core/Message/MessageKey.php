@@ -22,6 +22,8 @@ final class MessageKey
     public const PACKAGE_PHP_SYNTAX_ERROR = 'message.package.php_syntax_error';
     public const PACKAGE_PHP_NAMESPACE_INVALID = 'message.package.php_namespace_invalid';
     public const PACKAGE_TWIG_SYNTAX_ERROR = 'message.package.twig_syntax_error';
+    public const PACKAGE_TRANSLATION_ENGLISH_MISSING = 'message.package.translation_english_missing';
+    public const PACKAGE_TRANSLATION_NAMESPACE_INVALID = 'message.package.translation_namespace_invalid';
     public const PACKAGE_JSON_SYNTAX_ERROR = 'message.package.json_syntax_error';
     public const PACKAGE_YAML_SYNTAX_ERROR = 'message.package.yaml_syntax_error';
     public const PACKAGE_CSS_SYNTAX_ERROR = 'message.package.css_syntax_error';
@@ -32,6 +34,8 @@ final class MessageKey
     public const PACKAGE_COPY_SOURCE_SYMLINK = 'message.package.copy_source_symlink';
     public const PACKAGE_ASSET_SYNC_COMPLETED = 'message.package.asset_sync_completed';
     public const PACKAGE_ASSET_SYNC_FAILED = 'message.package.asset_sync_failed';
+    public const TRANSLATION_AGGREGATE_COMPLETED = 'message.translation.aggregate_completed';
+    public const TRANSLATION_AGGREGATE_FAILED = 'message.translation.aggregate_failed';
     public const PACKAGE_ASSET_REBUILD_QUEUED = 'message.package.asset_rebuild_queued';
     public const PACKAGE_ASSET_REBUILD_QUEUE_FAILED = 'message.package.asset_rebuild_queue_failed';
     public const PACKAGE_DISCOVERY_QUEUED = 'message.package.discovery_queued';

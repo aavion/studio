@@ -17,6 +17,7 @@
 - verify PHP version and required extensions;
 - resolve Composer through system Composer or `bin/composer`;
 - install production dependencies first;
+- generate core-only runtime translation catalogues from `translations/languages/{locale}` before Symfony console consumers run;
 - resolve Symfony environment consistently with Symfony's dotenv behavior;
 - install development dependencies for `dev` and `test`;
 - rely on Composer auto-scripts for ImportMap, public assets, and Tailwind;
@@ -29,9 +30,9 @@ Symfony environment resolution should match Symfony precedence as closely as pra
 
 ## Setup responsibilities
 
-`bin/setup` remains separate from `bin/init`. Setup currently handles:
+`bin/setup` remains separate from `bin/init` and assumes `bin/init` already generated the core runtime translation catalogues. Setup currently handles:
 
-- installer language selection from discovered translation catalogues;
+- installer language selection from generated translation catalogues with source-directory fallback;
 - translated interactive CLI prompts when `bin/setup` runs in a TTY;
 - site title and default URL values;
 - database URL compilation for SQLite, MySQL/MariaDB, and PostgreSQL;

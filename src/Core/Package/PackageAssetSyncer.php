@@ -208,15 +208,26 @@ final readonly class PackageAssetSyncer
 
     private function scopeForAsset(PackageAssetSyncPackage $package, string $assetFile): ?PackageScope
     {
-        if (str_starts_with($assetFile, 'assets/frontend/') && $package->hasScope(PackageScope::FrontendTheme)) {
-            return PackageScope::FrontendTheme;
+        if (str_starts_with($assetFile, 'assets/frontend/')) {
+            return $package->hasScope(PackageScope::FrontendTheme) ? PackageScope::FrontendTheme : null;
         }
 
-        if (str_starts_with($assetFile, 'assets/backend/') && $package->hasScope(PackageScope::BackendTheme)) {
-            return PackageScope::BackendTheme;
+        if (str_starts_with($assetFile, 'assets/backend/')) {
+            return $package->hasScope(PackageScope::BackendTheme) ? PackageScope::BackendTheme : null;
         }
 
-        return $this->primaryScope($package);
+        return $this->globalScope($package);
+    }
+
+    private function globalScope(PackageAssetSyncPackage $package): ?PackageScope
+    {
+        foreach ([PackageScope::Module, PackageScope::SystemTemplate, PackageScope::CaptchaProvider, PackageScope::EditorProvider] as $scope) {
+            if ($package->hasScope($scope)) {
+                return $scope;
+            }
+        }
+
+        return null;
     }
 
     private function primaryScope(PackageAssetSyncPackage $package): PackageScope

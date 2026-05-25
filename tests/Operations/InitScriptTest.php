@@ -39,6 +39,11 @@ final class InitScriptTest extends TestCase
         self::assertStringContainsString("'composer', '--version'", $contents);
         self::assertStringContainsString("/bin/composer'", $contents);
         self::assertStringContainsString("'install', '--no-dev', '--no-scripts', '--optimize-autoloader'", $contents);
+        self::assertStringContainsString('CoreTranslationBootstrapper', $contents);
+        self::assertLessThan(
+            strpos($contents, "in_array(\$environment, ['dev', 'test'], true)"),
+            strpos($contents, 'generateCoreTranslations()'),
+        );
         self::assertStringContainsString("in_array(\$environment, ['dev', 'test'], true)", $contents);
         self::assertStringContainsString("'install', '--optimize-autoloader'", $contents);
         self::assertStringContainsString("'install', '--no-dev', '--optimize-autoloader'", $contents);
