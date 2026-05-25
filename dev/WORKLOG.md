@@ -87,6 +87,7 @@
 - Fixed non-JSON asset command issue rendering so operation warnings use `OperationIssue::translationKey()` and do not mask the original failure.
 - Hardened package JavaScript mirroring so dynamic `import()` string specifiers are rewritten consistently with static imports while external and variable imports remain untouched.
 - Hardened setup environment writing so unreadable or unwritable `.env.{APP_ENV}.local` files stop setup instead of silently keeping stale configuration.
+- Hardened setup database URL validation so unsupported SQLite URL variants fail during preparation with a clear `sqlite:///...` format requirement.
 - Updated feature drafts, developer snippets, class map, translations, and tests for the new template namespace and package-scope contract.
 
 ### 2026-05-24

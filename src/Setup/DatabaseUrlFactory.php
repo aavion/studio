@@ -31,8 +31,12 @@ final readonly class DatabaseUrlFactory
             throw new SetupStepFailedException('Database URL must include a supported scheme.');
         }
 
+        if ('sqlite' === $scheme) {
+            throw new SetupStepFailedException('SQLite database URLs must use the sqlite:///path/to/database.db format.');
+        }
+
         return match ($scheme) {
-            'sqlite', 'mysql', 'mariadb', 'pgsql', 'postgres', 'postgresql' => $databaseUrl,
+            'mysql', 'mariadb', 'pgsql', 'postgres', 'postgresql' => $databaseUrl,
             default => throw new SetupStepFailedException(sprintf('Unsupported database URL scheme "%s".', $scheme)),
         };
     }

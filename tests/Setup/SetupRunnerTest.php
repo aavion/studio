@@ -303,6 +303,33 @@ final class SetupRunnerTest extends TestCase
         self::assertFileDoesNotExist($this->root.'/.env.test.local');
     }
 
+    public function testDryRunRejectsUnsupportedSqliteUrlVariantsBeforeWriting(): void
+    {
+        $executor = new RecordingSetupCommandExecutor();
+        $runner = new SetupRunner($this->root, $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Dry Studio',
+            defaultUri: 'https://dry.example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:/tmp/studio.db',
+            dryRun: true,
+        ));
+
+        self::assertFalse($result->isSuccess());
+        self::assertTrue($result->context()['halt_on_error']);
+        self::assertSame('prepare_setup', $result->context()['failed_step']);
+        self::assertSame([], $executor->commands);
+        self::assertFileDoesNotExist($this->root.'/.env.test.local');
+        self::assertSame('message.setup.step_failed', $result->issues()[0]->translationKey());
+        self::assertSame(
+            'SQLite database URLs must use the sqlite:///path/to/database.db format.',
+            $result->issues()[0]->parameters()['%message%'],
+        );
+    }
+
     public function testLanguageCatalogDiscoversTranslationCatalogues(): void
     {
         $catalog = new SetupLanguageCatalog();
