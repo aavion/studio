@@ -80,6 +80,7 @@
 - Added the first content rendering hook, `ContentRenderContextEvent`, so themes and packages can extend per-content Twig variables without replacing controller or resolver flow.
 - Split package asset sync internals into focused filesystem, mirror, and registry writer helpers while keeping `PackageAssetSyncer` behavior and public construction unchanged.
 - Split the deterministic PHPUnit database seeder into small config, security, extension, schema, content, and menu seed slices behind the existing `TestDatabaseSeeder` facade.
+- Split the public content functional tests by rendering, localization, access, redirect, and error-page behavior, with shared database helpers moved to a controller test trait.
 - Completed the package-scoped template baseline: canonical Twig namespaces (`@frontend`, `@backend`, `@root`, `@provider`), `system-template` scope, package template path validation, provider fallbacks, and CodeMirror as the native editor provider.
 - Reorganized the native template scaffold into frontend/backend/provider areas with root `base.html.twig`, generic frontend error fallbacks, shared macros, layout variants, and granular partials for future theme overrides.
 - Added the central HTTP error renderer with `/system/error-pages/{status}` content fallback, frontend status/default templates, anonymous `401` login rendering, and a production exception subscriber for HTTP exceptions.
