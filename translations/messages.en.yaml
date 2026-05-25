@@ -57,6 +57,7 @@ message:
       missing: 'Package dependency "%package%" required by "%required_by%" is not installed.'
       version_unsatisfied: 'Package dependency "%package%" requires at least version %required_version%; installed version is %installed_version%.'
       status_blocked: 'Package dependency "%package%" cannot be used while it is "%status%".'
+      resolved: 'Package "%package%" resolved %count% dependency item(s).'
   event:
     hook:
       invalid: 'Event hook "%event%" is not a valid public hook definition.'

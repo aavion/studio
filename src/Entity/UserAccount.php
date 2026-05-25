@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Uid;
@@ -179,7 +178,7 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
     private static function assertUsername(string $username): string
     {
         if (1 !== preg_match('/^[a-z][a-z0-9_.-]{2,79}$/', $username)) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::USERNAME_INVALID, [
+            throw MessageException::invalidArgument(MessageKey::USERNAME_INVALID, [
                 '%username%' => $username,
             ]);
         }
@@ -190,7 +189,7 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
     private static function assertEmail(string $email): string
     {
         if (false === filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::USER_EMAIL_INVALID, [
+            throw MessageException::invalidArgument(MessageKey::USER_EMAIL_INVALID, [
                 '%email%' => $email,
             ]);
         }

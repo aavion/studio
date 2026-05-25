@@ -9,8 +9,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
@@ -36,9 +35,9 @@ final readonly class PackageRegistryHandler
     /**
      * @param iterable<PackageCandidate> $candidates
      *
-     * @return OperationResult<list<array{package: string, action: string, status: string}>>
+     * @return WorkflowResult<list<array{package: string, action: string, status: string}>>
      */
-    public function synchronize(iterable $candidates): OperationResult
+    public function synchronize(iterable $candidates): WorkflowResult
     {
         $packages = $this->indexedPackages();
         $seen = [];
@@ -57,12 +56,12 @@ final readonly class PackageRegistryHandler
                 $path = $this->relativePackagePath($candidate);
                 $scopes = PackageScope::fromManifestValue((string) $candidate->manifest()->get('PACKAGE_SCOPE', ''));
             } catch (InvalidArgumentException) {
-                $issues[] = OperationIssue::create(
+                $issues[] = Message::create(
                     MessageCode::PACKAGE_IDENTIFIER_INVALID,
                     MessageKey::PACKAGE_IDENTIFIER_INVALID,
                     ['%identifier%' => basename($candidate->directory())],
                     ['path' => $candidate->directory(), 'source' => $candidate->source()->name()],
-                    MessageLevel::Warning,
+                    MessageLevel::Error,
                 );
 
                 continue;
@@ -96,7 +95,7 @@ final readonly class PackageRegistryHandler
 
                 if ($changed || $isNew) {
                     $changes[] = $this->change($packageName, 'faulty', ExtensionPackageStatus::Faulty);
-                    $messages[] = Message::warning(
+                    $messages[] = Message::error(
                         MessageCode::PACKAGE_REGISTRY_PACKAGE_FAULTY,
                         MessageKey::PACKAGE_REGISTRY_PACKAGE_FAULTY,
                         ['%package%' => $packageName],
@@ -116,11 +115,12 @@ final readonly class PackageRegistryHandler
 
             if ('unchanged' !== $action) {
                 $changes[] = $this->change($packageName, $action, $package->status());
-                $messages[] = Message::info(
+                $messages[] = Message::create(
                     'registered' === $action ? MessageCode::PACKAGE_REGISTRY_PACKAGE_REGISTERED : MessageCode::PACKAGE_REGISTRY_PACKAGE_UPDATED,
                     'registered' === $action ? MessageKey::PACKAGE_REGISTRY_PACKAGE_REGISTERED : MessageKey::PACKAGE_REGISTRY_PACKAGE_UPDATED,
                     ['%package%' => $packageName],
                     ['package' => $packageName, 'path' => $path, 'status' => $package->status()->value],
+                    MessageLevel::Success,
                 );
             }
         }
@@ -134,7 +134,7 @@ final readonly class PackageRegistryHandler
 
             if ($package->markRemoved($this->removedMetadata($package))) {
                 $changes[] = $this->change($packageName, 'removed', ExtensionPackageStatus::Removed);
-                $messages[] = Message::warning(
+                $messages[] = Message::error(
                     MessageCode::PACKAGE_REGISTRY_PACKAGE_REMOVED,
                     MessageKey::PACKAGE_REGISTRY_PACKAGE_REMOVED,
                     ['%package%' => $packageName],
@@ -148,7 +148,7 @@ final readonly class PackageRegistryHandler
         }
 
         if ([] !== $issues) {
-            return OperationResult::invalid($issues, ['changes' => $changes], $messages);
+            return WorkflowResult::invalid($issues, ['changes' => $changes], $messages);
         }
 
         $this->entityManager->flush();
@@ -157,14 +157,15 @@ final readonly class PackageRegistryHandler
             $this->assetRebuildDispatcher?->dispatch($this->environment, 'package_registry_state_exit');
         }
 
-        $messages[] = Message::info(
+        $messages[] = Message::create(
             MessageCode::PACKAGE_REGISTRY_SYNC_COMPLETED,
             MessageKey::PACKAGE_REGISTRY_SYNC_COMPLETED,
             ['%count%' => count($changes)],
             ['change_count' => count($changes), 'changes' => $changes],
+            MessageLevel::Success,
         );
 
-        return OperationResult::success($changes, [
+        return WorkflowResult::success($changes, [
             'change_count' => count($changes),
             'changes' => $changes,
         ], $messages);
@@ -204,7 +205,7 @@ final readonly class PackageRegistryHandler
     }
 
     /**
-     * @param list<OperationIssue> $issues
+     * @param list<Message> $issues
      *
      * @return array<string, mixed>
      */
@@ -217,7 +218,7 @@ final readonly class PackageRegistryHandler
             'dependencies' => $candidate->manifest()->get('PACKAGE_DEPENDENCIES'),
             'validation' => [
                 'issue_count' => count($issues),
-                'issues' => array_map(static fn (OperationIssue $issue): array => $issue->toArray(), $issues),
+                'issues' => array_map(static fn (Message $issue): array => $issue->toArray(), $issues),
             ],
         ];
     }

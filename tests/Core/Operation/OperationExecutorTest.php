@@ -7,13 +7,17 @@ namespace App\Tests\Core\Operation;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Operation\OperationExecutor;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
-use App\Core\Workflow\OperationStatus;
+use App\Core\Workflow\WorkflowResult;
+use App\Core\Workflow\WorkflowStatus;
 use InvalidArgumentException;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -22,12 +26,12 @@ final class OperationExecutorTest extends TestCase
     public function testItBuildsDryRunPlanFromActionQueue(): void
     {
         $queue = ActionQueue::create('import', [
-            new TestOperationAction('copy_file', 'Copy file', OperationResult::success()),
+            new TestOperationAction('copy_file', 'Copy file', WorkflowResult::success()),
         ], context: [
             'package' => 'demo',
-        ])->add(new TestOperationAction('write_config', 'Write config', OperationResult::success(), DryRunRisk::Medium));
+        ])->add(new TestOperationAction('write_config', 'Write config', WorkflowResult::success(), DryRunRisk::Medium));
 
-        $plan = (new OperationExecutor())->planQueue($queue);
+        $plan = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->planQueue($queue);
 
         self::assertSame('import', $plan->name());
         self::assertSame(['copy_file' => 1, 'write_config' => 1], $plan->actionCounts());
@@ -38,9 +42,9 @@ final class OperationExecutorTest extends TestCase
 
     public function testItExecutesSuccessfulActions(): void
     {
-        $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('success', [
-            new TestOperationAction('copy_file', 'Copy file', OperationResult::success(null, ['path' => 'target.txt'])),
-            new TestOperationAction('compile_assets', 'Compile assets', OperationResult::success()),
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue(ActionQueue::create('success', [
+            new TestOperationAction('copy_file', 'Copy file', WorkflowResult::success(null, ['path' => 'target.txt'])),
+            new TestOperationAction('compile_assets', 'Compile assets', WorkflowResult::success()),
         ]));
 
         self::assertTrue($execution->result()->isSuccess());
@@ -54,13 +58,13 @@ final class OperationExecutorTest extends TestCase
     public function testItExecutesActionQueueInOrderWithContext(): void
     {
         $queue = ActionQueue::create('ordered', [
-            new TestOperationAction('first', 'First action', OperationResult::success()),
-            new TestOperationAction('second', 'Second action', OperationResult::success()),
+            new TestOperationAction('first', 'First action', WorkflowResult::success()),
+            new TestOperationAction('second', 'Second action', WorkflowResult::success()),
         ], context: [
             'run_id' => 'abc',
         ]);
 
-        $execution = (new OperationExecutor())->executeQueue($queue);
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue($queue);
 
         self::assertTrue($execution->result()->isSuccess());
         self::assertSame('abc', $execution->result()->context()['run_id']);
@@ -72,11 +76,11 @@ final class OperationExecutorTest extends TestCase
     {
         $started = [];
         $finished = [];
-        $executor = new OperationExecutor();
+        $executor = new OperationExecutor(new NullWorkflowResultMessageReporter());
 
         $executor->executeQueue(ActionQueue::create('callbacks', [
-            new TestOperationAction('first', 'First action', OperationResult::success()),
-            new TestOperationAction('second', 'Second action', OperationResult::success()),
+            new TestOperationAction('first', 'First action', WorkflowResult::success()),
+            new TestOperationAction('second', 'Second action', WorkflowResult::success()),
         ]), function ($entry, int $index, int $total, $result) use (&$finished): void {
             $finished[] = [$entry->name(), $index, $total, $result->isSuccess()];
         }, function ($entry, int $index, int $total, $action) use (&$started): void {
@@ -95,14 +99,14 @@ final class OperationExecutorTest extends TestCase
 
     public function testItStopsOnFailureByDefault(): void
     {
-        $issue = OperationIssue::create('import.failed', 'message.import.failed');
+        $issue = Message::create('import.failed', 'message.import.failed');
 
-        $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('failure', [
-            new TestOperationAction('write_file', 'Write file', OperationResult::failed([$issue])),
-            new TestOperationAction('compile_assets', 'Compile assets', OperationResult::success()),
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue(ActionQueue::create('failure', [
+            new TestOperationAction('write_file', 'Write file', WorkflowResult::failed([$issue])),
+            new TestOperationAction('compile_assets', 'Compile assets', WorkflowResult::success()),
         ]));
 
-        self::assertSame(OperationStatus::Failed, $execution->result()->status());
+        self::assertSame(WorkflowStatus::Failed, $execution->result()->status());
         self::assertSame([$issue], $execution->result()->issues());
         self::assertCount(1, $execution->actionLog()->entries());
         self::assertSame(ActionLogStatus::Failed, $execution->actionLog()->entries()[0]->status());
@@ -110,14 +114,14 @@ final class OperationExecutorTest extends TestCase
 
     public function testItCanContinueAfterRecoverableIssues(): void
     {
-        $issue = OperationIssue::create('import.review', 'message.import.review');
+        $issue = Message::create('import.review', 'message.import.review');
 
-        $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('continue', [
-            new TestOperationAction('review', 'Review change', OperationResult::requiresReview(null, [$issue])),
-            new TestOperationAction('compile_assets', 'Compile assets', OperationResult::success()),
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue(ActionQueue::create('continue', [
+            new TestOperationAction('review', 'Review change', WorkflowResult::requiresReview(null, [$issue])),
+            new TestOperationAction('compile_assets', 'Compile assets', WorkflowResult::success()),
         ], stopOnFailure: false));
 
-        self::assertSame(OperationStatus::RequiresReview, $execution->result()->status());
+        self::assertSame(WorkflowStatus::RequiresReview, $execution->result()->status());
         self::assertSame([$issue], $execution->result()->issues());
         self::assertSame([
             'success' => 1,
@@ -127,14 +131,14 @@ final class OperationExecutorTest extends TestCase
 
     public function testItPreservesFailedStatusWhenContinuingAfterFailures(): void
     {
-        $issue = OperationIssue::create('import.failed', 'message.import.failed');
+        $issue = Message::create('import.failed', 'message.import.failed');
 
-        $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('continue failed', [
-            new TestOperationAction('write_file', 'Write file', OperationResult::failed([$issue])),
-            new TestOperationAction('compile_assets', 'Compile assets', OperationResult::success()),
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue(ActionQueue::create('continue failed', [
+            new TestOperationAction('write_file', 'Write file', WorkflowResult::failed([$issue])),
+            new TestOperationAction('compile_assets', 'Compile assets', WorkflowResult::success()),
         ], stopOnFailure: false));
 
-        self::assertSame(OperationStatus::Failed, $execution->result()->status());
+        self::assertSame(WorkflowStatus::Failed, $execution->result()->status());
         self::assertSame([$issue], $execution->result()->issues());
         self::assertSame([
             'failed' => 1,
@@ -144,14 +148,14 @@ final class OperationExecutorTest extends TestCase
 
     public function testItPreservesBlockedStatusWhenContinuingAfterBlockedActions(): void
     {
-        $issue = OperationIssue::create('import.blocked', 'message.import.blocked');
+        $issue = Message::create('import.blocked', 'message.import.blocked');
 
-        $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('continue blocked', [
-            new TestOperationAction('copy_file', 'Copy file', OperationResult::blocked([$issue])),
-            new TestOperationAction('compile_assets', 'Compile assets', OperationResult::success()),
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue(ActionQueue::create('continue blocked', [
+            new TestOperationAction('copy_file', 'Copy file', WorkflowResult::blocked([$issue])),
+            new TestOperationAction('compile_assets', 'Compile assets', WorkflowResult::success()),
         ], stopOnFailure: false));
 
-        self::assertSame(OperationStatus::Blocked, $execution->result()->status());
+        self::assertSame(WorkflowStatus::Blocked, $execution->result()->status());
         self::assertSame([$issue], $execution->result()->issues());
         self::assertSame([
             'failed' => 1,
@@ -161,34 +165,59 @@ final class OperationExecutorTest extends TestCase
 
     public function testActionQueueCanDisableStopOnFailure(): void
     {
-        $issue = OperationIssue::create('import.review', 'message.import.review');
+        $issue = Message::create('import.review', 'message.import.review');
         $queue = ActionQueue::create('continue', [
-            new TestOperationAction('review', 'Review change', OperationResult::requiresReview(null, [$issue])),
-            new TestOperationAction('compile_assets', 'Compile assets', OperationResult::success()),
+            new TestOperationAction('review', 'Review change', WorkflowResult::requiresReview(null, [$issue])),
+            new TestOperationAction('compile_assets', 'Compile assets', WorkflowResult::success()),
         ], stopOnFailure: false);
 
-        $execution = (new OperationExecutor())->executeQueue($queue);
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue($queue);
 
-        self::assertSame(OperationStatus::RequiresReview, $execution->result()->status());
+        self::assertSame(WorkflowStatus::RequiresReview, $execution->result()->status());
         self::assertCount(2, $execution->actionLog()->entries());
     }
 
     public function testItConvertsExceptionsToFailedResults(): void
     {
-        $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('exception', [
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue(ActionQueue::create('exception', [
             new ThrowingOperationAction(),
         ]));
 
-        self::assertSame(OperationStatus::Failed, $execution->result()->status());
+        self::assertSame(WorkflowStatus::Failed, $execution->result()->status());
         self::assertSame('operation.exception', $execution->result()->firstIssue()?->code());
         self::assertSame(RuntimeException::class, $execution->result()->firstIssue()?->context()['exception']);
         self::assertSame(ActionLogStatus::Failed, $execution->actionLog()->entries()[0]->status());
     }
 
+    public function testItPassesActionResultsToTheMessageReporter(): void
+    {
+        $logger = new RecordingWorkflowResultMessageReporter();
+        $message = Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+            '%count%' => 1,
+        ]);
+
+        $execution = (new OperationExecutor($logger))->executeQueue(ActionQueue::create('logged queue', [
+            new TestOperationAction('discover', 'Discover packages', WorkflowResult::success(context: [
+                'database_password' => 'secret',
+            ], messages: [$message])),
+        ]));
+
+        self::assertTrue($execution->result()->isSuccess());
+        self::assertCount(1, $logger->records);
+        self::assertSame([$message], $logger->records[0]['result']->messages());
+        self::assertSame([
+            'queue' => 'logged queue',
+            'action' => 'Discover packages',
+            'type' => 'discover',
+            'index' => 1,
+            'total' => 1,
+        ], $logger->records[0]['context']);
+    }
+
     public function testItExportsExecutionPayload(): void
     {
-        $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('success', [
-            new TestOperationAction('copy_file', 'Copy file', OperationResult::success(null, ['path' => 'target.txt'])),
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue(ActionQueue::create('success', [
+            new TestOperationAction('copy_file', 'Copy file', WorkflowResult::success(null, ['path' => 'target.txt'])),
         ], context: [
             'queue' => 'success',
         ]));
@@ -215,12 +244,12 @@ final class OperationExecutorTest extends TestCase
 final readonly class TestOperationAction implements OperationActionInterface
 {
     /**
-     * @param OperationResult<mixed> $result
+     * @param WorkflowResult<mixed> $result
      */
     public function __construct(
         private string $type,
         private string $label,
-        private OperationResult $result,
+        private WorkflowResult $result,
         private DryRunRisk $risk = DryRunRisk::Low,
     ) {
     }
@@ -240,7 +269,7 @@ final readonly class TestOperationAction implements OperationActionInterface
         return DryRunAction::create($this->type, $this->label, $this->risk);
     }
 
-    public function execute(): OperationResult
+    public function execute(): WorkflowResult
     {
         return $this->result;
     }
@@ -263,8 +292,26 @@ final readonly class ThrowingOperationAction implements OperationActionInterface
         return DryRunAction::create($this->type(), $this->label());
     }
 
-    public function execute(): OperationResult
+    public function execute(): WorkflowResult
     {
         throw new RuntimeException('Boom.');
+    }
+}
+
+final class RecordingWorkflowResultMessageReporter implements WorkflowResultMessageReporterInterface
+{
+    /**
+     * @var list<array{result: WorkflowResult<mixed>, context: array<string, mixed>}>
+     */
+    public array $records = [];
+
+    public function report(WorkflowResult $result, array $operationContext = []): WorkflowResult
+    {
+        $this->records[] = [
+            'result' => $result,
+            'context' => $operationContext,
+        ];
+
+        return $result;
     }
 }

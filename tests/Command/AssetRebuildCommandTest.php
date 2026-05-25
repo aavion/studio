@@ -13,6 +13,7 @@ use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageAssetSyncer;
 use App\Core\Package\PackageScope;
 use App\Tests\Support\FilesystemTestHelper;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
@@ -41,7 +42,7 @@ final class AssetRebuildCommandTest extends TestCase
             $this->kernel('test'),
             new FailingPackageAssetProvider(),
             new AssetRebuildQueueFactory($this->root, new PackageAssetSyncer($this->root)),
-            new OperationExecutor(),
+            new OperationExecutor(new NullWorkflowResultMessageReporter()),
         );
         $tester = new CommandTester($command);
 
@@ -59,7 +60,7 @@ final class AssetRebuildCommandTest extends TestCase
         $command = new PackageAssetSyncCommand(
             new FailingPackageAssetProvider(),
             new PackageAssetSyncer($this->root),
-            new OperationExecutor(),
+            new OperationExecutor(new NullWorkflowResultMessageReporter()),
         );
         $tester = new CommandTester($command);
 
@@ -80,7 +81,7 @@ final class AssetRebuildCommandTest extends TestCase
                 new PackageAssetSyncPackage('broken', 'packages/broken', [PackageScope::Module]),
             ]),
             new PackageAssetSyncer($this->root),
-            new OperationExecutor(),
+            new OperationExecutor(new NullWorkflowResultMessageReporter()),
         );
         $tester = new CommandTester($command);
 
@@ -104,7 +105,7 @@ final class AssetRebuildCommandTest extends TestCase
                 new PackageAssetSyncPackage('broken', 'packages/broken', [PackageScope::Module]),
             ]),
             new AssetRebuildQueueFactory($this->root, new PackageAssetSyncer($this->root)),
-            new OperationExecutor(),
+            new OperationExecutor(new NullWorkflowResultMessageReporter()),
         );
         $tester = new CommandTester($command);
 

@@ -8,7 +8,9 @@ use App\Debug\StudioDebugCollector;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Message\Message;
+use App\Core\Workflow\WorkflowResult;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Throwable;
 
@@ -17,6 +19,7 @@ final readonly class PublicEventDispatcher
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
         private PublicEventHookRegistry $hookRegistry,
+        private WorkflowResultMessageReporterInterface $messageReporter,
         private ?StudioDebugCollector $debugCollector = null,
     ) {
     }
@@ -41,29 +44,37 @@ final readonly class PublicEventDispatcher
         } catch (Throwable $error) {
             $this->debugCollector?->recordHook($eventClass, 'unknown', 'unknown', false, 'registry_failed', $context, $package, 1);
 
-            return PublicEventDispatchResult::failed($event, [
-                OperationIssue::create(MessageCode::EVENT_HOOK_INVALID, MessageKey::EVENT_HOOK_INVALID, [
+            $issues = [
+                Message::exception(MessageCode::EVENT_HOOK_INVALID, MessageKey::EVENT_HOOK_INVALID, [
                     '%event%' => $eventClass,
                 ], [
                     'event' => $eventClass,
                     'exception' => $error::class,
                     'message' => $error->getMessage(),
-                ], MessageLevel::Error),
-            ]);
+                ]),
+            ];
+
+            $this->reportFailure($issues, $eventClass, $context, $package);
+
+            return PublicEventDispatchResult::failed($event, $issues);
         }
 
         if (!isset($registeredHooks[$eventClass])) {
             $this->debugCollector?->recordHook($eventClass, 'unknown', 'unknown', false, 'unregistered', $context, $package, 1);
 
-            return PublicEventDispatchResult::failed($event, [
-                OperationIssue::create(MessageCode::EVENT_HOOK_UNREGISTERED, MessageKey::EVENT_HOOK_UNREGISTERED, [
+            $issues = [
+                Message::create(MessageCode::EVENT_HOOK_UNREGISTERED, MessageKey::EVENT_HOOK_UNREGISTERED, [
                     '%event%' => $eventClass,
                 ], [
                     'event' => $eventClass,
                     'context' => $context,
                     'package' => $package,
                 ], MessageLevel::Error),
-            ]);
+            ];
+
+            $this->reportFailure($issues, $eventClass, $context, $package);
+
+            return PublicEventDispatchResult::failed($event, $issues);
         }
 
         try {
@@ -80,7 +91,7 @@ final readonly class PublicEventDispatcher
                 1,
             );
 
-            $issue = OperationIssue::create(MessageCode::EVENT_HOOK_LISTENER_FAILED, MessageKey::EVENT_HOOK_LISTENER_FAILED, [
+            $issue = Message::exception(MessageCode::EVENT_HOOK_LISTENER_FAILED, MessageKey::EVENT_HOOK_LISTENER_FAILED, [
                 '%event%' => $eventClass,
             ], [
                 'event' => $eventClass,
@@ -89,9 +100,10 @@ final readonly class PublicEventDispatcher
                 'message' => $error->getMessage(),
                 'context' => $context,
                 'package' => $package,
-            ], MessageLevel::Error);
+            ]);
 
             $this->reportHookFailure($event, $registeredHooks[$eventClass], $issue, $error, $context, $package);
+            $this->reportFailure([$issue], $eventClass, $context, $package);
 
             return PublicEventDispatchResult::failed($event, [$issue]);
         }
@@ -115,7 +127,7 @@ final readonly class PublicEventDispatcher
     private function reportHookFailure(
         PublicEventInterface $event,
         EventHookDescriptor $hook,
-        OperationIssue $issue,
+        Message $issue,
         Throwable $exception,
         array $context,
         ?string $package,
@@ -132,5 +144,19 @@ final readonly class PublicEventDispatcher
         } catch (Throwable) {
             // Failure reporting must never hide the original hook failure.
         }
+    }
+
+    /**
+     * @param list<Message> $issues
+     * @param array<string, mixed> $context
+     */
+    private function reportFailure(array $issues, string $eventClass, array $context, ?string $package): void
+    {
+        $this->messageReporter->report(WorkflowResult::failed($issues), [
+            'operation' => 'event.dispatch',
+            'event' => $eventClass,
+            'context' => $context,
+            'package' => $package,
+        ]);
     }
 }

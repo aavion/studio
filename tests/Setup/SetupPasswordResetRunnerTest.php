@@ -7,6 +7,7 @@ namespace App\Tests\Setup;
 use App\Core\ActionLog\ActionLog;
 use App\Setup\SetupPasswordResetRunner;
 use PDO;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use PHPUnit\Framework\TestCase;
 
 final class SetupPasswordResetRunnerTest extends TestCase
@@ -29,7 +30,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
 
     public function testItFindsAndResetsUserPassword(): void
     {
-        $runner = new SetupPasswordResetRunner();
+        $runner = new SetupPasswordResetRunner(new NullWorkflowResultMessageReporter());
         $databaseUrl = 'sqlite:///'.$this->databasePath;
 
         $user = $runner->findUser($this->root, $databaseUrl, 'admin');
@@ -58,7 +59,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
 
     public function testItReturnsInvalidResultForMissingUser(): void
     {
-        $runner = new SetupPasswordResetRunner();
+        $runner = new SetupPasswordResetRunner(new NullWorkflowResultMessageReporter());
 
         $result = $runner->reset($this->root, 'sqlite:///'.$this->databasePath, 'missing', 'new-password');
 

@@ -8,30 +8,34 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Throwable;
 
 final readonly class PackageAssetRebuildDispatcher
 {
-    public function __construct(private MessageBusInterface $messageBus)
+    public function __construct(
+        private MessageBusInterface $messageBus,
+        private WorkflowResultMessageReporterInterface $messageReporter,
+    )
     {
     }
 
     /**
-     * @return OperationResult<array{trigger: string, environment: string, deferred: bool}>
+     * @return WorkflowResult<array{trigger: string, environment: string, deferred: bool}>
      */
-    public function dispatch(string $environment, string $trigger): OperationResult
+    public function dispatch(string $environment, string $trigger): WorkflowResult
     {
         $environment = '' === trim($environment) ? 'prod' : trim($environment);
         $trigger = '' === trim($trigger) ? 'package_lifecycle' : trim($trigger);
+        $context = ['operation' => 'package.asset_rebuild.dispatch', 'environment' => $environment, 'trigger' => $trigger];
 
         try {
             $this->messageBus->dispatch(new PackageAssetRebuildMessage($environment, $trigger));
         } catch (Throwable $error) {
-            return OperationResult::failed([
-                OperationIssue::create(
+            return $this->report(WorkflowResult::failed([
+                Message::exception(
                     MessageCode::PACKAGE_ASSET_REBUILD_QUEUE_FAILED,
                     MessageKey::PACKAGE_ASSET_REBUILD_QUEUE_FAILED,
                     ['%trigger%' => $trigger],
@@ -41,16 +45,15 @@ final readonly class PackageAssetRebuildDispatcher
                         'exception' => $error::class,
                         'message' => $error->getMessage(),
                     ],
-                    MessageLevel::Error,
                 ),
             ], [
                 'trigger' => $trigger,
                 'environment' => $environment,
                 'deferred' => true,
-            ]);
+            ]), $context);
         }
 
-        return OperationResult::success([
+        return $this->report(WorkflowResult::success([
             'trigger' => $trigger,
             'environment' => $environment,
             'deferred' => true,
@@ -59,12 +62,18 @@ final readonly class PackageAssetRebuildDispatcher
             'environment' => $environment,
             'deferred' => true,
         ], [
-            Message::info(
+            Message::create(
                 MessageCode::PACKAGE_ASSET_REBUILD_QUEUED,
                 MessageKey::PACKAGE_ASSET_REBUILD_QUEUED,
                 ['%trigger%' => $trigger],
                 ['trigger' => $trigger, 'environment' => $environment, 'deferred' => true],
+                MessageLevel::Success,
             ),
-        ]);
+        ]), $context);
+    }
+
+    private function report(WorkflowResult $result, array $context): WorkflowResult
+    {
+        return $this->messageReporter->report($result, $context);
     }
 }

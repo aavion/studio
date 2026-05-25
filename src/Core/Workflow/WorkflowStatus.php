@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Workflow;
 
-enum OperationStatus: string
+enum WorkflowStatus: string
 {
     case Success = 'success';
     case Invalid = 'invalid';

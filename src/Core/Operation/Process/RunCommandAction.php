@@ -11,8 +11,7 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationActionInterface;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 use InvalidArgumentException;
 use Symfony\Component\Process\Process;
 
@@ -76,9 +75,9 @@ final readonly class RunCommandAction implements OperationActionInterface
     }
 
     /**
-     * @return OperationResult<array{exit_code: int|null, output_excerpt: string, error_excerpt: string}>
+     * @return WorkflowResult<array{exit_code: int|null, output_excerpt: string, error_excerpt: string}>
      */
-    public function execute(): OperationResult
+    public function execute(): WorkflowResult
     {
         $process = new Process($this->command, $this->cwd, $this->env, null, $this->timeout);
         $process->run();
@@ -93,23 +92,23 @@ final readonly class RunCommandAction implements OperationActionInterface
         ];
 
         if (!$process->isSuccessful()) {
-            return OperationResult::failed([
-                OperationIssue::create(MessageCode::PROCESS_COMMAND_FAILED, MessageKey::PROCESS_COMMAND_FAILED, [
+            return WorkflowResult::failed([
+                Message::create(MessageCode::PROCESS_COMMAND_FAILED, MessageKey::PROCESS_COMMAND_FAILED, [
                     '%command%' => $this->formatCommand(),
                     '%exit_code%' => $process->getExitCode() ?? 'unknown',
                 ], $context, MessageLevel::Error),
             ], $context);
         }
 
-        return OperationResult::success([
+        return WorkflowResult::success([
             'exit_code' => $process->getExitCode(),
             'output_excerpt' => $context['output_excerpt'],
             'error_excerpt' => $context['error_excerpt'],
         ], $context, [
-            Message::info(MessageCode::PROCESS_COMMAND_COMPLETED, MessageKey::PROCESS_COMMAND_COMPLETED, [
+            Message::create(MessageCode::PROCESS_COMMAND_COMPLETED, MessageKey::PROCESS_COMMAND_COMPLETED, [
                 '%command%' => $this->formatCommand(),
                 '%exit_code%' => $process->getExitCode() ?? 'unknown',
-            ], $context),
+            ], $context, MessageLevel::Success),
         ]);
     }
 

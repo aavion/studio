@@ -12,8 +12,7 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationActionInterface;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 
 final readonly class RemovePathAction implements OperationActionInterface
 {
@@ -49,16 +48,16 @@ final readonly class RemovePathAction implements OperationActionInterface
     }
 
     /**
-     * @return OperationResult<array{path: string, removed: bool}>
+     * @return WorkflowResult<array{path: string, removed: bool}>
      */
-    public function execute(): OperationResult
+    public function execute(): WorkflowResult
     {
         $target = $this->targetPath();
         $symlinkAncestor = $this->pathGuard->symlinkAncestor($this->root, $this->relativePath);
 
         if (null !== $symlinkAncestor) {
-            return OperationResult::blocked([
-                OperationIssue::create(MessageCode::FILESYSTEM_PARENT_SYMLINK, MessageKey::FILESYSTEM_PARENT_SYMLINK, context: [
+            return WorkflowResult::blocked([
+                Message::create(MessageCode::FILESYSTEM_PARENT_SYMLINK, MessageKey::FILESYSTEM_PARENT_SYMLINK, context: [
                     'path' => $this->relativePath,
                     'parent' => $symlinkAncestor,
                 ], level: MessageLevel::Warning),
@@ -66,7 +65,7 @@ final readonly class RemovePathAction implements OperationActionInterface
         }
 
         if (!file_exists($target) && !is_link($target)) {
-            return OperationResult::success([
+            return WorkflowResult::success([
                 'path' => $this->relativePath,
                 'removed' => false,
             ], [
@@ -83,8 +82,8 @@ final readonly class RemovePathAction implements OperationActionInterface
         }
 
         if (is_link($target)) {
-            return OperationResult::blocked([
-                OperationIssue::create(MessageCode::FILESYSTEM_TARGET_SYMLINK, MessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
+            return WorkflowResult::blocked([
+                Message::create(MessageCode::FILESYSTEM_TARGET_SYMLINK, MessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
                     'path' => $this->relativePath,
                 ], level: MessageLevel::Warning),
             ]);
@@ -93,26 +92,26 @@ final readonly class RemovePathAction implements OperationActionInterface
         $this->remove($target);
 
         if (file_exists($target)) {
-            return OperationResult::failed([
-                OperationIssue::create(MessageCode::FILESYSTEM_FILE_WRITE_FAILED, MessageKey::FILESYSTEM_FILE_WRITE_FAILED, context: [
+            return WorkflowResult::failed([
+                Message::create(MessageCode::FILESYSTEM_FILE_WRITE_FAILED, MessageKey::FILESYSTEM_FILE_WRITE_FAILED, context: [
                     'path' => $this->relativePath,
                 ], level: MessageLevel::Error),
             ]);
         }
 
-        return OperationResult::success([
+        return WorkflowResult::success([
             'path' => $this->relativePath,
             'removed' => true,
         ], [
             'path' => $this->relativePath,
             'removed' => true,
         ], [
-            Message::info(MessageCode::FILESYSTEM_PATH_REMOVED, MessageKey::FILESYSTEM_PATH_REMOVED, [
+            Message::create(MessageCode::FILESYSTEM_PATH_REMOVED, MessageKey::FILESYSTEM_PATH_REMOVED, [
                 '%path%' => $this->relativePath,
             ], [
                 'path' => $this->relativePath,
                 'removed' => true,
-            ]),
+            ], MessageLevel::Success),
         ]);
     }
 

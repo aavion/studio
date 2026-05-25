@@ -10,6 +10,7 @@ use App\Debug\StudioDebugCollector;
 use App\View\Event\OutputGeneratedEvent;
 use App\View\Event\ResponseHeadersEvent;
 use App\View\Http\ResponseHookSubscriber;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
@@ -94,7 +95,7 @@ final class ResponseHookSubscriberTest extends TestCase
         ]);
 
         (new ResponseHookSubscriber(
-            new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), $collector),
+            new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter(), $collector),
             $collector,
         ))->onKernelResponse($this->responseEvent($response));
 
@@ -105,7 +106,7 @@ final class ResponseHookSubscriberTest extends TestCase
 
     private function subscriber(EventDispatcher $dispatcher): ResponseHookSubscriber
     {
-        return new ResponseHookSubscriber(new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry()));
+        return new ResponseHookSubscriber(new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter()));
     }
 
     private function responseEvent(Response $response): ResponseEvent

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Operation;
 
 use App\Core\DryRun\DryRunAction;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 
 interface OperationActionInterface
 {
@@ -16,7 +16,7 @@ interface OperationActionInterface
     public function dryRun(): DryRunAction;
 
     /**
-     * @return OperationResult<mixed>
+     * @return WorkflowResult<mixed>
      */
-    public function execute(): OperationResult;
+    public function execute(): WorkflowResult;
 }

@@ -8,8 +8,8 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -20,15 +20,24 @@ final readonly class PackageActivator
     public function __construct(
         private EntityManagerInterface $entityManager,
         private PackageLifecycleAssetRebuilderInterface $assetRebuilder,
+        private WorkflowResultMessageReporterInterface $messageReporter,
         ?PackageDependencyResolver $dependencyResolver = null,
     ) {
         $this->dependencyResolver = $dependencyResolver ?? new PackageDependencyResolver($entityManager);
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    public function planActivation(string $packageName): OperationResult
+    public function planActivation(string $packageName): WorkflowResult
+    {
+        return $this->report($this->doPlanActivation($packageName), 'package.activate.plan', ['package' => $packageName]);
+    }
+
+    /**
+     * @return WorkflowResult<array<string, mixed>>
+     */
+    private function doPlanActivation(string $packageName): WorkflowResult
     {
         $package = $this->package($packageName);
 
@@ -43,7 +52,7 @@ final readonly class PackageActivator
         $dependencies = $this->dependencyResolver->resolve($package);
 
         if (!$dependencies->isSuccess()) {
-            return OperationResult::blocked($dependencies->issues(), [
+            return WorkflowResult::blocked($dependencies->issues(), [
                 'package' => $packageName,
                 'dependencies' => $dependencies->context()['dependencies'] ?? [],
             ]);
@@ -71,7 +80,7 @@ final readonly class PackageActivator
             }
         }
 
-        return OperationResult::success([
+        return WorkflowResult::success([
             'package' => $packageName,
             'dependencies' => $dependencies->value()['dependencies'],
             'activate' => array_map(static fn (ExtensionPackage $candidate): string => $candidate->packageName(), $packages),
@@ -82,25 +91,25 @@ final readonly class PackageActivator
             'package' => $packageName,
             'dependencies' => $dependencies->value()['dependencies'],
             'changes' => $changes,
-        ]);
+        ], $dependencies->messages());
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    public function activate(string $packageName, string $environment, bool $rebuildAssets = true): OperationResult
+    public function activate(string $packageName, string $environment, bool $rebuildAssets = true): WorkflowResult
     {
-        $plan = $this->planActivation($packageName);
+        $plan = $this->doPlanActivation($packageName);
 
         if (!$plan->isSuccess()) {
-            return $plan;
+            return $this->report($plan, 'package.activate', ['package' => $packageName, 'environment' => $environment]);
         }
 
         $packages = $this->packagesByName($plan->value()['activate']);
         $conflicts = $this->packagesByName($plan->value()['deactivate']);
         $snapshots = $this->statusSnapshots([...$packages, ...$conflicts]);
         $changes = [];
-        $messages = [];
+        $messages = $plan->messages();
 
         foreach ($conflicts as $conflict) {
             if ($conflict->deactivate()) {
@@ -112,27 +121,32 @@ final readonly class PackageActivator
         foreach ($packages as $package) {
             if ($package->activate()) {
                 $changes[] = $this->change($package, 'activated');
-                $messages[] = Message::info(
+                $messages[] = Message::create(
                     MessageCode::PACKAGE_LIFECYCLE_ACTIVATED,
                     MessageKey::PACKAGE_LIFECYCLE_ACTIVATED,
                     ['%package%' => $package->packageName()],
                     ['package' => $package->packageName()],
+                    MessageLevel::Success,
                 );
             }
         }
 
-        return $this->finalize($snapshots, $changes, $messages, $environment, $rebuildAssets);
+        return $this->report(
+            $this->finalize($snapshots, $changes, $messages, $environment, $rebuildAssets),
+            'package.activate',
+            ['package' => $packageName, 'environment' => $environment],
+        );
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    public function deactivate(string $packageName, string $environment, bool $rebuildAssets = true): OperationResult
+    public function deactivate(string $packageName, string $environment, bool $rebuildAssets = true): WorkflowResult
     {
         $package = $this->package($packageName);
 
         if (null === $package) {
-            return $this->packageNotFound($packageName);
+            return $this->report($this->packageNotFound($packageName), 'package.deactivate', ['package' => $packageName, 'environment' => $environment]);
         }
 
         $snapshots = $this->statusSnapshots([$package]);
@@ -144,7 +158,11 @@ final readonly class PackageActivator
             $messages[] = $this->deactivatedMessage($package);
         }
 
-        return $this->finalize($snapshots, $changes, $messages, $environment, $rebuildAssets);
+        return $this->report(
+            $this->finalize($snapshots, $changes, $messages, $environment, $rebuildAssets),
+            'package.deactivate',
+            ['package' => $packageName, 'environment' => $environment],
+        );
     }
 
     private function package(string $packageName): ?ExtensionPackage
@@ -264,12 +282,12 @@ final readonly class PackageActivator
      * @param list<array{package: string, action: string, status: string}> $changes
      * @param list<Message> $messages
      *
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    private function finalize(array $snapshots, array $changes, array $messages, string $environment, bool $rebuildAssets): OperationResult
+    private function finalize(array $snapshots, array $changes, array $messages, string $environment, bool $rebuildAssets): WorkflowResult
     {
         if ([] === $changes) {
-            return OperationResult::success([
+            return WorkflowResult::success([
                 'changes' => [],
                 'asset_rebuild' => false,
                 'rolled_back' => false,
@@ -283,7 +301,7 @@ final readonly class PackageActivator
         $this->entityManager->flush();
 
         if (!$rebuildAssets) {
-            return OperationResult::success([
+            return WorkflowResult::success([
                 'changes' => $changes,
                 'asset_rebuild' => false,
                 'rolled_back' => false,
@@ -297,7 +315,7 @@ final readonly class PackageActivator
         $rebuild = $this->assetRebuilder->rebuild($environment);
 
         if ($rebuild->isSuccess()) {
-            return OperationResult::success([
+            return WorkflowResult::success([
                 'changes' => $changes,
                 'asset_rebuild' => true,
                 'rolled_back' => false,
@@ -311,7 +329,7 @@ final readonly class PackageActivator
 
         $this->restoreStatuses($snapshots);
 
-        return OperationResult::failed($rebuild->issues(), [
+        return WorkflowResult::failed($rebuild->issues(), [
             'changes' => $changes,
             'asset_rebuild' => true,
             'rolled_back' => true,
@@ -345,28 +363,28 @@ final readonly class PackageActivator
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    private function packageNotFound(string $packageName): OperationResult
+    private function packageNotFound(string $packageName): WorkflowResult
     {
-        return OperationResult::invalid([
-            OperationIssue::create(
+        return WorkflowResult::invalid([
+            Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
                 MessageKey::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
                 ['%package%' => $packageName],
                 ['package' => $packageName],
-                MessageLevel::Warning,
+                MessageLevel::Error,
             ),
         ]);
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    private function statusBlocked(ExtensionPackage $package): OperationResult
+    private function statusBlocked(ExtensionPackage $package): WorkflowResult
     {
-        return OperationResult::blocked([
-            OperationIssue::create(
+        return WorkflowResult::blocked([
+            Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
                 MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
                 ['%package%' => $package->packageName(), '%status%' => $package->status()->value],
@@ -390,11 +408,20 @@ final readonly class PackageActivator
 
     private function deactivatedMessage(ExtensionPackage $package): Message
     {
-        return Message::info(
+        return Message::create(
             MessageCode::PACKAGE_LIFECYCLE_DEACTIVATED,
             MessageKey::PACKAGE_LIFECYCLE_DEACTIVATED,
             ['%package%' => $package->packageName()],
             ['package' => $package->packageName()],
+            MessageLevel::Success,
         );
+    }
+
+    private function report(WorkflowResult $result, string $operation, array $context = []): WorkflowResult
+    {
+        return $this->messageReporter->report($result, [
+            ...$context,
+            'operation' => $operation,
+        ]);
     }
 }

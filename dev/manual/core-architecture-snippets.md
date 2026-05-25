@@ -21,16 +21,19 @@ The initial Core database baseline includes reusable operational tables beyond c
 
 Structured logs remain filesystem-oriented. Database tables should hold state that needs querying or relationships; operational access, error, and security logs should use stable structured log records so they can later be converted or streamed as JSONL for UI filtering.
 
-## Operation results and issues
+## Workflow results and messages
 
-Use `OperationResult` for recoverable workflows. Hard failures, blocked actions, validation errors, and review-required states should stay structured and inspectable by future CLI, UI, importer, and action-log consumers. Use issues for `WARN` or `ERROR` diagnostics that affect the result state; use messages for `INFO` or `DEBUG` events that should remain filterable in logs without turning into problems.
+Use `WorkflowResult` for recoverable workflows. Hard failures, blocked actions, validation errors, and review-required states should stay structured and inspectable by future CLI, UI, importer, and action-log consumers. `Message` is the central feedback object. Use the `issues` slot for messages that affect the result state, usually `WARN`, `ERROR`, or `EXCEPTION`; use the `messages` slot for `SUCCESS`, `INFO`, or `DEBUG` events that should remain filterable in logs without turning into problems.
 
 ```php
-$issue = OperationIssue::create('package.required_file_missing', 'Required package file is missing.', [
-    'file' => 'templates/base.html.twig',
-]);
+$issue = Message::warning(
+    'package.required_file_missing',
+    'message.package.required_file_missing',
+    ['%file%' => 'templates/base.html.twig'],
+    ['file' => 'templates/base.html.twig'],
+);
 
-return OperationResult::invalid([$issue], [
+return WorkflowResult::invalid([$issue], [
     'package' => $candidate->directory(),
 ]);
 ```
@@ -63,7 +66,9 @@ $plan = $executor->planQueue($queue);
 $execution = $executor->executeQueue($queue);
 ```
 
-Use the dry-run plan for previews. Use the execution result and action log for final status, diagnostics, UI summaries, and level-filtered log inspection. Successful high-level actions should generally emit `INFO`; noisy per-file or per-manifest details should emit `DEBUG`.
+Use the dry-run plan for previews. Use the execution result and action log for final status, diagnostics, UI summaries, and level-filtered log inspection. Completed high-level actions should generally emit `SUCCESS`; informational progress should emit `INFO`; noisy per-file or per-manifest details should emit `DEBUG`.
+
+Use `WARN` for recoverable or expected fallback behavior that does not leave the system in a broken state, such as content language/variant fallbacks or denied optional access. Use `ERROR` when something needs operator attention or a fix, such as faulty packages, invalid package manifests, missing required package files, broken package dependencies, or failed writes. Use `EXCEPTION` when a real `Throwable` was caught and converted into a structured message.
 
 ## Package validation flow
 
@@ -112,11 +117,11 @@ Intentionally invalid fixture packages live under `tests/Fixtures/packages-inval
 
 Messages have a stable log level and two stable identifiers:
 
-- `MessageLevel` is log-filterable and uses `ERROR`, `WARN`, `INFO`, or `DEBUG`.
+- `MessageLevel` is log-filterable and uses `SUCCESS`, `EXCEPTION`, `ERROR`, `WARN`, `INFO`, or `DEBUG`.
 - `MessageCode` is machine-readable and useful for logs, branching, API clients, CLI exits, and package integrations.
 - `MessageKey` is translation-facing and should resolve to localized UI, CLI, or log text later.
 
-Runtime code should use `Message`, `MessageCode`, and `MessageKey` instead of embedding user-facing text in exceptions or operation payloads.
+Runtime code should use `Message`, `MessageCode`, and `MessageKey` instead of embedding user-facing text in exceptions or operation payloads. Use `Message::invalidArgument()` or `MessageException::invalidArgument()` for hard invariant diagnostics that must still abort the current call.
 
 Core enforces a narrow transport shape:
 
@@ -128,7 +133,7 @@ parameters
 context
 ```
 
-Codes must either be generic uppercase tokens such as `E_INVALID_ARGUMENT` or namespaced lowercase tokens such as `package.required_file_missing`. Translation keys must start with `message.`. Translation parameter names must use Symfony-friendly placeholder keys such as `%slug%`; free-form diagnostic data belongs in `context`. Default message levels are `INFO` for success, `WARN` for `E_INVALID_ARGUMENT` and other diagnostics, and `ERROR` for other `E_*` codes unless the caller sets a level explicitly.
+Codes must either be generic uppercase tokens such as `E_INVALID_ARGUMENT` or namespaced lowercase tokens such as `package.required_file_missing`. Translation keys must start with `message.`. Translation parameter names must use Symfony-friendly placeholder keys such as `%slug%`; free-form diagnostic data belongs in `context`. Default message levels are `SUCCESS` for success, `WARN` for `E_INVALID_ARGUMENT` and other diagnostics, and `ERROR` for other `E_*` codes unless the caller sets a level explicitly. Use `EXCEPTION` when a real `Throwable` was caught and converted into a structured message.
 
 ## ACL resolver flow
 
@@ -146,7 +151,7 @@ $decision = $resolver->decide(
 );
 
 if (!$decision->isGranted()) {
-    return OperationResult::blocked([OperationIssue::fromMessage($decision->message())]);
+    return WorkflowResult::blocked([$decision->message()]);
 }
 ```
 
@@ -161,7 +166,7 @@ if (!$decision->isGranted()) {
 Later UI layers can map these codes to translated messages while preserving the raw code for logs, audits, and debugging.
 
 ```php
-$issue = OperationIssue::create(
+$issue = Message::warning(
     MessageCode::PACKAGE_REQUIRED_FILE_MISSING,
     MessageKey::PACKAGE_REQUIRED_FILE_MISSING,
     ['%file%' => 'templates/base.html.twig'],

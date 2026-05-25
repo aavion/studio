@@ -9,8 +9,8 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -30,6 +30,7 @@ final class PackagePhpLoader implements EventSubscriberInterface
         private readonly ActivePackageProviderInterface $packageProvider,
         private readonly EntityManagerInterface $entityManager,
         private readonly string $projectDir,
+        private readonly WorkflowResultMessageReporterInterface $messageReporter,
         private readonly ?PackageAssetRebuildDispatcher $assetRebuildDispatcher = null,
         private readonly string $environment = 'test',
         private readonly PathGuard $pathGuard = new PathGuard(),
@@ -53,14 +54,22 @@ final class PackagePhpLoader implements EventSubscriberInterface
     }
 
     /**
-     * @return OperationResult<array{loaded: list<string>, skipped: list<string>}>
+     * @return WorkflowResult<array{loaded: list<string>, skipped: list<string>}>
      */
-    public function loadActivePackages(): OperationResult
+    public function loadActivePackages(): WorkflowResult
+    {
+        return $this->report($this->doLoadActivePackages());
+    }
+
+    /**
+     * @return WorkflowResult<array{loaded: list<string>, skipped: list<string>}>
+     */
+    private function doLoadActivePackages(): WorkflowResult
     {
         try {
             $packages = $this->packageProvider->packages();
         } catch (Throwable $error) {
-            return OperationResult::failed([$this->exceptionIssue($error, ['stage' => 'active_package_lookup'])]);
+            return WorkflowResult::failed([$this->exceptionIssue($error, ['stage' => 'active_package_lookup'])]);
         }
 
         $loaded = [];
@@ -94,7 +103,7 @@ final class PackagePhpLoader implements EventSubscriberInterface
             } catch (Throwable $error) {
                 $issue = $this->phpLoadIssue($package, $loaderPath, $error);
                 $issues[] = $issue;
-                $messages[] = Message::error(
+                $messages[] = Message::exception(
                     MessageCode::PACKAGE_LIFECYCLE_PHP_LOAD_FAILED,
                     MessageKey::PACKAGE_LIFECYCLE_PHP_LOAD_FAILED,
                     ['%package%' => $package->packageName()],
@@ -111,15 +120,23 @@ final class PackagePhpLoader implements EventSubscriberInterface
 
         $value = ['loaded' => $loaded, 'skipped' => $skipped];
         $context = ['loaded' => $loaded, 'skipped' => $skipped, 'failed' => array_map(
-            static fn (OperationIssue $issue): array => $issue->context(),
+            static fn (Message $issue): array => $issue->context(),
             $issues,
         ), 'asset_rebuild' => $assetRebuild?->toArray()];
 
         if ([] !== $issues) {
-            return OperationResult::failed($issues, $context, $messages);
+            return WorkflowResult::failed($issues, $context, $messages);
         }
 
-        return OperationResult::success($value, $context, $messages);
+        return WorkflowResult::success($value, $context, $messages);
+    }
+
+    private function report(WorkflowResult $result): WorkflowResult
+    {
+        return $this->messageReporter->report($result, [
+            'operation' => 'package.php_load',
+            'environment' => $this->environment,
+        ]);
     }
 
     private function loaderPath(ExtensionPackage $package): ?string
@@ -157,9 +174,9 @@ final class PackagePhpLoader implements EventSubscriberInterface
         }
     }
 
-    private function phpLoadIssue(ExtensionPackage $package, string $loaderPath, Throwable $error): OperationIssue
+    private function phpLoadIssue(ExtensionPackage $package, string $loaderPath, Throwable $error): Message
     {
-        return OperationIssue::create(
+        return Message::create(
             MessageCode::PACKAGE_LIFECYCLE_PHP_LOAD_FAILED,
             MessageKey::PACKAGE_LIFECYCLE_PHP_LOAD_FAILED,
             ['%package%' => $package->packageName()],
@@ -170,16 +187,16 @@ final class PackagePhpLoader implements EventSubscriberInterface
                 'exception' => $error::class,
                 'message' => $error->getMessage(),
             ],
-            MessageLevel::Error,
+            MessageLevel::Exception,
         );
     }
 
     /**
      * @param array<string, mixed> $context
      */
-    private function exceptionIssue(Throwable $error, array $context): OperationIssue
+    private function exceptionIssue(Throwable $error, array $context): Message
     {
-        return OperationIssue::create(
+        return Message::create(
             MessageCode::OPERATION_EXCEPTION,
             MessageKey::OPERATION_EXCEPTION,
             context: [
@@ -187,7 +204,7 @@ final class PackagePhpLoader implements EventSubscriberInterface
                 'exception' => $error::class,
                 'message' => $error->getMessage(),
             ],
-            level: MessageLevel::Error,
+            level: MessageLevel::Exception,
         );
     }
 

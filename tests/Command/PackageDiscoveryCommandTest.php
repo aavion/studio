@@ -15,6 +15,7 @@ use App\Tests\Support\IdentityTranslator;
 use App\Tests\Support\RecordingMessageBus;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -96,12 +97,13 @@ final class PackageDiscoveryCommandTest extends KernelTestCase
     private function command(RecordingMessageBus $messageBus): PackageDiscoveryCommand
     {
         return new PackageDiscoveryCommand(
-            new PackageDiscoveryDispatcher($messageBus),
+            new PackageDiscoveryDispatcher($messageBus, new NullWorkflowResultMessageReporter()),
             new PackageDiscoveryRunner(
                 new PackageDiscovery(),
                 new PackageRegistryHandler($this->entityManager, $this->projectDir),
                 $this->projectDir,
                 'test',
+                new NullWorkflowResultMessageReporter(),
             ),
             new IdentityTranslator(),
         );

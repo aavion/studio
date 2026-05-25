@@ -8,7 +8,9 @@ use App\Core\Event\PublicHookFailedEvent;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
-use App\Core\Workflow\OperationResult;
+use App\Core\Message\MessageLevel;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -16,20 +18,32 @@ final readonly class PackageRuntimeFailureHandler
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
+        private WorkflowResultMessageReporterInterface $messageReporter,
         private ?PackageAssetRebuildDispatcher $assetRebuildDispatcher = null,
         private string $environment = 'test',
     ) {
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    public function handleHookFailure(PublicHookFailedEvent $event): OperationResult
+    public function handleHookFailure(PublicHookFailedEvent $event): WorkflowResult
+    {
+        return $this->report($this->doHandleHookFailure($event), [
+            'package' => $event->package(),
+            'hook' => $event->hook()->eventClass(),
+        ]);
+    }
+
+    /**
+     * @return WorkflowResult<array<string, mixed>>
+     */
+    private function doHandleHookFailure(PublicHookFailedEvent $event): WorkflowResult
     {
         $packageName = $event->package();
 
         if (null === $packageName) {
-            return OperationResult::success([
+            return WorkflowResult::success([
                 'package' => null,
                 'faulty' => false,
             ], [
@@ -41,7 +55,7 @@ final readonly class PackageRuntimeFailureHandler
         $package = $this->package($packageName);
 
         if (null === $package) {
-            return OperationResult::success([
+            return WorkflowResult::success([
                 'package' => $packageName,
                 'faulty' => false,
             ], [
@@ -75,7 +89,7 @@ final readonly class PackageRuntimeFailureHandler
             ? $this->assetRebuildDispatcher?->dispatch($this->environment, 'package_runtime_failure')
             : null;
 
-        return OperationResult::success([
+        return WorkflowResult::success([
             'package' => $packageName,
             'faulty' => $faulty,
             'asset_rebuild' => null !== $assetRebuild && $assetRebuild->isSuccess(),
@@ -84,12 +98,21 @@ final readonly class PackageRuntimeFailureHandler
             'faulty' => $faulty,
             'asset_rebuild' => $assetRebuild?->toArray(),
         ], [
-            Message::warning(
+            Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_RUNTIME_FAILURE,
                 MessageKey::PACKAGE_LIFECYCLE_RUNTIME_FAILURE,
                 ['%package%' => $packageName],
                 ['package' => $packageName, 'faulty' => $faulty],
+                $faulty ? MessageLevel::Error : MessageLevel::Warning,
             ),
+        ]);
+    }
+
+    private function report(WorkflowResult $result, array $context = []): WorkflowResult
+    {
+        return $this->messageReporter->report($result, [
+            ...$context,
+            'operation' => 'package.runtime_failure',
         ]);
     }
 

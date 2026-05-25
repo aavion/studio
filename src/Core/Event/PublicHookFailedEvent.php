@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Event;
 
-use App\Core\Workflow\OperationIssue;
+use App\Core\Message\Message;
 use Symfony\Contracts\EventDispatcher\Event;
 use Throwable;
 
@@ -16,7 +16,7 @@ final class PublicHookFailedEvent extends Event
     public function __construct(
         private readonly PublicEventInterface $hookEvent,
         private readonly EventHookDescriptor $hook,
-        private readonly OperationIssue $issue,
+        private readonly Message $issue,
         private readonly Throwable $exception,
         private readonly array $context = [],
         private readonly ?string $package = null,
@@ -33,7 +33,7 @@ final class PublicHookFailedEvent extends Event
         return $this->hook;
     }
 
-    public function issue(): OperationIssue
+    public function issue(): Message
     {
         return $this->issue;
     }

@@ -11,7 +11,6 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -38,7 +37,7 @@ final class ActionLogTest extends TestCase
 
     public function testItRecordsIssues(): void
     {
-        $issue = OperationIssue::create('setup.warning', 'message.setup.warning');
+        $issue = Message::create('setup.warning', 'message.setup.warning');
 
         $entry = ActionLogEntry::pending('setup')
             ->start(new DateTimeImmutable('2026-05-22 10:00:00'))
@@ -66,7 +65,7 @@ final class ActionLogTest extends TestCase
 
     public function testItExportsStructuredPayload(): void
     {
-        $issue = OperationIssue::create('setup.warning', 'message.setup.warning');
+        $issue = Message::create('setup.warning', 'message.setup.warning');
         $message = Message::debug(MessageCode::MANIFEST_PARSED, MessageKey::MANIFEST_PARSED);
         $startedAt = new DateTimeImmutable('2026-05-22 10:00:00.000000');
         $finishedAt = new DateTimeImmutable('2026-05-22 10:00:00.250000');

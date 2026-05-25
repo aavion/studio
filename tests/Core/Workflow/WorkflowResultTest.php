@@ -8,26 +8,25 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
-use App\Core\Workflow\OperationStatus;
+use App\Core\Workflow\WorkflowResult;
+use App\Core\Workflow\WorkflowStatus;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
-final class OperationResultTest extends TestCase
+final class WorkflowResultTest extends TestCase
 {
     public function testSuccessResultCarriesValueAndContext(): void
     {
         $message = Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
             '%count%' => 1,
         ]);
-        $result = OperationResult::success('theme-default', [
+        $result = WorkflowResult::success('theme-default', [
             'source' => 'system',
         ], [
             $message,
         ]);
 
-        self::assertSame(OperationStatus::Success, $result->status());
+        self::assertSame(WorkflowStatus::Success, $result->status());
         self::assertTrue($result->isSuccess());
         self::assertFalse($result->isRecoverable());
         self::assertSame('theme-default', $result->value());
@@ -40,13 +39,13 @@ final class OperationResultTest extends TestCase
 
     public function testInvalidResultCarriesIssues(): void
     {
-        $issue = OperationIssue::create('content.title_missing', 'message.content.title.required');
+        $issue = Message::create('content.title_missing', 'message.content.title.required');
 
-        $result = OperationResult::invalid([$issue], [
+        $result = WorkflowResult::invalid([$issue], [
             'content_type' => 'page',
         ]);
 
-        self::assertSame(OperationStatus::Invalid, $result->status());
+        self::assertSame(WorkflowStatus::Invalid, $result->status());
         self::assertFalse($result->isSuccess());
         self::assertTrue($result->isRecoverable());
         self::assertNull($result->value());
@@ -58,12 +57,12 @@ final class OperationResultTest extends TestCase
 
     public function testRequiresReviewResultCanCarryAReviewPlan(): void
     {
-        $issue = OperationIssue::create('import.confirm_changes', 'message.import.confirm_changes');
+        $issue = Message::create('import.confirm_changes', 'message.import.confirm_changes');
         $plan = ['changes' => 3];
 
-        $result = OperationResult::requiresReview($plan, [$issue]);
+        $result = WorkflowResult::requiresReview($plan, [$issue]);
 
-        self::assertSame(OperationStatus::RequiresReview, $result->status());
+        self::assertSame(WorkflowStatus::RequiresReview, $result->status());
         self::assertTrue($result->isRecoverable());
         self::assertSame($plan, $result->value());
         self::assertSame($issue, $result->firstIssue());
@@ -71,13 +70,13 @@ final class OperationResultTest extends TestCase
 
     public function testItExportsStructuredPayload(): void
     {
-        $issue = OperationIssue::create('import.confirm_changes', 'message.import.confirm_changes', [
+        $issue = Message::create('import.confirm_changes', 'message.import.confirm_changes', [
             '%changes%' => 3,
         ], [
             'changes' => 3,
         ]);
 
-        $result = OperationResult::requiresReview(['plan' => 'demo'], [$issue], [
+        $result = WorkflowResult::requiresReview(['plan' => 'demo'], [$issue], [
             'queue' => 'import',
         ]);
 
@@ -100,31 +99,31 @@ final class OperationResultTest extends TestCase
 
     public function testBlockedAndFailedResultsUseExpectedRecoverability(): void
     {
-        $issue = OperationIssue::create('storage.unavailable', 'message.storage.unavailable');
+        $issue = Message::create('storage.unavailable', 'message.storage.unavailable');
 
-        $blocked = OperationResult::blocked([$issue]);
-        $failed = OperationResult::failed([$issue]);
+        $blocked = WorkflowResult::blocked([$issue]);
+        $failed = WorkflowResult::failed([$issue]);
 
-        self::assertSame(OperationStatus::Blocked, $blocked->status());
+        self::assertSame(WorkflowStatus::Blocked, $blocked->status());
         self::assertTrue($blocked->isRecoverable());
-        self::assertSame(OperationStatus::Failed, $failed->status());
+        self::assertSame(WorkflowStatus::Failed, $failed->status());
         self::assertFalse($failed->isRecoverable());
     }
 
     public function testIssueStatusesRequireAtLeastOneIssue(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Operation result status "invalid" requires at least one issue.');
+        $this->expectExceptionMessage('Workflow result status "invalid" requires at least one issue.');
 
-        OperationResult::invalid([]);
+        WorkflowResult::invalid([]);
     }
 
-    public function testIssuesMustBeOperationIssueInstances(): void
+    public function testIssuesMustBeMessageInstances(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Operation result issues must contain only OperationIssue instances.');
+        $this->expectExceptionMessage('Workflow result issues must contain only Message instances.');
 
         /** @phpstan-ignore-next-line */
-        OperationResult::failed(['broken']);
+        WorkflowResult::failed(['broken']);
     }
 }

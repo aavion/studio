@@ -9,8 +9,8 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Operation\Filesystem\RemovePathAction;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use Doctrine\ORM\EntityManagerInterface;
 use Throwable;
@@ -22,38 +22,39 @@ final readonly class PackageRemover
         private PackageLifecycleAssetRebuilderInterface $assetRebuilder,
         private PackageLifecycleCleanupRunnerInterface $cleanupRunner,
         private string $projectDir,
+        private WorkflowResultMessageReporterInterface $messageReporter,
     ) {
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    public function planRemoval(string $packageName): OperationResult
+    public function planRemoval(string $packageName): WorkflowResult
     {
         $package = $this->package($packageName);
 
         if (null === $package) {
-            return $this->packageNotFound($packageName);
+            return $this->report($this->packageNotFound($packageName), 'package.remove.plan', ['package' => $packageName]);
         }
 
-        return OperationResult::success([
+        return $this->report(WorkflowResult::success([
             'package' => $packageName,
             'changes' => $this->plannedRemovalChanges($package),
         ], [
             'package' => $packageName,
             'path' => $package->path(),
-        ]);
+        ]), 'package.remove.plan', ['package' => $packageName]);
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    public function remove(string $packageName, string $environment, bool $rebuildAssets = true): OperationResult
+    public function remove(string $packageName, string $environment, bool $rebuildAssets = true): WorkflowResult
     {
         $package = $this->package($packageName);
 
         if (null === $package) {
-            return $this->packageNotFound($packageName);
+            return $this->report($this->packageNotFound($packageName), 'package.remove', ['package' => $packageName, 'environment' => $environment]);
         }
 
         $messages = [];
@@ -62,11 +63,12 @@ final readonly class PackageRemover
 
         if (ExtensionPackageStatus::Active === $package->status() && $package->deactivate()) {
             $changes[] = $this->change($package, 'deactivated');
-            $messages[] = Message::info(
+            $messages[] = Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_DEACTIVATED,
                 MessageKey::PACKAGE_LIFECYCLE_DEACTIVATED,
                 ['%package%' => $packageName],
                 ['package' => $packageName],
+                MessageLevel::Success,
             );
         }
 
@@ -76,21 +78,22 @@ final readonly class PackageRemover
         if (!$filesystem->isSuccess()) {
             $package->restoreStatus($previousStatus);
 
-            return OperationResult::failed($filesystem->issues(), [
+            return $this->report(WorkflowResult::failed($filesystem->issues(), [
                 'package' => $packageName,
                 'path' => $package->path(),
                 'changes' => $changes,
                 'filesystem_context' => $filesystem->context(),
-            ], $messages);
+            ], $messages), 'package.remove', ['package' => $packageName, 'environment' => $environment]);
         }
 
         if ($package->markRemoved($this->removedMetadata($package, $filesystem->context()))) {
             $changes[] = $this->change($package, 'removed');
-            $messages[] = Message::info(
+            $messages[] = Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_REMOVED,
                 MessageKey::PACKAGE_LIFECYCLE_REMOVED,
                 ['%package%' => $packageName],
                 ['package' => $packageName, 'path' => $package->path()],
+                MessageLevel::Success,
             );
         }
 
@@ -101,18 +104,18 @@ final readonly class PackageRemover
             $messages = [...$messages, ...$rebuild->messages()];
 
             if (!$rebuild->isSuccess()) {
-                return OperationResult::failed($rebuild->issues(), [
+                return $this->report(WorkflowResult::failed($rebuild->issues(), [
                     'package' => $packageName,
                     'path' => $package->path(),
                     'changes' => $changes,
                     'asset_rebuild' => true,
                     'rolled_back' => false,
                     'asset_rebuild_context' => $rebuild->context(),
-                ], $messages);
+                ], $messages), 'package.remove', ['package' => $packageName, 'environment' => $environment]);
             }
         }
 
-        return OperationResult::success([
+        return $this->report(WorkflowResult::success([
             'package' => $packageName,
             'path' => $package->path(),
             'changes' => $changes,
@@ -123,33 +126,33 @@ final readonly class PackageRemover
             'path' => $package->path(),
             'changes' => $changes,
             'filesystem_context' => $filesystem->context(),
-        ], $messages);
+        ], $messages), 'package.remove', ['package' => $packageName, 'environment' => $environment]);
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    public function purge(string $packageName): OperationResult
+    public function purge(string $packageName): WorkflowResult
     {
         $package = $this->package($packageName);
 
         if (null === $package) {
-            return $this->packageNotFound($packageName);
+            return $this->report($this->packageNotFound($packageName), 'package.purge', ['package' => $packageName]);
         }
 
         $cleanup = $this->cleanupRunner->cleanup($package);
 
         if (!$cleanup->isSuccess()) {
-            return OperationResult::failed($cleanup->issues(), [
+            return $this->report(WorkflowResult::failed($cleanup->issues(), [
                 'package' => $packageName,
                 'cleanup_context' => $cleanup->context(),
-            ], $cleanup->messages());
+            ], $cleanup->messages()), 'package.purge', ['package' => $packageName]);
         }
 
         $this->entityManager->remove($package);
         $this->entityManager->flush();
 
-        return OperationResult::success([
+        return $this->report(WorkflowResult::success([
             'package' => $packageName,
             'changes' => [[
                 'package' => $packageName,
@@ -161,13 +164,14 @@ final readonly class PackageRemover
             'cleanup_context' => $cleanup->context(),
         ], [
             ...$cleanup->messages(),
-            Message::info(
+            Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_PURGED,
                 MessageKey::PACKAGE_LIFECYCLE_PURGED,
                 ['%package%' => $packageName],
                 ['package' => $packageName],
+                MessageLevel::Success,
             ),
-        ]);
+        ]), 'package.purge', ['package' => $packageName]);
     }
 
     private function package(string $packageName): ?ExtensionPackage
@@ -180,13 +184,13 @@ final readonly class PackageRemover
     }
 
     /**
-     * @return OperationResult<array{path: string, removed: bool}>
+     * @return WorkflowResult<array{path: string, removed: bool}>
      */
-    private function removeFilesystemPackage(ExtensionPackage $package): OperationResult
+    private function removeFilesystemPackage(ExtensionPackage $package): WorkflowResult
     {
         if (!str_starts_with($package->path(), 'packages/')) {
-            return OperationResult::blocked([
-                OperationIssue::create(
+            return WorkflowResult::blocked([
+                Message::create(
                     MessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
                     MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
                     ['%package%' => $package->packageName(), '%status%' => $package->status()->value],
@@ -199,8 +203,8 @@ final readonly class PackageRemover
         try {
             return (new RemovePathAction($this->projectDir, $package->path()))->execute();
         } catch (Throwable $error) {
-            return OperationResult::failed([
-                OperationIssue::create(
+            return WorkflowResult::failed([
+                Message::exception(
                     MessageCode::OPERATION_EXCEPTION,
                     MessageKey::OPERATION_EXCEPTION,
                     context: [
@@ -209,7 +213,6 @@ final readonly class PackageRemover
                         'exception' => $error::class,
                         'message' => $error->getMessage(),
                     ],
-                    level: MessageLevel::Error,
                 ),
             ]);
         }
@@ -261,18 +264,26 @@ final readonly class PackageRemover
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    private function packageNotFound(string $packageName): OperationResult
+    private function packageNotFound(string $packageName): WorkflowResult
     {
-        return OperationResult::invalid([
-            OperationIssue::create(
+        return WorkflowResult::invalid([
+            Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
                 MessageKey::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
                 ['%package%' => $packageName],
                 ['package' => $packageName],
                 MessageLevel::Warning,
             ),
+        ]);
+    }
+
+    private function report(WorkflowResult $result, string $operation, array $context = []): WorkflowResult
+    {
+        return $this->messageReporter->report($result, [
+            ...$context,
+            'operation' => $operation,
         ]);
     }
 }

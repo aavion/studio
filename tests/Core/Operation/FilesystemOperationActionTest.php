@@ -12,9 +12,10 @@ use App\Core\Operation\Filesystem\RemovePathAction;
 use App\Core\Operation\Filesystem\WriteFileAction;
 use App\Core\Operation\OperationExecutor;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationStatus;
+use App\Core\Workflow\WorkflowStatus;
 use App\Tests\Support\FilesystemTestHelper;
 use InvalidArgumentException;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use PHPUnit\Framework\TestCase;
 
 final class FilesystemOperationActionTest extends TestCase
@@ -36,12 +37,12 @@ final class FilesystemOperationActionTest extends TestCase
     public function testEnsureDirectoryCreatesMissingDirectory(): void
     {
         $action = new EnsureDirectoryAction($this->root, 'var/cache/imports');
-        $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('ensure directories', [$action]));
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue(ActionQueue::create('ensure directories', [$action]));
 
         self::assertTrue($execution->result()->isSuccess());
         self::assertDirectoryExists($this->root.'/var/cache/imports');
         self::assertTrue($execution->actionLog()->entries()[0]->context()['created']);
-        self::assertSame(MessageLevel::Info, $execution->actionLog()->entries()[0]->messages()[0]->level());
+        self::assertSame(MessageLevel::Success, $execution->actionLog()->entries()[0]->messages()[0]->level());
         self::assertSame(['var/cache/imports'], $action->dryRun()->paths());
     }
 
@@ -51,7 +52,7 @@ final class FilesystemOperationActionTest extends TestCase
 
         $result = (new EnsureDirectoryAction($this->root, 'cache'))->execute();
 
-        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame(WorkflowStatus::Blocked, $result->status());
         self::assertSame('filesystem.directory_conflict', $result->firstIssue()?->code());
     }
 
@@ -62,7 +63,7 @@ final class FilesystemOperationActionTest extends TestCase
 
         $result = (new EnsureDirectoryAction($this->root, 'linked/nested'))->execute();
 
-        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame(WorkflowStatus::Blocked, $result->status());
         self::assertSame('filesystem.parent_symlink', $result->firstIssue()?->code());
         self::assertDirectoryDoesNotExist($this->root.'/external/nested');
     }
@@ -92,7 +93,7 @@ final class FilesystemOperationActionTest extends TestCase
 
         $result = (new WriteFileAction($this->root, 'config.php', 'new'))->execute();
 
-        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame(WorkflowStatus::Blocked, $result->status());
         self::assertSame('filesystem.file_exists', $result->firstIssue()?->code());
         self::assertSame('old', file_get_contents($this->root.'/config.php'));
     }
@@ -119,7 +120,7 @@ final class FilesystemOperationActionTest extends TestCase
 
         $result = (new WriteFileAction($this->root, 'linked.txt', 'new', overwrite: true))->execute();
 
-        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame(WorkflowStatus::Blocked, $result->status());
         self::assertSame('filesystem.target_symlink', $result->firstIssue()?->code());
         self::assertSame('real', file_get_contents($this->root.'/real.txt'));
     }
@@ -143,7 +144,7 @@ final class FilesystemOperationActionTest extends TestCase
 
         $result = (new WriteFileAction($this->root, 'linked/config.php', 'payload'))->execute();
 
-        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame(WorkflowStatus::Blocked, $result->status());
         self::assertSame('filesystem.parent_symlink', $result->firstIssue()?->code());
         self::assertFileDoesNotExist($this->root.'/external/config.php');
     }
@@ -166,7 +167,7 @@ final class FilesystemOperationActionTest extends TestCase
     {
         $result = (new CopyFileAction($this->root, 'missing.txt', $this->root, 'target.txt'))->execute();
 
-        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame(WorkflowStatus::Blocked, $result->status());
         self::assertSame('filesystem.source_missing', $result->firstIssue()?->code());
     }
 
@@ -177,7 +178,7 @@ final class FilesystemOperationActionTest extends TestCase
 
         $result = (new CopyFileAction($this->root, 'source.txt', $this->root, 'target.txt'))->execute();
 
-        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame(WorkflowStatus::Blocked, $result->status());
         self::assertSame('filesystem.file_exists', $result->firstIssue()?->code());
         self::assertSame('old', file_get_contents($this->root.'/target.txt'));
     }
@@ -189,7 +190,7 @@ final class FilesystemOperationActionTest extends TestCase
 
         $result = (new CopyFileAction($this->root, 'linked.txt', $this->root, 'target.txt'))->execute();
 
-        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame(WorkflowStatus::Blocked, $result->status());
         self::assertSame('filesystem.source_symlink', $result->firstIssue()?->code());
     }
 
@@ -201,7 +202,7 @@ final class FilesystemOperationActionTest extends TestCase
 
         $result = (new CopyFileAction($this->root, 'source.txt', $this->root, 'linked.txt', overwrite: true))->execute();
 
-        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame(WorkflowStatus::Blocked, $result->status());
         self::assertSame('filesystem.target_symlink', $result->firstIssue()?->code());
         self::assertSame('real', file_get_contents($this->root.'/real.txt'));
     }
@@ -214,7 +215,7 @@ final class FilesystemOperationActionTest extends TestCase
 
         $result = (new CopyFileAction($this->root, 'source.txt', $this->root, 'linked/target.txt'))->execute();
 
-        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame(WorkflowStatus::Blocked, $result->status());
         self::assertSame('filesystem.parent_symlink', $result->firstIssue()?->code());
         self::assertFileDoesNotExist($this->root.'/external/target.txt');
     }
@@ -257,7 +258,7 @@ final class FilesystemOperationActionTest extends TestCase
 
         $result = (new RemovePathAction($this->root, 'linked.txt'))->execute();
 
-        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame(WorkflowStatus::Blocked, $result->status());
         self::assertSame('filesystem.target_symlink', $result->firstIssue()?->code());
         self::assertSame('real', file_get_contents($this->root.'/real.txt'));
     }
@@ -270,7 +271,7 @@ final class FilesystemOperationActionTest extends TestCase
 
         $result = (new RemovePathAction($this->root, 'public/assets'))->execute();
 
-        self::assertSame(OperationStatus::Blocked, $result->status());
+        self::assertSame(WorkflowStatus::Blocked, $result->status());
         self::assertSame('filesystem.parent_symlink', $result->firstIssue()?->code());
         self::assertFileExists($this->root.'/external/assets/app.css');
     }

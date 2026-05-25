@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Core\Event;
 
-use App\Core\Workflow\OperationIssue;
+use App\Core\Message\Message;
 
 final readonly class PublicEventDispatchResult
 {
     /**
-     * @param list<OperationIssue> $issues
+     * @param list<Message> $issues
      */
     private function __construct(
         private PublicEventInterface $event,
@@ -23,7 +23,7 @@ final readonly class PublicEventDispatchResult
     }
 
     /**
-     * @param list<OperationIssue> $issues
+     * @param list<Message> $issues
      */
     public static function failed(PublicEventInterface $event, array $issues): self
     {
@@ -41,14 +41,14 @@ final readonly class PublicEventDispatchResult
     }
 
     /**
-     * @return list<OperationIssue>
+     * @return list<Message>
      */
     public function issues(): array
     {
         return $this->issues;
     }
 
-    public function firstIssue(): ?OperationIssue
+    public function firstIssue(): ?Message
     {
         return $this->issues[0] ?? null;
     }

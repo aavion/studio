@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -14,7 +14,7 @@ final readonly class PackageDiscoveryMessageHandler
     {
     }
 
-    public function __invoke(PackageDiscoveryMessage $message): OperationResult
+    public function __invoke(PackageDiscoveryMessage $message): WorkflowResult
     {
         return ($this->runner)($message->trigger());
     }

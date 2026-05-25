@@ -42,12 +42,25 @@ final class MessageTest extends TestCase
 
         self::assertSame(MessageCode::SUCCESS, $message->code());
         self::assertSame('message.content.entity_saved', $message->translationKey());
-        self::assertSame(MessageLevel::Info, $message->level());
+        self::assertSame(MessageLevel::Success, $message->level());
+    }
+
+    public function testItCreatesInvalidArgumentMessages(): void
+    {
+        $message = Message::invalidArgument(MessageKey::CONTENT_SLUG_INVALID, [
+            '%slug%' => 'Invalid Slug',
+        ]);
+
+        self::assertSame(MessageCode::E_INVALID_ARGUMENT, $message->code());
+        self::assertSame(MessageKey::CONTENT_SLUG_INVALID, $message->translationKey());
+        self::assertSame(MessageLevel::Warning, $message->level());
+        self::assertSame(['%slug%' => 'Invalid Slug'], $message->parameters());
     }
 
     public function testItCreatesExplicitLogLevelMessages(): void
     {
         self::assertSame(MessageLevel::Error, Message::error('custom.failed', MessageKey::OPERATION_EXCEPTION)->level());
+        self::assertSame(MessageLevel::Exception, Message::exception('custom.exception', MessageKey::OPERATION_EXCEPTION)->level());
         self::assertSame(MessageLevel::Warning, Message::warning('custom.warning', MessageKey::OPERATION_EXCEPTION)->level());
         self::assertSame(MessageLevel::Info, Message::info('custom.info', MessageKey::OPERATION_EXCEPTION)->level());
         self::assertSame(MessageLevel::Debug, Message::debug('custom.debug', MessageKey::OPERATION_EXCEPTION)->level());

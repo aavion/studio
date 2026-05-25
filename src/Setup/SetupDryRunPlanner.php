@@ -27,7 +27,7 @@ final readonly class SetupDryRunPlanner
         return [
             ['write_environment', fn (): array => [
                 '_messages' => [
-                    Message::info(MessageCode::SETUP_DRY_RUN, MessageKey::SETUP_DRY_RUN),
+                    Message::debug(MessageCode::SETUP_DRY_RUN, MessageKey::SETUP_DRY_RUN),
                 ],
                 'dry_run' => true,
                 'path' => '.env.'.$input->appEnv().'.local',

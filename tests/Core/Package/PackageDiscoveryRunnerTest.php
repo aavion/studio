@@ -15,6 +15,7 @@ use App\Tests\Support\FilesystemTestHelper;
 use App\Tests\Support\RecordingMessageBus;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class PackageDiscoveryRunnerTest extends KernelTestCase
@@ -94,7 +95,7 @@ final class PackageDiscoveryRunnerTest extends KernelTestCase
         $cacheDir = $this->projectDir.'/var/cache/test';
         $messageBus = new RecordingMessageBus();
 
-        $classes = (new PackageDiscoveryCacheWarmer(new PackageDiscoveryDispatcher($messageBus)))->warmUp($cacheDir);
+        $classes = (new PackageDiscoveryCacheWarmer(new PackageDiscoveryDispatcher($messageBus, new NullWorkflowResultMessageReporter())))->warmUp($cacheDir);
 
         self::assertSame([], $classes);
         self::assertCount(1, $messageBus->messages());
@@ -120,6 +121,7 @@ final class PackageDiscoveryRunnerTest extends KernelTestCase
             new PackageRegistryHandler($this->entityManager, $this->projectDir),
             $this->projectDir,
             'test',
+            new NullWorkflowResultMessageReporter(),
         );
     }
 

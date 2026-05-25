@@ -8,7 +8,7 @@ Implemented first-pass content primitives:
 
 - `ContentStatus` and `ContentVisibility` define stable workflow and visibility tokens.
 - `App\Core\Message\Message`, `MessageCode`, and `MessageKey` carry machine codes, translation keys, parameters, and context for later localization.
-- `App\Core\Message\MessageException` carries a structured message while remaining compatible with `InvalidArgumentException`.
+- `App\Core\Message\MessageException` carries a structured message for hard invariant boundaries while extending PHP's `InvalidArgumentException`.
 - `Read\ContentReadContextResolver` resolves the language and variant context for public content reads.
 - `Read\PublishedContentResolver` loads published content views from slugs, custom URLs, or hierarchy paths while enforcing active revisions, visibility, and view ACL rules.
 - `Read\PublishedContentResolveResult` and `Read\PublishedContentResolveStatus` distinguish missing/unpublished content from private or ACL-denied content for HTTP status mapping.

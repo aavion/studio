@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 
 interface PackageLifecycleAssetRebuilderInterface
 {
     /**
-     * @return OperationResult<mixed>
+     * @return WorkflowResult<mixed>
      */
-    public function rebuild(string $environment): OperationResult;
+    public function rebuild(string $environment): WorkflowResult;
 }

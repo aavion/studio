@@ -27,6 +27,15 @@ final class MessageException extends InvalidArgumentException
         return new self(Message::create($code, $translationKey, $parameters, $context, $level));
     }
 
+    /**
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $context
+     */
+    public static function invalidArgument(string $translationKey, array $parameters = [], array $context = []): self
+    {
+        return new self(Message::invalidArgument($translationKey, $parameters, $context));
+    }
+
     public static function fromMessage(Message $message): self
     {
         return new self($message);

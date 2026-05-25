@@ -10,8 +10,9 @@ use App\Core\Message\MessageLevel;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageLifecycleAssetRebuilderInterface;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Message\Message;
+use App\Core\Workflow\WorkflowResult;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -107,6 +108,8 @@ final class PackageActivatorTest extends KernelTestCase
             'status' => 'inactive',
             'required_by' => 'new-theme',
         ]], $result->value()['dependencies']);
+        self::assertSame('package.dependency.resolved', $result->messages()[0]->code());
+        self::assertSame(MessageLevel::Debug, $result->messages()[0]->level());
     }
 
     public function testItActivatesInactiveDependenciesWithTheTargetPackage(): void
@@ -176,8 +179,8 @@ final class PackageActivatorTest extends KernelTestCase
     public function testItRollsBackWhenAssetRebuildFails(): void
     {
         $this->insertPackage('demo-module', ['module'], 'inactive');
-        $this->assetRebuilder->result = OperationResult::failed([
-            OperationIssue::create(
+        $this->assetRebuilder->result = WorkflowResult::failed([
+            Message::create(
                 MessageCode::PACKAGE_ASSET_SYNC_FAILED,
                 MessageKey::PACKAGE_ASSET_SYNC_FAILED,
                 ['%message%' => 'rebuild failed'],
@@ -202,7 +205,7 @@ final class PackageActivatorTest extends KernelTestCase
 
     private function activator(): PackageActivator
     {
-        return new PackageActivator($this->entityManager, $this->assetRebuilder);
+        return new PackageActivator($this->entityManager, $this->assetRebuilder, new NullWorkflowResultMessageReporter());
     }
 
     /**
@@ -263,16 +266,16 @@ final class FakePackageLifecycleAssetRebuilder implements PackageLifecycleAssetR
     public array $environments = [];
 
     /**
-     * @var OperationResult<mixed>
+     * @var WorkflowResult<mixed>
      */
-    public OperationResult $result;
+    public WorkflowResult $result;
 
     public function __construct()
     {
-        $this->result = OperationResult::success(context: ['fake' => true]);
+        $this->result = WorkflowResult::success(context: ['fake' => true]);
     }
 
-    public function rebuild(string $environment): OperationResult
+    public function rebuild(string $environment): WorkflowResult
     {
         $this->environments[] = $environment;
 

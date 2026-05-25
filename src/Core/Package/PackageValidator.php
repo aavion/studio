@@ -16,8 +16,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 
 final class PackageValidator
 {
@@ -34,21 +33,21 @@ final class PackageValidator
     }
 
     /**
-     * @return OperationResult<PackageCandidate>
+     * @return WorkflowResult<PackageCandidate>
      */
-    public function validate(PackageCandidate $candidate, PackageSpec $spec): OperationResult
+    public function validate(PackageCandidate $candidate, PackageSpec $spec): WorkflowResult
     {
         $issues = [];
 
         foreach ($spec->requiredFiles() as $path) {
             $absolutePath = $candidate->directory().DIRECTORY_SEPARATOR.$path;
             if (!is_file($absolutePath)) {
-                $issues[] = OperationIssue::create(
+                $issues[] = Message::create(
                     MessageCode::PACKAGE_REQUIRED_FILE_MISSING,
                     MessageKey::PACKAGE_REQUIRED_FILE_MISSING,
                     ['%path%' => $absolutePath],
                     context: $this->context($candidate, $path, $absolutePath),
-                    level: MessageLevel::Warning,
+                    level: MessageLevel::Error,
                 );
             }
         }
@@ -56,12 +55,12 @@ final class PackageValidator
         foreach ($spec->requiredDirectories() as $path) {
             $absolutePath = $candidate->directory().DIRECTORY_SEPARATOR.$path;
             if (!is_dir($absolutePath)) {
-                $issues[] = OperationIssue::create(
+                $issues[] = Message::create(
                     MessageCode::PACKAGE_REQUIRED_DIRECTORY_MISSING,
                     MessageKey::PACKAGE_REQUIRED_DIRECTORY_MISSING,
                     ['%path%' => $absolutePath],
                     context: $this->context($candidate, $path, $absolutePath),
-                    level: MessageLevel::Warning,
+                    level: MessageLevel::Error,
                 );
             }
         }
@@ -97,7 +96,7 @@ final class PackageValidator
         }
 
         if ([] !== $issues) {
-            return OperationResult::invalid($issues, [
+            return WorkflowResult::invalid($issues, [
                 'inventory' => $inspection->inventory(),
                 'inspection' => $inspection,
             ]);
@@ -108,8 +107,8 @@ final class PackageValidator
             'inspection' => $inspection,
         ];
 
-        return OperationResult::success($candidate, $context, [
-            Message::info(MessageCode::PACKAGE_VALIDATION_COMPLETED, MessageKey::PACKAGE_VALIDATION_COMPLETED, [
+        return WorkflowResult::success($candidate, $context, [
+            Message::debug(MessageCode::PACKAGE_VALIDATION_COMPLETED, MessageKey::PACKAGE_VALIDATION_COMPLETED, [
                 '%package%' => $candidate->directory(),
             ], [
                 'source' => $candidate->source()->name(),
@@ -157,7 +156,7 @@ final class PackageValidator
     /**
      * @param list<string> $files
      *
-     * @return list<OperationIssue>
+     * @return list<Message>
      */
     private function lintFiles(PackageCandidate $candidate, array $files, LinterInterface $linter, string $issueCode, string $translationKey): array
     {
@@ -175,12 +174,12 @@ final class PackageValidator
             $lintResult = $linter->lint($contents, $file);
 
             foreach ($lintResult->issues() as $lintIssue) {
-                $issues[] = OperationIssue::create(
+                $issues[] = Message::create(
                     $issueCode,
                     $translationKey,
                     ['%path%' => $path],
                     context: $this->lintContext($candidate, $file, $path, $lintIssue->context()),
-                    level: MessageLevel::Warning,
+                    level: MessageLevel::Error,
                 );
             }
         }
@@ -204,9 +203,9 @@ final class PackageValidator
         ];
     }
 
-    private function unreadableFileIssue(PackageCandidate $candidate, string $file, string $path): OperationIssue
+    private function unreadableFileIssue(PackageCandidate $candidate, string $file, string $path): Message
     {
-        return OperationIssue::create(
+        return Message::create(
             MessageCode::PACKAGE_FILE_UNREADABLE,
             MessageKey::PACKAGE_FILE_UNREADABLE,
             ['%path%' => $path],
@@ -218,7 +217,7 @@ final class PackageValidator
     /**
      * @param list<string> $files
      *
-     * @return list<OperationIssue>
+     * @return list<Message>
      */
     private function validateSourceNamespaces(PackageCandidate $candidate, array $files): array
     {
@@ -325,8 +324,8 @@ final class PackageValidator
         string $path,
         string $namespace,
         string $expectedNamespace,
-    ): OperationIssue {
-        return OperationIssue::create(
+    ): Message {
+        return Message::create(
             MessageCode::PACKAGE_PHP_NAMESPACE_INVALID,
             MessageKey::PACKAGE_PHP_NAMESPACE_INVALID,
             ['%path%' => $path, '%expected_namespace%' => $expectedNamespace],
@@ -334,7 +333,7 @@ final class PackageValidator
                 'namespace' => $namespace,
                 'expected_namespace' => $expectedNamespace,
             ]),
-            level: MessageLevel::Warning,
+            level: MessageLevel::Error,
         );
     }
 }

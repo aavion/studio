@@ -6,7 +6,6 @@ namespace App\Entity;
 
 use App\Content\Routing\ContentSlug;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Repository\ContentFieldValueRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -120,7 +119,7 @@ class ContentFieldValue
     private static function assertUid(string $uid, string $label): string
     {
         if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $uid)) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_UID_INVALID, [
+            throw MessageException::invalidArgument(MessageKey::CONTENT_UID_INVALID, [
                 '%label%' => $label,
                 '%uid%' => $uid,
             ]);
@@ -132,7 +131,7 @@ class ContentFieldValue
     private static function assertToken(string $token, string $label): string
     {
         if (1 !== preg_match('/^[a-z]{2}(?:-[a-z0-9]+)?$/', $token)) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_LOCALE_TOKEN_INVALID, [
+            throw MessageException::invalidArgument(MessageKey::CONTENT_LOCALE_TOKEN_INVALID, [
                 '%label%' => $label,
                 '%token%' => $token,
             ]);
@@ -144,7 +143,7 @@ class ContentFieldValue
     private static function assertFieldIdentifier(string $fieldIdentifier): string
     {
         if (1 !== preg_match('/^[a-z][a-z0-9_]*$/', $fieldIdentifier)) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_FIELD_IDENTIFIER_INVALID, [
+            throw MessageException::invalidArgument(MessageKey::CONTENT_FIELD_IDENTIFIER_INVALID, [
                 '%field_identifier%' => $fieldIdentifier,
             ]);
         }

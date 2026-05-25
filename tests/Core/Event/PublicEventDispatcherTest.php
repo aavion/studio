@@ -8,6 +8,7 @@ use App\Core\Event\PublicEventDispatcher;
 use App\Core\Event\PublicEventHookRegistry;
 use App\Core\Event\PublicHookFailedEvent;
 use App\View\ViewContextEvent;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -21,7 +22,7 @@ final class PublicEventDispatcherTest extends TestCase
         });
 
         $event = new ViewContextEvent([]);
-        $result = (new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry()))->dispatch($event);
+        $result = (new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter()))->dispatch($event);
 
         self::assertTrue($result->isSuccess());
         self::assertSame(['handled' => true], $event->context());
@@ -39,7 +40,7 @@ final class PublicEventDispatcherTest extends TestCase
         });
 
         $event = new ViewContextEvent([]);
-        $result = (new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry()))->dispatch($event, [
+        $result = (new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter()))->dispatch($event, [
             'operation' => 'test',
         ], 'demo-package');
 
@@ -65,7 +66,7 @@ final class PublicEventDispatcherTest extends TestCase
         });
 
         $event = new ViewContextEvent([]);
-        $result = (new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry()))->dispatch($event);
+        $result = (new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter()))->dispatch($event);
 
         self::assertFalse($result->isSuccess());
         self::assertSame('Original failure', $result->firstIssue()?->context()['message']);

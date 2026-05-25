@@ -81,6 +81,20 @@ services:
     App\Core\Package\PackageLifecycleCleanupRunnerInterface:
         alias: App\Core\Package\PackageLifecycleCleanupRunner
 
+    App\Core\Log\MessageLoggerInterface:
+        alias: App\Core\Log\FileMessageLogger
+
+    App\Core\Message\MessageReporterInterface:
+        alias: App\Core\Message\MessageReporter
+
+    App\Core\Message\WorkflowResultMessageReporterInterface:
+        alias: App\Core\Message\WorkflowResultMessageReporter
+
+    App\Core\Log\FileMessageLogger:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
     App\Core\Asset\AssetRebuildQueueFactory:
         arguments:
             $projectDir: '%kernel.project_dir%'

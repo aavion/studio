@@ -13,6 +13,7 @@ use App\Setup\SetupInput;
 use App\Setup\SetupLanguageCatalog;
 use App\Setup\SetupRunner;
 use PDO;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use PHPUnit\Framework\TestCase;
 
 final class SetupRunnerTest extends TestCase
@@ -40,7 +41,7 @@ final class SetupRunnerTest extends TestCase
         $databasePath = $this->root.'/var/setup.db';
         $this->createSchema($databasePath);
         $executor = new RecordingSetupCommandExecutor();
-        $runner = new SetupRunner($this->root, $executor);
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
 
         $result = $runner->run(new SetupInput(
             appEnv: 'test',
@@ -118,7 +119,7 @@ final class SetupRunnerTest extends TestCase
         $pdo->prepare('INSERT INTO user_acl_group (user_uid, group_uid) VALUES (?, ?)')
             ->execute([$existingAdminUserUid, $existingAdminGroupUid]);
 
-        $runner = new SetupRunner($this->root, new RecordingSetupCommandExecutor());
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), new RecordingSetupCommandExecutor());
 
         $result = $runner->run(new SetupInput(
             appEnv: 'test',
@@ -145,7 +146,7 @@ final class SetupRunnerTest extends TestCase
     public function testItStopsOnCommandFailureAndReturnsActionLogContext(): void
     {
         $executor = new RecordingSetupCommandExecutor(failureAt: 2, failure: new SetupCommandResult(1, '', 'dump-env failed'));
-        $runner = new SetupRunner($this->root, $executor);
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
 
         $result = $runner->run(new SetupInput(
             appEnv: 'test',
@@ -167,7 +168,7 @@ final class SetupRunnerTest extends TestCase
     {
         mkdir($this->root.'/.env.test.local');
         $executor = new RecordingSetupCommandExecutor();
-        $runner = new SetupRunner($this->root, $executor);
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
 
         $result = $runner->run(new SetupInput(
             appEnv: 'test',
@@ -195,7 +196,7 @@ final class SetupRunnerTest extends TestCase
         $this->createSchema($databasePath);
         touch($this->root.'/bin/composer');
         $executor = new RecordingSetupCommandExecutor(failureAt: 1, failure: new SetupCommandResult(1));
-        $runner = new SetupRunner($this->root, $executor);
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
 
         $result = $runner->run(new SetupInput(
             appEnv: 'test',
@@ -221,7 +222,7 @@ final class SetupRunnerTest extends TestCase
         $databasePath = $this->root.'/var/setup.db';
         $this->createSchema($databasePath);
         $executor = new RecordingSetupCommandExecutor();
-        $runner = new SetupRunner($this->root, $executor);
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
 
         $result = $runner->run(new SetupInput(
             appEnv: 'test',
@@ -258,7 +259,7 @@ final class SetupRunnerTest extends TestCase
     public function testDryRunMasksDatabasePasswordsInActionLogContext(): void
     {
         $executor = new RecordingSetupCommandExecutor();
-        $runner = new SetupRunner($this->root, $executor);
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
 
         $result = $runner->run(new SetupInput(
             appEnv: 'test',
@@ -284,7 +285,7 @@ final class SetupRunnerTest extends TestCase
     public function testDryRunRejectsUnsupportedDatabaseUrlBeforeWriting(): void
     {
         $executor = new RecordingSetupCommandExecutor();
-        $runner = new SetupRunner($this->root, $executor);
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
 
         $result = $runner->run(new SetupInput(
             appEnv: 'test',
@@ -306,7 +307,7 @@ final class SetupRunnerTest extends TestCase
     public function testDryRunRejectsUnsupportedSqliteUrlVariantsBeforeWriting(): void
     {
         $executor = new RecordingSetupCommandExecutor();
-        $runner = new SetupRunner($this->root, $executor);
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
 
         $result = $runner->run(new SetupInput(
             appEnv: 'test',

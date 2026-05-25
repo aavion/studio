@@ -9,16 +9,16 @@ use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
-use App\Core\Message\MessageLevel;
 use App\Core\Message\MessageKey;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Workflow\WorkflowResult;
 use Throwable;
 
 final class SetupRunner
 {
     public function __construct(
         private readonly string $projectDir,
+        private readonly WorkflowResultMessageReporterInterface $messageReporter,
         private readonly SetupCommandExecutorInterface $commandExecutor = new ProcOpenSetupCommandExecutor(),
         private readonly DatabaseUrlFactory $databaseUrlFactory = new DatabaseUrlFactory(),
         private readonly SetupEnvironmentWriter $environmentWriter = new SetupEnvironmentWriter(),
@@ -31,15 +31,15 @@ final class SetupRunner
     }
 
     /**
-     * @return OperationResult<ActionLog>
+     * @return WorkflowResult<ActionLog>
      */
-    public function run(SetupInput $input): OperationResult
+    public function run(SetupInput $input): WorkflowResult
     {
         $log = ActionLog::create();
         $prepare = $this->prepare($input, $log);
 
-        if ($prepare instanceof OperationResult) {
-            return $prepare;
+        if ($prepare instanceof WorkflowResult) {
+            return $this->report($prepare, $input);
         }
 
         [$appSecret, $databaseUrl, $environment] = $prepare;
@@ -55,24 +55,18 @@ final class SetupRunner
                 unset($context['_messages']);
                 $log = $log->add($entry->finish($status, context: $context, messages: $messages));
             } catch (Throwable $throwable) {
-                $issue = OperationIssue::create(
-                    MessageCode::SETUP_STEP_FAILED,
-                    MessageKey::SETUP_STEP_FAILED,
-                    ['%step%' => $name, '%message%' => $throwable->getMessage()],
-                    ['step' => $name, 'exception' => $throwable::class],
-                    MessageLevel::Error,
-                );
+                $issue = $this->failureMessage($name, $throwable);
                 $log = $log->add($entry->finish(ActionLogStatus::Failed, [$issue]));
 
-                return OperationResult::failed([$issue], [
+                return $this->report(WorkflowResult::failed([$issue], [
                     'halt_on_error' => true,
                     'failed_step' => $name,
                     'action_log' => $log->toArray(),
-                ]);
+                ]), $input);
             }
         }
 
-        return OperationResult::success($log, [
+        return $this->report(WorkflowResult::success($log, [
             'halt_on_error' => false,
             'dry_run' => $input->dryRun(),
             'app_env' => $input->appEnv(),
@@ -80,13 +74,13 @@ final class SetupRunner
             'available_languages' => $this->languageCatalog->availableLanguages($this->projectDir),
             'default_uri' => $input->defaultUri(),
             'database_driver' => $input->databaseDriver()->value,
-        ]);
+        ]), $input);
     }
 
     /**
-     * @return array{0: string, 1: string, 2: array<string, string>}|OperationResult<ActionLog>
+     * @return array{0: string, 1: string, 2: array<string, string>}|WorkflowResult<ActionLog>
      */
-    private function prepare(SetupInput $input, ActionLog $log): array|OperationResult
+    private function prepare(SetupInput $input, ActionLog $log): array|WorkflowResult
     {
         try {
             $appSecret = $this->appSecret($input);
@@ -94,15 +88,9 @@ final class SetupRunner
 
             return [$appSecret, $databaseUrl, $this->environment($input, $appSecret, $databaseUrl)];
         } catch (Throwable $throwable) {
-            $issue = OperationIssue::create(
-                MessageCode::SETUP_STEP_FAILED,
-                MessageKey::SETUP_STEP_FAILED,
-                ['%step%' => 'prepare_setup', '%message%' => $throwable->getMessage()],
-                ['step' => 'prepare_setup', 'exception' => $throwable::class],
-                MessageLevel::Error,
-            );
+            $issue = $this->failureMessage('prepare_setup', $throwable);
 
-            return OperationResult::failed([$issue], [
+            return WorkflowResult::failed([$issue], [
                 'halt_on_error' => true,
                 'failed_step' => 'prepare_setup',
                 'action_log' => $log->toArray(),
@@ -209,6 +197,18 @@ final class SetupRunner
         return trim($result->output().PHP_EOL.$result->errorOutput()) ?: 'Setup command failed.';
     }
 
+    private function failureMessage(string $step, Throwable $throwable): Message
+    {
+        $parameters = ['%step%' => $step, '%message%' => $throwable->getMessage()];
+        $context = ['step' => $step, 'exception' => $throwable::class];
+
+        if ($throwable instanceof SetupStepFailedException) {
+            return Message::error(MessageCode::SETUP_STEP_FAILED, MessageKey::SETUP_STEP_FAILED, $parameters, $context);
+        }
+
+        return Message::exception(MessageCode::SETUP_STEP_FAILED, MessageKey::SETUP_STEP_FAILED, $parameters, $context);
+    }
+
     private function generateSecret(): string
     {
         return bin2hex(random_bytes(32));
@@ -237,5 +237,15 @@ final class SetupRunner
         }
 
         return array_values(array_filter($messages, static fn (mixed $message): bool => $message instanceof Message));
+    }
+
+    private function report(WorkflowResult $result, SetupInput $input): WorkflowResult
+    {
+        return $this->messageReporter->report($result, [
+            'operation' => 'setup.run',
+            'app_env' => $input->appEnv(),
+            'dry_run' => $input->dryRun(),
+            'language' => $input->language(),
+        ]);
     }
 }

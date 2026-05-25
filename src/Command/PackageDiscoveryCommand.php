@@ -8,8 +8,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageKey;
 use App\Core\Package\PackageDiscoveryDispatcher;
 use App\Core\Package\PackageDiscoveryRunner;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -93,7 +92,7 @@ final class PackageDiscoveryCommand extends Command
         ));
     }
 
-    private function formatIssue(OperationIssue $issue): string
+    private function formatIssue(Message $issue): string
     {
         return sprintf('%s: %s', $issue->code(), $this->translator->trans($issue->translationKey(), $issue->parameters()));
     }
@@ -107,7 +106,7 @@ final class PackageDiscoveryCommand extends Command
         return $this->translator->trans($message->translationKey(), $message->parameters());
     }
 
-    private function formatFailure(OperationResult $result): string
+    private function formatFailure(WorkflowResult $result): string
     {
         $issue = $result->firstIssue();
 
@@ -118,7 +117,7 @@ final class PackageDiscoveryCommand extends Command
         return $this->formatIssue($issue);
     }
 
-    private function writeMessages(SymfonyStyle $io, OperationResult $result): void
+    private function writeMessages(SymfonyStyle $io, WorkflowResult $result): void
     {
         foreach ($result->messages() as $message) {
             $io->writeln($this->translate($message, $message->translationKey()));

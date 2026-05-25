@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Uid;
@@ -97,7 +96,7 @@ class ApiKey
     private static function assertPrefix(string $prefix): string
     {
         if (1 !== preg_match('/^[A-Za-z0-9_-]{4,16}$/', $prefix)) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::API_KEY_PREFIX_INVALID, [
+            throw MessageException::invalidArgument(MessageKey::API_KEY_PREFIX_INVALID, [
                 '%prefix%' => $prefix,
             ]);
         }
@@ -108,7 +107,7 @@ class ApiKey
     private static function assertHmacHash(string $hmacHash): string
     {
         if (1 !== preg_match('/^[a-f0-9]{64}$/', $hmacHash)) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::API_KEY_HMAC_HASH_INVALID);
+            throw MessageException::invalidArgument(MessageKey::API_KEY_HMAC_HASH_INVALID);
         }
 
         return $hmacHash;
@@ -117,7 +116,7 @@ class ApiKey
     private static function assertEncryptedKey(string $encryptedKey): string
     {
         if ('' === trim($encryptedKey)) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::API_KEY_ENCRYPTED_KEY_EMPTY);
+            throw MessageException::invalidArgument(MessageKey::API_KEY_ENCRYPTED_KEY_EMPTY);
         }
 
         return $encryptedKey;

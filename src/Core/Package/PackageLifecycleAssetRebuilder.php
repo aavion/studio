@@ -7,10 +7,10 @@ namespace App\Core\Package;
 use App\Core\Asset\AssetRebuildQueueFactory;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
-use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationExecutor;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Message\Message;
+use App\Core\Workflow\WorkflowResult;
 use Throwable;
 
 final readonly class PackageLifecycleAssetRebuilder implements PackageLifecycleAssetRebuilderInterface
@@ -19,16 +19,17 @@ final readonly class PackageLifecycleAssetRebuilder implements PackageLifecycleA
         private ActivePackageAssetProviderInterface $packageProvider,
         private AssetRebuildQueueFactory $queueFactory,
         private OperationExecutor $operationExecutor,
+        private WorkflowResultMessageReporterInterface $messageReporter,
     ) {
     }
 
-    public function rebuild(string $environment): OperationResult
+    public function rebuild(string $environment): WorkflowResult
     {
         try {
             $packages = $this->packageProvider->packages();
         } catch (Throwable $error) {
-            return OperationResult::failed([
-                OperationIssue::create(
+            return $this->report(WorkflowResult::failed([
+                Message::exception(
                     MessageCode::PACKAGE_ASSET_SYNC_FAILED,
                     MessageKey::PACKAGE_ASSET_SYNC_FAILED,
                     ['%message%' => $error->getMessage()],
@@ -37,13 +38,20 @@ final readonly class PackageLifecycleAssetRebuilder implements PackageLifecycleA
                         'exception' => $error::class,
                         'message' => $error->getMessage(),
                     ],
-                    MessageLevel::Error,
                 ),
-            ]);
+            ]), $environment);
         }
 
         return $this->operationExecutor
             ->executeQueue($this->queueFactory->create($environment, $packages))
             ->result();
+    }
+
+    private function report(WorkflowResult $result, string $environment): WorkflowResult
+    {
+        return $this->messageReporter->report($result, [
+            'operation' => 'package.asset_rebuild',
+            'environment' => $environment,
+        ]);
     }
 }

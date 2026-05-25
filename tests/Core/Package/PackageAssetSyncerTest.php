@@ -13,8 +13,9 @@ use App\Core\Package\PackageAssetContribution;
 use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageAssetSyncer;
 use App\Core\Package\PackageScope;
-use App\Core\Workflow\OperationStatus;
+use App\Core\Workflow\WorkflowStatus;
 use App\Tests\Support\FilesystemTestHelper;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -146,7 +147,7 @@ final class PackageAssetSyncerTest extends TestCase
 
         $result = (new PackageAssetSyncer(
             $this->root,
-            eventDispatcher: new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry()),
+            eventDispatcher: new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter()),
         ))->sync([
             new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
         ]);
@@ -168,12 +169,12 @@ final class PackageAssetSyncerTest extends TestCase
 
         $result = (new PackageAssetSyncer(
             $this->root,
-            eventDispatcher: new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry()),
+            eventDispatcher: new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter()),
         ))->sync([
             new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
         ]);
 
-        self::assertSame(OperationStatus::Failed, $result->status());
+        self::assertSame(WorkflowStatus::Failed, $result->status());
         self::assertSame('event.hook_listener_failed', $result->firstIssue()?->code());
         self::assertSame(PackageAssetRegistryBuildEvent::class, $result->firstIssue()?->context()['event']);
     }
@@ -211,7 +212,7 @@ final class PackageAssetSyncerTest extends TestCase
         unlink($this->root.'/assets/packages');
         mkdir($this->root.'/assets/packages', 0775, true);
 
-        self::assertSame(OperationStatus::Failed, $result->status());
+        self::assertSame(WorkflowStatus::Failed, $result->status());
         self::assertSame('package.asset_sync_failed', $result->firstIssue()?->code());
     }
 
@@ -227,7 +228,7 @@ final class PackageAssetSyncerTest extends TestCase
         ]);
         unlink($this->root.'/packages/demo');
 
-        self::assertSame(OperationStatus::Failed, $result->status());
+        self::assertSame(WorkflowStatus::Failed, $result->status());
         self::assertSame('package.asset_sync_failed', $result->firstIssue()?->code());
     }
 
@@ -242,7 +243,7 @@ final class PackageAssetSyncerTest extends TestCase
         ]);
         unlink($this->root.'/packages/demo/templates');
 
-        self::assertSame(OperationStatus::Failed, $result->status());
+        self::assertSame(WorkflowStatus::Failed, $result->status());
         self::assertSame('package.asset_sync_failed', $result->firstIssue()?->code());
     }
 }

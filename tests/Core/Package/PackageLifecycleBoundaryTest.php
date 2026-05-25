@@ -9,7 +9,6 @@ use App\Core\Event\EventHookMode;
 use App\Core\Event\PublicHookFailedEvent;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
-use App\Core\Message\MessageLevel;
 use App\Core\Package\ActivePackageProvider;
 use App\Core\Package\PackageAssetRebuildDispatcher;
 use App\Core\Package\PackageAssetRebuildMessage;
@@ -21,8 +20,8 @@ use App\Core\Package\PackagePhpLoader;
 use App\Core\Package\PackageRemover;
 use App\Core\Package\PackageRuntimeFailureHandler;
 use App\Core\Package\PackageScope;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Message\Message;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use App\Tests\Support\FilesystemTestHelper;
 use App\Tests\Support\RecordingMessageBus;
@@ -30,6 +29,7 @@ use App\View\ViewContextEvent;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use RuntimeException;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class PackageLifecycleBoundaryTest extends KernelTestCase
@@ -94,12 +94,13 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
 
         $result = (new PackageRuntimeFailureHandler(
             $this->entityManager,
-            new PackageAssetRebuildDispatcher($messageBus),
+            new NullWorkflowResultMessageReporter(),
+            new PackageAssetRebuildDispatcher($messageBus, new NullWorkflowResultMessageReporter()),
             'test',
         ))->handleHookFailure(new PublicHookFailedEvent(
             new ViewContextEvent([]),
             new EventHookDescriptor(ViewContextEvent::class, 'view', EventHookMode::Extend, MessageKey::EVENT_HOOK_VIEW_CONTEXT_SUMMARY, mutable: true),
-            OperationIssue::create(MessageCode::EVENT_HOOK_LISTENER_FAILED, MessageKey::EVENT_HOOK_LISTENER_FAILED, ['%event%' => ViewContextEvent::class]),
+            Message::create(MessageCode::EVENT_HOOK_LISTENER_FAILED, MessageKey::EVENT_HOOK_LISTENER_FAILED, ['%event%' => ViewContextEvent::class]),
             new RuntimeException('listener failed'),
             ['route' => 'demo'],
             'demo-module',
@@ -139,6 +140,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
             new ActivePackageProvider($this->entityManager),
             $this->entityManager,
             $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
         ))->loadActivePackages();
 
         self::assertTrue($result->isSuccess());
@@ -162,7 +164,8 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
             new ActivePackageProvider($this->entityManager),
             $this->entityManager,
             $this->projectDir,
-            new PackageAssetRebuildDispatcher($messageBus),
+            new NullWorkflowResultMessageReporter(),
+            new PackageAssetRebuildDispatcher($messageBus, new NullWorkflowResultMessageReporter()),
             'test',
         ))->loadActivePackages();
 
@@ -194,6 +197,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
             $this->assetRebuilder,
             $this->cleanupRunner,
             $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
         ))->remove('demo-module', 'test');
 
         self::assertTrue($result->isSuccess());
@@ -214,6 +218,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
             $this->assetRebuilder,
             $this->cleanupRunner,
             $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
         ))->purge('demo-module');
 
         self::assertTrue($result->isSuccess());
@@ -230,6 +235,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         $result = (new PackageFaultResetter(
             $this->entityManager,
             $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
             'test',
         ))->resetFault('demo-module');
 
@@ -254,6 +260,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         $result = (new PackageFaultResetter(
             $this->entityManager,
             $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
             'test',
         ))->resetFault('demo-module');
 
@@ -270,6 +277,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         $result = (new PackageFaultResetter(
             $this->entityManager,
             $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
             'test',
         ))->resetFault('demo-module');
 
@@ -370,11 +378,11 @@ final class RecordingPackageLifecycleCleanupRunner implements PackageLifecycleCl
      */
     public array $packages = [];
 
-    public function cleanup(ExtensionPackage $package): OperationResult
+    public function cleanup(ExtensionPackage $package): WorkflowResult
     {
         $this->packages[] = $package->packageName();
 
-        return OperationResult::success([
+        return WorkflowResult::success([
             'package' => $package->packageName(),
             'actions' => [],
         ], [
@@ -391,10 +399,10 @@ final class BoundaryPackageLifecycleAssetRebuilder implements PackageLifecycleAs
      */
     public array $environments = [];
 
-    public function rebuild(string $environment): OperationResult
+    public function rebuild(string $environment): WorkflowResult
     {
         $this->environments[] = $environment;
 
-        return OperationResult::success(context: ['fake' => true]);
+        return WorkflowResult::success(context: ['fake' => true]);
     }
 }

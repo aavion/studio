@@ -4,7 +4,10 @@
 declare(strict_types=1);
 
 use App\Core\ActionLog\ActionLog;
+use App\Core\Log\FileMessageLogger;
 use App\Core\Message\MessageKey;
+use App\Core\Message\MessageReporter;
+use App\Core\Message\WorkflowResultMessageReporter;
 use App\Setup\SetupCliInputFactory;
 use App\Setup\SetupCliPrompter;
 use App\Setup\SetupLanguageCatalog;
@@ -55,7 +58,7 @@ $input = (new SetupCliInputFactory($projectDir))->create($options);
 $translator = new SetupMessageTranslator();
 $language = $input->language();
 
-$result = (new SetupRunner($projectDir))->run($input);
+$result = (new SetupRunner($projectDir, workflowResultMessageReporter($projectDir)))->run($input);
 $payload = $result->toArray();
 
 if ($result->value() instanceof ActionLog) {
@@ -162,6 +165,15 @@ function translationParameters(mixed $parameters): array
     return $translated;
 }
 
+function workflowResultMessageReporter(string $projectDir): WorkflowResultMessageReporter
+{
+    $environment = (string) ($_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? 'dev');
+
+    return new WorkflowResultMessageReporter(
+        new MessageReporter(new FileMessageLogger($projectDir, $environment)),
+    );
+}
+
 /**
  * @param list<string> $argv
  * @param array<string, string|false> $options
@@ -206,7 +218,7 @@ function handlePasswordReset(string $projectDir, array $options, string $usernam
         return 1;
     }
 
-    $runner = new SetupPasswordResetRunner();
+    $runner = new SetupPasswordResetRunner(workflowResultMessageReporter($projectDir));
     $user = $runner->findUser($projectDir, $databaseUrl, $username);
 
     if (null === $user) {

@@ -10,8 +10,8 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Manifest\ManifestSpec;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -24,6 +24,7 @@ final readonly class PackageFaultResetter
     public function __construct(
         private EntityManagerInterface $entityManager,
         private string $projectDir,
+        private WorkflowResultMessageReporterInterface $messageReporter,
         private string $environment = 'test',
         private PackageDiscovery $discovery = new PackageDiscovery(),
         private PackageValidator $validator = new PackageValidator(),
@@ -36,9 +37,17 @@ final readonly class PackageFaultResetter
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    public function resetFault(string $packageName): OperationResult
+    public function resetFault(string $packageName): WorkflowResult
+    {
+        return $this->report($this->doResetFault($packageName), ['package' => $packageName]);
+    }
+
+    /**
+     * @return WorkflowResult<array<string, mixed>>
+     */
+    private function doResetFault(string $packageName): WorkflowResult
     {
         $package = $this->package($packageName);
 
@@ -57,7 +66,7 @@ final readonly class PackageFaultResetter
         $candidateResult = $this->discoverCandidate($package);
 
         if (!$candidateResult->isSuccess()) {
-            return OperationResult::invalid($candidateResult->issues(), [
+            return WorkflowResult::invalid($candidateResult->issues(), [
                 'package' => $packageName,
                 'path' => $package->path(),
                 'discovery_context' => $candidateResult->context(),
@@ -68,7 +77,7 @@ final readonly class PackageFaultResetter
         $validation = $this->validator->validate($candidate, $this->validationSpec);
 
         if (!$validation->isSuccess()) {
-            return OperationResult::invalid($validation->issues(), [
+            return WorkflowResult::invalid($validation->issues(), [
                 'package' => $packageName,
                 'path' => $package->path(),
                 'validation_context' => $validation->context(),
@@ -79,13 +88,13 @@ final readonly class PackageFaultResetter
             $path = $this->relativePackagePath($candidate);
             $scopes = PackageScope::fromManifestValue((string) $candidate->manifest()->get('PACKAGE_SCOPE', ''));
         } catch (InvalidArgumentException) {
-            return OperationResult::invalid([
-                OperationIssue::create(
+            return WorkflowResult::invalid([
+                Message::create(
                     MessageCode::PACKAGE_IDENTIFIER_INVALID,
                     MessageKey::PACKAGE_IDENTIFIER_INVALID,
                     ['%identifier%' => $packageName],
                     ['package' => $packageName, 'path' => $package->path()],
-                    MessageLevel::Warning,
+                    MessageLevel::Error,
                 ),
             ]);
         }
@@ -104,7 +113,7 @@ final readonly class PackageFaultResetter
             'status' => ExtensionPackageStatus::Inactive->value,
         ];
 
-        return OperationResult::success([
+        return WorkflowResult::success([
             'package' => $packageName,
             'changes' => [$change],
             'asset_rebuild' => false,
@@ -114,11 +123,12 @@ final readonly class PackageFaultResetter
             'changes' => [$change],
         ], [
             ...$validation->messages(),
-            Message::info(
+            Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_FAULT_RESET,
                 MessageKey::PACKAGE_LIFECYCLE_FAULT_RESET,
                 ['%package%' => $packageName],
                 ['package' => $packageName, 'path' => $package->path()],
+                MessageLevel::Success,
             ),
         ]);
     }
@@ -133,15 +143,15 @@ final readonly class PackageFaultResetter
     }
 
     /**
-     * @return OperationResult<PackageCandidate>
+     * @return WorkflowResult<PackageCandidate>
      */
-    private function discoverCandidate(ExtensionPackage $package): OperationResult
+    private function discoverCandidate(ExtensionPackage $package): WorkflowResult
     {
         $source = PackageSource::single('package', $package->path(), $this->packageManifestSpec());
         $discovery = $this->discovery->discoverSources($this->projectDir, [$source]);
 
         if (!$discovery->isSuccess()) {
-            return OperationResult::invalid($discovery->issues(), [
+            return WorkflowResult::invalid($discovery->issues(), [
                 'package' => $package->packageName(),
                 'path' => $package->path(),
                 'discovery_context' => $discovery->context(),
@@ -153,18 +163,18 @@ final readonly class PackageFaultResetter
         if (!$candidate instanceof PackageCandidate) {
             $manifestPath = $package->path().'/.manifest';
 
-            return OperationResult::invalid([
-                OperationIssue::create(
+            return WorkflowResult::invalid([
+                Message::create(
                     MessageCode::PACKAGE_REQUIRED_FILE_MISSING,
                     MessageKey::PACKAGE_REQUIRED_FILE_MISSING,
                     ['%path%' => $manifestPath],
                     ['package' => $package->packageName(), 'path' => $manifestPath],
-                    MessageLevel::Warning,
+                    MessageLevel::Error,
                 ),
             ]);
         }
 
-        return OperationResult::success($candidate, [
+        return WorkflowResult::success($candidate, [
             'package' => $package->packageName(),
             'path' => $package->path(),
             'environment' => $this->environment,
@@ -260,12 +270,12 @@ final readonly class PackageFaultResetter
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    private function packageNotFound(string $packageName): OperationResult
+    private function packageNotFound(string $packageName): WorkflowResult
     {
-        return OperationResult::invalid([
-            OperationIssue::create(
+        return WorkflowResult::invalid([
+            Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
                 MessageKey::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
                 ['%package%' => $packageName],
@@ -276,18 +286,26 @@ final readonly class PackageFaultResetter
     }
 
     /**
-     * @return OperationResult<array<string, mixed>>
+     * @return WorkflowResult<array<string, mixed>>
      */
-    private function statusBlocked(ExtensionPackage $package, string $reason = 'status'): OperationResult
+    private function statusBlocked(ExtensionPackage $package, string $reason = 'status'): WorkflowResult
     {
-        return OperationResult::blocked([
-            OperationIssue::create(
+        return WorkflowResult::blocked([
+            Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
-                MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+            MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
                 ['%package%' => $package->packageName(), '%status%' => $package->status()->value],
                 ['package' => $package->packageName(), 'status' => $package->status()->value, 'reason' => $reason],
                 MessageLevel::Warning,
             ),
+        ]);
+    }
+
+    private function report(WorkflowResult $result, array $context = []): WorkflowResult
+    {
+        return $this->messageReporter->report($result, [
+            ...$context,
+            'operation' => 'package.fault_reset',
         ]);
     }
 }

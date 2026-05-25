@@ -11,8 +11,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 
 final readonly class PackageDiscovery
 {
@@ -23,9 +22,9 @@ final readonly class PackageDiscovery
     }
 
     /**
-     * @return OperationResult<list<PackageCandidate>>
+     * @return WorkflowResult<list<PackageCandidate>>
      */
-    public function discover(string $projectDir, string $environment): OperationResult
+    public function discover(string $projectDir, string $environment): WorkflowResult
     {
         return $this->discoverSources($projectDir, $this->defaultSources($environment));
     }
@@ -33,9 +32,9 @@ final readonly class PackageDiscovery
     /**
      * @param list<PackageSource> $sources
      *
-     * @return OperationResult<list<PackageCandidate>>
+     * @return WorkflowResult<list<PackageCandidate>>
      */
-    public function discoverSources(string $projectDir, array $sources): OperationResult
+    public function discoverSources(string $projectDir, array $sources): WorkflowResult
     {
         $projectDir = rtrim($projectDir, DIRECTORY_SEPARATOR);
         $candidates = [];
@@ -52,7 +51,7 @@ final readonly class PackageDiscovery
 
                 $contents = file_get_contents($manifestPath);
                 if (false === $contents) {
-                    $issues[] = OperationIssue::create(
+                    $issues[] = Message::create(
                         MessageCode::PACKAGE_MANIFEST_UNREADABLE,
                         MessageKey::PACKAGE_MANIFEST_UNREADABLE,
                         ['%path%' => $manifestPath],
@@ -66,7 +65,7 @@ final readonly class PackageDiscovery
                 $parseResult = $this->parser->parse($contents);
                 if (!$parseResult->isSuccess()) {
                     foreach ($parseResult->issues() as $issue) {
-                        $issues[] = OperationIssue::create(
+                        $issues[] = Message::create(
                             $issue->code(),
                             $issue->translationKey(),
                             $issue->parameters(),
@@ -89,7 +88,7 @@ final readonly class PackageDiscovery
                     $validationResult = $this->validator->validate($manifest, $spec);
                     if (!$validationResult->isSuccess()) {
                         foreach ($validationResult->issues() as $issue) {
-                            $issues[] = OperationIssue::create(
+                            $issues[] = Message::create(
                                 $issue->code(),
                                 $issue->translationKey(),
                                 $issue->parameters(),
@@ -112,12 +111,12 @@ final readonly class PackageDiscovery
                     try {
                         PackageScope::fromManifestValue($scopeValue);
                     } catch (\InvalidArgumentException $exception) {
-                        $issues[] = OperationIssue::create(
+                        $issues[] = Message::create(
                             MessageCode::PACKAGE_SCOPE_INVALID,
                             MessageKey::PACKAGE_SCOPE_INVALID,
                             ['%scope%' => $scopeValue],
                             ['path' => $manifestPath, 'source' => $source->name(), 'scope' => $scopeValue],
-                            MessageLevel::Warning,
+                            MessageLevel::Error,
                         );
 
                         continue;
@@ -129,18 +128,18 @@ final readonly class PackageDiscovery
         }
 
         if ([] !== $issues) {
-            return OperationResult::invalid($issues, ['candidates' => $candidates], $messages);
+            return WorkflowResult::invalid($issues, ['candidates' => $candidates], $messages);
         }
 
-        return OperationResult::success($candidates, [
+        return WorkflowResult::success($candidates, [
             'candidate_count' => count($candidates),
         ], [
             ...$messages,
-            Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+            Message::create(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
                 '%count%' => count($candidates),
             ], [
                 'candidate_count' => count($candidates),
-            ]),
+            ], MessageLevel::Success),
         ]);
     }
 

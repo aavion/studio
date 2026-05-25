@@ -6,7 +6,6 @@ namespace App\Entity;
 
 use App\Content\Schema\ContentSchemaField;
 use App\Core\Access\AccessLevel;
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
@@ -210,7 +209,7 @@ class ContentSchemaVersion
     private static function assertVersion(int $version): int
     {
         if ($version < 1) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_SCHEMA_VERSION_INVALID, [
+            throw MessageException::invalidArgument(MessageKey::CONTENT_SCHEMA_VERSION_INVALID, [
                 '%version%' => $version,
             ]);
         }
@@ -241,7 +240,7 @@ class ContentSchemaVersion
             Identifier::assertSnakeCase($field['identifier'], MessageKey::CONTENT_FIELD_IDENTIFIER_INVALID, '%field_identifier%');
 
             if (isset($identifiers[$field['identifier']])) {
-                throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_SCHEMA_FIELD_DUPLICATE, [
+                throw MessageException::invalidArgument(MessageKey::CONTENT_SCHEMA_FIELD_DUPLICATE, [
                     '%field_identifier%' => $field['identifier'],
                 ]);
             }
@@ -251,7 +250,7 @@ class ContentSchemaVersion
 
         foreach (ContentSchemaField::requiredBaseIdentifiers() as $requiredIdentifier) {
             if (!isset($identifiers[$requiredIdentifier])) {
-                throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_SCHEMA_REQUIRED_FIELD_MISSING, [
+                throw MessageException::invalidArgument(MessageKey::CONTENT_SCHEMA_REQUIRED_FIELD_MISSING, [
                     '%field_identifier%' => $requiredIdentifier,
                 ]);
             }
@@ -273,7 +272,7 @@ class ContentSchemaVersion
 
         foreach ($values as $identifier) {
             if (!is_string($identifier)) {
-                throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
+                throw MessageException::invalidArgument(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
                     '%identifier%' => 'non-string',
                 ]);
             }

@@ -7,8 +7,8 @@ namespace App\Core\Package;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Message\Message;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -19,9 +19,9 @@ final readonly class PackageDependencyResolver
     }
 
     /**
-     * @return OperationResult<array{packages: list<ExtensionPackage>, dependencies: list<array<string, mixed>>}>
+     * @return WorkflowResult<array{packages: list<ExtensionPackage>, dependencies: list<array<string, mixed>>}>
      */
-    public function resolve(ExtensionPackage $package): OperationResult
+    public function resolve(ExtensionPackage $package): WorkflowResult
     {
         $packages = [];
         $dependencies = [];
@@ -30,25 +30,36 @@ final readonly class PackageDependencyResolver
         $this->resolvePackage($package, $packages, $dependencies, $issues);
 
         if ([] !== $issues) {
-            return OperationResult::blocked($issues, [
+            return WorkflowResult::blocked($issues, [
                 'package' => $package->packageName(),
                 'dependencies' => $dependencies,
             ]);
         }
 
-        return OperationResult::success([
+        return WorkflowResult::success([
             'packages' => array_values($packages),
             'dependencies' => $dependencies,
         ], [
             'package' => $package->packageName(),
             'dependencies' => $dependencies,
+        ], [
+            Message::debug(
+                MessageCode::PACKAGE_DEPENDENCY_RESOLVED,
+                MessageKey::PACKAGE_DEPENDENCY_RESOLVED,
+                ['%package%' => $package->packageName(), '%count%' => count($dependencies)],
+                [
+                    'package' => $package->packageName(),
+                    'dependency_count' => count($dependencies),
+                    'dependencies' => $dependencies,
+                ],
+            ),
         ]);
     }
 
     /**
      * @param array<string, ExtensionPackage> $packages
      * @param list<array<string, mixed>> $dependencies
-     * @param list<OperationIssue> $issues
+     * @param list<Message> $issues
      */
     private function resolvePackage(ExtensionPackage $package, array &$packages, array &$dependencies, array &$issues): void
     {
@@ -71,12 +82,12 @@ final readonly class PackageDependencyResolver
             ];
 
             if (null === $dependency) {
-                $issues[] = OperationIssue::create(
+                $issues[] = Message::create(
                     MessageCode::PACKAGE_DEPENDENCY_MISSING,
                     MessageKey::PACKAGE_DEPENDENCY_MISSING,
                     ['%package%' => $dependencyName, '%required_by%' => $package->packageName()],
                     ['package' => $dependencyName, 'required_by' => $package->packageName()],
-                    MessageLevel::Warning,
+                    MessageLevel::Error,
                 );
 
                 continue;
@@ -86,24 +97,24 @@ final readonly class PackageDependencyResolver
                 ExtensionPackageStatus::Removed,
                 ExtensionPackageStatus::Faulty,
             ], true)) {
-                $issues[] = OperationIssue::create(
+                $issues[] = Message::create(
                     MessageCode::PACKAGE_DEPENDENCY_STATUS_BLOCKED,
                     MessageKey::PACKAGE_DEPENDENCY_STATUS_BLOCKED,
                     ['%package%' => $dependencyName, '%status%' => $dependency->status()->value],
                     ['package' => $dependencyName, 'status' => $dependency->status()->value, 'required_by' => $package->packageName()],
-                    MessageLevel::Warning,
+                    MessageLevel::Error,
                 );
 
                 continue;
             }
 
             if (null === $currentVersion || version_compare($currentVersion, $minVersion, '<')) {
-                $issues[] = OperationIssue::create(
+                $issues[] = Message::create(
                     MessageCode::PACKAGE_DEPENDENCY_VERSION_UNSATISFIED,
                     MessageKey::PACKAGE_DEPENDENCY_VERSION_UNSATISFIED,
                     ['%package%' => $dependencyName, '%required_version%' => $minVersion, '%installed_version%' => $currentVersion ?? ''],
                     ['package' => $dependencyName, 'required_version' => $minVersion, 'installed_version' => $currentVersion, 'required_by' => $package->packageName()],
-                    MessageLevel::Warning,
+                    MessageLevel::Error,
                 );
 
                 continue;

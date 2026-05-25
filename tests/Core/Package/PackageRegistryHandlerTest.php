@@ -15,6 +15,7 @@ use App\Tests\Support\FilesystemTestHelper;
 use App\Tests\Support\RecordingMessageBus;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class PackageRegistryHandlerTest extends KernelTestCase
@@ -182,7 +183,7 @@ final class PackageRegistryHandlerTest extends KernelTestCase
         return new PackageRegistryHandler(
             $this->entityManager,
             $this->projectDir,
-            assetRebuildDispatcher: null === $messageBus ? null : new PackageAssetRebuildDispatcher($messageBus),
+            assetRebuildDispatcher: null === $messageBus ? null : new PackageAssetRebuildDispatcher($messageBus, new NullWorkflowResultMessageReporter()),
             environment: 'test',
         );
     }

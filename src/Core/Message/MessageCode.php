@@ -95,6 +95,7 @@ final class MessageCode
     public const PACKAGE_DEPENDENCY_MISSING = 'package.dependency.missing';
     public const PACKAGE_DEPENDENCY_VERSION_UNSATISFIED = 'package.dependency.version_unsatisfied';
     public const PACKAGE_DEPENDENCY_STATUS_BLOCKED = 'package.dependency.status_blocked';
+    public const PACKAGE_DEPENDENCY_RESOLVED = 'package.dependency.resolved';
     public const ACCESS_GRANTED = 'access.granted';
     public const ACCESS_DENIED = 'access.denied';
     public const CONTENT_LANGUAGE_FALLBACK = 'content.language_fallback';

@@ -16,7 +16,7 @@ final class MessageExceptionTest extends TestCase
 {
     public function testItCarriesMessageKeyAndParameters(): void
     {
-        $exception = MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_SLUG_INVALID, [
+        $exception = MessageException::invalidArgument(MessageKey::CONTENT_SLUG_INVALID, [
             '%slug%' => 'Invalid Slug',
         ], [
             'field' => 'slug',
