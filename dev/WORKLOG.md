@@ -78,6 +78,7 @@
 - Hardened public hook dispatching with a provider-based registry, translation-key hook metadata, a `PublicEventDispatcher` that returns structured issues for listener failures, and a Twig `studio_event_hooks()` debug/admin metadata helper.
 - Added the internal `PublicHookFailedEvent` diagnostic signal so later package lifecycle and logging layers can react to hook listener failures without making package deactivation a dispatcher side effect.
 - Added the first content rendering hook, `ContentRenderContextEvent`, so themes and packages can extend per-content Twig variables without replacing controller or resolver flow.
+- Split package asset sync internals into focused filesystem, mirror, and registry writer helpers while keeping `PackageAssetSyncer` behavior and public construction unchanged.
 - Completed the package-scoped template baseline: canonical Twig namespaces (`@frontend`, `@backend`, `@root`, `@provider`), `system-template` scope, package template path validation, provider fallbacks, and CodeMirror as the native editor provider.
 - Reorganized the native template scaffold into frontend/backend/provider areas with root `base.html.twig`, generic frontend error fallbacks, shared macros, layout variants, and granular partials for future theme overrides.
 - Added the central HTTP error renderer with `/system/error-pages/{status}` content fallback, frontend status/default templates, anonymous `401` login rendering, and a production exception subscriber for HTTP exceptions.
