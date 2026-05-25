@@ -9,6 +9,8 @@ use App\Core\Message\MessageKey;
 use App\Core\Package\Event\PackageAssetRegistryBuildEvent;
 use App\Core\Package\Event\PackageAssetSyncCompletedEvent;
 use App\Core\Package\Event\PackageAssetSyncStartedEvent;
+use App\View\Event\OutputGeneratedEvent;
+use App\View\Event\ResponseHeadersEvent;
 use App\View\ViewContextEvent;
 
 final readonly class CoreEventHookProvider implements EventHookDescriptorProviderInterface
@@ -31,6 +33,22 @@ final readonly class CoreEventHookProvider implements EventHookDescriptorProvide
             'content',
             EventHookMode::Extend,
             MessageKey::EVENT_HOOK_CONTENT_RENDER_CONTEXT_SUMMARY,
+            mutable: true,
+        );
+
+        yield new EventHookDescriptor(
+            ResponseHeadersEvent::class,
+            'http',
+            EventHookMode::Extend,
+            MessageKey::EVENT_HOOK_RESPONSE_HEADERS_SUMMARY,
+            mutable: true,
+        );
+
+        yield new EventHookDescriptor(
+            OutputGeneratedEvent::class,
+            'view',
+            EventHookMode::Extend,
+            MessageKey::EVENT_HOOK_OUTPUT_GENERATED_SUMMARY,
             mutable: true,
         );
 

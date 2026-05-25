@@ -93,6 +93,8 @@ Current public hooks:
 
 - `App\View\ViewContextEvent`: extend the universal Twig context.
 - `App\Content\Event\ContentRenderContextEvent`: extend Twig context for one public content render.
+- `App\View\Event\ResponseHeadersEvent`: adjust HTTP response headers before sending.
+- `App\View\Event\OutputGeneratedEvent`: adjust generated HTML output after rendering.
 - `App\Core\Package\Event\PackageAssetSyncStartedEvent`: observe the active package set before asset sync.
 - `App\Core\Package\Event\PackageAssetRegistryBuildEvent`: add CSS, JavaScript, or Tailwind registry contributions before registries are written.
 - `App\Core\Package\Event\PackageAssetSyncCompletedEvent`: observe package asset sync metrics after registry generation.
@@ -118,6 +120,12 @@ final class PackageSubscriber implements EventSubscriberInterface
 ```
 
 Developers can inspect the currently surfaced hooks through `studio_event_hooks()` in Twig. This helper is intended for debug comments and future admin diagnostics, not for package control flow.
+
+Output hooks should stay narrow. Prefer Twig context hooks and templates for normal rendering work; use `OutputGeneratedEvent` only when the final HTML string is the correct boundary.
+
+Do not expect package hooks for template path collection or runtime asset collection. Template namespaces are resolved through the package/theme lifecycle, and active package assets are mirrored and compiled through AssetSync and `studio:assets:rebuild`.
+
+Packages must not define new core permission rules dynamically. A package can require existing ACL levels, groups, roles, or manifest capabilities for its routes and UI, but the security model itself stays core-owned.
 
 ## Admin UI and UX guidelines
 

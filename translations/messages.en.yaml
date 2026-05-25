@@ -39,6 +39,10 @@ message:
         summary: 'Extend the universal Twig view context before rendering.'
       content_render_context:
         summary: 'Extend the Twig context for one public content render.'
+      response_headers:
+        summary: 'Adjust HTTP response headers before the response is sent.'
+      output_generated:
+        summary: 'Adjust generated HTML output after rendering and before the response is sent.'
       package_asset_sync_started:
         summary: 'Observe the active package set before package assets are synchronized.'
       package_asset_registry_build:

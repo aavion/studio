@@ -96,6 +96,8 @@
 | Event payload | `App\Core\Package\Event\PackageAssetRegistryBuildEvent` | Public mutable extend hook that allows subscribers to add package asset registry contributions before generated registries are written. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Core/Package/PackageAssetSyncerTest.php` |
 | Event payload | `App\Core\Package\Event\PackageAssetSyncCompletedEvent` | Public observe hook dispatched with asset sync metrics after generated registries are written. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Core/Package/PackageAssetSyncerTest.php` |
 | Event payload | `App\Content\Event\ContentRenderContextEvent` | Public mutable extend hook for adding Twig variables to one public content render. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Controller/PublicContentControllerTest.php` |
+| Event payload | `App\View\Event\ResponseHeadersEvent` | Public mutable extend hook for adding or removing HTTP response headers before sending the main response. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/View/Http/ResponseHookSubscriberTest.php` |
+| Event payload | `App\View\Event\OutputGeneratedEvent` | Public mutable extend hook for adjusting generated HTML output after rendering and before sending the main response. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/View/Http/ResponseHookSubscriberTest.php` |
 | N/A | `App\Core\Workflow\OperationIssue` | Value object for structured recoverable-operation issues backed by leveled messages. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationIssueTest.php` |
 | N/A | `App\Core\Workflow\OperationResult` | Value object for recoverable workflow results with success, invalid, review, blocked, failed states, issues, messages, and context. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
 | N/A | `App\Core\Workflow\OperationStatus` | Enum for shared recoverable workflow result states. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
@@ -167,6 +169,7 @@
 | Event payload | `App\View\ViewContextEvent` | Public mutable event used by active package extensions to add universal Twig view context before rendering. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/View/ViewContextProviderTest.php` |
 | N/A | `App\View\ViewContextProvider` | Builds the universal Twig view context with system package metadata, macro namespaces, and event-collected extension variables. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/ViewContextProviderTest.php`, `tests/View/Twig/ViewTwigExtensionTest.php` |
 | Twig extension | `App\View\Twig\ViewTwigExtension` | Exposes `studio_view`, view context helpers, macro namespace helpers, public hook descriptors, and the `studio_markdown` filter to Twig. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/Twig/ViewTwigExtensionTest.php` |
+| Event subscriber | `App\View\Http\ResponseHookSubscriber` | Dispatches public response header and generated HTML output hooks for the main response while keeping failed hook mutations out of the final response. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/View/Http/ResponseHookSubscriberTest.php` |
 
 
 ## 2. Controllers

@@ -39,6 +39,10 @@ message:
         summary: 'Erweitert den universellen Twig-View-Kontext vor dem Rendering.'
       content_render_context:
         summary: 'Erweitert den Twig-Kontext für ein öffentliches Content-Rendering.'
+      response_headers:
+        summary: 'Passt HTTP-Response-Header an, bevor die Response gesendet wird.'
+      output_generated:
+        summary: 'Passt generierten HTML-Output nach dem Rendering und vor dem Senden der Response an.'
       package_asset_sync_started:
         summary: 'Beobachtet die aktiven Pakete, bevor Paket-Assets synchronisiert werden.'
       package_asset_registry_build:

@@ -71,6 +71,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-25
+- Added response-level public hooks for themes and modules: `ResponseHeadersEvent`, `OutputGeneratedEvent`, and the main-response `ResponseHookSubscriber` with mutation-on-success behavior and coverage.
+- Documented the event-hook decisions and deferred hook backlog: no template-path or runtime asset collection hooks while deterministic namespace discovery and AssetSync cover those paths, no package-defined core permission rules, provider selection remains resolver/lifecycle-owned, and the logger should start with an explicit recorder boundary instead of a generic operations-message event.
 - Added the first public EventDispatcher hook surface for packages: `PublicEventInterface`, hook descriptors/registry, class-name based `ViewContextEvent`, package asset sync observe/extend events, subscriber coverage, and package developer documentation.
 - Clarified the hook architecture direction: Symfony EventDispatcher and Messenger stay the implementation surface, public hooks remain typed/domain-specific, and adding new hooks should require only a small event class, dispatch point, registry descriptor, tests, and docs.
 - Hardened public hook dispatching with a provider-based registry, translation-key hook metadata, a `PublicEventDispatcher` that returns structured issues for listener failures, and a Twig `studio_event_hooks()` debug/admin metadata helper.

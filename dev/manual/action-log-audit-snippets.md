@@ -1,13 +1,17 @@
 # Action log and audit snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-23  
+> **Updated**: 2026-05-25  
 > **Owner**: Core  
 > **Purpose:** Capture action-log, audit, and operational event notes before persistence and UI are implemented.  
 
 ## Overview
 
 Action logs summarize operational workflows. Audit logs record security- and compliance-relevant facts. They may overlap, but they should not be treated as the same storage model until concrete requirements exist.
+
+The ActionLog model is a live operation overlay first. It should be able to display entries while a setup, package, asset, import, backup, or update workflow runs. Later, the same structured entries may be handed to a logger before an operation returns, using levels such as `error`, `warning`, `info`, and `debug`.
+
+The future logger should start with an explicit recorder/service boundary. A generic operation-message event can be reconsidered after the logger exists, but it should not be the first logging design.
 
 ## Action log candidates
 
@@ -62,6 +66,8 @@ Keep audit records for:
 - package activation or removal;
 - backup and restore actions;
 - configuration changes.
+
+Access logs, audit logs, security logs, and operational action logs may share message levels or rendering helpers, but they should remain separate storage and retention concerns.
 
 ## References
 

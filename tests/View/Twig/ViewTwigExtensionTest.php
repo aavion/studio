@@ -20,7 +20,7 @@ final class ViewTwigExtensionTest extends KernelTestCase
         )->render();
 
         self::assertArrayHasKey('studio_view', $globals);
-        self::assertSame('System|@root/macros/core/ui.html.twig|5|<p><strong>ok</strong></p>', $html);
+        self::assertSame('System|@root/macros/core/ui.html.twig|7|<p><strong>ok</strong></p>', $html);
     }
 
     public function testItRendersNativeProviderNamespaceFallbacks(): void
