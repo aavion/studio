@@ -15,33 +15,27 @@ use App\Core\Package\Event\PackageAssetSyncCompletedEvent;
 use App\Core\Package\Event\PackageAssetSyncStartedEvent;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use RuntimeException;
-use SplFileInfo;
 use Throwable;
 
 final readonly class PackageAssetSyncer
 {
-    private const CSS_REGISTRIES = [
-        PackageAssetRegistryBuilder::BUCKET_EXTENSION => 'assets/styles/packages/extension.css',
-        PackageAssetRegistryBuilder::BUCKET_FRONTEND_THEME => 'assets/styles/packages/frontend-theme.css',
-        PackageAssetRegistryBuilder::BUCKET_BACKEND_THEME => 'assets/styles/packages/backend-theme.css',
-    ];
+    private PackageAssetFilesystem $filesystem;
 
-    private const JAVASCRIPT_REGISTRIES = [
-        PackageAssetRegistryBuilder::BUCKET_EXTENSION => 'assets/js/packages/extension.js',
-        PackageAssetRegistryBuilder::BUCKET_FRONTEND_THEME => 'assets/js/packages/frontend-theme.js',
-        PackageAssetRegistryBuilder::BUCKET_BACKEND_THEME => 'assets/js/packages/backend-theme.js',
-    ];
+    private PackageAssetMirror $mirror;
+
+    private PackageAssetRegistryWriter $registryWriter;
 
     public function __construct(
-        private string $projectDir,
-        private PackageAssetPathRewriter $pathRewriter = new PackageAssetPathRewriter(),
-        private PackageAssetRegistryBuilder $registryBuilder = new PackageAssetRegistryBuilder(),
-        private PathGuard $pathGuard = new PathGuard(),
+        string $projectDir,
+        PackageAssetPathRewriter $pathRewriter = new PackageAssetPathRewriter(),
+        PackageAssetRegistryBuilder $registryBuilder = new PackageAssetRegistryBuilder(),
+        PathGuard $pathGuard = new PathGuard(),
         private ?PublicEventDispatcher $eventDispatcher = null,
     ) {
+        $this->filesystem = new PackageAssetFilesystem($projectDir, $pathGuard);
+        $this->mirror = new PackageAssetMirror($this->filesystem, $pathRewriter);
+        $this->registryWriter = new PackageAssetRegistryWriter($this->filesystem, $registryBuilder);
     }
 
     /**
@@ -80,7 +74,7 @@ final readonly class PackageAssetSyncer
             return $started;
         }
 
-        $this->resetMirrorDirectory();
+        $this->mirror->resetMirrorDirectory();
 
         $contributions = [];
         $mirroredAssets = 0;
@@ -88,14 +82,14 @@ final readonly class PackageAssetSyncer
         foreach ($packages as $package) {
             $packageAssetRoot = $package->directory().'/assets';
 
-            if ($this->pathExists($packageAssetRoot)) {
-                if (!$this->isSafeDirectory($packageAssetRoot)) {
+            if ($this->filesystem->pathExists($packageAssetRoot)) {
+                if (!$this->filesystem->isSafeDirectory($packageAssetRoot)) {
                     throw new RuntimeException(sprintf('Package asset root "%s" is not a safe directory.', $packageAssetRoot));
                 }
 
-                foreach ($this->assetFiles($packageAssetRoot) as $assetFile) {
+                foreach ($this->mirror->assetFiles($packageAssetRoot) as $assetFile) {
                     ++$mirroredAssets;
-                    $targetPath = $this->mirrorAsset($package, $packageAssetRoot, $assetFile);
+                    $targetPath = $this->mirror->mirrorAsset($package, $packageAssetRoot, $assetFile);
                     $scope = $this->scopeForAsset($package, $assetFile);
 
                     if (null === $scope || $this->isVendorAsset($assetFile) || !$this->isRegistryEntrypoint($assetFile)) {
@@ -117,11 +111,11 @@ final readonly class PackageAssetSyncer
             }
 
             $templatePath = $package->directory().'/templates';
-            if ($this->pathExists($templatePath) && !$this->isSafeDirectory($templatePath)) {
+            if ($this->filesystem->pathExists($templatePath) && !$this->filesystem->isSafeDirectory($templatePath)) {
                 throw new RuntimeException(sprintf('Package template root "%s" is not a safe directory.', $templatePath));
             }
 
-            if (is_dir($this->absolutePath($templatePath))) {
+            if (is_dir($this->filesystem->absolutePath($templatePath))) {
                 $contributions[] = PackageAssetContribution::tailwindSource($package->identifier(), $this->primaryScope($package), $templatePath);
             }
         }
@@ -142,7 +136,7 @@ final readonly class PackageAssetSyncer
             $contributions = $registryEvent->contributions();
         }
 
-        $this->writeRegistries($contributions);
+        $this->registryWriter->write($contributions);
 
         $context = [
             'packages' => count($packages),
@@ -213,141 +207,6 @@ final readonly class PackageAssetSyncer
         return $sorted;
     }
 
-    private function resetMirrorDirectory(): void
-    {
-        $rootPath = 'assets/packages';
-        $root = $this->absolutePath($rootPath);
-
-        if (is_link($root)) {
-            throw new RuntimeException(sprintf('Package asset mirror "%s" must not be a symlink.', $rootPath));
-        }
-
-        if (file_exists($root) && !is_dir($root)) {
-            throw new RuntimeException(sprintf('Package asset mirror "%s" must be a directory.', $rootPath));
-        }
-
-        $this->ensureDirectory($rootPath);
-        $entries = scandir($root);
-
-        if (false === $entries) {
-            throw new RuntimeException(sprintf('Package asset mirror "%s" cannot be read.', $rootPath));
-        }
-
-        foreach ($entries as $entry) {
-            if ('.' === $entry || '..' === $entry || '.gitignore' === $entry || 'README.md' === $entry) {
-                continue;
-            }
-
-            $this->removePath($root.DIRECTORY_SEPARATOR.$entry);
-
-            if (file_exists($root.DIRECTORY_SEPARATOR.$entry) || is_link($root.DIRECTORY_SEPARATOR.$entry)) {
-                throw new RuntimeException(sprintf('Package asset mirror entry "%s" could not be removed.', 'assets/packages/'.$entry));
-            }
-        }
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function assetFiles(string $packageAssetRoot): array
-    {
-        $absoluteRoot = $this->absolutePath($packageAssetRoot);
-        $files = [];
-
-        if (!$this->isSafeDirectory($packageAssetRoot)) {
-            throw new RuntimeException(sprintf('Package asset root "%s" is not a safe directory.', $packageAssetRoot));
-        }
-
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($absoluteRoot, RecursiveDirectoryIterator::SKIP_DOTS),
-        );
-
-        foreach ($iterator as $file) {
-            if (!$file instanceof SplFileInfo || !$file->isFile() || $file->isLink()) {
-                continue;
-            }
-
-            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($absoluteRoot) + 1));
-            $files[] = 'assets/'.$relative;
-        }
-
-        sort($files);
-
-        return $files;
-    }
-
-    private function mirrorAsset(PackageAssetSyncPackage $package, string $packageAssetRoot, string $assetFile): string
-    {
-        $targetPath = 'assets/packages/'.$package->identifier().'/'.substr($assetFile, strlen('assets/'));
-        $sourcePath = $package->directory().'/'.$assetFile;
-        $absoluteTarget = $this->absolutePath($targetPath);
-        $this->ensureParentDirectory($targetPath);
-
-        if (str_ends_with($assetFile, '.css')) {
-            $contents = $this->readFile($sourcePath);
-            $this->writeFile($targetPath, $this->pathRewriter->rewriteCss(
-                $contents,
-                $sourcePath,
-                $packageAssetRoot,
-                'assets/packages/'.$package->identifier(),
-            ));
-
-            return $targetPath;
-        }
-
-        if (str_ends_with($assetFile, '.js') || str_ends_with($assetFile, '.mjs')) {
-            $contents = $this->readFile($sourcePath);
-            $this->writeFile($targetPath, $this->pathRewriter->rewriteJavaScript(
-                $contents,
-                $sourcePath,
-                $packageAssetRoot,
-                $targetPath,
-                'assets/packages/'.$package->identifier(),
-            ));
-
-            return $targetPath;
-        }
-
-        if (!copy($this->absolutePath($sourcePath), $absoluteTarget)) {
-            throw new RuntimeException(sprintf('Package asset "%s" could not be copied to "%s".', $sourcePath, $targetPath));
-        }
-
-        return $targetPath;
-    }
-
-    /**
-     * @param list<PackageAssetContribution> $contributions
-     */
-    private function writeRegistries(array $contributions): void
-    {
-        foreach (self::CSS_REGISTRIES as $bucket => $path) {
-            $this->writeFile($path, $this->registryBuilder->buildCssRegistry($contributions, $bucket));
-        }
-
-        foreach (self::JAVASCRIPT_REGISTRIES as $bucket => $path) {
-            $this->writeFile($path, $this->registryBuilder->buildJavaScriptRegistry($contributions, $bucket));
-        }
-    }
-
-    private function writeFile(string $path, string $contents): void
-    {
-        $absolutePath = $this->absolutePath($path);
-
-        if (is_link($absolutePath)) {
-            throw new RuntimeException(sprintf('Target file "%s" must not be a symlink.', $path));
-        }
-
-        if (is_dir($absolutePath)) {
-            throw new RuntimeException(sprintf('Target file "%s" exists as a directory.', $path));
-        }
-
-        $this->ensureParentDirectory($path);
-
-        if (false === file_put_contents($absolutePath, $contents, LOCK_EX)) {
-            throw new RuntimeException(sprintf('Target file "%s" could not be written.', $path));
-        }
-    }
-
     private function scopeForAsset(PackageAssetSyncPackage $package, string $assetFile): ?PackageScope
     {
         if (str_starts_with($assetFile, 'assets/frontend/') && $package->hasScope(PackageScope::FrontendTheme)) {
@@ -399,100 +258,4 @@ final readonly class PackageAssetSyncer
         return count(array_filter($contributions, static fn (PackageAssetContribution $contribution): bool => $type === $contribution->type()));
     }
 
-    private function absolutePath(string $path): string
-    {
-        return rtrim($this->projectDir, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $this->pathGuard->relativePath($path));
-    }
-
-    private function isSafeDirectory(string $path): bool
-    {
-        $absolutePath = $this->absolutePath($path);
-
-        return is_dir($absolutePath)
-            && !is_link($absolutePath)
-            && null === $this->pathGuard->symlinkAncestor($this->projectDir, $path);
-    }
-
-    private function pathExists(string $path): bool
-    {
-        $absolutePath = $this->absolutePath($path);
-
-        return file_exists($absolutePath) || is_link($absolutePath);
-    }
-
-    private function ensureDirectory(string $path): void
-    {
-        $absolutePath = $this->absolutePath($path);
-
-        if (is_link($absolutePath)) {
-            throw new RuntimeException(sprintf('Directory "%s" must not be a symlink.', $path));
-        }
-
-        if (null !== $this->pathGuard->symlinkAncestor($this->projectDir, $path)) {
-            throw new RuntimeException(sprintf('Directory "%s" must not be below a symlink.', $path));
-        }
-
-        if (file_exists($absolutePath) && !is_dir($absolutePath)) {
-            throw new RuntimeException(sprintf('Directory "%s" exists as a file.', $path));
-        }
-
-        if (!is_dir($absolutePath) && !mkdir($absolutePath, 0775, true) && !is_dir($absolutePath)) {
-            throw new RuntimeException(sprintf('Directory "%s" could not be created.', $path));
-        }
-    }
-
-    private function ensureParentDirectory(string $path): void
-    {
-        $parent = dirname($this->pathGuard->relativePath($path));
-
-        if ('.' === $parent) {
-            return;
-        }
-
-        $this->ensureDirectory($parent);
-    }
-
-    private function readFile(string $path): string
-    {
-        $contents = file_get_contents($this->absolutePath($path));
-
-        if (false === $contents) {
-            throw new RuntimeException(sprintf('Package asset "%s" could not be read.', $path));
-        }
-
-        return $contents;
-    }
-
-    private function removePath(string $path): void
-    {
-        if (is_link($path) || is_file($path)) {
-            if (!@unlink($path)) {
-                throw new RuntimeException(sprintf('Path "%s" could not be removed.', $path));
-            }
-
-            return;
-        }
-
-        if (!is_dir($path)) {
-            return;
-        }
-
-        $entries = scandir($path);
-
-        if (false === $entries) {
-            throw new RuntimeException(sprintf('Directory "%s" could not be read.', $path));
-        }
-
-        foreach ($entries as $entry) {
-            if ('.' === $entry || '..' === $entry) {
-                continue;
-            }
-
-            $this->removePath($path.DIRECTORY_SEPARATOR.$entry);
-        }
-
-        if (!@rmdir($path)) {
-            throw new RuntimeException(sprintf('Directory "%s" could not be removed.', $path));
-        }
-    }
 }
