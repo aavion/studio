@@ -51,30 +51,51 @@ final class PackageAssetPathRewriter
             return $contents;
         }
 
-        $pattern = '/(?P<prefix>\b(?:import|export)\s+(?:[^\'";]*?\s+from\s+)?)(?P<quote>[\'"])(?P<reference>\.{1,2}\/[^\'"]+)(?P=quote)/';
+        $staticImportPattern = '/(?P<prefix>\b(?:import|export)\s+(?:[^\'";]*?\s+from\s+)?)(?P<quote>[\'"])(?P<reference>\.{1,2}\/[^\'"]+)(?P=quote)/';
+        $dynamicImportPattern = '/(?P<prefix>\bimport\s*\(\s*)(?P<quote>[\'"])(?P<reference>\.{1,2}\/[^\'"]+)(?P=quote)(?P<suffix>\s*\))/';
 
-        return preg_replace_callback(
-            $pattern,
+        $contents = preg_replace_callback(
+            $staticImportPattern,
             function (array $matches) use ($sourceFile, $sourceAssetRoot, $mirrorFile, $mirrorAssetRoot): string {
-                $reference = $matches['reference'];
-
-                if (!$this->isRelativeReference($reference)) {
-                    return $matches[0];
-                }
-
                 return $matches['prefix']
                     .$matches['quote']
-                    .$this->mirrorReference(
-                        $reference,
-                        $sourceFile,
-                        $sourceAssetRoot,
-                        $mirrorAssetRoot,
-                        dirname($mirrorFile),
-                    )
+                    .$this->rewriteJavaScriptReference($matches['reference'], $sourceFile, $sourceAssetRoot, $mirrorFile, $mirrorAssetRoot)
                     .$matches['quote'];
             },
             $contents,
         ) ?? $contents;
+
+        return preg_replace_callback(
+            $dynamicImportPattern,
+            function (array $matches) use ($sourceFile, $sourceAssetRoot, $mirrorFile, $mirrorAssetRoot): string {
+                return $matches['prefix']
+                    .$matches['quote']
+                    .$this->rewriteJavaScriptReference($matches['reference'], $sourceFile, $sourceAssetRoot, $mirrorFile, $mirrorAssetRoot)
+                    .$matches['quote']
+                    .$matches['suffix'];
+            },
+            $contents,
+        ) ?? $contents;
+    }
+
+    private function rewriteJavaScriptReference(
+        string $reference,
+        string $sourceFile,
+        string $sourceAssetRoot,
+        string $mirrorFile,
+        string $mirrorAssetRoot,
+    ): string {
+        if (!$this->isRelativeReference($reference)) {
+            return $reference;
+        }
+
+        return $this->mirrorReference(
+            $reference,
+            $sourceFile,
+            $sourceAssetRoot,
+            $mirrorAssetRoot,
+            dirname($mirrorFile),
+        );
     }
 
     private function mirrorReference(

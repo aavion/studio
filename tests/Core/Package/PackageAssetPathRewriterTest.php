@@ -39,6 +39,10 @@ CSS,
             <<<'JS'
 import helper from "./lib/helper.js";
 export { widget } from "../shared/widget.js";
+const lazy = () => import("./lib/lazy.js");
+const shared = await import('../shared/chunk.mjs?v=1#lazy');
+const external = () => import("alpinejs");
+const variable = (path) => import(path);
 import "alpinejs";
 JS,
             'packages/demo/assets/frontend/app.js',
@@ -49,6 +53,10 @@ JS,
 
         self::assertStringContainsString('import helper from "./frontend/lib/helper.js";', $javaScript);
         self::assertStringContainsString('export { widget } from "./shared/widget.js";', $javaScript);
+        self::assertStringContainsString('const lazy = () => import("./frontend/lib/lazy.js");', $javaScript);
+        self::assertStringContainsString("const shared = await import('./shared/chunk.mjs?v=1#lazy');", $javaScript);
+        self::assertStringContainsString('const external = () => import("alpinejs");', $javaScript);
+        self::assertStringContainsString('const variable = (path) => import(path);', $javaScript);
         self::assertStringContainsString('import "alpinejs";', $javaScript);
     }
 
@@ -67,9 +75,9 @@ JS,
         );
 
         self::assertSame(
-            'import "./chunk.js";',
+            'import "./chunk.js"; const lazy = () => import("./lazy.js");',
             $rewriter->rewriteJavaScript(
-                'import "./chunk.js";',
+                'import "./chunk.js"; const lazy = () => import("./lazy.js");',
                 'packages/demo/assets/vendor/library/index.js',
                 'packages/demo/assets',
                 'assets/packages/demo/vendor/library/index.js',
