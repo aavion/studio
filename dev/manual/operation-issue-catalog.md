@@ -44,6 +44,7 @@ Validation rules:
 | `package.required_directory_missing` | Required package directory is absent. | `source`, `package`, `requirement`, `path` |
 | `package.file_unreadable` | Package file could not be read for linting. | `source`, `package`, `file`, `path` |
 | `package.php_syntax_error` | PHP linter found a syntax error. | `source`, `package`, `file`, `path` |
+| `package.php_namespace_invalid` | Package PHP source under `src/` is outside the declared `PACKAGE_NAMESPACE`. | `source`, `package`, `file`, `path`, `namespace`, `expected_namespace` |
 | `package.twig_syntax_error` | Twig linter found a syntax error. | `source`, `package`, `file`, `path` |
 | `package.json_syntax_error` | JSON linter found a syntax error. | `source`, `package`, `file`, `path` |
 | `package.yaml_syntax_error` | YAML linter found a syntax error. | `source`, `package`, `file`, `path` |
@@ -52,8 +53,18 @@ Validation rules:
 | `package.template_path_invalid` | Package template path is not allowed for root/shared, provider, or macro namespace rules. | `source`, `package`, `package_slug`, `file`, `scopes` |
 | `package.copy_source_missing` | Planned package copy source does not exist. | `source`, `package`, `file`, `path` |
 | `package.copy_source_symlink` | Planned package copy source is a symlink. | `source`, `package`, `file`, `path` |
+| `package.asset_rebuild_queued` | Package asset rebuild was queued for deferred Messenger processing. | `trigger`, `environment`, `deferred` |
+| `package.asset_rebuild_queue_failed` | Package asset rebuild could not be queued for deferred Messenger processing. | `trigger`, `environment`, `exception`, `message` |
+| `package.discovery_queued` | Package discovery was queued for deferred Messenger processing. | `trigger`, `deferred` |
+| `package.discovery_queue_failed` | Package discovery could not be queued for deferred Messenger processing. | `trigger`, `exception`, `message` |
 | `package.discovery_completed` | Package discovery completed successfully. | `candidate_count` |
 | `package.validation_completed` | Package validation completed successfully. | `source`, `package`, `inventory_count` |
+| `package.lifecycle.cleanup_completed` | Package cleanup boundary completed. | `package`, `actions` |
+| `package.lifecycle.removed` | Package directory was removed and the registry row was marked removed. | `package`, `path` |
+| `package.lifecycle.purged` | Package cleanup completed and the registry row was deleted. | `package` |
+| `package.lifecycle.fault_reset` | Faulty package was validated and reset to inactive. | `package`, `path` |
+| `package.lifecycle.runtime_failure` | Package was marked faulty after a runtime failure. | `package`, `faulty` |
+| `package.lifecycle.php_load_failed` | Active package PHP loader failed and the package was marked faulty. | `package`, `path`, `loader`, `exception`, `message` |
 | `package.copy_plan_created` | Package copy plan was created successfully. | `source`, `package`, `target_root`, `target_prefix`, `files` |
 | `filesystem.source_missing` | Filesystem copy source is missing. | `source`, `target` |
 | `filesystem.source_symlink` | Filesystem copy source is a symlink. | `source`, `target` |
@@ -83,8 +94,18 @@ Validation rules:
 |-----------------|---------|-------------------|
 | `message.manifest.parsed` | Manifest parsing completed. | N/A |
 | `message.manifest.validated` | Manifest validation completed. | N/A |
+| `message.package.discovery_queued` | Package discovery was queued for deferred processing. | `%trigger%` |
+| `message.package.discovery_queue_failed` | Package discovery could not be queued. | `%trigger%` |
 | `message.package.discovery_completed` | Package discovery completed successfully. | `%count%` |
 | `message.package.validation_completed` | Package validation completed successfully. | `%package%` |
+| `message.package.asset_rebuild_queued` | Package asset rebuild was queued for deferred processing. | `%trigger%` |
+| `message.package.asset_rebuild_queue_failed` | Package asset rebuild could not be queued. | `%trigger%` |
+| `message.package.lifecycle.cleanup_completed` | Package cleanup boundary completed. | `%package%` |
+| `message.package.lifecycle.removed` | Package directory was removed and the registry row was marked removed. | `%package%` |
+| `message.package.lifecycle.purged` | Package cleanup completed and the registry row was deleted. | `%package%` |
+| `message.package.lifecycle.fault_reset` | Faulty package was validated and reset to inactive. | `%package%` |
+| `message.package.lifecycle.runtime_failure` | Package was marked faulty after a runtime failure. | `%package%` |
+| `message.package.lifecycle.php_load_failed` | Active package PHP loader failed and the package was marked faulty. | `%package%` |
 | `message.package.copy_plan_created` | Package copy plan was created successfully. | `%count%` |
 | `message.filesystem.file_written` | File write completed. | `%path%` |
 | `message.filesystem.file_copied` | File copy completed. | `%target%` |

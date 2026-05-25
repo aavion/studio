@@ -149,6 +149,34 @@ final class PackageValidatorTest extends TestCase
         self::assertSame('src/Broken.php', $result->firstIssue()?->context()['file']);
     }
 
+    public function testItAcceptsPackageSourceFilesWithinDeclaredNamespace(): void
+    {
+        $this->writeFile('src/Root.php', '<?php namespace Demo\\Package; final class Root {}');
+        $this->writeFile('src/Nested.php', '<?php namespace Demo\\Package\\Nested; final class Nested {}');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_NAMESPACE' => 'Demo\\Package']),
+            PackageSpec::create(),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItRejectsPackageSourceFilesOutsideDeclaredNamespace(): void
+    {
+        $this->writeFile('src/Foreign.php', '<?php namespace Other\\Package; final class Foreign {}');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_NAMESPACE' => 'Demo\\Package']),
+            PackageSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.php_namespace_invalid', $result->firstIssue()?->code());
+        self::assertSame('Other\\Package', $result->firstIssue()?->context()['namespace']);
+        self::assertSame('Demo\\Package', $result->firstIssue()?->context()['expected_namespace']);
+    }
+
     public function testItCanLintTwigFiles(): void
     {
         $this->writeFile('templates/valid.html.twig', '<main>{{ title }}</main>');
@@ -311,11 +339,19 @@ final class PackageValidatorTest extends TestCase
 
     private function candidateWithScope(string $scope): PackageCandidate
     {
+        return $this->candidateWithManifest(['PACKAGE_SCOPE' => $scope]);
+    }
+
+    /**
+     * @param array<string, string> $manifest
+     */
+    private function candidateWithManifest(array $manifest): PackageCandidate
+    {
         return new PackageCandidate(
             PackageSource::children('package', 'packages'),
             $this->packageDir,
             $this->packageDir.'/.manifest',
-            new Manifest(['PACKAGE_NAME' => 'System', 'PACKAGE_SCOPE' => $scope]),
+            new Manifest(['PACKAGE_NAME' => 'System', ...$manifest]),
         );
     }
 

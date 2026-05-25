@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\View\Template;
 
-use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageScope;
+use App\Entity\ExtensionPackage;
 use App\View\Template\PackageTemplatePathResolver;
 use App\View\Template\TemplateNamespace;
 use InvalidArgumentException;
@@ -17,9 +17,9 @@ final class PackageTemplatePathResolverTest extends TestCase
     {
         $resolver = new PackageTemplatePathResolver('/project');
         $paths = $resolver->pathsForNamespace(TemplateNamespace::Frontend, [
-            new PackageAssetSyncPackage('blog', 'packages/blog', [PackageScope::Module]),
-            new PackageAssetSyncPackage('captcha', 'packages/captcha', [PackageScope::CaptchaProvider]),
-            new PackageAssetSyncPackage('theme', 'packages/theme', [PackageScope::FrontendTheme]),
+            $this->package('blog', [PackageScope::Module]),
+            $this->package('captcha', [PackageScope::CaptchaProvider]),
+            $this->package('theme', [PackageScope::FrontendTheme]),
         ]);
 
         self::assertSame([
@@ -34,9 +34,9 @@ final class PackageTemplatePathResolverTest extends TestCase
     {
         $resolver = new PackageTemplatePathResolver('/project');
         $paths = $resolver->pathsForNamespace(TemplateNamespace::Backend, [
-            new PackageAssetSyncPackage('module', 'packages/module', [PackageScope::Module]),
-            new PackageAssetSyncPackage('editor', 'packages/editor', [PackageScope::EditorProvider]),
-            new PackageAssetSyncPackage('theme', 'packages/theme', [PackageScope::BackendTheme]),
+            $this->package('module', [PackageScope::Module]),
+            $this->package('editor', [PackageScope::EditorProvider]),
+            $this->package('theme', [PackageScope::BackendTheme]),
         ]);
 
         self::assertSame([
@@ -51,8 +51,8 @@ final class PackageTemplatePathResolverTest extends TestCase
     {
         $resolver = new PackageTemplatePathResolver('/project');
         $paths = $resolver->pathsForNamespace('@root', [
-            new PackageAssetSyncPackage('plain', 'packages/plain', [PackageScope::Module]),
-            new PackageAssetSyncPackage('system', 'packages/system', [PackageScope::SystemTemplate]),
+            $this->package('plain', [PackageScope::Module]),
+            $this->package('system', [PackageScope::SystemTemplate]),
         ]);
 
         self::assertSame([
@@ -66,9 +66,9 @@ final class PackageTemplatePathResolverTest extends TestCase
     {
         $resolver = new PackageTemplatePathResolver('/project');
         $paths = $resolver->providerPaths([
-            new PackageAssetSyncPackage('module', 'packages/module', [PackageScope::Module]),
-            new PackageAssetSyncPackage('turnstile', 'packages/turnstile', [PackageScope::CaptchaProvider]),
-            new PackageAssetSyncPackage('tinymce', 'packages/tinymce', [PackageScope::EditorProvider]),
+            $this->package('module', [PackageScope::Module]),
+            $this->package('turnstile', [PackageScope::CaptchaProvider]),
+            $this->package('tinymce', [PackageScope::EditorProvider]),
         ]);
 
         self::assertSame([
@@ -84,5 +84,27 @@ final class PackageTemplatePathResolverTest extends TestCase
         $this->expectExceptionMessage('Unsupported template namespace "unknown".');
 
         (new PackageTemplatePathResolver('/project'))->pathsForNamespace('unknown', []);
+    }
+
+    /**
+     * @param list<PackageScope> $scopes
+     */
+    private function package(string $name, array $scopes): ExtensionPackage
+    {
+        return new ExtensionPackage(
+            $this->uuid(),
+            $scopes,
+            $name,
+            'packages/'.$name,
+        );
+    }
+
+    private function uuid(): string
+    {
+        $bytes = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 }

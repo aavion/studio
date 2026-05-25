@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\View\Template;
 
-use App\Core\Package\ActivePackageAssetProviderInterface;
+use App\Core\Package\ActivePackageProviderInterface;
 use App\Debug\StudioDebugCollector;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -19,7 +19,7 @@ final class PackageTemplatePathConfigurator implements EventSubscriberInterface
 
     public function __construct(
         private readonly Environment $twig,
-        private readonly ActivePackageAssetProviderInterface $packageProvider,
+        private readonly ActivePackageProviderInterface $packageProvider,
         private readonly PackageTemplatePathResolver $pathResolver,
         private readonly ?StudioDebugCollector $debugCollector = null,
     ) {

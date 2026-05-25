@@ -18,6 +18,8 @@ framework:
             messenger.bus.default: []
 
         routing:
+            App\Core\Package\PackageAssetRebuildMessage: async
+            App\Core\Package\PackageDiscoveryMessage: async
             Symfony\Component\Mailer\Messenger\SendEmailMessage: async
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async

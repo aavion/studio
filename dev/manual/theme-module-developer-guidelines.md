@@ -69,7 +69,11 @@ Current constraints:
 
 `package.php` is optional. It must never be included during discovery and should only be loaded after a package is valid and active. Packages are trusted code; only administrators may install them. A package should use a package-owned root namespace derived from or declared for the package slug.
 
+When `PACKAGE_NAMESPACE` is declared, PHP files below `src/` must use that namespace or one of its child namespaces. The active runtime loader includes only `package.php`; that file may define a flat bootstrap class, register a small callable, or require further files below `src/`. Loader failures are caught by the lifecycle layer, recorded as structured diagnostics, and mark the package `faulty` so a broken active package does not keep breaking requests.
+
 Package assets must be self-contained. Packages should vendor their external dependencies inside their own package directory instead of requiring the project importmap to manage third-party dependency lifecycles across packages. Active package CSS and JavaScript are aggregated through the generated package asset registries; packages should not expect templates to add arbitrary direct `<link>` or `<script>` tags for package-level assets. Static assets such as images, fonts, videos, and SVGs should be referenced from package CSS, JavaScript, or templates after the lifecycle mirrors them into the AssetMapper-visible package path.
+
+Database-backed schema Twig is not visible to Tailwind file scanning by itself. Schema rendering needs a later aggregation layer that extracts or stores CSS class usage from active schema Twig and exposes it to the Tailwind rebuild before production builds depend on schema-authored classes.
 
 Template paths use logical Twig namespaces. Packages may ship frontend views under `templates/frontend/**` and reference templates as `@frontend/...`. Packages may ship backend views under `templates/backend/**` and reference templates as `@backend/...`. Frontend and backend theme scopes are the only scopes searched before native templates, so modules and providers can add package-specific views but do not replace matching core UI templates. Shared fallbacks use `@root/...`; packages may reference root templates, but only packages with `system-template` scope may override root-level shared files such as `base.html.twig` or `macros/core/**`.
 
@@ -87,7 +91,7 @@ Packages must not write macro files directly under `templates/macros/`, under an
 
 Packages may subscribe only to public hooks surfaced by `App\Core\Event\PublicEventHookRegistry`. The registry is the source of truth for stable package extension contracts. Other Symfony events can still exist inside the application, but they are internal unless listed there.
 
-Core dispatch points use `App\Core\Event\PublicEventDispatcher`, which converts listener failures into structured operation issues and emits the internal `App\Core\Event\PublicHookFailedEvent`. Package subscribers should still avoid throwing where a recoverable result is possible. Unrecoverable package listener failures may cause the package lifecycle to deactivate the package once package ownership can be resolved safely.
+Core dispatch points use `App\Core\Event\PublicEventDispatcher`, which converts listener failures into structured operation issues and emits the internal `App\Core\Event\PublicHookFailedEvent`. Package subscribers should still avoid throwing where a recoverable result is possible. Unrecoverable package listener failures may cause the package lifecycle to mark the package `faulty` once package ownership can be resolved safely.
 
 Current public hooks:
 

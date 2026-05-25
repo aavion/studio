@@ -38,12 +38,48 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Core\Package\PackageRegistryHandler:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+            $validationSpec: null
+
+    App\Core\Package\PackageDiscoveryRunner:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
+    App\Core\Package\PackageRemover:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Core\Package\PackagePhpLoader:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
+    App\Core\Package\PackageRuntimeFailureHandler:
+        arguments:
+            $environment: '%kernel.environment%'
+
+    App\Core\Package\PackageDiscoveryCacheWarmer:
+        tags: ['kernel.cache_warmer']
+
     App\Core\Event\PublicEventHookRegistry:
         arguments:
             $providers: !tagged_iterator studio.event_hook_provider
 
     App\Core\Package\ActivePackageAssetProviderInterface:
         alias: App\Core\Package\ActivePackageAssetProvider
+
+    App\Core\Package\ActivePackageProviderInterface:
+        alias: App\Core\Package\ActivePackageProvider
+
+    App\Core\Package\PackageLifecycleAssetRebuilderInterface:
+        alias: App\Core\Package\PackageLifecycleAssetRebuilder
+
+    App\Core\Package\PackageLifecycleCleanupRunnerInterface:
+        alias: App\Core\Package\PackageLifecycleCleanupRunner
 
     App\Core\Asset\AssetRebuildQueueFactory:
         arguments:
