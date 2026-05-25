@@ -11,6 +11,7 @@ use App\Core\Operation\OperationExecutor;
 use App\Core\Package\ActivePackageAssetProviderInterface;
 use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageAssetSyncer;
+use App\Core\Package\PackageScope;
 use App\Tests\Support\FilesystemTestHelper;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -71,12 +72,73 @@ final class AssetRebuildCommandTest extends TestCase
         self::assertDirectoryDoesNotExist($this->root.'/assets/packages');
     }
 
+    public function testPackageAssetSyncPrintsActionIssuesInTextMode(): void
+    {
+        $this->createUnsafePackageAssetRoot();
+        $command = new PackageAssetSyncCommand(
+            new StaticPackageAssetProvider([
+                new PackageAssetSyncPackage('broken', 'packages/broken', [PackageScope::Module]),
+            ]),
+            new PackageAssetSyncer($this->root),
+            new OperationExecutor(),
+        );
+        $tester = new CommandTester($command);
+
+        try {
+            $exitCode = $tester->execute([]);
+        } finally {
+            $this->removeUnsafePackageAssetRoot();
+        }
+
+        self::assertSame(Command::FAILURE, $exitCode);
+        self::assertStringContainsString('package.asset_sync_failed: message.package.asset_sync_failed', $tester->getDisplay());
+        self::assertStringContainsString('Package asset sync failed.', $tester->getDisplay());
+    }
+
+    public function testAssetRebuildPrintsActionIssuesInTextMode(): void
+    {
+        $this->createUnsafePackageAssetRoot();
+        $command = new AssetRebuildCommand(
+            $this->kernel('test'),
+            new StaticPackageAssetProvider([
+                new PackageAssetSyncPackage('broken', 'packages/broken', [PackageScope::Module]),
+            ]),
+            new AssetRebuildQueueFactory($this->root, new PackageAssetSyncer($this->root)),
+            new OperationExecutor(),
+        );
+        $tester = new CommandTester($command);
+
+        try {
+            $exitCode = $tester->execute([]);
+        } finally {
+            $this->removeUnsafePackageAssetRoot();
+        }
+
+        self::assertSame(Command::FAILURE, $exitCode);
+        self::assertStringContainsString('package.asset_sync_failed: message.package.asset_sync_failed', $tester->getDisplay());
+        self::assertStringContainsString('Asset rebuild failed.', $tester->getDisplay());
+    }
+
     private function kernel(string $environment): KernelInterface
     {
         $kernel = $this->createStub(KernelInterface::class);
         $kernel->method('getEnvironment')->willReturn($environment);
 
         return $kernel;
+    }
+
+    private function createUnsafePackageAssetRoot(): void
+    {
+        mkdir($this->root.'/packages/broken', 0777, true);
+        mkdir($this->root.'/external-assets', 0777, true);
+        $this->createSymlinkOrSkip($this->root.'/external-assets', $this->root.'/packages/broken/assets');
+    }
+
+    private function removeUnsafePackageAssetRoot(): void
+    {
+        if (is_link($this->root.'/packages/broken/assets')) {
+            unlink($this->root.'/packages/broken/assets');
+        }
     }
 }
 
@@ -88,5 +150,23 @@ final readonly class FailingPackageAssetProvider implements ActivePackageAssetPr
     public function packages(): array
     {
         throw new RuntimeException('Package storage is unavailable.');
+    }
+}
+
+final readonly class StaticPackageAssetProvider implements ActivePackageAssetProviderInterface
+{
+    /**
+     * @param list<PackageAssetSyncPackage> $packages
+     */
+    public function __construct(private array $packages)
+    {
+    }
+
+    /**
+     * @return list<PackageAssetSyncPackage>
+     */
+    public function packages(): array
+    {
+        return $this->packages;
     }
 }

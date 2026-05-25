@@ -84,6 +84,7 @@
 - Hardened root-level content routing by storing `/` as the non-null root parent sentinel, keeping `(parent_uid, slug)` uniqueness portable across supported databases.
 - Hardened setup ACL group seeding so reruns preserve existing group primary keys and keep user-group associations intact.
 - Hardened package asset sync so `.mjs` app, index, module, and theme entrypoints are mirrored and added to JavaScript registries consistently with `.js` files.
+- Fixed non-JSON asset command issue rendering so operation warnings use `OperationIssue::translationKey()` and do not mask the original failure.
 - Updated feature drafts, developer snippets, class map, translations, and tests for the new template namespace and package-scope contract.
 
 ### 2026-05-24

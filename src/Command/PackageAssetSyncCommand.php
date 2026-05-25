@@ -130,7 +130,7 @@ final class PackageAssetSyncCommand extends Command
     {
         return static function (ActionLogEntry $entry, int $index, int $total, OperationResult $result) use ($io): void {
             foreach ($entry->issues() as $issue) {
-                $io->warning(sprintf('%s: %s', $issue->code(), $issue->messageKey()));
+                $io->warning(sprintf('%s: %s', $issue->code(), $issue->translationKey()));
             }
         };
     }
