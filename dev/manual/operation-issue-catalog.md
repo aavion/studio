@@ -49,6 +49,7 @@ Validation rules:
 | `package.yaml_syntax_error` | YAML linter found a syntax error. | `source`, `package`, `file`, `path` |
 | `package.css_syntax_error` | CSS linter found a syntax error. | `source`, `package`, `file`, `path` |
 | `package.javascript_syntax_error` | JavaScript linter found a syntax error. | `source`, `package`, `file`, `path` |
+| `package.template_path_invalid` | Package template path is not allowed for root/shared, provider, or macro namespace rules. | `source`, `package`, `package_slug`, `file`, `scopes` |
 | `package.copy_source_missing` | Planned package copy source does not exist. | `source`, `package`, `file`, `path` |
 | `package.copy_source_symlink` | Planned package copy source is a symlink. | `source`, `package`, `file`, `path` |
 | `package.discovery_completed` | Package discovery completed successfully. | `candidate_count` |

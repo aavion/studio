@@ -22,6 +22,7 @@ message:
     css_syntax_error: 'CSS-Syntaxprüfung für "%path%" fehlgeschlagen.'
     javascript_syntax_error: 'JavaScript-Syntaxprüfung für "%path%" fehlgeschlagen.'
     scope_invalid: 'Paket-Scope "%scope%" wird nicht unterstützt.'
+    template_path_invalid: 'Paket-Template "%path%" ist durch Root-, Provider- oder Makro-Namespace-Regeln für Paket-Scope "%scope%" nicht erlaubt.'
     copy_source_missing: 'Paket-Kopierquelle "%path%" fehlt.'
     copy_source_symlink: 'Paket-Kopierquelle "%path%" darf kein Symlink sein.'
     asset_sync_completed: 'Paket-Asset-Sync hat %assets% Asset(s) aus %packages% Paket(en) gespiegelt.'

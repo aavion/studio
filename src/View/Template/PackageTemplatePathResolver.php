@@ -26,17 +26,33 @@ final readonly class PackageTemplatePathResolver
         $namespace = is_string($namespace) ? TemplateNamespace::fromName($namespace) : $namespace;
         $nativePath = $this->absolutePath($namespace->relativeDirectory());
 
-        if (TemplateNamespace::Root !== $namespace) {
-            return array_values(array_unique(array_merge(
-                $this->packagePaths($packages, $namespace, $namespace->overrideScope()),
-                [$nativePath],
-            )));
-        }
-
-        $overridePaths = $this->packagePaths($packages, TemplateNamespace::Root, PackageScope::SystemTemplate);
-        $fallbackOnlyPaths = $this->packagePaths($packages, TemplateNamespace::Root, null, PackageScope::SystemTemplate);
+        $overrideScope = $namespace->overrideScope();
+        $overridePaths = $this->packagePaths($packages, $namespace, $overrideScope);
+        $fallbackOnlyPaths = $this->packagePaths($packages, $namespace, null, $overrideScope);
 
         return array_values(array_unique(array_merge($overridePaths, [$nativePath], $fallbackOnlyPaths)));
+    }
+
+    /**
+     * @param iterable<PackageAssetSyncPackage> $packages
+     *
+     * @return list<string>
+     */
+    public function providerPaths(iterable $packages): array
+    {
+        $paths = [];
+
+        foreach ($packages as $package) {
+            if (!$package instanceof PackageAssetSyncPackage || !$this->hasProviderScope($package)) {
+                continue;
+            }
+
+            $paths[] = $this->absolutePath($package->directory().'/templates/provider');
+        }
+
+        $paths[] = $this->absolutePath('templates/provider');
+
+        return array_values(array_unique($paths));
     }
 
     /**
@@ -69,6 +85,17 @@ final readonly class PackageTemplatePathResolver
         }
 
         return $paths;
+    }
+
+    private function hasProviderScope(PackageAssetSyncPackage $package): bool
+    {
+        foreach ($package->scopes() as $scope) {
+            if (str_ends_with($scope->value, '-provider')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function absolutePath(string $relativePath): string

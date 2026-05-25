@@ -26,6 +26,7 @@ final class MessageKey
     public const PACKAGE_CSS_SYNTAX_ERROR = 'message.package.css_syntax_error';
     public const PACKAGE_JAVASCRIPT_SYNTAX_ERROR = 'message.package.javascript_syntax_error';
     public const PACKAGE_SCOPE_INVALID = 'message.package.scope_invalid';
+    public const PACKAGE_TEMPLATE_PATH_INVALID = 'message.package.template_path_invalid';
     public const PACKAGE_COPY_SOURCE_MISSING = 'message.package.copy_source_missing';
     public const PACKAGE_COPY_SOURCE_SYMLINK = 'message.package.copy_source_symlink';
     public const PACKAGE_ASSET_SYNC_COMPLETED = 'message.package.asset_sync_completed';

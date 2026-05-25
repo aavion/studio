@@ -1,0 +1,9 @@
+{% include '@provider/editor/code.html.twig' with {
+    name: name|default('content'),
+    value: value|default(''),
+    language: 'json',
+    line_wrapping: line_wrapping|default(false),
+    read_only: read_only|default(false),
+    tab_size: tab_size|default(2),
+    attributes: attributes|default({}),
+} only %}

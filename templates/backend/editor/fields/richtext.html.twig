@@ -1,0 +1,4 @@
+{% include '@provider/editor/richtext.html.twig' with {
+    name: name|default('content'),
+    value: value|default(''),
+} only %}

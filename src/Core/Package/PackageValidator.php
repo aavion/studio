@@ -29,6 +29,7 @@ final class PackageValidator
         private readonly CssLinter $cssLinter = new CssLinter(),
         private readonly JavaScriptLinter $javaScriptLinter = new JavaScriptLinter(),
         private readonly FileInventoryScanner $fileInventoryScanner = new FileInventoryScanner(),
+        private readonly PackageTemplatePathValidator $templatePathValidator = new PackageTemplatePathValidator(),
     ) {
     }
 
@@ -66,6 +67,8 @@ final class PackageValidator
         }
 
         $inspection = $this->inspect($candidate->directory(), $spec->inventoryDepth());
+
+        array_push($issues, ...$this->templatePathValidator->validate($candidate, $inspection->templateFiles()));
 
         if ($spec->lintPhpFiles()) {
             array_push($issues, ...$this->lintFiles($candidate, $inspection->phpFiles(), $this->phpLinter, MessageCode::PACKAGE_PHP_SYNTAX_ERROR, MessageKey::PACKAGE_PHP_SYNTAX_ERROR));

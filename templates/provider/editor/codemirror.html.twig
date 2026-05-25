@@ -1,0 +1,18 @@
+{% set editor_attributes = attributes|default({}) %}
+{% set editor_classes = [
+    'studio-codemirror-provider',
+    editor_attributes.class|default(''),
+]|filter(class_name => class_name is not empty)|join(' ') %}
+
+<textarea
+    name="{{ name|default('content') }}"
+    class="{{ editor_classes }}"
+    data-controller="code-editor"
+    data-code-editor-language-value="{{ language|default('markdown') }}"
+    data-code-editor-line-wrapping-value="{{ line_wrapping|default(true) ? 'true' : 'false' }}"
+    data-code-editor-read-only-value="{{ read_only|default(false) ? 'true' : 'false' }}"
+    data-code-editor-tab-size-value="{{ tab_size|default(4) }}"
+    {% for attribute, attribute_value in editor_attributes|filter((attribute_value, attribute) => attribute != 'class' and attribute_value is not same as(false)) %}
+        {{ attribute }}{% if attribute_value is not same as(true) %}="{{ attribute_value }}"{% endif %}
+    {% endfor %}
+>{{ value|default('') }}</textarea>

@@ -22,6 +22,7 @@ message:
     css_syntax_error: 'CSS syntax check failed for "%path%".'
     javascript_syntax_error: 'JavaScript syntax check failed for "%path%".'
     scope_invalid: 'Package scope "%scope%" is not supported.'
+    template_path_invalid: 'Package template "%path%" is not allowed by root, provider, or macro namespace rules for package scope "%scope%".'
     copy_source_missing: 'Package copy source "%path%" is missing.'
     copy_source_symlink: 'Package copy source "%path%" must not be a symlink.'
     asset_sync_completed: 'Package asset sync mirrored %assets% asset(s) from %packages% package(s).'

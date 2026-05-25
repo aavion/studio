@@ -71,7 +71,17 @@ Current constraints:
 
 Package assets must be self-contained. Packages should vendor their external dependencies inside their own package directory instead of requiring the project importmap to manage third-party dependency lifecycles across packages. Active package CSS and JavaScript are aggregated through the generated package asset registries; packages should not expect templates to add arbitrary direct `<link>` or `<script>` tags for package-level assets. Static assets such as images, fonts, videos, and SVGs should be referenced from package CSS, JavaScript, or templates after the lifecycle mirrors them into the AssetMapper-visible package path.
 
-Template paths use logical Twig namespaces. Frontend packages target `templates/frontend/**` and reference templates as `@frontend/...`. Backend packages target `templates/backend/**` and reference templates as `@backend/...`. Shared fallbacks use `@root/...`; packages may reference root templates, but only packages with `system-template` scope may override root-level shared files such as `base.html.twig` or `macros/**`.
+Template paths use logical Twig namespaces. Packages may ship frontend views under `templates/frontend/**` and reference templates as `@frontend/...`. Packages may ship backend views under `templates/backend/**` and reference templates as `@backend/...`. Frontend and backend theme scopes are the only scopes searched before native templates, so modules and providers can add package-specific views but do not replace matching core UI templates. Shared fallbacks use `@root/...`; packages may reference root templates, but only packages with `system-template` scope may override root-level shared files such as `base.html.twig` or `macros/core/**`.
+
+Optional provider markup should use stable native slots. Core templates render stable stubs such as `@frontend/partials/forms/fields/captcha.html.twig` or `@backend/editor/fields/richtext.html.twig`; those stubs include templates through the shared `@provider` namespace. Provider package paths are searched before native provider fallbacks, while frontend and backend themes do not participate in `@provider` lookup. Missing captcha providers must not be treated as validation success in Twig; the matching backend provider service remains responsible for no-op/resolved behavior when no provider is active.
+
+Package-owned macros are additive and use a directory namespace:
+
+```text
+packages/<package-slug>/templates/macros/<package-slug>/*.html.twig
+```
+
+Packages must not write macro files directly under `templates/macros/`, under another package slug, or under `templates/macros/core/**` unless they declare `system-template`.
 
 ## Admin UI and UX guidelines
 
@@ -104,6 +114,17 @@ Examples:
 - Search, storage, export, or media adapters.
 
 Provider packages should define required capabilities before they are allowed to replace a default. For editor providers, this may include Markdown/rich-text behavior, resolver-token insertion, autocomplete, validation feedback, diff integration, and asset lifecycle support.
+
+Provider templates should follow the slot convention owned by the resolver. Current native slot examples are:
+
+```text
+packages/<package-slug>/templates/provider/captcha/field.html.twig
+packages/<package-slug>/templates/provider/editor/richtext.html.twig
+```
+
+Native provider fallbacks live in the same structure below `templates/provider/**`. If no matching provider package is active, Twig resolves the native fallback through the same `@provider/...` include.
+
+The native editor provider uses CodeMirror as its base implementation. The shared `@provider/editor/codemirror.html.twig` template accepts `name`, `value`, `language`, `line_wrapping`, `read_only`, `tab_size`, and `attributes`. Native aliases such as `@provider/editor/markdown.html.twig`, `@provider/editor/json.html.twig`, `@provider/editor/php.html.twig`, and `@provider/editor/html.html.twig` set practical language defaults while keeping the same context contract for future editor-provider packages. The native `@provider/editor/richtext.html.twig` fallback intentionally delegates to Markdown editing; a real WYSIWYG provider such as TinyMCE may replace only that template while CodeMirror remains active for code-oriented aliases.
 
 ## Testing and validation
 

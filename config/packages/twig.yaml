@@ -4,6 +4,7 @@ twig:
         '%kernel.project_dir%/templates/frontend': frontend
         '%kernel.project_dir%/templates/backend': backend
         '%kernel.project_dir%/templates': root
+        '%kernel.project_dir%/templates/provider': provider
 
 when@test:
     twig:

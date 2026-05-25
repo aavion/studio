@@ -68,5 +68,14 @@ final class PackageTemplatePathConfigurator implements EventSubscriberInterface
                 $loader->setPaths($paths, $namespace->value);
             }
         }
+
+        $providerPaths = array_values(array_filter(
+            $this->pathResolver->providerPaths($packages),
+            static fn (string $path): bool => is_dir($path),
+        ));
+
+        if ([] !== $providerPaths) {
+            $loader->setPaths($providerPaths, 'provider');
+        }
     }
 }
