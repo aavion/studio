@@ -180,7 +180,7 @@ final class Version20260523210000 extends AbstractMigration
         $content->addColumn('uid', 'string', ['length' => 36]);
         $content->addColumn('slug', 'string', ['length' => 160]);
         $content->addColumn('status', 'string', ['length' => 255]);
-        $content->addColumn('parent_uid', 'string', ['length' => 36, 'notnull' => false]);
+        $content->addColumn('parent_uid', 'string', ['length' => 36, 'default' => '/']);
         $content->addColumn('sort_order', 'integer');
         $content->addColumn('custom_url', 'string', ['length' => 1024, 'notnull' => false]);
         $content->addColumn('redirect_target', 'string', ['length' => 1024, 'notnull' => false]);

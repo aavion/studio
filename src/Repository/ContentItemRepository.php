@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Content\ContentStatus;
+use App\Content\Routing\ContentSystemRoute;
 use App\Entity\ContentItem;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -23,6 +24,7 @@ final class ContentItemRepository extends ServiceEntityRepository
     {
         return $this->findOneBy([
             'slug' => $slug,
+            'parentUid' => ContentSystemRoute::ROOT_PARENT_UID,
             'status' => ContentStatus::Published,
         ]);
     }
@@ -31,6 +33,7 @@ final class ContentItemRepository extends ServiceEntityRepository
     {
         return $this->findOneBy([
             'slug' => $slug,
+            'parentUid' => ContentSystemRoute::ROOT_PARENT_UID,
         ]);
     }
 
@@ -38,7 +41,7 @@ final class ContentItemRepository extends ServiceEntityRepository
     {
         return $this->findOneBy([
             'slug' => $slug,
-            'parentUid' => $parentUid,
+            'parentUid' => $this->normalizeParentUid($parentUid),
             'status' => ContentStatus::Published,
         ]);
     }
@@ -47,7 +50,7 @@ final class ContentItemRepository extends ServiceEntityRepository
     {
         return $this->findOneBy([
             'slug' => $slug,
-            'parentUid' => $parentUid,
+            'parentUid' => $this->normalizeParentUid($parentUid),
         ]);
     }
 
@@ -64,5 +67,10 @@ final class ContentItemRepository extends ServiceEntityRepository
         return $this->findOneBy([
             'customUrl' => $customUrl,
         ]);
+    }
+
+    private function normalizeParentUid(?string $parentUid): string
+    {
+        return $parentUid ?? ContentSystemRoute::ROOT_PARENT_UID;
     }
 }

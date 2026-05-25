@@ -38,7 +38,7 @@ final readonly class ContentPathLookup
     private function findByHierarchyPath(string $path): ?ContentItem
     {
         $segments = $this->pathSegments($path);
-        $parentUid = null;
+        $parentUid = ContentSystemRoute::ROOT_PARENT_UID;
         $content = null;
 
         if (ContentSystemRoute::PREFIX === ($segments[0] ?? null)) {

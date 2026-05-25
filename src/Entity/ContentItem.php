@@ -43,8 +43,8 @@ class ContentItem
     #[ORM\Column(enumType: ContentStatus::class)]
     private ContentStatus $status = ContentStatus::Draft;
 
-    #[ORM\Column(length: 36, nullable: true)]
-    private ?string $parentUid = null;
+    #[ORM\Column(length: 36, options: ['default' => ContentSystemRoute::ROOT_PARENT_UID])]
+    private string $parentUid = ContentSystemRoute::ROOT_PARENT_UID;
 
     #[ORM\Column]
     private int $sortOrder = 0;
@@ -173,14 +173,14 @@ class ContentItem
         $this->status = ContentStatus::Archived;
     }
 
-    public function parentUid(): ?string
+    public function parentUid(): string
     {
         return $this->parentUid;
     }
 
     public function moveTo(?string $parentUid, int $sortOrder = 0): void
     {
-        $this->parentUid = null === $parentUid ? null : self::assertParentUid($parentUid);
+        $this->parentUid = self::assertParentUid($parentUid ?? ContentSystemRoute::ROOT_PARENT_UID);
         $this->sortOrder = $sortOrder;
     }
 
@@ -468,6 +468,10 @@ class ContentItem
 
     private static function assertParentUid(string $parentUid): string
     {
+        if (ContentSystemRoute::ROOT_PARENT_UID === $parentUid) {
+            return $parentUid;
+        }
+
         if (ContentSystemRoute::VIRTUAL_PARENT_UID === $parentUid) {
             return $parentUid;
         }

@@ -336,7 +336,7 @@ final class TestDatabaseSeeder
             'uid' => $item['content_uid'],
             'slug' => $item['slug'],
             'status' => 'published',
-            'parent_uid' => null,
+            'parent_uid' => '/',
             'sort_order' => $item['sort_order'],
             'custom_url' => $item['custom_url'],
             'redirect_target' => null,

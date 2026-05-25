@@ -20,7 +20,7 @@ Implemented first-pass content primitives:
 - `Routing\ContentRoutePath` parses public content paths and extracts trailing generic variant markers such as `~compact`.
 - `Routing\ContentSlug` validates public slug tokens.
 - `Routing\ContentRouteGuard` protects reserved system route prefixes and normalizes content paths.
-- `Routing\ContentSystemRoute` defines the internal-only `/system/...` prefix and virtual parent marker.
+- `Routing\ContentSystemRoute` defines the root parent sentinel and the internal-only `/system/...` prefix with its virtual parent marker.
 - `Schema\ContentSchemaField` defines reserved required base field identifiers such as `title` and `subtitle`.
 - `Schema\ContentSchemaSource` classifies schema origins such as preset, custom, and module-provided schemas.
 

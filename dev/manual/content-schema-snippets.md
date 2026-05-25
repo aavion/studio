@@ -93,7 +93,7 @@ state_marker
 
 `title` and `subtitle` are reserved required base fields in every content schema. They are stored as `content_field_value` rows through the variable fieldset, not as dedicated `content_item` columns and not in `content_item.metadata`.
 
-`parent_uid` usually stores another content UID. The reserved value `system` is the only virtual parent marker and is used for internal `/system/...` content routes. These entities may be resolved by internal services, but the public catch-all route must reject direct browser delivery for the `system` prefix.
+Root-level content stores `/` as `parent_uid` instead of `NULL` so route uniqueness stays portable across supported databases. Child content stores another content UID. The reserved value `system` is the only virtual parent marker and is used for internal `/system/...` content routes. These entities may be resolved by internal services, but the public catch-all route must reject direct browser delivery for the `system` prefix.
 
 `redirect_target` currently stores the redirect target string. Code may expose this as `redirectRoute()` while the database column keeps its pre-rename name until the routing model is reshaped. Internal targets such as `/system/footer` render the target content without changing the browser URL. External `http://` or `https://` targets return `302 Found`; other URI schemes are rejected.
 

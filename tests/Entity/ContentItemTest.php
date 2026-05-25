@@ -32,6 +32,7 @@ final class ContentItemTest extends TestCase
         self::assertSame('hello-world', $content->slug());
         self::assertSame(ContentStatus::Draft, $content->status());
         self::assertSame(ContentVisibility::Public, $content->visibility());
+        self::assertSame(ContentSystemRoute::ROOT_PARENT_UID, $content->parentUid());
         self::assertSame(['en'], $content->availableLanguages());
         self::assertSame(['default'], $content->availableVariants());
         self::assertSame('index,follow', $content->metadataValue('seo_robots'));
@@ -86,6 +87,15 @@ final class ContentItemTest extends TestCase
         $content->moveTo(ContentSystemRoute::VIRTUAL_PARENT_UID);
 
         self::assertSame(ContentSystemRoute::VIRTUAL_PARENT_UID, $content->parentUid());
+    }
+
+    public function testItNormalizesNullParentToRootParent(): void
+    {
+        $content = new ContentItem('11111111-1111-1111-1111-111111111111', 'home');
+
+        $content->moveTo(null);
+
+        self::assertSame(ContentSystemRoute::ROOT_PARENT_UID, $content->parentUid());
     }
 
     public function testItActivatesRevisionAndAttachesFieldValuesThroughRevision(): void

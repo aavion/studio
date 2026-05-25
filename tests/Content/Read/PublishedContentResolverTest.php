@@ -93,6 +93,7 @@ final class PublishedContentResolverTest extends KernelTestCase
         $this->connection->update('content_item', ['parent_uid' => $homeUid, 'custom_url' => null], ['slug' => 'about']);
         $this->entityManager->clear();
 
+        self::assertNull($this->resolver->findBySlug('about', AccessActor::anonymous()));
         self::assertNull($this->resolver->findByPath('/about', AccessActor::anonymous()));
 
         $view = $this->resolver->findByPath('/home/about', AccessActor::anonymous());

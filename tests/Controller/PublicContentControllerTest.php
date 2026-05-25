@@ -247,7 +247,7 @@ final class PublicContentControllerTest extends WebTestCase
         } finally {
             $connection->update('content_item', [
                 'slug' => 'about',
-                'parent_uid' => null,
+                'parent_uid' => '/',
                 'custom_url' => '/about',
             ], ['uid' => '20000000-0000-0000-0000-000000000002']);
             $connection->update('content_item', ['redirect_target' => null], ['slug' => 'first-update']);
@@ -302,7 +302,7 @@ final class PublicContentControllerTest extends WebTestCase
             $connection->delete('content_field_value', ['uid' => '40000000-0000-0000-0000-000000000501']);
             $connection->update('content_item', [
                 'slug' => 'about',
-                'parent_uid' => null,
+                'parent_uid' => '/',
                 'custom_url' => '/about',
                 'available_variants' => json_encode(['default'], JSON_THROW_ON_ERROR),
             ], ['uid' => '20000000-0000-0000-0000-000000000002']);
