@@ -1,0 +1,9 @@
+{% include '@provider/editor/markdown.html.twig' with {
+    name: name,
+    value: value|default(''),
+    language: language|default('markdown'),
+    line_wrapping: line_wrapping|default(true),
+    read_only: read_only|default(false),
+    tab_size: tab_size|default(4),
+    attributes: attributes|default({}),
+} only %}

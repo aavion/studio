@@ -53,4 +53,26 @@ final class ViewTwigExtensionTest extends KernelTestCase
         self::assertStringContainsString('data-code-editor-language-value="json"', $html);
         self::assertStringContainsString('data-code-editor-tab-size-value="2"', $html);
     }
+
+    public function testItRendersGranularFormAndActionPartials(): void
+    {
+        self::bootKernel();
+
+        $twig = self::getContainer()->get(Environment::class);
+        $html = $twig->createTemplate(
+            implode('', [
+                '{% include "@frontend/partials/forms/fields/email.html.twig" with {name: "email", label: "Email", value: "a@example.test"} only %}',
+                '{% include "@frontend/partials/forms/fields/radio-group.html.twig" with {name: "mode", label: "Mode", value: "draft", options: {draft: "Draft", live: "Live"}} only %}',
+                '{% include "@frontend/partials/actions/_button-group.html.twig" with {actions: [{label: "Save", variant: "primary"}, {label: "Cancel", href: "/"}]} only %}',
+                '{% include "@backend/partials/forms/fields/select.html.twig" with {name: "status", label: "Status", value: "active", options: {active: "Active", inactive: "Inactive"}} only %}',
+                '{% include "@backend/partials/forms/fields/code-editor.html.twig" with {name: "template", label: "Template", value: "{{ title }}", language: "html"} only %}',
+            ]),
+        )->render();
+
+        self::assertStringContainsString('type="email"', $html);
+        self::assertStringContainsString('type="radio"', $html);
+        self::assertStringContainsString('studio-button-group', $html);
+        self::assertStringContainsString('studio-backend-select', $html);
+        self::assertStringContainsString('data-code-editor-language-value="html"', $html);
+    }
 }

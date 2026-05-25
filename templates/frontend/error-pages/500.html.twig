@@ -4,9 +4,11 @@
 
 {% block frontend_body %}
     <section class="studio-error-page">
-        <div class="studio-kicker">500</div>
-        <h1>{{ 'ui.error.500.title'|trans }}</h1>
-        <p>{{ 'ui.error.500.message'|trans }}</p>
+        {% include '@frontend/partials/typography/_page-header.html.twig' with {
+            kicker: '500',
+            title: 'ui.error.500.title'|trans,
+            subtitle: 'ui.error.500.message'|trans,
+        } only %}
         {% include '@frontend/error-pages/partials/_debug.html.twig' with {http_error: http_error|default(null)} only %}
     </section>
 {% endblock %}

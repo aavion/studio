@@ -5,10 +5,13 @@
 {% block body %}
     <main class="studio-backend-shell">
         <div class="studio-admin-shell">
-            <aside class="studio-admin-sidebar" aria-label="{{ 'ui.admin.navigation'|trans }}">
-                {% block admin_sidebar %}{% endblock %}
-            </aside>
+            {% include '@backend/partials/layout/_sidebar.html.twig' with {
+                area: 'admin',
+                label_key: 'ui.admin.navigation',
+                sidebar_content: block('admin_sidebar'),
+            } only %}
             <section class="studio-admin-content">
+                {% include '@backend/partials/layout/_topbar.html.twig' with {area_key: 'ui.admin.area'} only %}
                 {% block admin_body %}{% endblock %}
             </section>
         </div>

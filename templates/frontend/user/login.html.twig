@@ -4,11 +4,26 @@
 
 {% block frontend_body %}
     <section class="studio-auth-panel">
-        <h1>{{ 'ui.user.login.title'|trans }}</h1>
+        {% include '@frontend/partials/typography/_page-header.html.twig' with {
+            title: 'ui.user.login.title'|trans,
+            subtitle: 'ui.user.login.placeholder'|trans,
+        } only %}
         {% if http_error is defined and http_error.status_code|default(null) == 401 %}
             <p class="studio-auth-notice">{{ http_error.message_key|trans }}</p>
         {% endif %}
-        <p>{{ 'ui.user.login.placeholder'|trans }}</p>
+        {% include '@frontend/partials/forms/fields/input.html.twig' with {
+            name: 'username',
+            label: 'ui.user.login.username'|trans,
+            autocomplete: 'username',
+        } only %}
+        {% include '@frontend/partials/forms/fields/input.html.twig' with {
+            name: 'password',
+            type: 'password',
+            label: 'ui.user.login.password'|trans,
+            autocomplete: 'current-password',
+        } only %}
+        {% include '@frontend/partials/forms/fields/captcha.html.twig' %}
+        {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.login.submit'|trans} only %}
         {% include '@frontend/error-pages/partials/_debug.html.twig' with {http_error: http_error|default(null)} only %}
     </section>
 {% endblock %}

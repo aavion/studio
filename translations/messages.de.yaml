@@ -177,6 +177,13 @@ message:
 ui:
   app:
     name: 'aavion Studio'
+  navigation:
+    skip_to_content: 'Zum Inhalt springen'
+  frontend:
+    navigation: 'Hauptnavigation'
+    footer: '%app%'
+  backend:
+    navigation: 'Backend-Navigation'
   admin:
     area: 'Administration'
     navigation: 'Admin-Navigation'
@@ -189,6 +196,27 @@ ui:
     field: 'Feld'
     value: 'Wert'
     empty_value: 'Leer'
+  form:
+    required: 'Erforderlich'
+    submit: 'Absenden'
+  empty_state:
+    title: 'Nichts anzuzeigen'
+  user:
+    login:
+      title: 'Anmelden'
+      placeholder: 'Nutze deine Zugangsdaten, um fortzufahren.'
+      username: 'Username'
+      password: 'Passwort'
+      submit: 'Anmelden'
+    register:
+      title: 'Account erstellen'
+      placeholder: 'Registrierung wird verfügbar, sobald Nutzer-Flows aktiviert sind.'
+    password_reset:
+      title: 'Passwort zurücksetzen'
+      placeholder: 'Passwort-Reset wird verfügbar, sobald Mail-Flows aktiviert sind.'
+    profile:
+      title: 'Profil'
+      placeholder: 'Profileinstellungen werden verfügbar, sobald Account-Flows aktiviert sind.'
   error:
     default:
       title: 'Anfrage fehlgeschlagen'
@@ -218,16 +246,3 @@ ui:
       summary: 'Zusammenfassung'
       entry: 'Operationsschritt'
       empty: 'Es sind keine Operationsschritte verfügbar.'
-  user:
-    login:
-      title: 'Anmelden'
-      placeholder: 'Das Anmeldeformular wird durch den Authentifizierungsflow bereitgestellt.'
-    register:
-      title: 'Account erstellen'
-      placeholder: 'Das Registrierungsformular wird durch den Nutzerflow bereitgestellt.'
-    profile:
-      title: 'Profil'
-      placeholder: 'Die Profilansicht wird durch den Nutzerflow bereitgestellt.'
-    password_reset:
-      title: 'Passwort zurücksetzen'
-      placeholder: 'Das Passwort-Reset-Formular wird durch den Nutzerflow bereitgestellt.'

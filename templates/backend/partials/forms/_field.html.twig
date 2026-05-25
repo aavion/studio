@@ -1,0 +1,10 @@
+<div class="studio-backend-form-field">
+    {% include '@backend/partials/forms/_label.html.twig' with {
+        id: id|default(null),
+        label: label,
+        required: required|default(false),
+    } only %}
+    {{ control|raw }}
+    {% include '@backend/partials/forms/_help.html.twig' with {help: help|default(null)} only %}
+    {% include '@backend/partials/forms/_errors.html.twig' with {errors: errors|default([])} only %}
+</div>

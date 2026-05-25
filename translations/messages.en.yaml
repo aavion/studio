@@ -177,6 +177,13 @@ message:
 ui:
   app:
     name: 'aavion Studio'
+  navigation:
+    skip_to_content: 'Skip to content'
+  frontend:
+    navigation: 'Primary navigation'
+    footer: '%app%'
+  backend:
+    navigation: 'Backend navigation'
   admin:
     area: 'Administration'
     navigation: 'Admin navigation'
@@ -189,6 +196,27 @@ ui:
     field: 'Field'
     value: 'Value'
     empty_value: 'Empty'
+  form:
+    required: 'Required'
+    submit: 'Submit'
+  empty_state:
+    title: 'Nothing to show'
+  user:
+    login:
+      title: 'Sign in'
+      placeholder: 'Use your account credentials to continue.'
+      username: 'Username'
+      password: 'Password'
+      submit: 'Sign in'
+    register:
+      title: 'Create account'
+      placeholder: 'Registration will be available once user flows are enabled.'
+    password_reset:
+      title: 'Reset password'
+      placeholder: 'Password reset will be available once mail flows are enabled.'
+    profile:
+      title: 'Profile'
+      placeholder: 'Profile settings will be available once account flows are enabled.'
   error:
     default:
       title: 'Request failed'
@@ -218,16 +246,3 @@ ui:
       summary: 'Summary'
       entry: 'Operation step'
       empty: 'No operation steps are available.'
-  user:
-    login:
-      title: 'Sign in'
-      placeholder: 'The sign-in form will be provided by the authentication flow.'
-    register:
-      title: 'Create account'
-      placeholder: 'The registration form will be provided by the user flow.'
-    profile:
-      title: 'Profile'
-      placeholder: 'The profile view will be provided by the user flow.'
-    password_reset:
-      title: 'Reset password'
-      placeholder: 'The password reset form will be provided by the user flow.'

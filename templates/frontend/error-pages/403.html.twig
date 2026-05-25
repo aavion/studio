@@ -4,9 +4,11 @@
 
 {% block frontend_body %}
     <section class="studio-error-page">
-        <div class="studio-kicker">403</div>
-        <h1>{{ 'ui.error.403.title'|trans }}</h1>
-        <p>{{ 'ui.error.403.message'|trans }}</p>
+        {% include '@frontend/partials/typography/_page-header.html.twig' with {
+            kicker: '403',
+            title: 'ui.error.403.title'|trans,
+            subtitle: 'ui.error.403.message'|trans,
+        } only %}
         {% include '@frontend/error-pages/partials/_debug.html.twig' with {http_error: http_error|default(null)} only %}
     </section>
 {% endblock %}

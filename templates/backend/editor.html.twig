@@ -5,6 +5,7 @@
 {% block body %}
     <main class="studio-backend-shell">
         <section class="studio-editor-shell">
+            {% include '@backend/partials/layout/_topbar.html.twig' with {area_key: 'ui.editor.area'} only %}
             {% block editor_body %}{% endblock %}
         </section>
     </main>

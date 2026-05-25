@@ -1,0 +1,6 @@
+<label class="studio-form-label"{% if id|default(null) %} for="{{ id }}"{% endif %}>
+    {{ label }}
+    {% if required|default(false) %}
+        <span class="studio-form-required" aria-label="{{ 'ui.form.required'|trans }}">*</span>
+    {% endif %}
+</label>

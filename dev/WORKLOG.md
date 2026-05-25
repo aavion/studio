@@ -80,6 +80,7 @@
 - Documented optional provider slots as stable native Twig stubs backed by the `@provider` namespace, while backend services keep the actual no-op/resolved decision.
 - Added deterministic `@provider/{captcha,editor}/**` resolution for captcha fields and rich-text editor fields, with active provider package templates before native base fallbacks.
 - Added CodeMirror as the native base editor provider with generic, Markdown-backed rich-text fallback, CSS, HTML, JavaScript, JSON, PHP, TypeScript, and code template stubs.
+- Expanded the native template scaffold with frontend/backend layout variants and granular layout, navigation, typography, feedback, action button, toolbar, and form field partials for early theme override points.
 - Updated feature drafts, developer snippets, class map, translations, and tests for the new template namespace and package-scope contract.
 
 ### 2026-05-24
