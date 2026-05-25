@@ -163,6 +163,32 @@ final class SetupRunnerTest extends TestCase
         self::assertArrayHasKey('action_log', $result->context());
     }
 
+    public function testItStopsWhenEnvironmentOverridesCannotBeWritten(): void
+    {
+        mkdir($this->root.'/.env.test.local');
+        $executor = new RecordingSetupCommandExecutor();
+        $runner = new SetupRunner($this->root, $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Example Studio',
+            defaultUri: 'https://example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///'.$this->root.'/var/setup.db',
+            appSecret: 'test-secret',
+        ));
+
+        self::assertFalse($result->isSuccess());
+        self::assertTrue($result->context()['halt_on_error']);
+        self::assertSame('write_environment', $result->context()['failed_step']);
+        self::assertSame([], $executor->commands);
+        self::assertSame(
+            'message.setup.step_failed',
+            $result->context()['action_log']['entries'][1]['issues'][0]['translation_key'],
+        );
+    }
+
     public function testItUsesBundledComposerWhenSystemComposerIsUnavailable(): void
     {
         $databasePath = $this->root.'/var/setup.db';

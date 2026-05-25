@@ -17,8 +17,21 @@ final readonly class SetupEnvironmentWriter
             'DEFAULT_URI' => $input->defaultUri(),
             'DATABASE_URL' => $databaseUrl,
         ];
+        $contents = '';
 
-        file_put_contents($path, $this->merge(is_file($path) ? (string) file_get_contents($path) : '', $values));
+        if (is_file($path)) {
+            $contents = file_get_contents($path);
+
+            if (false === $contents) {
+                throw new SetupStepFailedException(sprintf('Environment override file "%s" could not be read.', basename($path)));
+            }
+        }
+
+        $bytes = @file_put_contents($path, $this->merge($contents, $values), LOCK_EX);
+
+        if (false === $bytes) {
+            throw new SetupStepFailedException(sprintf('Environment override file "%s" could not be written.', basename($path)));
+        }
 
         return ['path' => basename($path), 'keys' => array_keys($values)];
     }

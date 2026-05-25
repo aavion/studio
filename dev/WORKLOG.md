@@ -86,6 +86,7 @@
 - Hardened package asset sync so `.mjs` app, index, module, and theme entrypoints are mirrored and added to JavaScript registries consistently with `.js` files.
 - Fixed non-JSON asset command issue rendering so operation warnings use `OperationIssue::translationKey()` and do not mask the original failure.
 - Hardened package JavaScript mirroring so dynamic `import()` string specifiers are rewritten consistently with static imports while external and variable imports remain untouched.
+- Hardened setup environment writing so unreadable or unwritable `.env.{APP_ENV}.local` files stop setup instead of silently keeping stale configuration.
 - Updated feature drafts, developer snippets, class map, translations, and tests for the new template namespace and package-scope contract.
 
 ### 2026-05-24
