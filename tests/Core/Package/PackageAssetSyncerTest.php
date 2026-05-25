@@ -75,6 +75,32 @@ final class PackageAssetSyncerTest extends TestCase
         self::assertStringNotContainsString('dual/frontend/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
     }
 
+    public function testItRegistersModuleJavaScriptEntrypoints(): void
+    {
+        $this->writeTestFile($this->root, 'packages/module-assets/assets/app.mjs', 'import "./shared/util.mjs";');
+        $this->writeTestFile($this->root, 'packages/module-assets/assets/index.mjs', 'console.log("index");');
+        $this->writeTestFile($this->root, 'packages/module-assets/assets/module.mjs', 'console.log("module");');
+        $this->writeTestFile($this->root, 'packages/module-assets/assets/theme.mjs', 'console.log("theme");');
+        $this->writeTestFile($this->root, 'packages/module-assets/assets/feature.mjs', 'console.log("feature");');
+        $this->writeTestFile($this->root, 'packages/module-assets/assets/vendor/library/index.mjs', 'console.log("vendor");');
+
+        $result = (new PackageAssetSyncer($this->root))->sync([
+            new PackageAssetSyncPackage('module-assets', 'packages/module-assets', [PackageScope::Module]),
+        ]);
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame(4, $result->context()['javascript_entries']);
+
+        $javaScriptRegistry = (string) file_get_contents($this->root.'/assets/js/packages/extension.js');
+
+        self::assertStringContainsString('import "../../packages/module-assets/app.mjs";', $javaScriptRegistry);
+        self::assertStringContainsString('import "../../packages/module-assets/index.mjs";', $javaScriptRegistry);
+        self::assertStringContainsString('import "../../packages/module-assets/module.mjs";', $javaScriptRegistry);
+        self::assertStringContainsString('import "../../packages/module-assets/theme.mjs";', $javaScriptRegistry);
+        self::assertStringNotContainsString('feature.mjs', $javaScriptRegistry);
+        self::assertStringNotContainsString('vendor/library/index.mjs', $javaScriptRegistry);
+    }
+
     public function testItRegistersTemplateOnlyPackagesAsTailwindSources(): void
     {
         $this->writeTestFile($this->root, 'packages/templates-only/templates/widget.html.twig', '<div class="package-widget"></div>');

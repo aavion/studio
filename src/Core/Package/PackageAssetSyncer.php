@@ -313,7 +313,7 @@ final readonly class PackageAssetSyncer
 
     private function isRegistryEntrypoint(string $assetFile): bool
     {
-        return in_array(basename($assetFile), ['app.css', 'app.js', 'index.css', 'index.js', 'module.css', 'module.js', 'theme.css', 'theme.js'], true);
+        return in_array(basename($assetFile), ['app.css', 'app.js', 'app.mjs', 'index.css', 'index.js', 'index.mjs', 'module.css', 'module.js', 'module.mjs', 'theme.css', 'theme.js', 'theme.mjs'], true);
     }
 
     private function isStyleOrScript(string $assetFile): bool
