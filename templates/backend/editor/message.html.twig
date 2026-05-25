@@ -1,0 +1,21 @@
+{% extends '@backend/editor.html.twig' %}
+
+{% block title %}{{ 'editor.message.title'|trans }}{% endblock %}
+
+{% block editor_body %}
+    <div class="studio-editor-workspace">
+        <aside class="studio-editor-panel">
+            <nav aria-label="{{ 'ui.editor.navigation'|trans }}">
+                {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+            </nav>
+        </aside>
+        <section class="studio-editor-canvas">
+            {% include '@backend/editor/partials/_workspace-header.html.twig' with {
+                title: 'editor.message.title'|trans,
+                status: 'editor.dashboard.status'|trans,
+            } only %}
+
+            {% include '@backend/partials/feedback/_message.html.twig' with {message: message} only %}
+        </section>
+    </div>
+{% endblock %}

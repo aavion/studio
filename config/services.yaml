@@ -30,6 +30,11 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Backend\BackendRouteResolver:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
     App\Localization\TranslationLanguageCatalog:
         arguments:
             $projectDir: '%kernel.project_dir%'

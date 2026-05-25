@@ -6,6 +6,7 @@ ui:
         navigation: Admin-Navigation
     editor:
         area: Editor
+        navigation: Editor-Navigation
     operations:
         action_log:
             title: Action-Log
@@ -70,6 +71,15 @@ ui:
         503:
             title: Wartungsmodus
             message: 'Die Seite ist vorübergehend nicht verfügbar, solange die Wartung aktiv ist.'
+admin:
+    navigation:
+        dashboard: Dashboard
+    dashboard:
+        title: Admin-Dashboard
+        foundation_title: Backend-Fundament
+        foundation_text: 'Administrative Routen werden jetzt durch den nativen Backend-Router aufgelöst. Funktionale Seiten können hier andocken, sobald Authentifizierung, Navigation und Zugriffsprüfungen bereit sind.'
+    message:
+        title: Admin-Route
 demo:
     kicker: System-UI
     frontend:
@@ -124,6 +134,16 @@ demo:
     operations:
         discovery: 'Discovery abgeschlossen'
         assets: 'Asset-Rebuild eingereiht'
+editor:
+    navigation:
+        dashboard: Dashboard
+    dashboard:
+        title: Editor-Dashboard
+        status: Content-Arbeitsbereich
+        foundation_title: Editor-Fundament
+        foundation_text: 'Content-Routen können an diese Shell andocken, sobald Editor-Workflows, Schema-Werkzeuge und Package-Beiträge verdrahtet sind.'
+    message:
+        title: Editor-Route
 message:
     manifest:
         unreadable: 'Manifest-Datei "%path%" kann nicht gelesen werden.'
@@ -250,8 +270,13 @@ message:
             invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
         group_identifier:
             invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein.'
+    backend:
+        route_not_found: 'Backend-Route "%path%" ist nicht registriert.'
+        setup_locked: 'Setup ist bereits abgeschlossen und nicht mehr verfügbar.'
     setup:
         step_failed: 'Setup-Schritt "%step%" ist fehlgeschlagen: %message%'
+        environment_file_unreadable: 'Environment-Override-Datei "%file%" konnte nicht gelesen werden.'
+        environment_file_write_failed: 'Environment-Override-Datei "%file%" konnte nicht geschrieben werden.'
         language_selected: 'Installer-Sprache "%language%" ausgewählt.'
         available_languages: 'Verfügbare Installer-Sprachen: %languages%'
         dry_run: 'Nur Dry-Run; es wurden keine Änderungen geschrieben.'
@@ -356,3 +381,11 @@ message:
             version_invalid: 'Content-Schema-Version %version% muss positiv sein.'
             required_field_missing: 'Content-Schema fehlt das erforderliche Feld "%field_identifier%".'
             field_duplicate: 'Content-Schema-Feld "%field_identifier%" ist doppelt vorhanden.'
+setup:
+    dashboard:
+        title: Setup
+        status: Ersteinrichtung
+        foundation_title: Setup-Fundament
+        foundation_text: 'Setup bleibt ohne Datenbankverbindung verfügbar, bis die Installation sich als abgeschlossen markiert.'
+    message:
+        title: Setup-Route

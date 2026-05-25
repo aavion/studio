@@ -124,8 +124,13 @@ message:
       invalid: 'Access level %level% must be between 0 and 9.'
     group_identifier:
       invalid: 'ACL group identifier "%identifier%" must be lowercase snake_case.'
+  backend:
+    route_not_found: 'Backend route "%path%" is not registered.'
+    setup_locked: 'Setup is already completed and is no longer available.'
   setup:
     step_failed: 'Setup step "%step%" failed: %message%'
+    environment_file_unreadable: 'Environment override file "%file%" could not be read.'
+    environment_file_write_failed: 'Environment override file "%file%" could not be written.'
     language_selected: 'Installer language "%language%" selected.'
     available_languages: 'Available installer languages: %languages%'
     dry_run: 'Dry run only; no changes were written.'

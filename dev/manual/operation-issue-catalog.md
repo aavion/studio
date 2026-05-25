@@ -120,6 +120,10 @@ Validation rules:
 | `message.filesystem.directory_ready` | Directory exists or was created. | `%path%` |
 | `message.filesystem.parent_directory_ready` | Parent directory exists or was created. | `%path%` |
 | `message.process.command_completed` | Process action exited successfully. | `%command%`, `%exit_code%` |
+| `message.backend.route_not_found` | Backend route resolver could not match an area path. | `%path%` |
+| `message.backend.setup_locked` | Setup route is locked after completed installation. | N/A |
+| `message.setup.environment_file_unreadable` | Setup environment override file could not be read. | `%file%` |
+| `message.setup.environment_file_write_failed` | Setup environment override file could not be written. | `%file%` |
 | `message.content.slug.invalid_format` | Content slug does not match the public slug rules. | `%slug%` |
 | `message.content.slug.reserved` | Content slug conflicts with a reserved system route prefix. | `%slug%` |
 | `message.content.path.empty_or_padded` | Content path is empty or padded with whitespace. | `%path%` |

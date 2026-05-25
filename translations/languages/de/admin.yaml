@@ -4,3 +4,13 @@ ui:
   admin:
     area: 'Administration'
     navigation: 'Admin-Navigation'
+
+admin:
+  navigation:
+    dashboard: 'Dashboard'
+  dashboard:
+    title: 'Admin-Dashboard'
+    foundation_title: 'Backend-Fundament'
+    foundation_text: 'Administrative Routen werden jetzt durch den nativen Backend-Router aufgelöst. Funktionale Seiten können hier andocken, sobald Authentifizierung, Navigation und Zugriffsprüfungen bereit sind.'
+  message:
+    title: 'Admin-Route'

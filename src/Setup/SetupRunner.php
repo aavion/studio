@@ -23,6 +23,7 @@ final class SetupRunner
         private readonly DatabaseUrlFactory $databaseUrlFactory = new DatabaseUrlFactory(),
         private readonly SetupEnvironmentWriter $environmentWriter = new SetupEnvironmentWriter(),
         private readonly SetupDatabaseSeeder $databaseSeeder = new SetupDatabaseSeeder(),
+        private readonly SetupCompletionMarker $completionMarker = new SetupCompletionMarker(),
         private readonly SetupLanguageCatalog $languageCatalog = new SetupLanguageCatalog(),
         private readonly SetupLanguageSelector $languageSelector = new SetupLanguageSelector(),
         private readonly SetupComposerCommandResolver $composerCommandResolver = new SetupComposerCommandResolver(),
@@ -125,6 +126,7 @@ final class SetupRunner
             ['run_migrations', fn (): array => $this->runMigrations($input, $environment)],
             ['seed_default_settings', fn (): array => $this->databaseSeeder->seedDefaultSettings($this->projectDir, $input, $databaseUrl)],
             ['seed_admin_user', fn (): array => $this->databaseSeeder->seedAdminUser($this->projectDir, $input, $databaseUrl)],
+            ['mark_setup_completed', fn (): array => $this->completionMarker->markComplete($this->projectDir, $input->appEnv())],
         ];
     }
 
@@ -199,6 +201,12 @@ final class SetupRunner
 
     private function failureMessage(string $step, Throwable $throwable): Message
     {
+        if ($throwable instanceof SetupStepFailedException && null !== $throwable->messageObject()) {
+            return $throwable->messageObject()->withContext([
+                'step' => $step,
+            ]);
+        }
+
         $parameters = ['%step%' => $step, '%message%' => $throwable->getMessage()];
         $context = ['step' => $step, 'exception' => $throwable::class];
 

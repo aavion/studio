@@ -102,9 +102,13 @@ final class MessageCode
     public const PACKAGE_DEPENDENCY_RESOLVED = 'package.dependency.resolved';
     public const ACCESS_GRANTED = 'access.granted';
     public const ACCESS_DENIED = 'access.denied';
+    public const BACKEND_ROUTE_NOT_FOUND = 'backend.route_not_found';
+    public const BACKEND_SETUP_LOCKED = 'backend.setup_locked';
     public const CONTENT_LANGUAGE_FALLBACK = 'content.language_fallback';
     public const CONTENT_VARIANT_FALLBACK = 'content.variant_fallback';
     public const SETUP_STEP_FAILED = 'setup.step_failed';
+    public const SETUP_ENVIRONMENT_FILE_UNREADABLE = 'setup.environment_file_unreadable';
+    public const SETUP_ENVIRONMENT_FILE_WRITE_FAILED = 'setup.environment_file_write_failed';
     public const SETUP_LANGUAGE_SELECTED = 'setup.language_selected';
     public const SETUP_AVAILABLE_LANGUAGES = 'setup.available_languages';
     public const SETUP_DRY_RUN = 'setup.dry_run';

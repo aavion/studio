@@ -19,6 +19,9 @@ final readonly class NavigationItem
         private int $sortOrder = 0,
         private array $metadata = [],
         private array $children = [],
+        private ?string $resolvedUrl = null,
+        private bool $active = false,
+        private bool $activeAncestor = false,
     ) {
     }
 
@@ -68,6 +71,21 @@ final readonly class NavigationItem
         return $this->children;
     }
 
+    public function resolvedUrl(): ?string
+    {
+        return $this->resolvedUrl;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+    public function isActiveAncestor(): bool
+    {
+        return $this->activeAncestor;
+    }
+
     /**
      * @param list<NavigationItem> $children
      */
@@ -82,11 +100,48 @@ final readonly class NavigationItem
             $this->sortOrder,
             $this->metadata,
             $children,
+            $this->resolvedUrl,
+            $this->active,
+            $this->activeAncestor,
+        );
+    }
+
+    public function withResolvedUrl(?string $resolvedUrl): self
+    {
+        return new self(
+            $this->uid,
+            $this->label,
+            $this->targetType,
+            $this->targetValue,
+            $this->parentUid,
+            $this->sortOrder,
+            $this->metadata,
+            $this->children,
+            $resolvedUrl,
+            $this->active,
+            $this->activeAncestor,
+        );
+    }
+
+    public function withActiveState(bool $active, bool $activeAncestor): self
+    {
+        return new self(
+            $this->uid,
+            $this->label,
+            $this->targetType,
+            $this->targetValue,
+            $this->parentUid,
+            $this->sortOrder,
+            $this->metadata,
+            $this->children,
+            $this->resolvedUrl,
+            $active,
+            $activeAncestor,
         );
     }
 
     /**
-     * @return array{uid: string, label: string, target_type: string, target_value: string, url: string, parent_uid: ?string, sort_order: int, level: int, metadata: array<string, mixed>, children: list<array<string, mixed>>}
+     * @return array{uid: string, label: string, target_type: string, target_value: string, url: string, parent_uid: ?string, sort_order: int, level: int, active: bool, active_ancestor: bool, metadata: array<string, mixed>, children: list<array<string, mixed>>}
      */
     public function toArray(int $level = 1): array
     {
@@ -99,6 +154,8 @@ final readonly class NavigationItem
             'parent_uid' => $this->parentUid,
             'sort_order' => $this->sortOrder,
             'level' => $level,
+            'active' => $this->active,
+            'active_ancestor' => $this->activeAncestor,
             'metadata' => $this->metadata,
             'children' => array_map(
                 static fn (NavigationItem $item): array => $item->toArray($level + 1),
@@ -109,6 +166,10 @@ final readonly class NavigationItem
 
     private function url(): string
     {
+        if (null !== $this->resolvedUrl) {
+            return $this->resolvedUrl;
+        }
+
         return match ($this->targetType) {
             'url', 'content' => $this->targetValue,
             default => '#',

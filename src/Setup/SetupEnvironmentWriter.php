@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+
 final readonly class SetupEnvironmentWriter
 {
     /**
@@ -23,14 +27,14 @@ final readonly class SetupEnvironmentWriter
             $contents = file_get_contents($path);
 
             if (false === $contents) {
-                throw new SetupStepFailedException(sprintf('Environment override file "%s" could not be read.', basename($path)));
+                throw $this->failure(MessageCode::SETUP_ENVIRONMENT_FILE_UNREADABLE, MessageKey::SETUP_ENVIRONMENT_FILE_UNREADABLE, $path);
             }
         }
 
         $bytes = @file_put_contents($path, $this->merge($contents, $values), LOCK_EX);
 
         if (false === $bytes) {
-            throw new SetupStepFailedException(sprintf('Environment override file "%s" could not be written.', basename($path)));
+            throw $this->failure(MessageCode::SETUP_ENVIRONMENT_FILE_WRITE_FAILED, MessageKey::SETUP_ENVIRONMENT_FILE_WRITE_FAILED, $path);
         }
 
         return ['path' => basename($path), 'keys' => array_keys($values)];
@@ -69,5 +73,15 @@ final readonly class SetupEnvironmentWriter
     private function quote(string $value): string
     {
         return "'".str_replace(['\\', "'"], ['\\\\', "\\'"], $value)."'";
+    }
+
+    private function failure(string $code, string $translationKey, string $path): SetupStepFailedException
+    {
+        return SetupStepFailedException::fromMessage(Message::error(
+            $code,
+            $translationKey,
+            ['%file%' => basename($path)],
+            ['path' => $path],
+        ));
     }
 }

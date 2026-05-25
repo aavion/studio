@@ -1,0 +1,16 @@
+{% if items|length > 0 %}
+    <ul class="studio-backend-nav">
+        {% for item in items %}
+            {% set item_classes = [
+                item.active ? 'is-active' : '',
+                item.active_ancestor ? 'is-active-ancestor' : '',
+            ]|filter(item_class => item_class is not empty)|join(' ') %}
+            <li{% if item_classes %} class="{{ item_classes }}"{% endif %}>
+                <a href="{{ item.url }}" {% if item.active %}aria-current="page"{% endif %}>{{ item.label|trans }}</a>
+                {% if item.children|length > 0 %}
+                    {% include '@backend/partials/navigation/_tree.html.twig' with {items: item.children} only %}
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

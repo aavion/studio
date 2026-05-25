@@ -1,3 +1,12 @@
 ui:
   setup:
     area: 'Setup'
+
+setup:
+  dashboard:
+    title: 'Setup'
+    status: 'Ersteinrichtung'
+    foundation_title: 'Setup-Fundament'
+    foundation_text: 'Setup bleibt ohne Datenbankverbindung verfügbar, bis die Installation sich als abgeschlossen markiert.'
+  message:
+    title: 'Setup-Route'

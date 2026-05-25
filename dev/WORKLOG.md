@@ -71,6 +71,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Added the native backend routing foundation: `/setup`, `/admin`, and `/editor` now resolve through a shared backend controller/resolver, setup is locked after a DB-free loaded `APP_SETUP_COMPLETED` environment value written into Composer's dumped `.env.local.php`, Symfony Security uses the `UserAccount` entity provider, admin/editor access is checked through the ACL resolver, and backend navigation can use route targets with access filtering plus active/ancestor state for future package menu contributions.
+- Tightened setup completion and environment-write failures to use structured message-backed `SetupStepFailedException` payloads instead of hard-coded visible exception text; left backend admin access at level `8+` while exposing an `AccessRule` boundary for future configured group exceptions.
 - Reworked translation handling from domain-specific runtime catalogues to language-grouped source files under `translations/languages/{locale}` with generated Symfony default-domain `translations/messages.{locale}.yaml` runtime catalogues.
 - Added a container-free core translation bootstrapper for `bin/init` and `bin/setup`, plus a package-aware runtime aggregator in the asset rebuild queue that includes only active package `languages/<locale>/*.yaml` files.
 - Added package translation fallback and namespace validation so package-owned language files require English fallback catalogues and must stay below `pkg.<package-slug>.*`, preventing package copy from overriding core UI/message keys through aggregation.

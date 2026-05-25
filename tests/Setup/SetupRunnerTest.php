@@ -61,6 +61,9 @@ final class SetupRunnerTest extends TestCase
         self::assertFalse($result->context()['halt_on_error']);
         self::assertFileExists($this->root.'/.env.test.local');
         self::assertStringContainsString("APP_SECRET='test-secret'", (string) file_get_contents($this->root.'/.env.test.local'));
+        self::assertFileExists($this->root.'/.env.local.php');
+        $dumpedEnvironment = include $this->root.'/.env.local.php';
+        self::assertSame('1', $dumpedEnvironment['APP_SETUP_COMPLETED']);
         self::assertSame([
             ['composer', '--version'],
             ['composer', 'dump-env', 'test'],
@@ -185,7 +188,7 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('write_environment', $result->context()['failed_step']);
         self::assertSame([], $executor->commands);
         self::assertSame(
-            'message.setup.step_failed',
+            'message.setup.environment_file_write_failed',
             $result->context()['action_log']['entries'][1]['issues'][0]['translation_key'],
         );
     }
@@ -411,6 +414,10 @@ final class RecordingSetupCommandExecutor implements SetupCommandExecutorInterfa
 
         if (null !== $this->failure && $this->failureAt === count($this->commands)) {
             return $this->failure;
+        }
+
+        if (in_array('dump-env', $command, true)) {
+            file_put_contents($cwd.'/.env.local.php', '<?php'.PHP_EOL.PHP_EOL.'return '.var_export($environment, true).';'.PHP_EOL);
         }
 
         return new SetupCommandResult(0);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Navigation;
 
+use App\Core\Access\AccessActor;
 use App\Navigation\Event\NavigationBuilderEvent;
 use App\Navigation\NavigationBuilder;
 use App\Navigation\NavigationItem;
@@ -197,6 +198,67 @@ final class NavigationBuilderTest extends KernelTestCase
         $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'en');
 
         self::assertSame(['Home', 'About', 'News'], array_column($navigation, 'label'));
+    }
+
+    public function testItBuildsRouteTargetsAndActiveState(): void
+    {
+        self::bootKernel();
+
+        self::getContainer()->get(EventDispatcherInterface::class)->addListener(
+            NavigationBuilderEvent::class,
+            static function (NavigationBuilderEvent $event): void {
+                $event->addItem(new NavigationItem(
+                    '30000000-0000-0000-0000-000000000971',
+                    'Admin',
+                    'route',
+                    'backend_admin_index',
+                    sortOrder: 1,
+                    metadata: ['min_access_level' => 8],
+                ));
+            },
+        );
+
+        $navigation = self::getContainer()->get(NavigationBuilder::class)->build(
+            'backend.admin',
+            actor: AccessActor::fromAccess(8),
+            activeRoute: 'backend_admin_index',
+        );
+
+        self::assertSame('/admin', $navigation[0]['url']);
+        self::assertTrue($navigation[0]['active']);
+    }
+
+    public function testItFiltersNavigationItemsByAccessLevel(): void
+    {
+        self::bootKernel();
+
+        self::getContainer()->get(EventDispatcherInterface::class)->addListener(
+            NavigationBuilderEvent::class,
+            static function (NavigationBuilderEvent $event): void {
+                $event->addItem(new NavigationItem(
+                    '30000000-0000-0000-0000-000000000972',
+                    'Allowed',
+                    'url',
+                    '/allowed',
+                    metadata: ['min_access_level' => 3],
+                ));
+                $event->addItem(new NavigationItem(
+                    '30000000-0000-0000-0000-000000000973',
+                    'Blocked',
+                    'url',
+                    '/blocked',
+                    metadata: ['min_access_level' => 8],
+                ));
+            },
+        );
+
+        $navigation = self::getContainer()->get(NavigationBuilder::class)->build(
+            'backend.editor',
+            actor: AccessActor::fromAccess(3),
+        );
+
+        self::assertContains('Allowed', array_column($navigation, 'label'));
+        self::assertNotContains('Blocked', array_column($navigation, 'label'));
     }
 
     private function addDeepAboutNavigation(): void

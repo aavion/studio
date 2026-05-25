@@ -1,0 +1,17 @@
+{% extends '@backend/setup.html.twig' %}
+
+{% block title %}{{ 'setup.dashboard.title'|trans }}{% endblock %}
+
+{% block setup_body %}
+    {% include '@backend/setup/partials/_step-header.html.twig' with {
+        title: 'setup.dashboard.title'|trans,
+        step: 'setup.dashboard.status'|trans,
+    } only %}
+
+    {% include '@backend/partials/feedback/_message.html.twig' with {message: message} only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'setup.dashboard.foundation_title'|trans }}</h2>
+        <p class="studio-muted">{{ 'setup.dashboard.foundation_text'|trans }}</p>
+    </section>
+{% endblock %}

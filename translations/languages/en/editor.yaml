@@ -1,3 +1,15 @@
 ui:
   editor:
     area: 'Editor'
+    navigation: 'Editor navigation'
+
+editor:
+  navigation:
+    dashboard: 'Dashboard'
+  dashboard:
+    title: 'Editor dashboard'
+    status: 'Content workspace'
+    foundation_title: 'Editor foundation'
+    foundation_text: 'Content routes can attach to this shell once editor workflows, schema tools, and package contributions are wired.'
+  message:
+    title: 'Editor route'

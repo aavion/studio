@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Navigation;
 
+use App\Core\Access\AccessActor;
 use App\Core\Event\PublicEventDispatcher;
 use App\Navigation\Event\NavigationBuilderEvent;
 use Doctrine\DBAL\Connection;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Throwable;
 
 final readonly class NavigationBuilder
@@ -14,6 +16,7 @@ final readonly class NavigationBuilder
     public function __construct(
         private Connection $connection,
         private PublicEventDispatcher $eventDispatcher,
+        private UrlGeneratorInterface $urlGenerator,
     ) {
     }
 
@@ -26,11 +29,15 @@ final readonly class NavigationBuilder
         int $maxDepth = 3,
         int $startLevel = 1,
         ?string $rootUid = null,
+        ?AccessActor $actor = null,
+        ?string $activeUrl = null,
+        ?string $activeRoute = null,
     ): array {
         $maxDepth = max(1, $maxDepth);
         $startLevel = max(1, $startLevel);
-        $items = $this->collectItems($identifier, $language, $maxDepth, $startLevel, $rootUid);
+        $items = $this->collectItems($identifier, $language, $maxDepth, $startLevel, $rootUid, $actor);
         $tree = $this->buildTree($items);
+        $tree = $this->markActive($tree, $activeUrl, $activeRoute);
         $slice = $this->slice($tree, $maxDepth, $startLevel, $rootUid);
         $arrayLevel = null === $rootUid ? $startLevel : 1;
 
@@ -49,6 +56,7 @@ final readonly class NavigationBuilder
         int $maxDepth = 3,
         int $startLevel = 1,
         ?string $rootUid = null,
+        ?AccessActor $actor = null,
     ): array {
         $maxDepth = max(1, $maxDepth);
         $startLevel = max(1, $startLevel);
@@ -63,7 +71,9 @@ final readonly class NavigationBuilder
             'root_uid' => $rootUid,
         ]);
 
-        return $result->isSuccess() ? $event->items() : $items;
+        $collectedItems = $result->isSuccess() ? $event->items() : $items;
+
+        return $this->resolveUrls($this->filterByAccess($collectedItems, $actor));
     }
 
     /**
@@ -180,6 +190,82 @@ final readonly class NavigationBuilder
         );
 
         return $items;
+    }
+
+    /**
+     * @param list<NavigationItem> $items
+     *
+     * @return list<NavigationItem>
+     */
+    private function filterByAccess(array $items, ?AccessActor $actor): array
+    {
+        if (null === $actor) {
+            return $items;
+        }
+
+        return array_values(array_filter($items, static function (NavigationItem $item) use ($actor): bool {
+            $minLevel = $item->metadata()['min_access_level'] ?? null;
+
+            return !is_int($minLevel) || $actor->accessLevel() >= $minLevel;
+        }));
+    }
+
+    /**
+     * @param list<NavigationItem> $items
+     *
+     * @return list<NavigationItem>
+     */
+    private function resolveUrls(array $items): array
+    {
+        return array_map(function (NavigationItem $item): NavigationItem {
+            if ('route' !== $item->targetType()) {
+                return $item;
+            }
+
+            $parameters = $item->metadata()['route_parameters'] ?? [];
+
+            if (!is_array($parameters)) {
+                $parameters = [];
+            }
+
+            try {
+                return $item->withResolvedUrl($this->urlGenerator->generate($item->targetValue(), $parameters));
+            } catch (Throwable) {
+                return $item->withResolvedUrl('#');
+            }
+        }, $items);
+    }
+
+    /**
+     * @param list<NavigationItem> $items
+     *
+     * @return list<NavigationItem>
+     */
+    private function markActive(array $items, ?string $activeUrl, ?string $activeRoute): array
+    {
+        if (null === $activeUrl && null === $activeRoute) {
+            return $items;
+        }
+
+        return array_map(function (NavigationItem $item) use ($activeUrl, $activeRoute): NavigationItem {
+            $children = $this->markActive($item->children(), $activeUrl, $activeRoute);
+            $active = $this->isActive($item, $activeUrl, $activeRoute);
+            $activeAncestor = [] !== array_filter(
+                $children,
+                static fn (NavigationItem $child): bool => $child->isActive() || $child->isActiveAncestor(),
+            );
+
+            return $item->withChildren($children)->withActiveState($active, $activeAncestor);
+        }, $items);
+    }
+
+    private function isActive(NavigationItem $item, ?string $activeUrl, ?string $activeRoute): bool
+    {
+        if (null !== $activeRoute && 'route' === $item->targetType() && $item->targetValue() === $activeRoute) {
+            return true;
+        }
+
+        return null !== $activeUrl && null !== $item->resolvedUrl() && rtrim($item->resolvedUrl(), '/') === rtrim($activeUrl, '/');
     }
 
     /**

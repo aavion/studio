@@ -6,6 +6,7 @@ ui:
         navigation: 'Admin navigation'
     editor:
         area: Editor
+        navigation: 'Editor navigation'
     operations:
         action_log:
             title: 'Action log'
@@ -70,6 +71,15 @@ ui:
         503:
             title: 'Maintenance mode'
             message: 'The site is temporarily unavailable while maintenance is active.'
+admin:
+    navigation:
+        dashboard: Dashboard
+    dashboard:
+        title: 'Admin dashboard'
+        foundation_title: 'Backend foundation'
+        foundation_text: 'Administrative routes are now resolved through the native backend router. Functional pages can attach here once authentication, navigation, and access checks are ready.'
+    message:
+        title: 'Admin route'
 demo:
     kicker: 'System UI'
     frontend:
@@ -124,6 +134,16 @@ demo:
     operations:
         discovery: 'Discovery completed'
         assets: 'Asset rebuild queued'
+editor:
+    navigation:
+        dashboard: Dashboard
+    dashboard:
+        title: 'Editor dashboard'
+        status: 'Content workspace'
+        foundation_title: 'Editor foundation'
+        foundation_text: 'Content routes can attach to this shell once editor workflows, schema tools, and package contributions are wired.'
+    message:
+        title: 'Editor route'
 message:
     manifest:
         unreadable: 'Manifest file "%path%" cannot be read.'
@@ -250,8 +270,13 @@ message:
             invalid: 'Access level %level% must be between 0 and 9.'
         group_identifier:
             invalid: 'ACL group identifier "%identifier%" must be lowercase snake_case.'
+    backend:
+        route_not_found: 'Backend route "%path%" is not registered.'
+        setup_locked: 'Setup is already completed and is no longer available.'
     setup:
         step_failed: 'Setup step "%step%" failed: %message%'
+        environment_file_unreadable: 'Environment override file "%file%" could not be read.'
+        environment_file_write_failed: 'Environment override file "%file%" could not be written.'
         language_selected: 'Installer language "%language%" selected.'
         available_languages: 'Available installer languages: %languages%'
         dry_run: 'Dry run only; no changes were written.'
@@ -356,3 +381,11 @@ message:
             version_invalid: 'Content schema version %version% must be positive.'
             required_field_missing: 'Content schema is missing required field "%field_identifier%".'
             field_duplicate: 'Content schema field "%field_identifier%" is duplicated.'
+setup:
+    dashboard:
+        title: Setup
+        status: 'First run'
+        foundation_title: 'Setup foundation'
+        foundation_text: 'Setup stays available without a database connection until the installation marks itself complete.'
+    message:
+        title: 'Setup route'

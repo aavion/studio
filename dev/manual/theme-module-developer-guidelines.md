@@ -1,7 +1,7 @@
 # Package developer guidelines (Developer Guide)
 
 > **Status**: Draft  
-> **Updated**: 2026-05-25  
+> **Updated**: 2026-05-26  
 > **Owner**: Core  
 > **Purpose:** Draft guidance for developing packages, scoped themes, modules, providers, admin UI extensions, and first-party add-ons while the extension system is still being designed.  
 
@@ -136,6 +136,10 @@ Output hooks should stay narrow. Prefer Twig context hooks and templates for nor
 Do not expect package hooks for template path collection or runtime asset collection. Template namespaces are resolved through the package/theme lifecycle, and active package assets are mirrored and compiled through AssetSync and `studio:assets:rebuild`.
 
 Packages must not define new core permission rules dynamically. A package can require existing ACL levels, groups, roles, or manifest capabilities for its routes and UI, but the security model itself stays core-owned.
+
+Backend menu contributions should start as navigation items with `target_type` `route` and a Symfony route name in `target_value`. The item metadata may include `min_access_level` and optional `route_parameters`. The native navigation builder resolves route URLs, filters entries the current backend actor cannot access, and exposes `active` plus `active_ancestor` flags for templates.
+
+Do not model package backend pages as virtual content entities yet. That remains a possible later target type if it clearly reuses public rendering hooks without weakening backend route ownership, ACL checks, or package lifecycle validation.
 
 ## Admin UI and UX guidelines
 
