@@ -1,0 +1,17 @@
+{% extends '@frontend/frontend.html.twig' %}
+
+{% block title %}{{ content_view.title ?? content_view.content.slug }}{% endblock %}
+
+{% block frontend_body %}
+    <main class="studio-content-page" data-content-uid="{{ content_view.content.uid }}" data-content-revision="{{ content_view.revision.uid }}">
+        <article class="studio-content-article">
+            {% include '@frontend/partials/typography/_page-header.html.twig' with {
+                kicker: content_view.content.slug,
+                title: content_view.title,
+                subtitle: content_view.subtitle,
+            } only %}
+
+            {% include '@frontend/content/partials/_generic-fields.html.twig' with {content_view: content_view} only %}
+        </article>
+    </main>
+{% endblock %}

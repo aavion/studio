@@ -61,10 +61,7 @@ final class FileInventoryScannerTest extends TestCase
     public function testItSkipsSymbolicLinks(): void
     {
         $this->writeTestFile($this->root, 'outside.txt', 'outside');
-
-        if (!@symlink($this->root.'/outside.txt', $this->root.'/linked.txt')) {
-            self::markTestSkipped('Symbolic links are not available in this environment.');
-        }
+        $this->createSymlinkOrSkip($this->root.'/outside.txt', $this->root.'/linked.txt');
 
         $inventory = (new FileInventoryScanner())->scan($this->root, 2);
 

@@ -1,0 +1,14 @@
+{% extends '@frontend/frontend.html.twig' %}
+
+{% block title %}{{ 'ui.error.403.title'|trans }}{% endblock %}
+
+{% block frontend_body %}
+    <section class="studio-error-page">
+        {% include '@frontend/partials/typography/_page-header.html.twig' with {
+            kicker: '403',
+            title: 'ui.error.403.title'|trans,
+            subtitle: 'ui.error.403.message'|trans,
+        } only %}
+        {% include '@frontend/error-pages/partials/_debug.html.twig' with {http_error: http_error|default(null)} only %}
+    </section>
+{% endblock %}

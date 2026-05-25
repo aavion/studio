@@ -1,7 +1,7 @@
 # {{ Title }} (Developer Guide)
 
 > **Status**: Draft  
-> **Updated**: YYYY-MM-DD   
+> **Updated**: YYYY-MM-DD  
 > **Owner**: Core  
 > **Purpose:** {Purpose/Brief description}  
 

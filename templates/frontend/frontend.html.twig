@@ -1,0 +1,17 @@
+{% extends '@root/base.html.twig' %}
+
+{% block body_class %}studio-body studio-frontend{% endblock %}
+
+{% block body %}
+    <div class="studio-frontend-shell">
+        {% include '@frontend/partials/layout/_skip-link.html.twig' %}
+        {% include '@frontend/partials/layout/_header.html.twig' %}
+        {% include '@frontend/partials/feedback/_flash-stack.html.twig' %}
+
+        <main id="studio-main" class="studio-frontend-main">
+            {% block frontend_body %}{% endblock %}
+        </main>
+
+        {% include '@frontend/partials/layout/_footer.html.twig' %}
+    </div>
+{% endblock %}

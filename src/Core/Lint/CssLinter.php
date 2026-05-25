@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Lint;
 
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use Sabberworm\CSS\Parser;
 use Sabberworm\CSS\Parsing\SourceException;
 use Sabberworm\CSS\Settings;
@@ -17,8 +19,8 @@ final class CssLinter implements LinterInterface
         } catch (SourceException $error) {
             return LintResult::invalid([
                 LintIssue::create(
-                    'lint.css_syntax_error',
-                    'CSS has a syntax error.',
+                    MessageCode::LINT_CSS_SYNTAX_ERROR,
+                    MessageKey::LINT_CSS_SYNTAX_ERROR,
                     $error->getLineNumber(),
                     $error->getColumnNumber(),
                     ['error' => $error->getMessage(), 'path' => $path],

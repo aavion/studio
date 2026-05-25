@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ app.request ? app.request.locale : 'en' }}">
     <head>
         <meta charset="UTF-8">
-        <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{% block title %}{{ 'ui.app.name'|trans }}{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><rect width=%22128%22 height=%22128%22 rx=%2224%22 fill=%22%23111827%22/><text y=%22.98em%22 x=%22.16em%22 font-size=%2278%22 fill=%22%23fff%22>A</text></svg>">
         {% block stylesheets %}
         {% endblock %}
 
@@ -18,7 +19,7 @@
         <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
         {% endif %}
     </head>
-    <body>
+    <body class="{% block body_class %}studio-body{% endblock %}">
         {% block body %}{% endblock %}
     </body>
 </html>

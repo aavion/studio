@@ -1,0 +1,16 @@
+{% set field_id = id|default(name|default('field')) %}
+{% set select_control %}
+    <select id="{{ field_id }}" class="studio-backend-select" name="{{ name }}" {% if required|default(false) %}required{% endif %}>
+        {% for option_value, option_label in options|default({}) %}
+            <option value="{{ option_value }}" {% if option_value == value|default(null) %}selected{% endif %}>{{ option_label }}</option>
+        {% endfor %}
+    </select>
+{% endset %}
+{% include '@backend/partials/forms/_field.html.twig' with {
+    id: field_id,
+    label: label,
+    required: required|default(false),
+    control: select_control,
+    help: help|default(null),
+    errors: errors|default([]),
+} only %}

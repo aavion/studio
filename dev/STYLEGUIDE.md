@@ -1,7 +1,7 @@
 # Documentation Style Guide
 
 > **Status**: Active  
-> **Updated**: 2026-05-20  
+> **Updated**: 2026-05-23  
 > **Owner**: Core  
 > **Purpose:** Provide consistent writing and formatting standards for all documentation (developer, user, codex notes).  
 
@@ -17,6 +17,7 @@
 - Sections should follow a logical order: background → prerequisites → steps → references.
 
 ## Formatting
+- Respect `.editorconfig` when editing documentation. In Markdown, two trailing spaces intentionally force a line break; keep them when they are used in metadata blocks, lists, or block quotes that should render as separate lines on GitHub.
 - Use markdown lists for steps (`1.`) and unordered bullets (`-`).
 - Highlight commands with fenced code blocks (add language hint):
   ````
@@ -38,7 +39,7 @@
 - Assets (screenshots) for docs go under `docs/assets/` (for user docs, `dev/manual/assets/` for developer docs) with descriptive names (`admin-dashboard_v1.png`).
 
 ## Status Tags
-- Include metadata near the top:
+- Include metadata near the top (add two trailing spaces at the end of each line to force a linebreak):
  > Status: Draft  
  > Updated: 2025-10-29  
  > Owner: Team/Core  

@@ -1,13 +1,14 @@
 # Agents Working Directory
 
 > **Status**: Active  
-> **Updated**: 2026-05-22
+> **Updated**: 2026-05-22. 
 > **Owner**: Dominik Letica, OpenAI/Codex  
 > **Purpose:** Provides a working directory for coding agents to cache additional information and reusable tools.  
 
 ## Index
 
 - Info: [Environment](ENVIRONMENT.md)
+- Info: [Project Rules](PROJECT_RULES.md)
 - Info: [Framework Version Recap](framework-version-recap.md)
 - Info: [Grav Plugin Inspiration Notes](grav-plugin-inspiration-notes.md)
 - Info: [Symfony Documentation Notes](symfony-docs-notes.md)

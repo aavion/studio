@@ -1,0 +1,23 @@
+{% set field_id = id|default(name|default('field')) %}
+{% set editor_control %}
+    {% include '@provider/editor/code.html.twig' with {
+        name: name,
+        value: value|default(''),
+        language: language|default('markdown'),
+        line_wrapping: line_wrapping|default(false),
+        read_only: read_only|default(false),
+        tab_size: tab_size|default(4),
+        attributes: {
+            id: field_id,
+            class: 'studio-backend-code-editor',
+        },
+    } only %}
+{% endset %}
+{% include '@backend/partials/forms/_field.html.twig' with {
+    id: field_id,
+    label: label,
+    required: required|default(false),
+    control: editor_control,
+    help: help|default(null),
+    errors: errors|default([]),
+} only %}

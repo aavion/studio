@@ -1,0 +1,11 @@
+{% include '@frontend/partials/forms/fields/input.html.twig' with {
+    id: id|default(null),
+    name: name,
+    type: 'date',
+    label: label,
+    value: value|default(''),
+    required: required|default(false),
+    disabled: disabled|default(false),
+    help: help|default(null),
+    errors: errors|default([]),
+} only %}

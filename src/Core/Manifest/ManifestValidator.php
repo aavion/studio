@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Manifest;
 
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\Message;
+use App\Core\Message\MessageLevel;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 
@@ -19,9 +23,11 @@ final class ManifestValidator
         foreach ($spec->requiredKeys() as $requiredKey) {
             if (!$manifest->has($requiredKey) || '' === trim((string) $manifest->get($requiredKey))) {
                 $issues[] = OperationIssue::create(
-                    'manifest.missing_required_key',
-                    'Required manifest key is missing.',
-                    ['key' => $requiredKey],
+                    MessageCode::MANIFEST_MISSING_REQUIRED_KEY,
+                    MessageKey::MANIFEST_MISSING_REQUIRED_KEY,
+                    ['%key%' => $requiredKey],
+                    context: ['key' => $requiredKey],
+                    level: MessageLevel::Warning,
                 );
             }
         }
@@ -31,9 +37,11 @@ final class ManifestValidator
             foreach ($manifest->keys() as $key) {
                 if (!in_array($key, $allowedKeys, true)) {
                     $issues[] = OperationIssue::create(
-                        'manifest.unknown_key',
-                        'Manifest key is not allowed by this specification.',
-                        ['key' => $key],
+                        MessageCode::MANIFEST_UNKNOWN_KEY,
+                        MessageKey::MANIFEST_UNKNOWN_KEY,
+                        ['%key%' => $key],
+                        context: ['key' => $key],
+                        level: MessageLevel::Warning,
                     );
                 }
             }
@@ -43,6 +51,14 @@ final class ManifestValidator
             return OperationResult::invalid($issues);
         }
 
-        return OperationResult::success($manifest);
+        return OperationResult::success($manifest, [
+            'required_keys' => $spec->requiredKeys(),
+            'allowed_keys' => $spec->allowedKeys(),
+        ], [
+            Message::debug(MessageCode::MANIFEST_VALIDATED, MessageKey::MANIFEST_VALIDATED, context: [
+                'required_keys' => $spec->requiredKeys(),
+                'allowed_keys' => $spec->allowedKeys(),
+            ]),
+        ]);
     }
 }

@@ -1,0 +1,20 @@
+{% set field_id = id|default(name|default('field')) %}
+{% set textarea_control %}
+    <textarea
+        id="{{ field_id }}"
+        class="studio-textarea"
+        name="{{ name }}"
+        rows="{{ rows|default(6) }}"
+        {% if placeholder|default(null) %}placeholder="{{ placeholder }}"{% endif %}
+        {% if required|default(false) %}required{% endif %}
+        {% if disabled|default(false) %}disabled{% endif %}
+    >{{ value|default('') }}</textarea>
+{% endset %}
+{% include '@frontend/partials/forms/_field.html.twig' with {
+    id: field_id,
+    label: label,
+    required: required|default(false),
+    control: textarea_control,
+    help: help|default(null),
+    errors: errors|default([]),
+} only %}

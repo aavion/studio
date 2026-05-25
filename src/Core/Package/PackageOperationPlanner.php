@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Filesystem\PathGuard;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\Filesystem\CopyFileAction;
 use App\Core\Workflow\OperationIssue;
@@ -39,19 +43,23 @@ final readonly class PackageOperationPlanner
             $sourcePath = $this->pathGuard->join($candidate->directory(), $file);
 
             if (is_link($sourcePath)) {
-                $issues[] = OperationIssue::create('package.copy_source_symlink', 'Package file cannot be copied because the source path is a symbolic link.', [
+                $issues[] = OperationIssue::create(MessageCode::PACKAGE_COPY_SOURCE_SYMLINK, MessageKey::PACKAGE_COPY_SOURCE_SYMLINK, [
+                    '%path%' => $sourcePath,
+                ], [
                     'source' => $candidate->source()->name(),
                     'package' => $candidate->directory(),
                     'file' => $file,
                     'path' => $sourcePath,
-                ]);
+                ], MessageLevel::Warning);
             } elseif (!is_file($sourcePath)) {
-                $issues[] = OperationIssue::create('package.copy_source_missing', 'Package file cannot be copied because the source file is missing.', [
+                $issues[] = OperationIssue::create(MessageCode::PACKAGE_COPY_SOURCE_MISSING, MessageKey::PACKAGE_COPY_SOURCE_MISSING, [
+                    '%path%' => $sourcePath,
+                ], [
                     'source' => $candidate->source()->name(),
                     'package' => $candidate->directory(),
                     'file' => $file,
                     'path' => $sourcePath,
-                ]);
+                ], MessageLevel::Warning);
             }
         }
 
@@ -83,7 +91,11 @@ final readonly class PackageOperationPlanner
             ));
         }
 
-        return OperationResult::success($queue, $queue->context());
+        return OperationResult::success($queue, $queue->context(), [
+            Message::info(MessageCode::PACKAGE_COPY_PLAN_CREATED, MessageKey::PACKAGE_COPY_PLAN_CREATED, [
+                '%count%' => count($normalizedFiles),
+            ], $queue->context()),
+        ]);
     }
 
     /**

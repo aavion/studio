@@ -1,0 +1,9 @@
+{# Native fallback only: CodeMirror edits Markdown text, not WYSIWYG rich text. #}
+{% include '@provider/editor/markdown.html.twig' with {
+    name: name|default('content'),
+    value: value|default(''),
+    line_wrapping: line_wrapping|default(true),
+    read_only: read_only|default(false),
+    tab_size: tab_size|default(4),
+    attributes: attributes|default({}),
+} only %}

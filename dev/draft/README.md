@@ -3,7 +3,7 @@
 > **Status**: Draft  
 > **Updated**: 2026-05-20   
 > **Owner**: Core  
-> **Purpose:** Description of planned features and technical specification drafts for use as guidance alongside implementation  
+> **Purpose:** Description of planned features and technical specification drafts for use as guidance alongside implementation.  
 
 ## Project Goal
 
@@ -19,7 +19,7 @@ Development should stay close to the Symfony application model. Prefer native Sy
 
 The core should provide stable boundaries and a small set of documented extension points instead of broad custom frameworks. Feature work should be split into reviewable vertical slices with nearby tests, documentation, class map entries, and worklog notes. Files should stay focused so future contributors and coding agents can inspect, change, and review behavior without loading a large part of the project into context.
 
-Plugin modules should be able to integrate with the system through explicit extension categories:
+Packages should be able to integrate with the system through explicit extension categories:
 
 - **Observe:** Modules may react to lifecycle events without changing the core result, for example audit logging, statistics, indexing, or notifications.
 - **Extend:** Modules may add behavior through documented hooks or tagged services, for example editor actions, export formats, form extensions, template candidates, or navigation entries.
@@ -48,7 +48,7 @@ The feature drafts should be created in dependency order. Start with architectur
 
 - [Security and access control](0.2.x-SecurityAccessControl.md)
 - [Admin interface and setup UI](0.2.x-AdminInterfaceSetupUi.md)
-- [Plugin modules](0.2.x-PluginModules.md)
+- [Package modules and providers](0.2.x-PluginModules.md)
 - [Event hooks and buses](0.2.x-EventHooksBuses.md)
 
 ### 0.3.x structured content and editor drafts
@@ -67,6 +67,7 @@ The feature drafts should be created in dependency order. Start with architectur
 - [API layer](0.4.x-ApiLayer.md)
 - [Frontend delivery and caching](0.4.x-FrontendDeliveryCaching.md)
 - [Operational admin workflows](0.4.x-OperationalAdminWorkflows.md)
+- [Scheduler](0.4.x-Scheduler.md)
 - [Import, export, and collaboration](0.4.x-ImportExportCollaboration.md)
 - [Backup and restore](0.4.x-BackupRestore.md)
 - [Contact, mail, and logging](0.4.x-ContactMailLogging.md)
@@ -116,7 +117,7 @@ A release should be considered stable and presentable only when the implemented 
 - Setup works from CLI and web setup without hidden local state.
 - Admin login, ACL protection, and administrator-only configuration are enforced.
 - Public rendering uses published content only and respects language, variant, visibility, and ACL rules.
-- Theme and module lifecycle workflows validate manifests, keep discovered packages inactive by default, rebuild assets, and recover from failures.
+- Package lifecycle workflows validate manifests, keep discovered packages inactive by default, rebuild assets, and recover from failures.
 - Content, schema, editor, draft/publish, resolver, media, navigation, import/export, backup/restore, and operational workflows have focused tests.
 - Operational actions expose understandable action logs, redacted diagnostics, and recovery paths.
 - Cache, asset, resolver/index, and delivery rebuilds are documented and available from admin or CLI workflows.

@@ -79,7 +79,7 @@ final readonly class ActionLog
     }
 
     /**
-     * @return array{entries: list<array{name: string, status: string, started_at: string|null, finished_at: string|null, duration_ms: int|null, issues: list<array{code: string, message: string, context: array<string, mixed>}>, context: array<string, mixed>}>, status_counts: array<string, int>, has_failures: bool, has_warnings: bool}
+     * @return array{entries: list<array<string, mixed>>, status_counts: array<string, int>, has_failures: bool, has_warnings: bool}
      */
     public function toArray(): array
     {

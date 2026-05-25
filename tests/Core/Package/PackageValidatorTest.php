@@ -23,7 +23,7 @@ final class PackageValidatorTest extends TestCase
     protected function setUp(): void
     {
         $this->packageDir = $this->createTemporaryDirectory('studio-package-validator');
-        file_put_contents($this->packageDir.'/.manifest', 'THEME_NAME=System');
+        $this->writeFile('.manifest', 'PACKAGE_NAME=System');
     }
 
     protected function tearDown(): void
@@ -56,9 +56,11 @@ final class PackageValidatorTest extends TestCase
         $this->writeFile('templates/base.html.twig', '<main></main>');
         $this->writeFile('assets/app.css', 'body {}');
         $this->writeFile('assets/app.js', 'export default true;');
+        $this->writeFile('assets/images/logo.svg', '<svg></svg>');
+        $this->writeFile('assets/fonts/demo.woff2', 'font');
         $this->writeFile('config/package.yaml', 'enabled: true');
         $this->writeFile('config/package.json', '{"enabled": true}');
-        $this->writeFile('src/ThemeExtension.php', '<?php class ThemeExtension {}');
+        $this->writeFile('src/PackageExtension.php', '<?php class PackageExtension {}');
         $this->writeFile('tools/helper.php', '<?php return true;');
 
         $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
@@ -78,14 +80,16 @@ final class PackageValidatorTest extends TestCase
         self::assertTrue($inspection->hasYamlFiles());
         self::assertTrue($inspection->hasCssFiles());
         self::assertTrue($inspection->hasJavaScriptFiles());
+        self::assertTrue($inspection->hasStaticAssetFiles());
         self::assertSame(['templates/base.html.twig'], $inspection->templateFiles());
-        self::assertSame(['assets/app.css', 'assets/app.js'], $inspection->assetFiles());
-        self::assertSame(['src/ThemeExtension.php'], $inspection->sourcePhpFiles());
-        self::assertSame(['src/ThemeExtension.php', 'tools/helper.php'], $inspection->phpFiles());
+        self::assertSame(['assets/app.css', 'assets/app.js', 'assets/fonts/demo.woff2', 'assets/images/logo.svg'], $inspection->assetFiles());
+        self::assertSame(['src/PackageExtension.php'], $inspection->sourcePhpFiles());
+        self::assertSame(['src/PackageExtension.php', 'tools/helper.php'], $inspection->phpFiles());
         self::assertSame(['config/package.json'], $inspection->jsonFiles());
         self::assertSame(['config/package.yaml'], $inspection->yamlFiles());
         self::assertSame(['assets/app.css'], $inspection->cssFiles());
         self::assertSame(['assets/app.js'], $inspection->javaScriptFiles());
+        self::assertSame(['assets/fonts/demo.woff2', 'assets/images/logo.svg'], $inspection->staticAssetFiles());
     }
 
     public function testItReportsMissingRequiredFilesAndDirectories(): void
@@ -160,6 +164,88 @@ final class PackageValidatorTest extends TestCase
         self::assertSame('templates/broken.html.twig', $result->firstIssue()?->context()['file']);
     }
 
+    public function testItAllowsAreaTemplatesForAdditivePackages(): void
+    {
+        $this->writeFile('templates/frontend/captcha/field.html.twig', '<input>');
+        $this->writeFile('templates/backend/module/settings.html.twig', '<form></form>');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithScope('[module, captcha-provider]'),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItAllowsProviderTemplatesForMatchingProviderScope(): void
+    {
+        $this->writeFile('templates/provider/captcha/field.html.twig', '<input>');
+        $this->writeFile('templates/provider/editor/richtext.html.twig', '<textarea></textarea>');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithScope('[captcha-provider, editor-provider]'),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItAllowsTemplatesWithinDeclaredOverrideScopes(): void
+    {
+        $packageSlug = basename($this->packageDir);
+        $this->writeFile('templates/frontend/page.html.twig', '<main></main>');
+        $this->writeFile('templates/backend/dashboard.html.twig', '<main></main>');
+        $this->writeFile('templates/base.html.twig', '<main></main>');
+        $this->writeFile('templates/macros/core/ui.html.twig', '{% macro badge(label) %}{{ label }}{% endmacro %}');
+        $this->writeFile(sprintf('templates/macros/%s/forms.html.twig', $packageSlug), '{% macro field(label) %}{{ label }}{% endmacro %}');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithScope('[frontend-theme, backend-theme, system-template, module]'),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItRejectsRootAndMacroTemplatesOutsideDeclaredPackageScopes(): void
+    {
+        $this->writeFile('templates/frontend/page.html.twig', '<main></main>');
+        $this->writeFile('templates/backend/dashboard.html.twig', '<main></main>');
+        $this->writeFile('templates/base.html.twig', '<main></main>');
+        $this->writeFile('templates/macros/core/ui.html.twig', '{% macro badge(label) %}{{ label }}{% endmacro %}');
+        $this->writeFile('templates/macros/other-package/forms.html.twig', '{% macro field(label) %}{{ label }}{% endmacro %}');
+        $this->writeFile('templates/macros/forms.html.twig', '{% macro field(label) %}{{ label }}{% endmacro %}');
+        $this->writeFile('templates/provider/captcha/field.html.twig', '<input>');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithScope('module'),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame([
+            'templates/base.html.twig',
+            'templates/macros/core/ui.html.twig',
+            'templates/macros/forms.html.twig',
+            'templates/macros/other-package/forms.html.twig',
+            'templates/provider/captcha/field.html.twig',
+        ], array_map(static fn ($issue): string => $issue->context()['file'], $result->issues()));
+        self::assertSame('package.template_path_invalid', $result->firstIssue()?->code());
+    }
+
+    public function testItAllowsPackageOwnedMacroNamespaceWithoutThemeScope(): void
+    {
+        $packageSlug = basename($this->packageDir);
+        $this->writeFile(sprintf('templates/macros/%s/forms.html.twig', $packageSlug), '{% macro field(label) %}{{ label }}{% endmacro %}');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithScope('module'),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
     public function testItCanRunAllLintingChecks(): void
     {
         $this->writeFile('src/Valid.php', '<?php class ValidPackageLintPhp {}');
@@ -216,10 +302,20 @@ final class PackageValidatorTest extends TestCase
     private function candidate(): PackageCandidate
     {
         return new PackageCandidate(
-            PackageSource::children('theme', 'themes'),
+            PackageSource::children('package', 'packages'),
             $this->packageDir,
             $this->packageDir.'/.manifest',
-            new Manifest(['THEME_NAME' => 'System']),
+            new Manifest(['PACKAGE_NAME' => 'System']),
+        );
+    }
+
+    private function candidateWithScope(string $scope): PackageCandidate
+    {
+        return new PackageCandidate(
+            PackageSource::children('package', 'packages'),
+            $this->packageDir,
+            $this->packageDir.'/.manifest',
+            new Manifest(['PACKAGE_NAME' => 'System', 'PACKAGE_SCOPE' => $scope]),
         );
     }
 

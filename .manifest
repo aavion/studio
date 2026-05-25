@@ -4,7 +4,7 @@
 
 ##> aavion/studio manifest ###
 APP_VERSION=0.0.0
-APP_DATE=2026-05-19
+APP_DATE=2026-05-24
 APP_CHANNEL=dev-latest
 APP_SOURCE=https://github.com/aavion/studio.git
 ###< aavion/studio manifest ###

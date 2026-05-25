@@ -1,0 +1,17 @@
+{% set field_id = id|default(name|default('field')) %}
+<div class="studio-backend-form-field studio-backend-form-field-toggle">
+    <label class="studio-backend-toggle-label" for="{{ field_id }}">
+        <input
+            id="{{ field_id }}"
+            class="studio-backend-toggle"
+            type="checkbox"
+            role="switch"
+            name="{{ name }}"
+            value="{{ value|default('1') }}"
+            {% if checked|default(false) %}checked{% endif %}
+        >
+        <span>{{ label }}</span>
+    </label>
+    {% include '@backend/partials/forms/_help.html.twig' with {help: help|default(null)} only %}
+    {% include '@backend/partials/forms/_errors.html.twig' with {errors: errors|default([])} only %}
+</div>

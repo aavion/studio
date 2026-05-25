@@ -1,0 +1,6 @@
+{% include '@frontend/partials/actions/_button.html.twig' with {
+    label: label|default('ui.form.submit'|trans),
+    type: 'submit',
+    variant: variant|default('primary'),
+    class: class|default(''),
+} only %}

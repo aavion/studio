@@ -1,0 +1,20 @@
+{% set field_id = id|default(name|default('field')) %}
+{% set file_control %}
+    <input
+        id="{{ field_id }}"
+        class="studio-backend-file-input"
+        type="file"
+        name="{{ name }}"
+        {% if accept|default(null) %}accept="{{ accept }}"{% endif %}
+        {% if multiple|default(false) %}multiple{% endif %}
+        {% if required|default(false) %}required{% endif %}
+    >
+{% endset %}
+{% include '@backend/partials/forms/_field.html.twig' with {
+    id: field_id,
+    label: label,
+    required: required|default(false),
+    control: file_control,
+    help: help|default(null),
+    errors: errors|default([]),
+} only %}

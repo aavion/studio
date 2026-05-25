@@ -1,0 +1,11 @@
+<div class="studio-button-group {{ class|default('') }}">
+    {% for action in actions|default([]) %}
+        {% include '@frontend/partials/actions/_button.html.twig' with {
+            label: action.label,
+            href: action.href|default(null),
+            type: action.type|default(null),
+            variant: action.variant|default('secondary'),
+            class: action.class|default(''),
+        } only %}
+    {% endfor %}
+</div>

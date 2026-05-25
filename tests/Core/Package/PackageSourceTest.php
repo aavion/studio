@@ -51,13 +51,13 @@ final class PackageSourceTest extends TestCase
 
     public function testItSkipsSymbolicPackageSourceChildren(): void
     {
-        mkdir($this->projectDir.'/themes', 0775, true);
-        mkdir($this->projectDir.'/themes/system', 0775, true);
+        mkdir($this->projectDir.'/packages', 0775, true);
+        mkdir($this->projectDir.'/packages/system', 0775, true);
         mkdir($this->projectDir.'/external', 0775, true);
-        symlink($this->projectDir.'/external', $this->projectDir.'/themes/external-link');
+        $this->createSymlinkOrSkip($this->projectDir.'/external', $this->projectDir.'/packages/external-link');
 
-        $directories = PackageSource::children('theme', 'themes')->candidateDirectories($this->projectDir);
+        $directories = PackageSource::children('package', 'packages')->candidateDirectories($this->projectDir);
 
-        self::assertSame([$this->projectDir.'/themes/system'], $directories);
+        self::assertSame([$this->projectDir.'/packages/system'], $directories);
     }
 }

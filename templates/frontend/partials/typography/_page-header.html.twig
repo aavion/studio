@@ -1,0 +1,9 @@
+<header class="studio-page-header">
+    {% if kicker|default(null) %}
+        <div class="studio-kicker">{{ kicker }}</div>
+    {% endif %}
+    <h1>{{ title }}</h1>
+    {% if subtitle|default(null) %}
+        <p class="studio-page-subtitle">{{ subtitle }}</p>
+    {% endif %}
+</header>

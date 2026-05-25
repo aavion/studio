@@ -1,0 +1,21 @@
+{% set field_id = id|default(name|default('field')) %}
+{% set selected_values = values|default([]) %}
+<fieldset id="{{ field_id }}" class="studio-backend-choice-group">
+    <legend class="studio-backend-form-label">{{ label }}</legend>
+    {% for option_value, option_label in options|default({}) %}
+        {% set option_id = field_id ~ '-' ~ loop.index %}
+        <label class="studio-backend-checkbox-label" for="{{ option_id }}">
+            <input
+                id="{{ option_id }}"
+                class="studio-backend-checkbox"
+                type="checkbox"
+                name="{{ name }}[]"
+                value="{{ option_value }}"
+                {% if option_value in selected_values %}checked{% endif %}
+            >
+            <span>{{ option_label }}</span>
+        </label>
+    {% endfor %}
+    {% include '@backend/partials/forms/_help.html.twig' with {help: help|default(null)} only %}
+    {% include '@backend/partials/forms/_errors.html.twig' with {errors: errors|default([])} only %}
+</fieldset>

@@ -1,0 +1,5 @@
+{% macro widget(label) %}
+    <section data-module="demo-module">
+        {{ label|default('Demo Module') }}
+    </section>
+{% endmacro %}

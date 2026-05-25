@@ -1,9 +1,9 @@
 # {{ Title }} (Feature Draft)
 
 > **Status**: Draft  
-> **Updated**: YYYY-MM-DD   
+> **Updated**: YYYY-MM-DD  
 > **Owner**: Core  
-> **Purpose:** Draft for a specific feature before/alongside implementation  
+> **Purpose:** Draft for a specific feature before/alongside implementation.  
 
 ## Overview
 - Purpose and scope of this feature.

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Workflow;
 
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 use App\Core\Workflow\OperationStatus;
@@ -14,8 +18,13 @@ final class OperationResultTest extends TestCase
 {
     public function testSuccessResultCarriesValueAndContext(): void
     {
+        $message = Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+            '%count%' => 1,
+        ]);
         $result = OperationResult::success('theme-default', [
             'source' => 'system',
+        ], [
+            $message,
         ]);
 
         self::assertSame(OperationStatus::Success, $result->status());
@@ -24,12 +33,14 @@ final class OperationResultTest extends TestCase
         self::assertSame('theme-default', $result->value());
         self::assertFalse($result->hasIssues());
         self::assertNull($result->firstIssue());
+        self::assertSame([$message], $result->messages());
+        self::assertSame(MessageLevel::Info->value, $result->toArray()['messages'][0]['level']);
         self::assertSame(['source' => 'system'], $result->context());
     }
 
     public function testInvalidResultCarriesIssues(): void
     {
-        $issue = OperationIssue::create('content.title_missing', 'Content title is required.');
+        $issue = OperationIssue::create('content.title_missing', 'message.content.title.required');
 
         $result = OperationResult::invalid([$issue], [
             'content_type' => 'page',
@@ -47,7 +58,7 @@ final class OperationResultTest extends TestCase
 
     public function testRequiresReviewResultCanCarryAReviewPlan(): void
     {
-        $issue = OperationIssue::create('import.confirm_changes', 'Import changes require review.');
+        $issue = OperationIssue::create('import.confirm_changes', 'message.import.confirm_changes');
         $plan = ['changes' => 3];
 
         $result = OperationResult::requiresReview($plan, [$issue]);
@@ -60,7 +71,9 @@ final class OperationResultTest extends TestCase
 
     public function testItExportsStructuredPayload(): void
     {
-        $issue = OperationIssue::create('import.confirm_changes', 'Import changes require review.', [
+        $issue = OperationIssue::create('import.confirm_changes', 'message.import.confirm_changes', [
+            '%changes%' => 3,
+        ], [
             'changes' => 3,
         ]);
 
@@ -74,17 +87,20 @@ final class OperationResultTest extends TestCase
             'recoverable' => true,
             'value' => ['plan' => 'demo'],
             'issues' => [[
+                'level' => 'WARN',
                 'code' => 'import.confirm_changes',
-                'message' => 'Import changes require review.',
+                'translation_key' => 'message.import.confirm_changes',
+                'parameters' => ['%changes%' => 3],
                 'context' => ['changes' => 3],
             ]],
+            'messages' => [],
             'context' => ['queue' => 'import'],
         ], $result->toArray());
     }
 
     public function testBlockedAndFailedResultsUseExpectedRecoverability(): void
     {
-        $issue = OperationIssue::create('storage.unavailable', 'Configured storage is unavailable.');
+        $issue = OperationIssue::create('storage.unavailable', 'message.storage.unavailable');
 
         $blocked = OperationResult::blocked([$issue]);
         $failed = OperationResult::failed([$issue]);

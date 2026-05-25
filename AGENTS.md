@@ -1,9 +1,9 @@
 # Repository Agent Guide
 
 > **Status**: Active  
-> **Updated**: 2026-05-20  
+> **Updated**: 2026-05-23  
 > **Owner**: Dominik Letica, OpenAI/Codex  
-> **Purpose:** Provide practical, repository-specific instructions for coding agents working on this Symfony application.
+> **Purpose:** Provide practical, repository-specific instructions for coding agents working on this Symfony application.  
 
 ## Operating Principles
 - Read the existing code and documentation before changing behavior. Prefer local patterns over new abstractions.
@@ -64,6 +64,7 @@
 - If a recommended verification step cannot run, record the reason in the final response and, when relevant, in `dev/WORKLOG.md`.
 
 ## Coding Style
+- Respect `.editorconfig` for whitespace and indentation rules; Markdown intentionally disables automatic trailing-whitespace trimming because two trailing spaces are meaningful hard line breaks.
 - PHP follows PSR-12 with four-space indentation and `declare(strict_types=1);` where applicable.
 - YAML keys use `snake_case`.
 - Twig templates use lowercase, hyphenated filenames such as `layouts/base.html.twig`.

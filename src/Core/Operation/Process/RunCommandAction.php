@@ -6,6 +6,10 @@ namespace App\Core\Operation\Process;
 
 use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
@@ -90,7 +94,10 @@ final readonly class RunCommandAction implements OperationActionInterface
 
         if (!$process->isSuccessful()) {
             return OperationResult::failed([
-                OperationIssue::create('process.command_failed', 'Command exited with a non-zero status.', $context),
+                OperationIssue::create(MessageCode::PROCESS_COMMAND_FAILED, MessageKey::PROCESS_COMMAND_FAILED, [
+                    '%command%' => $this->formatCommand(),
+                    '%exit_code%' => $process->getExitCode() ?? 'unknown',
+                ], $context, MessageLevel::Error),
             ], $context);
         }
 
@@ -98,7 +105,12 @@ final readonly class RunCommandAction implements OperationActionInterface
             'exit_code' => $process->getExitCode(),
             'output_excerpt' => $context['output_excerpt'],
             'error_excerpt' => $context['error_excerpt'],
-        ], $context);
+        ], $context, [
+            Message::info(MessageCode::PROCESS_COMMAND_COMPLETED, MessageKey::PROCESS_COMMAND_COMPLETED, [
+                '%command%' => $this->formatCommand(),
+                '%exit_code%' => $process->getExitCode() ?? 'unknown',
+            ], $context),
+        ]);
     }
 
     private function formatCommand(): string

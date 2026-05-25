@@ -1,0 +1,5 @@
+.studio-editor-shell {
+    display: grid;
+    gap: 1rem;
+    min-height: calc(100vh - 4rem);
+}

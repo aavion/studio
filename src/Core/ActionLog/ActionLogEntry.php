@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\ActionLog;
 
+use App\Core\Message\Message;
 use App\Core\Workflow\OperationIssue;
 use DateTimeImmutable;
 use InvalidArgumentException;
@@ -12,6 +13,7 @@ final readonly class ActionLogEntry
 {
     /**
      * @param list<OperationIssue> $issues
+     * @param list<Message> $messages
      * @param array<string, mixed> $context
      */
     public function __construct(
@@ -20,6 +22,7 @@ final readonly class ActionLogEntry
         private ?DateTimeImmutable $startedAt = null,
         private ?DateTimeImmutable $finishedAt = null,
         private array $issues = [],
+        private array $messages = [],
         private array $context = [],
     ) {
         if ('' === trim($name)) {
@@ -29,6 +32,12 @@ final readonly class ActionLogEntry
         foreach ($issues as $issue) {
             if (!$issue instanceof OperationIssue) {
                 throw new InvalidArgumentException('Action log entry issues must contain only OperationIssue instances.');
+            }
+        }
+
+        foreach ($messages as $message) {
+            if (!$message instanceof Message) {
+                throw new InvalidArgumentException('Action log entry messages must contain only Message instances.');
             }
         }
 
@@ -53,8 +62,9 @@ final readonly class ActionLogEntry
     /**
      * @param list<OperationIssue> $issues
      * @param array<string, mixed> $context
+     * @param list<Message> $messages
      */
-    public function finish(ActionLogStatus $status, array $issues = [], array $context = [], ?DateTimeImmutable $now = null): self
+    public function finish(ActionLogStatus $status, array $issues = [], array $context = [], ?DateTimeImmutable $now = null, array $messages = []): self
     {
         if (!$status->isTerminal()) {
             throw new InvalidArgumentException('Action log entry can only finish with a terminal status.');
@@ -66,6 +76,7 @@ final readonly class ActionLogEntry
             $this->startedAt,
             $now ?? new DateTimeImmutable(),
             $issues,
+            $messages,
             [...$this->context, ...$context],
         );
     }
@@ -110,6 +121,14 @@ final readonly class ActionLogEntry
         return $this->issues;
     }
 
+    /**
+     * @return list<Message>
+     */
+    public function messages(): array
+    {
+        return $this->messages;
+    }
+
     public function hasIssues(): bool
     {
         return [] !== $this->issues;
@@ -124,7 +143,7 @@ final readonly class ActionLogEntry
     }
 
     /**
-     * @return array{name: string, status: string, started_at: string|null, finished_at: string|null, duration_ms: int|null, issues: list<array{code: string, message: string, context: array<string, mixed>}>, context: array<string, mixed>}
+     * @return array{name: string, status: string, started_at: string|null, finished_at: string|null, duration_ms: int|null, issues: list<array<string, mixed>>, messages: list<array<string, mixed>>, context: array<string, mixed>}
      */
     public function toArray(): array
     {
@@ -135,6 +154,7 @@ final readonly class ActionLogEntry
             'finished_at' => $this->finishedAt?->format(DATE_ATOM),
             'duration_ms' => $this->durationMilliseconds(),
             'issues' => array_map(static fn (OperationIssue $issue): array => $issue->toArray(), $this->issues),
+            'messages' => array_map(static fn (Message $message): array => $message->toArray(), $this->messages),
             'context' => $this->context,
         ];
     }

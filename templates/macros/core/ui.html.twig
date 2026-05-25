@@ -1,0 +1,12 @@
+{% macro button(label, href = null, variant = 'primary') %}
+    {% set class_names = 'studio-button studio-button-' ~ variant %}
+    {% if href %}
+        <a class="{{ class_names }}" href="{{ href }}">{{ label }}</a>
+    {% else %}
+        <button class="{{ class_names }}" type="button">{{ label }}</button>
+    {% endif %}
+{% endmacro %}
+
+{% macro badge(label, tone = 'neutral') %}
+    <span class="studio-badge studio-badge-{{ tone }}">{{ label }}</span>
+{% endmacro %}

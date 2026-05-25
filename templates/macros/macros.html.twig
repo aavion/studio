@@ -1,0 +1,19 @@
+{% import studio_macro_template('core', 'content') as core_content %}
+{% import studio_macro_template('core', 'form') as core_form %}
+{% import studio_macro_template('core', 'ui') as core_ui %}
+
+{% for provider, namespaces in studio_macro_namespaces() %}
+    {% for namespace, template in namespaces %}
+        {% include template ignore missing %}
+    {% endfor %}
+{% endfor %}
+
+{% macro core_ui_button(label, href = null, variant = 'primary') %}
+    {% import studio_macro_template('core', 'ui') as ui %}
+    {{ ui.button(label, href, variant) }}
+{% endmacro %}
+
+{% macro core_ui_badge(label, tone = 'neutral') %}
+    {% import studio_macro_template('core', 'ui') as ui %}
+    {{ ui.badge(label, tone) }}
+{% endmacro %}

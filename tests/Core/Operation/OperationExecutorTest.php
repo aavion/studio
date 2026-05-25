@@ -68,9 +68,34 @@ final class OperationExecutorTest extends TestCase
         self::assertSame('Second action', $execution->actionLog()->entries()[1]->name());
     }
 
+    public function testItReportsActionStartAndFinishCallbacksWithProgress(): void
+    {
+        $started = [];
+        $finished = [];
+        $executor = new OperationExecutor();
+
+        $executor->executeQueue(ActionQueue::create('callbacks', [
+            new TestOperationAction('first', 'First action', OperationResult::success()),
+            new TestOperationAction('second', 'Second action', OperationResult::success()),
+        ]), function ($entry, int $index, int $total, $result) use (&$finished): void {
+            $finished[] = [$entry->name(), $index, $total, $result->isSuccess()];
+        }, function ($entry, int $index, int $total, $action) use (&$started): void {
+            $started[] = [$entry->name(), $index, $total, $action->type()];
+        });
+
+        self::assertSame([
+            ['First action', 1, 2, 'first'],
+            ['Second action', 2, 2, 'second'],
+        ], $started);
+        self::assertSame([
+            ['First action', 1, 2, true],
+            ['Second action', 2, 2, true],
+        ], $finished);
+    }
+
     public function testItStopsOnFailureByDefault(): void
     {
-        $issue = OperationIssue::create('import.failed', 'Import failed.');
+        $issue = OperationIssue::create('import.failed', 'message.import.failed');
 
         $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('failure', [
             new TestOperationAction('write_file', 'Write file', OperationResult::failed([$issue])),
@@ -85,7 +110,7 @@ final class OperationExecutorTest extends TestCase
 
     public function testItCanContinueAfterRecoverableIssues(): void
     {
-        $issue = OperationIssue::create('import.review', 'Import requires review.');
+        $issue = OperationIssue::create('import.review', 'message.import.review');
 
         $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('continue', [
             new TestOperationAction('review', 'Review change', OperationResult::requiresReview(null, [$issue])),
@@ -102,7 +127,7 @@ final class OperationExecutorTest extends TestCase
 
     public function testItPreservesFailedStatusWhenContinuingAfterFailures(): void
     {
-        $issue = OperationIssue::create('import.failed', 'Import failed.');
+        $issue = OperationIssue::create('import.failed', 'message.import.failed');
 
         $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('continue failed', [
             new TestOperationAction('write_file', 'Write file', OperationResult::failed([$issue])),
@@ -119,7 +144,7 @@ final class OperationExecutorTest extends TestCase
 
     public function testItPreservesBlockedStatusWhenContinuingAfterBlockedActions(): void
     {
-        $issue = OperationIssue::create('import.blocked', 'Import blocked.');
+        $issue = OperationIssue::create('import.blocked', 'message.import.blocked');
 
         $execution = (new OperationExecutor())->executeQueue(ActionQueue::create('continue blocked', [
             new TestOperationAction('copy_file', 'Copy file', OperationResult::blocked([$issue])),
@@ -136,7 +161,7 @@ final class OperationExecutorTest extends TestCase
 
     public function testActionQueueCanDisableStopOnFailure(): void
     {
-        $issue = OperationIssue::create('import.review', 'Import requires review.');
+        $issue = OperationIssue::create('import.review', 'message.import.review');
         $queue = ActionQueue::create('continue', [
             new TestOperationAction('review', 'Review change', OperationResult::requiresReview(null, [$issue])),
             new TestOperationAction('compile_assets', 'Compile assets', OperationResult::success()),

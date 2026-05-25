@@ -3,7 +3,7 @@
 > **Status**: Draft  
 > **Updated**: 2026-05-20  
 > **Owner**: OpenAI/Codex  
-> **Purpose:** Capture reusable product and architecture ideas from the old Grav plugins without copying code into the Symfony rewrite.
+> **Purpose:** Capture reusable product and architecture ideas from the old Grav plugins without copying code into the Symfony rewrite.  
 
 ## Scope
 

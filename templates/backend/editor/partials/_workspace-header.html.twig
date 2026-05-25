@@ -1,0 +1,9 @@
+<header class="studio-page-header">
+    <div>
+        <div class="studio-kicker">{{ eyebrow|default('ui.editor.area'|trans) }}</div>
+        <h1>{{ title }}</h1>
+    </div>
+    {% if status is defined and status is not empty %}
+        <span class="studio-badge studio-badge-neutral">{{ status }}</span>
+    {% endif %}
+</header>

@@ -31,15 +31,43 @@ final class SetupScriptTest extends TestCase
         self::assertSame(0, $exitCode, implode(PHP_EOL, $output));
     }
 
-    public function testSetupScriptKeepsRealSetupStepsDeferred(): void
+    public function testSetupScriptDelegatesToSetupRunner(): void
     {
         $contents = file_get_contents($this->scriptPath);
 
         self::assertIsString($contents);
-        self::assertStringContainsString('initializeRepository', $contents);
-        self::assertStringContainsString('collectInstallationData', $contents);
-        self::assertStringContainsString('writeInitialConfiguration', $contents);
-        self::assertStringContainsString('preparePersistentState', $contents);
-        self::assertStringContainsString('intentionally deferred', $contents);
+        self::assertStringContainsString('Dotenv', $contents);
+        self::assertStringContainsString('bootEnv', $contents);
+        self::assertStringContainsString('SetupRunner', $contents);
+        self::assertStringContainsString('SetupCliInputFactory', $contents);
+        self::assertStringContainsString('dry-run', $contents);
+        self::assertStringContainsString('reset-password', $contents);
+        self::assertStringContainsString('no-interaction', $contents);
+        self::assertStringContainsString('json_encode', $contents);
+    }
+
+    public function testSetupScriptLocalizesHumanOutput(): void
+    {
+        $output = [];
+        $exitCode = 1;
+        $command = implode(' ', [
+            escapeshellarg(PHP_BINARY),
+            escapeshellarg($this->scriptPath),
+            '--dry-run',
+            '--no-interaction',
+            '--language=de',
+            '--site-title='.escapeshellarg('Dry Studio'),
+            '--url=https://dry.example.test',
+            '--db-driver=sqlite',
+        ]);
+
+        exec($command, $output, $exitCode);
+        $text = implode(PHP_EOL, $output);
+
+        self::assertSame(0, $exitCode, $text);
+        self::assertStringContainsString('Setup erfolgreich abgeschlossen.', $text);
+        self::assertStringContainsString('Installer-Sprache "de" ausgewählt.', $text);
+        self::assertStringContainsString('Verfügbare Installer-Sprachen: de, en', $text);
+        self::assertStringNotContainsString('message.setup.language_selected', $text);
     }
 }

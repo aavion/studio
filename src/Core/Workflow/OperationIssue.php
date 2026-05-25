@@ -4,43 +4,60 @@ declare(strict_types=1);
 
 namespace App\Core\Workflow;
 
-use InvalidArgumentException;
+use App\Core\Message\Message;
+use App\Core\Message\MessageLevel;
 
 final readonly class OperationIssue
 {
-    /**
-     * @param array<string, mixed> $context
-     */
-    public function __construct(
-        private string $code,
-        private string $message,
-        private array $context = [],
-    ) {
-        if ('' === trim($code)) {
-            throw new InvalidArgumentException('Operation issue code must not be empty.');
-        }
-
-        if ('' === trim($message)) {
-            throw new InvalidArgumentException('Operation issue message must not be empty.');
-        }
+    public function __construct(private Message $message)
+    {
     }
 
     /**
      * @param array<string, mixed> $context
+     * @param array<string, mixed> $parameters
      */
-    public static function create(string $code, string $message, array $context = []): self
+    public static function create(
+        string $code,
+        string $translationKey,
+        array $parameters = [],
+        array $context = [],
+        ?MessageLevel $level = null,
+    ): self {
+        return new self(Message::create($code, $translationKey, $parameters, $context, $level));
+    }
+
+    public static function fromMessage(Message $message): self
     {
-        return new self($code, $message, $context);
+        return new self($message);
+    }
+
+    public function message(): Message
+    {
+        return $this->message;
     }
 
     public function code(): string
     {
-        return $this->code;
+        return $this->message->code();
     }
 
-    public function message(): string
+    public function translationKey(): string
     {
-        return $this->message;
+        return $this->message->translationKey();
+    }
+
+    public function level(): MessageLevel
+    {
+        return $this->message->level();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function parameters(): array
+    {
+        return $this->message->parameters();
     }
 
     /**
@@ -48,18 +65,20 @@ final readonly class OperationIssue
      */
     public function context(): array
     {
-        return $this->context;
+        return $this->message->context();
     }
 
     /**
-     * @return array{code: string, message: string, context: array<string, mixed>}
+     * @return array{level: string, code: string, translation_key: string, parameters: array<string, mixed>, context: array<string, mixed>}
      */
     public function toArray(): array
     {
         return [
-            'code' => $this->code,
-            'message' => $this->message,
-            'context' => $this->context,
+            'level' => $this->level()->value,
+            'code' => $this->code(),
+            'translation_key' => $this->translationKey(),
+            'parameters' => $this->parameters(),
+            'context' => $this->context(),
         ];
     }
 }

@@ -1,0 +1,14 @@
+{% if http_error and http_error.debug is defined %}
+    <details class="studio-debug-trace">
+        <summary>Debug trace</summary>
+        <dl>
+            <dt>Exception</dt>
+            <dd>{{ http_error.debug.exception_class }}</dd>
+            <dt>Message</dt>
+            <dd>{{ http_error.debug.message }}</dd>
+            <dt>Location</dt>
+            <dd>{{ http_error.debug.file }}:{{ http_error.debug.line }}</dd>
+        </dl>
+        <pre class="studio-code-block">{{ http_error.debug.trace }}</pre>
+    </details>
+{% endif %}

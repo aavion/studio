@@ -1,0 +1,6 @@
+.studio-setup-shell {
+    display: grid;
+    gap: 1rem;
+    width: min(100%, 760px);
+    margin: 0 auto;
+}

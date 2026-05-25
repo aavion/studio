@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Workflow;
 
+use App\Core\Message\Message;
 use InvalidArgumentException;
 
 /**
@@ -14,6 +15,7 @@ final readonly class OperationResult
     /**
      * @param TValue|null $value
      * @param list<OperationIssue> $issues
+     * @param list<Message> $messages
      * @param array<string, mixed> $context
      */
     private function __construct(
@@ -21,10 +23,17 @@ final readonly class OperationResult
         private mixed $value = null,
         private array $issues = [],
         private array $context = [],
+        private array $messages = [],
     ) {
         foreach ($issues as $issue) {
             if (!$issue instanceof OperationIssue) {
                 throw new InvalidArgumentException('Operation result issues must contain only OperationIssue instances.');
+            }
+        }
+
+        foreach ($messages as $message) {
+            if (!$message instanceof Message) {
+                throw new InvalidArgumentException('Operation result messages must contain only Message instances.');
             }
         }
 
@@ -38,23 +47,25 @@ final readonly class OperationResult
      *
      * @param TSuccessValue|null $value
      * @param array<string, mixed> $context
+     * @param list<Message> $messages
      *
      * @return self<TSuccessValue>
      */
-    public static function success(mixed $value = null, array $context = []): self
+    public static function success(mixed $value = null, array $context = [], array $messages = []): self
     {
-        return new self(OperationStatus::Success, $value, [], $context);
+        return new self(OperationStatus::Success, $value, [], $context, $messages);
     }
 
     /**
      * @param list<OperationIssue> $issues
      * @param array<string, mixed> $context
+     * @param list<Message> $messages
      *
      * @return self<null>
      */
-    public static function invalid(array $issues, array $context = []): self
+    public static function invalid(array $issues, array $context = [], array $messages = []): self
     {
-        return new self(OperationStatus::Invalid, null, $issues, $context);
+        return new self(OperationStatus::Invalid, null, $issues, $context, $messages);
     }
 
     /**
@@ -63,34 +74,37 @@ final readonly class OperationResult
      * @param TReviewValue|null $value
      * @param list<OperationIssue> $issues
      * @param array<string, mixed> $context
+     * @param list<Message> $messages
      *
      * @return self<TReviewValue>
      */
-    public static function requiresReview(mixed $value, array $issues, array $context = []): self
+    public static function requiresReview(mixed $value, array $issues, array $context = [], array $messages = []): self
     {
-        return new self(OperationStatus::RequiresReview, $value, $issues, $context);
+        return new self(OperationStatus::RequiresReview, $value, $issues, $context, $messages);
     }
 
     /**
      * @param list<OperationIssue> $issues
      * @param array<string, mixed> $context
+     * @param list<Message> $messages
      *
      * @return self<null>
      */
-    public static function blocked(array $issues, array $context = []): self
+    public static function blocked(array $issues, array $context = [], array $messages = []): self
     {
-        return new self(OperationStatus::Blocked, null, $issues, $context);
+        return new self(OperationStatus::Blocked, null, $issues, $context, $messages);
     }
 
     /**
      * @param list<OperationIssue> $issues
      * @param array<string, mixed> $context
+     * @param list<Message> $messages
      *
      * @return self<null>
      */
-    public static function failed(array $issues, array $context = []): self
+    public static function failed(array $issues, array $context = [], array $messages = []): self
     {
-        return new self(OperationStatus::Failed, null, $issues, $context);
+        return new self(OperationStatus::Failed, null, $issues, $context, $messages);
     }
 
     public function status(): OperationStatus
@@ -135,6 +149,14 @@ final readonly class OperationResult
     }
 
     /**
+     * @return list<Message>
+     */
+    public function messages(): array
+    {
+        return $this->messages;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function context(): array
@@ -143,7 +165,7 @@ final readonly class OperationResult
     }
 
     /**
-     * @return array{status: string, success: bool, recoverable: bool, value: TValue|null, issues: list<array{code: string, message: string, context: array<string, mixed>}>, context: array<string, mixed>}
+     * @return array{status: string, success: bool, recoverable: bool, value: TValue|null, issues: list<array<string, mixed>>, messages: list<array<string, mixed>>, context: array<string, mixed>}
      */
     public function toArray(): array
     {
@@ -153,6 +175,7 @@ final readonly class OperationResult
             'recoverable' => $this->isRecoverable(),
             'value' => $this->value,
             'issues' => array_map(static fn (OperationIssue $issue): array => $issue->toArray(), $this->issues),
+            'messages' => array_map(static fn (Message $message): array => $message->toArray(), $this->messages),
             'context' => $this->context,
         ];
     }

@@ -43,6 +43,8 @@ final class InitScriptTest extends TestCase
         self::assertStringContainsString("'install', '--optimize-autoloader'", $contents);
         self::assertStringContainsString("'install', '--no-dev', '--optimize-autoloader'", $contents);
         self::assertStringContainsString("'asset-map:compile'", $contents);
+        self::assertStringNotContainsString("'doctrine:migrations:migrate'", $contents);
+        self::assertStringNotContainsString("'doctrine:schema:validate'", $contents);
         self::assertStringNotContainsString("'importmap:install'", $contents);
         self::assertStringNotContainsString("'tailwind:build'", $contents);
         self::assertStringContainsString('bootEnv($this->projectDir.\'/.env\')', $contents);

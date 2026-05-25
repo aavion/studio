@@ -32,15 +32,19 @@ final class PackageDiscoveryTest extends TestCase
             APP_CHANNEL=dev-latest
             APP_SOURCE=https://github.com/aavion/studio.git
             MANIFEST);
-        $this->writeManifest('themes/system', <<<'MANIFEST'
-            THEME_NAME=System
-            THEME_VERSION=1.0.0
-            THEME_AUTHOR=Aavion
+        $this->writeManifest('packages/system-frontend', <<<'MANIFEST'
+            PACKAGE_AUTHOR=Aavion
+            PACKAGE_NAME=System Frontend
+            PACKAGE_VERSION=1.0.0
+            PACKAGE_SCOPE=frontend-theme
+            PACKAGE_DEPENDENCIES=[]
             MANIFEST);
-        $this->writeManifest('modules/contact', <<<'MANIFEST'
-            MODULE_NAME=Contact
-            MODULE_VERSION=1.0.0
-            MODULE_AUTHOR=Aavion
+        $this->writeManifest('packages/contact', <<<'MANIFEST'
+            PACKAGE_AUTHOR=Aavion
+            PACKAGE_NAME=Contact
+            PACKAGE_VERSION=1.0.0
+            PACKAGE_SCOPE=[module, captcha-provider]
+            PACKAGE_DEPENDENCIES=[]
             MANIFEST);
         $this->writeManifest('var/cache/test/imports/theme-update', <<<'MANIFEST'
             PACKAGE_NAME=Theme Update
@@ -51,11 +55,12 @@ final class PackageDiscoveryTest extends TestCase
 
         self::assertTrue($result->isSuccess());
         self::assertCount(4, $result->value());
-        self::assertSame(['app', 'theme', 'module', 'import'], array_map(
+        self::assertSame(['app', 'package', 'package', 'import'], array_map(
             static fn ($candidate): string => $candidate->source()->name(),
             $result->value(),
         ));
-        self::assertSame('System', $result->value()[1]->manifest()->get('THEME_NAME'));
+        self::assertSame('Contact', $result->value()[1]->manifest()->get('PACKAGE_NAME'));
+        self::assertSame('System Frontend', $result->value()[2]->manifest()->get('PACKAGE_NAME'));
     }
 
     public function testItTreatsMissingPackageDirectoriesAsEmptySources(): void
@@ -69,22 +74,44 @@ final class PackageDiscoveryTest extends TestCase
         self::assertSame('app', $result->value()[0]->source()->name());
     }
 
-    public function testItReportsInvalidNamespacedThemeManifests(): void
+    public function testItReportsInvalidPackageManifests(): void
     {
         $this->writeManifest('.', 'APP_VERSION=0.1.0');
-        $this->writeManifest('themes/broken', <<<'MANIFEST'
-            THEME_NAME=Broken
-            THEME_UNDECLARED=value
+        $this->writeManifest('packages/broken', <<<'MANIFEST'
+            PACKAGE_NAME=Broken
+            PACKAGE_SCOPE=unsupported-scope
+            PACKAGE_DEPENDENCIES=[]
+            PACKAGE_UNDECLARED=value
             MANIFEST);
 
         $result = (new PackageDiscovery())->discover($this->projectDir, 'test');
 
         self::assertFalse($result->isSuccess());
-        self::assertCount(2, $result->issues());
+        self::assertCount(3, $result->issues());
         self::assertSame('manifest.missing_required_key', $result->issues()[0]->code());
-        self::assertSame('THEME_VERSION', $result->issues()[0]->context()['key']);
-        self::assertSame('manifest.unknown_key', $result->issues()[1]->code());
-        self::assertSame('theme', $result->issues()[1]->context()['source']);
+        self::assertSame('PACKAGE_AUTHOR', $result->issues()[0]->context()['key']);
+        self::assertSame('manifest.missing_required_key', $result->issues()[1]->code());
+        self::assertSame('PACKAGE_VERSION', $result->issues()[1]->context()['key']);
+        self::assertSame('manifest.unknown_key', $result->issues()[2]->code());
+        self::assertSame('package', $result->issues()[2]->context()['source']);
+    }
+
+    public function testItReportsInvalidPackageScopes(): void
+    {
+        $this->writeManifest('.', 'APP_VERSION=0.1.0');
+        $this->writeManifest('packages/broken-scope', <<<'MANIFEST'
+            PACKAGE_AUTHOR=Aavion
+            PACKAGE_NAME=Broken Scope
+            PACKAGE_VERSION=1.0.0
+            PACKAGE_SCOPE=frontend-theme,unsupported-scope
+            PACKAGE_DEPENDENCIES=[]
+            MANIFEST);
+
+        $result = (new PackageDiscovery())->discover($this->projectDir, 'test');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.scope_invalid', $result->firstIssue()?->code());
+        self::assertSame('frontend-theme,unsupported-scope', $result->firstIssue()?->context()['scope']);
     }
 
     public function testImportManifestsAreParsedWithoutNamespaceRestrictions(): void

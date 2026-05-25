@@ -3,61 +3,284 @@
 
 declare(strict_types=1);
 
-final class SetupReporter
-{
-    public function info(string $message): void
-    {
-        echo '[INFO] '.$message.PHP_EOL;
+use App\Core\ActionLog\ActionLog;
+use App\Core\Message\MessageKey;
+use App\Setup\SetupCliInputFactory;
+use App\Setup\SetupCliPrompter;
+use App\Setup\SetupLanguageCatalog;
+use App\Setup\SetupMessageTranslator;
+use App\Setup\SetupPasswordResetRunner;
+use App\Setup\SetupRunner;
+use Symfony\Component\Dotenv\Dotenv;
+
+require dirname(__DIR__).'/vendor/autoload.php';
+
+$projectDir = dirname(__DIR__);
+
+if (is_file($projectDir.'/.env')) {
+    (new Dotenv())->bootEnv($projectDir.'/.env');
+}
+
+$options = getopt('', [
+    'env:',
+    'language:',
+    'site-title:',
+    'url:',
+    'db-driver:',
+    'database-url:',
+    'db-host:',
+    'db-port:',
+    'db-name:',
+    'db-user:',
+    'db-password:',
+    'admin-username:',
+    'admin-password:',
+    'admin-email:',
+    'app-secret:',
+    'dry-run',
+    'reset-password::',
+    'new-password:',
+    'confirm',
+    'no-interaction',
+    'json',
+]);
+
+$resetUsername = resetPasswordUsername($_SERVER['argv'] ?? [], $options);
+
+if (null !== $resetUsername) {
+    exit(handlePasswordReset($projectDir, $options, $resetUsername));
+}
+
+$input = (new SetupCliInputFactory($projectDir))->create($options);
+$translator = new SetupMessageTranslator();
+$language = $input->language();
+
+$result = (new SetupRunner($projectDir))->run($input);
+$payload = $result->toArray();
+
+if ($result->value() instanceof ActionLog) {
+    $payload['value'] = $result->value()->toArray();
+}
+
+if (array_key_exists('json', $options)) {
+    echo json_encode($payload, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR).PHP_EOL;
+
+    exit($result->isSuccess() ? 0 : 1);
+}
+
+echo sprintf(
+    '[%s] %s',
+    $result->isSuccess() ? 'OK' : 'ERROR',
+    $translator->translate($projectDir, $language, $result->isSuccess() ? 'message.setup.output.success' : 'message.setup.output.failed'),
+).PHP_EOL;
+
+$log = $result->value();
+
+if (!$log instanceof ActionLog && isset($result->context()['action_log'])) {
+    $log = $result->context()['action_log'];
+}
+
+foreach (logEntries($log) as $entry) {
+    echo sprintf('[%s] %s', strtoupper((string) ($entry['status'] ?? 'unknown')), (string) ($entry['name'] ?? 'setup_step')).PHP_EOL;
+
+    foreach (($entry['context'] ?? []) as $key => $value) {
+        echo sprintf('  %s: %s', (string) $key, formatCliValue($value)).PHP_EOL;
     }
 
-    public function success(string $message): void
-    {
-        echo '[OK] '.$message.PHP_EOL;
+    foreach (($entry['messages'] ?? []) as $message) {
+        echo sprintf(
+            '  * %s: %s',
+            strtoupper((string) ($message['level'] ?? 'info')),
+            translatedPayload($message, $translator, $projectDir, $language),
+        ).PHP_EOL;
+    }
+
+    foreach (($entry['issues'] ?? []) as $issue) {
+        echo sprintf('  - %s: %s', (string) ($issue['code'] ?? 'issue'), translatedPayload($issue, $translator, $projectDir, $language)) . PHP_EOL;
     }
 }
 
-final class SetupCommand
+exit($result->isSuccess() ? 0 : 1);
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function logEntries(mixed $log): array
 {
-    public function __construct(
-        private readonly string $projectDir,
-        private readonly SetupReporter $reporter,
-    ) {
+    if ($log instanceof ActionLog) {
+        return $log->toArray()['entries'];
     }
 
-    public function run(): int
-    {
-        $this->reporter->info('Setup skeleton started.');
-        $this->initializeRepository();
-        $this->collectInstallationData();
-        $this->writeInitialConfiguration();
-        $this->preparePersistentState();
-        $this->reporter->success('Setup skeleton completed without changing project data.');
+    if (is_array($log) && isset($log['entries']) && is_array($log['entries'])) {
+        return $log['entries'];
+    }
+
+    return [];
+}
+
+function formatCliValue(mixed $value): string
+{
+    if (is_scalar($value) || null === $value) {
+        return (string) ($value ?? 'null');
+    }
+
+    return json_encode($value, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+}
+
+/**
+ * @param array<string, mixed> $payload
+ */
+function translatedPayload(array $payload, SetupMessageTranslator $translator, string $projectDir, string $language): string
+{
+    $key = $payload['translation_key'] ?? null;
+
+    if (!is_string($key) || '' === $key) {
+        return (string) ($payload['code'] ?? '');
+    }
+
+    return $translator->translate($projectDir, $language, $key, translationParameters($payload['parameters'] ?? []));
+}
+
+/**
+ * @return array<string, string>
+ */
+function translationParameters(mixed $parameters): array
+{
+    if (!is_array($parameters)) {
+        return [];
+    }
+
+    $translated = [];
+    foreach ($parameters as $key => $value) {
+        if (!is_string($key)) {
+            continue;
+        }
+
+        $translated[$key] = is_scalar($value) || null === $value ? (string) $value : formatCliValue($value);
+    }
+
+    return $translated;
+}
+
+/**
+ * @param list<string> $argv
+ * @param array<string, string|false> $options
+ */
+function resetPasswordUsername(array $argv, array $options): ?string
+{
+    if (array_key_exists('reset-password', $options)) {
+        return is_string($options['reset-password']) ? $options['reset-password'] : '';
+    }
+
+    foreach ($argv as $argument) {
+        if (str_starts_with($argument, '--reset-password:')) {
+            return substr($argument, strlen('--reset-password:'));
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @param array<string, string|false> $options
+ */
+function handlePasswordReset(string $projectDir, array $options, string $username): int
+{
+    $translator = new SetupMessageTranslator();
+    $language = is_string($options['language'] ?? null)
+        ? $options['language']
+        : (new SetupLanguageCatalog())->defaultLanguage($projectDir);
+    $databaseUrl = is_string($options['database-url'] ?? null) && '' !== $options['database-url']
+        ? $options['database-url']
+        : (string) ($_SERVER['DATABASE_URL'] ?? $_ENV['DATABASE_URL'] ?? '');
+
+    if ('' === trim($username)) {
+        echo '[ERROR] --reset-password requires a username.'.PHP_EOL;
+
+        return 1;
+    }
+
+    if ('' === trim($databaseUrl)) {
+        echo '[ERROR] '.$translator->translate($projectDir, $language, MessageKey::SETUP_PASSWORD_RESET_DATABASE_URL_MISSING).PHP_EOL;
+
+        return 1;
+    }
+
+    $runner = new SetupPasswordResetRunner();
+    $user = $runner->findUser($projectDir, $databaseUrl, $username);
+
+    if (null === $user) {
+        echo '[ERROR] '.$translator->translate($projectDir, $language, MessageKey::SETUP_PASSWORD_RESET_USER_NOT_FOUND, [
+            '%username%' => $username,
+        ]).PHP_EOL;
+
+        return 1;
+    }
+
+    echo 'UID: '.$user->uid().PHP_EOL;
+    echo 'Username: '.$user->username().PHP_EOL;
+    echo 'Email: '.$user->email().PHP_EOL;
+    echo 'Status: '.$user->status().PHP_EOL;
+
+    $prompter = new SetupCliPrompter($projectDir);
+    $interactive = $prompter->isInteractive($options);
+
+    if (!$interactive && !array_key_exists('confirm', $options)) {
+        echo '[ERROR] '.$translator->translate($projectDir, $language, MessageKey::SETUP_PASSWORD_RESET_CONFIRM_REQUIRED).PHP_EOL;
+
+        return 1;
+    }
+
+    if ($interactive && !$prompter->confirm($language, MessageKey::SETUP_PROMPT_PASSWORD_RESET_CONTINUE, false, [
+        '%username%' => $user->username(),
+    ])) {
+        echo '[OK] '.$translator->translate($projectDir, $language, MessageKey::SETUP_PASSWORD_RESET_CANCELLED).PHP_EOL;
 
         return 0;
     }
 
-    private function initializeRepository(): void
-    {
-        $this->reporter->info('Repository initialization is delegated to bin/init when real setup begins.');
+    $newPassword = $prompter->confirmedValue(
+        $options,
+        'new-password',
+        '',
+        $interactive,
+        $language,
+        MessageKey::SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD,
+        MessageKey::SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD,
+    );
+
+    if ('' === $newPassword) {
+        echo '[ERROR] '.$translator->translate($projectDir, $language, MessageKey::SETUP_PROMPT_PASSWORD_MISMATCH).PHP_EOL;
+
+        return 1;
     }
 
-    private function collectInstallationData(): void
-    {
-        $this->reporter->info('Installation data collection is intentionally deferred until setup has persistence targets.');
+    $result = $runner->reset($projectDir, $databaseUrl, $user->username(), $newPassword);
+
+    echo sprintf(
+        '[%s] %s',
+        $result->isSuccess() ? 'OK' : 'ERROR',
+        $translator->translate($projectDir, $language, $result->isSuccess() ? MessageKey::SETUP_PASSWORD_RESET_COMPLETED : MessageKey::SETUP_OUTPUT_FAILED, [
+            '%username%' => $user->username(),
+        ]),
+    ).PHP_EOL;
+
+    $log = $result->value();
+    if (!$log instanceof ActionLog && isset($result->context()['action_log'])) {
+        $log = $result->context()['action_log'];
     }
 
-    private function writeInitialConfiguration(): void
-    {
-        $this->reporter->info('Initial configuration writing is intentionally deferred.');
+    foreach (logEntries($log) as $entry) {
+        echo sprintf('[%s] %s', strtoupper((string) ($entry['status'] ?? 'unknown')), (string) ($entry['name'] ?? 'setup_step')).PHP_EOL;
+
+        foreach (($entry['messages'] ?? []) as $message) {
+            echo sprintf(
+                '  * %s: %s',
+                strtoupper((string) ($message['level'] ?? 'info')),
+                translatedPayload($message, $translator, $projectDir, $language),
+            ).PHP_EOL;
+        }
     }
 
-    private function preparePersistentState(): void
-    {
-        $this->reporter->info('Database, administrator account, and seed setup are intentionally deferred.');
-    }
+    return $result->isSuccess() ? 0 : 1;
 }
-
-$projectDir = dirname(__DIR__);
-$reporter = new SetupReporter();
-
-exit((new SetupCommand($projectDir, $reporter))->run());

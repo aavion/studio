@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-05-22
+> **Updated**: 2026-05-25  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -9,23 +9,23 @@
 **ALWAYS KEEP UP-TO-DATE!**
 
 ## Roadmap
-**Usage:** Use as guidance on what major changes to implement next. Keep the list up-to-date while proceding.
+**Usage:** Use as guidance on what major changes to implement next. Keep the list up-to-date while proceeding.
 
 - [ ] **0.1.x Foundation**
-  - [ ] Core architecture
-  - [ ] Setup and test automation
-  - [ ] Error handling and validation
-  - [ ] Static/dynamic content model
-  - [ ] Theme engine
-  - [ ] System theme and design system
-  - Open: first deterministic SQL seed shape; `title`/`subtitle` JSON metadata vs indexed columns.
+  - [x] Core architecture
+  - [x] Setup and test automation
+  - [x] Error handling and validation
+  - [x] Static/dynamic content model
+  - [x] Package-scoped theme engine
+  - [ ] Native frontend/backend system package and design system
+  - Open: native template scaffold exists; finish the visual/design-system pass and first release-readiness verification shape.
 
 - [ ] **0.2.x Security and extension baseline**
-  - [ ] Security/ACL baseline
+  - [x] Security/ACL baseline
   - [ ] Admin interface and setup UI
   - [ ] Event hooks and Messenger conventions
-  - [ ] Plugin module discovery and lifecycle
-  - Open: first role/ACL group model; first dashboard widgets; account/password recovery flow; immutable event payload default; module uninstall/data cleanup policy.
+  - [ ] Package discovery and lifecycle
+  - Open: first dashboard widgets; setup UI; immutable event payload default; package activation/install/uninstall flows; package uninstall/data cleanup execution.
 
 - [ ] **0.3.x Structured authoring and resolver foundation**
   - [ ] Schema-driven content fields
@@ -35,18 +35,19 @@
   - [ ] Media library and file management
   - [ ] Navigation and sitemap builder
   - [ ] Cross-reference index and resolver foundation
-  - Open: first minimal field type set; autosave/draft storage; commit vs publish separation; media MIME/upload/thumbnail defaults and exact private-delivery strategy; menu types/depth/sitemap formats; resolver-token/query syntax, depth, loop protection, ACL behavior, and export/import normalization.
+  - Open: content/schema storage baseline exists; first minimal field type UI, autosave/draft storage, commit vs publish separation, media MIME/upload/thumbnail defaults and exact private-delivery strategy, menu types/depth/sitemap formats, resolver-token/query syntax, depth, loop protection, ACL behavior, and export/import normalization remain open.
 
 - [ ] **0.4.x External interfaces and operations**
   - [ ] Operational security and audit coverage
   - [ ] API layer
   - [ ] Frontend delivery and caching
   - [ ] Operational admin workflows
+  - [ ] Scheduler
   - [ ] Import/export and LLM collaboration
   - [ ] Backup and restore
   - [ ] Contact, mail, logging, and statistics
   - [ ] IconCaptcha integration
-  - Open: API write scope; public delivery snapshot vs cache-backed read model; operational action-log transport/storage; exact audit log channels/levels/retention; backup/log/submission retention defaults; IconCaptcha provider interface, secret rotation, and asset policy details.
+  - Open: API write scope; public delivery snapshot vs cache-backed read model; ActionLog UI/storage beyond current operation output; exact audit log channels/levels/retention; backup/log/submission retention defaults; Scheduler execution implementation; IconCaptcha provider interface, secret rotation, and asset policy details.
 
 - [ ] **0.5.x Release lifecycle**
   - [ ] Self-update and release workflow
@@ -62,23 +63,44 @@
 ## To-Do
 **Usage:** Track deferred tasks and keep the list up-to-date.
 
-- [ ] Keep roadmap sub-items aligned with feature drafts when implementation changes scope, order, or dependencies.
+- [ ] Keep roadmap sub-items aligned with feature drafts when implementation changes scope, order, or dependencies. Last reviewed: 2026-05-25.
+- [ ] Before the first stable `1.0.0` release, keep Doctrine migrations consolidated into one current baseline migration.
+- [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
 
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
+### 2026-05-25
+- Completed the package-scoped template baseline: canonical Twig namespaces (`@frontend`, `@backend`, `@root`, `@provider`), `system-template` scope, package template path validation, provider fallbacks, and CodeMirror as the native editor provider.
+- Reorganized the native template scaffold into frontend/backend/provider areas with root `base.html.twig`, generic frontend error fallbacks, shared macros, layout variants, and granular partials for future theme overrides.
+- Added the central HTTP error renderer with `/system/error-pages/{status}` content fallback, frontend status/default templates, anonymous `401` login rendering, and a production exception subscriber for HTTP exceptions.
+- Hardened package asset handling: `.mjs` app/index/module/theme entrypoints now enter JavaScript registries, dynamic `import()` string specifiers are rewritten during mirroring, vendor assets remain isolated, and non-JSON asset command issue rendering no longer masks failures.
+- Hardened setup/content review findings: root-level content uses `/` as a non-null parent sentinel for portable slug uniqueness, setup ACL group seeding preserves existing primary keys, env writes fail loudly, and unsupported SQLite URL variants are rejected during preparation.
+- Updated feature drafts, developer snippets, class map, translations, worklog notes, and tests for the template, package, setup, and content-routing contracts.
+
+### 2026-05-24
+- Completed the first-run/setup and deterministic test-data baselines: localized interactive setup, dry-run planning, env persistence, migrations, default settings/admin seeding, password reset, SQLite test bootstrap, demo data, and sequential test-suite protection.
+- Completed the first public content delivery slice: published content reads from active revisions, hierarchy/custom/internal `/system` routing, reserved prefixes, home-path config, `401`/`403`/`404` mapping, redirects, redirect-loop protection, localization redirects/fallbacks, variant suffix fallback, and `APP_MAINTENANCE` `503` handling.
+- Completed shared security/message foundations: access actors, level-plus-group ACL rules, roleless access-level user bridge, API-key status/encryption metadata, structured message severities, and synchronized English/German catalogues.
+- Reworked extensions into one package lifecycle with `PACKAGE_SCOPE`, single-active theme/provider scopes, many-active module scopes, all-or-nothing multi-scope activation, `packages/` discovery, package-owned assets, data-cleanup rules, and native package-scoped view/template foundations.
+- Added the package asset pipeline baseline and commands: CSS/JS registry buckets, `assets/packages/` mirroring, Tailwind source discovery, CSS/JS path rewriting, `studio:packages:assets:sync`, `studio:assets:rebuild`, dry-run/progress/JSON output, production compile steps, and structured failure handling.
+- Added operational foundations and documentation updates: raw JSON output renderer for `/api/live/**`, ActionLog polling cursor semantics, scheduler draft, external media/file resolver draft, admin/editor route decisions, class maps, and related architecture notes.
+
+### 2026-05-23
+- Added the first persistent Core/content database baseline in migration `Version20260523210000`: global config, ACL groups, users, API keys, extension packages, menus, database-backed schemas, schema versions, content items, revisions, and revision-scoped field values.
+- Introduced schema/content primitives for status, visibility, slug and route-prefix validation, required `title`/`subtitle` field identifiers, schema sources, nullable active schema/revision pointers, revision diff/import readiness, and level-plus-group ACL override fields.
+- Added the shared `Message` model with machine-readable codes, translation keys, parameters, diagnostic context, exception support, synchronized English/German catalogues, and coverage; wired package, manifest, lint, filesystem, process, operation, and content validation flows through it.
+- Configured SQLite for the test environment at `var/test/test.db`; the PHPUnit bootstrap now clears `var/test`, applies migrations, and verifies the baseline migration against SQLite.
+- Documented pre-`1.0.0` migration/compatibility rules, database portability, filesystem-backed structured logging direction, Markdown/EditorConfig hardbreak rules, schema preset expectations, and portable read-model follow-ups.
+- Updated class map, drafts, developer snippets, namespace READMEs, env defaults, and placeholder cleanup to match the new baseline.
+- Verified with PHPUnit, translation catalogue sync, YAML syntax, Symfony container linting, full Doctrine schema validation against SQLite, and the EditorConfig audit.
+
 ### 2026-05-22
-- Prepared the first Core architecture baseline from the 0.1.x through 0.5.x feature drafts, including source namespace boundaries, `bin/init` dependency bootstrapping, a non-mutating `bin/setup` skeleton, regenerated illustration CSS, and web server configuration templates for Apache, nginx, and IIS.
-- Added the shared Core package foundation: manifest parsing and namespace-based validation, package discovery for app/theme/module/import-cache manifests, package requirement validation, package feature inspection, and reusable lint providers for PHP, Twig, JSON, YAML, CSS, and JavaScript.
-- Added reusable Core primitives for filesystem-safe path handling and inventories, checksums, action logs, structured diffs, dry-run previews, deterministic action queues, operation execution, filesystem actions, process actions, and package-to-copy-queue planning.
-- Added structured `toArray()` exports across workflow, action-log, dry-run, diff, and operation result objects so future CLI, UI, importer, and action-log consumers can render the same payloads.
-- Added shared PHPUnit support helpers for temporary filesystem fixtures plus suite initialization and cleanup hooks for later demo and integration fixtures.
-- Documented deferred design decisions: dynamic SVG theme coloring needs an inline SVG/Twig renderer later, theme/module dependency maps belong to package-type installer workflows, and a third generic diagnostics model should wait until concrete UI or logging requirements appear.
-- Added `.codex/resolve_cloud_artifacts.php` for reviewed iCloud/Finder conflict cleanup and `.codex/clean_ignored_artifacts.php` for dry-run/apply removal of ignored build artifacts; documented both helper scripts in the agent tool registry.
-- Hardened the review baseline against traversal, symlink, and status-downgrade risks by validating package source paths, skipping symlinks in discovery and inventories, rejecting symlink package copy sources, blocking filesystem actions from reading or writing through symlink sources or targets and parents, preserving failed or blocked queue status when continuing after action errors, and keeping Apache/IIS front-controller redirects base-path-aware.
-- Fixed Composer metadata review findings by replacing unbounded `symfony/apache-pack` and `symfonycasts/tailwind-bundle` constraints with caret constraints and refreshing the lock content hash.
-- Updated `dev/CLASSMAP.md`, relevant feature drafts, and PHPUnit coverage for the new Core architecture, package validation, linting, filesystem, integrity, action-log, diff, dry-run, operation, process, helper-script, and test-support behavior.
-- Verified the review state by cleaning ignored artifacts, running `bin/init` from a clean dependency state, and re-running PHPUnit, container linting, Composer validation, and whitespace checks.
+- Prepared the first Core architecture baseline: source namespace boundaries, `bin/init`, `bin/setup`, illustration CSS sync, Apache/nginx/IIS templates, manifest/package discovery, package validation, reusable lint providers, filesystem/integrity helpers, action logs, structured diffs, dry-runs, action queues, operation execution, filesystem/process actions, package operation planning, and structured exports.
+- Added supporting docs and fixtures: developer-manual snippet pages for Core/package/import/security/deployment/UI/release/test topics, valid and intentionally invalid package fixtures, visible `TestSuiteLifecycle` notes, and deferred design decisions for SVG theme coloring, dependency maps, and diagnostics models.
+- Added and refined automation/test tooling: `.codex` cleanup helpers for ignored artifacts and iCloud/Finder conflicts, shared PHPUnit filesystem helpers, suite-root temporary directories, centralized fixture paths, symlink test helpers, and smoke/negative coverage for fixtures and package preflight diagnostics.
+- Hardened the review baseline against traversal, symlink, status-downgrade, Composer metadata, and base-path redirect regressions; updated class map, drafts, documentation, and PHPUnit coverage accordingly.
+- Verified by cleaning ignored artifacts, rebuilding with `bin/init`, and re-running PHPUnit, container linting, Composer validation, Markdown link checks, and whitespace checks.
 
 ### 2026-05-20
 - Created and consolidated the feature-draft roadmap for 0.1.x through 0.5.x plus future features, including core architecture, content modeling, themes, modules, security/ACL, editor workflows, resolver/search, media, import/export, operations, backup/restore, IconCaptcha, release lifecycle, and first-party module candidates.

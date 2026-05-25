@@ -1,0 +1,15 @@
+{% extends '@root/base.html.twig' %}
+
+{% block title %}{{ 'ui.error.503.title'|trans }}{% endblock %}
+{% block body_class %}studio-body studio-frontend studio-frontend-lightweight{% endblock %}
+
+{% block body %}
+    <main class="studio-error-page studio-error-lightweight">
+        {% include '@frontend/partials/typography/_page-header.html.twig' with {
+            kicker: '503',
+            title: 'ui.error.503.title'|trans,
+            subtitle: 'ui.error.503.message'|trans,
+        } only %}
+        {% include '@frontend/error-pages/partials/_debug.html.twig' with {http_error: http_error|default(null)} only %}
+    </main>
+{% endblock %}

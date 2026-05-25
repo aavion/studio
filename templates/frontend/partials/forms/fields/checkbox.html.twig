@@ -1,0 +1,17 @@
+{% set field_id = id|default(name|default('field')) %}
+<div class="studio-form-field studio-form-field-checkbox">
+    <label class="studio-checkbox-label" for="{{ field_id }}">
+        <input
+            id="{{ field_id }}"
+            class="studio-checkbox"
+            type="checkbox"
+            name="{{ name }}"
+            value="{{ value|default('1') }}"
+            {% if checked|default(false) %}checked{% endif %}
+            {% if required|default(false) %}required{% endif %}
+        >
+        <span>{{ label }}</span>
+    </label>
+    {% include '@frontend/partials/forms/_help.html.twig' with {help: help|default(null)} only %}
+    {% include '@frontend/partials/forms/_errors.html.twig' with {errors: errors|default([])} only %}
+</div>

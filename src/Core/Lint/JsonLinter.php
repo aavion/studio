@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Lint;
 
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use JsonException;
 
 final class JsonLinter implements LinterInterface
@@ -15,8 +17,8 @@ final class JsonLinter implements LinterInterface
         } catch (JsonException $error) {
             return LintResult::invalid([
                 LintIssue::create(
-                    'lint.json_syntax_error',
-                    'JSON has a syntax error.',
+                    MessageCode::LINT_JSON_SYNTAX_ERROR,
+                    MessageKey::LINT_JSON_SYNTAX_ERROR,
                     details: ['error' => $error->getMessage(), 'path' => $path],
                 ),
             ]);
