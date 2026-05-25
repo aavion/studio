@@ -57,6 +57,10 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Debug\StudioDebugCollector:
+        arguments:
+            $debug: '%kernel.debug%'
+
     App\View\Template\PackageTemplatePathResolver:
         arguments:
             $projectDir: '%kernel.project_dir%'

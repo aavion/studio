@@ -71,6 +71,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-25
+- Added the first navigation builder slice with `NavigationBuilderEvent`, seeded recursive menu rendering in the frontend navigation partial, configurable depth/split-menu output, package item parent/sort normalization, flat item collection for custom theme builders, and debug metadata for public hooks plus Twig namespace path resolution.
+- Added `ContentRenderedEvent` as the content-specific post-render hook before the broader HTML output hook runs.
 - Added response-level public hooks for themes and modules: `ResponseHeadersEvent`, `OutputGeneratedEvent`, and the main-response `ResponseHookSubscriber` with mutation-on-success behavior and coverage.
 - Documented the event-hook decisions and deferred hook backlog: no template-path or runtime asset collection hooks while deterministic namespace discovery and AssetSync cover those paths, no package-defined core permission rules, provider selection remains resolver/lifecycle-owned, and the logger should start with an explicit recorder boundary instead of a generic operations-message event.
 - Added the first public EventDispatcher hook surface for packages: `PublicEventInterface`, hook descriptors/registry, class-name based `ViewContextEvent`, package asset sync observe/extend events, subscriber coverage, and package developer documentation.

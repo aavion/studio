@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Content\Event\ContentRenderContextEvent;
+use App\Content\Event\ContentRenderedEvent;
 use App\Content\Read\PublishedContentResolver;
 use App\Content\Read\PublishedContentResolveStatus;
 use App\Content\Routing\ContentRedirectResolveStatus;
@@ -140,7 +141,19 @@ final class PublicContentController extends AbstractController
                 );
             }
 
-            return $this->render('@frontend/content/entity.html.twig', $context);
+            $content = $this->renderView('@frontend/content/entity.html.twig', $context);
+            $renderedEvent = new ContentRenderedEvent($view, $request, $content);
+            $renderedResult = $this->eventDispatcher->dispatch($renderedEvent, [
+                'operation' => 'content_rendered',
+                'path' => $path,
+                'language' => $language,
+            ]);
+
+            if ($renderedResult->isSuccess()) {
+                $content = $renderedEvent->content();
+            }
+
+            return new Response($content);
         }
 
         if (PublishedContentResolveStatus::ContextUnavailable === $result->status()) {

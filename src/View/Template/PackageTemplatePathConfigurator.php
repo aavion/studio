@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\View\Template;
 
 use App\Core\Package\ActivePackageAssetProviderInterface;
+use App\Debug\StudioDebugCollector;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -20,6 +21,7 @@ final class PackageTemplatePathConfigurator implements EventSubscriberInterface
         private readonly Environment $twig,
         private readonly ActivePackageAssetProviderInterface $packageProvider,
         private readonly PackageTemplatePathResolver $pathResolver,
+        private readonly ?StudioDebugCollector $debugCollector = null,
     ) {
     }
 
@@ -58,11 +60,14 @@ final class PackageTemplatePathConfigurator implements EventSubscriberInterface
             $packages = [];
         }
 
+        $debugPaths = [];
+
         foreach (TemplateNamespace::cases() as $namespace) {
             $paths = array_values(array_filter(
                 $this->pathResolver->pathsForNamespace($namespace, $packages),
                 static fn (string $path): bool => is_dir($path),
             ));
+            $debugPaths[$namespace->value] = $paths;
 
             if ([] !== $paths) {
                 $loader->setPaths($paths, $namespace->value);
@@ -77,5 +82,8 @@ final class PackageTemplatePathConfigurator implements EventSubscriberInterface
         if ([] !== $providerPaths) {
             $loader->setPaths($providerPaths, 'provider');
         }
+
+        $debugPaths['provider'] = $providerPaths;
+        $this->debugCollector?->recordTemplatePaths($debugPaths);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Content\Event\ContentRenderContextEvent;
+use App\Content\Event\ContentRenderedEvent;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -58,6 +59,31 @@ final class PublicContentRenderingTest extends WebTestCase
             'title' => 'First seeded article',
             'path' => '/news/first-update',
         ]], $calls);
+    }
+
+    public function testItDispatchesContentRenderedHook(): void
+    {
+        $client = self::createClient();
+        $eventDispatcher = self::getContainer()->get(EventDispatcherInterface::class);
+        $eventDispatcher->addListener(ContentRenderedEvent::class, static function (ContentRenderedEvent $event): void {
+            $event->appendContent('<!-- content-rendered-hook -->');
+        });
+
+        $client->request('GET', '/news/first-update');
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('<!-- content-rendered-hook -->', (string) $client->getResponse()->getContent());
+    }
+
+    public function testItRendersSeededNavigation(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-frontend-navigation', 'Home');
+        self::assertSelectorTextContains('.studio-frontend-navigation', 'About');
+        self::assertSelectorTextContains('.studio-frontend-navigation', 'News');
     }
 
     public function testItFallsBackToDefaultForMissingVariant(): void

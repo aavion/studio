@@ -6,6 +6,7 @@ namespace App\Tests\View\Http;
 
 use App\Core\Event\PublicEventDispatcher;
 use App\Core\Event\PublicEventHookRegistry;
+use App\Debug\StudioDebugCollector;
 use App\View\Event\OutputGeneratedEvent;
 use App\View\Event\ResponseHeadersEvent;
 use App\View\Http\ResponseHookSubscriber;
@@ -82,6 +83,24 @@ final class ResponseHookSubscriberTest extends TestCase
         $this->subscriber($dispatcher)->onKernelResponse($this->responseEvent($response));
 
         self::assertSame('<html></html>', $response->getContent());
+    }
+
+    public function testItAppendsDebugCommentWhenCollectorIsEnabled(): void
+    {
+        $dispatcher = new EventDispatcher();
+        $collector = new StudioDebugCollector(true);
+        $response = new Response('<html></html>', 200, [
+            'Content-Type' => 'text/html',
+        ]);
+
+        (new ResponseHookSubscriber(
+            new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), $collector),
+            $collector,
+        ))->onKernelResponse($this->responseEvent($response));
+
+        self::assertStringContainsString('<!-- studio-debug', (string) $response->getContent());
+        self::assertStringContainsString('ResponseHeadersEvent', (string) $response->getContent());
+        self::assertStringContainsString('OutputGeneratedEvent', (string) $response->getContent());
     }
 
     private function subscriber(EventDispatcher $dispatcher): ResponseHookSubscriber

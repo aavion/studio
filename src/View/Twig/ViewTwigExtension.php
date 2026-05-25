@@ -6,6 +6,8 @@ namespace App\View\Twig;
 
 use App\Core\Event\EventHookDescriptor;
 use App\Core\Event\PublicEventHookRegistry;
+use App\Debug\StudioDebugCollector;
+use App\Navigation\NavigationBuilder;
 use App\View\MarkdownRenderer;
 use App\View\PackageMacroRegistry;
 use App\View\ViewContextProvider;
@@ -21,6 +23,8 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         private readonly PackageMacroRegistry $macroRegistry,
         private readonly MarkdownRenderer $markdownRenderer,
         private readonly PublicEventHookRegistry $eventHookRegistry,
+        private readonly NavigationBuilder $navigationBuilder,
+        private readonly StudioDebugCollector $debugCollector,
     ) {
     }
 
@@ -44,6 +48,8 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             new TwigFunction('studio_macro_namespaces', $this->macroRegistry->namespaces(...)),
             new TwigFunction('studio_macro_template', $this->macroRegistry->template(...)),
             new TwigFunction('studio_event_hooks', $this->eventHooks(...)),
+            new TwigFunction('studio_navigation', $this->navigation(...)),
+            new TwigFunction('studio_debug_info', $this->debugInfo(...)),
         ];
     }
 
@@ -66,5 +72,27 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             static fn (EventHookDescriptor $hook): array => $hook->toArray(),
             $this->eventHookRegistry->hooks(),
         );
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function navigation(
+        string $identifier = 'main',
+        string $language = 'en',
+        int $maxDepth = 3,
+        int $startLevel = 1,
+        ?string $rootUid = null,
+    ): array
+    {
+        return $this->navigationBuilder->build($identifier, $language, $maxDepth, $startLevel, $rootUid);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function debugInfo(): array
+    {
+        return $this->debugCollector->summary();
     }
 }

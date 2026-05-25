@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Event;
 
+use App\Debug\StudioDebugCollector;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
@@ -16,6 +17,7 @@ final readonly class PublicEventDispatcher
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
         private PublicEventHookRegistry $hookRegistry,
+        private ?StudioDebugCollector $debugCollector = null,
     ) {
     }
 
@@ -37,6 +39,8 @@ final readonly class PublicEventDispatcher
         try {
             $registeredHooks = $this->hookRegistry->byEventClass();
         } catch (Throwable $error) {
+            $this->debugCollector?->recordHook($eventClass, 'unknown', 'unknown', false, 'registry_failed', $context, $package, 1);
+
             return PublicEventDispatchResult::failed($event, [
                 OperationIssue::create(MessageCode::EVENT_HOOK_INVALID, MessageKey::EVENT_HOOK_INVALID, [
                     '%event%' => $eventClass,
@@ -49,6 +53,8 @@ final readonly class PublicEventDispatcher
         }
 
         if (!isset($registeredHooks[$eventClass])) {
+            $this->debugCollector?->recordHook($eventClass, 'unknown', 'unknown', false, 'unregistered', $context, $package, 1);
+
             return PublicEventDispatchResult::failed($event, [
                 OperationIssue::create(MessageCode::EVENT_HOOK_UNREGISTERED, MessageKey::EVENT_HOOK_UNREGISTERED, [
                     '%event%' => $eventClass,
@@ -63,6 +69,17 @@ final readonly class PublicEventDispatcher
         try {
             $this->eventDispatcher->dispatch($event);
         } catch (Throwable $error) {
+            $this->debugCollector?->recordHook(
+                $eventClass,
+                $registeredHooks[$eventClass]->domain(),
+                $registeredHooks[$eventClass]->mode()->value,
+                $registeredHooks[$eventClass]->mutable(),
+                'failed',
+                $context,
+                $package,
+                1,
+            );
+
             $issue = OperationIssue::create(MessageCode::EVENT_HOOK_LISTENER_FAILED, MessageKey::EVENT_HOOK_LISTENER_FAILED, [
                 '%event%' => $eventClass,
             ], [
@@ -78,6 +95,16 @@ final readonly class PublicEventDispatcher
 
             return PublicEventDispatchResult::failed($event, [$issue]);
         }
+
+        $this->debugCollector?->recordHook(
+            $eventClass,
+            $registeredHooks[$eventClass]->domain(),
+            $registeredHooks[$eventClass]->mode()->value,
+            $registeredHooks[$eventClass]->mutable(),
+            'success',
+            $context,
+            $package,
+        );
 
         return PublicEventDispatchResult::success($event);
     }

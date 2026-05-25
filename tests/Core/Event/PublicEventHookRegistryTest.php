@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Tests\Core\Event;
 
 use App\Content\Event\ContentRenderContextEvent;
+use App\Content\Event\ContentRenderedEvent;
 use App\Core\Event\EventHookMode;
 use App\Core\Event\CoreEventHookProvider;
 use App\Core\Event\PublicEventHookRegistry;
 use App\Core\Message\MessageKey;
 use App\Core\Package\Event\PackageAssetRegistryBuildEvent;
+use App\Navigation\Event\NavigationBuilderEvent;
 use App\View\Event\OutputGeneratedEvent;
 use App\View\Event\ResponseHeadersEvent;
 use App\View\ViewContextEvent;
@@ -23,6 +25,8 @@ final class PublicEventHookRegistryTest extends TestCase
 
         self::assertArrayHasKey(ViewContextEvent::class, $hooks);
         self::assertArrayHasKey(ContentRenderContextEvent::class, $hooks);
+        self::assertArrayHasKey(ContentRenderedEvent::class, $hooks);
+        self::assertArrayHasKey(NavigationBuilderEvent::class, $hooks);
         self::assertArrayHasKey(ResponseHeadersEvent::class, $hooks);
         self::assertArrayHasKey(OutputGeneratedEvent::class, $hooks);
         self::assertArrayHasKey(PackageAssetRegistryBuildEvent::class, $hooks);
@@ -31,6 +35,10 @@ final class PublicEventHookRegistryTest extends TestCase
         self::assertSame(MessageKey::EVENT_HOOK_VIEW_CONTEXT_SUMMARY, $hooks[ViewContextEvent::class]->summaryKey());
         self::assertSame('content', $hooks[ContentRenderContextEvent::class]->domain());
         self::assertTrue($hooks[ContentRenderContextEvent::class]->mutable());
+        self::assertSame('content', $hooks[ContentRenderedEvent::class]->domain());
+        self::assertTrue($hooks[ContentRenderedEvent::class]->mutable());
+        self::assertSame('navigation', $hooks[NavigationBuilderEvent::class]->domain());
+        self::assertTrue($hooks[NavigationBuilderEvent::class]->mutable());
         self::assertSame('http', $hooks[ResponseHeadersEvent::class]->domain());
         self::assertTrue($hooks[ResponseHeadersEvent::class]->mutable());
         self::assertSame('view', $hooks[OutputGeneratedEvent::class]->domain());
@@ -43,7 +51,7 @@ final class PublicEventHookRegistryTest extends TestCase
     {
         $hooks = (new PublicEventHookRegistry([new CoreEventHookProvider()]))->hooks();
 
-        self::assertCount(7, $hooks);
+        self::assertCount(9, $hooks);
         self::assertSame(ViewContextEvent::class, $hooks[0]->eventClass());
     }
 }

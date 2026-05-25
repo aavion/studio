@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\View\Http;
 
 use App\Core\Event\PublicEventDispatcher;
+use App\Debug\StudioDebugCollector;
 use App\View\Event\OutputGeneratedEvent;
 use App\View\Event\ResponseHeadersEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -15,8 +16,10 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 final readonly class ResponseHookSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private PublicEventDispatcher $eventDispatcher)
-    {
+    public function __construct(
+        private PublicEventDispatcher $eventDispatcher,
+        private ?StudioDebugCollector $debugCollector = null,
+    ) {
     }
 
     public static function getSubscribedEvents(): array
@@ -39,6 +42,7 @@ final readonly class ResponseHookSubscriber implements EventSubscriberInterface
 
         if ($this->isHtmlResponse($response)) {
             $this->dispatchOutputHook($request, $response);
+            $this->appendDebugComment($response);
         }
     }
 
@@ -91,5 +95,18 @@ final readonly class ResponseHookSubscriber implements EventSubscriberInterface
         $contentType = $response->headers->get('Content-Type');
 
         return null === $contentType || str_contains(strtolower($contentType), 'text/html');
+    }
+
+    private function appendDebugComment(Response $response): void
+    {
+        $comment = $this->debugCollector?->htmlComment() ?? '';
+        $content = $response->getContent();
+
+        if ('' === $comment || !is_string($content)) {
+            return;
+        }
+
+        $response->setContent($content.$comment);
+        $response->headers->remove('Content-Length');
     }
 }

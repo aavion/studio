@@ -39,6 +39,10 @@ message:
         summary: 'Erweitert den universellen Twig-View-Kontext vor dem Rendering.'
       content_render_context:
         summary: 'Erweitert den Twig-Kontext für ein öffentliches Content-Rendering.'
+      content_rendered:
+        summary: 'Passt den generierten HTML-Output eines öffentlichen Content-Renderings an, bevor die Response zurückgegeben wird.'
+      navigation_builder:
+        summary: 'Erweitert Navigationspunkte, bevor Baumhierarchie, Sortierung und Render-Slices aufgelöst werden.'
       response_headers:
         summary: 'Passt HTTP-Response-Header an, bevor die Response gesendet wird.'
       output_generated:
