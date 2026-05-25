@@ -78,6 +78,7 @@
 - Hardened public hook dispatching with a provider-based registry, translation-key hook metadata, a `PublicEventDispatcher` that returns structured issues for listener failures, and a Twig `studio_event_hooks()` debug/admin metadata helper.
 - Added the internal `PublicHookFailedEvent` diagnostic signal so later package lifecycle and logging layers can react to hook listener failures without making package deactivation a dispatcher side effect.
 - Added the first content rendering hook, `ContentRenderContextEvent`, so themes and packages can extend per-content Twig variables without replacing controller or resolver flow.
+- Reorganized `dev/CLASSMAP.md` into stable domain sections with semantic table columns and explicit maintenance rules for deterministic project navigation as the callable index grows.
 - Split package asset sync internals into focused filesystem, mirror, and registry writer helpers while keeping `PackageAssetSyncer` behavior and public construction unchanged.
 - Split the deterministic PHPUnit database seeder into small config, security, extension, schema, content, and menu seed slices behind the existing `TestDatabaseSeeder` facade.
 - Split the public content functional tests by rendering, localization, access, redirect, and error-page behavior, with shared database helpers moved to a controller test trait.
