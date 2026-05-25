@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Content\Event\ContentRenderContextEvent;
 use App\Core\Access\AccessLevel;
 use Doctrine\DBAL\Connection;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class PublicContentControllerTest extends WebTestCase
@@ -127,6 +129,28 @@ final class PublicContentControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'First seeded article');
+    }
+
+    public function testItDispatchesContentRenderContextHook(): void
+    {
+        $client = self::createClient();
+        $eventDispatcher = self::getContainer()->get(EventDispatcherInterface::class);
+        $calls = [];
+        $eventDispatcher->addListener(ContentRenderContextEvent::class, static function (ContentRenderContextEvent $event) use (&$calls): void {
+            $calls[] = [
+                'title' => $event->contentView()->title(),
+                'path' => $event->request()->getPathInfo(),
+            ];
+            $event->set('package_marker', 'demo');
+        });
+
+        $client->request('GET', '/news/first-update');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame([[
+            'title' => 'First seeded article',
+            'path' => '/news/first-update',
+        ]], $calls);
     }
 
     public function testItReturnsNotFoundForMissingContent(): void

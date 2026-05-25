@@ -30,6 +30,21 @@ message:
     discovery_completed: 'Paket-Discovery hat %count% Kandidat(en) gefunden.'
     validation_completed: 'Paket "%package%" hat die Validierung bestanden.'
     copy_plan_created: 'Paket-Kopierplan enthält %count% Datei(en).'
+  event:
+    hook:
+      invalid: 'Event-Hook "%event%" ist keine gültige öffentliche Hook-Definition.'
+      unregistered: 'Event-Hook "%event%" ist nicht als öffentlicher Paket-Hook registriert.'
+      listener_failed: 'Event-Hook "%event%" ist beim Benachrichtigen eines Listeners fehlgeschlagen.'
+      view_context:
+        summary: 'Erweitert den universellen Twig-View-Kontext vor dem Rendering.'
+      content_render_context:
+        summary: 'Erweitert den Twig-Kontext für ein öffentliches Content-Rendering.'
+      package_asset_sync_started:
+        summary: 'Beobachtet die aktiven Pakete, bevor Paket-Assets synchronisiert werden.'
+      package_asset_registry_build:
+        summary: 'Ergänzt Paket-Asset-Registry-Beiträge, bevor CSS- und JavaScript-Registries geschrieben werden.'
+      package_asset_sync_completed:
+        summary: 'Beobachtet Paket-Asset-Sync-Metriken nach dem Schreiben der Registries.'
   lint:
     php_unreadable: 'PHP-Quelle kann nicht gelesen werden.'
     php_syntax_error: 'PHP-Syntaxprüfung fehlgeschlagen.'

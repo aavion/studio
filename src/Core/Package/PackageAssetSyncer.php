@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Core\Event\PublicEventDispatcher;
 use App\Core\Filesystem\PathGuard;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\Event\PackageAssetRegistryBuildEvent;
+use App\Core\Package\Event\PackageAssetSyncCompletedEvent;
+use App\Core\Package\Event\PackageAssetSyncStartedEvent;
 use App\Core\Workflow\OperationIssue;
 use App\Core\Workflow\OperationResult;
 use RecursiveDirectoryIterator;
@@ -36,6 +40,7 @@ final readonly class PackageAssetSyncer
         private PackageAssetPathRewriter $pathRewriter = new PackageAssetPathRewriter(),
         private PackageAssetRegistryBuilder $registryBuilder = new PackageAssetRegistryBuilder(),
         private PathGuard $pathGuard = new PathGuard(),
+        private ?PublicEventDispatcher $eventDispatcher = null,
     ) {
     }
 
@@ -70,6 +75,11 @@ final readonly class PackageAssetSyncer
     private function doSync(iterable $packages): OperationResult
     {
         $packages = $this->sortedPackages($packages);
+        $started = $this->dispatchHook(new PackageAssetSyncStartedEvent($packages));
+        if (null !== $started) {
+            return $started;
+        }
+
         $this->resetMirrorDirectory();
 
         $contributions = [];
@@ -116,6 +126,22 @@ final readonly class PackageAssetSyncer
             }
         }
 
+        if (null !== $this->eventDispatcher) {
+            $registryEvent = new PackageAssetRegistryBuildEvent($packages, $contributions);
+            $registryResult = $this->eventDispatcher->dispatch($registryEvent, [
+                'operation' => 'package_asset_sync',
+                'phase' => 'registry_build',
+            ]);
+            if (!$registryResult->isSuccess()) {
+                return OperationResult::failed($registryResult->issues(), [
+                    'packages' => count($packages),
+                    'hook' => $registryEvent::class,
+                ]);
+            }
+
+            $contributions = $registryEvent->contributions();
+        }
+
         $this->writeRegistries($contributions);
 
         $context = [
@@ -126,12 +152,47 @@ final readonly class PackageAssetSyncer
             'tailwind_sources' => $this->countByType($contributions, PackageAssetContribution::TYPE_TAILWIND_SOURCE),
         ];
 
+        $completed = $this->dispatchHook(new PackageAssetSyncCompletedEvent($packages, $context));
+        if (null !== $completed) {
+            return $completed;
+        }
+
         return OperationResult::success($context, $context, [
             Message::info(MessageCode::PACKAGE_ASSET_SYNC_COMPLETED, MessageKey::PACKAGE_ASSET_SYNC_COMPLETED, [
                 '%assets%' => (string) $mirroredAssets,
                 '%packages%' => (string) count($packages),
             ], $context),
         ]);
+    }
+
+    /**
+     * @return OperationResult<array{packages: int, mirrored_assets: int, css_entries: int, javascript_entries: int, tailwind_sources: int}>|null
+     */
+    private function dispatchHook(PackageAssetSyncStartedEvent|PackageAssetSyncCompletedEvent $event): ?OperationResult
+    {
+        if (null === $this->eventDispatcher) {
+            return null;
+        }
+
+        $phase = $event instanceof PackageAssetSyncCompletedEvent ? 'completed' : 'started';
+        $result = $this->eventDispatcher->dispatch($event, [
+            'operation' => 'package_asset_sync',
+            'phase' => $phase,
+        ]);
+        if ($result->isSuccess()) {
+            return null;
+        }
+
+        $context = [
+            'packages' => count($event->packages()),
+            'hook' => $event::class,
+        ];
+
+        if ($event instanceof PackageAssetSyncCompletedEvent) {
+            $context += $event->metrics();
+        }
+
+        return OperationResult::failed($result->issues(), $context);
     }
 
     /**

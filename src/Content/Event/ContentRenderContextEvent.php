@@ -2,20 +2,33 @@
 
 declare(strict_types=1);
 
-namespace App\View;
+namespace App\Content\Event;
 
+use App\Content\Read\PublishedContentView;
 use App\Core\Event\PublicEventInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\EventDispatcher\Event;
 
-final class ViewContextEvent extends Event implements PublicEventInterface
+final class ContentRenderContextEvent extends Event implements PublicEventInterface
 {
-    public const NAME = self::class;
-
     /**
      * @param array<string, mixed> $context
      */
-    public function __construct(private array $context)
+    public function __construct(
+        private readonly PublishedContentView $contentView,
+        private readonly Request $request,
+        private array $context,
+    ) {
+    }
+
+    public function contentView(): PublishedContentView
     {
+        return $this->contentView;
+    }
+
+    public function request(): Request
+    {
+        return $this->request;
     }
 
     /**

@@ -4,12 +4,19 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Package;
 
+use App\Core\Event\PublicEventDispatcher;
+use App\Core\Event\PublicEventHookRegistry;
+use App\Core\Package\Event\PackageAssetRegistryBuildEvent;
+use App\Core\Package\Event\PackageAssetSyncCompletedEvent;
+use App\Core\Package\Event\PackageAssetSyncStartedEvent;
+use App\Core\Package\PackageAssetContribution;
 use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageAssetSyncer;
 use App\Core\Package\PackageScope;
 use App\Core\Workflow\OperationStatus;
 use App\Tests\Support\FilesystemTestHelper;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 final class PackageAssetSyncerTest extends TestCase
 {
@@ -113,6 +120,62 @@ final class PackageAssetSyncerTest extends TestCase
         self::assertSame(0, $result->context()['mirrored_assets']);
         self::assertSame(1, $result->context()['tailwind_sources']);
         self::assertStringContainsString('@source "../../../packages/templates-only/templates";', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+    }
+
+    public function testItDispatchesPackageAssetHooksAndAcceptsRegistryContributions(): void
+    {
+        $this->writeTestFile($this->root, 'packages/demo/assets/module.css', '.demo {}');
+        $this->writeTestFile($this->root, 'packages/demo/assets/generated.css', '.generated {}');
+
+        $events = [];
+        $dispatcher = new EventDispatcher();
+        $dispatcher->addListener(PackageAssetSyncStartedEvent::class, static function (PackageAssetSyncStartedEvent $event) use (&$events): void {
+            $events[] = 'started:'.$event->packages()[0]->identifier();
+        });
+        $dispatcher->addListener(PackageAssetRegistryBuildEvent::class, static function (PackageAssetRegistryBuildEvent $event) use (&$events): void {
+            $events[] = 'registry:'.count($event->contributions());
+            $event->addContribution(PackageAssetContribution::css(
+                'demo',
+                PackageScope::Module,
+                'assets/packages/demo/generated.css',
+            ));
+        });
+        $dispatcher->addListener(PackageAssetSyncCompletedEvent::class, static function (PackageAssetSyncCompletedEvent $event) use (&$events): void {
+            $events[] = 'completed:'.$event->metrics()['css_entries'];
+        });
+
+        $result = (new PackageAssetSyncer(
+            $this->root,
+            eventDispatcher: new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry()),
+        ))->sync([
+            new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
+        ]);
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame(['started:demo', 'registry:1', 'completed:2'], $events);
+        self::assertSame(2, $result->context()['css_entries']);
+        self::assertStringContainsString('@import "../../packages/demo/generated.css";', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+    }
+
+    public function testItReportsHookListenerFailuresWithoutThrowing(): void
+    {
+        $this->writeTestFile($this->root, 'packages/demo/assets/module.css', '.demo {}');
+
+        $dispatcher = new EventDispatcher();
+        $dispatcher->addListener(PackageAssetRegistryBuildEvent::class, static function (): void {
+            throw new \RuntimeException('Subscriber failed');
+        });
+
+        $result = (new PackageAssetSyncer(
+            $this->root,
+            eventDispatcher: new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry()),
+        ))->sync([
+            new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
+        ]);
+
+        self::assertSame(OperationStatus::Failed, $result->status());
+        self::assertSame('event.hook_listener_failed', $result->firstIssue()?->code());
+        self::assertSame(PackageAssetRegistryBuildEvent::class, $result->firstIssue()?->context()['event']);
     }
 
     public function testItRemovesDeactivatedPackageMirrorAndRegistryEntries(): void

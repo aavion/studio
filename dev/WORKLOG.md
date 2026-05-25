@@ -25,7 +25,7 @@
   - [ ] Admin interface and setup UI
   - [ ] Event hooks and Messenger conventions
   - [ ] Package discovery and lifecycle
-  - Open: first dashboard widgets; setup UI; immutable event payload default; package activation/install/uninstall flows; package uninstall/data cleanup execution.
+  - Open: first dashboard widgets; setup UI; package activation/install/uninstall flows; package uninstall/data cleanup execution; package service loading for active packages; Messenger mode/routing conventions.
 
 - [ ] **0.3.x Structured authoring and resolver foundation**
   - [ ] Schema-driven content fields
@@ -71,6 +71,11 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-25
+- Added the first public EventDispatcher hook surface for packages: `PublicEventInterface`, hook descriptors/registry, class-name based `ViewContextEvent`, package asset sync observe/extend events, subscriber coverage, and package developer documentation.
+- Clarified the hook architecture direction: Symfony EventDispatcher and Messenger stay the implementation surface, public hooks remain typed/domain-specific, and adding new hooks should require only a small event class, dispatch point, registry descriptor, tests, and docs.
+- Hardened public hook dispatching with a provider-based registry, translation-key hook metadata, a `PublicEventDispatcher` that returns structured issues for listener failures, and a Twig `studio_event_hooks()` debug/admin metadata helper.
+- Added the internal `PublicHookFailedEvent` diagnostic signal so later package lifecycle and logging layers can react to hook listener failures without making package deactivation a dispatcher side effect.
+- Added the first content rendering hook, `ContentRenderContextEvent`, so themes and packages can extend per-content Twig variables without replacing controller or resolver flow.
 - Completed the package-scoped template baseline: canonical Twig namespaces (`@frontend`, `@backend`, `@root`, `@provider`), `system-template` scope, package template path validation, provider fallbacks, and CodeMirror as the native editor provider.
 - Reorganized the native template scaffold into frontend/backend/provider areas with root `base.html.twig`, generic frontend error fallbacks, shared macros, layout variants, and granular partials for future theme overrides.
 - Added the central HTTP error renderer with `/system/error-pages/{status}` content fallback, frontend status/default templates, anonymous `401` login rendering, and a production exception subscriber for HTTP exceptions.

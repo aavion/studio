@@ -33,6 +33,9 @@ final class MessageCode
     public const PACKAGE_COPY_SOURCE_SYMLINK = 'package.copy_source_symlink';
     public const PACKAGE_ASSET_SYNC_COMPLETED = 'package.asset_sync_completed';
     public const PACKAGE_ASSET_SYNC_FAILED = 'package.asset_sync_failed';
+    public const EVENT_HOOK_INVALID = 'event.hook_invalid';
+    public const EVENT_HOOK_UNREGISTERED = 'event.hook_unregistered';
+    public const EVENT_HOOK_LISTENER_FAILED = 'event.hook_listener_failed';
 
     public const LINT_PHP_UNREADABLE = 'lint.php_unreadable';
     public const LINT_PHP_SYNTAX_ERROR = 'lint.php_syntax_error';
