@@ -16,11 +16,11 @@ final class ViewTwigExtensionTest extends KernelTestCase
         $twig = self::getContainer()->get(Environment::class);
         $globals = $twig->getGlobals();
         $html = $twig->createTemplate(
-            '{{ studio_view_context().system_package.name }}|{{ studio_macro_template("core", "ui") }}|{{ "**ok**"|studio_markdown }}',
+            '{{ studio_view_context().system_package.name }}|{{ studio_macro_template("core", "ui") }}|{{ studio_event_hooks()|length }}|{{ "**ok**"|studio_markdown }}',
         )->render();
 
         self::assertArrayHasKey('studio_view', $globals);
-        self::assertSame('System|@root/macros/core/ui.html.twig|<p><strong>ok</strong></p>', $html);
+        self::assertSame('System|@root/macros/core/ui.html.twig|7|<p><strong>ok</strong></p>', $html);
     }
 
     public function testItRendersNativeProviderNamespaceFallbacks(): void

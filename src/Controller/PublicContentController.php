@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Content\Event\ContentRenderContextEvent;
 use App\Content\Read\PublishedContentResolver;
 use App\Content\Read\PublishedContentResolveStatus;
 use App\Content\Routing\ContentRedirectResolveStatus;
@@ -12,6 +13,7 @@ use App\Content\Routing\ContentRouteLocalization;
 use App\Content\Routing\ContentRoutePath;
 use App\Content\Routing\ContentRouteGuard;
 use App\Core\Access\AccessActor;
+use App\Core\Event\PublicEventDispatcher;
 use App\Core\Message\MessageException;
 use App\View\Http\HttpErrorRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,6 +30,7 @@ final class PublicContentController extends AbstractController
         private readonly ContentRouteLocalization $localization,
         private readonly ContentRouteGuard $routeGuard,
         private readonly HttpErrorRenderer $httpError,
+        private readonly PublicEventDispatcher $eventDispatcher,
     ) {
     }
 
@@ -119,9 +122,25 @@ final class PublicContentController extends AbstractController
         $view = $result->view();
 
         if (null !== $view) {
-            return $this->render('@frontend/content/entity.html.twig', [
+            $context = [
                 'content_view' => $view,
+            ];
+            $event = new ContentRenderContextEvent($view, $request, $context);
+            $dispatchResult = $this->eventDispatcher->dispatch($event, [
+                'operation' => 'content_render',
+                'path' => $path,
+                'language' => $language,
             ]);
+            $context = $event->context();
+
+            if (!$dispatchResult->isSuccess()) {
+                $context['hook_issues'] = array_map(
+                    static fn ($issue): array => $issue->toArray(),
+                    $dispatchResult->issues(),
+                );
+            }
+
+            return $this->render('@frontend/content/entity.html.twig', $context);
         }
 
         if (PublishedContentResolveStatus::ContextUnavailable === $result->status()) {

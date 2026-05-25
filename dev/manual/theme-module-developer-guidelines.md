@@ -83,6 +83,50 @@ packages/<package-slug>/templates/macros/<package-slug>/*.html.twig
 
 Packages must not write macro files directly under `templates/macros/`, under another package slug, or under `templates/macros/core/**` unless they declare `system-template`.
 
+## Event Hooks
+
+Packages may subscribe only to public hooks surfaced by `App\Core\Event\PublicEventHookRegistry`. The registry is the source of truth for stable package extension contracts. Other Symfony events can still exist inside the application, but they are internal unless listed there.
+
+Core dispatch points use `App\Core\Event\PublicEventDispatcher`, which converts listener failures into structured operation issues and emits the internal `App\Core\Event\PublicHookFailedEvent`. Package subscribers should still avoid throwing where a recoverable result is possible. Unrecoverable package listener failures may cause the package lifecycle to deactivate the package once package ownership can be resolved safely.
+
+Current public hooks:
+
+- `App\View\ViewContextEvent`: extend the universal Twig context.
+- `App\Content\Event\ContentRenderContextEvent`: extend Twig context for one public content render.
+- `App\View\Event\ResponseHeadersEvent`: adjust HTTP response headers before sending.
+- `App\View\Event\OutputGeneratedEvent`: adjust generated HTML output after rendering.
+- `App\Core\Package\Event\PackageAssetSyncStartedEvent`: observe the active package set before asset sync.
+- `App\Core\Package\Event\PackageAssetRegistryBuildEvent`: add CSS, JavaScript, or Tailwind registry contributions before registries are written.
+- `App\Core\Package\Event\PackageAssetSyncCompletedEvent`: observe package asset sync metrics after registry generation.
+
+Subscribers should use Symfony-native event subscription and the event class name:
+
+```php
+use App\View\ViewContextEvent;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+
+final class PackageSubscriber implements EventSubscriberInterface
+{
+    public static function getSubscribedEvents(): array
+    {
+        return [ViewContextEvent::class => 'onViewContext'];
+    }
+
+    public function onViewContext(ViewContextEvent $event): void
+    {
+        $event->set('package_demo', ['enabled' => true]);
+    }
+}
+```
+
+Developers can inspect the currently surfaced hooks through `studio_event_hooks()` in Twig. This helper is intended for debug comments and future admin diagnostics, not for package control flow.
+
+Output hooks should stay narrow. Prefer Twig context hooks and templates for normal rendering work; use `OutputGeneratedEvent` only when the final HTML string is the correct boundary.
+
+Do not expect package hooks for template path collection or runtime asset collection. Template namespaces are resolved through the package/theme lifecycle, and active package assets are mirrored and compiled through AssetSync and `studio:assets:rebuild`.
+
+Packages must not define new core permission rules dynamically. A package can require existing ACL levels, groups, roles, or manifest capabilities for its routes and UI, but the security model itself stays core-owned.
+
 ## Admin UI and UX guidelines
 
 The admin interface should feel quiet, dense, predictable, and work-focused. Avoid marketing-style layouts, oversized hero sections, decorative page cards, and one-off interaction patterns.

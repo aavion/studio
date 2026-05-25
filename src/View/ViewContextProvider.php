@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\View;
 
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use App\Core\Event\PublicEventDispatcher;
 
 final readonly class ViewContextProvider
 {
     public function __construct(
         private SystemPackageMetadataProvider $systemPackage,
         private PackageMacroRegistry $macroRegistry,
-        private EventDispatcherInterface $eventDispatcher,
+        private PublicEventDispatcher $eventDispatcher,
     ) {
     }
 
@@ -31,7 +31,15 @@ final readonly class ViewContextProvider
             ],
         ]);
 
-        $this->eventDispatcher->dispatch($event, ViewContextEvent::NAME);
+        $result = $this->eventDispatcher->dispatch($event, [
+            'operation' => 'view_context',
+        ]);
+        if (!$result->isSuccess()) {
+            $event->set('hook_issues', array_map(
+                static fn ($issue): array => $issue->toArray(),
+                $result->issues(),
+            ));
+        }
 
         return $event->context();
     }

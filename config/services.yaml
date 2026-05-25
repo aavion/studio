@@ -14,6 +14,10 @@ services:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
+    _instanceof:
+        App\Core\Event\EventHookDescriptorProviderInterface:
+            tags: ['studio.event_hook_provider']
+
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
     App\:
@@ -33,6 +37,10 @@ services:
     App\Core\Package\PackageAssetSyncer:
         arguments:
             $projectDir: '%kernel.project_dir%'
+
+    App\Core\Event\PublicEventHookRegistry:
+        arguments:
+            $providers: !tagged_iterator studio.event_hook_provider
 
     App\Core\Package\ActivePackageAssetProviderInterface:
         alias: App\Core\Package\ActivePackageAssetProvider

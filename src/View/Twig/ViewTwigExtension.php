@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\View\Twig;
 
+use App\Core\Event\EventHookDescriptor;
+use App\Core\Event\PublicEventHookRegistry;
 use App\View\MarkdownRenderer;
 use App\View\PackageMacroRegistry;
 use App\View\ViewContextProvider;
@@ -18,6 +20,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         private readonly ViewContextProvider $contextProvider,
         private readonly PackageMacroRegistry $macroRegistry,
         private readonly MarkdownRenderer $markdownRenderer,
+        private readonly PublicEventHookRegistry $eventHookRegistry,
     ) {
     }
 
@@ -40,6 +43,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             new TwigFunction('studio_view_context', $this->contextProvider->context(...)),
             new TwigFunction('studio_macro_namespaces', $this->macroRegistry->namespaces(...)),
             new TwigFunction('studio_macro_template', $this->macroRegistry->template(...)),
+            new TwigFunction('studio_event_hooks', $this->eventHooks(...)),
         ];
     }
 
@@ -51,5 +55,16 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         return [
             new TwigFilter('studio_markdown', $this->markdownRenderer->render(...), ['is_safe' => ['html']]),
         ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function eventHooks(): array
+    {
+        return array_map(
+            static fn (EventHookDescriptor $hook): array => $hook->toArray(),
+            $this->eventHookRegistry->hooks(),
+        );
     }
 }

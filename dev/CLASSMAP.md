@@ -1,7 +1,7 @@
 # Developer Class Map
 
 > **Status**: Active  
-> **Updated**: 2026-05-24  
+> **Updated**: 2026-05-25  
 > **Owner**: Core  
 > **Purpose:** This document tracks callable entry points (services, commands, controllers, Twig components, Stimulus controllers). Keep it up to date as new classes are added or interfaces change. This document is meant to evolve alongside the codebase—treat it as a living index for developers to quickly discover callables without grepping through the project.  
 
@@ -68,13 +68,20 @@
 | N/A | `App\Core\Message\MessageException` | InvalidArgumentException subtype carrying a structured message with log level, code, translation key, parameters, and context. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Message/MessageExceptionTest.php` |
 | N/A | `App\Core\Message\MessageKey` | Core-owned translation-key catalogue for operation issues, logs, output, validation, and future localization. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Message/MessageKeyTest.php` |
 | N/A | `App\Core\Message\MessageLevel` | Enum for log-filterable message levels: error, warning, info, and debug. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Message/MessageTest.php` |
+| N/A | `App\Core\Event\PublicEventInterface` | Marker for documented public events that packages may subscribe to as stable extension hooks. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Core/Event/PublicEventHookRegistryTest.php` |
+| N/A | `App\Core\Event\EventHookMode` | Enum for public hook behavior modes: observe, extend, and replace. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Core/Event/PublicEventHookRegistryTest.php` |
+| N/A | `App\Core\Event\EventHookDescriptor` | Descriptor for one surfaced public hook, including event class, domain, mode, summary translation key, mutability, and stoppability. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Core/Event/PublicEventHookRegistryTest.php` |
+| N/A | `App\Core\Event\EventHookDescriptorProviderInterface`, `App\Core\Event\CoreEventHookProvider` | Provider contract and native provider for registering public hook descriptors without editing the registry itself. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Core/Event/PublicEventHookRegistryTest.php` |
+| N/A | `App\Core\Event\PublicEventHookRegistry` | Aggregates public package hook descriptors for documentation, tooling, debug output, and future admin/package inspection UI. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Core/Event/PublicEventHookRegistryTest.php` |
+| N/A | `App\Core\Event\PublicEventDispatcher`, `App\Core\Event\PublicEventDispatchResult` | Safe public hook dispatcher that rejects unregistered hooks, converts listener failures into structured operation issues, and emits internal failure diagnostics. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Core/Event/PublicEventDispatcherTest.php` |
+| Event payload | `App\Core\Event\PublicHookFailedEvent` | Internal diagnostic event emitted after a public hook listener failure so lifecycle/logging layers can react without turning deactivation into a dispatcher side effect. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Core/Event/PublicEventDispatcherTest.php` |
 | N/A | `App\Core\Package\PackageCandidate` | Value object for a discovered manifest-backed package candidate. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageDiscoveryTest.php` |
 | N/A | `App\Core\Package\PackageAssetContribution` | Value object for CSS, JavaScript, static asset, and Tailwind-source contributions from active packages. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Core/Package/PackageAssetRegistryBuilderTest.php` |
 | N/A | `App\Core\Package\ActivePackageAssetProviderInterface` | Contract for reading active packages that participate in asset sync, keeping commands testable and provider failures explicit. | `dev/manual/frontend-asset-snippets.md` | `tests/Command/AssetRebuildCommandTest.php` |
 | N/A | `App\Core\Package\ActivePackageAssetProvider` | Reads active real packages from the database for package asset sync while ignoring virtual system package records. | `dev/manual/frontend-asset-snippets.md` | N/A |
 | N/A | `App\Core\Package\PackageAssetSyncAction` | Operation action that mirrors active package assets and rewrites generated package CSS/JS registries. | `dev/manual/frontend-asset-snippets.md` | `tests/Core/Package/PackageAssetSyncerTest.php` |
 | N/A | `App\Core\Package\PackageAssetSyncPackage` | Value object for one active package participating in asset sync with a safe identifier, directory, and scopes. | `dev/manual/frontend-asset-snippets.md` | `tests/Core/Package/PackageAssetSyncerTest.php` |
-| N/A | `App\Core\Package\PackageAssetSyncer` | Mirrors active package assets into `assets/packages/`, rewrites package-authored CSS/JS paths, and rebuilds package asset registries. | `dev/manual/frontend-asset-snippets.md` | `tests/Core/Package/PackageAssetSyncerTest.php` |
+| N/A | `App\Core\Package\PackageAssetSyncer` | Mirrors active package assets into `assets/packages/`, dispatches public package asset hooks, rewrites package-authored CSS/JS paths, and rebuilds package asset registries. | `dev/manual/frontend-asset-snippets.md` | `tests/Core/Package/PackageAssetSyncerTest.php` |
 | N/A | `App\Core\Package\PackageAssetPathRewriter` | Rewrites package-authored CSS URLs and JavaScript imports from private package source paths to public mirrored package asset paths. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Core/Package/PackageAssetPathRewriterTest.php` |
 | N/A | `App\Core\Package\PackageAssetRegistryBuilder` | Builds deterministic generated CSS and JavaScript registries for active package asset buckets. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/Core/Package/PackageAssetRegistryBuilderTest.php` |
 | N/A | `App\Core\Package\PackageDiscovery` | Discovers application, scoped package, and cached import manifests from standard package locations. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageDiscoveryTest.php` |
@@ -85,6 +92,12 @@
 | N/A | `App\Core\Package\PackageValidator` | Validates discovered package candidates for required files, directories, feature inventory, and optional syntax checks before dry-run planning. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Package/PackageValidatorTest.php` |
 | N/A | `App\Core\Package\ExtensionPackageStatus` | Enum for managed extension package activation states. | `dev/draft/0.2.x-PluginModules.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | N/A | `App\Core\Package\PackageScope` | Enum for allowed package scopes such as frontend theme, backend theme, module, captcha provider, and editor provider. | `dev/draft/0.2.x-PluginModules.md` | `tests/Core/Package/PackageScopeTest.php`, `tests/Entity/CoreDatabaseModelTest.php` |
+| Event payload | `App\Core\Package\Event\PackageAssetSyncStartedEvent` | Public observe hook dispatched before active package assets are synchronized. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Core/Package/PackageAssetSyncerTest.php` |
+| Event payload | `App\Core\Package\Event\PackageAssetRegistryBuildEvent` | Public mutable extend hook that allows subscribers to add package asset registry contributions before generated registries are written. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Core/Package/PackageAssetSyncerTest.php` |
+| Event payload | `App\Core\Package\Event\PackageAssetSyncCompletedEvent` | Public observe hook dispatched with asset sync metrics after generated registries are written. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Core/Package/PackageAssetSyncerTest.php` |
+| Event payload | `App\Content\Event\ContentRenderContextEvent` | Public mutable extend hook for adding Twig variables to one public content render. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/Controller/PublicContentControllerTest.php` |
+| Event payload | `App\View\Event\ResponseHeadersEvent` | Public mutable extend hook for adding or removing HTTP response headers before sending the main response. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/View/Http/ResponseHookSubscriberTest.php` |
+| Event payload | `App\View\Event\OutputGeneratedEvent` | Public mutable extend hook for adjusting generated HTML output after rendering and before sending the main response. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/View/Http/ResponseHookSubscriberTest.php` |
 | N/A | `App\Core\Workflow\OperationIssue` | Value object for structured recoverable-operation issues backed by leveled messages. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationIssueTest.php` |
 | N/A | `App\Core\Workflow\OperationResult` | Value object for recoverable workflow results with success, invalid, review, blocked, failed states, issues, messages, and context. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
 | N/A | `App\Core\Workflow\OperationStatus` | Enum for shared recoverable workflow result states. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Workflow/OperationResultTest.php` |
@@ -153,16 +166,17 @@
 | N/A | `App\View\MarkdownRenderer` | Small safe Markdown renderer for native fallback templates and generic content field rendering. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/MarkdownRendererTest.php`, `tests/View/Twig/ViewTwigExtensionTest.php` |
 | N/A | `App\View\SystemPackageMetadataProvider` | Exposes immutable virtual system package metadata from the root `.manifest` for future package chooser UI and Twig context. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/SystemPackageMetadataProviderTest.php` |
 | N/A | `App\View\PackageMacroRegistry` | Provides namespaced core macro template paths and future package macro namespace slots. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/PackageMacroRegistryTest.php`, `tests/View/Twig/ViewTwigExtensionTest.php` |
-| Event payload | `App\View\ViewContextEvent` | Event used by active package extensions to add universal Twig view context before rendering. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/ViewContextProviderTest.php` |
+| Event payload | `App\View\ViewContextEvent` | Public mutable event used by active package extensions to add universal Twig view context before rendering. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/View/ViewContextProviderTest.php` |
 | N/A | `App\View\ViewContextProvider` | Builds the universal Twig view context with system package metadata, macro namespaces, and event-collected extension variables. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/ViewContextProviderTest.php`, `tests/View/Twig/ViewTwigExtensionTest.php` |
-| Twig extension | `App\View\Twig\ViewTwigExtension` | Exposes `studio_view`, view context helpers, macro namespace helpers, and the `studio_markdown` filter to Twig. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/Twig/ViewTwigExtensionTest.php` |
+| Twig extension | `App\View\Twig\ViewTwigExtension` | Exposes `studio_view`, view context helpers, macro namespace helpers, public hook descriptors, and the `studio_markdown` filter to Twig. | `dev/draft/0.1.x-ThemeEngine.md` | `tests/View/Twig/ViewTwigExtensionTest.php` |
+| Event subscriber | `App\View\Http\ResponseHookSubscriber` | Dispatches public response header and generated HTML output hooks for the main response while keeping failed hook mutations out of the final response. | `dev/draft/0.2.x-EventHooksBuses.md` | `tests/View/Http/ResponseHookSubscriberTest.php` |
 
 
 ## 2. Controllers
 
 | Name | Class | Description | Docs | Test-Class |
 |------|-------|-------------|------| ---------- |
-| Route `content_home`, `content_show` | `App\Controller\PublicContentController` | Low-priority public content delivery controller for root and catch-all content paths. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Controller/PublicContentControllerTest.php` |
+| Route `content_home`, `content_show` | `App\Controller\PublicContentController` | Low-priority public content delivery controller for root and catch-all content paths, including public content render context hook dispatch. | `dev/draft/0.1.x-StaticDynamicContent.md` | `tests/Controller/PublicContentControllerTest.php` |
 | Stimulus `chart` | `assets/controllers/chart_controller.js` | Lazily renders ApexCharts instances from Stimulus values and destroys them on disconnect. | N/A | N/A |
 | Stimulus `code-editor` | `assets/controllers/code_editor_controller.js` | Lazily mounts CodeMirror editors with CSS, HTML, JavaScript, JSX, JSON, Markdown, PHP, TypeScript, and TSX language support. | N/A | N/A |
 
