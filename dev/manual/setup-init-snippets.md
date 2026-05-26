@@ -45,6 +45,8 @@ Symfony environment resolution should match Symfony precedence as closely as pra
 - dry-run planning without writing env files, running commands, or seeding the database;
 - setup action logs with halt-on-error results.
 
+Setup subprocesses provide a local `COMPOSER_HOME` under `var/composer-home` when no explicit Composer home is present, and fall back to `var` as `HOME` when the web server environment omits it. This keeps web setup compatible with Composer without relying on shell-only environment variables.
+
 Use `--no-interaction` for scripted CLI setup with defaults and explicit options. `--json` is also non-interactive so automation receives machine-readable output only.
 
 Interactive CLI setup asks for the admin password twice. Non-interactive setup uses the provided `--admin-password` value directly. Password reset displays the matched user's UID, username, email, and status before prompting for confirmation and the new password; scripted reset runs should pass `--confirm` and `--new-password`.

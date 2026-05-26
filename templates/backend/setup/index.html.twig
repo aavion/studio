@@ -14,7 +14,7 @@
         <h2>{{ 'setup.dashboard.foundation_title'|trans }}</h2>
         <p class="studio-muted">{{ 'setup.dashboard.foundation_text'|trans }}</p>
 
-        <form id="setup-web" class="studio-backend-form" method="post" action="{{ path('backend_setup_index') }}">
+        <form id="setup-web" class="studio-backend-form" method="post" action="{{ path('backend_setup_index') }}" data-turbo="false">
             <input type="hidden" name="_form_id" value="setup-web">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('setup-web') }}">
             {% include '@backend/partials/forms/_errors.html.twig' with {errors: setup_errors.__form|default([])} only %}

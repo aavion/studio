@@ -35,6 +35,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorExists('.studio-setup-shell');
             self::assertSelectorTextContains('h1', 'Setup');
             self::assertSelectorExists('form#setup-web');
+            self::assertSelectorExists('form#setup-web[data-turbo="false"]');
             self::assertSelectorExists('input[name="_csrf_token"]');
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);

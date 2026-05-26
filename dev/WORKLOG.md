@@ -72,6 +72,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Added local `COMPOSER_HOME`/`HOME` fallbacks to setup subprocess execution so web setup can run Composer even when the web server environment omits shell home variables.
+- Disabled Turbo interception on the first web setup form so non-redirect POST responses can render setup validation, dry-run results, and ActionLog output in the browser.
 - Added a first functional web setup form on `/setup` that stays DB-free while rendering, submits through the shared `SetupRunner`, supports CSRF-protected dry-runs for local verification, and renders ActionLog step results with localized labels.
 - Made generated Admin Settings forms functional with CSRF-protected POST handling, neutral form submission casting/validation, persisted core settings, persisted package settings, translated validation feedback, and backend flash rendering.
 - Added a reusable form-definition foundation outside the backend namespace, wired core and package setting definitions into it, rendered the first typed Admin Settings forms with validation metadata, and prepared the native captcha provider field slot for future provider packages.
