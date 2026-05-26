@@ -33,6 +33,7 @@ final class BackendControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(401);
         self::assertSelectorTextContains('h1', 'Sign in');
         self::assertSelectorTextContains('.studio-auth-notice', 'This content is only available after signing in with sufficient access.');
+        self::assertSelectorExists('input[name="_target_path"][value="/admin"]');
     }
 
     public function testAdminRouteAllowsAccessLevelEight(): void

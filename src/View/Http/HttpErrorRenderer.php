@@ -53,7 +53,9 @@ final readonly class HttpErrorRenderer
         $variables = $this->variables($statusCode, $request, $exception, $context);
 
         if (Response::HTTP_UNAUTHORIZED === $statusCode && !$this->isAuthenticated()) {
-            return $this->renderTemplate('@frontend/user/login.html.twig', $variables, $statusCode);
+            return $this->renderTemplate('@frontend/user/login.html.twig', $variables + [
+                'return_to' => $this->returnTo($request),
+            ], $statusCode);
         }
 
         $renderFailure = null;
@@ -168,6 +170,13 @@ final readonly class HttpErrorRenderer
         }
 
         return $request->getLocale();
+    }
+
+    private function returnTo(Request $request): ?string
+    {
+        $uri = $request->getRequestUri();
+
+        return str_starts_with($uri, '/') && !str_starts_with($uri, '//') ? $uri : null;
     }
 
     private function isAuthenticated(): bool
