@@ -70,6 +70,9 @@ ui:
       placeholder: 'Invitation acceptance will let invited users choose a username and password from their email link.'
     logout:
       title: 'Sign out'
+      placeholder: 'Confirm that you want to end your session.'
+      submit: 'Sign out'
+      home: 'Back to start'
   error:
     default:
       title: 'Request failed'

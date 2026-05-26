@@ -31,8 +31,14 @@ final class SecurityController extends AbstractController
         ]);
     }
 
-    #[Route('/user/logout', name: 'user_logout', methods: ['GET', 'POST'])]
+    #[Route('/user/logout', name: 'user_logout', methods: ['GET'])]
     public function logout(): Response
+    {
+        return $this->render('@frontend/user/logout.html.twig');
+    }
+
+    #[Route('/user/logout', name: 'user_logout_perform', methods: ['POST'])]
+    public function performLogout(): Response
     {
         return $this->redirectToRoute('user_login');
     }

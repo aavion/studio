@@ -46,6 +46,53 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Admin dashboard');
     }
 
+    public function testLogoutRouteRendersConfirmationWithoutEndingSession(): void
+    {
+        $client = self::createClient();
+        $this->createUserWithLevel(8, 'logoutadmin', 'correct-password');
+
+        $crawler = $client->request('GET', '/user/login');
+        $form = $crawler->selectButton('Sign in')->form([
+            'username' => 'logoutadmin',
+            'password' => 'correct-password',
+        ]);
+
+        $client->submit($form);
+        $client->request('GET', '/user/logout');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Sign out');
+        self::assertSelectorExists('form[action="/user/logout"][method="post"]');
+
+        $client->request('GET', '/admin');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Admin dashboard');
+    }
+
+    public function testLogoutFormEndsSession(): void
+    {
+        $client = self::createClient();
+        $this->createUserWithLevel(8, 'logoutformadmin', 'correct-password');
+
+        $crawler = $client->request('GET', '/user/login');
+        $form = $crawler->selectButton('Sign in')->form([
+            'username' => 'logoutformadmin',
+            'password' => 'correct-password',
+        ]);
+
+        $client->submit($form);
+
+        $crawler = $client->request('GET', '/user/logout');
+        $client->submit($crawler->selectButton('Sign out')->form());
+
+        self::assertResponseRedirects('/user/login');
+
+        $client->request('GET', '/admin');
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
     public function testInvalidLoginRendersTranslatedFeedback(): void
     {
         $client = self::createClient();
@@ -131,7 +178,7 @@ final class SecurityControllerTest extends WebTestCase
         }
 
         $user = new UserAccount(
-            '40000000-0000-0000-0000-00000000000'.$level,
+            $this->testUserUid($username),
             $username,
             $username.'@example.test',
             'pending',
@@ -151,5 +198,16 @@ final class SecurityControllerTest extends WebTestCase
             $level >= 3 => 'editor',
             default => 'registered',
         };
+    }
+
+    private function testUserUid(string $username): string
+    {
+        $hash = md5($username);
+
+        return substr($hash, 0, 8)
+            .'-'.substr($hash, 8, 4)
+            .'-'.substr($hash, 12, 4)
+            .'-'.substr($hash, 16, 4)
+            .'-'.substr($hash, 20, 12);
     }
 }

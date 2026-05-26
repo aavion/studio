@@ -87,6 +87,9 @@ ui:
             placeholder: 'Der Einladungs-Flow lässt eingeladene Nutzer später über ihren E-Mail-Link Username und Passwort wählen.'
         logout:
             title: Abmelden
+            placeholder: 'Bestätige, dass du deine Sitzung beenden möchtest.'
+            submit: Abmelden
+            home: 'Zur Startseite'
     error:
         default:
             title: 'Anfrage fehlgeschlagen'
