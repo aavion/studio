@@ -145,16 +145,22 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
     {
         $definitions = $this->coreSettingsRegistry->definitions($section);
         $values = [];
+        $request = $this->requestStack->getCurrentRequest();
 
         foreach ($definitions as $definition) {
             $values[$definition->key()] = $this->config->get($definition->key(), $definition->defaultValue());
         }
+
+        $values = array_replace($values, $this->requestFormValues($request));
+        $errors = $this->requestFormErrors($request);
 
         return $this->formBuilder->build(
             'admin-settings-'.$section,
             'admin.settings.'.$section.'.title',
             array_map(static fn ($definition) => $definition->formField(), $definitions),
             $values,
+            $errors,
+            $errors['__form'] ?? [],
         )->toArray();
     }
 
@@ -163,10 +169,16 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
      */
     public function packageSettingsForm(string $packageName): array
     {
+        $request = $this->requestStack->getCurrentRequest();
+        $errors = $this->requestFormErrors($request);
+
         return $this->formBuilder->build(
             'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($packageName)),
             $packageName,
             $this->packageSettings->formFields($packageName, $this->packageSettingRegistry),
+            $this->requestFormValues($request),
+            $errors,
+            $errors['__form'] ?? [],
         )->toArray();
     }
 
@@ -228,6 +240,26 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         $user = $this->security->getUser();
 
         return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function requestFormValues(?\Symfony\Component\HttpFoundation\Request $request): array
+    {
+        $values = $request?->attributes->get('_studio_form_values');
+
+        return is_array($values) ? $values : [];
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    private function requestFormErrors(?\Symfony\Component\HttpFoundation\Request $request): array
+    {
+        $errors = $request?->attributes->get('_studio_form_errors');
+
+        return is_array($errors) ? $errors : [];
     }
 
     private function isSafeAttributeName(string $name): bool

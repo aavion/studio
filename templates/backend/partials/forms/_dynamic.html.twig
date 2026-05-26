@@ -1,5 +1,9 @@
 {% if form.fields|default([])|length > 0 %}
     <form id="{{ form.id }}" class="studio-backend-form" method="{{ form.method|default('post') }}" action="{{ form.action|default('') }}">
+        <input type="hidden" name="_form_id" value="{{ form.id }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token(form.id) }}">
+        {% include '@backend/partials/forms/_errors.html.twig' with {errors: form.errors|default([])} only %}
+
         {% for field in form.fields %}
             {% set field_label = field.label|trans %}
             {% set field_help = field.help ? field.help|trans : null %}

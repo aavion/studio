@@ -43,15 +43,19 @@ final class FormBuilderTest extends TestCase
                 ),
             ],
             ['site.url' => 'https://example.test', 'enabled' => true],
+            ['site.url' => ['admin.settings.form.errors.invalid']],
+            ['admin.settings.form.errors.save_failed'],
         )->toArray();
 
         self::assertSame('settings', $form['id']);
+        self::assertSame(['admin.settings.form.errors.save_failed'], $form['errors']);
         self::assertSame(['enabled', 'site.url', 'widgets'], array_column($form['fields'], 'name'));
         self::assertSame('checkbox', $form['fields'][0]['input_type']);
         self::assertTrue($form['fields'][0]['value']);
         self::assertSame('https://example.test', $form['fields'][1]['value']);
         self::assertTrue($form['fields'][1]['required']);
         self::assertSame(['maxlength' => 255], $form['fields'][1]['attributes']);
+        self::assertSame(['admin.settings.form.errors.invalid'], $form['fields'][1]['errors']);
         self::assertSame('multiselect', $form['fields'][2]['input_type']);
         self::assertSame(['system_status' => 'System status'], $form['fields'][2]['options']);
     }

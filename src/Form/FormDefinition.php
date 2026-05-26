@@ -8,6 +8,7 @@ final readonly class FormDefinition
 {
     /**
      * @param list<array<string, mixed>> $fields
+     * @param list<string> $errors
      * @param array<string, mixed> $metadata
      */
     public function __construct(
@@ -16,6 +17,7 @@ final readonly class FormDefinition
         private string $method,
         private string $action,
         private array $fields,
+        private array $errors = [],
         private array $metadata = [],
     ) {
     }
@@ -31,6 +33,7 @@ final readonly class FormDefinition
             'method' => $this->method,
             'action' => $this->action,
             'fields' => $this->fields,
+            'errors' => $this->errors,
             'metadata' => $this->metadata,
         ];
     }

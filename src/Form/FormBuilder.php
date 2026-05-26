@@ -9,6 +9,8 @@ final readonly class FormBuilder
     /**
      * @param iterable<FormFieldDefinition> $fields
      * @param array<string, mixed> $values
+     * @param array<string, list<string>> $errors
+     * @param list<string> $formErrors
      * @param array<string, mixed> $metadata
      */
     public function build(
@@ -16,6 +18,8 @@ final readonly class FormBuilder
         string $title,
         iterable $fields,
         array $values = [],
+        array $errors = [],
+        array $formErrors = [],
         string $method = 'post',
         string $action = '',
         array $metadata = [],
@@ -23,7 +27,11 @@ final readonly class FormBuilder
         $fieldList = [];
 
         foreach ($fields as $field) {
-            $fieldList[] = $this->fieldArray($field, $values[$field->name()] ?? $field->defaultValue());
+            $fieldList[] = $this->fieldArray(
+                $field,
+                $values[$field->name()] ?? $field->defaultValue(),
+                $errors[$field->name()] ?? [],
+            );
         }
 
         usort(
@@ -39,13 +47,15 @@ final readonly class FormBuilder
             ],
         );
 
-        return new FormDefinition($id, $title, $method, $action, $fieldList, $metadata);
+        return new FormDefinition($id, $title, $method, $action, $fieldList, $formErrors, $metadata);
     }
 
     /**
+     * @param list<string> $errors
+     *
      * @return array<string, mixed>
      */
-    private function fieldArray(FormFieldDefinition $field, mixed $value): array
+    private function fieldArray(FormFieldDefinition $field, mixed $value, array $errors): array
     {
         $validation = $field->validation();
 
@@ -64,7 +74,7 @@ final readonly class FormBuilder
             'validation' => $validation,
             'metadata' => $field->metadata(),
             'sort_order' => $field->sortOrder(),
-            'errors' => [],
+            'errors' => $errors,
         ];
     }
 

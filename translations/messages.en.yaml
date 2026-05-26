@@ -195,7 +195,22 @@ admin:
             foundation_title: 'Scheduler configuration foundation'
             foundation_text: 'Scheduler defaults, intervals, and automation-related settings will attach here.'
         form:
+            saved: 'Settings saved.'
             save: 'Save settings'
+            errors:
+                choice: 'Choose one of the available options.'
+                integer: 'Enter a whole number.'
+                invalid: 'Enter a valid value.'
+                invalid_csrf: 'The settings form expired. Please try again.'
+                json: 'Enter valid JSON.'
+                max: 'Enter a smaller value.'
+                max_length: 'Enter a shorter value.'
+                min: 'Enter a larger value.'
+                min_length: 'Enter a longer value.'
+                number: 'Enter a valid number.'
+                pattern: 'The submitted value does not match the expected format.'
+                required: 'This field is required.'
+                save_failed: 'The settings could not be saved.'
         fields:
             site_title:
                 label: 'Site title'

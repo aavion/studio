@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Core\Config\Config;
+use App\Core\Config\ConfigValueType;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
 use App\Setup\SetupCompletionMarker;
@@ -127,6 +129,61 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Security settings');
         self::assertSelectorExists('form#admin-settings-security');
         self::assertSelectorExists('select[name="security.captcha.provider"]');
+    }
+
+    public function testAdminSettingsFormsPersistCoreSettings(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $config = self::getContainer()->get(Config::class);
+
+        try {
+            $crawler = $client->request('GET', '/admin/settings/general');
+            $form = $crawler->selectButton('Save settings')->form([
+                'site.title' => 'Saved Admin Title',
+                'site.url' => 'https://example.test',
+                'localization.default_language' => 'en',
+                'content.home_path' => '/saved-home',
+            ]);
+
+            $client->submit($form);
+
+            self::assertResponseRedirects('/admin/settings/general');
+            self::assertSame('Saved Admin Title', $config->get('site.title'));
+            self::assertSame('https://example.test', $config->get('site.url'));
+            self::assertSame('/saved-home', $config->get('content.home_path'));
+
+            $client->followRedirect();
+
+            self::assertSelectorTextContains('.studio-alert-success', 'Settings saved.');
+            self::assertStringContainsString('value="Saved Admin Title"', (string) $client->getResponse()->getContent());
+        } finally {
+            $config->set('site.title', 'aavion Studio', ConfigValueType::String, modifiedBy: 'test');
+            $config->set('site.url', 'http://localhost', ConfigValueType::String, modifiedBy: 'test');
+            $config->set('localization.default_language', 'en', ConfigValueType::String, modifiedBy: 'test');
+            $config->set('localization.route_prefixes_enabled', false, ConfigValueType::Boolean, modifiedBy: 'test');
+            $config->set('content.home_path', '/home', ConfigValueType::String, modifiedBy: 'test');
+        }
+    }
+
+    public function testAdminSettingsFormsRenderValidationErrors(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $crawler = $client->request('GET', '/admin/settings/general');
+        $form = $crawler->selectButton('Save settings')->form([
+            'site.title' => '',
+            'site.url' => 'https://example.test',
+            'localization.default_language' => 'en',
+            'content.home_path' => 'saved-home',
+        ]);
+
+        $client->submit($form);
+
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('This field is required.', $html);
+        self::assertStringContainsString('The submitted value does not match the expected format.', $html);
     }
 
     public function testAdminStaticViewInjectionsRenderThroughBackendRegistry(): void

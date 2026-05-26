@@ -13,6 +13,7 @@ final readonly class CoreSettingDefinition
     /**
      * @param array<string, string> $options
      * @param array<string, mixed> $validation
+     * @param array<string, mixed> $metadata
      */
     public function __construct(
         private string $section,
@@ -24,6 +25,7 @@ final readonly class CoreSettingDefinition
         private ?string $help = null,
         private array $options = [],
         private array $validation = [],
+        private array $metadata = [],
         private int $sortOrder = 0,
     ) {
     }
@@ -43,6 +45,19 @@ final readonly class CoreSettingDefinition
         return $this->defaultValue;
     }
 
+    public function valueType(): ConfigValueType
+    {
+        return $this->valueType;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function metadata(): array
+    {
+        return $this->metadata;
+    }
+
     public function formField(): FormFieldDefinition
     {
         return new FormFieldDefinition(
@@ -54,7 +69,7 @@ final readonly class CoreSettingDefinition
             $this->help,
             $this->options,
             $this->validation,
-            ['section' => $this->section],
+            ['section' => $this->section, ...$this->metadata],
             $this->sortOrder,
         );
     }

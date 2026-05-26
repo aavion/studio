@@ -13,6 +13,7 @@
             <section class="studio-admin-content">
                 {% include '@backend/partials/layout/_topbar.html.twig' with {area_key: 'ui.admin.area'} only %}
                 <div class="studio-admin-content-inner">
+                    {% include '@backend/partials/feedback/_flash-stack.html.twig' %}
                     {% block admin_body %}{% endblock %}
                 </div>
             </section>

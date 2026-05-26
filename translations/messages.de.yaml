@@ -195,7 +195,22 @@ admin:
             foundation_title: Scheduler-Konfigurationsfundament
             foundation_text: 'Scheduler-Defaults, Intervalle und Automations-bezogene Einstellungen docken hier an.'
         form:
+            saved: 'Einstellungen gespeichert.'
             save: 'Einstellungen speichern'
+            errors:
+                choice: 'Wähle eine der verfügbaren Optionen.'
+                integer: 'Gib eine ganze Zahl ein.'
+                invalid: 'Gib einen gültigen Wert ein.'
+                invalid_csrf: 'Das Einstellungsformular ist abgelaufen. Bitte versuche es erneut.'
+                json: 'Gib gültiges JSON ein.'
+                max: 'Gib einen kleineren Wert ein.'
+                max_length: 'Gib einen kürzeren Wert ein.'
+                min: 'Gib einen größeren Wert ein.'
+                min_length: 'Gib einen längeren Wert ein.'
+                number: 'Gib eine gültige Zahl ein.'
+                pattern: 'Der gesendete Wert entspricht nicht dem erwarteten Format.'
+                required: 'Dieses Feld ist erforderlich.'
+                save_failed: 'Die Einstellungen konnten nicht gespeichert werden.'
         fields:
             site_title:
                 label: Seitentitel

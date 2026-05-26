@@ -9,13 +9,18 @@ use App\Backend\BackendArea;
 use App\Backend\BackendRouteResolver;
 use App\Backend\BackendViewDefinition;
 use App\Core\Access\AccessActor;
+use App\Core\Config\Settings\CoreSettingsFormHandler;
+use App\Core\Package\Settings\PackageSettingsFormHandler;
 use App\Entity\UserAccount;
+use App\Form\FormSubmissionResult;
 use App\Navigation\NavigationBuilder;
 use App\View\Http\HttpErrorRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Csrf\CsrfToken;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 final class BackendController extends AbstractController
 {
@@ -24,6 +29,9 @@ final class BackendController extends AbstractController
         private readonly BackendAccessGuard $accessGuard,
         private readonly NavigationBuilder $navigationBuilder,
         private readonly HttpErrorRenderer $httpError,
+        private readonly CoreSettingsFormHandler $coreSettingsFormHandler,
+        private readonly PackageSettingsFormHandler $packageSettingsFormHandler,
+        private readonly CsrfTokenManagerInterface $csrfTokenManager,
     ) {
     }
 
@@ -45,10 +53,10 @@ final class BackendController extends AbstractController
         return $this->handle($request, BackendArea::Admin);
     }
 
-    #[Route('/admin/{path}', name: 'backend_admin_route', requirements: ['path' => '.+'], methods: ['GET'])]
+    #[Route('/admin/{path}', name: 'backend_admin_route', requirements: ['path' => '.+'], methods: ['GET', 'POST'])]
     public function adminRoute(Request $request, string $path): Response
     {
-        if ('settings' === trim($path, '/')) {
+        if ($request->isMethod('GET') && 'settings' === trim($path, '/')) {
             return $this->redirectToRoute('backend_admin_route', ['path' => 'settings/general']);
         }
 
@@ -87,6 +95,14 @@ final class BackendController extends AbstractController
                 'area' => $area->value,
                 'view' => $view->uid(),
             ]);
+        }
+
+        if (BackendArea::Admin === $area && $request->isMethod('POST') && null !== $view) {
+            $response = $this->handleAdminPost($request, $view);
+
+            if (null !== $response) {
+                return $response;
+            }
         }
 
         return $this->render($result->template(), [
@@ -135,5 +151,68 @@ final class BackendController extends AbstractController
         }
 
         return false;
+    }
+
+    private function handleAdminPost(Request $request, BackendViewDefinition $view): ?Response
+    {
+        $context = $view->context();
+        $formId = $this->stringField($request, '_form_id');
+        $token = $this->stringField($request, '_csrf_token');
+        $result = null;
+        $expectedFormId = null;
+
+        if (isset($context['settings_section']) && is_string($context['settings_section'])) {
+            $expectedFormId = 'admin-settings-'.$context['settings_section'];
+            $result = $this->validFormToken($expectedFormId, $formId, $token)
+                ? $this->coreSettingsFormHandler->submit($context['settings_section'], $request->request->all(), $this->actor()->userUid())
+                : $this->invalidCsrfResult($request);
+        } elseif ('backend-admin-settings-packages' === $view->uid()) {
+            $expectedFormId = 'admin-settings-packages';
+            $result = $this->validFormToken($expectedFormId, $formId, $token)
+                ? $this->coreSettingsFormHandler->submit('packages', $request->request->all(), $this->actor()->userUid())
+                : $this->invalidCsrfResult($request);
+        } elseif (isset($context['package_name']) && is_string($context['package_name'])) {
+            $expectedFormId = 'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($context['package_name']));
+            $result = $this->validFormToken($expectedFormId, $formId, $token)
+                ? $this->packageSettingsFormHandler->submit($context['package_name'], $request->request->all(), $this->actor()->userUid())
+                : $this->invalidCsrfResult($request);
+        }
+
+        if (!$result instanceof FormSubmissionResult) {
+            return $this->httpError->render(Response::HTTP_METHOD_NOT_ALLOWED, $request, context: [
+                'area' => $view->area()->value,
+                'view' => $view->uid(),
+            ]);
+        }
+
+        if ($result->isValid()) {
+            $this->addFlash('success', 'admin.settings.form.saved');
+
+            return $this->redirect($request->getPathInfo());
+        }
+
+        $request->attributes->set('_studio_form_values', $result->values());
+        $request->attributes->set('_studio_form_errors', $result->errors());
+
+        return null;
+    }
+
+    private function validFormToken(string $expectedFormId, string $formId, string $token): bool
+    {
+        return $expectedFormId === $formId && $this->csrfTokenManager->isTokenValid(new CsrfToken($expectedFormId, $token));
+    }
+
+    private function invalidCsrfResult(Request $request): FormSubmissionResult
+    {
+        return new FormSubmissionResult($request->request->all(), [
+            '__form' => ['admin.settings.form.errors.invalid_csrf'],
+        ]);
+    }
+
+    private function stringField(Request $request, string $name): string
+    {
+        $value = $request->request->get($name);
+
+        return is_string($value) ? $value : '';
     }
 }

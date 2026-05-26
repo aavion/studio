@@ -72,6 +72,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Made generated Admin Settings forms functional with CSRF-protected POST handling, neutral form submission casting/validation, persisted core settings, persisted package settings, translated validation feedback, and backend flash rendering.
 - Added a reusable form-definition foundation outside the backend namespace, wired core and package setting definitions into it, rendered the first typed Admin Settings forms with validation metadata, and prepared the native captcha provider field slot for future provider packages.
 - Added top-level Admin Shell placeholders for User Management, Scheduler, Backups, and Logs so administrative surfaces from the drafts have navigable ACL-protected anchors while content, schema, and import/export work stays with the Editor area.
 - Added `/admin/themes` as the first top-level Theme Management placeholder so theme selection, activation, previews, and variants can evolve outside the settings tree.
