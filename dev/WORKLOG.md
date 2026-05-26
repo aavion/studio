@@ -72,6 +72,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Added a first BackendActions foundation with CSRF-protected Admin UI buttons for package discovery, asset rebuild dispatch, and synchronous cache clearing on package and theme overview screens.
 - Surfaced root `.manifest` name, author, and description metadata through the virtual system package and mirrored those values into package and theme admin overviews.
 - Marked system package/theme rows as immutable in admin overviews, kept the virtual system package visible for package update workflows, and made theme sections show the system fallback as active only when no active theme package owns that area.
 - Aligned application package discovery with the current root `.manifest` metadata keys used by the virtual system package.

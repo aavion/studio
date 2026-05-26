@@ -116,6 +116,9 @@ final class MessageKey
     public const ACCESS_DENIED = 'message.access.denied';
     public const BACKEND_ROUTE_NOT_FOUND = 'message.backend.route_not_found';
     public const BACKEND_SETUP_LOCKED = 'message.backend.setup_locked';
+    public const BACKEND_ACTION_UNKNOWN = 'message.backend.action.unknown';
+    public const BACKEND_ACTION_INVALID_CSRF = 'message.backend.action.invalid_csrf';
+    public const BACKEND_ACTION_CACHE_CLEAR_COMPLETED = 'message.backend.action.cache_clear_completed';
     public const SETUP_STEP_FAILED = 'message.setup.step_failed';
     public const SETUP_ENVIRONMENT_FILE_UNREADABLE = 'message.setup.environment_file_unreadable';
     public const SETUP_ENVIRONMENT_FILE_WRITE_FAILED = 'message.setup.environment_file_write_failed';

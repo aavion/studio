@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace App\View\Twig;
 
+use App\Backend\BackendActions;
 use App\Core\Access\AccessActor;
 use App\Core\Config\Config;
 use App\Core\Config\Settings\CoreSettingsRegistry;
 use App\Core\Event\EventHookDescriptor;
 use App\Core\Event\PublicEventHookRegistry;
 use App\Core\Package\PackageAdminOverview;
-use App\Core\Package\ThemeAdminOverview;
 use App\Core\Package\Settings\PackageSettingRegistry;
 use App\Core\Package\Settings\PackageSettings;
+use App\Core\Package\ThemeAdminOverview;
 use App\Debug\StudioDebugCollector;
 use App\Entity\UserAccount;
 use App\Form\FormBuilder;
@@ -39,6 +40,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         private readonly Config $config,
         private readonly CoreSettingsRegistry $coreSettingsRegistry,
         private readonly FormBuilder $formBuilder,
+        private readonly BackendActions $backendActions,
         private readonly PackageAdminOverview $packageAdminOverview,
         private readonly ThemeAdminOverview $themeAdminOverview,
         private readonly PackageSettings $packageSettings,
@@ -72,6 +74,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             new TwigFunction('studio_html_attributes', $this->htmlAttributes(...), ['is_safe' => ['html']]),
             new TwigFunction('studio_navigation', $this->navigation(...)),
             new TwigFunction('studio_core_settings_form', $this->coreSettingsForm(...)),
+            new TwigFunction('studio_backend_actions', $this->backendActions(...)),
             new TwigFunction('studio_extension_packages', $this->extensionPackages(...)),
             new TwigFunction('studio_themes', $this->themes(...)),
             new TwigFunction('studio_package_settings', $this->packageSettings(...)),
@@ -142,6 +145,16 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
     public function extensionPackages(): array
     {
         return $this->packageAdminOverview->packages();
+    }
+
+    /**
+     * @param list<string> $ids
+     *
+     * @return list<array{id: string, label_key: string, variant: string}>
+     */
+    public function backendActions(array $ids = []): array
+    {
+        return $this->backendActions->definitions($ids);
     }
 
     /**

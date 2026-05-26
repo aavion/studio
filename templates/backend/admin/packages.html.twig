@@ -11,9 +11,16 @@
 {% endblock %}
 
 {% block admin_body %}
+    {% set backend_actions %}
+        {% include '@backend/admin/partials/_backend-actions.html.twig' with {
+            actions: studio_backend_actions(['package_discovery']),
+        } only %}
+    {% endset %}
+
     {% include '@backend/admin/partials/_page-header.html.twig' with {
         eyebrow: 'ui.admin.area'|trans,
         title: 'admin.packages.title'|trans,
+        actions: backend_actions,
     } only %}
 
     {% include '@backend/partials/feedback/_message.html.twig' with {message: message} only %}

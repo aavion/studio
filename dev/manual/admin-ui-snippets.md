@@ -28,6 +28,7 @@ Future operational screens should reuse common patterns:
 | Package detail | Manifest, inventory, features, lint results, compatibility, actions. |
 | Theme management | Frontend and backend theme registry sections, active status, immutable system fallback, version and template path details. |
 | Package management | Extension package registry rows plus the immutable virtual system package so application and package update flows can share one UI foundation. |
+| Backend actions | CSRF-protected POST buttons for discovery, asset rebuild dispatch, cache clearing, and later long-running ActionLog overlays. |
 | Import review | Diffs, risks, affected paths/entities, confirmation. |
 | Action log | Timeline, status counts, issues, context payload. |
 | Backup/restore | Snapshot metadata, checksums, retention, restore plan. |

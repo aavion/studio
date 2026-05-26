@@ -128,6 +128,13 @@ admin:
         security_settings: Sicherheit
         package_settings: Pakete
         scheduler_settings: Scheduler
+    actions:
+        package_discovery:
+            label: 'Registry aktualisieren'
+        asset_rebuild:
+            label: 'Assets neu bauen'
+        cache_clear:
+            label: 'Cache leeren'
     dashboard:
         title: Admin-Dashboard
         foundation_title: Backend-Fundament
@@ -514,6 +521,10 @@ message:
     backend:
         route_not_found: 'Backend-Route "%path%" ist nicht registriert.'
         setup_locked: 'Setup ist bereits abgeschlossen und nicht mehr verfügbar.'
+        action:
+            unknown: 'Backend-Aktion "%action%" ist nicht verfügbar.'
+            invalid_csrf: 'Das Formular für die Backend-Aktion ist abgelaufen. Bitte versuche es erneut.'
+            cache_clear_completed: 'Der Cache wurde geleert.'
     setup:
         step_failed: 'Setup-Schritt "%step%" ist fehlgeschlagen: %message%'
         environment_file_unreadable: 'Environment-Override-Datei "%file%" konnte nicht gelesen werden.'

@@ -122,6 +122,9 @@ Validation rules:
 | `message.process.command_completed` | Process action exited successfully. | `%command%`, `%exit_code%` |
 | `message.backend.route_not_found` | Backend route resolver could not match an area path. | `%path%` |
 | `message.backend.setup_locked` | Setup route is locked after completed installation. | N/A |
+| `message.backend.action.unknown` | Submitted backend action is not registered. | `%action%` |
+| `message.backend.action.invalid_csrf` | Submitted backend action failed CSRF validation. | N/A |
+| `message.backend.action.cache_clear_completed` | Manual backend cache clear completed. | N/A |
 | `message.setup.environment_file_unreadable` | Setup environment override file could not be read. | `%file%` |
 | `message.setup.environment_file_write_failed` | Setup environment override file could not be written. | `%file%` |
 | `message.content.slug.invalid_format` | Content slug does not match the public slug rules. | `%slug%` |

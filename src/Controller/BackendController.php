@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Backend\BackendAccessGuard;
+use App\Backend\BackendActions;
 use App\Backend\BackendArea;
 use App\Backend\BackendRouteResolver;
 use App\Backend\BackendViewDefinition;
 use App\Core\Access\AccessActor;
 use App\Core\Config\Settings\CoreSettingsFormHandler;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\Package\Settings\PackageSettingsFormHandler;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\UserAccount;
 use App\Form\FormSubmissionResult;
 use App\Navigation\NavigationBuilder;
@@ -33,6 +38,7 @@ final class BackendController extends AbstractController
         private readonly HttpErrorRenderer $httpError,
         private readonly CoreSettingsFormHandler $coreSettingsFormHandler,
         private readonly PackageSettingsFormHandler $packageSettingsFormHandler,
+        private readonly BackendActions $backendActions,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
         private readonly SetupRunner $setupRunner,
         private readonly SetupWebInputFactory $setupWebInputFactory,
@@ -51,7 +57,7 @@ final class BackendController extends AbstractController
         return $this->handle($request, BackendArea::Setup, $path);
     }
 
-    #[Route('/admin', name: 'backend_admin_index', methods: ['GET'])]
+    #[Route('/admin', name: 'backend_admin_index', methods: ['GET', 'POST'])]
     public function adminIndex(Request $request): Response
     {
         return $this->handle($request, BackendArea::Admin);
@@ -171,6 +177,10 @@ final class BackendController extends AbstractController
         $result = null;
         $expectedFormId = null;
 
+        if ('' !== $this->stringField($request, '_backend_action')) {
+            return $this->handleBackendAction($request);
+        }
+
         if (isset($context['settings_section']) && is_string($context['settings_section'])) {
             $expectedFormId = 'admin-settings-'.$context['settings_section'];
             $result = $this->validFormToken($expectedFormId, $formId, $token)
@@ -207,6 +217,26 @@ final class BackendController extends AbstractController
         return null;
     }
 
+    private function handleBackendAction(Request $request): Response
+    {
+        $action = $this->stringField($request, '_backend_action');
+        $formId = $this->stringField($request, '_form_id');
+        $token = $this->stringField($request, '_csrf_token');
+        $result = $this->validFormToken('backend-action-'.$action, $formId, $token)
+            ? $this->backendActions->run($action)
+            : WorkflowResult::invalid([
+                Message::warning(
+                    MessageCode::E_INVALID_ARGUMENT,
+                    MessageKey::BACKEND_ACTION_INVALID_CSRF,
+                    context: ['action' => $action],
+                ),
+            ], ['action' => $action]);
+
+        $this->flashResult($result);
+
+        return $this->redirect($request->getPathInfo());
+    }
+
     private function validFormToken(string $expectedFormId, string $formId, string $token): bool
     {
         return $expectedFormId === $formId && $this->csrfTokenManager->isTokenValid(new CsrfToken($expectedFormId, $token));
@@ -216,6 +246,21 @@ final class BackendController extends AbstractController
     {
         return new FormSubmissionResult($request->request->all(), [
             '__form' => ['admin.settings.form.errors.invalid_csrf'],
+        ]);
+    }
+
+    /**
+     * @param WorkflowResult<mixed> $result
+     */
+    private function flashResult(WorkflowResult $result): void
+    {
+        $message = $result->isSuccess()
+            ? ($result->messages()[0] ?? Message::success(MessageKey::BACKEND_ACTION_CACHE_CLEAR_COMPLETED))
+            : ($result->firstIssue() ?? Message::error(MessageCode::E_OPERATION_FAILED, MessageKey::OPERATION_EXCEPTION));
+
+        $this->addFlash($result->isSuccess() ? 'success' : 'error', [
+            'translation_key' => $message->translationKey(),
+            'parameters' => $message->parameters(),
         ]);
     }
 

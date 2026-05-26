@@ -115,6 +115,11 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Package management');
         self::assertSelectorTextContains('.studio-backend-nav', 'Packages');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/packages"][aria-current="page"]');
+        self::assertSelectorExists('.studio-page-actions form input[name="_backend_action"][value="package_discovery"]');
+        self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="asset_rebuild"]');
+        self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="cache_clear"]');
+        self::assertSelectorNotExists('.studio-page-actions form input[name="_backend_action"][value="asset_rebuild"]');
+        self::assertSelectorNotExists('.studio-page-actions form input[name="_backend_action"][value="cache_clear"]');
         self::assertSelectorExists('.studio-backend-nav .is-collapsed a[href="/admin/settings"][aria-expanded="false"]');
         self::assertSelectorNotExists('.studio-backend-nav a[href="/admin/settings/general"]');
         self::assertSelectorTextContains('.studio-table', 'aavion Studio');
@@ -131,6 +136,9 @@ final class BackendControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Theme management');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/themes"][aria-current="page"]');
+        self::assertSelectorNotExists('.studio-page-actions form input[name="_backend_action"][value="package_discovery"]');
+        self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="asset_rebuild"]');
+        self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="cache_clear"]');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'Frontend themes');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'aavion Studio');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'templates/frontend');
@@ -173,6 +181,22 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('h1', $title);
             self::assertSelectorExists(sprintf('.studio-backend-nav a[href="%s"][aria-current="page"]', $path));
         }
+    }
+
+    public function testAdminBackendActionFormsQueuePackageDiscovery(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $crawler = $client->request('GET', '/admin/packages');
+        $form = $crawler->selectButton('Update registry')->form();
+
+        $client->submit($form);
+
+        self::assertResponseRedirects('/admin/packages');
+
+        $client->followRedirect();
+
+        self::assertSelectorTextContains('.studio-alert-success', 'Package discovery was queued by "admin_ui".');
     }
 
     public function testAdminSettingsRoutesRenderThroughRegistry(): void
