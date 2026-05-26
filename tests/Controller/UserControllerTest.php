@@ -95,20 +95,23 @@ final class UserControllerTest extends WebTestCase
         self::assertSelectorTextContains('.studio-form-errors', 'The new passwords do not match.');
     }
 
-    public function testUserSkeletonRoutesRender(): void
+    public function testApiKeysRouteRendersForAuthenticatedUsers(): void
     {
         $client = self::createClient();
         $client->loginUser($this->createUserWithLevel(1, 'skeletonuser', 'skeleton-password'));
+        $client->request('GET', '/user/api-keys');
 
-        foreach ([
-            '/user/api-keys' => 'API keys',
-            '/user/invitations' => 'Invitations',
-        ] as $path => $title) {
-            $client->request('GET', $path);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'API keys');
+    }
 
-            self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('h1', $title);
-        }
+    public function testInvitationAcceptanceSkeletonRendersFromMailToken(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/user/invitation/test-token');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Accept invitation');
     }
 
     public function testApiKeysRouteListsPersistedKeysForTheCurrentUser(): void
@@ -131,6 +134,8 @@ final class UserControllerTest extends WebTestCase
         self::assertSelectorTextContains('.studio-field-table', 'Read only');
         self::assertSelectorTextContains('.studio-field-table', 'seedrv');
         self::assertSelectorTextContains('.studio-field-table', 'Revoked');
+        self::assertSelectorExists('#studio-show-revoked-api-keys');
+        self::assertSelectorExists('.studio-api-key-row-revoked');
     }
 
     private function createUserWithLevel(int $level, string $username, string $password): UserAccount

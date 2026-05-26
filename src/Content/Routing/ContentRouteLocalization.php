@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Content\Routing;
 
-use App\Core\Config\ConfigReader;
+use App\Core\Config\Config;
 use App\Localization\TranslationLanguageCatalog;
 
 final readonly class ContentRouteLocalization
@@ -14,7 +14,7 @@ final readonly class ContentRouteLocalization
     public const HOME_PATH_KEY = 'content.home_path';
 
     public function __construct(
-        private ConfigReader $config,
+        private Config $config,
         private TranslationLanguageCatalog $languageCatalog,
     ) {
     }
@@ -138,6 +138,6 @@ final readonly class ContentRouteLocalization
 
     private function configValue(string $key, mixed $default): mixed
     {
-        return $this->config->value($key, $default);
+        return $this->config->get($key, $default);
     }
 }

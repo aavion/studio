@@ -110,14 +110,12 @@ final class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/user/invitations', name: 'user_invitations', methods: ['GET'])]
-    public function invitations(Request $request): Response
+    #[Route('/user/invitation/{token}', name: 'user_invitation_accept', methods: ['GET'])]
+    public function invitation(string $token): Response
     {
-        if (!$this->currentUser() instanceof UserAccount) {
-            return $this->httpError->unauthorized($request);
-        }
-
-        return $this->render('@frontend/user/invitations.html.twig');
+        return $this->render('@frontend/user/invitation.html.twig', [
+            'invitation_token' => $token,
+        ]);
     }
 
     private function currentUser(): ?UserAccount

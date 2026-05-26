@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Core\Config\Config;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
-use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -112,11 +112,7 @@ final class SecurityControllerTest extends WebTestCase
 
     private function setRegistrationEnabled(bool $enabled): void
     {
-        self::getContainer()->get(Connection::class)->update(
-            'config_entry',
-            ['value' => json_encode($enabled, JSON_THROW_ON_ERROR), 'value_type' => 'boolean'],
-            ['config_key' => 'user.registration.enabled'],
-        );
+        self::getContainer()->get(Config::class)->set('user.registration.enabled', $enabled);
     }
 
     private function createUserWithLevel(int $level, string $username, string $password): UserAccount

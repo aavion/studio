@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Navigation;
 
 use App\Core\Access\AccessActor;
+use App\Core\Config\Config;
 use App\Navigation\Event\NavigationBuilderEvent;
 use App\Navigation\NavigationBuilder;
 use App\Navigation\NavigationItem;
-use Doctrine\DBAL\Connection;
 use RuntimeException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -291,7 +291,7 @@ final class NavigationBuilderTest extends KernelTestCase
         $account = $editorNavigation[3];
 
         self::assertSame('ui.user.profile.title', $account['label']);
-        self::assertSame(['ui.user.api_keys.title', 'ui.user.invitations.title', 'ui.user.navigation.studio', 'ui.user.logout.title'], array_column($account['children'], 'label'));
+        self::assertSame(['ui.user.api_keys.title', 'ui.user.navigation.studio', 'ui.user.logout.title'], array_column($account['children'], 'label'));
         self::assertNotContains('ui.user.login.title', array_column($account['children'], 'label'));
         self::assertNotContains('ui.user.navigation.admin', array_column($account['children'], 'label'));
 
@@ -307,7 +307,7 @@ final class NavigationBuilderTest extends KernelTestCase
     public function testItCanDisableSystemUserNavigation(): void
     {
         self::bootKernel();
-        $this->setConfig('user.menu.enabled', false, 'boolean');
+        $this->setConfig('user.menu.enabled', false);
 
         try {
             $navigation = self::getContainer()->get(NavigationBuilder::class)->build(
@@ -317,7 +317,7 @@ final class NavigationBuilderTest extends KernelTestCase
 
             self::assertNotContains('ui.user.login.title', array_column($navigation, 'label'));
         } finally {
-            $this->setConfig('user.menu.enabled', true, 'boolean');
+            $this->setConfig('user.menu.enabled', true);
         }
     }
 
@@ -354,12 +354,8 @@ final class NavigationBuilderTest extends KernelTestCase
         );
     }
 
-    private function setConfig(string $key, mixed $value, string $type): void
+    private function setConfig(string $key, mixed $value): void
     {
-        self::getContainer()->get(Connection::class)->update(
-            'config_entry',
-            ['value' => json_encode($value, JSON_THROW_ON_ERROR), 'value_type' => $type],
-            ['config_key' => $key],
-        );
+        self::getContainer()->get(Config::class)->set($key, $value);
     }
 }

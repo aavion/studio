@@ -57,18 +57,17 @@ ui:
         password_mismatch: 'Die neuen Passwörter stimmen nicht überein.'
     api_keys:
       title: 'API-Keys'
-      subtitle: 'Verwalte persönlichen API-Zugriff für deinen Account.'
+      subtitle: 'Hier werden nur API-Keys angezeigt, die deinem Account zugeordnet sind.'
       empty_title: 'Keine API-Keys'
       empty_message: 'Diesem Account sind noch keine API-Keys zugeordnet.'
+      show_revoked: 'Widerrufene Keys anzeigen'
       prefix: 'Prefix'
       status: 'Status'
       created_at: 'Erstellt'
       revoked_at: 'Widerrufen'
-    invitations:
-      title: 'Einladungen'
-      placeholder: 'Einladungs- und Onboarding-Flows werden später hier angebunden.'
-      empty_title: 'Keine Einladungen'
-      empty_message: 'Einladungen sind noch nicht aktiviert.'
+    invitation:
+      title: 'Einladung annehmen'
+      placeholder: 'Der Einladungs-Flow lässt eingeladene Nutzer später über ihren E-Mail-Link Username und Passwort wählen.'
     logout:
       title: 'Abmelden'
   error:

@@ -57,18 +57,17 @@ ui:
         password_mismatch: 'The new passwords do not match.'
     api_keys:
       title: 'API keys'
-      subtitle: 'Manage personal API access for your account.'
+      subtitle: 'Only API keys assigned to your account are shown here.'
       empty_title: 'No API keys'
       empty_message: 'No API keys are assigned to this account yet.'
+      show_revoked: 'Show revoked keys'
       prefix: 'Prefix'
       status: 'Status'
       created_at: 'Created'
       revoked_at: 'Revoked'
-    invitations:
-      title: 'Invitations'
-      placeholder: 'Invitation and onboarding flows will be connected here later.'
-      empty_title: 'No invitations'
-      empty_message: 'Invitation handling is not enabled yet.'
+    invitation:
+      title: 'Accept invitation'
+      placeholder: 'Invitation acceptance will let invited users choose a username and password from their email link.'
     logout:
       title: 'Sign out'
   error:

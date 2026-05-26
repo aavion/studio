@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Access\AccessLevel;
+use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateSubjectType;
@@ -22,17 +23,17 @@ final readonly class SetupDatabaseSeeder
     public function seedDefaultSettings(string $projectDir, SetupInput $input, string $databaseUrl): array
     {
         $connection = $this->connection($projectDir, $databaseUrl);
-        $now = $this->now();
+        $config = new Config($connection);
 
-        $this->upsertConfig($connection, 'site.title', $input->siteTitle(), ConfigValueType::String, $now);
-        $this->upsertConfig($connection, 'site.url', $input->defaultUri(), ConfigValueType::String, $now);
-        $this->upsertConfig($connection, 'localization.default_language', $input->language(), ConfigValueType::String, $now);
-        $this->upsertConfig($connection, 'localization.route_prefixes_enabled', false, ConfigValueType::Boolean, $now);
-        $this->upsertConfig($connection, 'content.home_path', '/home', ConfigValueType::String, $now);
-        $this->upsertConfig($connection, 'user.default_acl_group', 'registered', ConfigValueType::String, $now);
-        $this->upsertConfig($connection, 'user.menu.enabled', true, ConfigValueType::Boolean, $now);
-        $this->upsertConfig($connection, 'user.menu.sort_order', 900, ConfigValueType::Integer, $now);
-        $this->upsertConfig($connection, 'user.registration.enabled', false, ConfigValueType::Boolean, $now);
+        $config->set('site.title', $input->siteTitle(), ConfigValueType::String, modifiedBy: 'setup');
+        $config->set('site.url', $input->defaultUri(), ConfigValueType::String, modifiedBy: 'setup');
+        $config->set('localization.default_language', $input->language(), ConfigValueType::String, modifiedBy: 'setup');
+        $config->set('localization.route_prefixes_enabled', false, ConfigValueType::Boolean, modifiedBy: 'setup');
+        $config->set('content.home_path', '/home', ConfigValueType::String, modifiedBy: 'setup');
+        $config->set('user.default_acl_group', 'registered', ConfigValueType::String, modifiedBy: 'setup');
+        $config->set('user.menu.enabled', true, ConfigValueType::Boolean, modifiedBy: 'setup');
+        $config->set('user.menu.sort_order', 900, ConfigValueType::Integer, modifiedBy: 'setup');
+        $config->set('user.registration.enabled', false, ConfigValueType::Boolean, modifiedBy: 'setup');
 
         return ['settings' => ['site.title', 'site.url', 'localization.default_language', 'localization.route_prefixes_enabled', 'content.home_path', 'user.default_acl_group', 'user.menu.enabled', 'user.menu.sort_order', 'user.registration.enabled']];
     }
@@ -64,21 +65,6 @@ final readonly class SetupDatabaseSeeder
         $this->ensureUserGroup($connection, $userUid, (string) $connection->fetchOne('SELECT uid FROM acl_group WHERE identifier = ?', ['admin']));
 
         return ['admin_username' => $input->adminUsername(), 'admin_email' => $input->adminEmail()];
-    }
-
-    private function upsertConfig(Connection $connection, string $key, mixed $value, ConfigValueType $type, string $now): void
-    {
-        $values = [
-            'value' => json_encode($value, JSON_THROW_ON_ERROR),
-            'value_type' => $type->value,
-            'sensitive' => 0,
-            'modified_at' => $now,
-            'modified_by' => 'setup',
-        ];
-
-        $connection->fetchOne('SELECT config_key FROM config_entry WHERE config_key = ?', [$key])
-            ? $connection->update('config_entry', $values, ['config_key' => $key])
-            : $connection->insert('config_entry', ['config_key' => $key, ...$values]);
     }
 
     /**
