@@ -14,6 +14,7 @@ final readonly class BackendRouteResolver
 {
     public function __construct(
         private SetupCompletionMarker $setupCompletionMarker,
+        private BackendViewRegistry $viewRegistry,
         private string $projectDir,
         private string $environment,
     ) {
@@ -35,8 +36,14 @@ final readonly class BackendRouteResolver
             );
         }
 
-        if ('' === $path) {
+        if (BackendArea::Setup === $area && '' === $path) {
             return BackendRouteResult::index($area);
+        }
+
+        $view = $this->viewRegistry->find($area, $path);
+
+        if ($view instanceof BackendViewDefinition) {
+            return BackendRouteResult::fromView($view);
         }
 
         return BackendRouteResult::withMessage(

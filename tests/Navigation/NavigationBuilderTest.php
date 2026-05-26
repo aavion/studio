@@ -237,6 +237,23 @@ final class NavigationBuilderTest extends KernelTestCase
         self::assertTrue($navigation[0]['active']);
     }
 
+    public function testItBuildsBackendViewsFromRegistry(): void
+    {
+        self::bootKernel();
+
+        $navigation = self::getContainer()->get(NavigationBuilder::class)->build(
+            'backend.admin',
+            actor: AccessActor::fromAccess(8),
+            activeUrl: '/admin/packages',
+            activeRoute: 'backend_admin_route',
+        );
+
+        self::assertSame(['admin.navigation.dashboard', 'admin.navigation.packages'], array_column($navigation, 'label'));
+        self::assertSame(['/admin', '/admin/packages'], array_column($navigation, 'url'));
+        self::assertFalse($navigation[0]['active']);
+        self::assertTrue($navigation[1]['active']);
+    }
+
     public function testItFiltersNavigationItemsByAccessLevel(): void
     {
         self::bootKernel();

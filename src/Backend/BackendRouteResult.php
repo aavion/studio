@@ -13,6 +13,7 @@ final readonly class BackendRouteResult
         private BackendArea $area,
         private int $statusCode,
         private ?string $template,
+        private ?BackendViewDefinition $view = null,
         private ?Message $message = null,
     ) {
     }
@@ -22,9 +23,14 @@ final readonly class BackendRouteResult
         return new self($area, Response::HTTP_OK, $area->indexTemplate());
     }
 
+    public static function fromView(BackendViewDefinition $view): self
+    {
+        return new self($view->area(), Response::HTTP_OK, $view->template(), $view);
+    }
+
     public static function withMessage(BackendArea $area, int $statusCode, Message $message): self
     {
-        return new self($area, $statusCode, $area->messageTemplate(), $message);
+        return new self($area, $statusCode, $area->messageTemplate(), message: $message);
     }
 
     public function area(): BackendArea
@@ -40,6 +46,11 @@ final readonly class BackendRouteResult
     public function template(): string
     {
         return $this->template ?? $this->area->messageTemplate();
+    }
+
+    public function view(): ?BackendViewDefinition
+    {
+        return $this->view;
     }
 
     public function message(): ?Message

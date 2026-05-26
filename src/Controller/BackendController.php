@@ -77,6 +77,7 @@ final class BackendController extends AbstractController
 
         return $this->render($result->template(), [
             'area' => $result->area(),
+            'view' => $result->view(),
             'message' => $result->message()?->toArray(),
             'navigation' => $this->navigation($request, $area),
         ], new Response(status: $result->statusCode()));

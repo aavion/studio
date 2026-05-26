@@ -43,6 +43,18 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('.studio-backend-nav a[aria-current="page"]');
     }
 
+    public function testAdminRegisteredBackendViewRouteRendersThroughRegistry(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $client->request('GET', '/admin/packages');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Package management');
+        self::assertSelectorTextContains('.studio-backend-nav', 'Packages');
+        self::assertSelectorExists('.studio-backend-nav a[href="/admin/packages"][aria-current="page"]');
+    }
+
     public function testEditorRouteAllowsEditorsButAdminRouteDoesNot(): void
     {
         $client = self::createClient();

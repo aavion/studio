@@ -8,9 +8,14 @@ ui:
 admin:
   navigation:
     dashboard: 'Dashboard'
+    packages: 'Packages'
   dashboard:
     title: 'Admin dashboard'
     foundation_title: 'Backend foundation'
     foundation_text: 'Administrative routes are now resolved through the native backend router. Functional pages can attach here once authentication, navigation, and access checks are ready.'
+  packages:
+    title: 'Package management'
+    foundation_title: 'Package view foundation'
+    foundation_text: 'Package management will attach here once install, update, activation, and cleanup workflows are wired.'
   message:
     title: 'Admin route'

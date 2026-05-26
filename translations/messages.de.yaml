@@ -114,10 +114,15 @@ ui:
 admin:
     navigation:
         dashboard: Dashboard
+        packages: Packages
     dashboard:
         title: Admin-Dashboard
         foundation_title: Backend-Fundament
         foundation_text: 'Administrative Routen werden jetzt durch den nativen Backend-Router aufgelöst. Funktionale Seiten können hier andocken, sobald Authentifizierung, Navigation und Zugriffsprüfungen bereit sind.'
+    packages:
+        title: Paketverwaltung
+        foundation_title: Paket-View-Fundament
+        foundation_text: 'Die Paketverwaltung dockt hier an, sobald Installations-, Update-, Aktivierungs- und Cleanup-Workflows verdrahtet sind.'
     message:
         title: Admin-Route
 demo:

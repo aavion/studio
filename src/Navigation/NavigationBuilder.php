@@ -266,7 +266,14 @@ final readonly class NavigationBuilder
 
     private function isActive(NavigationItem $item, ?string $activeUrl, ?string $activeRoute): bool
     {
-        if (null !== $activeRoute && 'route' === $item->targetType() && $item->targetValue() === $activeRoute) {
+        $routeParameters = $item->metadata()['route_parameters'] ?? [];
+
+        if (
+            null !== $activeRoute
+            && 'route' === $item->targetType()
+            && $item->targetValue() === $activeRoute
+            && ([] === $routeParameters || false === is_array($routeParameters))
+        ) {
             return true;
         }
 

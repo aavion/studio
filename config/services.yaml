@@ -17,6 +17,8 @@ services:
     _instanceof:
         App\Core\Event\EventHookDescriptorProviderInterface:
             tags: ['studio.event_hook_provider']
+        App\Backend\BackendViewProviderInterface:
+            tags: ['studio.backend_view_provider']
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -34,6 +36,10 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
+
+    App\Backend\BackendViewRegistry:
+        arguments:
+            $providers: !tagged_iterator studio.backend_view_provider
 
     App\Localization\TranslationLanguageCatalog:
         arguments:
