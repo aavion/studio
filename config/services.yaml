@@ -30,6 +30,8 @@ services:
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
+        exclude:
+            - '../src/Core/Package/PackageSpec.php'
 
     App\Setup\SetupCommandExecutorInterface:
         alias: App\Setup\ProcOpenSetupCommandExecutor
@@ -92,6 +94,11 @@ services:
     App\Core\Package\PackageRemover:
         arguments:
             $projectDir: '%kernel.project_dir%'
+
+    App\Core\Package\PackageFaultResetter:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
 
     App\Core\Package\PackagePhpLoader:
         arguments:

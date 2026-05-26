@@ -169,8 +169,51 @@ admin:
         actions:
             settings: Settings
             no_settings: 'No settings'
+            none: 'No actions'
         meta:
             author: 'By %author%'
+        detail:
+            overview_title: 'Package overview'
+            manifest_title: 'Manifest data'
+            manifest_empty: 'No manifest data is available.'
+            immutable: Immutable
+            description: Description
+            author: Author
+        lifecycle:
+            review_title: 'Review changes'
+            immutable: 'This system package is immutable and cannot change lifecycle state.'
+            unavailable: 'This lifecycle action is not available.'
+            no_changes: 'This action does not need to change package state.'
+            cancel: Cancel
+            table:
+                action: Action
+            activate:
+                label: Activate
+                title: 'Activate %package%'
+                text: 'Review dependency and conflict changes before activating this package.'
+                submit: 'Activate package'
+            deactivate:
+                label: Deactivate
+                title: 'Deactivate %package%'
+                text: 'Review the planned state change before deactivating this package.'
+                submit: 'Deactivate package'
+            reset_fault:
+                label: 'Reset fault'
+                title: 'Reset fault for %package%'
+                text: 'The package will be validated again and returned to inactive if recovery succeeds.'
+                submit: 'Reset fault'
+            purge:
+                label: 'Delete data'
+                title: 'Delete data for %package%'
+                text: 'Review package-owned data cleanup before resetting this package registration.'
+                warning: 'This step is irreversible. Package-owned settings and future package-owned data cleanup targets will be deleted.'
+                submit: 'Delete data'
+            delete:
+                label: 'Delete package'
+                title: 'Delete %package%'
+                text: 'Review the filesystem removal before deleting this package from disk.'
+                warning: 'This step is irreversible. The package files will be deleted and the registry row will stay as removed until data is deleted separately.'
+                submit: 'Delete package'
     themes:
         title: 'Theme management'
         foundation_title: 'Theme management foundation'

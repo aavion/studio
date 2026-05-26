@@ -78,6 +78,7 @@ final readonly class ThemeAdminOverview
             'package_name' => $package->packageName(),
             'label' => $label,
             'label_key' => null,
+            'detail_path' => $this->detailPath($package->packageName()),
             'description' => $this->metadataString($metadata, 'description'),
             'description_key' => null,
             'author' => $this->metadataString($metadata, 'author'),
@@ -86,6 +87,7 @@ final readonly class ThemeAdminOverview
             'status' => $package->status()->value,
             'status_label_key' => 'admin.packages.status.'.$package->status()->value,
             'status_tone' => $this->statusTone($package->status()),
+            'status_action_path' => $this->statusActionPath($package),
             'type_label_key' => 'admin.themes.type.package',
             'type_tone' => 'neutral',
             'version' => $package->installedVersion() ?? $package->manifestVersion(),
@@ -102,6 +104,7 @@ final readonly class ThemeAdminOverview
             'package_name' => 'system',
             'label' => $metadata['name'],
             'label_key' => null,
+            'detail_path' => $this->detailPath('system'),
             'description' => $metadata['description'],
             'description_key' => null,
             'author' => $metadata['author'],
@@ -110,11 +113,29 @@ final readonly class ThemeAdminOverview
             'status' => $status->value,
             'status_label_key' => 'admin.packages.status.'.$status->value,
             'status_tone' => $this->statusTone($status),
+            'status_action_path' => null,
             'type_label_key' => 'admin.themes.type.system',
             'type_tone' => 'info',
             'version' => is_string($version) && '' !== trim($version) ? $version : null,
             'scope' => $scope->value,
         ];
+    }
+
+    private function detailPath(string $packageName): string
+    {
+        return '/admin/packages/'.rawurlencode($packageName);
+    }
+
+    private function statusActionPath(ExtensionPackage $package): ?string
+    {
+        $action = match ($package->status()) {
+            ExtensionPackageStatus::Inactive => 'activate',
+            ExtensionPackageStatus::Active => 'deactivate',
+            ExtensionPackageStatus::Faulty => 'reset-fault',
+            ExtensionPackageStatus::Removed => null,
+        };
+
+        return null === $action ? null : $this->detailPath($package->packageName()).'/'.$action;
     }
 
     /**

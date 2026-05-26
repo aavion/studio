@@ -63,8 +63,51 @@ admin:
     actions:
       settings: 'Einstellungen'
       no_settings: 'Keine Einstellungen'
+      none: 'Keine Aktionen'
     meta:
       author: 'Von %author%'
+    detail:
+      overview_title: 'Paketübersicht'
+      manifest_title: 'Manifestdaten'
+      manifest_empty: 'Es sind keine Manifestdaten verfügbar.'
+      immutable: 'Unveränderlich'
+      description: 'Beschreibung'
+      author: 'Autor'
+    lifecycle:
+      review_title: 'Änderungen prüfen'
+      immutable: 'Dieses Systempaket ist unveränderlich und kann seinen Lifecycle-State nicht ändern.'
+      unavailable: 'Diese Lifecycle-Aktion ist nicht verfügbar.'
+      no_changes: 'Diese Aktion muss keinen Paketstatus ändern.'
+      cancel: 'Abbrechen'
+      table:
+        action: 'Aktion'
+      activate:
+        label: 'Aktivieren'
+        title: '%package% aktivieren'
+        text: 'Prüfe Abhängigkeiten und Konflikte, bevor dieses Paket aktiviert wird.'
+        submit: 'Paket aktivieren'
+      deactivate:
+        label: 'Deaktivieren'
+        title: '%package% deaktivieren'
+        text: 'Prüfe die geplante Statusänderung, bevor dieses Paket deaktiviert wird.'
+        submit: 'Paket deaktivieren'
+      reset_fault:
+        label: 'Fehler zurücksetzen'
+        title: 'Fehler für %package% zurücksetzen'
+        text: 'Das Paket wird erneut validiert und bei erfolgreicher Wiederherstellung auf inaktiv gesetzt.'
+        submit: 'Fehler zurücksetzen'
+      purge:
+        label: 'Daten löschen'
+        title: 'Daten für %package% löschen'
+        text: 'Prüfe den Cleanup paketbezogener Daten, bevor diese Paketregistrierung zurückgesetzt wird.'
+        warning: 'Dieser Schritt ist irreversibel. Paketeigene Einstellungen und spätere paketeigene Cleanup-Ziele werden gelöscht.'
+        submit: 'Daten löschen'
+      delete:
+        label: 'Paket löschen'
+        title: '%package% löschen'
+        text: 'Prüfe die Dateisystem-Entfernung, bevor dieses Paket von der Festplatte gelöscht wird.'
+        warning: 'Dieser Schritt ist irreversibel. Die Paketdateien werden gelöscht und der Registry-Eintrag bleibt als entfernt bestehen, bis Daten separat gelöscht werden.'
+        submit: 'Paket löschen'
   themes:
     title: 'Theme-Verwaltung'
     foundation_title: 'Theme-Verwaltungsfundament'

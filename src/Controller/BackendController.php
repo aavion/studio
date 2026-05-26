@@ -9,6 +9,7 @@ use App\Backend\BackendActions;
 use App\Backend\BackendArea;
 use App\Backend\BackendRouteResolver;
 use App\Backend\BackendViewDefinition;
+use App\Backend\PackageLifecycleAdmin;
 use App\Core\Access\AccessActor;
 use App\Core\Config\Settings\CoreSettingsFormHandler;
 use App\Core\Message\Message;
@@ -39,6 +40,7 @@ final class BackendController extends AbstractController
         private readonly CoreSettingsFormHandler $coreSettingsFormHandler,
         private readonly PackageSettingsFormHandler $packageSettingsFormHandler,
         private readonly BackendActions $backendActions,
+        private readonly PackageLifecycleAdmin $packageLifecycleAdmin,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
         private readonly SetupRunner $setupRunner,
         private readonly SetupWebInputFactory $setupWebInputFactory,
@@ -61,6 +63,79 @@ final class BackendController extends AbstractController
     public function adminIndex(Request $request): Response
     {
         return $this->handle($request, BackendArea::Admin);
+    }
+
+    #[Route('/admin/packages/{packageName}', name: 'backend_admin_package_detail', requirements: ['packageName' => '[^/]+'], methods: ['GET'])]
+    public function packageDetail(Request $request, string $packageName): Response
+    {
+        $access = $this->adminAccessResponse($request);
+
+        if (null !== $access) {
+            return $access;
+        }
+
+        $package = $this->packageLifecycleAdmin->package($packageName);
+
+        if (null === $package) {
+            return $this->httpError->render(Response::HTTP_NOT_FOUND, $request, context: [
+                'area' => BackendArea::Admin->value,
+                'package' => $packageName,
+            ]);
+        }
+
+        return $this->render('@backend/admin/packages/detail.html.twig', [
+            'area' => BackendArea::Admin,
+            'navigation' => $this->navigation($request, BackendArea::Admin),
+            'package' => $package,
+        ]);
+    }
+
+    #[Route('/admin/packages/{packageName}/{action}', name: 'backend_admin_package_lifecycle', requirements: ['packageName' => '[^/]+', 'action' => 'activate|deactivate|reset-fault|purge|delete'], methods: ['GET', 'POST'])]
+    public function packageLifecycle(Request $request, string $packageName, string $action): Response
+    {
+        $access = $this->adminAccessResponse($request);
+
+        if (null !== $access) {
+            return $access;
+        }
+
+        $review = $this->packageLifecycleAdmin->review($packageName, $action);
+
+        if (null === $review['package']) {
+            return $this->httpError->render(Response::HTTP_NOT_FOUND, $request, context: [
+                'area' => BackendArea::Admin->value,
+                'package' => $packageName,
+                'action' => $action,
+            ]);
+        }
+
+        if ($request->isMethod('POST')) {
+            $formId = 'package-lifecycle-'.$action.'-'.$packageName;
+
+            if (!$this->validFormToken($formId, $this->stringField($request, '_form_id'), $this->stringField($request, '_csrf_token'))) {
+                $this->addFlash('error', [
+                    'translation_key' => MessageKey::BACKEND_ACTION_INVALID_CSRF,
+                    'parameters' => [],
+                ]);
+
+                return $this->redirect($request->getPathInfo());
+            }
+
+            $result = $this->packageLifecycleAdmin->apply($packageName, $action);
+            $this->flashResult($result);
+
+            if ($result->isSuccess()) {
+                return $this->redirect('purge' === $action ? '/admin/packages' : '/admin/packages/'.rawurlencode($packageName));
+            }
+
+            return $this->redirect($request->getPathInfo());
+        }
+
+        return $this->render('@backend/admin/packages/lifecycle.html.twig', [
+            'area' => BackendArea::Admin,
+            'navigation' => $this->navigation($request, BackendArea::Admin),
+            'review' => $review,
+        ]);
     }
 
     #[Route('/admin/{path}', name: 'backend_admin_route', requirements: ['path' => '.+'], methods: ['GET', 'POST'])]
@@ -127,6 +202,20 @@ final class BackendController extends AbstractController
         }
 
         return $this->render($result->template(), $templateVariables, new Response(status: $result->statusCode()));
+    }
+
+    private function adminAccessResponse(Request $request): ?Response
+    {
+        $decision = $this->accessGuard->decide(BackendArea::Admin, $this->getUser());
+
+        if ($decision->isGranted()) {
+            return null;
+        }
+
+        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            'area' => BackendArea::Admin->value,
+            'access_decision' => $decision->toArray(),
+        ]);
     }
 
     /**

@@ -58,6 +58,7 @@ final readonly class PackageAdminOverview
             'package_name' => $package->packageName(),
             'label' => $label,
             'label_key' => null,
+            'detail_path' => $this->detailPath($package->packageName()),
             'description' => $this->metadataString($metadata, 'description'),
             'description_key' => null,
             'author' => $this->metadataString($metadata, 'author'),
@@ -66,6 +67,7 @@ final readonly class PackageAdminOverview
             'status' => $package->status()->value,
             'status_label_key' => 'admin.packages.status.'.$package->status()->value,
             'status_tone' => $this->statusTone($package->status()),
+            'actions' => $this->actions($package),
             'scopes' => array_map(static fn (string $scope): array => [
                 'value' => $scope,
                 'label_key' => 'admin.packages.scope.'.str_replace('-', '_', $scope),
@@ -85,6 +87,7 @@ final readonly class PackageAdminOverview
             'package_name' => 'system',
             'label' => $metadata['name'],
             'label_key' => null,
+            'detail_path' => $this->detailPath('system'),
             'description' => $metadata['description'],
             'description_key' => null,
             'author' => $metadata['author'],
@@ -93,6 +96,7 @@ final readonly class PackageAdminOverview
             'status' => ExtensionPackageStatus::Active->value,
             'status_label_key' => 'admin.packages.status.active',
             'status_tone' => 'success',
+            'actions' => [],
             'scopes' => array_map(static fn (string $scope): array => [
                 'value' => $scope,
                 'label_key' => 'admin.packages.scope.'.str_replace('-', '_', $scope),
@@ -100,6 +104,44 @@ final readonly class PackageAdminOverview
             'manifest_version' => is_string($version) && '' !== trim($version) ? $version : null,
             'installed_version' => null,
             'settings_path' => null,
+        ];
+    }
+
+    private function detailPath(string $packageName): string
+    {
+        return '/admin/packages/'.rawurlencode($packageName);
+    }
+
+    /**
+     * @return list<array{id: string, label_key: string, path: string, variant: string}>
+     */
+    private function actions(ExtensionPackage $package): array
+    {
+        $stateActions = match ($package->status()) {
+            ExtensionPackageStatus::Inactive => [$this->action($package, 'activate', 'primary')],
+            ExtensionPackageStatus::Active => [$this->action($package, 'deactivate', 'secondary')],
+            ExtensionPackageStatus::Faulty => [$this->action($package, 'reset-fault', 'secondary')],
+            ExtensionPackageStatus::Removed => [],
+        };
+
+        $cleanupActions = [
+            $this->action($package, 'purge', 'danger'),
+        ];
+
+        if (ExtensionPackageStatus::Removed !== $package->status()) {
+            $cleanupActions[] = $this->action($package, 'delete', 'danger');
+        }
+
+        return [...$stateActions, ...$cleanupActions];
+    }
+
+    private function action(ExtensionPackage $package, string $action, string $variant): array
+    {
+        return [
+            'id' => $action,
+            'label_key' => 'admin.packages.lifecycle.'.str_replace('-', '_', $action).'.label',
+            'path' => $this->detailPath($package->packageName()).'/'.$action,
+            'variant' => $variant,
         ];
     }
 

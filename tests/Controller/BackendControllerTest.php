@@ -123,13 +123,11 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('.studio-backend-nav .is-collapsed a[href="/admin/settings"][aria-expanded="false"]');
         self::assertSelectorNotExists('.studio-backend-nav a[href="/admin/settings/general"]');
         self::assertSelectorTextContains('.studio-table', 'aavion Studio');
-        self::assertSelectorTextContains('.studio-table', 'Symfony 8 CMS (under active development)');
-        self::assertSelectorTextContains('.studio-table', 'By Dominik Letica');
-        self::assertSelectorTextContains('.studio-table', 'system');
+        self::assertSelectorTextContains('.studio-table', '0.1.0');
         self::assertSelectorTextContains('.studio-table', 'Active');
         self::assertSelectorTextContains('.studio-table', 'System template');
-        self::assertSelectorTextContains('.studio-table', 'No settings');
         self::assertSelectorExists('.studio-table tr.is-immutable[data-package-name="system"][data-immutable="true"]');
+        self::assertSelectorExists('.studio-table a[href="/admin/packages/system"]');
 
         $client->request('GET', '/admin/themes');
 
@@ -197,6 +195,78 @@ final class BackendControllerTest extends WebTestCase
         $client->followRedirect();
 
         self::assertSelectorTextContains('.studio-alert-success', 'Package discovery was queued by "admin_ui".');
+    }
+
+    public function testAdminPackageDetailAndLifecycleReviewRoutesRender(): void
+    {
+        $client = self::createClient();
+        $this->removePackageByName('test-lifecycle');
+
+        $client->loginUser($this->createUserWithLevel(8));
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $package = new ExtensionPackage(
+            '00000000-0000-0000-0000-000000000498',
+            [PackageScope::Module],
+            'test-lifecycle',
+            'packages/test-lifecycle',
+            ExtensionPackageStatus::Inactive,
+            [
+                'display_name' => 'Test Lifecycle',
+                'description' => 'Lifecycle package fixture',
+                'author' => 'Test Suite',
+                'manifest' => [
+                    'PACKAGE_NAME' => 'Test Lifecycle',
+                    'PACKAGE_VERSION' => '1.0.0',
+                ],
+            ],
+            manifestVersion: '1.0.0',
+        );
+        $entityManager->persist($package);
+        $entityManager->flush();
+
+        try {
+            $client->request('GET', '/admin/packages');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('a[href="/admin/packages/test-lifecycle"]');
+            self::assertSelectorNotExists('a[href="/admin/packages/test-lifecycle/activate"]');
+            self::assertSelectorNotExists('a[href="/admin/packages/test-lifecycle/purge"]');
+            self::assertSelectorNotExists('a[href="/admin/packages/test-lifecycle/delete"]');
+
+            $client->request('GET', '/admin/packages/test-lifecycle');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Test Lifecycle');
+            self::assertSelectorTextContains('.studio-table', 'Lifecycle package fixture');
+            self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/activate"]');
+            self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/purge"]');
+            self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/delete"]');
+
+            $client->request('GET', '/admin/packages/test-lifecycle/activate');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Activate Test Lifecycle');
+            self::assertSelectorTextContains('.studio-table', 'activated');
+            self::assertSelectorExists('button[type="submit"]');
+
+            $client->request('GET', '/admin/packages/test-lifecycle/purge');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Delete data for Test Lifecycle');
+            self::assertSelectorTextContains('.studio-table', 'purged');
+            self::assertSelectorTextContains('.studio-alert-warning', 'This step is irreversible.');
+            self::assertSelectorExists('button.studio-button-danger[type="submit"]');
+
+            $client->request('GET', '/admin/packages/test-lifecycle/delete');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Delete Test Lifecycle');
+            self::assertSelectorTextContains('.studio-table', 'removed');
+            self::assertSelectorTextContains('.studio-alert-warning', 'This step is irreversible.');
+            self::assertSelectorExists('button[type="submit"]');
+        } finally {
+            $this->removePackageByName('test-lifecycle');
+        }
     }
 
     public function testAdminSettingsRoutesRenderThroughRegistry(): void

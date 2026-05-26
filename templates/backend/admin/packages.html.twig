@@ -36,30 +36,28 @@
                         <th scope="col">{{ 'admin.packages.table.package'|trans }}</th>
                         <th scope="col">{{ 'admin.packages.table.status'|trans }}</th>
                         <th scope="col">{{ 'admin.packages.table.scopes'|trans }}</th>
-                        <th scope="col">{{ 'admin.packages.table.version'|trans }}</th>
-                        <th scope="col">{{ 'admin.packages.table.path'|trans }}</th>
-                        <th scope="col">{{ 'admin.packages.table.actions'|trans }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for package in packages %}
+                        {% set row_classes = package.immutable ? 'is-immutable' : '' %}
+                        {% set row_classes = package.update_version|default(null) ? (row_classes ~ ' has-update')|trim : row_classes %}
                         <tr {{ studio_html_attributes({
-                            class: package.immutable ? 'is-immutable' : null,
+                            class: row_classes ?: null,
                             'data-package-name': package.package_name,
                             'data-package-status': package.status,
                             'data-immutable': package.immutable ? 'true' : null,
                         }) }}>
+                            {% set package_version = package.installed_version|default(package.manifest_version|default(null)) %}
                             <th scope="row">
-                                <strong>{{ package.label_key ? package.label_key|trans : package.label }}</strong>
-                                <br>
-                                <span class="studio-muted">{{ package.package_name }}</span>
-                                {% if package.description_key or package.description %}
-                                    <br>
-                                    <span class="studio-muted">{{ package.description_key ? package.description_key|trans : package.description }}</span>
+                                <strong>
+                                    <a href="{{ package.detail_path }}">{{ package.label_key ? package.label_key|trans : package.label }}</a>
+                                </strong>
+                                {% if package_version %}
+                                    <span class="studio-muted">{{ package_version }}</span>
                                 {% endif %}
-                                {% if package.author %}
-                                    <br>
-                                    <span class="studio-muted">{{ 'admin.packages.meta.author'|trans({'%author%': package.author}) }}</span>
+                                {% if package.update_version|default(null) %}
+                                    <strong class="studio-badge studio-badge-warning">&gt; {{ package.update_version }}</strong>
                                 {% endif %}
                             </th>
                             <td>
@@ -71,15 +69,6 @@
                                 {% for scope in package.scopes %}
                                     <span class="studio-badge studio-badge-neutral">{{ scope.label_key|trans }}</span>
                                 {% endfor %}
-                            </td>
-                            <td>{{ package.installed_version|default(package.manifest_version|default('admin.packages.unknown_value'|trans)) }}</td>
-                            <td><code>{{ package.path }}</code></td>
-                            <td>
-                                {% if package.settings_path %}
-                                    <a href="{{ package.settings_path }}">{{ 'admin.packages.actions.settings'|trans }}</a>
-                                {% else %}
-                                    <span class="studio-muted">{{ 'admin.packages.actions.no_settings'|trans }}</span>
-                                {% endif %}
                             </td>
                         </tr>
                     {% endfor %}

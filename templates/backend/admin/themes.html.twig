@@ -46,7 +46,9 @@
                                 'data-theme-status': theme.status,
                             }) }}>
                                 <th scope="row">
-                                    <strong>{{ theme.label_key ? theme.label_key|trans : theme.label }}</strong>
+                                    <strong>
+                                        <a href="{{ theme.detail_path }}">{{ theme.label_key ? theme.label_key|trans : theme.label }}</a>
+                                    </strong>
                                     <br>
                                     <span class="studio-muted">{{ theme.package_name }}</span>
                                     {% if theme.description_key or theme.description %}
@@ -59,9 +61,15 @@
                                     {% endif %}
                                 </th>
                                 <td>
-                                    <span class="studio-badge studio-badge-{{ theme.status_tone }}">
-                                        {{ theme.status_label_key|trans }}
-                                    </span>
+                                    {% if theme.status_action_path %}
+                                        <a class="studio-badge studio-badge-{{ theme.status_tone }}" href="{{ theme.status_action_path }}">
+                                            {{ theme.status_label_key|trans }}
+                                        </a>
+                                    {% else %}
+                                        <span class="studio-badge studio-badge-{{ theme.status_tone }}">
+                                            {{ theme.status_label_key|trans }}
+                                        </span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <span class="studio-badge studio-badge-{{ theme.type_tone }}">

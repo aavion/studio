@@ -72,6 +72,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Added package detail and non-menu lifecycle review routes for package activation, deactivation, fault reset, data purge, and physical package deletion, with explicit overview action buttons instead of clickable status badges.
+- Verified the package lifecycle UI slice with PHP syntax checks, Twig linting, translation catalogue comparison, container linting, targeted backend controller coverage, and the full PHPUnit suite.
 - Added a first BackendActions foundation with CSRF-protected Admin UI buttons for package discovery, asset rebuild dispatch, and synchronous cache clearing on package and theme overview screens.
 - Surfaced root `.manifest` name, author, and description metadata through the virtual system package and mirrored those values into package and theme admin overviews.
 - Marked system package/theme rows as immutable in admin overviews, kept the virtual system package visible for package update workflows, and made theme sections show the system fallback as active only when no active theme package owns that area.
