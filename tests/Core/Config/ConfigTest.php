@@ -6,6 +6,10 @@ namespace App\Tests\Core\Config;
 
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageReporterInterface;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 
@@ -37,8 +41,8 @@ final class ConfigTest extends TestCase
         $connection = $this->connection();
         $config = new Config($connection);
 
-        $config->set('user.menu.sort_order', 875, ConfigValueType::Integer, modifiedBy: 'test');
-        $config->set('user.menu.sort_order', 950, modifiedBy: 'test');
+        self::assertTrue($config->set('user.menu.sort_order', 875, ConfigValueType::Integer, modifiedBy: 'test'));
+        self::assertTrue($config->set('user.menu.sort_order', 950, modifiedBy: 'test'));
 
         $row = $connection->fetchAssociative('SELECT value, value_type, sensitive, modified_by FROM config_entry WHERE config_key = ?', [
             'user.menu.sort_order',
@@ -51,11 +55,90 @@ final class ConfigTest extends TestCase
         self::assertSame('test', $row['modified_by']);
     }
 
+    public function testItReportsInvalidConfigurationKeys(): void
+    {
+        $reporter = new RecordingConfigMessageReporter();
+        $config = new Config($this->connection(), $reporter);
+
+        self::assertSame('fallback', $config->get('InvalidKey', 'fallback'));
+        self::assertFalse($config->set('InvalidKey', true));
+
+        self::assertCount(2, $reporter->messages);
+        self::assertSame(MessageKey::CONFIG_KEY_INVALID, $reporter->messages[0]->translationKey());
+        self::assertSame(MessageKey::CONFIG_KEY_INVALID, $reporter->messages[1]->translationKey());
+        self::assertSame('config.get', $reporter->messages[0]->context()['operation']);
+        self::assertSame('config.set', $reporter->messages[1]->context()['operation']);
+    }
+
+    public function testItReportsStoredJsonErrors(): void
+    {
+        $connection = $this->connection();
+        $connection->insert('config_entry', [
+            'config_key' => 'user.menu.enabled',
+            'value' => '{broken-json',
+            'value_type' => 'boolean',
+        ]);
+        $reporter = new RecordingConfigMessageReporter();
+        $config = new Config($connection, $reporter);
+
+        self::assertTrue($config->get('user.menu.enabled', true));
+
+        self::assertCount(1, $reporter->messages);
+        self::assertSame(MessageCode::CONFIG_VALUE_INVALID, $reporter->messages[0]->code());
+        self::assertSame(MessageKey::CONFIG_VALUE_INVALID, $reporter->messages[0]->translationKey());
+        self::assertSame('user.menu.enabled', $reporter->messages[0]->context()['config_key']);
+    }
+
+    public function testItReportsReadAndWriteFailures(): void
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $reporter = new RecordingConfigMessageReporter();
+        $config = new Config($connection, $reporter);
+
+        self::assertSame('fallback', $config->get('user.menu.enabled', 'fallback'));
+        self::assertFalse($config->set('user.menu.enabled', true));
+
+        self::assertCount(2, $reporter->messages);
+        self::assertSame(MessageCode::CONFIG_READ_FAILED, $reporter->messages[0]->code());
+        self::assertSame(MessageCode::CONFIG_WRITE_FAILED, $reporter->messages[1]->code());
+    }
+
     private function connection(): \Doctrine\DBAL\Connection
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL DEFAULT 0, modified_at DATETIME DEFAULT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
 
         return $connection;
+    }
+}
+
+final class RecordingConfigMessageReporter implements MessageReporterInterface
+{
+    /**
+     * @var list<Message>
+     */
+    public array $messages = [];
+
+    public function report(Message $message, array $context = []): Message
+    {
+        $this->messages[] = $message;
+
+        return $message;
+    }
+
+    public function reportBatch(iterable $records): array
+    {
+        $messages = [];
+
+        foreach ($records as $record) {
+            $message = $record['message'];
+
+            if ($message instanceof Message) {
+                $this->messages[] = $message;
+                $messages[] = $message;
+            }
+        }
+
+        return $messages;
     }
 }

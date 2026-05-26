@@ -167,6 +167,9 @@ message:
   config:
     key:
       invalid: 'Konfigurations-Key "%key%" muss aus kleingeschriebenen Segmenten mit Punkten bestehen.'
+    read_failed: 'Konfigurations-Key "%key%" konnte nicht gelesen werden.'
+    write_failed: 'Konfigurations-Key "%key%" konnte nicht geschrieben werden.'
+    value_invalid: 'Konfigurations-Key "%key%" enthält einen ungültigen gespeicherten Wert.'
   state:
     subject_type:
       invalid: 'State-Subject-Type "%subject_type%" muss lowercase snake_case sein.'

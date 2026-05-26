@@ -151,6 +151,9 @@ Validation rules:
 | `message.access.level.invalid` | Access level is outside the supported 0-9 range. | `%level%` |
 | `message.access.group_identifier.invalid` | ACL group identifier is not lowercase snake_case. | `%identifier%` |
 | `message.config.key.invalid` | Configuration key does not use dotted lowercase segments. | `%key%` |
+| `message.config.read_failed` | Configuration storage could not read a key. | `%key%` |
+| `message.config.write_failed` | Configuration storage could not write a key. | `%key%` |
+| `message.config.value_invalid` | Configuration storage contains malformed JSON for a key. | `%key%` |
 | `message.user.username.invalid` | Username does not match the supported account-name format. | `%username%` |
 | `message.user.email.invalid` | User email address is invalid. | `%email%` |
 | `message.api_key.prefix.invalid` | API key prefix does not match the safe display format. | `%prefix%` |

@@ -167,6 +167,9 @@ message:
   config:
     key:
       invalid: 'Configuration key "%key%" must use dotted lowercase segments.'
+    read_failed: 'Configuration key "%key%" could not be read.'
+    write_failed: 'Configuration key "%key%" could not be written.'
+    value_invalid: 'Configuration key "%key%" contains an invalid stored value.'
   state:
     subject_type:
       invalid: 'State subject type "%subject_type%" must be lowercase snake_case.'

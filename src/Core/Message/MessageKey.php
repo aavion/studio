@@ -148,6 +148,9 @@ final class MessageKey
     public const STATE_SUBJECT_TYPE_INVALID = 'message.state.subject_type.invalid';
     public const STATE_MARKER_KEY_INVALID = 'message.state.marker_key.invalid';
     public const CONFIG_KEY_INVALID = 'message.config.key.invalid';
+    public const CONFIG_READ_FAILED = 'message.config.read_failed';
+    public const CONFIG_WRITE_FAILED = 'message.config.write_failed';
+    public const CONFIG_VALUE_INVALID = 'message.config.value_invalid';
     public const USERNAME_INVALID = 'message.user.username.invalid';
     public const USER_EMAIL_INVALID = 'message.user.email.invalid';
     public const API_KEY_PREFIX_INVALID = 'message.api_key.prefix.invalid';

@@ -90,7 +90,7 @@
 
 | Type | Symbol | Purpose | Docs | Tests |
 |------|--------|---------|------|-------|
-| Service | `App\Core\Config\Config` | Small DBAL-backed configuration service with `get()` and `set()` helpers for JSON-encoded global config values. Reads fall back gracefully when the database or key is unavailable. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Config/ConfigTest.php`, `tests/Controller/PublicContentLocalizationTest.php` |
+| Service | `App\Core\Config\Config` | Small DBAL-backed configuration service with `get()` and `set()` helpers for JSON-encoded global config values, graceful fallbacks, and message-backed diagnostics for invalid keys, malformed values, and storage failures. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Config/ConfigTest.php`, `tests/Controller/PublicContentLocalizationTest.php` |
 | Enum | `App\Core\Config\ConfigValueType` | Enum for typed database-backed configuration values. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | Value object | `App\Core\Message\Message` | Universal message value object carrying log level, code, translation key, parameters, and context for logs, output, validation, future localization, and invalid-argument diagnostics. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Message/MessageTest.php` |
 | Value object | `App\Core\Message\MessageCode` | Constants for core-owned machine-readable message codes while allowing third-party modules to provide their own codes. | `dev/draft/0.1.x-ErrorHandlingValidation.md` | `tests/Core/Message/MessageCodeTest.php` |

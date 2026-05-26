@@ -104,6 +104,9 @@ final class MessageCode
     public const ACCESS_DENIED = 'access.denied';
     public const BACKEND_ROUTE_NOT_FOUND = 'backend.route_not_found';
     public const BACKEND_SETUP_LOCKED = 'backend.setup_locked';
+    public const CONFIG_READ_FAILED = 'config.read_failed';
+    public const CONFIG_WRITE_FAILED = 'config.write_failed';
+    public const CONFIG_VALUE_INVALID = 'config.value_invalid';
     public const CONTENT_LANGUAGE_FALLBACK = 'content.language_fallback';
     public const CONTENT_VARIANT_FALLBACK = 'content.variant_fallback';
     public const SETUP_STEP_FAILED = 'setup.step_failed';
