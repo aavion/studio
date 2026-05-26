@@ -42,6 +42,7 @@ Symfony environment resolution should match Symfony precedence as closely as pra
 - env override writing and `composer dump-env`;
 - Doctrine migration execution;
 - database-backed default settings, including `localization.default_language`, disabled `localization.route_prefixes_enabled`, and `content.home_path`;
+- a minimal locked `static_page` schema plus published `/home` placeholder page so the configured public root can render immediately after setup;
 - dry-run planning without writing env files, running commands, or seeding the database;
 - setup action logs with halt-on-error results.
 

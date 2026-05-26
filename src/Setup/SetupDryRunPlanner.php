@@ -66,6 +66,12 @@ final readonly class SetupDryRunPlanner
                 'admin_password' => '[hidden]',
                 'groups' => ['admin'],
             ], ActionLogStatus::Skipped],
+            ['seed_initial_content', fn (): array => [
+                'dry_run' => true,
+                'schema' => 'static_page',
+                'path' => '/home',
+                'title' => $input->siteTitle(),
+            ], ActionLogStatus::Skipped],
             ['mark_setup_completed', fn (): array => [
                 'dry_run' => true,
                 'would_write' => [

@@ -84,6 +84,8 @@ final class SetupRunnerTest extends TestCase
         $passwordHash = $pdo->query("SELECT password_hash FROM user_account WHERE username = 'admin'")->fetchColumn();
         $stateMarkers = $pdo->query("SELECT marker_key, marker_value FROM state_marker WHERE subject_type = 'user_account' ORDER BY marker_key")->fetchAll(PDO::FETCH_KEY_PAIR);
         $groups = $pdo->query("SELECT g.identifier FROM acl_group g INNER JOIN user_acl_group ug ON ug.group_uid = g.uid INNER JOIN user_account u ON u.uid = ug.user_uid WHERE u.username = 'admin' ORDER BY g.access_level")->fetchAll(PDO::FETCH_COLUMN);
+        $home = $pdo->query("SELECT ci.slug, ci.status, ci.visibility, ci.active_revision_uid, cs.identifier AS schema_identifier FROM content_item ci INNER JOIN content_schema cs ON cs.uid = ci.schema_uid WHERE ci.slug = 'home'")->fetch(PDO::FETCH_ASSOC);
+        $homeTitle = $pdo->query("SELECT field_content FROM content_field_value WHERE revision_uid = '20000000-0000-0000-0000-000000000101' AND field_identifier = 'title' AND language = 'en'")->fetchColumn();
 
         self::assertSame('Example Studio', json_decode((string) $title, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame('https://example.test', json_decode((string) $url, true, flags: JSON_THROW_ON_ERROR));
@@ -112,6 +114,14 @@ final class SetupRunnerTest extends TestCase
             'status_changed' => 'active',
         ], $stateMarkers);
         self::assertSame(['admin'], $groups);
+        self::assertSame([
+            'slug' => 'home',
+            'status' => 'published',
+            'visibility' => 'public',
+            'active_revision_uid' => '20000000-0000-0000-0000-000000000101',
+            'schema_identifier' => 'static_page',
+        ], $home);
+        self::assertSame('Example Studio', json_decode((string) $homeTitle, true, flags: JSON_THROW_ON_ERROR));
     }
 
     public function testItSeedsTheSameSqliteDatabaseThatSymfonyMigratesWhenUrlUsesKernelEnvironmentPlaceholder(): void
@@ -324,9 +334,11 @@ final class SetupRunnerTest extends TestCase
         self::assertTrue($entries[4]['context']['settings']['user.menu.enabled']);
         self::assertSame(900, $entries[4]['context']['settings']['user.menu.sort_order']);
         self::assertFalse($entries[4]['context']['settings']['user.registration.enabled']);
-        self::assertSame('mark_setup_completed', $entries[6]['name']);
-        self::assertSame('clear_cache', $entries[7]['name']);
-        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'], $entries[7]['context']['command']);
+        self::assertSame('seed_initial_content', $entries[6]['name']);
+        self::assertSame('/home', $entries[6]['context']['path']);
+        self::assertSame('mark_setup_completed', $entries[7]['name']);
+        self::assertSame('clear_cache', $entries[8]['name']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'], $entries[8]['context']['command']);
     }
 
     public function testDryRunMasksDatabasePasswordsInActionLogContext(): void
@@ -443,6 +455,11 @@ final class SetupRunnerTest extends TestCase
         $pdo->exec('CREATE TABLE state_marker (uid VARCHAR(36) NOT NULL PRIMARY KEY, subject_type VARCHAR(80) NOT NULL, subject_uid VARCHAR(36) NOT NULL, marker_key VARCHAR(80) NOT NULL, marker_at DATETIME NOT NULL, marker_by VARCHAR(180) DEFAULT NULL, marker_value VARCHAR(255) DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(subject_type, subject_uid, marker_key))');
         $pdo->exec('CREATE TABLE user_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(180) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, profile CLOB NOT NULL, settings CLOB NOT NULL, status VARCHAR(32) NOT NULL)');
         $pdo->exec('CREATE TABLE user_acl_group (user_uid VARCHAR(36) NOT NULL, group_uid VARCHAR(36) NOT NULL, PRIMARY KEY(user_uid, group_uid))');
+        $pdo->exec('CREATE TABLE content_schema (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(120) NOT NULL UNIQUE, source VARCHAR(255) NOT NULL, locked BOOLEAN NOT NULL, active_version_uid VARCHAR(36) DEFAULT NULL, labels CLOB NOT NULL, descriptions CLOB NOT NULL, metadata CLOB NOT NULL)');
+        $pdo->exec('CREATE TABLE content_schema_version (uid VARCHAR(36) NOT NULL PRIMARY KEY, schema_uid VARCHAR(36) NOT NULL, version INTEGER NOT NULL, title CLOB NOT NULL, description CLOB NOT NULL, definition CLOB NOT NULL, custom_twig CLOB DEFAULT NULL, definition_hash VARCHAR(64) NOT NULL, use_min_level INTEGER DEFAULT NULL, use_group_identifiers CLOB DEFAULT NULL, edit_min_level INTEGER DEFAULT NULL, edit_group_identifiers CLOB DEFAULT NULL, manage_min_level INTEGER DEFAULT NULL, manage_group_identifiers CLOB DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(schema_uid, version))');
+        $pdo->exec('CREATE TABLE content_item (uid VARCHAR(36) NOT NULL PRIMARY KEY, slug VARCHAR(160) NOT NULL, status VARCHAR(255) NOT NULL, parent_uid VARCHAR(36) NOT NULL DEFAULT \'/\', sort_order INTEGER NOT NULL, custom_url VARCHAR(1024) DEFAULT NULL UNIQUE, redirect_target VARCHAR(1024) DEFAULT NULL, schema_uid VARCHAR(36) DEFAULT NULL, schema_version INTEGER DEFAULT NULL, active_revision_uid VARCHAR(36) DEFAULT NULL, version INTEGER NOT NULL, available_languages CLOB NOT NULL, available_variants CLOB NOT NULL, visibility VARCHAR(255) NOT NULL, acl_restrictions CLOB NOT NULL, view_min_level INTEGER DEFAULT NULL, view_group_identifiers CLOB DEFAULT NULL, edit_min_level INTEGER DEFAULT NULL, edit_group_identifiers CLOB DEFAULT NULL, manage_min_level INTEGER DEFAULT NULL, manage_group_identifiers CLOB DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(parent_uid, slug))');
+        $pdo->exec('CREATE TABLE content_revision (uid VARCHAR(36) NOT NULL PRIMARY KEY, content_uid VARCHAR(36) NOT NULL, version INTEGER NOT NULL, schema_uid VARCHAR(36) NOT NULL, schema_version_uid VARCHAR(36) NOT NULL, change_summary VARCHAR(255) DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(content_uid, version))');
+        $pdo->exec('CREATE TABLE content_field_value (uid VARCHAR(36) NOT NULL PRIMARY KEY, revision_uid VARCHAR(36) NOT NULL, language VARCHAR(16) NOT NULL, variant VARCHAR(80) NOT NULL, field_identifier VARCHAR(160) NOT NULL, field_content CLOB NOT NULL, UNIQUE(revision_uid, language, variant, field_identifier))');
     }
 
     private function removeDirectory(string $directory): void

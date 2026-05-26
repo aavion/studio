@@ -126,6 +126,7 @@ final class SetupRunner
             ['run_migrations', fn (): array => $this->runMigrations($input, $environment)],
             ['seed_default_settings', fn (): array => $this->databaseSeeder->seedDefaultSettings($this->projectDir, $input, $databaseUrl)],
             ['seed_admin_user', fn (): array => $this->databaseSeeder->seedAdminUser($this->projectDir, $input, $databaseUrl)],
+            ['seed_initial_content', fn (): array => $this->databaseSeeder->seedInitialContent($this->projectDir, $input, $databaseUrl)],
             ['mark_setup_completed', fn (): array => $this->completionMarker->markComplete($this->projectDir, $input->appEnv())],
             ['clear_cache', fn (): array => $this->clearCache($input, $environment)],
         ];
