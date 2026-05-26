@@ -66,6 +66,16 @@ final readonly class SetupDryRunPlanner
                 'admin_password' => '[hidden]',
                 'groups' => ['admin'],
             ], ActionLogStatus::Skipped],
+            ['mark_setup_completed', fn (): array => [
+                'dry_run' => true,
+                'would_write' => [
+                    'APP_SETUP_COMPLETED' => '1',
+                ],
+            ], ActionLogStatus::Skipped],
+            ['clear_cache', fn (): array => [
+                'dry_run' => true,
+                'command' => [PHP_BINARY, $projectDir.'/bin/console', 'cache:clear', '--env='.$input->appEnv()],
+            ], ActionLogStatus::Skipped],
         ];
     }
 }

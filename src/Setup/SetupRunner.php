@@ -127,6 +127,7 @@ final class SetupRunner
             ['seed_default_settings', fn (): array => $this->databaseSeeder->seedDefaultSettings($this->projectDir, $input, $databaseUrl)],
             ['seed_admin_user', fn (): array => $this->databaseSeeder->seedAdminUser($this->projectDir, $input, $databaseUrl)],
             ['mark_setup_completed', fn (): array => $this->completionMarker->markComplete($this->projectDir, $input->appEnv())],
+            ['clear_cache', fn (): array => $this->clearCache($input, $environment)],
         ];
     }
 
@@ -166,6 +167,23 @@ final class SetupRunner
     }
 
     /**
+     * @param array<string, string> $environment
+     *
+     * @return array<string, mixed>
+     */
+    private function clearCache(SetupInput $input, array $environment): array
+    {
+        $command = $this->cacheClearCommand($input);
+        $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
+
+        if (!$result->isSuccessful()) {
+            throw new SetupStepFailedException($this->commandError($result));
+        }
+
+        return ['command' => $command];
+    }
+
+    /**
      * @return list<string>
      */
     private function migrationCommand(SetupInput $input): array
@@ -175,6 +193,19 @@ final class SetupRunner
             $this->projectDir.'/bin/console',
             'doctrine:migrations:migrate',
             '--no-interaction',
+            '--env='.$input->appEnv(),
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function cacheClearCommand(SetupInput $input): array
+    {
+        return [
+            PHP_BINARY,
+            $this->projectDir.'/bin/console',
+            'cache:clear',
             '--env='.$input->appEnv(),
         ];
     }

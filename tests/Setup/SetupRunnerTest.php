@@ -68,6 +68,7 @@ final class SetupRunnerTest extends TestCase
             ['composer', '--version'],
             ['composer', 'dump-env', 'test'],
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
         ], $executor->commands);
 
         $pdo = new PDO('sqlite:'.$databasePath);
@@ -279,6 +280,7 @@ final class SetupRunnerTest extends TestCase
             [PHP_BINARY, $this->root.'/bin/composer', '--version'],
             [PHP_BINARY, $this->root.'/bin/composer', 'dump-env', 'test'],
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
         ], $executor->commands);
     }
 
@@ -322,6 +324,9 @@ final class SetupRunnerTest extends TestCase
         self::assertTrue($entries[4]['context']['settings']['user.menu.enabled']);
         self::assertSame(900, $entries[4]['context']['settings']['user.menu.sort_order']);
         self::assertFalse($entries[4]['context']['settings']['user.registration.enabled']);
+        self::assertSame('mark_setup_completed', $entries[6]['name']);
+        self::assertSame('clear_cache', $entries[7]['name']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'], $entries[7]['context']['command']);
     }
 
     public function testDryRunMasksDatabasePasswordsInActionLogContext(): void
