@@ -1,6 +1,6 @@
 {% extends '@backend/admin.html.twig' %}
 
-{% block title %}{{ 'admin.settings.global.title'|trans }}{% endblock %}
+{% block title %}{{ 'admin.themes.title'|trans }}{% endblock %}
 
 {% block admin_sidebar %}
     <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
@@ -10,12 +10,12 @@
 
 {% block admin_body %}
     {% include '@backend/admin/partials/_page-header.html.twig' with {
-        eyebrow: 'admin.settings.title'|trans,
-        title: 'admin.settings.global.title'|trans,
+        eyebrow: 'ui.admin.area'|trans,
+        title: 'admin.themes.title'|trans,
     } only %}
 
     <section class="studio-panel">
-        <h2>{{ 'admin.settings.global.foundation_title'|trans }}</h2>
-        <p class="studio-muted">{{ 'admin.settings.global.foundation_text'|trans }}</p>
+        <h2>{{ 'admin.themes.foundation_title'|trans }}</h2>
+        <p class="studio-muted">{{ 'admin.themes.foundation_text'|trans }}</p>
     </section>
 {% endblock %}

@@ -49,7 +49,7 @@ final class BackendController extends AbstractController
     public function adminRoute(Request $request, string $path): Response
     {
         if ('settings' === trim($path, '/')) {
-            return $this->redirectToRoute('backend_admin_route', ['path' => 'settings/global']);
+            return $this->redirectToRoute('backend_admin_route', ['path' => 'settings/general']);
         }
 
         return $this->handle($request, BackendArea::Admin, $path);

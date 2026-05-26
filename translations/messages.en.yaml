@@ -115,9 +115,15 @@ admin:
     navigation:
         dashboard: Dashboard
         packages: Packages
+        themes: Themes
         settings: Settings
-        global_settings: Global
+        general_settings: General
+        dashboard_settings: Dashboard
+        user_settings: Users
+        mail_settings: Mail
+        security_settings: Security
         package_settings: Packages
+        scheduler_settings: Scheduler
     dashboard:
         title: 'Admin dashboard'
         foundation_title: 'Backend foundation'
@@ -126,14 +132,34 @@ admin:
         title: 'Package management'
         foundation_title: 'Package view foundation'
         foundation_text: 'Package management will attach here once install, update, activation, and cleanup workflows are wired.'
+    themes:
+        title: 'Theme management'
+        foundation_title: 'Theme management foundation'
+        foundation_text: 'Theme selection, activation, preview, and variant management will attach here.'
     settings:
         title: Settings
         redirect_title: 'Settings sections'
-        redirect_text: 'Global settings are the first built-in settings section. Active packages with simple setting definitions appear here as package sections.'
-        global:
-            title: 'Global settings'
-            foundation_title: 'Global configuration foundation'
-            foundation_text: 'Global configuration will be managed here through the shared configuration layer.'
+        redirect_text: 'General settings are the first built-in settings section. Active packages with simple setting definitions appear under package settings.'
+        general:
+            title: 'General settings'
+            foundation_title: 'General configuration foundation'
+            foundation_text: 'General site configuration will be managed here through the shared configuration layer.'
+        dashboard:
+            title: 'Dashboard settings'
+            foundation_title: 'Dashboard configuration foundation'
+            foundation_text: 'Dashboard widget selection and admin start-page preferences will attach here.'
+        users:
+            title: 'User settings'
+            foundation_title: 'User configuration foundation'
+            foundation_text: 'Registration availability, profile field configuration, and account-flow defaults will attach here.'
+        mail:
+            title: 'Mail settings'
+            foundation_title: 'Mail configuration foundation'
+            foundation_text: 'Mail transport, sender defaults, and template-related settings will attach here.'
+        security:
+            title: 'Security settings'
+            foundation_title: 'Security configuration foundation'
+            foundation_text: 'Security, captcha, logging, and abuse-control settings will attach here.'
         packages:
             title: 'Package settings'
             foundation_title: 'Packages with settings'
@@ -144,6 +170,10 @@ admin:
             empty: 'This package does not expose configurable settings.'
             options: '%count% option(s)'
             validation: '%count% validation rule(s)'
+        scheduler:
+            title: 'Scheduler settings'
+            foundation_title: 'Scheduler configuration foundation'
+            foundation_text: 'Scheduler defaults, intervals, and automation-related settings will attach here.'
     message:
         title: 'Admin route'
 demo:

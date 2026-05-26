@@ -115,9 +115,15 @@ admin:
     navigation:
         dashboard: Dashboard
         packages: Packages
+        themes: Themes
         settings: Einstellungen
-        global_settings: Global
+        general_settings: Allgemein
+        dashboard_settings: Dashboard
+        user_settings: Benutzer
+        mail_settings: Mail
+        security_settings: Sicherheit
         package_settings: Pakete
+        scheduler_settings: Scheduler
     dashboard:
         title: Admin-Dashboard
         foundation_title: Backend-Fundament
@@ -126,14 +132,34 @@ admin:
         title: Paketverwaltung
         foundation_title: Paket-View-Fundament
         foundation_text: 'Die Paketverwaltung dockt hier an, sobald Installations-, Update-, Aktivierungs- und Cleanup-Workflows verdrahtet sind.'
+    themes:
+        title: Theme-Verwaltung
+        foundation_title: Theme-Verwaltungsfundament
+        foundation_text: 'Theme-Auswahl, Aktivierung, Vorschau und Variantenverwaltung docken hier an.'
     settings:
         title: Einstellungen
         redirect_title: Einstellungsbereiche
-        redirect_text: 'Globale Einstellungen sind der erste eingebaute Einstellungsbereich. Aktive Pakete mit einfachen Setting-Definitionen erscheinen hier als Paketbereiche.'
-        global:
-            title: 'Globale Einstellungen'
-            foundation_title: 'Globales Konfigurationsfundament'
-            foundation_text: 'Globale Konfiguration wird hier über den gemeinsamen Konfigurations-Layer verwaltet.'
+        redirect_text: 'Allgemeine Einstellungen sind der erste eingebaute Einstellungsbereich. Aktive Pakete mit einfachen Setting-Definitionen erscheinen unter den Paket-Einstellungen.'
+        general:
+            title: 'Allgemeine Einstellungen'
+            foundation_title: 'Allgemeines Konfigurationsfundament'
+            foundation_text: 'Allgemeine Website-Konfiguration wird hier über den gemeinsamen Konfigurations-Layer verwaltet.'
+        dashboard:
+            title: Dashboard-Einstellungen
+            foundation_title: Dashboard-Konfigurationsfundament
+            foundation_text: 'Dashboard-Widget-Auswahl und Einstellungen für die Admin-Startseite docken hier an.'
+        users:
+            title: Benutzer-Einstellungen
+            foundation_title: Benutzer-Konfigurationsfundament
+            foundation_text: 'Registrierungsfreigabe, Profilfeld-Konfiguration und Standardwerte für Account-Flows docken hier an.'
+        mail:
+            title: Mail-Einstellungen
+            foundation_title: Mail-Konfigurationsfundament
+            foundation_text: 'Mail-Transport, Absender-Defaults und Template-bezogene Einstellungen docken hier an.'
+        security:
+            title: Sicherheits-Einstellungen
+            foundation_title: Sicherheits-Konfigurationsfundament
+            foundation_text: 'Sicherheits-, Captcha-, Logging- und Missbrauchsschutz-Einstellungen docken hier an.'
         packages:
             title: Paket-Einstellungen
             foundation_title: 'Pakete mit Einstellungen'
@@ -144,6 +170,10 @@ admin:
             empty: 'Dieses Paket stellt keine konfigurierbaren Einstellungen bereit.'
             options: '%count% Option(en)'
             validation: '%count% Validierungsregel(n)'
+        scheduler:
+            title: Scheduler-Einstellungen
+            foundation_title: Scheduler-Konfigurationsfundament
+            foundation_text: 'Scheduler-Defaults, Intervalle und Automations-bezogene Einstellungen docken hier an.'
     message:
         title: Admin-Route
 demo:

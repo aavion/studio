@@ -70,6 +70,12 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Package management');
         self::assertSelectorTextContains('.studio-backend-nav', 'Packages');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/packages"][aria-current="page"]');
+
+        $client->request('GET', '/admin/themes');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Theme management');
+        self::assertSelectorExists('.studio-backend-nav a[href="/admin/themes"][aria-current="page"]');
     }
 
     public function testAdminSettingsRoutesRenderThroughRegistry(): void
@@ -78,21 +84,26 @@ final class BackendControllerTest extends WebTestCase
         $client->loginUser($this->createUserWithLevel(8));
         $client->request('GET', '/admin/settings');
 
-        self::assertResponseRedirects('/admin/settings/global');
+        self::assertResponseRedirects('/admin/settings/general');
 
         $client->followRedirect();
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Global settings');
+        self::assertSelectorTextContains('h1', 'General settings');
         self::assertSelectorTextContains('.studio-backend-nav', 'Settings');
         self::assertSelectorExists('.studio-backend-nav .is-active-ancestor a[href="/admin/settings"]');
-        self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/global"][aria-current="page"]');
+        self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/general"][aria-current="page"]');
 
         $client->request('GET', '/admin/settings/packages');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Package settings');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/packages"][aria-current="page"]');
+
+        $client->request('GET', '/admin/settings/security');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Security settings');
     }
 
     public function testAdminStaticViewInjectionsRenderThroughBackendRegistry(): void

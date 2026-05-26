@@ -72,6 +72,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Added `/admin/themes` as the first top-level Theme Management placeholder so theme selection, activation, previews, and variants can evolve outside the settings tree.
+- Added the first Admin Settings information architecture with `/admin/settings/general` as the default section plus Dashboard, Users, Mail, Security, Packages, and Scheduler placeholder sections under the shared backend view registry.
 - Extended package settings with input-type and validation metadata for future generic forms, added `/admin/settings/packages` as the package settings overview, and nested package-specific settings pages below it by package slug while keeping labels from package metadata.
 - Added the first package settings foundation: a package-scoped settings table, typed setting definitions/providers, active-package filtering, generic Admin Settings views, purge cleanup for package settings, and `PACKAGE_DESCRIPTION` metadata propagation for package UI surfaces.
 - Added a DB-free setup redirect subscriber so fresh installations route public catch-all requests to `/setup` before content, navigation, or config services can query missing tables.
