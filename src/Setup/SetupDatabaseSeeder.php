@@ -7,6 +7,9 @@ namespace App\Setup;
 use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateSubjectType;
 use Doctrine\DBAL\Connection;
@@ -22,20 +25,32 @@ final readonly class SetupDatabaseSeeder
      */
     public function seedDefaultSettings(string $projectDir, SetupInput $input, string $databaseUrl): array
     {
-        $connection = $this->connection($projectDir, $databaseUrl);
+        $connection = $this->connection($projectDir, $databaseUrl, $input);
         $config = new Config($connection);
+        $settings = [
+            ['site.title', $input->siteTitle(), ConfigValueType::String],
+            ['site.url', $input->defaultUri(), ConfigValueType::String],
+            ['localization.default_language', $input->language(), ConfigValueType::String],
+            ['localization.route_prefixes_enabled', false, ConfigValueType::Boolean],
+            ['content.home_path', '/home', ConfigValueType::String],
+            ['user.default_acl_group', 'registered', ConfigValueType::String],
+            ['user.menu.enabled', true, ConfigValueType::Boolean],
+            ['user.menu.sort_order', 900, ConfigValueType::Integer],
+            ['user.registration.enabled', false, ConfigValueType::Boolean],
+        ];
 
-        $config->set('site.title', $input->siteTitle(), ConfigValueType::String, modifiedBy: 'setup');
-        $config->set('site.url', $input->defaultUri(), ConfigValueType::String, modifiedBy: 'setup');
-        $config->set('localization.default_language', $input->language(), ConfigValueType::String, modifiedBy: 'setup');
-        $config->set('localization.route_prefixes_enabled', false, ConfigValueType::Boolean, modifiedBy: 'setup');
-        $config->set('content.home_path', '/home', ConfigValueType::String, modifiedBy: 'setup');
-        $config->set('user.default_acl_group', 'registered', ConfigValueType::String, modifiedBy: 'setup');
-        $config->set('user.menu.enabled', true, ConfigValueType::Boolean, modifiedBy: 'setup');
-        $config->set('user.menu.sort_order', 900, ConfigValueType::Integer, modifiedBy: 'setup');
-        $config->set('user.registration.enabled', false, ConfigValueType::Boolean, modifiedBy: 'setup');
+        foreach ($settings as [$key, $value, $type]) {
+            if (!$config->set($key, $value, $type, modifiedBy: 'setup')) {
+                throw SetupStepFailedException::fromMessage(Message::error(
+                    MessageCode::CONFIG_WRITE_FAILED,
+                    MessageKey::CONFIG_WRITE_FAILED,
+                    ['%key%' => $key],
+                    ['operation' => 'setup.seed_default_settings', 'config_key' => $key],
+                ));
+            }
+        }
 
-        return ['settings' => ['site.title', 'site.url', 'localization.default_language', 'localization.route_prefixes_enabled', 'content.home_path', 'user.default_acl_group', 'user.menu.enabled', 'user.menu.sort_order', 'user.registration.enabled']];
+        return ['settings' => array_column($settings, 0)];
     }
 
     /**
@@ -43,7 +58,7 @@ final readonly class SetupDatabaseSeeder
      */
     public function seedAdminUser(string $projectDir, SetupInput $input, string $databaseUrl): array
     {
-        $connection = $this->connection($projectDir, $databaseUrl);
+        $connection = $this->connection($projectDir, $databaseUrl, $input);
         $now = $this->now();
         $groups = [
             ['00000000-0000-0000-0000-000000000102', 'registered', ['en' => 'Registered', 'de' => 'Registriert'], AccessLevel::REGISTERED, true, true],
@@ -164,9 +179,9 @@ final readonly class SetupDatabaseSeeder
             : $connection->insert('state_marker', ['uid' => $this->uuid(), ...$where, ...$values]);
     }
 
-    private function connection(string $projectDir, string $databaseUrl): Connection
+    private function connection(string $projectDir, string $databaseUrl, SetupInput $input): Connection
     {
-        return $this->connectionFactory->create($projectDir, $databaseUrl);
+        return $this->connectionFactory->create($projectDir, $databaseUrl, $input->appEnv());
     }
 
     private function uuid(): string

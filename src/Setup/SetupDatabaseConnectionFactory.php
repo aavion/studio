@@ -9,9 +9,13 @@ use Doctrine\DBAL\DriverManager;
 
 final readonly class SetupDatabaseConnectionFactory
 {
-    public function create(string $projectDir, string $databaseUrl): Connection
+    public function create(string $projectDir, string $databaseUrl, ?string $appEnv = null): Connection
     {
-        return DriverManager::getConnection($this->connectionParameters(str_replace('%kernel.project_dir%', $projectDir, $databaseUrl)));
+        return DriverManager::getConnection($this->connectionParameters($this->resolveSymfonyPlaceholders(
+            $databaseUrl,
+            $projectDir,
+            $appEnv,
+        )));
     }
 
     /**
@@ -33,5 +37,13 @@ final readonly class SetupDatabaseConnectionFactory
                 default => throw new SetupStepFailedException(sprintf('Unsupported database URL scheme "%s".', $scheme)),
             },
         ];
+    }
+
+    private function resolveSymfonyPlaceholders(string $databaseUrl, string $projectDir, ?string $appEnv): string
+    {
+        return strtr($databaseUrl, [
+            '%kernel.project_dir%' => $projectDir,
+            '%kernel.environment%' => $appEnv ?? (string) ($_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? 'dev'),
+        ]);
     }
 }

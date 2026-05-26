@@ -113,6 +113,62 @@ final class SetupRunnerTest extends TestCase
         self::assertSame(['admin'], $groups);
     }
 
+    public function testItSeedsTheSameSqliteDatabaseThatSymfonyMigratesWhenUrlUsesKernelEnvironmentPlaceholder(): void
+    {
+        $databasePath = $this->root.'/var/data_dev.db';
+        $this->createSchema($databasePath);
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), new RecordingSetupCommandExecutor());
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'dev',
+            language: 'en',
+            siteTitle: 'Placeholder Studio',
+            defaultUri: 'https://placeholder.example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///%kernel.project_dir%/var/data_%kernel.environment%.db',
+            adminUsername: 'admin',
+            adminPassword: 'secret-password',
+            adminEmail: 'admin@example.test',
+            appSecret: 'test-secret',
+        ));
+
+        self::assertTrue($result->isSuccess());
+        self::assertFileDoesNotExist($this->root.'/var/data_%kernel.environment%.db');
+
+        $pdo = new PDO('sqlite:'.$databasePath);
+        self::assertSame(
+            'Placeholder Studio',
+            json_decode((string) $pdo->query("SELECT value FROM config_entry WHERE config_key = 'site.title'")->fetchColumn(), true, flags: JSON_THROW_ON_ERROR),
+        );
+        self::assertSame(1, (int) $pdo->query("SELECT COUNT(*) FROM acl_group WHERE identifier = 'admin'")->fetchColumn());
+    }
+
+    public function testItStopsWhenDefaultSettingsCannotBeWritten(): void
+    {
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), new RecordingSetupCommandExecutor());
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Broken Studio',
+            defaultUri: 'https://broken.example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///'.$this->root.'/var/missing-schema.db',
+            adminUsername: 'admin',
+            adminPassword: 'secret-password',
+            adminEmail: 'admin@example.test',
+            appSecret: 'test-secret',
+        ));
+
+        self::assertFalse($result->isSuccess());
+        self::assertTrue($result->context()['halt_on_error']);
+        self::assertSame('seed_default_settings', $result->context()['failed_step']);
+        self::assertSame(
+            'config.write_failed',
+            $result->context()['action_log']['entries'][4]['issues'][0]['code'],
+        );
+    }
+
     public function testItPreservesExistingAclGroupPrimaryKeysWhenSetupIsRerun(): void
     {
         $databasePath = $this->root.'/var/setup.db';

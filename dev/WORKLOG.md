@@ -71,6 +71,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Fixed setup SQLite seeding to resolve `%kernel.environment%` the same way as the Symfony migration command and to fail the setup step with a message-backed config write issue when default settings cannot be persisted.
 - Added message-backed diagnostics to the `Config` service so invalid keys, malformed stored values, and read/write failures are surfaced through the shared message reporter while `get()` still falls back and `set()` returns a success boolean.
 - Refined the `user/*` foundation with a DB-backed `Config` get/set service, config-gated registration, a login-page registration link only when registration is enabled, a high-sort-order system login/profile menu that can be disabled, authenticated profile children for API keys/studio/admin/logout, an email-token invitation acceptance skeleton, and an API-key page that lists persisted user-scoped keys with revoked keys hidden by default.
 - Completed the first `user/*` route skeleton: added a `/user` account entry point, public register/reset-password screens, protected profile/password/API-key/invitation routes, functional authenticated password changes with CSRF and translated validation feedback, actor-aware `studio_navigation()` output, and virtual main-menu account children including admin/editor links filtered by access metadata.
