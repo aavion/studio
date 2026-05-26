@@ -46,6 +46,8 @@ Manual CLI runs use `php bin/console studio:packages:discover`; add `--json` for
 
 `App\Core\Package\PackageDiscoveryCacheWarmer` wires the automatic cache-rebuild trigger. It writes `studio-package-discovery-warmup.lock` into the active cache directory, queues discovery with `cache_warmup` trigger context, and writes `studio-package-discovery-warmup.json` as a compact diagnostic artifact. The warmer is optional so deployment commands can skip optional warmers when the database or package storage is intentionally unavailable.
 
+Repository demo packages live under `packages/demo-*`. They are intentionally small, inactive after discovery, and do not include runtime loaders; use them to exercise package discovery, registry views, scoped assets, provider paths, and future lifecycle UI flows without executing package code.
+
 Required package manifest keys:
 
 | Key | Purpose |

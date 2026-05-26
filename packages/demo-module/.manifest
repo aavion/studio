@@ -1,0 +1,7 @@
+PACKAGE_AUTHOR=Aavion Demo
+PACKAGE_NAME=Demo Module
+PACKAGE_DESCRIPTION=Demo module used to exercise package registry, asset discovery, templates, and future lifecycle UI flows.
+PACKAGE_VERSION=0.1.1
+PACKAGE_SCOPE=module
+PACKAGE_DEPENDENCIES=[]
+PACKAGE_LICENSE=MIT

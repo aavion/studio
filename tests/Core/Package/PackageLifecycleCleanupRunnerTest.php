@@ -21,6 +21,7 @@ final class PackageLifecycleCleanupRunnerTest extends KernelTestCase
         $runner = new PackageLifecycleCleanupRunner($settings);
 
         $settings->set('cleanup-module', 'display.mode', 'compact', ConfigValueType::String);
+        $settings->set('neighbor-module', 'display.mode', 'comfortable', ConfigValueType::String);
 
         $result = $runner->cleanup(new ExtensionPackage(
             '10000000-0000-0000-0000-000000000611',
@@ -38,5 +39,8 @@ final class PackageLifecycleCleanupRunnerTest extends KernelTestCase
             ],
         ], $result->value()['actions']);
         self::assertSame('fallback', $settings->get('cleanup-module', 'display.mode', 'fallback'));
+        self::assertSame('comfortable', $settings->get('neighbor-module', 'display.mode', 'fallback'));
+
+        $settings->removePackage('neighbor-module');
     }
 }
