@@ -67,11 +67,21 @@
 - [ ] Before the first stable `1.0.0` release, keep Doctrine migrations consolidated into one current baseline migration.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
 - [ ] Define the package manifest syntax for static and dynamic view injections now that the core registry uses the shared `public`, `admin`, and `editor` surfaces.
+- [ ] Before production readiness, review public package/developer-facing class, interface, function, and Twig helper names for clarity and ergonomics; decide whether to rename directly or provide stable aliases so extension APIs read as intentional rather than provisional.
 
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Moved the shell and typography demo routes out of Core and into the demo module as portable configurable static view injections under `/demo/**`, added a package setting for the route parent, kept the frontend shell on top-level `/demo`, and adjusted demo route tests to activate the module fixture while skipping with a notice if the module is intentionally absent.
+- Added a setup-time minimal `static_page` schema and published `/home` placeholder content item so fresh installations render the configured public home path instead of falling through to a `404`.
+- Expanded the `/demo/typography` guide into renderer-backed Markdown input/output examples for basic, allrounder, and design profiles, including fenced code blocks, tables, task lists, footnotes, attributes, trusted HTML, and embeds for later user-guide reuse.
+- Fixed package deactivation planning/execution so active reverse dependencies are deactivated before the target package, including implicit single-active scope conflicts such as switching themes that have active dependent provider packages.
+- Fixed Admin UI maintenance actions so top-bar forms are handled before backend view resolution on package detail and lifecycle routes, and made the Admin package registry refresh run discovery synchronously so purged package rows reappear immediately when their package files still exist.
+- Added active package runtime contributions from `package.php` return values for static/dynamic view injections and package setting definitions, and gave the demo module a tiny public route plus package setting contribution.
+- Replaced the package detail manifest dump with structured metadata, optional GitHub-Flavored README markdown rendering through `league/commonmark`, optional package image data-URI previews, and branch-aware source links while extending system/package manifest metadata for license, homepage, source, and channel fields.
+- Split Markdown rendering into README, trusted design, rich allrounder, and safety-first basic profiles, and added a tiny package-owned dynamic view contribution to the demo module so static route, dynamic slot, and settings contributions are all covered by one demo package.
+- Added `/demo/typography` as a Markdown-rendered typography guide for the basic, allrounder, and design profiles, hardened shared Markdown CSS through Tailwind-style `@apply` rules, and wired demo package dependencies through the virtual `system` package plus a demo theme dependency chain.
 - Reworked the Admin Theme Management overview into scope-separated theme cards with reserved preview image space, package detail links, removed-theme filtering, and single quick use/active/repair controls.
 - Added package detail and non-menu lifecycle review routes for package activation, deactivation, fault reset, data purge, and physical package deletion, with explicit overview action buttons instead of clickable status badges.
 - Verified the package lifecycle UI slice with PHP syntax checks, Twig linting, translation catalogue comparison, container linting, targeted backend controller coverage, and the full PHPUnit suite.

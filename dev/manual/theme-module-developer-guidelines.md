@@ -53,6 +53,8 @@ PACKAGE_SCOPE=[frontend-theme, module]
 PACKAGE_DEPENDENCIES=[]
 ```
 
+Optional source metadata stays split: `PACKAGE_SOURCE` points to the repository or release source root, and `PACKAGE_CHANNEL` identifies the branch or channel. The admin UI may turn those two values into a branch-specific link, but update tooling must still be able to reconstruct clone/fetch targets from the raw manifest values.
+
 Current constraints:
 
 - Allowed scopes start as `frontend-theme`, `backend-theme`, `system-template`, `module`, `captcha-provider`, and `editor-provider`.
@@ -69,7 +71,7 @@ Current constraints:
 
 `package.php` is optional. It must never be included during discovery and should only be loaded after a package is valid and active. Packages are trusted code; only administrators may install them. A package should use a package-owned root namespace derived from or declared for the package slug.
 
-When `PACKAGE_NAMESPACE` is declared, PHP files below `src/` must use that namespace or one of its child namespaces. The active runtime loader includes only `package.php`; that file may define a flat bootstrap class, register a small callable, or require further files below `src/`. Loader failures are caught by the lifecycle layer, recorded as structured diagnostics, and mark the package `faulty` so a broken active package does not keep breaking requests.
+When `PACKAGE_NAMESPACE` is declared, PHP files below `src/` must use that namespace or one of its child namespaces. The active runtime loader includes only `package.php`; that file may define a flat bootstrap class, return a callable, require further files below `src/`, or return simple contribution DTOs/providers. Supported direct contributions currently include static view injections, configurable static route sets, dynamic view injections, and package setting definitions. Loader failures are caught by the lifecycle layer, recorded as structured diagnostics, and mark the package `faulty` so a broken active package does not keep breaking requests.
 
 Package assets must be self-contained. Packages should vendor their external dependencies inside their own package directory instead of requiring the project importmap to manage third-party dependency lifecycles across packages. Active package CSS and JavaScript are aggregated through the generated package asset registries; packages should not expect templates to add arbitrary direct `<link>` or `<script>` tags for package-level assets. Static assets such as images, fonts, videos, and SVGs should be referenced from package CSS, JavaScript, or templates after the lifecycle mirrors them into the AssetMapper-visible package path.
 
@@ -141,11 +143,13 @@ Do not expect package hooks for template path collection or runtime asset collec
 
 Packages must not define new core permission rules dynamically. A package can require existing ACL levels, groups, roles, or manifest capabilities for its routes and UI, but the security model itself stays core-owned.
 
-Backend page contributions should use static view injections on the `admin` or `editor` surface. Static injections provide a path slug, optional parent slug, label key, physical Twig template, sort order, access level/groups, optional link attributes, and menu visibility. Core backend views keep priority over injected package paths.
+Backend page contributions should use static view injections on the `admin` or `editor` surface. Static injections provide a path slug, optional parent slug, label key, physical Twig template, sort order, access level/groups, optional link attributes, and menu visibility. Public package routes that should not permanently reserve one hard-coded path may use a configurable static route set: the route tree declares a default parent slug, while a package setting can move the whole tree to another free path. Core backend views, public content entities, and system views keep priority over injected package paths.
 
 Dynamic public content contributions should use dynamic view injections with declarative filters. Slot injections render before or after the core content field block; route injections may claim missing content variant suffixes, but they must not replace an existing content entity or an existing content variant.
 
 Schema `custom_twig` belongs to the inner content fieldset only. The native public content template keeps the page header, package injection slots, and outer content chrome stable, then delegates the variable fieldset to schema Twig with a generic fallback when custom Twig is empty or invalid. Custom schema Twig receives `content_view`, `content`, `revision`, `schema`, `schema_version`, `fields`, `language`, and `variant`.
+
+Markdown rendering is profile-aware through the `studio_markdown` Twig filter. The default profile is `allrounder`, which enables rich Markdown features, heading anchors, task lists, tables, footnotes, description lists, highlights, safe attributes, and external-link handling while escaping raw HTML and omitting embeds. Package README rendering uses `readme`, which maps to GitHub-Flavored Markdown for developer-authored package documentation. Trusted schema or admin-controlled design fields may explicitly call `studio_markdown('design')`; that profile allows raw HTML, controlled attributes, rich Markdown, and YouTube embeds through the native no-cookie embed adapter. Public untrusted inputs such as future comments should call `studio_markdown('basic')`, which keeps the CommonMark baseline plus autolinks while escaping HTML and excluding richer layout controls.
 
 ## Admin UI and UX guidelines
 
