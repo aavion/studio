@@ -6,8 +6,12 @@ namespace App\Tests\Controller;
 
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
+use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
+use App\View\Injection\StaticViewInjection;
+use App\View\Injection\ViewSurface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 final class BackendControllerTest extends WebTestCase
 {
@@ -53,6 +57,29 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Package management');
         self::assertSelectorTextContains('.studio-backend-nav', 'Packages');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/packages"][aria-current="page"]');
+    }
+
+    public function testAdminStaticViewInjectionsRenderThroughBackendRegistry(): void
+    {
+        $client = self::createClient();
+        $eventDispatcher = self::getContainer()->get(EventDispatcherInterface::class);
+        $eventDispatcher->addListener(StaticViewInjectionRegistryEvent::class, static function (StaticViewInjectionRegistryEvent $event): void {
+            $event->addInjection(new StaticViewInjection(
+                'test-admin-reports',
+                ViewSurface::Admin,
+                'reports',
+                'admin.navigation.packages',
+                '@backend/admin/packages.html.twig',
+                accessLevel: 8,
+            ));
+        });
+
+        $client->loginUser($this->createUserWithLevel(8));
+        $client->request('GET', '/admin/reports');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Package management');
+        self::assertSelectorExists('.studio-backend-nav a[href="/admin/reports"][aria-current="page"]');
     }
 
     public function testEditorRouteAllowsEditorsButAdminRouteDoesNot(): void

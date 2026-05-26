@@ -13,6 +13,8 @@ use App\Core\Package\Event\PackageAssetSyncStartedEvent;
 use App\Navigation\Event\NavigationBuilderEvent;
 use App\View\Event\OutputGeneratedEvent;
 use App\View\Event\ResponseHeadersEvent;
+use App\View\Injection\Event\DynamicViewInjectionRegistryEvent;
+use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
 use App\View\ViewContextEvent;
 
 final readonly class CoreEventHookProvider implements EventHookDescriptorProviderInterface
@@ -51,6 +53,22 @@ final readonly class CoreEventHookProvider implements EventHookDescriptorProvide
             'navigation',
             EventHookMode::Extend,
             MessageKey::EVENT_HOOK_NAVIGATION_BUILDER_SUMMARY,
+            mutable: true,
+        );
+
+        yield new EventHookDescriptor(
+            StaticViewInjectionRegistryEvent::class,
+            'view',
+            EventHookMode::Extend,
+            MessageKey::EVENT_HOOK_STATIC_VIEW_INJECTION_REGISTRY_SUMMARY,
+            mutable: true,
+        );
+
+        yield new EventHookDescriptor(
+            DynamicViewInjectionRegistryEvent::class,
+            'view',
+            EventHookMode::Extend,
+            MessageKey::EVENT_HOOK_DYNAMIC_VIEW_INJECTION_REGISTRY_SUMMARY,
             mutable: true,
         );
 

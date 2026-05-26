@@ -66,12 +66,13 @@
 - [ ] Keep roadmap sub-items aligned with feature drafts when implementation changes scope, order, or dependencies. Last reviewed: 2026-05-25.
 - [ ] Before the first stable `1.0.0` release, keep Doctrine migrations consolidated into one current baseline migration.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
-- [ ] Define the shared package-facing view surface names (`public`, `admin`, `editor`, `setup`) so public frontend views and backend views have consistent extension scopes without merging their route registries.
+- [ ] Define the package manifest syntax for static and dynamic view injections now that the core registry uses the shared `public`, `admin`, and `editor` surfaces.
 
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Added the first package-facing view injection foundation: shared `public`, `admin`, and `editor` surfaces; static route/menu injection definitions; dynamic content slot and variant-route injections; public hook events for both registries; schema custom-Twig fieldset rendering with generic fallback; access-aware navigation filtering for groups; and tests proving content/core views win before injected package routes.
 - Added backend routing and account foundations: shared `/setup`, `/admin`, and `/editor` routing with ACL checks and setup locking; `/user/*` login, logout, profile/password, registration/reset/invitation skeletons, user-scoped API-key listing, config-gated account flows, and access-filtered account navigation.
 - Added a backend view registry/provider foundation so core and package views can define area paths, templates, navigation labels, access levels, route parameters, and sort order from one shared contract; registered the first `/admin/packages` placeholder view through it.
 - Added safe navigation link metadata rendering for optional `data-*`, `aria-*`, and selected link attributes, including Turbo-prefetch opt-out metadata for the logout menu link.

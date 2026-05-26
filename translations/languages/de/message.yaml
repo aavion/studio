@@ -76,6 +76,10 @@ message:
         summary: 'Passt den generierten HTML-Output eines öffentlichen Content-Renderings an, bevor die Response zurückgegeben wird.'
       navigation_builder:
         summary: 'Erweitert Navigationspunkte, bevor Baumhierarchie, Sortierung und Render-Slices aufgelöst werden.'
+      static_view_injection_registry:
+        summary: 'Ergänzt statische Paket-View-Injections, bevor Routen und Menüeinträge aufgelöst werden.'
+      dynamic_view_injection_registry:
+        summary: 'Ergänzt content-bewusste dynamische Paket-View-Injections, bevor Content-Slots und Varianten gerendert werden.'
       response_headers:
         summary: 'Passt HTTP-Response-Header an, bevor die Response gesendet wird.'
       output_generated:

@@ -275,16 +275,32 @@ final class NavigationBuilderTest extends KernelTestCase
                     '/blocked',
                     metadata: ['min_access_level' => 8],
                 ));
+                $event->addItem(new NavigationItem(
+                    '30000000-0000-0000-0000-000000000974',
+                    'Group Allowed',
+                    'url',
+                    '/group-allowed',
+                    metadata: ['access_groups' => ['content_team']],
+                ));
+                $event->addItem(new NavigationItem(
+                    '30000000-0000-0000-0000-000000000975',
+                    'Group Blocked',
+                    'url',
+                    '/group-blocked',
+                    metadata: ['access_groups' => ['admin_team']],
+                ));
             },
         );
 
         $navigation = self::getContainer()->get(NavigationBuilder::class)->build(
             'backend.editor',
-            actor: AccessActor::fromAccess(3),
+            actor: AccessActor::fromAccess(3, ['content_team']),
         );
 
         self::assertContains('Allowed', array_column($navigation, 'label'));
+        self::assertContains('Group Allowed', array_column($navigation, 'label'));
         self::assertNotContains('Blocked', array_column($navigation, 'label'));
+        self::assertNotContains('Group Blocked', array_column($navigation, 'label'));
     }
 
     public function testItAddsUserNavigationWithAccessAwareChildren(): void

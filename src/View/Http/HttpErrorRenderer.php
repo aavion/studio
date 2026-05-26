@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\View\Http;
 
 use App\Content\Read\PublishedContentResolver;
+use App\Content\Render\ContentFieldsetRenderer;
 use App\Core\Access\AccessActor;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,6 +19,7 @@ final readonly class HttpErrorRenderer
     public function __construct(
         private Environment $twig,
         private PublishedContentResolver $contentResolver,
+        private ContentFieldsetRenderer $fieldsetRenderer,
         private Security $security,
         private bool $debug = false,
     ) {
@@ -99,6 +101,8 @@ final readonly class HttpErrorRenderer
 
             return $this->renderTemplate('@frontend/content/entity.html.twig', array_replace($variables, [
                 'content_view' => $view,
+                'content_fieldset' => $this->fieldsetRenderer->render($view),
+                'content_injections' => [],
             ]), $statusCode);
         } catch (Throwable $error) {
             $renderFailure = $error;

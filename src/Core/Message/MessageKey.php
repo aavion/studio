@@ -70,6 +70,8 @@ final class MessageKey
     public const EVENT_HOOK_CONTENT_RENDER_CONTEXT_SUMMARY = 'message.event.hook.content_render_context.summary';
     public const EVENT_HOOK_CONTENT_RENDERED_SUMMARY = 'message.event.hook.content_rendered.summary';
     public const EVENT_HOOK_NAVIGATION_BUILDER_SUMMARY = 'message.event.hook.navigation_builder.summary';
+    public const EVENT_HOOK_STATIC_VIEW_INJECTION_REGISTRY_SUMMARY = 'message.event.hook.static_view_injection_registry.summary';
+    public const EVENT_HOOK_DYNAMIC_VIEW_INJECTION_REGISTRY_SUMMARY = 'message.event.hook.dynamic_view_injection_registry.summary';
     public const EVENT_HOOK_RESPONSE_HEADERS_SUMMARY = 'message.event.hook.response_headers.summary';
     public const EVENT_HOOK_OUTPUT_GENERATED_SUMMARY = 'message.event.hook.output_generated.summary';
     public const EVENT_HOOK_PACKAGE_ASSET_SYNC_STARTED_SUMMARY = 'message.event.hook.package_asset_sync_started.summary';

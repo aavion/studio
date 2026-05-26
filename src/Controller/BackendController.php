@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Backend\BackendAccessGuard;
 use App\Backend\BackendArea;
 use App\Backend\BackendRouteResolver;
+use App\Backend\BackendViewDefinition;
 use App\Core\Access\AccessActor;
 use App\Entity\UserAccount;
 use App\Navigation\NavigationBuilder;
@@ -64,6 +65,7 @@ final class BackendController extends AbstractController
 
     private function handle(Request $request, BackendArea $area, string $path = ''): Response
     {
+        $actor = $this->actor();
         $decision = $this->accessGuard->decide($area, $this->getUser());
 
         if (!$decision->isGranted()) {
@@ -74,6 +76,14 @@ final class BackendController extends AbstractController
         }
 
         $result = $this->routeResolver->resolve($area, $path);
+        $view = $result->view();
+
+        if (null !== $view && !$this->viewAllows($view, $actor)) {
+            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+                'area' => $area->value,
+                'view' => $view->uid(),
+            ]);
+        }
 
         return $this->render($result->template(), [
             'area' => $result->area(),
@@ -92,15 +102,34 @@ final class BackendController extends AbstractController
             return [];
         }
 
-        $user = $this->getUser();
-        $actor = $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
-
         return $this->navigationBuilder->build(
             $area->navigationIdentifier(),
             (string) $request->getLocale(),
-            actor: $actor,
+            actor: $this->actor(),
             activeUrl: $request->getPathInfo(),
             activeRoute: (string) $request->attributes->get('_route'),
         );
+    }
+
+    private function actor(): AccessActor
+    {
+        $user = $this->getUser();
+
+        return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
+    }
+
+    private function viewAllows(BackendViewDefinition $view, AccessActor $actor): bool
+    {
+        if ($actor->accessLevel() >= $view->minimumAccessLevel()) {
+            return true;
+        }
+
+        foreach ($view->accessGroups() as $group) {
+            if ($actor->hasGroupIdentifier($group)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

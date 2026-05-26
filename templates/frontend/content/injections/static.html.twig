@@ -1,0 +1,15 @@
+{% extends '@frontend/frontend.html.twig' %}
+
+{% block title %}{{ injection.label|trans }}{% endblock %}
+
+{% block frontend_body %}
+    <main class="studio-content-page" data-injection="{{ injection.uid }}">
+        <article class="studio-content-article">
+            {% include '@frontend/partials/typography/_page-header.html.twig' with {
+                kicker: injection.pathSlug,
+                title: injection.label|trans,
+                subtitle: null,
+            } only %}
+        </article>
+    </main>
+{% endblock %}

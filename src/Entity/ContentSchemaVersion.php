@@ -162,6 +162,11 @@ class ContentSchemaVersion
         return $this->definitionHash;
     }
 
+    public function customTwig(): ?string
+    {
+        return $this->customTwig;
+    }
+
     public function useMinLevel(): ?int
     {
         return $this->useMinLevel;

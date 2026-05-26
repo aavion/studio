@@ -76,6 +76,10 @@ message:
         summary: 'Adjust the generated HTML for one public content render before the response is returned.'
       navigation_builder:
         summary: 'Extend navigation items before tree hierarchy, sort order, and render slices are resolved.'
+      static_view_injection_registry:
+        summary: 'Add static package view injections before route and menu entries are resolved.'
+      dynamic_view_injection_registry:
+        summary: 'Add content-aware dynamic package view injections before content slots and variants are rendered.'
       response_headers:
         summary: 'Adjust HTTP response headers before the response is sent.'
       output_generated:

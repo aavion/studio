@@ -9,6 +9,7 @@ final readonly class BackendViewDefinition
     /**
      * @param array<string, mixed> $routeParameters
      * @param array<string, mixed> $linkAttributes
+     * @param list<string> $accessGroups
      */
     public function __construct(
         private string $uid,
@@ -21,6 +22,7 @@ final readonly class BackendViewDefinition
         private ?int $minimumAccessLevel = null,
         private array $routeParameters = [],
         private array $linkAttributes = [],
+        private array $accessGroups = [],
     ) {
     }
 
@@ -62,6 +64,14 @@ final readonly class BackendViewDefinition
     public function minimumAccessLevel(): int
     {
         return $this->minimumAccessLevel ?? $this->area->minimumAccessLevel();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function accessGroups(): array
+    {
+        return $this->accessGroups;
     }
 
     public function routeName(): string

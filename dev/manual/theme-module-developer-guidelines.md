@@ -103,6 +103,10 @@ Current public hooks:
 
 - `App\View\ViewContextEvent`: extend the universal Twig context.
 - `App\Content\Event\ContentRenderContextEvent`: extend Twig context for one public content render.
+- `App\Content\Event\ContentRenderedEvent`: adjust generated HTML for one public content render.
+- `App\Navigation\Event\NavigationBuilderEvent`: extend navigation items before tree hierarchy and active state are resolved.
+- `App\View\Injection\Event\StaticViewInjectionRegistryEvent`: add static route/menu view injections for the `public`, `admin`, or `editor` surface.
+- `App\View\Injection\Event\DynamicViewInjectionRegistryEvent`: add content-aware dynamic slot or variant-route injections for physical Twig templates.
 - `App\View\Event\ResponseHeadersEvent`: adjust HTTP response headers before sending.
 - `App\View\Event\OutputGeneratedEvent`: adjust generated HTML output after rendering.
 - `App\Core\Package\Event\PackageAssetSyncStartedEvent`: observe the active package set before asset sync.
@@ -137,9 +141,11 @@ Do not expect package hooks for template path collection or runtime asset collec
 
 Packages must not define new core permission rules dynamically. A package can require existing ACL levels, groups, roles, or manifest capabilities for its routes and UI, but the security model itself stays core-owned.
 
-Backend menu contributions should start as navigation items with `target_type` `route` and a Symfony route name in `target_value`. The item metadata may include `min_access_level` and optional `route_parameters`. The native navigation builder resolves route URLs, filters entries the current backend actor cannot access, and exposes `active` plus `active_ancestor` flags for templates.
+Backend page contributions should use static view injections on the `admin` or `editor` surface. Static injections provide a path slug, optional parent slug, label key, physical Twig template, sort order, access level/groups, optional link attributes, and menu visibility. Core backend views keep priority over injected package paths.
 
-Do not model package backend pages as virtual content entities yet. That remains a possible later target type if it clearly reuses public rendering hooks without weakening backend route ownership, ACL checks, or package lifecycle validation.
+Dynamic public content contributions should use dynamic view injections with declarative filters. Slot injections render before or after the core content field block; route injections may claim missing content variant suffixes, but they must not replace an existing content entity or an existing content variant.
+
+Schema `custom_twig` belongs to the inner content fieldset only. The native public content template keeps the page header, package injection slots, and outer content chrome stable, then delegates the variable fieldset to schema Twig with a generic fallback when custom Twig is empty or invalid. Custom schema Twig receives `content_view`, `content`, `revision`, `schema`, `schema_version`, `fields`, `language`, and `variant`.
 
 ## Admin UI and UX guidelines
 
