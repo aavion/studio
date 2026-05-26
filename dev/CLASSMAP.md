@@ -61,7 +61,7 @@
 | Value object | `App\Core\Lint\LintResult` | Value object for reusable lint success and diagnostic results. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Lint/LinterTest.php` |
 | Interface | `App\Core\Lint\LinterInterface` | Shared contract for content-based linters that can be reused by packages, editors, and debug tools. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Lint/LinterTest.php` |
 | Service | `App\Core\Lint\PhpLinter` | Reusable string-based PHP syntax linter backed by `php -l` through a temporary file. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Lint/LinterTest.php` |
-| Service | `App\Core\Lint\TwigLinter` | Reusable string-based Twig syntax linter using Twig's parser. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Lint/LinterTest.php` |
+| Service | `App\Core\Lint\TwigLinter` | Reusable string-based Twig syntax linter using Twig's parser with placeholder callbacks for runtime filters, functions, and tests supplied by Symfony, Studio, themes, or active packages. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Lint/LinterTest.php` |
 | Service | `App\Core\Lint\YamlLinter` | Reusable string-based YAML syntax linter using Symfony YAML. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Core/Lint/LinterTest.php` |
 
 ## 2. Security Services and Subscribers

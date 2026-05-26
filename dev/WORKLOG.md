@@ -72,6 +72,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Relaxed the Twig syntax linter so package templates may use Symfony, Studio, theme, or package-provided filters, functions, and tests without failing discovery in the isolated lint environment.
 - Added small inactive demo packages for module, frontend-theme, and captcha-provider discovery plus a regression test proving package cleanup removes only the purged package settings.
 - Rendered the first read-only Admin Package Management overview from the extension package registry, including status, scopes, versions, paths, and generic package settings links when available.
 - Collapsed inactive backend navigation branches so admin menu children only render for active parents or active ancestors while keeping active-state classes available for later UI styling.

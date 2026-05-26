@@ -48,6 +48,8 @@ Manual CLI runs use `php bin/console studio:packages:discover`; add `--json` for
 
 Repository demo packages live under `packages/demo-*`. They are intentionally small, inactive after discovery, and do not include runtime loaders; use them to exercise package discovery, registry views, scoped assets, provider paths, and future lifecycle UI flows without executing package code.
 
+Package Twig validation checks syntax while accepting runtime filters, functions, and tests as extension placeholders. Availability of Symfony, Studio, theme, or package-provided Twig extensions is verified by render/runtime coverage instead of discovery-time linting.
+
 Required package manifest keys:
 
 | Key | Purpose |
