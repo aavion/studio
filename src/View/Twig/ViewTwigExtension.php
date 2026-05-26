@@ -17,6 +17,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Twig\Extension\AbstractExtension;
 use Twig\Extension\GlobalsInterface;
+use Twig\Markup;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
 
@@ -54,6 +55,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             new TwigFunction('studio_macro_namespaces', $this->macroRegistry->namespaces(...)),
             new TwigFunction('studio_macro_template', $this->macroRegistry->template(...)),
             new TwigFunction('studio_event_hooks', $this->eventHooks(...)),
+            new TwigFunction('studio_html_attributes', $this->htmlAttributes(...), ['is_safe' => ['html']]),
             new TwigFunction('studio_navigation', $this->navigation(...)),
             new TwigFunction('studio_debug_info', $this->debugInfo(...)),
         ];
@@ -114,10 +116,59 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         return $this->debugCollector->summary();
     }
 
+    /**
+     * @param array<string, mixed> $attributes
+     */
+    public function htmlAttributes(array $attributes): Markup
+    {
+        $rendered = [];
+
+        foreach ($attributes as $name => $value) {
+            if (!is_string($name) || !$this->isSafeAttributeName($name) || false === $value || null === $value) {
+                continue;
+            }
+
+            $escapedName = htmlspecialchars($name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+            if (true === $value) {
+                $rendered[] = $escapedName;
+
+                continue;
+            }
+
+            if (!is_scalar($value)) {
+                continue;
+            }
+
+            $rendered[] = sprintf(
+                '%s="%s"',
+                $escapedName,
+                htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+            );
+        }
+
+        return new Markup(implode(' ', $rendered), 'UTF-8');
+    }
+
     private function actor(): AccessActor
     {
         $user = $this->security->getUser();
 
         return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
+    }
+
+    private function isSafeAttributeName(string $name): bool
+    {
+        if (!preg_match('/^[a-z][a-z0-9:_-]*$/i', $name)) {
+            return false;
+        }
+
+        if (str_starts_with(strtolower($name), 'on')) {
+            return false;
+        }
+
+        return str_starts_with($name, 'data-')
+            || str_starts_with($name, 'aria-')
+            || in_array($name, ['download', 'id', 'rel', 'target', 'title'], true);
     }
 }

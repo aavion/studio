@@ -9,8 +9,11 @@
                         item.active ? 'is-active' : '',
                         item.active_ancestor ? 'is-active-ancestor' : '',
                     ]|filter(item_class => item_class is not empty)|join(' ') %}
+                    {% set link_attributes = item.metadata.link_attributes|default({})|merge({
+                        'aria-current': item.active ? 'page' : false,
+                    }) %}
                     <li class="{{ item_classes }}">
-                        <a class="studio-frontend-navigation-link" href="{{ item.url }}" {% if item.active %}aria-current="page"{% endif %}>{{ item.label|trans }}</a>
+                        <a class="studio-frontend-navigation-link" href="{{ item.url }}" {{ studio_html_attributes(link_attributes) }}>{{ item.label|trans }}</a>
                         {{ _self.render_items(item.children) }}
                     </li>
                 {% endif %}

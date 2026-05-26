@@ -70,6 +70,24 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Admin dashboard');
     }
 
+    public function testAuthenticatedNavigationRendersSafeLogoutLinkAttributes(): void
+    {
+        $client = self::createClient();
+        $this->createUserWithLevel(8, 'logoutlinkadmin', 'correct-password');
+
+        $crawler = $client->request('GET', '/user/login');
+        $form = $crawler->selectButton('Sign in')->form([
+            'username' => 'logoutlinkadmin',
+            'password' => 'correct-password',
+        ]);
+
+        $client->submit($form);
+        $client->request('GET', '/user/profile');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('a[href="/user/logout"][data-turbo="false"][data-turbo-prefetch="false"]');
+    }
+
     public function testLogoutFormEndsSession(): void
     {
         $client = self::createClient();

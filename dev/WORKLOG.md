@@ -72,6 +72,7 @@
 
 ### 2026-05-26
 - Added backend routing and account foundations: shared `/setup`, `/admin`, and `/editor` routing with ACL checks and setup locking; `/user/*` login, logout, profile/password, registration/reset/invitation skeletons, user-scoped API-key listing, config-gated account flows, and access-filtered account navigation.
+- Added safe navigation link metadata rendering for optional `data-*`, `aria-*`, and selected link attributes, including Turbo-prefetch opt-out metadata for the logout menu link.
 - Hardened logout routing so `GET /user/logout` renders a translated confirmation page while only a CSRF-protected `POST /user/logout` can terminate the session and redirect to the homepage.
 - Strengthened setup and configuration behavior: message-backed setup failures, DB-free completion marker persistence, SQLite placeholder resolution, post-completion `cache:clear` for package discovery warmup, Config get/set diagnostics, and test-safe `bin/setup` operation logging based on the selected setup environment.
 - Reworked translation handling into language-grouped source catalogues with generated default-domain runtime catalogues, early CLI bootstrap support, active-package aggregation, package namespace/fallback validation, collision checks, Twig default-domain usage, and updated comparison tooling/docs/tests.

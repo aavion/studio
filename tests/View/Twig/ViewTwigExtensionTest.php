@@ -23,6 +23,18 @@ final class ViewTwigExtensionTest extends KernelTestCase
         self::assertSame('System|@root/macros/core/ui.html.twig|9|4|debug|<p><strong>ok</strong></p>', $html);
     }
 
+    public function testItRendersSafeHtmlAttributes(): void
+    {
+        self::bootKernel();
+
+        $twig = self::getContainer()->get(Environment::class);
+        $html = $twig->createTemplate(
+            '{{ studio_html_attributes({"data-action": "save", "aria-expanded": false, "title": "A & B", "onclick": "alert(1)", "style": "display:none", "data-active": true}) }}',
+        )->render();
+
+        self::assertSame('data-action="save" title="A &amp; B" data-active', $html);
+    }
+
     public function testItRendersNativeProviderNamespaceFallbacks(): void
     {
         self::bootKernel();

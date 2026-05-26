@@ -294,6 +294,10 @@ final class NavigationBuilderTest extends KernelTestCase
         self::assertSame(['ui.user.api_keys.title', 'ui.user.navigation.studio', 'ui.user.logout.title'], array_column($account['children'], 'label'));
         self::assertNotContains('ui.user.login.title', array_column($account['children'], 'label'));
         self::assertNotContains('ui.user.navigation.admin', array_column($account['children'], 'label'));
+        self::assertSame([
+            'data-turbo' => 'false',
+            'data-turbo-prefetch' => 'false',
+        ], $account['children'][2]['metadata']['link_attributes']);
 
         $adminNavigation = self::getContainer()->get(NavigationBuilder::class)->build(
             'main',
