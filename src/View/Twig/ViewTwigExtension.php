@@ -77,6 +77,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             new TwigFunction('studio_backend_actions', $this->backendActions(...)),
             new TwigFunction('studio_extension_packages', $this->extensionPackages(...)),
             new TwigFunction('studio_themes', $this->themes(...)),
+            new TwigFunction('studio_package_setting', $this->packageSetting(...)),
             new TwigFunction('studio_package_settings', $this->packageSettings(...)),
             new TwigFunction('studio_package_settings_form', $this->packageSettingsForm(...)),
             new TwigFunction('studio_package_setting_packages', $this->packageSettingPackages(...)),
@@ -171,6 +172,11 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
     public function packageSettings(string $packageName): array
     {
         return $this->packageSettings->viewRows($packageName, $this->packageSettingRegistry);
+    }
+
+    public function packageSetting(string $packageName, string $key, mixed $default = null): mixed
+    {
+        return $this->packageSettings->get($packageName, $key, $default);
     }
 
     /**

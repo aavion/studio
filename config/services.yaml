@@ -104,6 +104,7 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
+            $runtimeContributions: '@App\Core\Package\PackageRuntimeContributionRegistry'
 
     App\Core\Package\PackageRuntimeFailureHandler:
         arguments:

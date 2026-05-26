@@ -65,13 +65,24 @@ final class BackendController extends AbstractController
         return $this->handle($request, BackendArea::Admin);
     }
 
-    #[Route('/admin/packages/{packageName}', name: 'backend_admin_package_detail', requirements: ['packageName' => '[^/]+'], methods: ['GET'])]
+    #[Route('/admin/packages/{packageName}', name: 'backend_admin_package_detail', requirements: ['packageName' => '[^/]+'], methods: ['GET', 'POST'])]
     public function packageDetail(Request $request, string $packageName): Response
     {
         $access = $this->adminAccessResponse($request);
 
         if (null !== $access) {
             return $access;
+        }
+
+        if ($request->isMethod('POST')) {
+            if ($this->isBackendActionRequest($request)) {
+                return $this->handleBackendAction($request);
+            }
+
+            return $this->httpError->render(Response::HTTP_METHOD_NOT_ALLOWED, $request, context: [
+                'area' => BackendArea::Admin->value,
+                'package' => $packageName,
+            ]);
         }
 
         $package = $this->packageLifecycleAdmin->package($packageName);
@@ -97,6 +108,10 @@ final class BackendController extends AbstractController
 
         if (null !== $access) {
             return $access;
+        }
+
+        if ($request->isMethod('POST') && $this->isBackendActionRequest($request)) {
+            return $this->handleBackendAction($request);
         }
 
         $review = $this->packageLifecycleAdmin->review($packageName, $action);
@@ -170,6 +185,10 @@ final class BackendController extends AbstractController
                 'area' => $area->value,
                 'access_decision' => $decision->toArray(),
             ]);
+        }
+
+        if (BackendArea::Admin === $area && $request->isMethod('POST') && $this->isBackendActionRequest($request)) {
+            return $this->handleBackendAction($request);
         }
 
         $result = $this->routeResolver->resolve($area, $path);
@@ -266,7 +285,7 @@ final class BackendController extends AbstractController
         $result = null;
         $expectedFormId = null;
 
-        if ('' !== $this->stringField($request, '_backend_action')) {
+        if ($this->isBackendActionRequest($request)) {
             return $this->handleBackendAction($request);
         }
 
@@ -324,6 +343,11 @@ final class BackendController extends AbstractController
         $this->flashResult($result);
 
         return $this->redirect($request->getPathInfo());
+    }
+
+    private function isBackendActionRequest(Request $request): bool
+    {
+        return '' !== $this->stringField($request, '_backend_action');
     }
 
     private function validFormToken(string $expectedFormId, string $formId, string $token): bool

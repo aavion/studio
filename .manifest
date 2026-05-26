@@ -8,6 +8,8 @@ APP_DATE=2026-05-24
 APP_NAME=aavion Studio
 APP_AUTHOR=Dominik Letica
 APP_DESCRIPTION=Symfony 8 CMS (under active development)
+APP_LICENSE=MIT
+APP_HOMEPAGE=https://github.com/aavion/studio
 APP_CHANNEL=dev-latest
-APP_SOURCE=https://github.com/aavion/studio.git
+APP_SOURCE=https://github.com/aavion/studio
 ###< aavion/studio manifest ###

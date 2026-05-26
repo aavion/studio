@@ -33,6 +33,7 @@ final class PackagePhpLoader implements EventSubscriberInterface
         private readonly WorkflowResultMessageReporterInterface $messageReporter,
         private readonly ?PackageAssetRebuildDispatcher $assetRebuildDispatcher = null,
         private readonly string $environment = 'test',
+        private readonly ?PackageRuntimeContributionRegistry $runtimeContributions = null,
         private readonly PathGuard $pathGuard = new PathGuard(),
     ) {
     }
@@ -95,8 +96,10 @@ final class PackagePhpLoader implements EventSubscriberInterface
                 $result = $this->includeLoader($loaderPath, $package);
 
                 if (is_callable($result)) {
-                    $result($package);
+                    $result = $result($package);
                 }
+
+                $this->runtimeContributions?->add($package, $result);
 
                 $this->loadedPackages[$package->packageName()] = true;
                 $loaded[] = $package->packageName();
@@ -151,7 +154,7 @@ final class PackagePhpLoader implements EventSubscriberInterface
     private function includeLoader(string $loaderPath, ExtensionPackage $package): mixed
     {
         return (static function (string $loaderPath, ExtensionPackage $package): mixed {
-            return require_once $loaderPath;
+            return require $loaderPath;
         })($loaderPath, $package);
     }
 

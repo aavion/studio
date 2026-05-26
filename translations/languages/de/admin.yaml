@@ -68,11 +68,15 @@ admin:
       author: 'Von %author%'
     detail:
       overview_title: 'Paketübersicht'
-      manifest_title: 'Manifestdaten'
-      manifest_empty: 'Es sind keine Manifestdaten verfügbar.'
       immutable: 'Unveränderlich'
       description: 'Beschreibung'
       author: 'Autor'
+      license: 'Lizenz'
+      dependencies: 'Abhängigkeiten'
+      dependencies_empty: 'Keine Paketabhängigkeiten'
+      homepage: 'Homepage'
+      source: 'Quelle'
+      readme_title: 'README'
     lifecycle:
       review_title: 'Änderungen prüfen'
       immutable: 'Dieses Systempaket ist unveränderlich und kann seinen Lifecycle-State nicht ändern.'

@@ -18,7 +18,7 @@ final class SystemPackageMetadataProvider
     }
 
     /**
-     * @return array{identifier: string, name: string, author: string|null, description: string|null, immutable: bool, virtual: bool, scopes: list<string>, version: string|null, date: string|null, channel: string|null, source: string|null, manifest: array<string, string>}
+     * @return array{identifier: string, name: string, author: string|null, description: string|null, immutable: bool, virtual: bool, scopes: list<string>, version: string|null, date: string|null, channel: string|null, source: string|null, license: string|null, homepage: string|null, image: string|null, manifest: array<string, string>}
      */
     public function metadata(): array
     {
@@ -40,6 +40,9 @@ final class SystemPackageMetadataProvider
             'date' => $manifest->get('APP_DATE'),
             'channel' => $manifest->get('APP_CHANNEL'),
             'source' => $manifest->get('APP_SOURCE'),
+            'license' => $this->manifestString($manifest, 'APP_LICENSE'),
+            'homepage' => $this->manifestString($manifest, 'APP_HOMEPAGE'),
+            'image' => $this->manifestString($manifest, 'APP_IMAGE'),
             'manifest' => $manifest->all(),
         ];
     }

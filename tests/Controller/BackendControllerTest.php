@@ -200,26 +200,90 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
-    public function testAdminBackendActionFormsQueuePackageDiscovery(): void
+    public function testAdminBackendActionFormsRunPackageDiscoveryImmediately(): void
+    {
+        $client = self::createClient();
+        $demoPackages = ['demo-module', 'demo-frontend-theme', 'demo-captcha-provider'];
+
+        foreach ($demoPackages as $packageName) {
+            $this->removePackageByName($packageName);
+        }
+
+        try {
+            $client->loginUser($this->createUserWithLevel(8));
+            $crawler = $client->request('GET', '/admin/packages');
+
+            self::assertSelectorNotExists('.studio-table tr[data-package-name="demo-module"]');
+
+            $form = $crawler->selectButton('Update registry')->form();
+
+            $client->submit($form);
+
+            self::assertResponseRedirects('/admin/packages');
+
+            $client->followRedirect();
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('.studio-alert-success');
+            self::assertSelectorExists('.studio-table tr[data-package-name="demo-module"]');
+
+            $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+            self::assertInstanceOf(
+                ExtensionPackage::class,
+                $entityManager->getRepository(ExtensionPackage::class)->findOneBy(['packageName' => 'demo-module']),
+            );
+        } finally {
+            foreach ($demoPackages as $packageName) {
+                $this->removePackageByName($packageName);
+            }
+        }
+    }
+
+    public function testAdminTopbarActionsHandlePackageDetailPosts(): void
     {
         $client = self::createClient();
         $client->loginUser($this->createUserWithLevel(8));
-        $crawler = $client->request('GET', '/admin/packages');
-        $form = $crawler->selectButton('Update registry')->form();
+        $crawler = $client->request('GET', '/admin/packages/system');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'aavion Studio');
+
+        $form = $crawler->filter('.studio-backend-topbar form')->first()->form();
 
         $client->submit($form);
 
-        self::assertResponseRedirects('/admin/packages');
+        self::assertResponseRedirects('/admin/packages/system');
 
         $client->followRedirect();
 
-        self::assertSelectorTextContains('.studio-alert-success', 'Package discovery was queued by "admin_ui".');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'aavion Studio');
     }
 
     public function testAdminPackageDetailAndLifecycleReviewRoutesRender(): void
     {
         $client = self::createClient();
         $this->removePackageByName('test-lifecycle');
+        $projectDir = (string) self::getContainer()->getParameter('kernel.project_dir');
+        $packageDir = $projectDir.'/packages/test-lifecycle';
+        $assetsDir = $packageDir.'/assets';
+        if (!is_dir($assetsDir)) {
+            mkdir($assetsDir, 0775, true);
+        }
+        file_put_contents($packageDir.'/.manifest', <<<'MANIFEST'
+            PACKAGE_AUTHOR=Test Suite
+            PACKAGE_NAME=Test Lifecycle
+            PACKAGE_DESCRIPTION=Lifecycle package fixture
+            PACKAGE_VERSION=1.0.0
+            PACKAGE_SCOPE=module
+            PACKAGE_DEPENDENCIES=["demo-base >=1.0"]
+            PACKAGE_LICENSE=MIT
+            PACKAGE_SOURCE=https://github.com/example/test-lifecycle
+            PACKAGE_CHANNEL=main
+            PACKAGE_IMAGE=assets/preview.svg
+            MANIFEST);
+        file_put_contents($packageDir.'/README.md', "# Lifecycle README\n\nThis package has **markdown** docs.");
+        file_put_contents($assetsDir.'/preview.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9"><rect width="16" height="9" fill="#315bdc"/></svg>');
 
         $client->loginUser($this->createUserWithLevel(8));
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -257,6 +321,13 @@ final class BackendControllerTest extends WebTestCase
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Test Lifecycle');
             self::assertSelectorTextContains('.studio-table', 'Lifecycle package fixture');
+            self::assertSelectorTextContains('.studio-table', 'MIT');
+            self::assertSelectorTextContains('.studio-table', 'demo-base >=1.0');
+            self::assertSelectorExists('.studio-package-hero img[src^="data:image/svg+xml;base64,"]');
+            self::assertSelectorExists('a[href="https://github.com/example/test-lifecycle/tree/main"]');
+            self::assertSelectorTextContains('a[href="https://github.com/example/test-lifecycle/tree/main"]', 'https://github.com/example/test-lifecycle/tree/main');
+            self::assertSelectorTextContains('.studio-markdown h1', 'Lifecycle README');
+            self::assertSelectorTextContains('.studio-markdown strong', 'markdown');
             self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/activate"]');
             self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/purge"]');
             self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/delete"]');
@@ -285,6 +356,58 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorExists('button[type="submit"]');
         } finally {
             $this->removePackageByName('test-lifecycle');
+            @unlink($assetsDir.'/preview.svg');
+            @rmdir($assetsDir);
+            @unlink($packageDir.'/README.md');
+            @unlink($packageDir.'/.manifest');
+            @rmdir($packageDir);
+        }
+    }
+
+    public function testAdminPackageDeactivationReviewIncludesActiveDependents(): void
+    {
+        $client = self::createClient();
+        $this->removePackageByName('test-dependent-theme');
+        $this->removePackageByName('test-dependent-captcha');
+
+        $client->loginUser($this->createUserWithLevel(8));
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $theme = new ExtensionPackage(
+            '00000000-0000-0000-0000-000000000596',
+            [PackageScope::FrontendTheme],
+            'test-dependent-theme',
+            'packages/test-dependent-theme',
+            ExtensionPackageStatus::Active,
+            ['display_name' => 'Test Dependent Theme', 'manifest' => ['PACKAGE_DEPENDENCIES' => '[]']],
+            manifestVersion: '1.0.0',
+        );
+        $captcha = new ExtensionPackage(
+            '00000000-0000-0000-0000-000000000597',
+            [PackageScope::CaptchaProvider],
+            'test-dependent-captcha',
+            'packages/test-dependent-captcha',
+            ExtensionPackageStatus::Active,
+            [
+                'display_name' => 'Test Dependent Captcha',
+                'manifest' => ['PACKAGE_DEPENDENCIES' => "[['test-dependent-theme', '1.0.0']]"],
+            ],
+            manifestVersion: '1.0.0',
+            installedVersion: '1.0.0',
+        );
+        $entityManager->persist($theme);
+        $entityManager->persist($captcha);
+        $entityManager->flush();
+
+        try {
+            $client->request('GET', '/admin/packages/test-dependent-theme/deactivate');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Deactivate Test Dependent Theme');
+            self::assertSelectorTextContains('.studio-table', 'test-dependent-captcha');
+            self::assertSelectorTextContains('.studio-table', 'test-dependent-theme');
+        } finally {
+            $this->removePackageByName('test-dependent-captcha');
+            $this->removePackageByName('test-dependent-theme');
         }
     }
 

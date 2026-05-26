@@ -67,6 +67,8 @@ final class PackageRegistryHandlerTest extends KernelTestCase
         self::assertSame(['module'], json_decode((string) $row['package_scopes'], true, flags: JSON_THROW_ON_ERROR));
         self::assertSame('Demo Module', $this->metadata($row)['display_name']);
         self::assertSame('Registry handler demo package.', $this->metadata($row)['description']);
+        self::assertSame('MIT', $this->metadata($row)['license']);
+        self::assertSame('assets/preview.svg', $this->metadata($row)['image']);
     }
 
     public function testItMarksMissingFilesystemPackagesAsRemoved(): void
@@ -212,6 +214,8 @@ final class PackageRegistryHandlerTest extends KernelTestCase
             PACKAGE_VERSION={$version}
             PACKAGE_SCOPE=module
             PACKAGE_DEPENDENCIES=[]
+            PACKAGE_LICENSE=MIT
+            PACKAGE_IMAGE=assets/preview.svg
             MANIFEST);
     }
 

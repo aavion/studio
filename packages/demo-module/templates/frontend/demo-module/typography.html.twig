@@ -1,0 +1,79 @@
+{% extends '@frontend/frontend.html.twig' %}
+
+{% block title %}{{ 'pkg.demo-module.demo.typography.title'|trans }}{% endblock %}
+
+{% macro markdown_example(title_key, markdown_key, profile) %}
+    {% set markdown_source = markdown_key|trans %}
+    <article class="studio-markdown-example">
+        <h3>{{ title_key|trans }}</h3>
+        <div class="studio-markdown-example-grid">
+            <div class="studio-markdown-source">
+                <p class="studio-kicker">{{ 'pkg.demo-module.demo.typography.example.source'|trans }}</p>
+                <pre><code>{{ markdown_source }}</code></pre>
+            </div>
+            <div class="studio-markdown-result">
+                <p class="studio-kicker">{{ 'pkg.demo-module.demo.typography.example.result'|trans }}</p>
+                <div class="studio-markdown">
+                    {{ markdown_source|studio_markdown(profile)|raw }}
+                </div>
+            </div>
+        </div>
+    </article>
+{% endmacro %}
+
+{% block frontend_body %}
+    {% import _self as examples %}
+
+    <section class="studio-content-page studio-typography-guide">
+        {% include '@frontend/partials/typography/_page-header.html.twig' with {
+            kicker: 'pkg.demo-module.demo.kicker'|trans,
+            title: 'pkg.demo-module.demo.typography.title'|trans,
+            subtitle: 'pkg.demo-module.demo.typography.subtitle'|trans,
+        } only %}
+
+        <section class="studio-panel studio-typography-section">
+            <header>
+                <p class="studio-kicker">{{ 'pkg.demo-module.demo.typography.basic.kicker'|trans }}</p>
+                <h2>{{ 'pkg.demo-module.demo.typography.basic.title'|trans }}</h2>
+            </header>
+            <div class="studio-markdown">
+                {{ 'pkg.demo-module.demo.typography.basic.markdown'|trans|studio_markdown('basic')|raw }}
+            </div>
+            <div class="studio-typography-examples">
+                {{ examples.markdown_example('pkg.demo-module.demo.typography.basic.examples.headings.title', 'pkg.demo-module.demo.typography.basic.examples.headings.markdown', 'basic') }}
+                {{ examples.markdown_example('pkg.demo-module.demo.typography.basic.examples.lists.title', 'pkg.demo-module.demo.typography.basic.examples.lists.markdown', 'basic') }}
+                {{ examples.markdown_example('pkg.demo-module.demo.typography.basic.examples.quote_code.title', 'pkg.demo-module.demo.typography.basic.examples.quote_code.markdown', 'basic') }}
+            </div>
+        </section>
+
+        <section class="studio-panel studio-typography-section">
+            <header>
+                <p class="studio-kicker">{{ 'pkg.demo-module.demo.typography.allrounder.kicker'|trans }}</p>
+                <h2>{{ 'pkg.demo-module.demo.typography.allrounder.title'|trans }}</h2>
+            </header>
+            <div class="studio-markdown">
+                {{ 'pkg.demo-module.demo.typography.allrounder.markdown'|trans|studio_markdown|raw }}
+            </div>
+            <div class="studio-typography-examples">
+                {{ examples.markdown_example('pkg.demo-module.demo.typography.allrounder.examples.tables_tasks.title', 'pkg.demo-module.demo.typography.allrounder.examples.tables_tasks.markdown', 'allrounder') }}
+                {{ examples.markdown_example('pkg.demo-module.demo.typography.allrounder.examples.footnotes_descriptions.title', 'pkg.demo-module.demo.typography.allrounder.examples.footnotes_descriptions.markdown', 'allrounder') }}
+                {{ examples.markdown_example('pkg.demo-module.demo.typography.allrounder.examples.toc_attributes.title', 'pkg.demo-module.demo.typography.allrounder.examples.toc_attributes.markdown', 'allrounder') }}
+            </div>
+        </section>
+
+        <section class="studio-panel studio-typography-section">
+            <header>
+                <p class="studio-kicker">{{ 'pkg.demo-module.demo.typography.design.kicker'|trans }}</p>
+                <h2>{{ 'pkg.demo-module.demo.typography.design.title'|trans }}</h2>
+            </header>
+            <div class="studio-markdown">
+                {{ 'pkg.demo-module.demo.typography.design.markdown'|trans|studio_markdown('design')|raw }}
+            </div>
+            <div class="studio-typography-examples">
+                {{ examples.markdown_example('pkg.demo-module.demo.typography.design.examples.trusted_html.title', 'pkg.demo-module.demo.typography.design.examples.trusted_html.markdown', 'design') }}
+                {{ examples.markdown_example('pkg.demo-module.demo.typography.design.examples.embed.title', 'pkg.demo-module.demo.typography.design.examples.embed.markdown', 'design') }}
+                {{ examples.markdown_example('pkg.demo-module.demo.typography.design.examples.attributes.title', 'pkg.demo-module.demo.typography.design.examples.attributes.markdown', 'design') }}
+            </div>
+        </section>
+    </section>
+{% endblock %}

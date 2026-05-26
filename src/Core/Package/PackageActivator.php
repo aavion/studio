@@ -37,6 +37,14 @@ final readonly class PackageActivator
     /**
      * @return WorkflowResult<array<string, mixed>>
      */
+    public function planDeactivation(string $packageName): WorkflowResult
+    {
+        return $this->report($this->doPlanDeactivation($packageName), 'package.deactivate.plan', ['package' => $packageName]);
+    }
+
+    /**
+     * @return WorkflowResult<array<string, mixed>>
+     */
     private function doPlanActivation(string $packageName): WorkflowResult
     {
         $package = $this->package($packageName);
@@ -60,11 +68,15 @@ final readonly class PackageActivator
 
         $packages = $dependencies->value()['packages'];
         $conflicts = $this->singleActiveConflictsFor($packages);
+        $deactivations = $this->deactivationCascadeFor($conflicts, array_map(
+            static fn (ExtensionPackage $candidate): string => $candidate->packageName(),
+            $packages,
+        ));
         $changes = [];
 
-        foreach ($conflicts as $conflict) {
+        foreach ($deactivations as $deactivation) {
             $changes[] = [
-                'package' => $conflict->packageName(),
+                'package' => $deactivation->packageName(),
                 'action' => 'deactivated',
                 'status' => ExtensionPackageStatus::Inactive->value,
             ];
@@ -84,7 +96,7 @@ final readonly class PackageActivator
             'package' => $packageName,
             'dependencies' => $dependencies->value()['dependencies'],
             'activate' => array_map(static fn (ExtensionPackage $candidate): string => $candidate->packageName(), $packages),
-            'deactivate' => array_map(static fn (ExtensionPackage $candidate): string => $candidate->packageName(), $conflicts),
+            'deactivate' => array_map(static fn (ExtensionPackage $candidate): string => $candidate->packageName(), $deactivations),
             'changes' => $changes,
             'asset_rebuild' => [] !== $changes,
         ], [
@@ -143,19 +155,22 @@ final readonly class PackageActivator
      */
     public function deactivate(string $packageName, string $environment, bool $rebuildAssets = true): WorkflowResult
     {
-        $package = $this->package($packageName);
+        $plan = $this->doPlanDeactivation($packageName);
 
-        if (null === $package) {
-            return $this->report($this->packageNotFound($packageName), 'package.deactivate', ['package' => $packageName, 'environment' => $environment]);
+        if (!$plan->isSuccess()) {
+            return $this->report($plan, 'package.deactivate', ['package' => $packageName, 'environment' => $environment]);
         }
 
-        $snapshots = $this->statusSnapshots([$package]);
+        $packages = $this->packagesByName($plan->value()['deactivate']);
+        $snapshots = $this->statusSnapshots($packages);
         $changes = [];
         $messages = [];
 
-        if (ExtensionPackageStatus::Active === $package->status() && $package->deactivate()) {
-            $changes[] = $this->change($package, 'deactivated');
-            $messages[] = $this->deactivatedMessage($package);
+        foreach ($packages as $package) {
+            if (ExtensionPackageStatus::Active === $package->status() && $package->deactivate()) {
+                $changes[] = $this->change($package, 'deactivated');
+                $messages[] = $this->deactivatedMessage($package);
+            }
         }
 
         return $this->report(
@@ -163,6 +178,43 @@ final readonly class PackageActivator
             'package.deactivate',
             ['package' => $packageName, 'environment' => $environment],
         );
+    }
+
+    /**
+     * @return WorkflowResult<array<string, mixed>>
+     */
+    private function doPlanDeactivation(string $packageName): WorkflowResult
+    {
+        $package = $this->package($packageName);
+
+        if (null === $package) {
+            return $this->packageNotFound($packageName);
+        }
+
+        $packages = $this->deactivationCascadeFor([$package]);
+        $changes = [];
+
+        foreach ($packages as $candidate) {
+            if (ExtensionPackageStatus::Active !== $candidate->status()) {
+                continue;
+            }
+
+            $changes[] = [
+                'package' => $candidate->packageName(),
+                'action' => 'deactivated',
+                'status' => ExtensionPackageStatus::Inactive->value,
+            ];
+        }
+
+        return WorkflowResult::success([
+            'package' => $packageName,
+            'deactivate' => array_map(static fn (ExtensionPackage $candidate): string => $candidate->packageName(), $packages),
+            'changes' => $changes,
+            'asset_rebuild' => [] !== $changes,
+        ], [
+            'package' => $packageName,
+            'changes' => $changes,
+        ]);
     }
 
     private function package(string $packageName): ?ExtensionPackage
@@ -234,6 +286,34 @@ final readonly class PackageActivator
         }
 
         return array_values($conflicts);
+    }
+
+    /**
+     * @param list<ExtensionPackage> $packages
+     * @param list<string> $excludedPackageNames
+     *
+     * @return list<ExtensionPackage>
+     */
+    private function deactivationCascadeFor(array $packages, array $excludedPackageNames = []): array
+    {
+        $excluded = array_fill_keys($excludedPackageNames, true);
+        $deactivations = [];
+
+        foreach ($packages as $package) {
+            foreach ($this->dependencyResolver->activeDependentsOf($package, [...array_keys($excluded), ...array_keys($deactivations)]) as $dependent) {
+                if (isset($excluded[$dependent->packageName()]) || isset($deactivations[$dependent->packageName()])) {
+                    continue;
+                }
+
+                $deactivations[$dependent->packageName()] = $dependent;
+            }
+
+            if (!isset($excluded[$package->packageName()]) && !isset($deactivations[$package->packageName()])) {
+                $deactivations[$package->packageName()] = $package;
+            }
+        }
+
+        return array_values($deactivations);
     }
 
     /**

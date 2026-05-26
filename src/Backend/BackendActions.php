@@ -11,7 +11,7 @@ use App\Core\Operation\ActionQueue;
 use App\Core\Operation\OperationExecutor;
 use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Package\PackageAssetRebuildDispatcher;
-use App\Core\Package\PackageDiscoveryDispatcher;
+use App\Core\Package\PackageDiscoveryRunner;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpKernel\KernelInterface;
 
@@ -23,7 +23,7 @@ final readonly class BackendActions
 
     public function __construct(
         private KernelInterface $kernel,
-        private PackageDiscoveryDispatcher $packageDiscoveryDispatcher,
+        private PackageDiscoveryRunner $packageDiscoveryRunner,
         private PackageAssetRebuildDispatcher $assetRebuildDispatcher,
         private OperationExecutor $operationExecutor,
     ) {
@@ -69,7 +69,7 @@ final readonly class BackendActions
     public function run(string $action): WorkflowResult
     {
         return match ($action) {
-            self::PACKAGE_DISCOVERY => $this->packageDiscoveryDispatcher->dispatch('admin_ui'),
+            self::PACKAGE_DISCOVERY => ($this->packageDiscoveryRunner)('admin_ui'),
             self::ASSET_REBUILD => $this->assetRebuildDispatcher->dispatch($this->kernel->getEnvironment(), 'admin_ui'),
             self::CACHE_CLEAR => $this->clearCache(),
             default => WorkflowResult::invalid([

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Backend;
 
+use App\Core\Filesystem\PathGuard;
+use App\Core\Manifest\Manifest;
+use App\Core\Manifest\ManifestParser;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
@@ -16,6 +19,7 @@ use App\Entity\ExtensionPackage;
 use App\View\SystemPackageMetadataProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Throwable;
 
 final readonly class PackageLifecycleAdmin
 {
@@ -32,6 +36,8 @@ final readonly class PackageLifecycleAdmin
         private PackageFaultResetter $faultResetter,
         private PackageRemover $remover,
         private KernelInterface $kernel,
+        private ManifestParser $manifestParser = new ManifestParser(),
+        private PathGuard $pathGuard = new PathGuard(),
     ) {
     }
 
@@ -56,7 +62,7 @@ final readonly class PackageLifecycleAdmin
         if (null !== $package && !$package['immutable']) {
             $plan = match ($action) {
                 self::ACTION_ACTIVATE => $this->activator->planActivation($packageName)->toArray(),
-                self::ACTION_DEACTIVATE => $this->deactivationPlan($package)->toArray(),
+                self::ACTION_DEACTIVATE => $this->activator->planDeactivation($packageName)->toArray(),
                 self::ACTION_RESET_FAULT => $this->faultResetPlan($package)->toArray(),
                 self::ACTION_PURGE => $this->purgePlan($package)->toArray(),
                 self::ACTION_DELETE => $this->remover->planRemoval($packageName)->toArray(),
@@ -111,7 +117,13 @@ final readonly class PackageLifecycleAdmin
             'scopes' => $this->scopeRows($metadata['scopes']),
             'manifest_version' => $metadata['version'],
             'installed_version' => null,
-            'manifest' => $metadata['manifest'],
+            'license' => $metadata['license'] ?? null,
+            'dependencies' => [],
+            'homepage' => $metadata['homepage'] ?? null,
+            'source' => $metadata['source'] ?? null,
+            'source_url' => $this->sourceUrl($metadata['source'] ?? null, $metadata['channel'] ?? null),
+            'readme' => $this->readReadme('.'),
+            'preview_image' => $this->previewImageDataUri('.', $metadata['image'] ?? null),
             'actions' => [],
         ];
     }
@@ -119,13 +131,17 @@ final readonly class PackageLifecycleAdmin
     private function extensionPackage(ExtensionPackage $package): array
     {
         $metadata = $package->metadata();
+        $manifest = $this->readManifest($package->path());
         $label = $this->metadataString($metadata, 'display_name') ?? $package->packageName();
+        $dependencies = $manifest?->get('PACKAGE_DEPENDENCIES') ?? $this->metadataString($metadata, 'dependencies');
+        $source = $this->metadataString($metadata, 'source') ?? $manifest?->get('PACKAGE_SOURCE');
+        $channel = $this->metadataString($metadata, 'channel') ?? $manifest?->get('PACKAGE_CHANNEL');
 
         return [
             'package_name' => $package->packageName(),
             'label' => $label,
-            'description' => $this->metadataString($metadata, 'description'),
-            'author' => $this->metadataString($metadata, 'author'),
+            'description' => $this->metadataString($metadata, 'description') ?? $manifest?->get('PACKAGE_DESCRIPTION'),
+            'author' => $this->metadataString($metadata, 'author') ?? $manifest?->get('PACKAGE_AUTHOR'),
             'path' => $package->path(),
             'status' => $package->status()->value,
             'status_label_key' => 'admin.packages.status.'.$package->status()->value,
@@ -134,7 +150,13 @@ final readonly class PackageLifecycleAdmin
             'scopes' => $this->scopeRows($package->scopeValues()),
             'manifest_version' => $package->manifestVersion(),
             'installed_version' => $package->installedVersion(),
-            'manifest' => $this->manifest($metadata),
+            'license' => $this->metadataString($metadata, 'license') ?? $manifest?->get('PACKAGE_LICENSE'),
+            'dependencies' => $this->dependencies($dependencies),
+            'homepage' => $this->metadataString($metadata, 'homepage') ?? $manifest?->get('PACKAGE_HOMEPAGE'),
+            'source' => $source,
+            'source_url' => $this->sourceUrl($source, $channel),
+            'readme' => $this->readReadme($package->path()),
+            'preview_image' => $this->previewImageDataUri($package->path(), $this->metadataString($metadata, 'image') ?? $manifest?->get('PACKAGE_IMAGE')),
             'actions' => $this->actions($package),
         ];
     }
@@ -190,24 +212,6 @@ final readonly class PackageLifecycleAdmin
      *
      * @return WorkflowResult<array<string, mixed>>
      */
-    private function deactivationPlan(array $package): WorkflowResult
-    {
-        return WorkflowResult::success([
-            'package' => $package['package_name'],
-            'changes' => [[
-                'package' => $package['package_name'],
-                'action' => 'deactivated',
-                'status' => ExtensionPackageStatus::Inactive->value,
-            ]],
-            'asset_rebuild' => ExtensionPackageStatus::Active->value === $package['status'],
-        ]);
-    }
-
-    /**
-     * @param array<string, mixed> $package
-     *
-     * @return WorkflowResult<array<string, mixed>>
-     */
     private function faultResetPlan(array $package): WorkflowResult
     {
         return WorkflowResult::success([
@@ -251,30 +255,6 @@ final readonly class PackageLifecycleAdmin
 
     /**
      * @param array<string, mixed> $metadata
-     *
-     * @return array<string, string>
-     */
-    private function manifest(array $metadata): array
-    {
-        $manifest = $metadata['manifest'] ?? [];
-
-        if (!is_array($manifest)) {
-            return [];
-        }
-
-        $rows = [];
-
-        foreach ($manifest as $key => $value) {
-            if (is_string($key) && is_scalar($value)) {
-                $rows[$key] = (string) $value;
-            }
-        }
-
-        return $rows;
-    }
-
-    /**
-     * @param array<string, mixed> $metadata
      */
     private function metadataString(array $metadata, string $key): ?string
     {
@@ -290,6 +270,163 @@ final readonly class PackageLifecycleAdmin
             ExtensionPackageStatus::Inactive => 'neutral',
             ExtensionPackageStatus::Removed => 'warning',
             ExtensionPackageStatus::Faulty => 'error',
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function dependencies(?string $raw): array
+    {
+        if (null === $raw || '' === trim($raw) || '[]' === trim($raw)) {
+            return [];
+        }
+
+        try {
+            $decoded = json_decode($raw, true, flags: JSON_THROW_ON_ERROR);
+        } catch (Throwable) {
+            return [$raw];
+        }
+
+        if (!is_array($decoded)) {
+            return [$raw];
+        }
+
+        $dependencies = [];
+
+        foreach ($decoded as $dependency) {
+            if (is_scalar($dependency)) {
+                $dependencies[] = (string) $dependency;
+
+                continue;
+            }
+
+            if (is_array($dependency)) {
+                $dependencies[] = implode(' ', array_filter(array_map(
+                    static fn (mixed $part): ?string => is_scalar($part) ? (string) $part : null,
+                    $dependency,
+                )));
+            }
+        }
+
+        return array_values(array_filter($dependencies, static fn (string $dependency): bool => '' !== trim($dependency)));
+    }
+
+    private function readManifest(string $basePath): ?Manifest
+    {
+        try {
+            $path = $this->absolutePath($basePath, '.manifest');
+        } catch (Throwable) {
+            return null;
+        }
+
+        if (!is_file($path) || !is_readable($path)) {
+            return null;
+        }
+
+        $contents = file_get_contents($path);
+
+        if (!is_string($contents)) {
+            return null;
+        }
+
+        $result = $this->manifestParser->parse($contents);
+        $manifest = $result->value();
+
+        return $manifest instanceof Manifest ? $manifest : null;
+    }
+
+    private function readReadme(string $basePath): ?string
+    {
+        try {
+            $path = $this->absolutePath($basePath, 'README.md');
+        } catch (Throwable) {
+            return null;
+        }
+
+        if (!is_file($path) || !is_readable($path)) {
+            return null;
+        }
+
+        $contents = file_get_contents($path);
+
+        return is_string($contents) && '' !== trim($contents) ? $contents : null;
+    }
+
+    private function previewImageDataUri(string $basePath, ?string $imagePath): ?string
+    {
+        if (null === $imagePath || '' === trim($imagePath)) {
+            return null;
+        }
+
+        try {
+            $path = $this->absolutePath($basePath, $imagePath);
+        } catch (Throwable) {
+            return null;
+        }
+
+        if (!is_file($path) || !is_readable($path)) {
+            return null;
+        }
+
+        $size = filesize($path);
+
+        if (false === $size || $size > 2_000_000) {
+            return null;
+        }
+
+        $contents = file_get_contents($path);
+
+        if (!is_string($contents)) {
+            return null;
+        }
+
+        $mime = $this->imageMimeType($path);
+
+        if (null === $mime) {
+            return null;
+        }
+
+        return 'data:'.$mime.';base64,'.base64_encode($contents);
+    }
+
+    private function sourceUrl(?string $source, ?string $channel): ?string
+    {
+        if (null === $source || '' === trim($source)) {
+            return null;
+        }
+
+        $source = preg_replace('/\.git$/', '', trim($source)) ?? trim($source);
+
+        if (null === $channel || '' === trim($channel)) {
+            return $source;
+        }
+
+        if (1 === preg_match('#^https://github\.com/[^/\s]+/[^/\s]+$#', $source)) {
+            return rtrim($source, '/').'/tree/'.rawurlencode(trim($channel));
+        }
+
+        return $source;
+    }
+
+    private function absolutePath(string $basePath, string $relativePath): string
+    {
+        $basePath = '.' === $basePath ? '' : trim($basePath, '/');
+        $relativePath = trim($relativePath, '/');
+        $path = '' === $basePath ? $relativePath : $basePath.'/'.$relativePath;
+
+        return rtrim($this->kernel->getProjectDir(), '/').'/'.$this->pathGuard->relativePath($path);
+    }
+
+    private function imageMimeType(string $path): ?string
+    {
+        return match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+            'gif' => 'image/gif',
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'svg' => 'image/svg+xml',
+            'webp' => 'image/webp',
+            default => null,
         };
     }
 }

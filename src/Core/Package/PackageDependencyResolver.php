@@ -10,12 +10,15 @@ use App\Core\Message\MessageLevel;
 use App\Core\Message\Message;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
+use App\View\SystemPackageMetadataProvider;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class PackageDependencyResolver
 {
-    public function __construct(private EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private ?SystemPackageMetadataProvider $systemPackageMetadata = null,
+    ) {
     }
 
     /**
@@ -57,6 +60,54 @@ final readonly class PackageDependencyResolver
     }
 
     /**
+     * @param list<string> $excludedPackageNames
+     *
+     * @return list<ExtensionPackage>
+     */
+    public function activeDependentsOf(ExtensionPackage $package, array $excludedPackageNames = []): array
+    {
+        $excluded = array_fill_keys($excludedPackageNames, true);
+        $excluded[$package->packageName()] = true;
+        $targetPackageName = $package->packageName();
+        $dependents = [];
+
+        foreach ($this->entityManager->getRepository(ExtensionPackage::class)->findBy(['status' => ExtensionPackageStatus::Active]) as $candidate) {
+            if (
+                !$candidate instanceof ExtensionPackage
+                || isset($excluded[$candidate->packageName()])
+            ) {
+                continue;
+            }
+
+            $depth = $this->dependencyDepthToPackage($candidate, $targetPackageName);
+
+            if (null === $depth) {
+                continue;
+            }
+
+            $dependents[$candidate->packageName()] = [
+                'package' => $candidate,
+                'depth' => $depth,
+            ];
+        }
+
+        uasort($dependents, static function (array $left, array $right): int {
+            $depth = $right['depth'] <=> $left['depth'];
+
+            if (0 !== $depth) {
+                return $depth;
+            }
+
+            return $left['package']->packageName() <=> $right['package']->packageName();
+        });
+
+        return array_values(array_map(
+            static fn (array $dependent): ExtensionPackage => $dependent['package'],
+            $dependents,
+        ));
+    }
+
+    /**
      * @param array<string, ExtensionPackage> $packages
      * @param list<array<string, mixed>> $dependencies
      * @param list<Message> $issues
@@ -70,6 +121,12 @@ final readonly class PackageDependencyResolver
         $packages[$package->packageName()] = $package;
 
         foreach ($this->dependencies($package) as [$dependencyName, $minVersion]) {
+            if ('system' === $dependencyName) {
+                $this->resolveSystemPackage($package, $minVersion, $dependencies, $issues);
+
+                continue;
+            }
+
             $dependency = $this->package($dependencyName);
             $currentVersion = $dependency?->installedVersion() ?? $dependency?->manifestVersion();
             $status = $dependency?->status();
@@ -124,6 +181,40 @@ final readonly class PackageDependencyResolver
         }
     }
 
+    /**
+     * @param list<array<string, mixed>> $dependencies
+     * @param list<Message> $issues
+     */
+    private function resolveSystemPackage(
+        ExtensionPackage $package,
+        string $minVersion,
+        array &$dependencies,
+        array &$issues,
+    ): void {
+        $metadata = $this->systemPackageMetadata?->metadata();
+        $currentVersion = is_array($metadata) && isset($metadata['version']) && is_string($metadata['version'])
+            ? $metadata['version']
+            : null;
+
+        $dependencies[] = [
+            'package' => 'system',
+            'required_min_version' => $minVersion,
+            'installed_version' => $currentVersion,
+            'status' => ExtensionPackageStatus::Active->value,
+            'required_by' => $package->packageName(),
+        ];
+
+        if (null === $currentVersion || version_compare($currentVersion, $minVersion, '<')) {
+            $issues[] = Message::create(
+                MessageCode::PACKAGE_DEPENDENCY_VERSION_UNSATISFIED,
+                MessageKey::PACKAGE_DEPENDENCY_VERSION_UNSATISFIED,
+                ['%package%' => 'system', '%required_version%' => $minVersion, '%installed_version%' => $currentVersion ?? ''],
+                ['package' => 'system', 'required_version' => $minVersion, 'installed_version' => $currentVersion, 'required_by' => $package->packageName()],
+                MessageLevel::Error,
+            );
+        }
+    }
+
     private function package(string $packageName): ?ExtensionPackage
     {
         $package = $this->entityManager->getRepository(ExtensionPackage::class)->findOneBy([
@@ -131,6 +222,45 @@ final readonly class PackageDependencyResolver
         ]);
 
         return $package instanceof ExtensionPackage ? $package : null;
+    }
+
+    /**
+     * @param array<string, true> $seen
+     */
+    private function dependencyDepthToPackage(ExtensionPackage $package, string $targetPackageName, array $seen = []): ?int
+    {
+        if (isset($seen[$package->packageName()])) {
+            return null;
+        }
+
+        $seen[$package->packageName()] = true;
+        $deepest = null;
+
+        foreach ($this->dependencies($package) as [$dependencyName]) {
+            if ($dependencyName === $targetPackageName) {
+                $deepest = max($deepest ?? 0, 1);
+
+                continue;
+            }
+
+            if (isset($seen[$dependencyName])) {
+                continue;
+            }
+
+            $dependency = $this->package($dependencyName);
+
+            if (!$dependency instanceof ExtensionPackage) {
+                continue;
+            }
+
+            $depth = $this->dependencyDepthToPackage($dependency, $targetPackageName, $seen);
+
+            if (null !== $depth) {
+                $deepest = max($deepest ?? 0, $depth + 1);
+            }
+        }
+
+        return $deepest;
     }
 
     /**

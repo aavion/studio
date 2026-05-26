@@ -27,6 +27,12 @@
         actions: package_actions,
     } only %}
 
+    {% if package.preview_image %}
+        <figure class="studio-package-hero">
+            <img src="{{ package.preview_image }}" alt="">
+        </figure>
+    {% endif %}
+
     <section class="studio-panel">
         <h2>{{ 'admin.packages.detail.overview_title'|trans }}</h2>
         <table class="studio-table">
@@ -68,25 +74,44 @@
                         <td>{{ package.author }}</td>
                     </tr>
                 {% endif %}
+                {% if package.license %}
+                    <tr>
+                        <th scope="row">{{ 'admin.packages.detail.license'|trans }}</th>
+                        <td>{{ package.license }}</td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <th scope="row">{{ 'admin.packages.detail.dependencies'|trans }}</th>
+                    <td>
+                        {% if package.dependencies is not empty %}
+                            {% for dependency in package.dependencies %}
+                                <span class="studio-badge studio-badge-neutral">{{ dependency }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="studio-muted">{{ 'admin.packages.detail.dependencies_empty'|trans }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if package.homepage %}
+                    <tr>
+                        <th scope="row">{{ 'admin.packages.detail.homepage'|trans }}</th>
+                        <td><a href="{{ package.homepage }}" rel="noreferrer">{{ package.homepage }}</a></td>
+                    </tr>
+                {% endif %}
+                {% if package.source %}
+                    <tr>
+                        <th scope="row">{{ 'admin.packages.detail.source'|trans }}</th>
+                        <td><a href="{{ package.source_url|default(package.source) }}" rel="noreferrer">{{ package.source_url|default(package.source) }}</a></td>
+                    </tr>
+                {% endif %}
             </tbody>
         </table>
     </section>
 
-    <section class="studio-panel">
-        <h2>{{ 'admin.packages.detail.manifest_title'|trans }}</h2>
-        {% if package.manifest is not empty %}
-            <table class="studio-table">
-                <tbody>
-                    {% for key, value in package.manifest %}
-                        <tr>
-                            <th scope="row"><code>{{ key }}</code></th>
-                            <td>{{ value }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p class="studio-muted">{{ 'admin.packages.detail.manifest_empty'|trans }}</p>
-        {% endif %}
-    </section>
+    {% if package.readme %}
+        <section class="studio-panel studio-markdown">
+            <h2>{{ 'admin.packages.detail.readme_title'|trans }}</h2>
+            {{ package.readme|studio_markdown('readme')|raw }}
+        </section>
+    {% endif %}
 {% endblock %}

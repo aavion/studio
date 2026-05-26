@@ -18,6 +18,7 @@ use App\Core\Package\PackageLifecycleCleanupRunnerInterface;
 use App\Core\Package\PackageLifecycleAssetRebuilderInterface;
 use App\Core\Package\PackagePhpLoader;
 use App\Core\Package\PackageRemover;
+use App\Core\Package\PackageRuntimeContributionRegistry;
 use App\Core\Package\PackageRuntimeFailureHandler;
 use App\Core\Package\PackageScope;
 use App\Core\Message\Message;
@@ -148,6 +149,117 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         self::assertFileExists($this->projectDir.'/packages/demo-module/loaded.txt');
         self::assertSame('demo-module', file_get_contents($this->projectDir.'/packages/demo-module/called.txt'));
         self::assertFileDoesNotExist($this->projectDir.'/packages/inactive-module/loaded.txt');
+    }
+
+    public function testPackagePhpLoaderRegistersRuntimeContributions(): void
+    {
+        $this->insertPackage('demo-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'packages/demo-module/package.php', <<<'PHP'
+            <?php
+
+            use App\Core\Package\Settings\PackageSettingDefinition;
+            use App\View\Injection\ConfigurableStaticViewInjectionRoute;
+            use App\View\Injection\ConfigurableStaticViewInjectionSet;
+            use App\View\Injection\DynamicViewInjection;
+            use App\View\Injection\DynamicViewInjectionSlot;
+            use App\View\Injection\StaticViewInjection;
+            use App\View\Injection\ViewSurface;
+
+            return [
+                new StaticViewInjection(
+                    'pkg-demo-module-route',
+                    ViewSurface::Public,
+                    'demo-module',
+                    'pkg.demo-module.widget',
+                    '@frontend/demo-module/frontend.html.twig',
+                ),
+                new ConfigurableStaticViewInjectionSet(
+                    'demo-module',
+                    'demo.route',
+                    ViewSurface::Public,
+                    'demo',
+                    [
+                        new ConfigurableStaticViewInjectionRoute(
+                            'pkg-demo-module-configurable-route',
+                            '',
+                            'pkg.demo-module.widget',
+                            '@frontend/demo-module/frontend.html.twig',
+                        ),
+                    ],
+                ),
+                new DynamicViewInjection(
+                    'pkg-demo-module-after-content',
+                    ViewSurface::Public,
+                    DynamicViewInjectionSlot::AfterContent,
+                    '@frontend/demo-module/after-content.html.twig',
+                ),
+                new PackageSettingDefinition(
+                    'demo-module',
+                    'display.mode',
+                    'pkg.demo-module.settings.display_mode.label',
+                    'compact',
+                ),
+            ];
+            PHP);
+        $registry = new PackageRuntimeContributionRegistry();
+
+        $result = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActivePackages();
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('pkg-demo-module-route', $registry->staticViewInjections()[0]->uid());
+        self::assertSame('demo-module', $registry->staticViewInjections()[0]->pathSlug());
+        self::assertSame('pkg-demo-module-configurable-route', $registry->staticViewInjections()[1]->uid());
+        self::assertSame('demo', $registry->staticViewInjections()[1]->pathSlug());
+        self::assertSame('pkg-demo-module-after-content', $registry->dynamicViewInjections()[0]->uid());
+        self::assertSame('display.mode', $registry->packageSettings()[0]->key());
+    }
+
+    public function testPackagePhpLoaderCanReloadPackagePhpAcrossLoaderInstances(): void
+    {
+        $this->insertPackage('demo-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'packages/demo-module/package.php', <<<'PHP'
+            <?php
+
+            use App\View\Injection\StaticViewInjection;
+            use App\View\Injection\ViewSurface;
+
+            return new StaticViewInjection(
+                'pkg-demo-module-reload',
+                ViewSurface::Public,
+                'demo-module',
+                'pkg.demo-module.widget',
+                '@frontend/demo-module/frontend.html.twig',
+            );
+            PHP);
+
+        $firstRegistry = new PackageRuntimeContributionRegistry();
+        $secondRegistry = new PackageRuntimeContributionRegistry();
+
+        $firstResult = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $firstRegistry,
+        ))->loadActivePackages();
+        $secondResult = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $secondRegistry,
+        ))->loadActivePackages();
+
+        self::assertTrue($firstResult->isSuccess());
+        self::assertTrue($secondResult->isSuccess());
+        self::assertSame('pkg-demo-module-reload', $firstRegistry->staticViewInjections()[0]->uid());
+        self::assertSame('pkg-demo-module-reload', $secondRegistry->staticViewInjections()[0]->uid());
     }
 
     public function testPackagePhpLoaderMarksFailingPackagesFaulty(): void

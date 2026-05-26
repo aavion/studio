@@ -218,6 +218,11 @@ final readonly class PackageRegistryHandler
             'author' => $candidate->manifest()->get('PACKAGE_AUTHOR'),
             'description' => $candidate->manifest()->get('PACKAGE_DESCRIPTION'),
             'dependencies' => $candidate->manifest()->get('PACKAGE_DEPENDENCIES'),
+            'license' => $candidate->manifest()->get('PACKAGE_LICENSE'),
+            'homepage' => $candidate->manifest()->get('PACKAGE_HOMEPAGE'),
+            'source' => $candidate->manifest()->get('PACKAGE_SOURCE'),
+            'channel' => $candidate->manifest()->get('PACKAGE_CHANNEL'),
+            'image' => $candidate->manifest()->get('PACKAGE_IMAGE'),
             'validation' => [
                 'issue_count' => count($issues),
                 'issues' => array_map(static fn (Message $issue): array => $issue->toArray(), $issues),

@@ -174,11 +174,15 @@ admin:
             author: 'Von %author%'
         detail:
             overview_title: Paketübersicht
-            manifest_title: Manifestdaten
-            manifest_empty: 'Es sind keine Manifestdaten verfügbar.'
             immutable: Unveränderlich
             description: Beschreibung
             author: Autor
+            license: Lizenz
+            dependencies: Abhängigkeiten
+            dependencies_empty: 'Keine Paketabhängigkeiten'
+            homepage: Homepage
+            source: Quelle
+            readme_title: README
         lifecycle:
             review_title: 'Änderungen prüfen'
             immutable: 'Dieses Systempaket ist unveränderlich und kann seinen Lifecycle-State nicht ändern.'
@@ -366,60 +370,6 @@ admin:
                 weekly: Wöchentlich
     message:
         title: Admin-Route
-demo:
-    kicker: System-UI
-    frontend:
-        title: Frontend-Shell-Demo
-        subtitle: 'Eine temporäre Vorschau für öffentliches Theme-Layout, Navigation, Aktionen, Formulare, Feedback und Statusfarben.'
-        content_title: Content-Vorschau
-        content_text: 'Diese Karte nutzt dieselben Fallback-Komponenten, die öffentliches Content-Rendering wiederverwenden kann.'
-        rich_text: 'Lesbare Texte, fokussierte Aktionen und zurückhaltende Kontraste sollen über Themes hinweg stabil bleiben.'
-    backend:
-        title: Backend-Shell-Demo
-        nav_overview: Übersicht
-        overview_title: Operationsfläche
-        overview_text: 'Die Backend-Shell hält Navigation, Status, Formulare, Operationen und Workspace-Bereiche optisch zusammen.'
-    editor:
-        title: Editor-Workspace
-    setup:
-        title: Setup-Ablauf
-        step: 'Schritt 1 von 2'
-        item_environment: 'Umgebung geprüft'
-        item_packages: 'Package Lifecycle bereit'
-    actions:
-        primary: 'Gegenstück öffnen'
-        secondary: 'Sekundäre Aktion'
-    empty:
-        title: 'Empty State'
-        message: 'Nutze diesen Zustand, wenn eine Liste, Tabelle oder ein Workflow noch keine Einträge hat.'
-    form:
-        kicker: Formularvorschau
-        title: Feldprimitive
-        title_label: Titel
-        status_label: Status
-        body_label: Body
-        help: 'Kurze Hilfetexte bleiben nah am Control.'
-        value: Demo-Wert
-        body_value: 'Strukturierter Content kann dieselben Control-Abstände nutzen.'
-        status_option: Entwurf
-    status:
-        title: Statussprache
-    badges:
-        success: Success
-        info: Info
-        warning: Warnung
-        error: Fehler
-        exception: Exception
-    table:
-        title: Paketübersicht
-        name: Name
-        scope: Scope
-        status: Status
-        system: Systempaket
-        theme: 'Aktives Theme'
-    operations:
-        discovery: 'Discovery abgeschlossen'
-        assets: 'Asset-Rebuild eingereiht'
 editor:
     navigation:
         dashboard: Dashboard

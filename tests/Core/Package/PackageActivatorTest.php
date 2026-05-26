@@ -9,10 +9,12 @@ use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageActivator;
+use App\Core\Package\PackageDependencyResolver;
 use App\Core\Package\PackageLifecycleAssetRebuilderInterface;
 use App\Core\Message\Message;
 use App\Core\Workflow\WorkflowResult;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
+use App\View\SystemPackageMetadataProvider;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -74,6 +76,21 @@ final class PackageActivatorTest extends KernelTestCase
         self::assertSame([], $this->assetRebuilder->environments);
     }
 
+    public function testItDeactivatesDependentsOfConflictingSingleActiveScopes(): void
+    {
+        $this->insertPackage('old-theme', ['frontend-theme'], 'active');
+        $this->insertPackage('captcha-provider', ['captcha-provider'], 'active', "[['old-theme', '1.0.0']]");
+        $this->insertPackage('new-theme', ['frontend-theme'], 'inactive');
+
+        $result = $this->activator()->activate('new-theme', 'test', rebuildAssets: false);
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('inactive', $this->packageStatus('old-theme'));
+        self::assertSame('inactive', $this->packageStatus('captcha-provider'));
+        self::assertSame('active', $this->packageStatus('new-theme'));
+        self::assertSame(['captcha-provider', 'old-theme', 'new-theme'], array_column($result->value()['changes'], 'package'));
+    }
+
     public function testItRunsOneAssetRebuildForBatchedActivationChanges(): void
     {
         $this->insertPackage('old-theme', ['frontend-theme'], 'active');
@@ -125,6 +142,23 @@ final class PackageActivatorTest extends KernelTestCase
         self::assertSame(['new-theme', 'theme-tools'], array_column($result->value()['changes'], 'package'));
     }
 
+    public function testItTreatsSystemAsSatisfiedVirtualDependency(): void
+    {
+        $this->insertPackage('demo-module', ['module'], 'inactive', '[["system", "0.1.0"]]');
+
+        $result = $this->activatorWithSystemDependencySupport()->planActivation('demo-module');
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame(['demo-module'], $result->value()['activate']);
+        self::assertSame([[
+            'package' => 'system',
+            'required_min_version' => '0.1.0',
+            'installed_version' => '0.1.0',
+            'status' => 'active',
+            'required_by' => 'demo-module',
+        ]], $result->value()['dependencies']);
+    }
+
     public function testItBlocksMissingPackageDependencies(): void
     {
         $this->insertPackage('new-theme', ['frontend-theme'], 'inactive', "[['missing-tools', '1.0.0']]");
@@ -161,6 +195,42 @@ final class PackageActivatorTest extends KernelTestCase
             'action' => 'deactivated',
             'status' => 'inactive',
         ]], $result->value()['changes']);
+    }
+
+    public function testItPlansDependentCascadeBeforeDeactivation(): void
+    {
+        $this->insertPackage('demo-theme', ['frontend-theme'], 'active');
+        $this->insertPackage('captcha-provider', ['captcha-provider'], 'active', "[['demo-theme', '1.0.0']]");
+
+        $result = $this->activator()->planDeactivation('demo-theme');
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame(['captcha-provider', 'demo-theme'], $result->value()['deactivate']);
+        self::assertSame([
+            [
+                'package' => 'captcha-provider',
+                'action' => 'deactivated',
+                'status' => 'inactive',
+            ],
+            [
+                'package' => 'demo-theme',
+                'action' => 'deactivated',
+                'status' => 'inactive',
+            ],
+        ], $result->value()['changes']);
+    }
+
+    public function testItDeactivatesActiveDependentsWithTheTargetPackage(): void
+    {
+        $this->insertPackage('demo-theme', ['frontend-theme'], 'active');
+        $this->insertPackage('captcha-provider', ['captcha-provider'], 'active', "[['demo-theme', '1.0.0']]");
+
+        $result = $this->activator()->deactivate('demo-theme', 'test', rebuildAssets: false);
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('inactive', $this->packageStatus('demo-theme'));
+        self::assertSame('inactive', $this->packageStatus('captcha-provider'));
+        self::assertSame(['captcha-provider', 'demo-theme'], array_column($result->value()['changes'], 'package'));
     }
 
     public function testItBlocksFaultyOrRemovedPackages(): void
@@ -206,6 +276,16 @@ final class PackageActivatorTest extends KernelTestCase
     private function activator(): PackageActivator
     {
         return new PackageActivator($this->entityManager, $this->assetRebuilder, new NullWorkflowResultMessageReporter());
+    }
+
+    private function activatorWithSystemDependencySupport(): PackageActivator
+    {
+        return new PackageActivator(
+            $this->entityManager,
+            $this->assetRebuilder,
+            new NullWorkflowResultMessageReporter(),
+            new PackageDependencyResolver($this->entityManager, new SystemPackageMetadataProvider(dirname(__DIR__, 3))),
+        );
     }
 
     /**

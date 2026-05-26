@@ -68,11 +68,15 @@ admin:
       author: 'By %author%'
     detail:
       overview_title: 'Package overview'
-      manifest_title: 'Manifest data'
-      manifest_empty: 'No manifest data is available.'
       immutable: 'Immutable'
       description: 'Description'
       author: 'Author'
+      license: 'License'
+      dependencies: 'Dependencies'
+      dependencies_empty: 'No package dependencies'
+      homepage: 'Homepage'
+      source: 'Source'
+      readme_title: 'README'
     lifecycle:
       review_title: 'Review changes'
       immutable: 'This system package is immutable and cannot change lifecycle state.'
