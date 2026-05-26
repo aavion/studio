@@ -9,10 +9,10 @@ use App\Core\Package\ActivePackageProviderInterface;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
 use App\Core\Package\Settings\PackageSettingDefinition;
-use App\Core\Package\Settings\PackageSettingInputType;
 use App\Core\Package\Settings\PackageSettingProviderInterface;
 use App\Core\Package\Settings\PackageSettingRegistry;
 use App\Entity\ExtensionPackage;
+use App\Form\FormInputType;
 use PHPUnit\Framework\TestCase;
 
 final class PackageSettingRegistryTest extends TestCase
@@ -55,11 +55,12 @@ final class PackageSettingRegistryTest extends TestCase
             static fn (PackageSettingDefinition $definition): string => $definition->key(),
             $definitions,
         ));
-        self::assertSame(PackageSettingInputType::Checkbox, $definitions[0]->inputType());
-        self::assertSame(PackageSettingInputType::Select, $definitions[1]->inputType());
+        self::assertSame(FormInputType::Checkbox, $definitions[0]->inputType());
+        self::assertSame(FormInputType::Select, $definitions[1]->inputType());
         self::assertSame(['required' => true], $definitions[1]->validation());
         self::assertSame('select', $definitions[1]->toArray()['input_type']);
         self::assertSame(['compact', 'comfortable'], $definitions[1]->toArray()['options']);
+        self::assertSame(['compact' => 'compact', 'comfortable' => 'comfortable'], $definitions[1]->formField()->options());
         self::assertSame([
             'active-module' => [
                 'label' => 'Active Module',

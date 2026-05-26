@@ -72,6 +72,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Added a reusable form-definition foundation outside the backend namespace, wired core and package setting definitions into it, rendered the first typed Admin Settings forms with validation metadata, and prepared the native captcha provider field slot for future provider packages.
+- Added top-level Admin Shell placeholders for User Management, Scheduler, Backups, and Logs so administrative surfaces from the drafts have navigable ACL-protected anchors while content, schema, and import/export work stays with the Editor area.
 - Added `/admin/themes` as the first top-level Theme Management placeholder so theme selection, activation, previews, and variants can evolve outside the settings tree.
 - Added the first Admin Settings information architecture with `/admin/settings/general` as the default section plus Dashboard, Users, Mail, Security, Packages, and Scheduler placeholder sections under the shared backend view registry.
 - Extended package settings with input-type and validation metadata for future generic forms, added `/admin/settings/packages` as the package settings overview, and nested package-specific settings pages below it by package slug while keeping labels from package metadata.

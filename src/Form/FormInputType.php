@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Core\Package\Settings;
+namespace App\Form;
 
 use App\Core\Config\ConfigValueType;
 
-enum PackageSettingInputType: string
+enum FormInputType: string
 {
     case Text = 'text';
     case Textarea = 'textarea';
@@ -15,9 +15,10 @@ enum PackageSettingInputType: string
     case Checkbox = 'checkbox';
     case Number = 'number';
     case Color = 'color';
+    case Captcha = 'captcha';
 
     /**
-     * @param list<string|int|float|bool> $options
+     * @param array<string, string>|list<string|int|float|bool> $options
      */
     public static function infer(ConfigValueType $valueType, array $options = []): self
     {

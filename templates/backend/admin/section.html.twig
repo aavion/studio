@@ -1,10 +1,8 @@
 {% extends '@backend/admin.html.twig' %}
 
-{% set title_key = view.context.title_key|default('admin.settings.title') %}
+{% set title_key = view.context.title_key|default('admin.message.title') %}
 {% set foundation_title_key = view.context.foundation_title_key|default(title_key) %}
-{% set foundation_text_key = view.context.foundation_text_key|default('admin.settings.redirect_text') %}
-{% set settings_section = view.context.settings_section|default(null) %}
-{% set settings_form = settings_section ? studio_core_settings_form(settings_section) : null %}
+{% set foundation_text_key = view.context.foundation_text_key|default('admin.message.title') %}
 
 {% block title %}{{ title_key|trans }}{% endblock %}
 
@@ -16,15 +14,12 @@
 
 {% block admin_body %}
     {% include '@backend/admin/partials/_page-header.html.twig' with {
-        eyebrow: 'admin.settings.title'|trans,
+        eyebrow: 'ui.admin.area'|trans,
         title: title_key|trans,
     } only %}
 
     <section class="studio-panel">
         <h2>{{ foundation_title_key|trans }}</h2>
         <p class="studio-muted">{{ foundation_text_key|trans }}</p>
-        {% if settings_form %}
-            {% include '@backend/partials/forms/_dynamic.html.twig' with {form: settings_form} only %}
-        {% endif %}
     </section>
 {% endblock %}

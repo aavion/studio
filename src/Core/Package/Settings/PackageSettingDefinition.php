@@ -8,11 +8,13 @@ use App\Core\Config\ConfigValueType;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
+use App\Form\FormFieldDefinition;
+use App\Form\FormInputType;
 
 final readonly class PackageSettingDefinition
 {
     /**
-     * @param list<string|int|float|bool> $options
+     * @param array<string, string>|list<string|int|float|bool> $options
      * @param array<string, mixed> $validation
      * @param array<string, mixed> $metadata
      */
@@ -24,7 +26,7 @@ final readonly class PackageSettingDefinition
         private ConfigValueType $valueType = ConfigValueType::String,
         private ?string $description = null,
         private array $options = [],
-        private ?PackageSettingInputType $inputType = null,
+        private ?FormInputType $inputType = null,
         private array $validation = [],
         private array $metadata = [],
         private int $sortOrder = 0,
@@ -64,16 +66,16 @@ final readonly class PackageSettingDefinition
     }
 
     /**
-     * @return list<string|int|float|bool>
+     * @return array<string, string>|list<string|int|float|bool>
      */
     public function options(): array
     {
         return $this->options;
     }
 
-    public function inputType(): PackageSettingInputType
+    public function inputType(): FormInputType
     {
-        return $this->inputType ?? PackageSettingInputType::infer($this->valueType, $this->options);
+        return $this->inputType ?? FormInputType::infer($this->valueType, $this->optionLabels());
     }
 
     /**
@@ -116,6 +118,42 @@ final readonly class PackageSettingDefinition
             'metadata' => $this->metadata,
             'sort_order' => $this->sortOrder,
         ];
+    }
+
+    public function formField(mixed $value = null): FormFieldDefinition
+    {
+        return new FormFieldDefinition(
+            $this->key,
+            $this->label,
+            $value ?? $this->defaultValue,
+            $this->valueType,
+            $this->inputType(),
+            $this->description,
+            $this->optionLabels(),
+            $this->validation,
+            ['package_name' => $this->packageName, ...$this->metadata],
+            $this->sortOrder,
+        );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function optionLabels(): array
+    {
+        $options = [];
+
+        foreach ($this->options as $key => $option) {
+            if (is_string($key)) {
+                $options[$key] = (string) $option;
+
+                continue;
+            }
+
+            $options[(string) $option] = (string) $option;
+        }
+
+        return $options;
     }
 
     private function assertPackageName(string $packageName): void

@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\View\Twig;
 
 use App\Core\Access\AccessActor;
+use App\Core\Config\Config;
+use App\Core\Config\Settings\CoreSettingsRegistry;
 use App\Core\Event\EventHookDescriptor;
 use App\Core\Event\PublicEventHookRegistry;
 use App\Core\Package\Settings\PackageSettingRegistry;
 use App\Core\Package\Settings\PackageSettings;
 use App\Debug\StudioDebugCollector;
 use App\Entity\UserAccount;
+use App\Form\FormBuilder;
 use App\Navigation\NavigationBuilder;
 use App\View\MarkdownRenderer;
 use App\View\PackageMacroRegistry;
@@ -31,6 +34,9 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         private readonly MarkdownRenderer $markdownRenderer,
         private readonly PublicEventHookRegistry $eventHookRegistry,
         private readonly NavigationBuilder $navigationBuilder,
+        private readonly Config $config,
+        private readonly CoreSettingsRegistry $coreSettingsRegistry,
+        private readonly FormBuilder $formBuilder,
         private readonly PackageSettings $packageSettings,
         private readonly PackageSettingRegistry $packageSettingRegistry,
         private readonly StudioDebugCollector $debugCollector,
@@ -61,7 +67,9 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             new TwigFunction('studio_event_hooks', $this->eventHooks(...)),
             new TwigFunction('studio_html_attributes', $this->htmlAttributes(...), ['is_safe' => ['html']]),
             new TwigFunction('studio_navigation', $this->navigation(...)),
+            new TwigFunction('studio_core_settings_form', $this->coreSettingsForm(...)),
             new TwigFunction('studio_package_settings', $this->packageSettings(...)),
+            new TwigFunction('studio_package_settings_form', $this->packageSettingsForm(...)),
             new TwigFunction('studio_package_setting_packages', $this->packageSettingPackages(...)),
             new TwigFunction('studio_debug_info', $this->debugInfo(...)),
         ];
@@ -128,6 +136,38 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
     public function packageSettings(string $packageName): array
     {
         return $this->packageSettings->viewRows($packageName, $this->packageSettingRegistry);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function coreSettingsForm(string $section): array
+    {
+        $definitions = $this->coreSettingsRegistry->definitions($section);
+        $values = [];
+
+        foreach ($definitions as $definition) {
+            $values[$definition->key()] = $this->config->get($definition->key(), $definition->defaultValue());
+        }
+
+        return $this->formBuilder->build(
+            'admin-settings-'.$section,
+            'admin.settings.'.$section.'.title',
+            array_map(static fn ($definition) => $definition->formField(), $definitions),
+            $values,
+        )->toArray();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function packageSettingsForm(string $packageName): array
+    {
+        return $this->formBuilder->build(
+            'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($packageName)),
+            $packageName,
+            $this->packageSettings->formFields($packageName, $this->packageSettingRegistry),
+        )->toArray();
     }
 
     /**
@@ -202,6 +242,20 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
 
         return str_starts_with($name, 'data-')
             || str_starts_with($name, 'aria-')
-            || in_array($name, ['download', 'id', 'rel', 'target', 'title'], true);
+            || in_array($name, [
+                'autocomplete',
+                'download',
+                'id',
+                'max',
+                'maxlength',
+                'min',
+                'minlength',
+                'pattern',
+                'placeholder',
+                'rel',
+                'step',
+                'target',
+                'title',
+            ], true);
     }
 }

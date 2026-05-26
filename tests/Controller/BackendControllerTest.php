@@ -76,6 +76,19 @@ final class BackendControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Theme management');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/themes"][aria-current="page"]');
+
+        foreach ([
+            '/admin/users' => 'User management',
+            '/admin/scheduler' => 'Scheduler',
+            '/admin/backups' => 'Backup and restore',
+            '/admin/logs' => 'Logs',
+        ] as $path => $title) {
+            $client->request('GET', $path);
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', $title);
+            self::assertSelectorExists(sprintf('.studio-backend-nav a[href="%s"][aria-current="page"]', $path));
+        }
     }
 
     public function testAdminSettingsRoutesRenderThroughRegistry(): void
@@ -93,17 +106,27 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('.studio-backend-nav', 'Settings');
         self::assertSelectorExists('.studio-backend-nav .is-active-ancestor a[href="/admin/settings"]');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/general"][aria-current="page"]');
+        self::assertSelectorExists('form#admin-settings-general');
+        self::assertStringContainsString('name="site.title"', (string) $client->getResponse()->getContent());
+        self::assertStringContainsString('maxlength="120"', (string) $client->getResponse()->getContent());
+        self::assertSelectorExists('select[name="localization.default_language"][required]');
+        self::assertStringContainsString('name="content.home_path"', (string) $client->getResponse()->getContent());
+        self::assertStringContainsString('pattern="^/.*$"', (string) $client->getResponse()->getContent());
 
         $client->request('GET', '/admin/settings/packages');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Package settings');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/packages"][aria-current="page"]');
+        self::assertSelectorExists('form#admin-settings-packages');
+        self::assertSelectorExists('select[name="packages.update_check_interval"]');
 
         $client->request('GET', '/admin/settings/security');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Security settings');
+        self::assertSelectorExists('form#admin-settings-security');
+        self::assertSelectorExists('select[name="security.captcha.provider"]');
     }
 
     public function testAdminStaticViewInjectionsRenderThroughBackendRegistry(): void

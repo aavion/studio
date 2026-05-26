@@ -248,8 +248,26 @@ final class NavigationBuilderTest extends KernelTestCase
             activeRoute: 'backend_admin_route',
         );
 
-        self::assertSame(['admin.navigation.dashboard', 'admin.navigation.packages', 'admin.navigation.themes', 'admin.navigation.settings'], array_column($navigation, 'label'));
-        self::assertSame(['/admin', '/admin/packages', '/admin/themes', '/admin/settings'], array_column($navigation, 'url'));
+        self::assertSame([
+            'admin.navigation.dashboard',
+            'admin.navigation.packages',
+            'admin.navigation.themes',
+            'admin.navigation.users',
+            'admin.navigation.scheduler',
+            'admin.navigation.backups',
+            'admin.navigation.logs',
+            'admin.navigation.settings',
+        ], array_column($navigation, 'label'));
+        self::assertSame([
+            '/admin',
+            '/admin/packages',
+            '/admin/themes',
+            '/admin/users',
+            '/admin/scheduler',
+            '/admin/backups',
+            '/admin/logs',
+            '/admin/settings',
+        ], array_column($navigation, 'url'));
         self::assertFalse($navigation[0]['active']);
         self::assertTrue($navigation[1]['active']);
         self::assertSame([
@@ -260,7 +278,7 @@ final class NavigationBuilderTest extends KernelTestCase
             'admin.navigation.security_settings',
             'admin.navigation.package_settings',
             'admin.navigation.scheduler_settings',
-        ], array_column($navigation[3]['children'], 'label'));
+        ], array_column($navigation[7]['children'], 'label'));
     }
 
     public function testItFiltersNavigationItemsByAccessLevel(): void

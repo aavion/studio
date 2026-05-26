@@ -42,6 +42,62 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 minimumAccessLevel: 8,
             ),
             new BackendViewDefinition(
+                'backend-admin-users',
+                BackendArea::Admin,
+                'users',
+                'admin.navigation.users',
+                '@backend/admin/section.html.twig',
+                40,
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.users.title',
+                    'foundation_title_key' => 'admin.users.foundation_title',
+                    'foundation_text_key' => 'admin.users.foundation_text',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-scheduler',
+                BackendArea::Admin,
+                'scheduler',
+                'admin.navigation.scheduler',
+                '@backend/admin/section.html.twig',
+                50,
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.scheduler.title',
+                    'foundation_title_key' => 'admin.scheduler.foundation_title',
+                    'foundation_text_key' => 'admin.scheduler.foundation_text',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-backups',
+                BackendArea::Admin,
+                'backups',
+                'admin.navigation.backups',
+                '@backend/admin/section.html.twig',
+                60,
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.backups.title',
+                    'foundation_title_key' => 'admin.backups.foundation_title',
+                    'foundation_text_key' => 'admin.backups.foundation_text',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-logs',
+                BackendArea::Admin,
+                'logs',
+                'admin.navigation.logs',
+                '@backend/admin/section.html.twig',
+                800,
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.logs.title',
+                    'foundation_title_key' => 'admin.logs.foundation_title',
+                    'foundation_text_key' => 'admin.logs.foundation_text',
+                ],
+            ),
+            new BackendViewDefinition(
                 'backend-admin-settings',
                 BackendArea::Admin,
                 'settings',
@@ -63,6 +119,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                     'title_key' => 'admin.settings.general.title',
                     'foundation_title_key' => 'admin.settings.general.foundation_title',
                     'foundation_text_key' => 'admin.settings.general.foundation_text',
+                    'settings_section' => 'general',
                 ],
             ),
             new BackendViewDefinition(
@@ -78,6 +135,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                     'title_key' => 'admin.settings.dashboard.title',
                     'foundation_title_key' => 'admin.settings.dashboard.foundation_title',
                     'foundation_text_key' => 'admin.settings.dashboard.foundation_text',
+                    'settings_section' => 'dashboard',
                 ],
             ),
             new BackendViewDefinition(
@@ -93,6 +151,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                     'title_key' => 'admin.settings.users.title',
                     'foundation_title_key' => 'admin.settings.users.foundation_title',
                     'foundation_text_key' => 'admin.settings.users.foundation_text',
+                    'settings_section' => 'users',
                 ],
             ),
             new BackendViewDefinition(
@@ -108,6 +167,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                     'title_key' => 'admin.settings.mail.title',
                     'foundation_title_key' => 'admin.settings.mail.foundation_title',
                     'foundation_text_key' => 'admin.settings.mail.foundation_text',
+                    'settings_section' => 'mail',
                 ],
             ),
             new BackendViewDefinition(
@@ -123,6 +183,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                     'title_key' => 'admin.settings.security.title',
                     'foundation_title_key' => 'admin.settings.security.foundation_title',
                     'foundation_text_key' => 'admin.settings.security.foundation_text',
+                    'settings_section' => 'security',
                 ],
             ),
             new BackendViewDefinition(
@@ -148,6 +209,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                     'title_key' => 'admin.settings.scheduler.title',
                     'foundation_title_key' => 'admin.settings.scheduler.foundation_title',
                     'foundation_text_key' => 'admin.settings.scheduler.foundation_text',
+                    'settings_section' => 'scheduler',
                 ],
             ),
             new BackendViewDefinition(

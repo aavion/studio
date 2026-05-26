@@ -10,6 +10,7 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
 use App\Core\Validation\Identifier;
+use App\Form\FormFieldDefinition;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use JsonException;
@@ -137,6 +138,17 @@ final readonly class PackageSettings
     {
         return array_map(
             fn (PackageSettingDefinition $definition): array => $definition->toArray($this->getDefinitionValue($definition)),
+            $registry->definitions($packageName),
+        );
+    }
+
+    /**
+     * @return list<FormFieldDefinition>
+     */
+    public function formFields(string $packageName, PackageSettingRegistry $registry): array
+    {
+        return array_map(
+            fn (PackageSettingDefinition $definition): FormFieldDefinition => $definition->formField($this->getDefinitionValue($definition)),
             $registry->definitions($packageName),
         );
     }

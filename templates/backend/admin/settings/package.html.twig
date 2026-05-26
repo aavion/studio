@@ -2,6 +2,7 @@
 
 {% set package_name = view.context.package_name|default('') %}
 {% set package_settings = studio_package_settings(package_name) %}
+{% set package_form = studio_package_settings_form(package_name) %}
 
 {% block title %}{{ 'admin.settings.package.title'|trans({'%package%': view.label|default(package_name)}) }}{% endblock %}
 
@@ -23,6 +24,7 @@
 
     <section class="studio-panel">
         <h2>{{ 'admin.settings.package.foundation_title'|trans }}</h2>
+        {% include '@backend/partials/forms/_dynamic.html.twig' with {form: package_form} only %}
         {% if package_settings|length > 0 %}
             <dl>
                 {% for setting in package_settings %}

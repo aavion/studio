@@ -8,8 +8,12 @@ ui:
 admin:
   navigation:
     dashboard: 'Dashboard'
+    users: 'Users'
     packages: 'Packages'
     themes: 'Themes'
+    scheduler: 'Scheduler'
+    backups: 'Backups'
+    logs: 'Logs'
     settings: 'Settings'
     general_settings: 'General'
     dashboard_settings: 'Dashboard'
@@ -30,6 +34,22 @@ admin:
     title: 'Theme management'
     foundation_title: 'Theme management foundation'
     foundation_text: 'Theme selection, activation, preview, and variant management will attach here.'
+  users:
+    title: 'User management'
+    foundation_title: 'User and ACL foundation'
+    foundation_text: 'User accounts, ACL groups, invitations, and administrative access recovery will attach here.'
+  scheduler:
+    title: 'Scheduler'
+    foundation_title: 'Scheduler operations foundation'
+    foundation_text: 'Scheduled jobs, queue triggers, intervals, and execution diagnostics will attach here.'
+  backups:
+    title: 'Backup and restore'
+    foundation_title: 'Backup and restore foundation'
+    foundation_text: 'Backup plans, restore flows, retention policies, and recovery diagnostics will attach here.'
+  logs:
+    title: 'Logs'
+    foundation_title: 'Log and audit foundation'
+    foundation_text: 'Operational logs, audit views, package diagnostics, and security-relevant events will attach here.'
   settings:
     title: 'Settings'
     redirect_title: 'Settings sections'
@@ -68,5 +88,61 @@ admin:
       title: 'Scheduler settings'
       foundation_title: 'Scheduler configuration foundation'
       foundation_text: 'Scheduler defaults, intervals, and automation-related settings will attach here.'
+    form:
+      save: 'Save settings'
+    fields:
+      site_title:
+        label: 'Site title'
+      site_url:
+        label: 'Site URL'
+      default_language:
+        label: 'Default language'
+      route_prefixes_enabled:
+        label: 'Use language route prefixes'
+      home_path:
+        label: 'Home path'
+      dashboard_widgets:
+        label: 'Dashboard widgets'
+      registration_enabled:
+        label: 'Allow registration'
+      default_acl_group:
+        label: 'Default ACL group'
+      user_menu_enabled:
+        label: 'Show system user menu'
+      user_menu_sort_order:
+        label: 'User menu sort order'
+      mail_enabled:
+        label: 'Enable mail'
+      mail_from_address:
+        label: 'Default sender email'
+      mail_from_name:
+        label: 'Default sender name'
+      captcha_enabled:
+        label: 'Enable captcha'
+      captcha_provider:
+        label: 'Captcha provider'
+      captcha_preview:
+        label: 'Captcha preview'
+      package_update_interval:
+        label: 'Update check interval'
+      package_auto_updates:
+        label: 'Allow automatic package updates'
+      scheduler_enabled:
+        label: 'Enable scheduler'
+      scheduler_default_interval:
+        label: 'Default scheduler interval'
+    options:
+      dashboard:
+        system_status: 'System status'
+        packages: 'Package status'
+        recent_activity: 'Recent activity'
+        setup_warnings: 'Setup warnings'
+      captcha:
+        none: 'No captcha provider'
+      interval:
+        manual: 'Manual'
+        hourly: 'Hourly'
+        daily: 'Daily'
+        weekly: 'Weekly'
   message:
     title: 'Admin route'

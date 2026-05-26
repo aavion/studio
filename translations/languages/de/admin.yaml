@@ -8,8 +8,12 @@ ui:
 admin:
   navigation:
     dashboard: 'Dashboard'
+    users: 'Benutzer'
     packages: 'Packages'
     themes: 'Themes'
+    scheduler: 'Scheduler'
+    backups: 'Backups'
+    logs: 'Logs'
     settings: 'Einstellungen'
     general_settings: 'Allgemein'
     dashboard_settings: 'Dashboard'
@@ -30,6 +34,22 @@ admin:
     title: 'Theme-Verwaltung'
     foundation_title: 'Theme-Verwaltungsfundament'
     foundation_text: 'Theme-Auswahl, Aktivierung, Vorschau und Variantenverwaltung docken hier an.'
+  users:
+    title: 'Benutzerverwaltung'
+    foundation_title: 'Benutzer- und ACL-Fundament'
+    foundation_text: 'Benutzerkonten, ACL-Gruppen, Einladungen und administrative Zugriffswiederherstellung docken hier an.'
+  scheduler:
+    title: 'Scheduler'
+    foundation_title: 'Scheduler-Operations-Fundament'
+    foundation_text: 'Geplante Jobs, Queue-Trigger, Intervalle und Ausführungsdiagnostik docken hier an.'
+  backups:
+    title: 'Backup und Restore'
+    foundation_title: 'Backup- und Restore-Fundament'
+    foundation_text: 'Backup-Pläne, Restore-Flows, Aufbewahrungsregeln und Wiederherstellungsdiagnostik docken hier an.'
+  logs:
+    title: 'Logs'
+    foundation_title: 'Log- und Audit-Fundament'
+    foundation_text: 'Operations-Logs, Audit-Ansichten, Paketdiagnostik und sicherheitsrelevante Ereignisse docken hier an.'
   settings:
     title: 'Einstellungen'
     redirect_title: 'Einstellungsbereiche'
@@ -68,5 +88,61 @@ admin:
       title: 'Scheduler-Einstellungen'
       foundation_title: 'Scheduler-Konfigurationsfundament'
       foundation_text: 'Scheduler-Defaults, Intervalle und Automations-bezogene Einstellungen docken hier an.'
+    form:
+      save: 'Einstellungen speichern'
+    fields:
+      site_title:
+        label: 'Seitentitel'
+      site_url:
+        label: 'Website-URL'
+      default_language:
+        label: 'Standardsprache'
+      route_prefixes_enabled:
+        label: 'Sprachpräfixe in Routen verwenden'
+      home_path:
+        label: 'Startseiten-Pfad'
+      dashboard_widgets:
+        label: 'Dashboard-Widgets'
+      registration_enabled:
+        label: 'Registrierung erlauben'
+      default_acl_group:
+        label: 'Standard-ACL-Gruppe'
+      user_menu_enabled:
+        label: 'System-Benutzermenü anzeigen'
+      user_menu_sort_order:
+        label: 'Sortierung des Benutzermenüs'
+      mail_enabled:
+        label: 'Mail aktivieren'
+      mail_from_address:
+        label: 'Standard-Absender-E-Mail'
+      mail_from_name:
+        label: 'Standard-Absendername'
+      captcha_enabled:
+        label: 'Captcha aktivieren'
+      captcha_provider:
+        label: 'Captcha-Provider'
+      captcha_preview:
+        label: 'Captcha-Vorschau'
+      package_update_interval:
+        label: 'Update-Check-Intervall'
+      package_auto_updates:
+        label: 'Automatische Paket-Updates erlauben'
+      scheduler_enabled:
+        label: 'Scheduler aktivieren'
+      scheduler_default_interval:
+        label: 'Standard-Scheduler-Intervall'
+    options:
+      dashboard:
+        system_status: 'Systemstatus'
+        packages: 'Paketstatus'
+        recent_activity: 'Letzte Aktivität'
+        setup_warnings: 'Setup-Warnungen'
+      captcha:
+        none: 'Kein Captcha-Provider'
+      interval:
+        manual: 'Manuell'
+        hourly: 'Stündlich'
+        daily: 'Täglich'
+        weekly: 'Wöchentlich'
   message:
     title: 'Admin-Route'

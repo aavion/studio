@@ -29,10 +29,10 @@ final class ViewTwigExtensionTest extends KernelTestCase
 
         $twig = self::getContainer()->get(Environment::class);
         $html = $twig->createTemplate(
-            '{{ studio_html_attributes({"data-action": "save", "aria-expanded": false, "title": "A & B", "onclick": "alert(1)", "style": "display:none", "data-active": true}) }}',
+            '{{ studio_html_attributes({"data-action": "save", "aria-expanded": false, "title": "A & B", "maxlength": 120, "pattern": "^/.*$", "onclick": "alert(1)", "style": "display:none", "data-active": true}) }}',
         )->render();
 
-        self::assertSame('data-action="save" title="A &amp; B" data-active', $html);
+        self::assertSame('data-action="save" title="A &amp; B" maxlength="120" pattern="^/.*$" data-active', $html);
     }
 
     public function testItRendersNativeProviderNamespaceFallbacks(): void

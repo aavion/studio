@@ -1,0 +1,82 @@
+{% if form.fields|default([])|length > 0 %}
+    <form id="{{ form.id }}" class="studio-backend-form" method="{{ form.method|default('post') }}" action="{{ form.action|default('') }}">
+        {% for field in form.fields %}
+            {% set field_label = field.label|trans %}
+            {% set field_help = field.help ? field.help|trans : null %}
+            {% set field_options = {} %}
+            {% for option_value, option_label in field.options|default({}) %}
+                {% set field_options = field_options|merge({(option_value): option_label|trans}) %}
+            {% endfor %}
+
+            {% if field.input_type == 'checkbox' %}
+                {% include '@backend/partials/forms/fields/toggle.html.twig' with {
+                    id: field.id,
+                    name: field.name,
+                    label: field_label,
+                    checked: field.value,
+                    help: field_help,
+                    errors: field.errors,
+                } only %}
+            {% elseif field.input_type == 'select' %}
+                {% include '@backend/partials/forms/fields/select.html.twig' with {
+                    id: field.id,
+                    name: field.name,
+                    label: field_label,
+                    value: field.value,
+                    options: field_options,
+                    required: field.required,
+                    attributes: field.attributes,
+                    help: field_help,
+                    errors: field.errors,
+                } only %}
+            {% elseif field.input_type == 'multiselect' %}
+                {% include '@backend/partials/forms/fields/checkbox-group.html.twig' with {
+                    id: field.id,
+                    name: field.name,
+                    label: field_label,
+                    values: field.value is iterable ? field.value : [],
+                    options: field_options,
+                    help: field_help,
+                    errors: field.errors,
+                } only %}
+            {% elseif field.input_type == 'textarea' %}
+                {% include '@backend/partials/forms/fields/textarea.html.twig' with {
+                    id: field.id,
+                    name: field.name,
+                    label: field_label,
+                    value: field.value,
+                    required: field.required,
+                    attributes: field.attributes,
+                    help: field_help,
+                    errors: field.errors,
+                } only %}
+            {% elseif field.input_type == 'captcha' %}
+                {% include '@backend/partials/forms/_field.html.twig' with {
+                    id: field.id,
+                    label: field_label,
+                    required: field.required,
+                    control: include('@provider/captcha/field.html.twig'),
+                    help: field_help,
+                    errors: field.errors,
+                } only %}
+            {% else %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {
+                    id: field.id,
+                    name: field.name,
+                    label: field_label,
+                    type: field.input_type == 'number' ? 'number' : (field.input_type == 'color' ? 'color' : 'text'),
+                    value: field.value,
+                    required: field.required,
+                    attributes: field.attributes,
+                    help: field_help,
+                    errors: field.errors,
+                } only %}
+            {% endif %}
+        {% endfor %}
+
+        {% include '@backend/partials/forms/fields/submit.html.twig' with {
+            label: 'admin.settings.form.save'|trans,
+            variant: 'primary',
+        } only %}
+    </form>
+{% endif %}
