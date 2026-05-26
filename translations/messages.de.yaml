@@ -584,7 +584,65 @@ setup:
     dashboard:
         title: Setup
         status: Ersteinrichtung
-        foundation_title: Setup-Fundament
-        foundation_text: 'Setup bleibt ohne Datenbankverbindung verfügbar, bis die Installation sich als abgeschlossen markiert.'
+        foundation_title: Setup-Routine
+        foundation_text: 'Führt dieselbe Setup-Routine aus wie die CLI. Lass den Dry-Run aktiv, um die geplanten Schritte ohne Datei- oder Datenbankänderungen zu prüfen.'
     message:
         title: Setup-Route
+    form:
+        language:
+            label: Installer-Sprache
+        site_title:
+            label: Seitentitel
+        default_uri:
+            label: Website-URL
+        database_driver:
+            label: Datenbanktreiber
+            options:
+                sqlite: SQLite
+                mysql: 'MySQL / MariaDB'
+                postgresql: PostgreSQL
+        database_url:
+            label: Datenbank-URL
+            help: 'Leer lassen, damit Setup eine URL aus den Standardwerten des gewählten Treibers erzeugt.'
+        admin_username:
+            label: Admin-Benutzername
+        admin_password:
+            label: Admin-Passwort
+        admin_password_confirm:
+            label: 'Admin-Passwort bestätigen'
+        admin_email:
+            label: Admin-E-Mail
+        app_secret:
+            label: APP_SECRET
+            help: 'Leer lassen, um einen sicheren Wert zu erzeugen.'
+        dry_run:
+            label: 'Nur Dry-Run'
+            help: 'Zeigt die geplanten Setup-Schritte, ohne Dateien zu schreiben, Migrationen auszuführen oder Daten anzulegen.'
+        submit: 'Setup ausführen'
+        errors:
+            choice: 'Wähle eine der verfügbaren Optionen.'
+            email: 'Gib eine gültige E-Mail-Adresse ein.'
+            invalid: 'Die gesendeten Setup-Daten konnten nicht verwendet werden.'
+            invalid_csrf: 'Das Setup-Formular ist abgelaufen. Bitte versuche es erneut.'
+            password_mismatch: 'Die Passwortbestätigung stimmt nicht überein.'
+            required: 'Dieses Feld ist erforderlich.'
+    result:
+        success_title: Setup-Ergebnis
+        failed_title: 'Setup fehlgeschlagen'
+    action_log:
+        status:
+            success: Erfolgreich
+            failed: Fehlgeschlagen
+            warning: Warnung
+            skipped: Übersprungen
+            pending: Ausstehend
+            running: Läuft
+    steps:
+        select_language: 'Sprache auswählen'
+        write_environment: 'Environment schreiben'
+        dump_environment: 'Environment dumpen'
+        run_migrations: 'Migrationen ausführen'
+        seed_default_settings: 'Standard-Einstellungen anlegen'
+        seed_admin_user: 'Admin-Benutzer anlegen'
+        mark_setup_completed: 'Setup als abgeschlossen markieren'
+        clear_cache: 'Cache leeren'

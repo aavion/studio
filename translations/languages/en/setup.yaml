@@ -6,7 +6,65 @@ setup:
   dashboard:
     title: 'Setup'
     status: 'First run'
-    foundation_title: 'Setup foundation'
-    foundation_text: 'Setup stays available without a database connection until the installation marks itself complete.'
+    foundation_title: 'Setup routine'
+    foundation_text: 'Run the same setup routine used by the CLI. Keep dry run enabled to verify the planned steps without changing files or the database.'
   message:
     title: 'Setup route'
+  form:
+    language:
+      label: 'Installer language'
+    site_title:
+      label: 'Site title'
+    default_uri:
+      label: 'Site URL'
+    database_driver:
+      label: 'Database driver'
+      options:
+        sqlite: 'SQLite'
+        mysql: 'MySQL / MariaDB'
+        postgresql: 'PostgreSQL'
+    database_url:
+      label: 'Database URL'
+      help: 'Leave empty to let setup build a URL from the selected driver defaults.'
+    admin_username:
+      label: 'Admin username'
+    admin_password:
+      label: 'Admin password'
+    admin_password_confirm:
+      label: 'Confirm admin password'
+    admin_email:
+      label: 'Admin email'
+    app_secret:
+      label: 'APP_SECRET'
+      help: 'Leave empty to generate a secure value.'
+    dry_run:
+      label: 'Dry run only'
+      help: 'Show planned setup steps without writing files, running migrations, or seeding data.'
+    submit: 'Run setup'
+    errors:
+      choice: 'Choose one of the available options.'
+      email: 'Enter a valid email address.'
+      invalid: 'The submitted setup data could not be used.'
+      invalid_csrf: 'The setup form expired. Please try again.'
+      password_mismatch: 'The password confirmation does not match.'
+      required: 'This field is required.'
+  result:
+    success_title: 'Setup result'
+    failed_title: 'Setup failed'
+  action_log:
+    status:
+      success: 'Success'
+      failed: 'Failed'
+      warning: 'Warning'
+      skipped: 'Skipped'
+      pending: 'Pending'
+      running: 'Running'
+  steps:
+    select_language: 'Select language'
+    write_environment: 'Write environment'
+    dump_environment: 'Dump environment'
+    run_migrations: 'Run migrations'
+    seed_default_settings: 'Seed default settings'
+    seed_admin_user: 'Seed admin user'
+    mark_setup_completed: 'Mark setup completed'
+    clear_cache: 'Clear cache'

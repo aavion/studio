@@ -14,6 +14,8 @@ use App\Core\Package\Settings\PackageSettingsFormHandler;
 use App\Entity\UserAccount;
 use App\Form\FormSubmissionResult;
 use App\Navigation\NavigationBuilder;
+use App\Setup\SetupRunner;
+use App\Setup\SetupWebInputFactory;
 use App\View\Http\HttpErrorRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -32,10 +34,12 @@ final class BackendController extends AbstractController
         private readonly CoreSettingsFormHandler $coreSettingsFormHandler,
         private readonly PackageSettingsFormHandler $packageSettingsFormHandler,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
+        private readonly SetupRunner $setupRunner,
+        private readonly SetupWebInputFactory $setupWebInputFactory,
     ) {
     }
 
-    #[Route('/setup', name: 'backend_setup_index', methods: ['GET'])]
+    #[Route('/setup', name: 'backend_setup_index', methods: ['GET', 'POST'])]
     public function setupIndex(Request $request): Response
     {
         return $this->handle($request, BackendArea::Setup);
@@ -105,12 +109,18 @@ final class BackendController extends AbstractController
             }
         }
 
-        return $this->render($result->template(), [
+        $templateVariables = [
             'area' => $result->area(),
             'view' => $result->view(),
             'message' => $result->message()?->toArray(),
             'navigation' => $this->navigation($request, $area),
-        ], new Response(status: $result->statusCode()));
+        ];
+
+        if (BackendArea::Setup === $area && '' === trim($path, '/')) {
+            $templateVariables += $this->setupVariables($request);
+        }
+
+        return $this->render($result->template(), $templateVariables, new Response(status: $result->statusCode()));
     }
 
     /**
@@ -214,5 +224,42 @@ final class BackendController extends AbstractController
         $value = $request->request->get($name);
 
         return is_string($value) ? $value : '';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function setupVariables(Request $request): array
+    {
+        $values = $this->setupWebInputFactory->defaults();
+        $errors = [];
+        $workflow = null;
+        $actionLog = null;
+
+        if ($request->isMethod('POST')) {
+            if (!$this->validFormToken('setup-web', $this->stringField($request, '_form_id'), $this->stringField($request, '_csrf_token'))) {
+                $values = array_replace($values, $request->request->all());
+                $errors['__form'] = ['setup.form.errors.invalid_csrf'];
+            } else {
+                $inputResult = $this->setupWebInputFactory->create($request->request->all());
+                $values = $inputResult->values();
+                $errors = $inputResult->errors();
+
+                if ($inputResult->isValid() && null !== $inputResult->input()) {
+                    $result = $this->setupRunner->run($inputResult->input());
+                    $workflow = $result->toArray();
+                    $actionLog = $result->value()?->toArray() ?? $result->context()['action_log'] ?? null;
+                }
+            }
+        }
+
+        return [
+            'setup_values' => $values,
+            'setup_errors' => $errors,
+            'setup_available_languages' => $this->setupWebInputFactory->availableLanguages(),
+            'setup_database_driver_options' => $this->setupWebInputFactory->databaseDriverOptions(),
+            'setup_workflow' => $workflow,
+            'setup_action_log' => $actionLog,
+        ];
     }
 }

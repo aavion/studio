@@ -34,6 +34,45 @@ final class BackendControllerTest extends WebTestCase
             self::assertResponseIsSuccessful();
             self::assertSelectorExists('.studio-setup-shell');
             self::assertSelectorTextContains('h1', 'Setup');
+            self::assertSelectorExists('form#setup-web');
+            self::assertSelectorExists('input[name="_csrf_token"]');
+        } finally {
+            $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
+        }
+    }
+
+    public function testSetupRouteRunsDryRunWithoutAuthentication(): void
+    {
+        $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
+        $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
+        $previousPutenvValue = getenv(SetupCompletionMarker::KEY);
+
+        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
+        putenv(SetupCompletionMarker::KEY);
+
+        try {
+            $client = self::createClient();
+            $crawler = $client->request('GET', '/setup');
+            $form = $crawler->selectButton('Run setup')->form([
+                'language' => 'en',
+                'site_title' => 'Dry Run Studio',
+                'default_uri' => 'http://localhost',
+                'database_driver' => 'sqlite',
+                'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+                'admin_username' => 'admin',
+                'admin_password' => 'admin',
+                'admin_password_confirm' => 'admin',
+                'admin_email' => 'admin@localhost',
+                'dry_run' => '1',
+            ]);
+
+            $client->submit($form);
+
+            self::assertResponseIsSuccessful();
+            $html = (string) $client->getResponse()->getContent();
+            self::assertStringContainsString('Setup result', $html);
+            self::assertStringContainsString('Write environment', $html);
+            self::assertStringContainsString('Skipped', $html);
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
         }

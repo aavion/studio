@@ -13,5 +13,149 @@
     <section class="studio-panel">
         <h2>{{ 'setup.dashboard.foundation_title'|trans }}</h2>
         <p class="studio-muted">{{ 'setup.dashboard.foundation_text'|trans }}</p>
+
+        <form id="setup-web" class="studio-backend-form" method="post" action="{{ path('backend_setup_index') }}">
+            <input type="hidden" name="_form_id" value="setup-web">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('setup-web') }}">
+            {% include '@backend/partials/forms/_errors.html.twig' with {errors: setup_errors.__form|default([])} only %}
+
+            {% set language_options = {} %}
+            {% for language in setup_available_languages %}
+                {% set language_options = language_options|merge({(language): language}) %}
+            {% endfor %}
+
+            {% include '@backend/partials/forms/fields/select.html.twig' with {
+                name: 'language',
+                label: 'setup.form.language.label'|trans,
+                value: setup_values.language,
+                options: language_options,
+                required: true,
+                errors: setup_errors.language|default([]),
+            } only %}
+
+            {% include '@backend/partials/forms/fields/input.html.twig' with {
+                name: 'site_title',
+                label: 'setup.form.site_title.label'|trans,
+                value: setup_values.site_title,
+                required: true,
+                errors: setup_errors.site_title|default([]),
+            } only %}
+
+            {% include '@backend/partials/forms/fields/input.html.twig' with {
+                name: 'default_uri',
+                label: 'setup.form.default_uri.label'|trans,
+                value: setup_values.default_uri,
+                required: true,
+                errors: setup_errors.default_uri|default([]),
+            } only %}
+
+            {% set database_driver_options = {} %}
+            {% for driver_value, driver_label in setup_database_driver_options %}
+                {% set database_driver_options = database_driver_options|merge({(driver_value): driver_label|trans}) %}
+            {% endfor %}
+
+            {% include '@backend/partials/forms/fields/select.html.twig' with {
+                name: 'database_driver',
+                label: 'setup.form.database_driver.label'|trans,
+                value: setup_values.database_driver,
+                options: database_driver_options,
+                required: true,
+                errors: setup_errors.database_driver|default([]),
+            } only %}
+
+            {% include '@backend/partials/forms/fields/input.html.twig' with {
+                name: 'database_url',
+                label: 'setup.form.database_url.label'|trans,
+                value: setup_values.database_url,
+                help: 'setup.form.database_url.help'|trans,
+                errors: setup_errors.database_url|default([]),
+            } only %}
+
+            {% include '@backend/partials/forms/fields/input.html.twig' with {
+                name: 'admin_username',
+                label: 'setup.form.admin_username.label'|trans,
+                value: setup_values.admin_username,
+                required: true,
+                errors: setup_errors.admin_username|default([]),
+            } only %}
+
+            {% include '@backend/partials/forms/fields/input.html.twig' with {
+                name: 'admin_password',
+                label: 'setup.form.admin_password.label'|trans,
+                type: 'password',
+                value: '',
+                required: true,
+                errors: setup_errors.admin_password|default([]),
+            } only %}
+
+            {% include '@backend/partials/forms/fields/input.html.twig' with {
+                name: 'admin_password_confirm',
+                label: 'setup.form.admin_password_confirm.label'|trans,
+                type: 'password',
+                value: '',
+                required: true,
+                errors: setup_errors.admin_password_confirm|default([]),
+            } only %}
+
+            {% include '@backend/partials/forms/fields/input.html.twig' with {
+                name: 'admin_email',
+                label: 'setup.form.admin_email.label'|trans,
+                type: 'email',
+                value: setup_values.admin_email,
+                required: true,
+                errors: setup_errors.admin_email|default([]),
+            } only %}
+
+            {% include '@backend/partials/forms/fields/input.html.twig' with {
+                name: 'app_secret',
+                label: 'setup.form.app_secret.label'|trans,
+                value: setup_values.app_secret,
+                help: 'setup.form.app_secret.help'|trans,
+                errors: setup_errors.app_secret|default([]),
+            } only %}
+
+            {% include '@backend/partials/forms/fields/toggle.html.twig' with {
+                name: 'dry_run',
+                label: 'setup.form.dry_run.label'|trans,
+                checked: setup_values.dry_run,
+                help: 'setup.form.dry_run.help'|trans,
+            } only %}
+
+            {% include '@backend/partials/forms/fields/submit.html.twig' with {
+                label: 'setup.form.submit'|trans,
+                variant: 'primary',
+            } only %}
+        </form>
     </section>
+
+    {% if setup_workflow %}
+        <section class="studio-panel">
+            <h2>{{ (setup_workflow.success ? 'setup.result.success_title' : 'setup.result.failed_title')|trans }}</h2>
+            {% if setup_workflow.issues|default([])|length > 0 %}
+                <ul class="studio-backend-form-errors">
+                    {% for issue in setup_workflow.issues %}
+                        <li>{{ issue.translation_key|trans(issue.parameters|default({})) }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% if setup_action_log.entries|default([])|length > 0 %}
+                <ol>
+                    {% for entry in setup_action_log.entries %}
+                        <li>
+                            <strong>{{ ('setup.steps.' ~ entry.name)|trans }}</strong>
+                            <span class="studio-badge studio-badge-neutral">{{ ('setup.action_log.status.' ~ entry.status)|trans }}</span>
+                            {% if entry.issues|default([])|length > 0 %}
+                                <ul class="studio-backend-form-errors">
+                                    {% for issue in entry.issues %}
+                                        <li>{{ issue.translation_key|trans(issue.parameters|default({})) }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% endif %}
+        </section>
+    {% endif %}
 {% endblock %}
