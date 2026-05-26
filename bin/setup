@@ -58,7 +58,7 @@ $input = (new SetupCliInputFactory($projectDir))->create($options);
 $translator = new SetupMessageTranslator();
 $language = $input->language();
 
-$result = (new SetupRunner($projectDir, workflowResultMessageReporter($projectDir)))->run($input);
+$result = (new SetupRunner($projectDir, workflowResultMessageReporter($projectDir, $input->appEnv())))->run($input);
 $payload = $result->toArray();
 
 if ($result->value() instanceof ActionLog) {
@@ -165,10 +165,8 @@ function translationParameters(mixed $parameters): array
     return $translated;
 }
 
-function workflowResultMessageReporter(string $projectDir): WorkflowResultMessageReporter
+function workflowResultMessageReporter(string $projectDir, string $environment): WorkflowResultMessageReporter
 {
-    $environment = (string) ($_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? 'dev');
-
     return new WorkflowResultMessageReporter(
         new MessageReporter(new FileMessageLogger($projectDir, $environment)),
     );

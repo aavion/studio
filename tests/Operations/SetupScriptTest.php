@@ -51,11 +51,19 @@ final class SetupScriptTest extends TestCase
     {
         $output = [];
         $exitCode = 1;
+        $projectDir = dirname(__DIR__, 2);
+        $testLog = $projectDir.'/var/log/test/operations.log';
+        $devLog = $projectDir.'/var/log/dev/operations.log';
+        $devLogSize = is_file($devLog) ? filesize($devLog) : false;
+
+        @unlink($testLog);
+
         $command = implode(' ', [
             escapeshellarg(PHP_BINARY),
             escapeshellarg($this->scriptPath),
             '--dry-run',
             '--no-interaction',
+            '--env=test',
             '--language=de',
             '--site-title='.escapeshellarg('Dry Studio'),
             '--url=https://dry.example.test',
@@ -70,5 +78,7 @@ final class SetupScriptTest extends TestCase
         self::assertStringContainsString('Installer-Sprache "de" ausgewählt.', $text);
         self::assertStringContainsString('Verfügbare Installer-Sprachen: de, en', $text);
         self::assertStringNotContainsString('message.setup.language_selected', $text);
+        self::assertFileExists($testLog);
+        self::assertSame($devLogSize, is_file($devLog) ? filesize($devLog) : false);
     }
 }
