@@ -86,7 +86,7 @@ final class SecurityControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/user/logout');
         $client->submit($crawler->selectButton('Sign out')->form());
 
-        self::assertResponseRedirects('/user/login');
+        self::assertResponseRedirects('/');
 
         $client->request('GET', '/admin');
 

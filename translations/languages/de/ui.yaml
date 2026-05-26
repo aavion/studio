@@ -72,7 +72,6 @@ ui:
       title: 'Abmelden'
       placeholder: 'Bestätige, dass du deine Sitzung beenden möchtest.'
       submit: 'Abmelden'
-      home: 'Zur Startseite'
   error:
     default:
       title: 'Anfrage fehlgeschlagen'

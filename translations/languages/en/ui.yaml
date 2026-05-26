@@ -72,7 +72,6 @@ ui:
       title: 'Sign out'
       placeholder: 'Confirm that you want to end your session.'
       submit: 'Sign out'
-      home: 'Back to start'
   error:
     default:
       title: 'Request failed'

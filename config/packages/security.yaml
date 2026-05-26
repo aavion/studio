@@ -28,7 +28,7 @@ security:
                 enable_csrf: true
             logout:
                 path: user_logout_perform
-                target: user_login
+                target: content_home
                 enable_csrf: true
 
             # Activate different ways to authenticate:
