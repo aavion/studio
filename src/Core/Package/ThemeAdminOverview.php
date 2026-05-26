@@ -30,8 +30,9 @@ final readonly class ThemeAdminOverview
     private function section(string $key, PackageScope $scope, string $systemPath): array
     {
         $packages = $this->packages($scope);
+        $activePackage = $this->activePackage($packages);
         $themes = [
-            $this->systemThemeRow($scope, $systemPath, !$this->hasActivePackage($packages)),
+            $this->systemThemeRow($scope, $systemPath, null === $activePackage, $activePackage),
             ...array_map($this->packageRow(...), $packages),
         ];
 
@@ -52,7 +53,8 @@ final readonly class ThemeAdminOverview
             $this->entityManager->getRepository(ExtensionPackage::class)->findAll(),
             static fn (mixed $package): bool => $package instanceof ExtensionPackage
                 && 'system' !== $package->packageName()
-                && $package->hasScope($scope),
+                && $package->hasScope($scope)
+                && ExtensionPackageStatus::Removed !== $package->status(),
         );
 
         usort(
@@ -87,14 +89,14 @@ final readonly class ThemeAdminOverview
             'status' => $package->status()->value,
             'status_label_key' => 'admin.packages.status.'.$package->status()->value,
             'status_tone' => $this->statusTone($package->status()),
-            'status_action_path' => $this->statusActionPath($package),
             'type_label_key' => 'admin.themes.type.package',
             'type_tone' => 'neutral',
             'version' => $package->installedVersion() ?? $package->manifestVersion(),
+            'quick_action' => $this->quickAction($package),
         ];
     }
 
-    private function systemThemeRow(PackageScope $scope, string $path, bool $active): array
+    private function systemThemeRow(PackageScope $scope, string $path, bool $active, ?ExtensionPackage $activePackage): array
     {
         $metadata = $this->systemPackageMetadata->metadata();
         $version = $metadata['version'] ?? null;
@@ -113,11 +115,13 @@ final readonly class ThemeAdminOverview
             'status' => $status->value,
             'status_label_key' => 'admin.packages.status.'.$status->value,
             'status_tone' => $this->statusTone($status),
-            'status_action_path' => null,
             'type_label_key' => 'admin.themes.type.system',
             'type_tone' => 'info',
             'version' => is_string($version) && '' !== trim($version) ? $version : null,
             'scope' => $scope->value,
+            'quick_action' => $active
+                ? $this->disabledQuickAction('admin.themes.quick.active', 'secondary')
+                : (null === $activePackage ? null : $this->linkedQuickAction('admin.themes.quick.use', $this->detailPath($activePackage->packageName()).'/deactivate', 'primary')),
         ];
     }
 
@@ -126,30 +130,48 @@ final readonly class ThemeAdminOverview
         return '/admin/packages/'.rawurlencode($packageName);
     }
 
-    private function statusActionPath(ExtensionPackage $package): ?string
-    {
-        $action = match ($package->status()) {
-            ExtensionPackageStatus::Inactive => 'activate',
-            ExtensionPackageStatus::Active => 'deactivate',
-            ExtensionPackageStatus::Faulty => 'reset-fault',
-            ExtensionPackageStatus::Removed => null,
-        };
-
-        return null === $action ? null : $this->detailPath($package->packageName()).'/'.$action;
-    }
-
     /**
      * @param list<ExtensionPackage> $packages
      */
-    private function hasActivePackage(array $packages): bool
+    private function activePackage(array $packages): ?ExtensionPackage
     {
         foreach ($packages as $package) {
             if (ExtensionPackageStatus::Active === $package->status()) {
-                return true;
+                return $package;
             }
         }
 
-        return false;
+        return null;
+    }
+
+    private function quickAction(ExtensionPackage $package): ?array
+    {
+        return match ($package->status()) {
+            ExtensionPackageStatus::Active => $this->disabledQuickAction('admin.themes.quick.active', 'secondary'),
+            ExtensionPackageStatus::Inactive => $this->linkedQuickAction('admin.themes.quick.use', $this->detailPath($package->packageName()).'/activate', 'primary'),
+            ExtensionPackageStatus::Faulty => $this->linkedQuickAction('admin.themes.quick.repair', $this->detailPath($package->packageName()).'/reset-fault', 'secondary'),
+            ExtensionPackageStatus::Removed => null,
+        };
+    }
+
+    private function linkedQuickAction(string $labelKey, string $path, string $variant): array
+    {
+        return [
+            'label_key' => $labelKey,
+            'path' => $path,
+            'variant' => $variant,
+            'disabled' => false,
+        ];
+    }
+
+    private function disabledQuickAction(string $labelKey, string $variant): array
+    {
+        return [
+            'label_key' => $labelKey,
+            'path' => null,
+            'variant' => $variant,
+            'disabled' => true,
+        ];
     }
 
     /**

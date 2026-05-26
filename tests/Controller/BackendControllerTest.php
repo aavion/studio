@@ -139,14 +139,19 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="cache_clear"]');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'Frontend themes');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'aavion Studio');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'templates/frontend');
-        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] tr.is-immutable[data-package-name="system"][data-theme-status="active"]');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', '0.1.0');
+        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] a[href="/admin/packages/system"]');
+        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card.is-immutable[data-package-name="system"][data-theme-status="active"]');
+        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-preview');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card[data-package-name="system"]', 'Active');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', 'Backend themes');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', 'aavion Studio');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', 'templates/backend');
-        self::assertSelectorExists('.studio-theme-overview[data-theme-section="backend"] tr.is-immutable[data-package-name="system"][data-theme-status="active"]');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', '0.1.0');
+        self::assertSelectorExists('.studio-theme-overview[data-theme-section="backend"] a[href="/admin/packages/system"]');
+        self::assertSelectorExists('.studio-theme-overview[data-theme-section="backend"] .studio-theme-card.is-immutable[data-package-name="system"][data-theme-status="active"]');
 
         $this->removePackageByName('test-frontend-theme');
+        $this->removePackageByName('test-removed-theme');
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $frontendTheme = new ExtensionPackage(
             '00000000-0000-0000-0000-000000000499',
@@ -157,15 +162,29 @@ final class BackendControllerTest extends WebTestCase
             ['display_name' => 'Test Frontend Theme'],
             manifestVersion: '1.0.0',
         );
+        $removedTheme = new ExtensionPackage(
+            '00000000-0000-0000-0000-000000000497',
+            [PackageScope::FrontendTheme],
+            'test-removed-theme',
+            'packages/test-removed-theme',
+            ExtensionPackageStatus::Removed,
+            ['display_name' => 'Test Removed Theme'],
+            manifestVersion: '1.0.0',
+        );
         $entityManager->persist($frontendTheme);
+        $entityManager->persist($removedTheme);
         $entityManager->flush();
 
         $client->request('GET', '/admin/themes');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] tr.is-immutable[data-package-name="system"][data-theme-status="inactive"]');
+        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card.is-immutable[data-package-name="system"][data-theme-status="inactive"]');
+        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] a[href="/admin/packages/test-frontend-theme/deactivate"]');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'Test Frontend Theme');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card[data-package-name="test-frontend-theme"]', 'Active');
+        self::assertSelectorNotExists('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card[data-package-name="test-removed-theme"]');
         $this->removePackageByName('test-frontend-theme');
+        $this->removePackageByName('test-removed-theme');
 
         foreach ([
             '/admin/users' => 'User management',

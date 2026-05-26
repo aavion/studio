@@ -16,72 +16,49 @@
         title: 'admin.themes.title'|trans,
     } only %}
 
-    <section class="studio-panel">
-        <h2>{{ 'admin.themes.foundation_title'|trans }}</h2>
-        <p class="studio-muted">{{ 'admin.themes.foundation_text'|trans }}</p>
-    </section>
-
     {% for section in theme_sections %}
         <section class="studio-panel studio-theme-overview" data-theme-section="{{ section.key }}">
             <h2>{{ section.title_key|trans }}</h2>
-            <p class="studio-muted">{{ section.text_key|trans }}</p>
 
             {% if section.themes|length > 0 %}
-                <table class="studio-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">{{ 'admin.themes.table.theme'|trans }}</th>
-                            <th scope="col">{{ 'admin.themes.table.status'|trans }}</th>
-                            <th scope="col">{{ 'admin.themes.table.type'|trans }}</th>
-                            <th scope="col">{{ 'admin.themes.table.version'|trans }}</th>
-                            <th scope="col">{{ 'admin.themes.table.path'|trans }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for theme in section.themes %}
-                            <tr {{ studio_html_attributes({
-                                class: theme.immutable ? 'is-immutable' : null,
-                                'data-package-name': theme.package_name,
-                                'data-immutable': theme.immutable ? 'true' : null,
-                                'data-theme-status': theme.status,
-                            }) }}>
-                                <th scope="row">
+                <div class="studio-theme-grid">
+                    {% for theme in section.themes %}
+                        <article {{ studio_html_attributes({
+                            class: theme.immutable ? 'studio-theme-card is-immutable' : 'studio-theme-card',
+                            'data-package-name': theme.package_name,
+                            'data-immutable': theme.immutable ? 'true' : null,
+                            'data-theme-status': theme.status,
+                        }) }}>
+                            {% set theme_version = theme.version|default(null) %}
+                            <header class="studio-theme-card-header">
+                                <h3>
                                     <strong>
                                         <a href="{{ theme.detail_path }}">{{ theme.label_key ? theme.label_key|trans : theme.label }}</a>
                                     </strong>
-                                    <br>
-                                    <span class="studio-muted">{{ theme.package_name }}</span>
-                                    {% if theme.description_key or theme.description %}
-                                        <br>
-                                        <span class="studio-muted">{{ theme.description_key ? theme.description_key|trans : theme.description }}</span>
+                                    {% if theme_version %}
+                                        <span class="studio-muted">{{ theme_version }}</span>
                                     {% endif %}
-                                    {% if theme.author %}
-                                        <br>
-                                        <span class="studio-muted">{{ 'admin.packages.meta.author'|trans({'%author%': theme.author}) }}</span>
-                                    {% endif %}
-                                </th>
-                                <td>
-                                    {% if theme.status_action_path %}
-                                        <a class="studio-badge studio-badge-{{ theme.status_tone }}" href="{{ theme.status_action_path }}">
-                                            {{ theme.status_label_key|trans }}
-                                        </a>
-                                    {% else %}
-                                        <span class="studio-badge studio-badge-{{ theme.status_tone }}">
-                                            {{ theme.status_label_key|trans }}
+                                </h3>
+                            </header>
+
+                            <div class="studio-theme-preview" aria-hidden="true"></div>
+
+                            <footer class="studio-theme-card-footer">
+                                {% if theme.quick_action %}
+                                    {% if theme.quick_action.disabled %}
+                                        <span class="studio-backend-button studio-button-{{ theme.quick_action.variant }}" aria-disabled="true">
+                                            {{ theme.quick_action.label_key|trans }}
                                         </span>
+                                    {% else %}
+                                        <a class="studio-backend-button studio-button-{{ theme.quick_action.variant }}" href="{{ theme.quick_action.path }}">
+                                            {{ theme.quick_action.label_key|trans }}
+                                        </a>
                                     {% endif %}
-                                </td>
-                                <td>
-                                    <span class="studio-badge studio-badge-{{ theme.type_tone }}">
-                                        {{ theme.type_label_key|trans }}
-                                    </span>
-                                </td>
-                                <td>{{ theme.version|default('admin.packages.unknown_value'|trans) }}</td>
-                                <td><code>{{ theme.path }}</code></td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                {% endif %}
+                            </footer>
+                        </article>
+                    {% endfor %}
+                </div>
             {% else %}
                 <p class="studio-muted">{{ 'admin.themes.empty'|trans }}</p>
             {% endif %}

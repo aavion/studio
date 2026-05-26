@@ -123,6 +123,10 @@ admin:
     type:
       system: 'System'
       package: 'Package'
+    quick:
+      use: 'Use'
+      active: 'Active'
+      repair: 'Repair'
     table:
       theme: 'Theme'
       status: 'Status'

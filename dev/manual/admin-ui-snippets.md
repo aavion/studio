@@ -25,7 +25,7 @@ Future operational screens should reuse common patterns:
 
 | Screen | Likely primary content |
 |--------|------------------------|
-| Theme management | Frontend and backend theme registry sections, active status, immutable system fallback, version and template path details. |
+| Theme management | Frontend and backend theme cards with preview-image space, version labels, immutable system fallback, and a single quick use/active/repair control. |
 | Package management | Extension package registry rows plus the immutable virtual system package so application and package update flows can share one UI foundation. |
 | Package detail | Manifest metadata, current status, scopes, package-owned lifecycle buttons, and non-menu review screens before state changes, including separate irreversible flows for data purge and physical package deletion. Later iterations can add inventory, features, lint results, and compatibility notes. |
 | Backend actions | CSRF-protected POST buttons for discovery, asset rebuild dispatch, cache clearing, and later long-running ActionLog overlays. |

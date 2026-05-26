@@ -72,6 +72,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Reworked the Admin Theme Management overview into scope-separated theme cards with reserved preview image space, package detail links, removed-theme filtering, and single quick use/active/repair controls.
 - Added package detail and non-menu lifecycle review routes for package activation, deactivation, fault reset, data purge, and physical package deletion, with explicit overview action buttons instead of clickable status badges.
 - Verified the package lifecycle UI slice with PHP syntax checks, Twig linting, translation catalogue comparison, container linting, targeted backend controller coverage, and the full PHPUnit suite.
 - Added a first BackendActions foundation with CSRF-protected Admin UI buttons for package discovery, asset rebuild dispatch, and synchronous cache clearing on package and theme overview screens.
