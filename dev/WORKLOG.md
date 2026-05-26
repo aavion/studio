@@ -66,11 +66,13 @@
 - [ ] Keep roadmap sub-items aligned with feature drafts when implementation changes scope, order, or dependencies. Last reviewed: 2026-05-25.
 - [ ] Before the first stable `1.0.0` release, keep Doctrine migrations consolidated into one current baseline migration.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
+- [ ] Trigger package discovery again after successful setup so package registry persistence is populated after migrations create the required tables.
 
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Updated the baseline migration to use Doctrine DBAL's primary-key constraint API instead of deprecated `Table::setPrimaryKey()` calls.
 - Fixed setup SQLite seeding to resolve `%kernel.environment%` the same way as the Symfony migration command and to fail the setup step with a message-backed config write issue when default settings cannot be persisted.
 - Added message-backed diagnostics to the `Config` service so invalid keys, malformed stored values, and read/write failures are surfaced through the shared message reporter while `get()` still falls back and `set()` returns a success boolean.
 - Refined the `user/*` foundation with a DB-backed `Config` get/set service, config-gated registration, a login-page registration link only when registration is enabled, a high-sort-order system login/profile menu that can be disabled, authenticated profile children for API keys/studio/admin/logout, an email-token invitation acceptance skeleton, and an API-key page that lists persisted user-scoped keys with revoked keys hidden by default.
