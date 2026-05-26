@@ -72,6 +72,23 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/packages"][aria-current="page"]');
     }
 
+    public function testAdminSettingsRoutesRenderThroughRegistry(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $client->request('GET', '/admin/settings');
+
+        self::assertResponseRedirects('/admin/settings/global');
+
+        $client->followRedirect();
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Global settings');
+        self::assertSelectorTextContains('.studio-backend-nav', 'Settings');
+        self::assertSelectorExists('.studio-backend-nav .is-active-ancestor a[href="/admin/settings"]');
+        self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/global"][aria-current="page"]');
+    }
+
     public function testAdminStaticViewInjectionsRenderThroughBackendRegistry(): void
     {
         $client = self::createClient();

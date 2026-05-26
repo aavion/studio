@@ -244,6 +244,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         self::assertSame('fault_reset', $result->value()['changes'][0]['action']);
         self::assertSame('package.lifecycle.fault_reset', $result->messages()[1]->code());
         self::assertSame('available', $this->metadata('demo-module')['registry_state']);
+        self::assertSame('Lifecycle boundary demo package.', $this->metadata('demo-module')['description']);
         self::assertArrayHasKey('last_fault', $this->metadata('demo-module'));
     }
 
@@ -330,6 +331,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         $this->writeTestFile($this->projectDir, 'packages/'.$packageName.'/.manifest', <<<'MANIFEST'
             PACKAGE_AUTHOR=Aavion Test Fixtures
             PACKAGE_NAME=Demo Module
+            PACKAGE_DESCRIPTION=Lifecycle boundary demo package.
             PACKAGE_VERSION=1.0.1
             PACKAGE_SCOPE=module
             PACKAGE_DEPENDENCIES=[]

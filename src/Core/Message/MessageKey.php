@@ -59,6 +59,10 @@ final class MessageKey
     public const PACKAGE_LIFECYCLE_RUNTIME_FAILURE = 'message.package.lifecycle.runtime_failure';
     public const PACKAGE_LIFECYCLE_PHP_LOAD_FAILED = 'message.package.lifecycle.php_load_failed';
     public const PACKAGE_LIFECYCLE_ROLLED_BACK = 'message.package.lifecycle.rolled_back';
+    public const PACKAGE_SETTING_READ_FAILED = 'message.package.setting.read_failed';
+    public const PACKAGE_SETTING_WRITE_FAILED = 'message.package.setting.write_failed';
+    public const PACKAGE_SETTING_DELETE_FAILED = 'message.package.setting.delete_failed';
+    public const PACKAGE_SETTING_VALUE_INVALID = 'message.package.setting.value_invalid';
     public const PACKAGE_DEPENDENCY_MISSING = 'message.package.dependency.missing';
     public const PACKAGE_DEPENDENCY_VERSION_UNSATISFIED = 'message.package.dependency.version_unsatisfied';
     public const PACKAGE_DEPENDENCY_STATUS_BLOCKED = 'message.package.dependency.status_blocked';

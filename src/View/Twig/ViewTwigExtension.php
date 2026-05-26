@@ -7,6 +7,8 @@ namespace App\View\Twig;
 use App\Core\Access\AccessActor;
 use App\Core\Event\EventHookDescriptor;
 use App\Core\Event\PublicEventHookRegistry;
+use App\Core\Package\Settings\PackageSettingRegistry;
+use App\Core\Package\Settings\PackageSettings;
 use App\Debug\StudioDebugCollector;
 use App\Entity\UserAccount;
 use App\Navigation\NavigationBuilder;
@@ -29,6 +31,8 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         private readonly MarkdownRenderer $markdownRenderer,
         private readonly PublicEventHookRegistry $eventHookRegistry,
         private readonly NavigationBuilder $navigationBuilder,
+        private readonly PackageSettings $packageSettings,
+        private readonly PackageSettingRegistry $packageSettingRegistry,
         private readonly StudioDebugCollector $debugCollector,
         private readonly Security $security,
         private readonly RequestStack $requestStack,
@@ -57,6 +61,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             new TwigFunction('studio_event_hooks', $this->eventHooks(...)),
             new TwigFunction('studio_html_attributes', $this->htmlAttributes(...), ['is_safe' => ['html']]),
             new TwigFunction('studio_navigation', $this->navigation(...)),
+            new TwigFunction('studio_package_settings', $this->packageSettings(...)),
             new TwigFunction('studio_debug_info', $this->debugInfo(...)),
         ];
     }
@@ -114,6 +119,14 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
     public function debugInfo(): array
     {
         return $this->debugCollector->summary();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function packageSettings(string $packageName): array
+    {
+        return $this->packageSettings->viewRows($packageName, $this->packageSettingRegistry);
     }
 
     /**

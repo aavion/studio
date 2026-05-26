@@ -10,6 +10,7 @@ final readonly class BackendViewDefinition
      * @param array<string, mixed> $routeParameters
      * @param array<string, mixed> $linkAttributes
      * @param list<string> $accessGroups
+     * @param array<string, mixed> $context
      */
     public function __construct(
         private string $uid,
@@ -23,6 +24,7 @@ final readonly class BackendViewDefinition
         private array $routeParameters = [],
         private array $linkAttributes = [],
         private array $accessGroups = [],
+        private array $context = [],
     ) {
     }
 
@@ -95,5 +97,13 @@ final readonly class BackendViewDefinition
     public function linkAttributes(): array
     {
         return $this->linkAttributes;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function context(): array
+    {
+        return $this->context;
     }
 }

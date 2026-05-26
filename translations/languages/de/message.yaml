@@ -55,6 +55,11 @@ message:
       runtime_failure: 'Paket "%package%" wurde nach einem Runtime-Fehler als fehlerhaft markiert.'
       php_load_failed: 'PHP-Loader für Paket "%package%" ist fehlgeschlagen und das Paket wurde als fehlerhaft markiert.'
       rolled_back: 'Paket-Lifecycle-Änderungen wurden für %count% Paket(e) zurückgerollt.'
+    setting:
+      read_failed: 'Paket-Einstellung "%package%:%key%" konnte nicht gelesen werden.'
+      write_failed: 'Paket-Einstellung "%package%:%key%" konnte nicht geschrieben werden.'
+      delete_failed: 'Paket-Einstellungen für "%package%" konnten nicht gelöscht werden.'
+      value_invalid: 'Paket-Einstellung "%package%:%key%" enthält einen ungültigen gespeicherten Wert.'
     dependency:
       missing: 'Paket-Abhängigkeit "%package%" für "%required_by%" ist nicht installiert.'
       version_unsatisfied: 'Paket-Abhängigkeit "%package%" erfordert mindestens Version %required_version%; installiert ist %installed_version%.'

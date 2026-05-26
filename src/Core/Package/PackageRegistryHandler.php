@@ -215,6 +215,7 @@ final readonly class PackageRegistryHandler
             'registry_state' => $state,
             'manifest' => $candidate->manifest()->all(),
             'display_name' => $candidate->manifest()->get('PACKAGE_NAME'),
+            'description' => $candidate->manifest()->get('PACKAGE_DESCRIPTION'),
             'dependencies' => $candidate->manifest()->get('PACKAGE_DEPENDENCIES'),
             'validation' => [
                 'issue_count' => count($issues),

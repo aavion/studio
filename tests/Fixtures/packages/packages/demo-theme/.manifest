@@ -1,5 +1,6 @@
 PACKAGE_AUTHOR=Aavion Test Fixtures
 PACKAGE_NAME=Demo Theme
+PACKAGE_DESCRIPTION=Demo frontend theme package used to exercise scoped assets, template namespaces, settings, and future admin UI flows.
 PACKAGE_VERSION=0.1.0
 PACKAGE_SCOPE=frontend-theme
 PACKAGE_DEPENDENCIES=[]

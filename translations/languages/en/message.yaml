@@ -55,6 +55,11 @@ message:
       runtime_failure: 'Package "%package%" was marked faulty after a runtime failure.'
       php_load_failed: 'Package "%package%" PHP loader failed and the package was marked faulty.'
       rolled_back: 'Package lifecycle changes were rolled back for %count% package(s).'
+    setting:
+      read_failed: 'Package setting "%package%:%key%" could not be read.'
+      write_failed: 'Package setting "%package%:%key%" could not be written.'
+      delete_failed: 'Package settings for "%package%" could not be deleted.'
+      value_invalid: 'Package setting "%package%:%key%" contains an invalid stored value.'
     dependency:
       missing: 'Package dependency "%package%" required by "%required_by%" is not installed.'
       version_unsatisfied: 'Package dependency "%package%" requires at least version %required_version%; installed version is %installed_version%.'

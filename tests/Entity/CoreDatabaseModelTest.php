@@ -13,6 +13,7 @@ use App\Entity\AclGroup;
 use App\Entity\ApiKey;
 use App\Entity\ConfigEntry;
 use App\Entity\ExtensionPackage;
+use App\Entity\PackageSettingEntry;
 use App\Entity\SiteMenu;
 use App\Entity\SiteMenuItem;
 use App\Entity\StateMarker;
@@ -119,6 +120,7 @@ final class CoreDatabaseModelTest extends TestCase
     public function testItModelsConfigPackagesAndMenus(): void
     {
         $config = new ConfigEntry('content.cleanup.trash_retention_days', 30, ConfigValueType::Integer);
+        $packageSetting = new PackageSettingEntry('demo_package', 'theme.variant', 'green', ConfigValueType::String);
         $package = new ExtensionPackage(
             '55555555-5555-5555-5555-555555555555',
             [PackageScope::FrontendTheme, PackageScope::Module],
@@ -143,6 +145,10 @@ final class CoreDatabaseModelTest extends TestCase
         $config->replaceValue(0.75, ConfigValueType::Float);
         self::assertSame(0.75, $config->value());
         self::assertSame(ConfigValueType::Float, $config->valueType());
+        self::assertSame('demo_package', $packageSetting->packageName());
+        self::assertSame('theme.variant', $packageSetting->key());
+        self::assertSame('green', $packageSetting->value());
+        self::assertSame(ConfigValueType::String, $packageSetting->valueType());
         self::assertSame([PackageScope::FrontendTheme, PackageScope::Module], $package->scopes());
         self::assertSame(['frontend-theme', 'module'], $package->scopeValues());
         self::assertTrue($package->hasScope(PackageScope::FrontendTheme));

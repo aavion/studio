@@ -38,6 +38,17 @@ final class Version20260523210000 extends AbstractMigration
         $config->addColumn('modified_by', 'string', ['length' => 180, 'notnull' => false]);
         $this->addPrimaryKey($config, 'config_key');
 
+        $packageSetting = $schema->createTable('package_setting_entry');
+        $packageSetting->addColumn('package_name', 'string', ['length' => 120]);
+        $packageSetting->addColumn('setting_key', 'string', ['length' => 160]);
+        $packageSetting->addColumn('value', 'json');
+        $packageSetting->addColumn('value_type', 'string', ['length' => 255]);
+        $packageSetting->addColumn('metadata', 'json');
+        $packageSetting->addColumn('modified_at', 'datetime_immutable');
+        $packageSetting->addColumn('modified_by', 'string', ['length' => 180, 'notnull' => false]);
+        $this->addPrimaryKey($packageSetting, 'package_name', 'setting_key');
+        $packageSetting->addIndex(['package_name'], 'idx_package_setting_package');
+
         $stateMarker = $schema->createTable('state_marker');
         $stateMarker->addColumn('uid', 'string', ['length' => 36]);
         $stateMarker->addColumn('subject_type', 'string', ['length' => 80]);
@@ -266,6 +277,7 @@ final class Version20260523210000 extends AbstractMigration
         $schema->dropTable('user_acl_group');
         $schema->dropTable('user_account');
         $schema->dropTable('acl_group');
+        $schema->dropTable('package_setting_entry');
         $schema->dropTable('config_entry');
         $schema->dropTable('state_marker');
         $schema->dropTable('messenger_messages');

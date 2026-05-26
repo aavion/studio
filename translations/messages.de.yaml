@@ -115,6 +115,8 @@ admin:
     navigation:
         dashboard: Dashboard
         packages: Packages
+        settings: Einstellungen
+        global_settings: Global
     dashboard:
         title: Admin-Dashboard
         foundation_title: Backend-Fundament
@@ -123,6 +125,18 @@ admin:
         title: Paketverwaltung
         foundation_title: Paket-View-Fundament
         foundation_text: 'Die Paketverwaltung dockt hier an, sobald Installations-, Update-, Aktivierungs- und Cleanup-Workflows verdrahtet sind.'
+    settings:
+        title: Einstellungen
+        redirect_title: Einstellungsbereiche
+        redirect_text: 'Globale Einstellungen sind der erste eingebaute Einstellungsbereich. Aktive Pakete mit einfachen Setting-Definitionen erscheinen hier als Paketbereiche.'
+        global:
+            title: 'Globale Einstellungen'
+            foundation_title: 'Globales Konfigurationsfundament'
+            foundation_text: 'Globale Konfiguration wird hier über den gemeinsamen Konfigurations-Layer verwaltet.'
+        package:
+            title: 'Einstellungen für %package%'
+            foundation_title: Paket-Einstellungen
+            empty: 'Dieses Paket stellt keine konfigurierbaren Einstellungen bereit.'
     message:
         title: Admin-Route
 demo:
@@ -246,6 +260,11 @@ message:
             runtime_failure: 'Paket "%package%" wurde nach einem Runtime-Fehler als fehlerhaft markiert.'
             php_load_failed: 'PHP-Loader für Paket "%package%" ist fehlgeschlagen und das Paket wurde als fehlerhaft markiert.'
             rolled_back: 'Paket-Lifecycle-Änderungen wurden für %count% Paket(e) zurückgerollt.'
+        setting:
+            read_failed: 'Paket-Einstellung "%package%:%key%" konnte nicht gelesen werden.'
+            write_failed: 'Paket-Einstellung "%package%:%key%" konnte nicht geschrieben werden.'
+            delete_failed: 'Paket-Einstellungen für "%package%" konnten nicht gelöscht werden.'
+            value_invalid: 'Paket-Einstellung "%package%:%key%" enthält einen ungültigen gespeicherten Wert.'
         dependency:
             missing: 'Paket-Abhängigkeit "%package%" für "%required_by%" ist nicht installiert.'
             version_unsatisfied: 'Paket-Abhängigkeit "%package%" erfordert mindestens Version %required_version%; installiert ist %installed_version%.'

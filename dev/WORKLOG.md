@@ -72,6 +72,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Added the first package settings foundation: a package-scoped settings table, typed setting definitions/providers, active-package filtering, generic Admin Settings views, purge cleanup for package settings, and `PACKAGE_DESCRIPTION` metadata propagation for package UI surfaces.
 - Added a DB-free setup redirect subscriber so fresh installations route public catch-all requests to `/setup` before content, navigation, or config services can query missing tables.
 - Fixed unauthenticated `401` login rendering so protected route requests include a local `_target_path` callback to the originally requested URL.
 - Added the first package-facing view injection foundation: shared `public`, `admin`, and `editor` surfaces; static route/menu injection definitions; dynamic content slot and variant-route injections; public hook events for both registries; schema custom-Twig fieldset rendering with generic fallback; access-aware navigation filtering for groups; and tests proving content/core views win before injected package routes.

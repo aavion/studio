@@ -1,0 +1,21 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.settings.global.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.settings.title'|trans,
+        title: 'admin.settings.global.title'|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.settings.global.foundation_title'|trans }}</h2>
+        <p class="studio-muted">{{ 'admin.settings.global.foundation_text'|trans }}</p>
+    </section>
+{% endblock %}

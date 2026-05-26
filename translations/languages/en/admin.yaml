@@ -9,6 +9,8 @@ admin:
   navigation:
     dashboard: 'Dashboard'
     packages: 'Packages'
+    settings: 'Settings'
+    global_settings: 'Global'
   dashboard:
     title: 'Admin dashboard'
     foundation_title: 'Backend foundation'
@@ -17,5 +19,17 @@ admin:
     title: 'Package management'
     foundation_title: 'Package view foundation'
     foundation_text: 'Package management will attach here once install, update, activation, and cleanup workflows are wired.'
+  settings:
+    title: 'Settings'
+    redirect_title: 'Settings sections'
+    redirect_text: 'Global settings are the first built-in settings section. Active packages with simple setting definitions appear here as package sections.'
+    global:
+      title: 'Global settings'
+      foundation_title: 'Global configuration foundation'
+      foundation_text: 'Global configuration will be managed here through the shared configuration layer.'
+    package:
+      title: '%package% settings'
+      foundation_title: 'Package settings'
+      empty: 'This package does not expose configurable settings.'
   message:
     title: 'Admin route'

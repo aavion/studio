@@ -13,23 +13,37 @@ use App\Entity\ExtensionPackage;
 
 final readonly class PackageLifecycleCleanupRunner implements PackageLifecycleCleanupRunnerInterface
 {
+    public function __construct(private Settings\PackageSettings $packageSettings)
+    {
+    }
+
     /**
      * @return WorkflowResult<array<string, mixed>>
      */
     public function cleanup(ExtensionPackage $package): WorkflowResult
     {
+        $deletedSettings = $this->packageSettings->removePackage($package->packageName());
+        $actions = [];
+
+        if ($deletedSettings > 0) {
+            $actions[] = [
+                'action' => 'delete_package_settings',
+                'count' => $deletedSettings,
+            ];
+        }
+
         return WorkflowResult::success([
             'package' => $package->packageName(),
-            'actions' => [],
+            'actions' => $actions,
         ], [
             'package' => $package->packageName(),
-            'actions' => [],
+            'actions' => $actions,
         ], [
             Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_CLEANUP_COMPLETED,
                 MessageKey::PACKAGE_LIFECYCLE_CLEANUP_COMPLETED,
                 ['%package%' => $package->packageName()],
-                ['package' => $package->packageName(), 'actions' => []],
+                ['package' => $package->packageName(), 'actions' => $actions],
                 MessageLevel::Success,
             ),
         ]);

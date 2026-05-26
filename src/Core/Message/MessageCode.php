@@ -96,6 +96,10 @@ final class MessageCode
     public const PACKAGE_LIFECYCLE_RUNTIME_FAILURE = 'package.lifecycle.runtime_failure';
     public const PACKAGE_LIFECYCLE_PHP_LOAD_FAILED = 'package.lifecycle.php_load_failed';
     public const PACKAGE_LIFECYCLE_ROLLED_BACK = 'package.lifecycle.rolled_back';
+    public const PACKAGE_SETTING_READ_FAILED = 'package.setting.read_failed';
+    public const PACKAGE_SETTING_WRITE_FAILED = 'package.setting.write_failed';
+    public const PACKAGE_SETTING_DELETE_FAILED = 'package.setting.delete_failed';
+    public const PACKAGE_SETTING_VALUE_INVALID = 'package.setting.value_invalid';
     public const PACKAGE_DEPENDENCY_MISSING = 'package.dependency.missing';
     public const PACKAGE_DEPENDENCY_VERSION_UNSATISFIED = 'package.dependency.version_unsatisfied';
     public const PACKAGE_DEPENDENCY_STATUS_BLOCKED = 'package.dependency.status_blocked';

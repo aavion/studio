@@ -248,10 +248,11 @@ final class NavigationBuilderTest extends KernelTestCase
             activeRoute: 'backend_admin_route',
         );
 
-        self::assertSame(['admin.navigation.dashboard', 'admin.navigation.packages'], array_column($navigation, 'label'));
-        self::assertSame(['/admin', '/admin/packages'], array_column($navigation, 'url'));
+        self::assertSame(['admin.navigation.dashboard', 'admin.navigation.packages', 'admin.navigation.settings'], array_column($navigation, 'label'));
+        self::assertSame(['/admin', '/admin/packages', '/admin/settings'], array_column($navigation, 'url'));
         self::assertFalse($navigation[0]['active']);
         self::assertTrue($navigation[1]['active']);
+        self::assertSame(['admin.navigation.global_settings'], array_column($navigation[2]['children'], 'label'));
     }
 
     public function testItFiltersNavigationItemsByAccessLevel(): void
