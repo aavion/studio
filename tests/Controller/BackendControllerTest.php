@@ -114,6 +114,10 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/packages"][aria-current="page"]');
         self::assertSelectorExists('.studio-backend-nav .is-collapsed a[href="/admin/settings"][aria-expanded="false"]');
         self::assertSelectorNotExists('.studio-backend-nav a[href="/admin/settings/general"]');
+        self::assertSelectorTextContains('.studio-table', 'system');
+        self::assertSelectorTextContains('.studio-table', 'Active');
+        self::assertSelectorTextContains('.studio-table', 'System template');
+        self::assertSelectorTextContains('.studio-table', 'No settings');
 
         $client->request('GET', '/admin/themes');
 

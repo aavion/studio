@@ -136,6 +136,32 @@ admin:
         title: 'Package management'
         foundation_title: 'Package view foundation'
         foundation_text: 'Package management will attach here once install, update, activation, and cleanup workflows are wired.'
+        registry_title: 'Registered packages'
+        registry_text: 'Packages discovered in the registry are listed here. Lifecycle actions will attach once operation flows are wired.'
+        empty: 'No packages are registered yet.'
+        unknown_value: Unknown
+        table:
+            package: Package
+            status: Status
+            scopes: Scopes
+            version: Version
+            path: Path
+            actions: Actions
+        status:
+            active: Active
+            inactive: Inactive
+            removed: Removed
+            faulty: Faulty
+        scope:
+            frontend_theme: 'Frontend theme'
+            backend_theme: 'Backend theme'
+            system_template: 'System template'
+            module: Module
+            captcha_provider: 'Captcha provider'
+            editor_provider: 'Editor provider'
+        actions:
+            settings: Settings
+            no_settings: 'No settings'
     themes:
         title: 'Theme management'
         foundation_title: 'Theme management foundation'

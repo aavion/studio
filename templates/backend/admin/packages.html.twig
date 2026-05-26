@@ -1,5 +1,7 @@
 {% extends '@backend/admin.html.twig' %}
 
+{% set packages = studio_extension_packages() %}
+
 {% block title %}{{ 'admin.packages.title'|trans }}{% endblock %}
 
 {% block admin_sidebar %}
@@ -17,7 +19,58 @@
     {% include '@backend/partials/feedback/_message.html.twig' with {message: message} only %}
 
     <section class="studio-panel">
-        <h2>{{ 'admin.packages.foundation_title'|trans }}</h2>
-        <p class="studio-muted">{{ 'admin.packages.foundation_text'|trans }}</p>
+        <h2>{{ 'admin.packages.registry_title'|trans }}</h2>
+        <p class="studio-muted">{{ 'admin.packages.registry_text'|trans }}</p>
+
+        {% if packages|length > 0 %}
+            <table class="studio-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.packages.table.package'|trans }}</th>
+                        <th scope="col">{{ 'admin.packages.table.status'|trans }}</th>
+                        <th scope="col">{{ 'admin.packages.table.scopes'|trans }}</th>
+                        <th scope="col">{{ 'admin.packages.table.version'|trans }}</th>
+                        <th scope="col">{{ 'admin.packages.table.path'|trans }}</th>
+                        <th scope="col">{{ 'admin.packages.table.actions'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for package in packages %}
+                        <tr>
+                            <th scope="row">
+                                <strong>{{ package.label }}</strong>
+                                <br>
+                                <span class="studio-muted">{{ package.package_name }}</span>
+                                {% if package.description %}
+                                    <br>
+                                    <span class="studio-muted">{{ package.description }}</span>
+                                {% endif %}
+                            </th>
+                            <td>
+                                <span class="studio-badge studio-badge-{{ package.status_tone }}">
+                                    {{ package.status_label_key|trans }}
+                                </span>
+                            </td>
+                            <td>
+                                {% for scope in package.scopes %}
+                                    <span class="studio-badge studio-badge-neutral">{{ scope.label_key|trans }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>{{ package.installed_version|default(package.manifest_version|default('admin.packages.unknown_value'|trans)) }}</td>
+                            <td><code>{{ package.path }}</code></td>
+                            <td>
+                                {% if package.settings_path %}
+                                    <a href="{{ package.settings_path }}">{{ 'admin.packages.actions.settings'|trans }}</a>
+                                {% else %}
+                                    <span class="studio-muted">{{ 'admin.packages.actions.no_settings'|trans }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="studio-muted">{{ 'admin.packages.empty'|trans }}</p>
+        {% endif %}
     </section>
 {% endblock %}

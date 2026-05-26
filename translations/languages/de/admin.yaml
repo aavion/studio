@@ -30,6 +30,32 @@ admin:
     title: 'Paketverwaltung'
     foundation_title: 'Paket-View-Fundament'
     foundation_text: 'Die Paketverwaltung dockt hier an, sobald Installations-, Update-, Aktivierungs- und Cleanup-Workflows verdrahtet sind.'
+    registry_title: 'Registrierte Pakete'
+    registry_text: 'In der Registry gefundene Pakete werden hier aufgelistet. Lifecycle-Aktionen docken an, sobald Operation-Flows verdrahtet sind.'
+    empty: 'Noch sind keine Pakete registriert.'
+    unknown_value: 'Unbekannt'
+    table:
+      package: 'Paket'
+      status: 'Status'
+      scopes: 'Scopes'
+      version: 'Version'
+      path: 'Pfad'
+      actions: 'Aktionen'
+    status:
+      active: 'Aktiv'
+      inactive: 'Inaktiv'
+      removed: 'Entfernt'
+      faulty: 'Fehlerhaft'
+    scope:
+      frontend_theme: 'Frontend-Theme'
+      backend_theme: 'Backend-Theme'
+      system_template: 'System-Template'
+      module: 'Modul'
+      captcha_provider: 'Captcha-Provider'
+      editor_provider: 'Editor-Provider'
+    actions:
+      settings: 'Einstellungen'
+      no_settings: 'Keine Einstellungen'
   themes:
     title: 'Theme-Verwaltung'
     foundation_title: 'Theme-Verwaltungsfundament'
