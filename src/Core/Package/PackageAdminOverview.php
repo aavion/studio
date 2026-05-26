@@ -6,6 +6,7 @@ namespace App\Core\Package;
 
 use App\Core\Package\Settings\PackageSettingRegistry;
 use App\Entity\ExtensionPackage;
+use App\View\SystemPackageMetadataProvider;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class PackageAdminOverview
@@ -13,6 +14,7 @@ final readonly class PackageAdminOverview
     public function __construct(
         private EntityManagerInterface $entityManager,
         private PackageSettingRegistry $settingRegistry,
+        private SystemPackageMetadataProvider $systemPackageMetadata,
     ) {
     }
 
@@ -24,7 +26,7 @@ final readonly class PackageAdminOverview
         $settingPackages = $this->settingRegistry->packagesWithDefinitions();
         $packages = array_filter(
             $this->entityManager->getRepository(ExtensionPackage::class)->findAll(),
-            static fn (mixed $package): bool => $package instanceof ExtensionPackage,
+            static fn (mixed $package): bool => $package instanceof ExtensionPackage && 'system' !== $package->packageName(),
         );
 
         usort(
@@ -38,10 +40,13 @@ final readonly class PackageAdminOverview
             ],
         );
 
-        return array_map(
-            fn (ExtensionPackage $package): array => $this->row($package, $settingPackages[$package->packageName()]['path'] ?? null),
-            $packages,
-        );
+        return [
+            $this->systemRow(),
+            ...array_map(
+                fn (ExtensionPackage $package): array => $this->row($package, $settingPackages[$package->packageName()]['path'] ?? null),
+                $packages,
+            ),
+        ];
     }
 
     private function row(ExtensionPackage $package, ?string $settingsPath): array
@@ -52,8 +57,12 @@ final readonly class PackageAdminOverview
         return [
             'package_name' => $package->packageName(),
             'label' => $label,
+            'label_key' => null,
             'description' => $this->metadataString($metadata, 'description'),
+            'description_key' => null,
+            'author' => $this->metadataString($metadata, 'author'),
             'path' => $package->path(),
+            'immutable' => false,
             'status' => $package->status()->value,
             'status_label_key' => 'admin.packages.status.'.$package->status()->value,
             'status_tone' => $this->statusTone($package->status()),
@@ -64,6 +73,33 @@ final readonly class PackageAdminOverview
             'manifest_version' => $package->manifestVersion(),
             'installed_version' => $package->installedVersion(),
             'settings_path' => $settingsPath,
+        ];
+    }
+
+    private function systemRow(): array
+    {
+        $metadata = $this->systemPackageMetadata->metadata();
+        $version = $metadata['version'] ?? null;
+
+        return [
+            'package_name' => 'system',
+            'label' => $metadata['name'],
+            'label_key' => null,
+            'description' => $metadata['description'],
+            'description_key' => null,
+            'author' => $metadata['author'],
+            'path' => '.',
+            'immutable' => true,
+            'status' => ExtensionPackageStatus::Active->value,
+            'status_label_key' => 'admin.packages.status.active',
+            'status_tone' => 'success',
+            'scopes' => array_map(static fn (string $scope): array => [
+                'value' => $scope,
+                'label_key' => 'admin.packages.scope.'.str_replace('-', '_', $scope),
+            ], $metadata['scopes']),
+            'manifest_version' => is_string($version) && '' !== trim($version) ? $version : null,
+            'installed_version' => null,
+            'settings_path' => null,
         ];
     }
 

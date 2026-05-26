@@ -162,10 +162,29 @@ admin:
         actions:
             settings: Settings
             no_settings: 'No settings'
+        meta:
+            author: 'By %author%'
     themes:
         title: 'Theme management'
         foundation_title: 'Theme management foundation'
         foundation_text: 'Theme selection, activation, preview, and variant management will attach here.'
+        empty: 'No themes are registered for this area yet.'
+        sections:
+            frontend:
+                title: 'Frontend themes'
+                text: 'Public-facing themes and the native system fallback are listed here.'
+            backend:
+                title: 'Backend themes'
+                text: 'Administration and editor shell themes plus the native system fallback are listed here.'
+        type:
+            system: System
+            package: Package
+        table:
+            theme: Theme
+            status: Status
+            type: Type
+            version: Version
+            path: Path
     users:
         title: 'User management'
         foundation_title: 'User and ACL foundation'

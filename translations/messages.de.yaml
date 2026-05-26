@@ -162,10 +162,29 @@ admin:
         actions:
             settings: Einstellungen
             no_settings: 'Keine Einstellungen'
+        meta:
+            author: 'Von %author%'
     themes:
         title: Theme-Verwaltung
         foundation_title: Theme-Verwaltungsfundament
         foundation_text: 'Theme-Auswahl, Aktivierung, Vorschau und Variantenverwaltung docken hier an.'
+        empty: 'Für diesen Bereich sind noch keine Themes registriert.'
+        sections:
+            frontend:
+                title: Frontend-Themes
+                text: 'Öffentliche Themes und der native System-Fallback werden hier aufgelistet.'
+            backend:
+                title: Backend-Themes
+                text: 'Themes für Administrations- und Editor-Shells sowie der native System-Fallback werden hier aufgelistet.'
+        type:
+            system: System
+            package: Paket
+        table:
+            theme: Theme
+            status: Status
+            type: Typ
+            version: Version
+            path: Pfad
     users:
         title: Benutzerverwaltung
         foundation_title: 'Benutzer- und ACL-Fundament'

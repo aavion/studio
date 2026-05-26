@@ -72,6 +72,10 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-26
+- Surfaced root `.manifest` name, author, and description metadata through the virtual system package and mirrored those values into package and theme admin overviews.
+- Marked system package/theme rows as immutable in admin overviews, kept the virtual system package visible for package update workflows, and made theme sections show the system fallback as active only when no active theme package owns that area.
+- Aligned application package discovery with the current root `.manifest` metadata keys used by the virtual system package.
+- Added the first Admin Theme Management overview with separate frontend/backend theme sections and the immutable native system theme fallback shown in both areas.
 - Relaxed the Twig syntax linter so package templates may use Symfony, Studio, theme, or package-provided filters, functions, and tests without failing discovery in the isolated lint environment.
 - Added small inactive demo packages for module, frontend-theme, and captcha-provider discovery plus a regression test proving package cleanup removes only the purged package settings.
 - Rendered the first read-only Admin Package Management overview from the extension package registry, including status, scopes, versions, paths, and generic package settings links when available.

@@ -6,7 +6,10 @@ namespace App\Tests\Controller;
 
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\Package\ExtensionPackageStatus;
+use App\Core\Package\PackageScope;
 use App\Entity\AclGroup;
+use App\Entity\ExtensionPackage;
 use App\Entity\UserAccount;
 use App\Setup\SetupCompletionMarker;
 use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
@@ -114,16 +117,49 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/packages"][aria-current="page"]');
         self::assertSelectorExists('.studio-backend-nav .is-collapsed a[href="/admin/settings"][aria-expanded="false"]');
         self::assertSelectorNotExists('.studio-backend-nav a[href="/admin/settings/general"]');
+        self::assertSelectorTextContains('.studio-table', 'aavion Studio');
+        self::assertSelectorTextContains('.studio-table', 'Symfony 8 CMS (under active development)');
+        self::assertSelectorTextContains('.studio-table', 'By Dominik Letica');
         self::assertSelectorTextContains('.studio-table', 'system');
         self::assertSelectorTextContains('.studio-table', 'Active');
         self::assertSelectorTextContains('.studio-table', 'System template');
         self::assertSelectorTextContains('.studio-table', 'No settings');
+        self::assertSelectorExists('.studio-table tr.is-immutable[data-package-name="system"][data-immutable="true"]');
 
         $client->request('GET', '/admin/themes');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Theme management');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/themes"][aria-current="page"]');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'Frontend themes');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'aavion Studio');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'templates/frontend');
+        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] tr.is-immutable[data-package-name="system"][data-theme-status="active"]');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', 'Backend themes');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', 'aavion Studio');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', 'templates/backend');
+        self::assertSelectorExists('.studio-theme-overview[data-theme-section="backend"] tr.is-immutable[data-package-name="system"][data-theme-status="active"]');
+
+        $this->removePackageByName('test-frontend-theme');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $frontendTheme = new ExtensionPackage(
+            '00000000-0000-0000-0000-000000000499',
+            [PackageScope::FrontendTheme],
+            'test-frontend-theme',
+            'packages/test-frontend-theme',
+            ExtensionPackageStatus::Active,
+            ['display_name' => 'Test Frontend Theme'],
+            manifestVersion: '1.0.0',
+        );
+        $entityManager->persist($frontendTheme);
+        $entityManager->flush();
+
+        $client->request('GET', '/admin/themes');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] tr.is-immutable[data-package-name="system"][data-theme-status="inactive"]');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'Test Frontend Theme');
+        $this->removePackageByName('test-frontend-theme');
 
         foreach ([
             '/admin/users' => 'User management',
@@ -307,6 +343,19 @@ final class BackendControllerTest extends WebTestCase
         $entityManager->flush();
 
         return $user;
+    }
+
+    private function removePackageByName(string $packageName): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $package = $entityManager->getRepository(ExtensionPackage::class)->findOneBy(['packageName' => $packageName]);
+
+        if (!$package instanceof ExtensionPackage) {
+            return;
+        }
+
+        $entityManager->remove($package);
+        $entityManager->flush();
     }
 
     private function restoreSetupMarker(mixed $serverValue, mixed $envValue, mixed $putenvValue): void

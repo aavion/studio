@@ -151,7 +151,7 @@ final readonly class PackageDiscovery
         return [
             PackageSource::single('app', '.', ManifestSpec::forNamespace(
                 'APP',
-                ['VERSION', 'DATE', 'CHANNEL', 'SOURCE'],
+                ['VERSION', 'DATE', 'NAME', 'AUTHOR', 'DESCRIPTION', 'CHANNEL', 'SOURCE'],
                 ['VERSION'],
             )),
             PackageSource::children('package', 'packages', ManifestSpec::create()

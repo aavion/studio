@@ -20,7 +20,7 @@ final class ViewTwigExtensionTest extends KernelTestCase
         )->render();
 
         self::assertArrayHasKey('studio_view', $globals);
-        self::assertSame('System|@root/macros/core/ui.html.twig|11|4|debug|<p><strong>ok</strong></p>', $html);
+        self::assertSame('aavion Studio|@root/macros/core/ui.html.twig|11|4|debug|<p><strong>ok</strong></p>', $html);
     }
 
     public function testItRendersSafeHtmlAttributes(): void
@@ -29,10 +29,10 @@ final class ViewTwigExtensionTest extends KernelTestCase
 
         $twig = self::getContainer()->get(Environment::class);
         $html = $twig->createTemplate(
-            '{{ studio_html_attributes({"data-action": "save", "aria-expanded": false, "title": "A & B", "maxlength": 120, "pattern": "^/.*$", "onclick": "alert(1)", "style": "display:none", "data-active": true}) }}',
+            '{{ studio_html_attributes({"class": "is-immutable", "data-action": "save", "aria-expanded": false, "title": "A & B", "maxlength": 120, "pattern": "^/.*$", "onclick": "alert(1)", "style": "display:none", "data-active": true}) }}',
         )->render();
 
-        self::assertSame('data-action="save" title="A &amp; B" maxlength="120" pattern="^/.*$" data-active', $html);
+        self::assertSame('class="is-immutable" data-action="save" title="A &amp; B" maxlength="120" pattern="^/.*$" data-active', $html);
     }
 
     public function testItRendersNativeProviderNamespaceFallbacks(): void

@@ -10,6 +10,7 @@ use App\Core\Config\Settings\CoreSettingsRegistry;
 use App\Core\Event\EventHookDescriptor;
 use App\Core\Event\PublicEventHookRegistry;
 use App\Core\Package\PackageAdminOverview;
+use App\Core\Package\ThemeAdminOverview;
 use App\Core\Package\Settings\PackageSettingRegistry;
 use App\Core\Package\Settings\PackageSettings;
 use App\Debug\StudioDebugCollector;
@@ -39,6 +40,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         private readonly CoreSettingsRegistry $coreSettingsRegistry,
         private readonly FormBuilder $formBuilder,
         private readonly PackageAdminOverview $packageAdminOverview,
+        private readonly ThemeAdminOverview $themeAdminOverview,
         private readonly PackageSettings $packageSettings,
         private readonly PackageSettingRegistry $packageSettingRegistry,
         private readonly StudioDebugCollector $debugCollector,
@@ -71,6 +73,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             new TwigFunction('studio_navigation', $this->navigation(...)),
             new TwigFunction('studio_core_settings_form', $this->coreSettingsForm(...)),
             new TwigFunction('studio_extension_packages', $this->extensionPackages(...)),
+            new TwigFunction('studio_themes', $this->themes(...)),
             new TwigFunction('studio_package_settings', $this->packageSettings(...)),
             new TwigFunction('studio_package_settings_form', $this->packageSettingsForm(...)),
             new TwigFunction('studio_package_setting_packages', $this->packageSettingPackages(...)),
@@ -139,6 +142,14 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
     public function extensionPackages(): array
     {
         return $this->packageAdminOverview->packages();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function themes(): array
+    {
+        return $this->themeAdminOverview->sections();
     }
 
     /**
@@ -287,6 +298,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             || str_starts_with($name, 'aria-')
             || in_array($name, [
                 'autocomplete',
+                'class',
                 'download',
                 'id',
                 'max',

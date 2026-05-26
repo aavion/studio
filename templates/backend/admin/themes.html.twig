@@ -1,5 +1,7 @@
 {% extends '@backend/admin.html.twig' %}
 
+{% set theme_sections = studio_themes() %}
+
 {% block title %}{{ 'admin.themes.title'|trans }}{% endblock %}
 
 {% block admin_sidebar %}
@@ -18,4 +20,63 @@
         <h2>{{ 'admin.themes.foundation_title'|trans }}</h2>
         <p class="studio-muted">{{ 'admin.themes.foundation_text'|trans }}</p>
     </section>
+
+    {% for section in theme_sections %}
+        <section class="studio-panel studio-theme-overview" data-theme-section="{{ section.key }}">
+            <h2>{{ section.title_key|trans }}</h2>
+            <p class="studio-muted">{{ section.text_key|trans }}</p>
+
+            {% if section.themes|length > 0 %}
+                <table class="studio-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ 'admin.themes.table.theme'|trans }}</th>
+                            <th scope="col">{{ 'admin.themes.table.status'|trans }}</th>
+                            <th scope="col">{{ 'admin.themes.table.type'|trans }}</th>
+                            <th scope="col">{{ 'admin.themes.table.version'|trans }}</th>
+                            <th scope="col">{{ 'admin.themes.table.path'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for theme in section.themes %}
+                            <tr {{ studio_html_attributes({
+                                class: theme.immutable ? 'is-immutable' : null,
+                                'data-package-name': theme.package_name,
+                                'data-immutable': theme.immutable ? 'true' : null,
+                                'data-theme-status': theme.status,
+                            }) }}>
+                                <th scope="row">
+                                    <strong>{{ theme.label_key ? theme.label_key|trans : theme.label }}</strong>
+                                    <br>
+                                    <span class="studio-muted">{{ theme.package_name }}</span>
+                                    {% if theme.description_key or theme.description %}
+                                        <br>
+                                        <span class="studio-muted">{{ theme.description_key ? theme.description_key|trans : theme.description }}</span>
+                                    {% endif %}
+                                    {% if theme.author %}
+                                        <br>
+                                        <span class="studio-muted">{{ 'admin.packages.meta.author'|trans({'%author%': theme.author}) }}</span>
+                                    {% endif %}
+                                </th>
+                                <td>
+                                    <span class="studio-badge studio-badge-{{ theme.status_tone }}">
+                                        {{ theme.status_label_key|trans }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="studio-badge studio-badge-{{ theme.type_tone }}">
+                                        {{ theme.type_label_key|trans }}
+                                    </span>
+                                </td>
+                                <td>{{ theme.version|default('admin.packages.unknown_value'|trans) }}</td>
+                                <td><code>{{ theme.path }}</code></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="studio-muted">{{ 'admin.themes.empty'|trans }}</p>
+            {% endif %}
+        </section>
+    {% endfor %}
 {% endblock %}

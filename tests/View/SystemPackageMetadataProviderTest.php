@@ -14,11 +14,13 @@ final class SystemPackageMetadataProviderTest extends TestCase
         $metadata = (new SystemPackageMetadataProvider(dirname(__DIR__, 2)))->metadata();
 
         self::assertSame('system', $metadata['identifier']);
-        self::assertSame('System', $metadata['name']);
+        self::assertSame('aavion Studio', $metadata['name']);
+        self::assertSame('Dominik Letica', $metadata['author']);
+        self::assertSame('Symfony 8 CMS (under active development)', $metadata['description']);
         self::assertTrue($metadata['immutable']);
         self::assertTrue($metadata['virtual']);
         self::assertSame(['frontend-theme', 'backend-theme', 'system-template'], $metadata['scopes']);
-        self::assertSame('0.0.0', $metadata['version']);
+        self::assertSame('0.1.0', $metadata['version']);
         self::assertArrayHasKey('APP_SOURCE', $metadata['manifest']);
     }
 }

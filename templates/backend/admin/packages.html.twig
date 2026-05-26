@@ -36,14 +36,23 @@
                 </thead>
                 <tbody>
                     {% for package in packages %}
-                        <tr>
+                        <tr {{ studio_html_attributes({
+                            class: package.immutable ? 'is-immutable' : null,
+                            'data-package-name': package.package_name,
+                            'data-package-status': package.status,
+                            'data-immutable': package.immutable ? 'true' : null,
+                        }) }}>
                             <th scope="row">
-                                <strong>{{ package.label }}</strong>
+                                <strong>{{ package.label_key ? package.label_key|trans : package.label }}</strong>
                                 <br>
                                 <span class="studio-muted">{{ package.package_name }}</span>
-                                {% if package.description %}
+                                {% if package.description_key or package.description %}
                                     <br>
-                                    <span class="studio-muted">{{ package.description }}</span>
+                                    <span class="studio-muted">{{ package.description_key ? package.description_key|trans : package.description }}</span>
+                                {% endif %}
+                                {% if package.author %}
+                                    <br>
+                                    <span class="studio-muted">{{ 'admin.packages.meta.author'|trans({'%author%': package.author}) }}</span>
                                 {% endif %}
                             </th>
                             <td>
