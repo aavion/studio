@@ -112,6 +112,8 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Package management');
         self::assertSelectorTextContains('.studio-backend-nav', 'Packages');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/packages"][aria-current="page"]');
+        self::assertSelectorExists('.studio-backend-nav .is-collapsed a[href="/admin/settings"][aria-expanded="false"]');
+        self::assertSelectorNotExists('.studio-backend-nav a[href="/admin/settings/general"]');
 
         $client->request('GET', '/admin/themes');
 
@@ -146,7 +148,7 @@ final class BackendControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'General settings');
         self::assertSelectorTextContains('.studio-backend-nav', 'Settings');
-        self::assertSelectorExists('.studio-backend-nav .is-active-ancestor a[href="/admin/settings"]');
+        self::assertSelectorExists('.studio-backend-nav .is-active-ancestor a[href="/admin/settings"][aria-expanded="true"]');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/general"][aria-current="page"]');
         self::assertSelectorExists('form#admin-settings-general');
         self::assertStringContainsString('name="site.title"', (string) $client->getResponse()->getContent());
