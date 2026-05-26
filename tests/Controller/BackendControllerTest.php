@@ -6,6 +6,7 @@ namespace App\Tests\Controller;
 
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
+use App\Setup\SetupCompletionMarker;
 use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
 use App\View\Injection\StaticViewInjection;
 use App\View\Injection\ViewSurface;
@@ -17,12 +18,23 @@ final class BackendControllerTest extends WebTestCase
 {
     public function testSetupRouteRendersWithoutAuthentication(): void
     {
-        $client = self::createClient();
-        $client->request('GET', '/setup');
+        $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
+        $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
+        $previousPutenvValue = getenv(SetupCompletionMarker::KEY);
 
-        self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.studio-setup-shell');
-        self::assertSelectorTextContains('h1', 'Setup');
+        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
+        putenv(SetupCompletionMarker::KEY);
+
+        try {
+            $client = self::createClient();
+            $client->request('GET', '/setup');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('.studio-setup-shell');
+            self::assertSelectorTextContains('h1', 'Setup');
+        } finally {
+            $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
+        }
     }
 
     public function testAdminRouteRequiresAdministrativeAccess(): void
@@ -135,5 +147,26 @@ final class BackendControllerTest extends WebTestCase
         $entityManager->flush();
 
         return $user;
+    }
+
+    private function restoreSetupMarker(mixed $serverValue, mixed $envValue, mixed $putenvValue): void
+    {
+        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
+
+        if (null !== $serverValue) {
+            $_SERVER[SetupCompletionMarker::KEY] = $serverValue;
+        }
+
+        if (null !== $envValue) {
+            $_ENV[SetupCompletionMarker::KEY] = $envValue;
+        }
+
+        if (is_string($putenvValue)) {
+            putenv(SetupCompletionMarker::KEY.'='.$putenvValue);
+
+            return;
+        }
+
+        putenv(SetupCompletionMarker::KEY);
     }
 }

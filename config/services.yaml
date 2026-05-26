@@ -36,6 +36,11 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Setup\SetupRedirectSubscriber:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
     App\Backend\BackendRouteResolver:
         arguments:
             $projectDir: '%kernel.project_dir%'

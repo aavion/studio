@@ -11,11 +11,17 @@ use PHPUnit\Framework\TestCase;
 final class SetupCompletionMarkerTest extends TestCase
 {
     private string $root;
+    private mixed $previousServerValue = null;
+    private mixed $previousEnvValue = null;
+    private mixed $previousPutenvValue = false;
 
     protected function setUp(): void
     {
         $this->root = sys_get_temp_dir().'/studio-setup-marker-'.bin2hex(random_bytes(6));
         mkdir($this->root, 0777, true);
+        $this->previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
+        $this->previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
+        $this->previousPutenvValue = getenv(SetupCompletionMarker::KEY);
         unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
         putenv(SetupCompletionMarker::KEY);
     }
@@ -25,8 +31,7 @@ final class SetupCompletionMarkerTest extends TestCase
         if (is_dir($this->root)) {
             $this->removeDirectory($this->root);
         }
-        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
-        putenv(SetupCompletionMarker::KEY);
+        $this->restoreEnvironment();
     }
 
     public function testItKeepsSetupOpenWithoutMarker(): void
@@ -82,5 +87,26 @@ final class SetupCompletionMarkerTest extends TestCase
         }
 
         rmdir($path);
+    }
+
+    private function restoreEnvironment(): void
+    {
+        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
+
+        if (null !== $this->previousServerValue) {
+            $_SERVER[SetupCompletionMarker::KEY] = $this->previousServerValue;
+        }
+
+        if (null !== $this->previousEnvValue) {
+            $_ENV[SetupCompletionMarker::KEY] = $this->previousEnvValue;
+        }
+
+        if (is_string($this->previousPutenvValue)) {
+            putenv(SetupCompletionMarker::KEY.'='.$this->previousPutenvValue);
+
+            return;
+        }
+
+        putenv(SetupCompletionMarker::KEY);
     }
 }
