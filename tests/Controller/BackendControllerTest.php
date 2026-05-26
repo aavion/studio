@@ -87,6 +87,12 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('.studio-backend-nav', 'Settings');
         self::assertSelectorExists('.studio-backend-nav .is-active-ancestor a[href="/admin/settings"]');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/global"][aria-current="page"]');
+
+        $client->request('GET', '/admin/settings/packages');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Package settings');
+        self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/packages"][aria-current="page"]');
     }
 
     public function testAdminStaticViewInjectionsRenderThroughBackendRegistry(): void

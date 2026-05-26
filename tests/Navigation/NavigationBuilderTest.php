@@ -252,7 +252,7 @@ final class NavigationBuilderTest extends KernelTestCase
         self::assertSame(['/admin', '/admin/packages', '/admin/settings'], array_column($navigation, 'url'));
         self::assertFalse($navigation[0]['active']);
         self::assertTrue($navigation[1]['active']);
-        self::assertSame(['admin.navigation.global_settings'], array_column($navigation[2]['children'], 'label'));
+        self::assertSame(['admin.navigation.global_settings', 'admin.navigation.package_settings'], array_column($navigation[2]['children'], 'label'));
     }
 
     public function testItFiltersNavigationItemsByAccessLevel(): void

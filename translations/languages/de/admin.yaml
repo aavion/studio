@@ -11,6 +11,7 @@ admin:
     packages: 'Packages'
     settings: 'Einstellungen'
     global_settings: 'Global'
+    package_settings: 'Pakete'
   dashboard:
     title: 'Admin-Dashboard'
     foundation_title: 'Backend-Fundament'
@@ -27,9 +28,15 @@ admin:
       title: 'Globale Einstellungen'
       foundation_title: 'Globales Konfigurationsfundament'
       foundation_text: 'Globale Konfiguration wird hier über den gemeinsamen Konfigurations-Layer verwaltet.'
+    packages:
+      title: 'Paket-Einstellungen'
+      foundation_title: 'Pakete mit Einstellungen'
+      empty: 'Noch kein aktives Paket stellt Einstellungen bereit.'
     package:
       title: 'Einstellungen für %package%'
       foundation_title: 'Paket-Einstellungen'
       empty: 'Dieses Paket stellt keine konfigurierbaren Einstellungen bereit.'
+      options: '%count% Option(en)'
+      validation: '%count% Validierungsregel(n)'
   message:
     title: 'Admin-Route'

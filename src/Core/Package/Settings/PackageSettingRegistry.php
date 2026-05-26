@@ -60,7 +60,7 @@ final readonly class PackageSettingRegistry
     }
 
     /**
-     * @return array<string, array{label: string, description: string|null}>
+     * @return array<string, array{label: string, description: string|null, path: string}>
      */
     public function packagesWithDefinitions(): array
     {
@@ -73,6 +73,7 @@ final readonly class PackageSettingRegistry
             $result[$packageName] = [
                 'label' => $packages[$packageName]['label'] ?? $packageName,
                 'description' => $packages[$packageName]['description'] ?? null,
+                'path' => '/admin/settings/packages/'.$packageName,
             ];
         }
 

@@ -12,8 +12,9 @@ use App\Core\Validation\Identifier;
 final readonly class PackageSettingDefinition
 {
     /**
-     * @param array<string, mixed> $metadata
      * @param list<string|int|float|bool> $options
+     * @param array<string, mixed> $validation
+     * @param array<string, mixed> $metadata
      */
     public function __construct(
         private string $packageName,
@@ -23,6 +24,8 @@ final readonly class PackageSettingDefinition
         private ConfigValueType $valueType = ConfigValueType::String,
         private ?string $description = null,
         private array $options = [],
+        private ?PackageSettingInputType $inputType = null,
+        private array $validation = [],
         private array $metadata = [],
         private int $sortOrder = 0,
     ) {
@@ -68,6 +71,19 @@ final readonly class PackageSettingDefinition
         return $this->options;
     }
 
+    public function inputType(): PackageSettingInputType
+    {
+        return $this->inputType ?? PackageSettingInputType::infer($this->valueType, $this->options);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function validation(): array
+    {
+        return $this->validation;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -92,9 +108,11 @@ final readonly class PackageSettingDefinition
             'label' => $this->label,
             'description' => $this->description,
             'type' => $this->valueType->value,
+            'input_type' => $this->inputType()->value,
             'value' => $value ?? $this->defaultValue,
             'default' => $this->defaultValue,
             'options' => $this->options,
+            'validation' => $this->validation,
             'metadata' => $this->metadata,
             'sort_order' => $this->sortOrder,
         ];

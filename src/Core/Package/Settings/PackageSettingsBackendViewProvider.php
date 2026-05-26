@@ -30,7 +30,7 @@ final readonly class PackageSettingsBackendViewProvider implements BackendViewPr
                 $metadata['label'],
                 '@backend/admin/settings/package.html.twig',
                 $sortOrder,
-                parentUid: 'backend-admin-settings',
+                parentUid: 'backend-admin-settings-packages',
                 minimumAccessLevel: 8,
                 context: [
                     'package_name' => $packageName,

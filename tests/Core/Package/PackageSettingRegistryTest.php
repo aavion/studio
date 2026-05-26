@@ -9,6 +9,7 @@ use App\Core\Package\ActivePackageProviderInterface;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
 use App\Core\Package\Settings\PackageSettingDefinition;
+use App\Core\Package\Settings\PackageSettingInputType;
 use App\Core\Package\Settings\PackageSettingProviderInterface;
 use App\Core\Package\Settings\PackageSettingRegistry;
 use App\Entity\ExtensionPackage;
@@ -20,7 +21,16 @@ final class PackageSettingRegistryTest extends TestCase
     {
         $registry = new PackageSettingRegistry(
             [new StaticPackageSettingProvider([
-                new PackageSettingDefinition('active-module', 'display.mode', 'Display mode', 'compact', ConfigValueType::String, sortOrder: 20),
+                new PackageSettingDefinition(
+                    'active-module',
+                    'display.mode',
+                    'Display mode',
+                    'compact',
+                    ConfigValueType::String,
+                    options: ['compact', 'comfortable'],
+                    validation: ['required' => true],
+                    sortOrder: 20,
+                ),
                 new PackageSettingDefinition('inactive-module', 'display.mode', 'Display mode', 'compact'),
                 new PackageSettingDefinition('active-module', 'feature.enabled', 'Feature enabled', true, ConfigValueType::Boolean, sortOrder: 10),
             ])],
@@ -45,10 +55,16 @@ final class PackageSettingRegistryTest extends TestCase
             static fn (PackageSettingDefinition $definition): string => $definition->key(),
             $definitions,
         ));
+        self::assertSame(PackageSettingInputType::Checkbox, $definitions[0]->inputType());
+        self::assertSame(PackageSettingInputType::Select, $definitions[1]->inputType());
+        self::assertSame(['required' => true], $definitions[1]->validation());
+        self::assertSame('select', $definitions[1]->toArray()['input_type']);
+        self::assertSame(['compact', 'comfortable'], $definitions[1]->toArray()['options']);
         self::assertSame([
             'active-module' => [
                 'label' => 'Active Module',
                 'description' => 'Adds configurable active module behavior.',
+                'path' => '/admin/settings/packages/active-module',
             ],
         ], $registry->packagesWithDefinitions());
     }

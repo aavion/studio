@@ -30,8 +30,15 @@
                     <dd>
                         <code>{{ setting.key }}</code>
                         <span class="studio-muted">{{ setting.type }}</span>
+                        <span class="studio-muted">{{ setting.input_type }}</span>
                         {% if setting.description %}
                             <p class="studio-muted">{{ setting.description|trans }}</p>
+                        {% endif %}
+                        {% if setting.options|length > 0 %}
+                            <p class="studio-muted">{{ 'admin.settings.package.options'|trans({'%count%': setting.options|length}) }}</p>
+                        {% endif %}
+                        {% if setting.validation|length > 0 %}
+                            <p class="studio-muted">{{ 'admin.settings.package.validation'|trans({'%count%': setting.validation|length}) }}</p>
                         {% endif %}
                     </dd>
                 {% endfor %}

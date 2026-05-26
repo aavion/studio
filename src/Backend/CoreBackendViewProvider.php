@@ -52,6 +52,16 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 minimumAccessLevel: 8,
             ),
             new BackendViewDefinition(
+                'backend-admin-settings-packages',
+                BackendArea::Admin,
+                'settings/packages',
+                'admin.navigation.package_settings',
+                '@backend/admin/settings/packages.html.twig',
+                20,
+                parentUid: 'backend-admin-settings',
+                minimumAccessLevel: 8,
+            ),
+            new BackendViewDefinition(
                 'backend-editor-dashboard',
                 BackendArea::Editor,
                 '',

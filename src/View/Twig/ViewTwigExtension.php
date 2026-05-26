@@ -62,6 +62,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             new TwigFunction('studio_html_attributes', $this->htmlAttributes(...), ['is_safe' => ['html']]),
             new TwigFunction('studio_navigation', $this->navigation(...)),
             new TwigFunction('studio_package_settings', $this->packageSettings(...)),
+            new TwigFunction('studio_package_setting_packages', $this->packageSettingPackages(...)),
             new TwigFunction('studio_debug_info', $this->debugInfo(...)),
         ];
     }
@@ -127,6 +128,25 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
     public function packageSettings(string $packageName): array
     {
         return $this->packageSettings->viewRows($packageName, $this->packageSettingRegistry);
+    }
+
+    /**
+     * @return list<array{package_name: string, label: string, description: string|null, path: string}>
+     */
+    public function packageSettingPackages(): array
+    {
+        $packages = [];
+
+        foreach ($this->packageSettingRegistry->packagesWithDefinitions() as $packageName => $metadata) {
+            $packages[] = [
+                'package_name' => $packageName,
+                'label' => $metadata['label'],
+                'description' => $metadata['description'],
+                'path' => $metadata['path'],
+            ];
+        }
+
+        return $packages;
     }
 
     /**
