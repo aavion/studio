@@ -16,6 +16,7 @@
         "doctrine/orm": "^3.6.7",
         "geoip2/geoip2": "^3.3",
         "justinrainbow/json-schema": "^6.8.2",
+        "league/commonmark": "^2.8.2",
         "league/flysystem-bundle": "^3.7",
         "mck89/peast": "^1.17.6",
         "phpdocumentor/reflection-docblock": "^6.0.3",

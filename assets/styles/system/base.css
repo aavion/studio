@@ -446,28 +446,271 @@ html {
     pointer-events: none;
 }
 
+.studio-package-hero {
+    position: relative;
+    overflow: hidden;
+    max-height: 18rem;
+    margin: 0 0 1rem;
+    border: var(--studio-border);
+    border-radius: var(--studio-radius);
+    background: var(--color-gray-100);
+}
+
+.studio-package-hero::after {
+    position: absolute;
+    inset: auto 0 0;
+    height: 45%;
+    background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-ink) 24%, transparent));
+    content: "";
+    pointer-events: none;
+}
+
+.studio-package-hero img {
+    display: block;
+    width: 100%;
+    max-height: 18rem;
+    object-fit: cover;
+}
+
+.studio-typography-guide {
+    @apply grid gap-6;
+}
+
+.studio-typography-section {
+    @apply grid gap-4;
+}
+
+.studio-typography-section > header {
+    @apply grid gap-1;
+}
+
+.studio-typography-section > header h2 {
+    @apply m-0 text-xl font-extrabold leading-tight;
+}
+
+.studio-typography-examples {
+    @apply grid gap-4;
+}
+
+.studio-markdown-example {
+    @apply grid gap-3 rounded-lg border p-4;
+    border-color: var(--color-line);
+    background: var(--color-gray-50);
+}
+
+.studio-markdown-example h3 {
+    @apply m-0 text-base font-extrabold leading-tight;
+}
+
+.studio-markdown-example-grid {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+}
+
+.studio-markdown-source,
+.studio-markdown-result {
+    @apply min-w-0 rounded-lg border p-4;
+    border-color: var(--color-line);
+    background: var(--color-paper);
+}
+
+.studio-markdown-source pre {
+    @apply m-0 overflow-x-auto rounded-lg p-4 text-sm leading-6;
+    background: var(--color-gray-100);
+}
+
+.studio-markdown-source code {
+    @apply whitespace-pre bg-transparent p-0;
+    color: #243244;
+}
+
+.studio-markdown,
+.studio-rich-text {
+    @apply text-base leading-7;
+}
+
+.studio-markdown > *:first-child,
 .studio-rich-text > *:first-child {
-    margin-top: 0;
+    @apply mt-0;
 }
 
+.studio-markdown > *:last-child,
 .studio-rich-text > *:last-child {
-    margin-bottom: 0;
+    @apply mb-0;
 }
 
+.studio-markdown p,
+.studio-rich-text p {
+    @apply my-4;
+}
+
+.studio-markdown h1,
+.studio-markdown h2,
+.studio-markdown h3,
+.studio-markdown h4,
+.studio-markdown h5,
+.studio-markdown h6 {
+    @apply mb-3 mt-6 scroll-mt-24 font-extrabold leading-tight;
+    color: var(--color-ink);
+}
+
+.studio-markdown h1 {
+    @apply text-3xl;
+}
+
+.studio-markdown h2 {
+    @apply border-b pb-2 text-2xl;
+    border-color: var(--color-line);
+}
+
+.studio-markdown h3 {
+    @apply text-xl;
+}
+
+.studio-markdown h4 {
+    @apply text-lg;
+}
+
+.studio-markdown h5,
+.studio-markdown h6 {
+    @apply text-base uppercase;
+    letter-spacing: 0;
+}
+
+.studio-markdown .heading-permalink {
+    @apply ml-2 text-sm no-underline opacity-0 transition-opacity;
+}
+
+.studio-markdown :is(h1, h2, h3, h4, h5, h6):hover .heading-permalink,
+.studio-markdown .heading-permalink:focus-visible {
+    @apply opacity-100;
+}
+
+.studio-markdown blockquote {
+    @apply my-4 border-l-4 px-4 py-3;
+    border-color: var(--color-primary-action);
+    background: var(--color-primary-soft);
+    color: var(--color-gray-700);
+}
+
+.studio-markdown ul,
+.studio-markdown ol {
+    @apply my-4 pl-6;
+}
+
+.studio-markdown ul {
+    @apply list-disc;
+}
+
+.studio-markdown ol {
+    @apply list-decimal;
+}
+
+.studio-markdown li {
+    @apply my-1 pl-1;
+}
+
+.studio-markdown li > input[type="checkbox"] {
+    @apply mr-2 align-middle;
+}
+
+.studio-markdown a,
 .studio-rich-text a {
+    @apply font-bold underline underline-offset-2;
     color: var(--color-primary-strong);
-    font-weight: 700;
 }
 
+.studio-markdown code,
 .studio-rich-text code,
 .studio-code-block {
-    border-radius: var(--studio-radius-sm);
+    @apply rounded px-1 py-0.5 text-sm;
     background: var(--color-gray-100);
     color: #243244;
 }
 
-.studio-rich-text code {
-    padding: 0.125rem 0.25rem;
+.studio-markdown pre {
+    @apply my-4 overflow-x-auto rounded-lg p-4;
+    background: var(--color-gray-100);
+}
+
+.studio-markdown pre code {
+    @apply rounded-none bg-transparent p-0 text-sm;
+}
+
+.studio-markdown table {
+    @apply my-4 w-full border-collapse text-left text-sm;
+}
+
+.studio-markdown th,
+.studio-markdown td {
+    @apply border px-3 py-2 align-top;
+    border-color: var(--color-line);
+}
+
+.studio-markdown th {
+    @apply font-extrabold;
+    background: var(--color-gray-50);
+}
+
+.studio-markdown dl {
+    @apply my-4 grid gap-2;
+}
+
+.studio-markdown dt {
+    @apply font-extrabold;
+}
+
+.studio-markdown dd {
+    @apply ml-0 border-l-4 pl-4;
+    border-color: var(--color-line);
+}
+
+.studio-markdown mark {
+    @apply rounded px-1 py-0.5;
+    background: color-mix(in srgb, var(--color-warning) 24%, transparent);
+    color: var(--color-ink);
+}
+
+.studio-markdown hr {
+    @apply my-6 border-0 border-t;
+    border-color: var(--color-line);
+}
+
+.studio-markdown img {
+    @apply my-4 h-auto max-w-full rounded-lg;
+}
+
+.studio-markdown .studio-markdown-toc {
+    @apply my-4 rounded-lg border p-4;
+    border-color: var(--color-line);
+    background: var(--color-gray-50);
+}
+
+.studio-markdown .footnotes {
+    @apply mt-8 border-t pt-4 text-sm;
+    border-color: var(--color-line);
+}
+
+.studio-markdown .studio-demo-callout,
+.studio-markdown .studio-demo-attribute {
+    @apply my-4 rounded-lg border p-4;
+    border-color: var(--color-line);
+    background: var(--color-gray-50);
+}
+
+.studio-markdown-embed {
+    margin-block: 1rem;
+    overflow: hidden;
+    border: var(--studio-border);
+    border-radius: var(--studio-radius);
+    background: var(--color-gray-100);
+    aspect-ratio: 16 / 9;
+}
+
+.studio-markdown-embed iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
 }
 
 .studio-code-block {
