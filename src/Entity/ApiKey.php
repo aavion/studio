@@ -87,6 +87,16 @@ class ApiKey
         return $this->status;
     }
 
+    public function createdAt(): DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function revokedAt(): ?DateTimeImmutable
+    {
+        return $this->revokedAt;
+    }
+
     public function revoke(?DateTimeImmutable $revokedAt = null): void
     {
         $this->status = ApiKeyStatus::Revoked;

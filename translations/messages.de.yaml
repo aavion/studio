@@ -34,14 +34,20 @@ ui:
     empty_state:
         title: 'Nichts anzuzeigen'
     user:
+        navigation:
+            account: Account
+            admin: Admin
+            studio: Studio
         login:
             title: Anmelden
             placeholder: 'Nutze deine Zugangsdaten, um fortzufahren.'
             username: Username
             password: Passwort
             submit: Anmelden
+            invalid_credentials: 'Username oder Passwort ist nicht gültig.'
         register:
             title: 'Account erstellen'
+            link: 'Account erstellen'
             placeholder: 'Registrierung wird verfügbar, sobald Nutzer-Flows aktiviert sind.'
         password_reset:
             title: 'Passwort zurücksetzen'
@@ -49,6 +55,39 @@ ui:
         profile:
             title: Profil
             placeholder: 'Profileinstellungen werden verfügbar, sobald Account-Flows aktiviert sind.'
+            username: Username
+            email: E-Mail
+            access_level: Access-Level
+        password:
+            title: 'Passwort ändern'
+            placeholder: 'Aktualisiere das Passwort für deinen Account.'
+            current_password: 'Aktuelles Passwort'
+            new_password: 'Neues Passwort'
+            new_password_help: 'Nutze mindestens 12 Zeichen.'
+            confirm_password: 'Neues Passwort bestätigen'
+            submit: 'Passwort aktualisieren'
+            success: 'Dein Passwort wurde aktualisiert.'
+            errors:
+                invalid_csrf: 'Das Passwortformular ist abgelaufen. Bitte versuche es erneut.'
+                current_password: 'Das aktuelle Passwort ist nicht korrekt.'
+                new_password_length: 'Das neue Passwort muss mindestens 12 Zeichen enthalten.'
+                password_mismatch: 'Die neuen Passwörter stimmen nicht überein.'
+        api_keys:
+            title: API-Keys
+            subtitle: 'Verwalte persönlichen API-Zugriff für deinen Account.'
+            empty_title: 'Keine API-Keys'
+            empty_message: 'Diesem Account sind noch keine API-Keys zugeordnet.'
+            prefix: Prefix
+            status: Status
+            created_at: Erstellt
+            revoked_at: Widerrufen
+        invitations:
+            title: Einladungen
+            placeholder: 'Einladungs- und Onboarding-Flows werden später hier angebunden.'
+            empty_title: 'Keine Einladungen'
+            empty_message: 'Einladungen sind noch nicht aktiviert.'
+        logout:
+            title: Abmelden
     error:
         default:
             title: 'Anfrage fehlgeschlagen'

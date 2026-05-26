@@ -1,0 +1,16 @@
+{% extends '@frontend/frontend.html.twig' %}
+
+{% block title %}{{ 'ui.user.invitations.title'|trans }}{% endblock %}
+
+{% block frontend_body %}
+    <section class="studio-auth-panel">
+        {% include '@frontend/partials/typography/_page-header.html.twig' with {
+            title: 'ui.user.invitations.title'|trans,
+            subtitle: 'ui.user.invitations.placeholder'|trans,
+        } only %}
+        {% include '@frontend/partials/feedback/_empty-state.html.twig' with {
+            title: 'ui.user.invitations.empty_title'|trans,
+            message: 'ui.user.invitations.empty_message'|trans,
+        } only %}
+    </section>
+{% endblock %}

@@ -136,6 +136,29 @@
     line-height: var(--studio-leading-copy);
 }
 
+.studio-user-summary {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.studio-user-summary div {
+    display: grid;
+    gap: 0.25rem;
+    padding-block: 0.75rem;
+    border-bottom: var(--studio-border);
+}
+
+.studio-user-summary dt {
+    color: var(--color-muted);
+    font-size: var(--studio-text-sm);
+    font-weight: 750;
+}
+
+.studio-user-summary dd {
+    margin: 0;
+}
+
 .studio-content-page {
     width: min(100% - 2rem, 960px);
     margin: 0 auto;

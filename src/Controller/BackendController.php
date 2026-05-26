@@ -10,6 +10,7 @@ use App\Backend\BackendRouteResolver;
 use App\Core\Access\AccessActor;
 use App\Entity\UserAccount;
 use App\Navigation\NavigationBuilder;
+use App\View\Http\HttpErrorRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,6 +22,7 @@ final class BackendController extends AbstractController
         private readonly BackendRouteResolver $routeResolver,
         private readonly BackendAccessGuard $accessGuard,
         private readonly NavigationBuilder $navigationBuilder,
+        private readonly HttpErrorRenderer $httpError,
     ) {
     }
 
@@ -65,11 +67,10 @@ final class BackendController extends AbstractController
         $decision = $this->accessGuard->decide($area, $this->getUser());
 
         if (!$decision->isGranted()) {
-            return $this->render($area->messageTemplate(), [
-                'area' => $area,
-                'message' => $decision->message()->toArray(),
-                'navigation' => $this->navigation($request, $area),
-            ], new Response(status: Response::HTTP_FORBIDDEN));
+            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+                'area' => $area->value,
+                'access_decision' => $decision->toArray(),
+            ]);
         }
 
         $result = $this->routeResolver->resolve($area, $path);

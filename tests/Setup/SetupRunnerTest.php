@@ -76,6 +76,9 @@ final class SetupRunnerTest extends TestCase
         $language = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'localization.default_language'")->fetchColumn();
         $homePath = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'content.home_path'")->fetchColumn();
         $defaultAclGroup = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.default_acl_group'")->fetchColumn();
+        $userMenuEnabled = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.menu.enabled'")->fetchColumn();
+        $userMenuSortOrder = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.menu.sort_order'")->fetchColumn();
+        $registrationEnabled = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.registration.enabled'")->fetchColumn();
         $aclGroups = $pdo->query('SELECT identifier, access_level, locked, allow_empty FROM acl_group ORDER BY access_level')->fetchAll(PDO::FETCH_ASSOC);
         $passwordHash = $pdo->query("SELECT password_hash FROM user_account WHERE username = 'admin'")->fetchColumn();
         $stateMarkers = $pdo->query("SELECT marker_key, marker_value FROM state_marker WHERE subject_type = 'user_account' ORDER BY marker_key")->fetchAll(PDO::FETCH_KEY_PAIR);
@@ -86,6 +89,9 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('de', json_decode((string) $language, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame('/home', json_decode((string) $homePath, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame('registered', json_decode((string) $defaultAclGroup, true, flags: JSON_THROW_ON_ERROR));
+        self::assertTrue(json_decode((string) $userMenuEnabled, true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame(900, json_decode((string) $userMenuSortOrder, true, flags: JSON_THROW_ON_ERROR));
+        self::assertFalse(json_decode((string) $registrationEnabled, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame([
             ['identifier' => 'registered', 'access_level' => 1, 'locked' => 1, 'allow_empty' => 1],
             ['identifier' => 'editor', 'access_level' => 3, 'locked' => 0, 'allow_empty' => 1],
@@ -257,6 +263,9 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('de', $entries[4]['context']['settings']['localization.default_language']);
         self::assertSame('/home', $entries[4]['context']['settings']['content.home_path']);
         self::assertSame('registered', $entries[4]['context']['settings']['user.default_acl_group']);
+        self::assertTrue($entries[4]['context']['settings']['user.menu.enabled']);
+        self::assertSame(900, $entries[4]['context']['settings']['user.menu.sort_order']);
+        self::assertFalse($entries[4]['context']['settings']['user.registration.enabled']);
     }
 
     public function testDryRunMasksDatabasePasswordsInActionLogContext(): void

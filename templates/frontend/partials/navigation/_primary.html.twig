@@ -3,8 +3,14 @@
         <ul class="studio-frontend-navigation-list">
             {% for item in items %}
                 {% if item.label is not empty %}
-                    <li class="studio-frontend-navigation-item studio-frontend-navigation-level-{{ item.level }}">
-                        <a class="studio-frontend-navigation-link" href="{{ item.url }}">{{ item.label }}</a>
+                    {% set item_classes = [
+                        'studio-frontend-navigation-item',
+                        'studio-frontend-navigation-level-' ~ item.level,
+                        item.active ? 'is-active' : '',
+                        item.active_ancestor ? 'is-active-ancestor' : '',
+                    ]|filter(item_class => item_class is not empty)|join(' ') %}
+                    <li class="{{ item_classes }}">
+                        <a class="studio-frontend-navigation-link" href="{{ item.url }}" {% if item.active %}aria-current="page"{% endif %}>{{ item.label|trans }}</a>
                         {{ _self.render_items(item.children) }}
                     </li>
                 {% endif %}

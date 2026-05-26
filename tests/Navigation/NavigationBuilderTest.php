@@ -8,6 +8,7 @@ use App\Core\Access\AccessActor;
 use App\Navigation\Event\NavigationBuilderEvent;
 use App\Navigation\NavigationBuilder;
 use App\Navigation\NavigationItem;
+use Doctrine\DBAL\Connection;
 use RuntimeException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -18,10 +19,10 @@ final class NavigationBuilderTest extends KernelTestCase
     {
         self::bootKernel();
 
-        $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'en');
+        $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'en', actor: AccessActor::anonymous());
 
-        self::assertSame(['Home', 'About', 'News'], array_column($navigation, 'label'));
-        self::assertSame(['/', '/about', '/news/first-update'], array_column($navigation, 'url'));
+        self::assertSame(['Home', 'About', 'News', 'ui.user.login.title'], array_column($navigation, 'label'));
+        self::assertSame(['/', '/about', '/news/first-update', '/user/login'], array_column($navigation, 'url'));
     }
 
     public function testItDispatchesNavigationBuilderHook(): void
@@ -47,7 +48,7 @@ final class NavigationBuilderTest extends KernelTestCase
             },
         );
 
-        $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'en');
+        $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'en', actor: AccessActor::anonymous());
 
         self::assertSame('Docs', $navigation[3]['label']);
         self::assertSame('/docs', $navigation[3]['url']);
@@ -95,9 +96,9 @@ final class NavigationBuilderTest extends KernelTestCase
             },
         );
 
-        $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'en');
+        $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'en', actor: AccessActor::anonymous());
 
-        self::assertSame(['Home', 'About', 'Packages', 'News'], array_column($navigation, 'label'));
+        self::assertSame(['Home', 'About', 'Packages', 'News', 'ui.user.login.title'], array_column($navigation, 'label'));
         self::assertSame(['Alpha', 'Beta'], array_column($navigation[1]['children'], 'label'));
         self::assertSame('Package Child', $navigation[2]['children'][0]['label']);
     }
@@ -129,12 +130,14 @@ final class NavigationBuilderTest extends KernelTestCase
 
         $items = self::getContainer()->get(NavigationBuilder::class)->collectItems('main', 'en');
 
-        self::assertSame(
-            ['Home', 'About', 'News', 'Module Root', 'Module Child'],
-            array_map(static fn (NavigationItem $item): string => $item->label(), $items),
-        );
-        self::assertSame('30000000-0000-0000-0000-000000000995', $items[4]->parentUid());
-        self::assertSame([], $items[4]->children());
+        self::assertContains('Module Root', array_map(static fn (NavigationItem $item): string => $item->label(), $items));
+        self::assertContains('Module Child', array_map(static fn (NavigationItem $item): string => $item->label(), $items));
+        $moduleChild = array_values(array_filter(
+            $items,
+            static fn (NavigationItem $item): bool => 'Module Child' === $item->label(),
+        ))[0];
+        self::assertSame('30000000-0000-0000-0000-000000000995', $moduleChild->parentUid());
+        self::assertSame([], $moduleChild->children());
     }
 
     public function testItLimitsNavigationDepth(): void
@@ -156,7 +159,13 @@ final class NavigationBuilderTest extends KernelTestCase
 
         $this->addDeepAboutNavigation();
 
-        $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'en', maxDepth: 2, startLevel: 2);
+        $navigation = self::getContainer()->get(NavigationBuilder::class)->build(
+            'main',
+            'en',
+            maxDepth: 2,
+            startLevel: 2,
+            actor: AccessActor::anonymous(),
+        );
 
         self::assertSame(['Team'], array_column($navigation, 'label'));
         self::assertSame(2, $navigation[0]['level']);
@@ -261,6 +270,57 @@ final class NavigationBuilderTest extends KernelTestCase
         self::assertNotContains('Blocked', array_column($navigation, 'label'));
     }
 
+    public function testItAddsUserNavigationWithAccessAwareChildren(): void
+    {
+        self::bootKernel();
+
+        $anonymousNavigation = self::getContainer()->get(NavigationBuilder::class)->build(
+            'main',
+            actor: AccessActor::anonymous(),
+        );
+        $account = $anonymousNavigation[3];
+
+        self::assertSame('ui.user.login.title', $account['label']);
+        self::assertSame('/user/login', $account['url']);
+        self::assertSame([], $account['children']);
+
+        $editorNavigation = self::getContainer()->get(NavigationBuilder::class)->build(
+            'main',
+            actor: AccessActor::fromAccess(3, userUid: '10000000-0000-0000-0000-000000000001'),
+        );
+        $account = $editorNavigation[3];
+
+        self::assertSame('ui.user.profile.title', $account['label']);
+        self::assertSame(['ui.user.api_keys.title', 'ui.user.invitations.title', 'ui.user.navigation.studio', 'ui.user.logout.title'], array_column($account['children'], 'label'));
+        self::assertNotContains('ui.user.login.title', array_column($account['children'], 'label'));
+        self::assertNotContains('ui.user.navigation.admin', array_column($account['children'], 'label'));
+
+        $adminNavigation = self::getContainer()->get(NavigationBuilder::class)->build(
+            'main',
+            actor: AccessActor::fromAccess(8, userUid: '10000000-0000-0000-0000-000000000002'),
+        );
+        $account = $adminNavigation[3];
+
+        self::assertContains('ui.user.navigation.admin', array_column($account['children'], 'label'));
+    }
+
+    public function testItCanDisableSystemUserNavigation(): void
+    {
+        self::bootKernel();
+        $this->setConfig('user.menu.enabled', false, 'boolean');
+
+        try {
+            $navigation = self::getContainer()->get(NavigationBuilder::class)->build(
+                'main',
+                actor: AccessActor::anonymous(),
+            );
+
+            self::assertNotContains('ui.user.login.title', array_column($navigation, 'label'));
+        } finally {
+            $this->setConfig('user.menu.enabled', true, 'boolean');
+        }
+    }
+
     private function addDeepAboutNavigation(): void
     {
         self::getContainer()->get(EventDispatcherInterface::class)->addListener(
@@ -291,6 +351,15 @@ final class NavigationBuilderTest extends KernelTestCase
                     10,
                 ));
             },
+        );
+    }
+
+    private function setConfig(string $key, mixed $value, string $type): void
+    {
+        self::getContainer()->get(Connection::class)->update(
+            'config_entry',
+            ['value' => json_encode($value, JSON_THROW_ON_ERROR), 'value_type' => $type],
+            ['config_key' => $key],
         );
     }
 }

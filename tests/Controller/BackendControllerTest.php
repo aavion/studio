@@ -26,8 +26,9 @@ final class BackendControllerTest extends WebTestCase
         $client = self::createClient();
         $client->request('GET', '/admin');
 
-        self::assertResponseStatusCodeSame(403);
-        self::assertSelectorTextContains('.studio-alert', 'Access denied');
+        self::assertResponseStatusCodeSame(401);
+        self::assertSelectorTextContains('h1', 'Sign in');
+        self::assertSelectorTextContains('.studio-auth-notice', 'This content is only available after signing in with sufficient access.');
     }
 
     public function testAdminRouteAllowsAccessLevelEight(): void
@@ -53,7 +54,9 @@ final class BackendControllerTest extends WebTestCase
 
         $client->request('GET', '/admin');
 
-        self::assertResponseStatusCodeSame(403);
+        self::assertResponseStatusCodeSame(401);
+        self::assertSelectorTextContains('h1', 'Sign in required');
+        self::assertSelectorNotExists('.studio-auth-panel');
     }
 
     public function testAuthenticatedBackendAreaReturnsMessageForUnknownRoute(): void
@@ -69,17 +72,11 @@ final class BackendControllerTest extends WebTestCase
     private function createUserWithLevel(int $level): UserAccount
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $group = $entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => 'level_'.$level]);
+        $group = $entityManager->getRepository(AclGroup::class)->findOneBy([
+            'identifier' => $level >= 8 ? 'admin' : 'editor',
+        ]);
 
-        if (!$group instanceof AclGroup) {
-            $group = new AclGroup(
-                '20000000-0000-0000-0000-00000000000'.$level,
-                'level_'.$level,
-                ['en' => 'Level '.$level],
-                $level,
-            );
-            $entityManager->persist($group);
-        }
+        self::assertInstanceOf(AclGroup::class, $group);
 
         $existingUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'testuser'.$level]);
 

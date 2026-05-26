@@ -54,6 +54,9 @@ final readonly class SetupDryRunPlanner
                     'localization.route_prefixes_enabled' => false,
                     'content.home_path' => '/home',
                     'user.default_acl_group' => 'registered',
+                    'user.menu.enabled' => true,
+                    'user.menu.sort_order' => 900,
+                    'user.registration.enabled' => false,
                 ],
             ], ActionLogStatus::Skipped],
             ['seed_admin_user', fn (): array => [

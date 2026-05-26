@@ -17,6 +17,9 @@ final class TestDatabaseConfigSeeder
             ['content.enabled_locales', ['en', 'de'], 'json'],
             ['content.default_variant', 'default', 'string'],
             ['content.revision_retention_count', 10, 'integer'],
+            ['user.menu.enabled', true, 'boolean'],
+            ['user.menu.sort_order', 900, 'integer'],
+            ['user.registration.enabled', false, 'boolean'],
         ];
 
         foreach ($entries as [$key, $value, $type]) {

@@ -1,0 +1,45 @@
+{% extends '@frontend/frontend.html.twig' %}
+
+{% block title %}{{ 'ui.user.api_keys.title'|trans }}{% endblock %}
+
+{% block frontend_body %}
+    <section class="studio-auth-panel">
+        {% include '@frontend/partials/typography/_page-header.html.twig' with {
+            title: 'ui.user.api_keys.title'|trans,
+            subtitle: 'ui.user.api_keys.subtitle'|trans,
+        } only %}
+        {% if api_keys|default([]) is empty %}
+            {% include '@frontend/partials/feedback/_empty-state.html.twig' with {
+                title: 'ui.user.api_keys.empty_title'|trans,
+                message: 'ui.user.api_keys.empty_message'|trans,
+            } only %}
+        {% else %}
+            <table class="studio-field-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'ui.user.api_keys.prefix'|trans }}</th>
+                        <th scope="col">{{ 'ui.user.api_keys.status'|trans }}</th>
+                        <th scope="col">{{ 'ui.user.api_keys.created_at'|trans }}</th>
+                        <th scope="col">{{ 'ui.user.api_keys.revoked_at'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for api_key in api_keys %}
+                        <tr>
+                            <td>{{ api_key.prefix }}</td>
+                            <td>{{ api_key.status.messageKey|trans }}</td>
+                            <td>{{ api_key.createdAt|date('Y-m-d H:i') }}</td>
+                            <td>
+                                {% if api_key.revokedAt %}
+                                    {{ api_key.revokedAt|date('Y-m-d H:i') }}
+                                {% else %}
+                                    {{ 'ui.content.empty_value'|trans }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
+{% endblock %}

@@ -18,6 +18,17 @@ security:
         main:
             lazy: true
             provider: app_user_provider
+            entry_point: App\Security\HttpErrorSecurityHandler
+            access_denied_handler: App\Security\HttpErrorSecurityHandler
+            form_login:
+                login_path: user_login
+                check_path: user_login
+                username_parameter: username
+                password_parameter: password
+                enable_csrf: true
+            logout:
+                path: user_logout
+                target: user_login
 
             # Activate different ways to authenticate:
             # https://symfony.com/doc/current/security.html#the-firewall

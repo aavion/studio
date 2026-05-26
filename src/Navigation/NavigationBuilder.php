@@ -205,6 +205,11 @@ final readonly class NavigationBuilder
 
         return array_values(array_filter($items, static function (NavigationItem $item) use ($actor): bool {
             $minLevel = $item->metadata()['min_access_level'] ?? null;
+            $anonymousOnly = $item->metadata()['anonymous_only'] ?? false;
+
+            if (true === $anonymousOnly && null !== $actor->userUid()) {
+                return false;
+            }
 
             return !is_int($minLevel) || $actor->accessLevel() >= $minLevel;
         }));

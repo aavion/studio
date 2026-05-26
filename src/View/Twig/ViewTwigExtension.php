@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\View\Twig;
 
+use App\Core\Access\AccessActor;
 use App\Core\Event\EventHookDescriptor;
 use App\Core\Event\PublicEventHookRegistry;
 use App\Debug\StudioDebugCollector;
+use App\Entity\UserAccount;
 use App\Navigation\NavigationBuilder;
 use App\View\MarkdownRenderer;
 use App\View\PackageMacroRegistry;
 use App\View\ViewContextProvider;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Twig\Extension\AbstractExtension;
 use Twig\Extension\GlobalsInterface;
 use Twig\TwigFilter;
@@ -25,6 +29,8 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         private readonly PublicEventHookRegistry $eventHookRegistry,
         private readonly NavigationBuilder $navigationBuilder,
         private readonly StudioDebugCollector $debugCollector,
+        private readonly Security $security,
+        private readonly RequestStack $requestStack,
     ) {
     }
 
@@ -85,7 +91,19 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         ?string $rootUid = null,
     ): array
     {
-        return $this->navigationBuilder->build($identifier, $language, $maxDepth, $startLevel, $rootUid);
+        $request = $this->requestStack->getCurrentRequest();
+        $activeRoute = $request?->attributes->get('_route');
+
+        return $this->navigationBuilder->build(
+            $identifier,
+            $language,
+            $maxDepth,
+            $startLevel,
+            $rootUid,
+            $this->actor(),
+            $request?->getPathInfo(),
+            is_string($activeRoute) ? $activeRoute : null,
+        );
     }
 
     /**
@@ -94,5 +112,12 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
     public function debugInfo(): array
     {
         return $this->debugCollector->summary();
+    }
+
+    private function actor(): AccessActor
+    {
+        $user = $this->security->getUser();
+
+        return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
     }
 }

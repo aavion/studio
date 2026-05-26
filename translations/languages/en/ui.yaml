@@ -17,14 +17,20 @@ ui:
   empty_state:
     title: 'Nothing to show'
   user:
+    navigation:
+      account: 'Account'
+      admin: 'Admin'
+      studio: 'Studio'
     login:
       title: 'Sign in'
       placeholder: 'Use your account credentials to continue.'
       username: 'Username'
       password: 'Password'
       submit: 'Sign in'
+      invalid_credentials: 'The username or password is not valid.'
     register:
       title: 'Create account'
+      link: 'Create an account'
       placeholder: 'Registration will be available once user flows are enabled.'
     password_reset:
       title: 'Reset password'
@@ -32,6 +38,39 @@ ui:
     profile:
       title: 'Profile'
       placeholder: 'Profile settings will be available once account flows are enabled.'
+      username: 'Username'
+      email: 'Email'
+      access_level: 'Access level'
+    password:
+      title: 'Change password'
+      placeholder: 'Update the password for your account.'
+      current_password: 'Current password'
+      new_password: 'New password'
+      new_password_help: 'Use at least 12 characters.'
+      confirm_password: 'Confirm new password'
+      submit: 'Update password'
+      success: 'Your password was updated.'
+      errors:
+        invalid_csrf: 'The password form expired. Please try again.'
+        current_password: 'The current password is not correct.'
+        new_password_length: 'The new password must contain at least 12 characters.'
+        password_mismatch: 'The new passwords do not match.'
+    api_keys:
+      title: 'API keys'
+      subtitle: 'Manage personal API access for your account.'
+      empty_title: 'No API keys'
+      empty_message: 'No API keys are assigned to this account yet.'
+      prefix: 'Prefix'
+      status: 'Status'
+      created_at: 'Created'
+      revoked_at: 'Revoked'
+    invitations:
+      title: 'Invitations'
+      placeholder: 'Invitation and onboarding flows will be connected here later.'
+      empty_title: 'No invitations'
+      empty_message: 'Invitation handling is not enabled yet.'
+    logout:
+      title: 'Sign out'
   error:
     default:
       title: 'Request failed'
