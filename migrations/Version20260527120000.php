@@ -9,7 +9,7 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\Migrations\AbstractMigration;
 
-final class Version20260523210000 extends AbstractMigration
+final class Version20260527120000 extends AbstractMigration
 {
     public function getDescription(): string
     {
