@@ -1,0 +1,158 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Core\Messenger;
+
+use DateTimeImmutable;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Types\Types;
+use Throwable;
+
+final readonly class DeferredMessengerDrain
+{
+    private const DEFAULT_TRANSPORT = 'async';
+    private const DEFAULT_COOLDOWN_SECONDS = 300;
+    private const DEFAULT_MESSAGE_LIMIT = 25;
+    private const DEFAULT_TIME_LIMIT_SECONDS = 60;
+
+    public function __construct(
+        private Connection $connection,
+        private DeferredMessengerDrainStarterInterface $starter,
+        private string $projectDir,
+        private string $environment,
+        private string $transportName = self::DEFAULT_TRANSPORT,
+        private int $cooldownSeconds = self::DEFAULT_COOLDOWN_SECONDS,
+    ) {
+    }
+
+    public function drainPendingMessages(): bool
+    {
+        if (!$this->hasPendingMessages()) {
+            return false;
+        }
+
+        if (!$this->acquireCooldownLock()) {
+            return false;
+        }
+
+        if (!$this->starter->start($this->command(), $this->projectDir(), $this->outputPath(), $this->pidPath())) {
+            $this->clearCooldownLock();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function hasPendingMessages(): bool
+    {
+        try {
+            $count = $this->connection->fetchOne(
+                'SELECT COUNT(*) FROM messenger_messages WHERE queue_name = :queue_name AND delivered_at IS NULL AND available_at <= :now',
+                [
+                    'queue_name' => $this->transportName,
+                    'now' => new DateTimeImmutable(),
+                ],
+                [
+                    'queue_name' => ParameterType::STRING,
+                    'now' => Types::DATETIME_IMMUTABLE,
+                ],
+            );
+        } catch (Throwable) {
+            return false;
+        }
+
+        return 0 < (int) $count;
+    }
+
+    private function acquireCooldownLock(): bool
+    {
+        $path = $this->lockPath();
+
+        try {
+            if (is_file($path) && time() - filemtime($path) < $this->cooldownSeconds) {
+                return false;
+            }
+
+            $directory = dirname($path);
+
+            if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+                return false;
+            }
+
+            return false !== file_put_contents($path, (string) time(), LOCK_EX);
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function clearCooldownLock(): void
+    {
+        try {
+            $path = $this->lockPath();
+
+            if (is_file($path)) {
+                unlink($path);
+            }
+        } catch (Throwable) {
+            return;
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function command(): array
+    {
+        return [
+            PHP_BINARY,
+            $this->projectDir().'/bin/console',
+            'messenger:consume',
+            $this->transportName,
+            '--limit='.self::DEFAULT_MESSAGE_LIMIT,
+            '--time-limit='.self::DEFAULT_TIME_LIMIT_SECONDS,
+            '--memory-limit=128M',
+            '--env='.$this->safeEnvironment(),
+            '--no-interaction',
+        ];
+    }
+
+    private function projectDir(): string
+    {
+        return rtrim($this->projectDir, DIRECTORY_SEPARATOR.'/\\');
+    }
+
+    private function lockPath(): string
+    {
+        return $this->projectDir()
+            .DIRECTORY_SEPARATOR.'var'
+            .DIRECTORY_SEPARATOR.'cache'
+            .DIRECTORY_SEPARATOR.$this->safeEnvironment()
+            .DIRECTORY_SEPARATOR.'studio-messenger-drain.lock';
+    }
+
+    private function outputPath(): string
+    {
+        return $this->projectDir()
+            .DIRECTORY_SEPARATOR.'var'
+            .DIRECTORY_SEPARATOR.'log'
+            .DIRECTORY_SEPARATOR.$this->safeEnvironment()
+            .DIRECTORY_SEPARATOR.'messenger-drain.log';
+    }
+
+    private function pidPath(): string
+    {
+        return $this->projectDir()
+            .DIRECTORY_SEPARATOR.'var'
+            .DIRECTORY_SEPARATOR.'cache'
+            .DIRECTORY_SEPARATOR.$this->safeEnvironment()
+            .DIRECTORY_SEPARATOR.'studio-messenger-drain.pid';
+    }
+
+    private function safeEnvironment(): string
+    {
+        return preg_replace('/[^a-zA-Z0-9_.-]/', '_', $this->environment) ?: 'prod';
+    }
+}

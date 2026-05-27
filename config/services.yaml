@@ -136,6 +136,14 @@ services:
     App\Core\Package\PackageLifecycleCleanupRunnerInterface:
         alias: App\Core\Package\PackageLifecycleCleanupRunner
 
+    App\Core\Messenger\DeferredMessengerDrainStarterInterface:
+        alias: App\Core\Messenger\DeferredMessengerDrainProcessStarter
+
+    App\Core\Messenger\DeferredMessengerDrain:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
     App\Core\Log\MessageLoggerInterface:
         alias: App\Core\Log\FileMessageLogger
 

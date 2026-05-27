@@ -44,6 +44,8 @@ Use `App\Core\Package\PackageDiscoveryRunner` for deterministic registry refresh
 
 Manual CLI runs use `php bin/console studio:packages:discover`; add `--json` for machine-readable output and `--trigger=<name>` when a caller needs to identify the source. The command queues discovery by default. Use `--run-now` only for deliberate recovery or local maintenance where synchronous execution is acceptable.
 
+Deferred Messenger work is drained opportunistically after HTTP responses through `App\Core\Messenger\DeferredMessengerDrainSubscriber`. It checks for due `async` transport rows after the main request has terminated, starts one detached `messenger:consume async` worker when work is pending, and uses a short environment-scoped cache lock to avoid parallel request-triggered workers. Missing database connections or missing `messenger_messages` tables are treated as a no-op so first-run setup and recovery routes stay graceful.
+
 `App\Core\Package\PackageDiscoveryCacheWarmer` wires the automatic cache-rebuild trigger. It writes `studio-package-discovery-warmup.lock` into the active cache directory, queues discovery with `cache_warmup` trigger context, and writes `studio-package-discovery-warmup.json` as a compact diagnostic artifact. The warmer is optional so deployment commands can skip optional warmers when the database or package storage is intentionally unavailable.
 
 Repository demo packages live under `packages/demo-*`. They are intentionally small and inactive after discovery; use them to exercise package discovery, registry views, scoped assets, provider paths, package runtime contributions, and lifecycle UI flows. Demo packages may include tiny `package.php` contribution loaders, but they execute only after explicit activation.
