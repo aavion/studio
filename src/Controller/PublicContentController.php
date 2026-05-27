@@ -194,6 +194,21 @@ final class PublicContentController extends AbstractController
             return new Response($content);
         }
 
+        if ($result->isUnauthorized()) {
+            return $this->httpError->unauthorized($request);
+        }
+
+        if ($result->isForbidden()) {
+            return $this->httpError->forbidden($request);
+        }
+
+        if (!in_array($result->status(), [
+            PublishedContentResolveStatus::NotFound,
+            PublishedContentResolveStatus::ContextUnavailable,
+        ], true)) {
+            return $this->httpError->notFound($request);
+        }
+
         $staticInjection = $this->viewInjectionRegistry->findStatic(ViewSurface::Public, $path);
 
         if (null !== $staticInjection) {
@@ -212,18 +227,6 @@ final class PublicContentController extends AbstractController
                 'injection' => $staticInjection,
                 'request' => $request,
             ]);
-        }
-
-        if (PublishedContentResolveStatus::ContextUnavailable === $result->status()) {
-            return $this->httpError->notFound($request);
-        }
-
-        if ($result->isUnauthorized()) {
-            return $this->httpError->unauthorized($request);
-        }
-
-        if ($result->isForbidden()) {
-            return $this->httpError->forbidden($request);
         }
 
         return $this->httpError->notFound($request);

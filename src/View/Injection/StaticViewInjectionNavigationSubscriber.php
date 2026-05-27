@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace App\View\Injection;
 
+use App\Content\Routing\ContentRouteGuard;
 use App\Navigation\Event\NavigationBuilderEvent;
 use App\Navigation\NavigationItem;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Throwable;
 
 final readonly class StaticViewInjectionNavigationSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private ViewInjectionRegistry $registry)
-    {
+    public function __construct(
+        private ViewInjectionRegistry $registry,
+        private ContentRouteGuard $routeGuard,
+    ) {
     }
 
     public static function getSubscribedEvents(): array
@@ -28,6 +32,10 @@ final readonly class StaticViewInjectionNavigationSubscriber implements EventSub
         }
 
         foreach ($this->registry->staticInjections(ViewSurface::Public, menuOnly: true) as $injection) {
+            if (!$this->publicRouteAllowed($injection)) {
+                continue;
+            }
+
             $event->addItem(new NavigationItem(
                 $injection->uid(),
                 $injection->label(),
@@ -43,6 +51,21 @@ final readonly class StaticViewInjectionNavigationSubscriber implements EventSub
                 ],
             ));
         }
+    }
+
+    private function publicRouteAllowed(StaticViewInjection $injection): bool
+    {
+        if ('/' === $injection->routePath()) {
+            return true;
+        }
+
+        try {
+            $this->routeGuard->assertPathAllowed($injection->routePath());
+        } catch (Throwable) {
+            return false;
+        }
+
+        return true;
     }
 
     private function routeName(StaticViewInjection $injection): string

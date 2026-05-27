@@ -9,6 +9,9 @@ use App\Core\Config\Config;
 use App\Navigation\Event\NavigationBuilderEvent;
 use App\Navigation\NavigationBuilder;
 use App\Navigation\NavigationItem;
+use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
+use App\View\Injection\StaticViewInjection;
+use App\View\Injection\ViewSurface;
 use Doctrine\DBAL\Connection;
 use RuntimeException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -24,6 +27,38 @@ final class NavigationBuilderTest extends KernelTestCase
 
         self::assertSame(['Home', 'About', 'News', 'ui.user.login.title'], array_column($navigation, 'label'));
         self::assertSame(['/', '/about', '/news/first-update', '/user/login'], array_column($navigation, 'url'));
+    }
+
+    public function testStaticPublicInjectionsSkipReservedRoutePrefixesInNavigation(): void
+    {
+        self::bootKernel();
+
+        self::getContainer()->get(EventDispatcherInterface::class)->addListener(
+            StaticViewInjectionRegistryEvent::class,
+            static function (StaticViewInjectionRegistryEvent $event): void {
+                $event->addInjection(new StaticViewInjection(
+                    'test-public-docs-navigation',
+                    ViewSurface::Public,
+                    'docs',
+                    'Docs',
+                    '@frontend/content/injections/static.html.twig',
+                    sortOrder: 90,
+                ));
+                $event->addInjection(new StaticViewInjection(
+                    'test-public-admin-navigation',
+                    ViewSurface::Public,
+                    'admin/shadow',
+                    'Admin Shadow',
+                    '@frontend/content/injections/static.html.twig',
+                    sortOrder: 91,
+                ));
+            },
+        );
+
+        $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'en', actor: AccessActor::anonymous());
+
+        self::assertContains('Docs', array_column($navigation, 'label'));
+        self::assertNotContains('Admin Shadow', array_column($navigation, 'label'));
     }
 
     public function testItDispatchesNavigationBuilderHook(): void
