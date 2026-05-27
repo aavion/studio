@@ -1,7 +1,7 @@
 # Package developer guidelines (Developer Guide)
 
 > **Status**: Draft  
-> **Updated**: 2026-05-25  
+> **Updated**: 2026-05-26  
 > **Owner**: Core  
 > **Purpose:** Draft guidance for developing packages, scoped themes, modules, providers, admin UI extensions, and first-party add-ons while the extension system is still being designed.  
 
@@ -40,18 +40,21 @@ packages/<package-slug>/
   assets/
   config/
   migrations/
-  translations/
+  languages/
 ```
 
 Required manifest keys:
 
 ```text
 PACKAGE_AUTHOR=Aavion
+PACKAGE_SLUG=example-package
 PACKAGE_NAME=Example Package
 PACKAGE_VERSION=1.0.0
 PACKAGE_SCOPE=[frontend-theme, module]
 PACKAGE_DEPENDENCIES=[]
 ```
+
+Optional source metadata stays split: `PACKAGE_SOURCE` points to the repository or release source root, and `PACKAGE_CHANNEL` identifies the branch or channel. The admin UI may turn those two values into a branch-specific link, but update tooling must still be able to reconstruct clone/fetch targets from the raw manifest values.
 
 Current constraints:
 
@@ -69,7 +72,17 @@ Current constraints:
 
 `package.php` is optional. It must never be included during discovery and should only be loaded after a package is valid and active. Packages are trusted code; only administrators may install them. A package should use a package-owned root namespace derived from or declared for the package slug.
 
+When `PACKAGE_NAMESPACE` is declared, PHP files below `src/` must use that namespace or one of its child namespaces. The active runtime loader includes only `package.php`; that file may define a flat bootstrap class, return a callable, require further files below `src/`, or return simple contribution DTOs/providers. Supported direct contributions currently include static view injections, configurable static route sets, dynamic view injections, and package setting definitions. Loader failures are caught by the lifecycle layer, recorded as structured diagnostics, and mark the package `faulty` so a broken active package does not keep breaking requests. Contribution iterables are staged before registry mutation, so one unsupported item rejects the full package contribution for the current request.
+
 Package assets must be self-contained. Packages should vendor their external dependencies inside their own package directory instead of requiring the project importmap to manage third-party dependency lifecycles across packages. Active package CSS and JavaScript are aggregated through the generated package asset registries; packages should not expect templates to add arbitrary direct `<link>` or `<script>` tags for package-level assets. Static assets such as images, fonts, videos, and SVGs should be referenced from package CSS, JavaScript, or templates after the lifecycle mirrors them into the AssetMapper-visible package path.
+
+Area-specific package assets follow the same boundary as template namespaces. A package with `frontend-theme` should put frontend-only entrypoints under `assets/frontend/**`; a package with `backend-theme` should put backend-only entrypoints under `assets/backend/**`. Root-level package assets and other package asset subdirectories are shared/global and enter the extension registry only when the package also declares a global scope such as `module`, `captcha-provider`, `editor-provider`, or `system-template`.
+
+Package asset registries control deterministic rebuild order, but Tailwind currently emits one application stylesheet. CSS that belongs to one rendered area should therefore stay scoped to that area's root class, such as `.studio-frontend` or `.studio-backend`, unless the package intentionally contributes global module/provider styling.
+
+Package translations are package-scoped. A package may ship `languages/<locale>/*.yaml`; when it does, `languages/en/*.yaml` is required as the fallback source. Only active package language files are aggregated into the generated runtime `messages` catalogue during the package rebuild queue, so inactive packages cannot override or leak copy. Package-owned translation keys must stay namespaced below `pkg.<package-slug>.*`.
+
+Database-backed schema Twig is not visible to Tailwind file scanning by itself. Schema rendering needs a later aggregation layer that extracts or stores CSS class usage from active schema Twig and exposes it to the Tailwind rebuild before production builds depend on schema-authored classes.
 
 Template paths use logical Twig namespaces. Packages may ship frontend views under `templates/frontend/**` and reference templates as `@frontend/...`. Packages may ship backend views under `templates/backend/**` and reference templates as `@backend/...`. Frontend and backend theme scopes are the only scopes searched before native templates, so modules and providers can add package-specific views but do not replace matching core UI templates. Shared fallbacks use `@root/...`; packages may reference root templates, but only packages with `system-template` scope may override root-level shared files such as `base.html.twig` or `macros/core/**`.
 
@@ -87,12 +100,16 @@ Packages must not write macro files directly under `templates/macros/`, under an
 
 Packages may subscribe only to public hooks surfaced by `App\Core\Event\PublicEventHookRegistry`. The registry is the source of truth for stable package extension contracts. Other Symfony events can still exist inside the application, but they are internal unless listed there.
 
-Core dispatch points use `App\Core\Event\PublicEventDispatcher`, which converts listener failures into structured operation issues and emits the internal `App\Core\Event\PublicHookFailedEvent`. Package subscribers should still avoid throwing where a recoverable result is possible. Unrecoverable package listener failures may cause the package lifecycle to deactivate the package once package ownership can be resolved safely.
+Core dispatch points use `App\Core\Event\PublicEventDispatcher`, which converts listener failures into structured operation issues and emits the internal `App\Core\Event\PublicHookFailedEvent`. Package subscribers should still avoid throwing where a recoverable result is possible. Unrecoverable package listener failures may cause the package lifecycle to mark the package `faulty` once package ownership can be resolved safely.
 
 Current public hooks:
 
 - `App\View\ViewContextEvent`: extend the universal Twig context.
 - `App\Content\Event\ContentRenderContextEvent`: extend Twig context for one public content render.
+- `App\Content\Event\ContentRenderedEvent`: adjust generated HTML for one public content render.
+- `App\Navigation\Event\NavigationBuilderEvent`: extend navigation items before tree hierarchy and active state are resolved. URL targets may use relative paths or safe `http`/`https` links; unsafe schemes are normalized away by the core builder before rendering.
+- `App\View\Injection\Event\StaticViewInjectionRegistryEvent`: add static route/menu view injections for the `public`, `admin`, or `editor` surface.
+- `App\View\Injection\Event\DynamicViewInjectionRegistryEvent`: add content-aware dynamic slot or variant-route injections for physical Twig templates.
 - `App\View\Event\ResponseHeadersEvent`: adjust HTTP response headers before sending.
 - `App\View\Event\OutputGeneratedEvent`: adjust generated HTML output after rendering.
 - `App\Core\Package\Event\PackageAssetSyncStartedEvent`: observe the active package set before asset sync.
@@ -126,6 +143,14 @@ Output hooks should stay narrow. Prefer Twig context hooks and templates for nor
 Do not expect package hooks for template path collection or runtime asset collection. Template namespaces are resolved through the package/theme lifecycle, and active package assets are mirrored and compiled through AssetSync and `studio:assets:rebuild`.
 
 Packages must not define new core permission rules dynamically. A package can require existing ACL levels, groups, roles, or manifest capabilities for its routes and UI, but the security model itself stays core-owned.
+
+Backend page contributions should use static view injections on the `admin` or `editor` surface. Static injections provide a path slug, optional parent slug, label key, physical Twig template, sort order, access level/groups, optional link attributes, and menu visibility. Public package routes that should not permanently reserve one hard-coded path may use a configurable static route set: the route tree declares a default parent slug, while a package setting can move the whole tree to another free path. Core backend views, public content entities, and system views keep priority over injected package paths.
+
+Dynamic public content contributions should use dynamic view injections with declarative filters. Slot injections render before or after the core content field block; route injections may claim missing content variant suffixes, but they must not replace an existing content entity or an existing content variant.
+
+Schema `custom_twig` belongs to the inner content fieldset only. The native public content template keeps the page header, package injection slots, and outer content chrome stable, then delegates the variable fieldset to schema Twig with a generic fallback when custom Twig is empty or invalid. Custom schema Twig receives `content_view`, `content`, `revision`, `schema`, `schema_version`, `fields`, `language`, and `variant`.
+
+Markdown rendering is profile-aware through the `studio_markdown` Twig filter. The default profile is `allrounder`, which enables rich Markdown features, heading anchors, task lists, tables, footnotes, description lists, highlights, safe attributes, and external-link handling while escaping raw HTML and omitting embeds. Package README rendering uses `readme`, which maps to GitHub-Flavored Markdown for developer-authored package documentation. Trusted schema or admin-controlled design fields may explicitly call `studio_markdown('design')`; that profile allows raw HTML, controlled attributes, rich Markdown, and YouTube embeds through the native no-cookie embed adapter. Public untrusted inputs such as future comments should call `studio_markdown('basic')`, which keeps the CommonMark baseline plus autolinks while escaping HTML and excluding richer layout controls.
 
 ## Admin UI and UX guidelines
 

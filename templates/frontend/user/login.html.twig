@@ -11,19 +11,38 @@
         {% if http_error is defined and http_error.status_code|default(null) == 401 %}
             <p class="studio-auth-notice">{{ http_error.message_key|trans }}</p>
         {% endif %}
-        {% include '@frontend/partials/forms/fields/input.html.twig' with {
-            name: 'username',
-            label: 'ui.user.login.username'|trans,
-            autocomplete: 'username',
-        } only %}
-        {% include '@frontend/partials/forms/fields/input.html.twig' with {
-            name: 'password',
-            type: 'password',
-            label: 'ui.user.login.password'|trans,
-            autocomplete: 'current-password',
-        } only %}
-        {% include '@frontend/partials/forms/fields/captcha.html.twig' %}
-        {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.login.submit'|trans} only %}
+        {% if authentication_error|default(false) %}
+            <p class="studio-auth-notice">{{ 'ui.user.login.invalid_credentials'|trans }}</p>
+        {% endif %}
+        <form action="{{ path('user_login') }}" method="post" class="studio-auth-form">
+            {% include '@frontend/partials/forms/fields/input.html.twig' with {
+                name: 'username',
+                label: 'ui.user.login.username'|trans,
+                autocomplete: 'username',
+                value: last_username|default(''),
+                required: true,
+            } only %}
+            {% include '@frontend/partials/forms/fields/input.html.twig' with {
+                name: 'password',
+                type: 'password',
+                label: 'ui.user.login.password'|trans,
+                autocomplete: 'current-password',
+                required: true,
+            } only %}
+            {% if return_to|default(null) %}
+                <input type="hidden" name="_target_path" value="{{ return_to }}">
+            {% endif %}
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            {% include '@frontend/partials/forms/fields/captcha.html.twig' %}
+            {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.login.submit'|trans} only %}
+        </form>
+        {% if registration_enabled|default(false) %}
+            {% include '@frontend/partials/actions/_button-group.html.twig' with {
+                actions: [
+                    {label: 'ui.user.register.link'|trans, href: path('user_register'), variant: 'secondary'},
+                ],
+            } only %}
+        {% endif %}
         {% include '@frontend/error-pages/partials/_debug.html.twig' with {http_error: http_error|default(null)} only %}
     </section>
 {% endblock %}

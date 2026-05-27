@@ -21,7 +21,7 @@ final readonly class SetupInput
         private ?string $databaseUser = null,
         private ?string $databasePassword = null,
         private string $adminUsername = 'admin',
-        private string $adminPassword = 'admin',
+        private string $adminPassword = 'admin-password',
         private ?string $adminEmail = null,
         private ?string $appSecret = null,
         private bool $dryRun = false,

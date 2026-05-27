@@ -15,6 +15,7 @@ use App\Content\Routing\ContentRoutePath;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Message\MessageReporterInterface;
 use App\Entity\ContentItem;
 use App\Repository\ContentFieldValueRepository;
 use App\Repository\ContentItemRepository;
@@ -22,14 +23,17 @@ use App\Repository\ContentItemRepository;
 final class PublishedContentResolver
 {
     private ContentPathLookup $pathLookup;
+    private AccessResolver $accessResolver;
 
     public function __construct(
         private ContentItemRepository $contentItems,
         private ContentFieldValueRepository $fieldValues,
+        private MessageReporterInterface $messageReporter,
         private ContentReadContextResolver $contextResolver = new ContentReadContextResolver(),
-        private AccessResolver $accessResolver = new AccessResolver(),
+        ?AccessResolver $accessResolver = null,
         ?ContentPathLookup $pathLookup = null,
     ) {
+        $this->accessResolver = $accessResolver ?? new AccessResolver($messageReporter);
         $this->pathLookup = $pathLookup ?? new ContentPathLookup($contentItems);
     }
 
@@ -111,7 +115,7 @@ final class PublishedContentResolver
         $messages = [];
 
         if ($context->languageFallbackUsed()) {
-            $messages[] = Message::warning(MessageCode::CONTENT_LANGUAGE_FALLBACK, MessageKey::CONTENT_LANGUAGE_FALLBACK, [
+            $messages[] = $this->report(Message::warning(MessageCode::CONTENT_LANGUAGE_FALLBACK, MessageKey::CONTENT_LANGUAGE_FALLBACK, [
                 '%requested_language%' => $context->requestedLanguage(),
                 '%resolved_language%' => $context->language(),
             ], [
@@ -119,11 +123,11 @@ final class PublishedContentResolver
                 'slug' => $content->slug(),
                 'requested_language' => $context->requestedLanguage(),
                 'resolved_language' => $context->language(),
-            ]);
+            ]));
         }
 
         if ($context->variantFallbackUsed()) {
-            $messages[] = Message::warning(MessageCode::CONTENT_VARIANT_FALLBACK, MessageKey::CONTENT_VARIANT_FALLBACK, [
+            $messages[] = $this->report(Message::warning(MessageCode::CONTENT_VARIANT_FALLBACK, MessageKey::CONTENT_VARIANT_FALLBACK, [
                 '%requested_variant%' => $context->requestedVariant(),
                 '%resolved_variant%' => $context->variant(),
             ], [
@@ -131,10 +135,17 @@ final class PublishedContentResolver
                 'slug' => $content->slug(),
                 'requested_variant' => $context->requestedVariant(),
                 'resolved_variant' => $context->variant(),
-            ]);
+            ]));
         }
 
         return $messages;
+    }
+
+    private function report(Message $message): Message
+    {
+        return $this->messageReporter->report($message, [
+            'source' => 'published_content_resolver',
+        ]);
     }
 
     private function aclRestrictionsAllow(ContentItem $content, AccessActor $actor): bool

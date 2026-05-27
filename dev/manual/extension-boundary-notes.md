@@ -23,7 +23,7 @@ Core can provide:
 - action queues;
 - filesystem and process actions;
 - action logs;
-- operation result and issue payloads.
+- workflow result and issue payloads.
 
 ## Lifecycle responsibilities
 

@@ -16,11 +16,23 @@ final class ViewTwigExtensionTest extends KernelTestCase
         $twig = self::getContainer()->get(Environment::class);
         $globals = $twig->getGlobals();
         $html = $twig->createTemplate(
-            '{{ studio_view_context().system_package.name }}|{{ studio_macro_template("core", "ui") }}|{{ studio_event_hooks()|length }}|{{ "**ok**"|studio_markdown }}',
+            '{{ studio_view_context().system_package.name }}|{{ studio_macro_template("core", "ui") }}|{{ studio_event_hooks()|length }}|{{ studio_navigation("main")|length }}|{{ studio_debug_info().hooks is defined ? "debug" : "missing" }}|{{ studio_package_setting("demo-module", "missing.key", "fallback") }}|{{ "**ok**"|studio_markdown }}',
         )->render();
 
         self::assertArrayHasKey('studio_view', $globals);
-        self::assertSame('System|@root/macros/core/ui.html.twig|7|<p><strong>ok</strong></p>', $html);
+        self::assertSame('aavion Studio|@root/macros/core/ui.html.twig|11|4|debug|fallback|<p><strong>ok</strong></p>', $html);
+    }
+
+    public function testItRendersSafeHtmlAttributes(): void
+    {
+        self::bootKernel();
+
+        $twig = self::getContainer()->get(Environment::class);
+        $html = $twig->createTemplate(
+            '{{ studio_html_attributes({"class": "is-immutable", "data-action": "save", "aria-expanded": false, "title": "A & B", "maxlength": 120, "pattern": "^/.*$", "onclick": "alert(1)", "style": "display:none", "data-active": true}) }}',
+        )->render();
+
+        self::assertSame('class="is-immutable" data-action="save" title="A &amp; B" maxlength="120" pattern="^/.*$" data-active', $html);
     }
 
     public function testItRendersNativeProviderNamespaceFallbacks(): void

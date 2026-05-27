@@ -4,90 +4,194 @@ declare(strict_types=1);
 
 namespace App\View;
 
+use League\CommonMark\Environment\Environment;
+use League\CommonMark\Extension\Attributes\AttributesExtension;
+use League\CommonMark\Extension\Autolink\AutolinkExtension;
+use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
+use League\CommonMark\Extension\DescriptionList\DescriptionListExtension;
+use League\CommonMark\Extension\DisallowedRawHtml\DisallowedRawHtmlExtension;
+use League\CommonMark\Extension\Embed\EmbedExtension;
+use League\CommonMark\Extension\ExternalLink\ExternalLinkExtension;
+use League\CommonMark\Extension\ExternalLink\ExternalLinkProcessor;
+use League\CommonMark\Extension\Footnote\FootnoteExtension;
+use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
+use League\CommonMark\Extension\HeadingPermalink\HeadingPermalinkExtension;
+use League\CommonMark\Extension\HeadingPermalink\HeadingPermalinkProcessor;
+use League\CommonMark\Extension\Highlight\HighlightExtension;
+use League\CommonMark\Extension\SmartPunct\SmartPunctExtension;
+use League\CommonMark\Extension\Strikethrough\StrikethroughExtension;
+use League\CommonMark\Extension\Table\TableExtension;
+use League\CommonMark\Extension\TableOfContents\TableOfContentsBuilder;
+use League\CommonMark\Extension\TableOfContents\TableOfContentsExtension;
+use League\CommonMark\Extension\TaskList\TaskListExtension;
+use League\CommonMark\MarkdownConverter;
+use League\CommonMark\Output\RenderedContentInterface;
+
 final class MarkdownRenderer
 {
-    public function render(string $markdown): string
-    {
-        $markdown = trim(str_replace(["\r\n", "\r"], "\n", $markdown));
+    /**
+     * @var array<string, MarkdownConverter>
+     */
+    private array $converters = [];
 
-        if ('' === $markdown) {
+    public function render(string $markdown, string|MarkdownProfile|null $profile = null): string
+    {
+        if ('' === trim($markdown)) {
             return '';
         }
 
-        $blocks = preg_split('/\n{2,}/', $markdown) ?: [];
-        $html = [];
+        $rendered = $this->converter(MarkdownProfile::resolve($profile))->convert($markdown);
 
-        foreach ($blocks as $block) {
-            $block = trim($block);
+        $html = $rendered instanceof RenderedContentInterface ? $rendered->getContent() : (string) $rendered;
 
-            if ('' === $block) {
-                continue;
-            }
-
-            if (str_starts_with($block, '```') && str_ends_with($block, '```')) {
-                $code = trim(substr($block, 3, -3));
-                $html[] = '<pre><code>'.$this->escape($code).'</code></pre>';
-
-                continue;
-            }
-
-            if (1 === preg_match('/^(#{1,3})\s+(.+)$/', $block, $matches)) {
-                $level = strlen($matches[1]);
-                $html[] = sprintf('<h%d>%s</h%d>', $level, $this->renderInline($matches[2]), $level);
-
-                continue;
-            }
-
-            if (1 === preg_match('/^-\s+/m', $block)) {
-                $items = array_filter(array_map('trim', explode("\n", $block)));
-                $listItems = [];
-
-                foreach ($items as $item) {
-                    if (!str_starts_with($item, '- ')) {
-                        continue 2;
-                    }
-
-                    $listItems[] = '<li>'.$this->renderInline(substr($item, 2)).'</li>';
-                }
-
-                $html[] = '<ul>'.implode('', $listItems).'</ul>';
-
-                continue;
-            }
-
-            $html[] = '<p>'.$this->renderInline(str_replace("\n", ' ', $block)).'</p>';
-        }
-
-        return implode("\n", $html);
+        return rtrim($html);
     }
 
-    private function renderInline(string $text): string
+    private function converter(MarkdownProfile $profile): MarkdownConverter
     {
-        $escaped = $this->escape($text);
-        $escaped = preg_replace_callback('/`([^`]+)`/', static function (array $matches): string {
-            return '<code>'.$matches[1].'</code>';
-        }, $escaped) ?? $escaped;
-        $escaped = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $escaped) ?? $escaped;
-        $escaped = preg_replace('/\*([^*]+)\*/', '<em>$1</em>', $escaped) ?? $escaped;
-
-        return preg_replace_callback('/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/', function (array $matches): string {
-            $label = $matches[1];
-            $url = html_entity_decode($matches[2], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-            if (false === filter_var($url, FILTER_VALIDATE_URL)) {
-                return $label;
-            }
-
-            return sprintf(
-                '<a href="%s" rel="noopener noreferrer">%s</a>',
-                $this->escape($url),
-                $label,
-            );
-        }, $escaped) ?? $escaped;
+        return $this->converters[$profile->value] ??= match ($profile) {
+            MarkdownProfile::Readme => $this->readmeConverter(),
+            MarkdownProfile::Design => $this->designConverter(),
+            MarkdownProfile::Allrounder => $this->allrounderConverter(),
+            MarkdownProfile::Basic => $this->basicConverter(),
+        };
     }
 
-    private function escape(string $value): string
+    private function readmeConverter(): MarkdownConverter
     {
-        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $environment = new Environment($this->safeConfig());
+        $environment->addExtension(new CommonMarkCoreExtension());
+        $environment->addExtension(new GithubFlavoredMarkdownExtension());
+
+        return new MarkdownConverter($environment);
+    }
+
+    private function designConverter(): MarkdownConverter
+    {
+        $environment = new Environment($this->richConfig([
+            'allow_unsafe_links' => false,
+            'html_input' => 'allow',
+            'attributes' => [
+                'allow' => [
+                    'class',
+                    'id',
+                    'style',
+                    'title',
+                    'aria-label',
+                    'aria-hidden',
+                    'data-*',
+                ],
+            ],
+        ]));
+
+        $this->addRichExtensions($environment);
+        $environment->addExtension(new AttributesExtension());
+        $environment->addExtension(new EmbedExtension());
+
+        return new MarkdownConverter($environment);
+    }
+
+    private function allrounderConverter(): MarkdownConverter
+    {
+        $environment = new Environment($this->richConfig([
+            'allow_unsafe_links' => false,
+            'html_input' => 'escape',
+            'attributes' => [
+                'allow' => [
+                    'class',
+                    'id',
+                    'title',
+                    'aria-label',
+                    'aria-hidden',
+                    'data-*',
+                ],
+            ],
+        ]));
+
+        $this->addRichExtensions($environment);
+        $environment->addExtension(new AttributesExtension());
+
+        return new MarkdownConverter($environment);
+    }
+
+    private function basicConverter(): MarkdownConverter
+    {
+        $environment = new Environment($this->safeConfig());
+        $environment->addExtension(new CommonMarkCoreExtension());
+        $environment->addExtension(new AutolinkExtension());
+        $environment->addExtension(new DisallowedRawHtmlExtension());
+
+        return new MarkdownConverter($environment);
+    }
+
+    private function addRichExtensions(Environment $environment): void
+    {
+        $environment->addExtension(new CommonMarkCoreExtension());
+        $environment->addExtension(new AutolinkExtension());
+        $environment->addExtension(new DisallowedRawHtmlExtension());
+        $environment->addExtension(new DescriptionListExtension());
+        $environment->addExtension(new ExternalLinkExtension());
+        $environment->addExtension(new FootnoteExtension());
+        $environment->addExtension(new HeadingPermalinkExtension());
+        $environment->addExtension(new HighlightExtension());
+        $environment->addExtension(new SmartPunctExtension());
+        $environment->addExtension(new StrikethroughExtension());
+        $environment->addExtension(new TableExtension());
+        $environment->addExtension(new TableOfContentsExtension());
+        $environment->addExtension(new TaskListExtension());
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     *
+     * @return array<string, mixed>
+     */
+    private function richConfig(array $overrides = []): array
+    {
+        return array_replace_recursive($this->safeConfig(), [
+            'embed' => [
+                'adapter' => new MarkdownEmbedAdapter(),
+                'allowed_domains' => [
+                    'youtube.com',
+                    'www.youtube.com',
+                    'm.youtube.com',
+                    'youtu.be',
+                    'www.youtu.be',
+                ],
+                'fallback' => 'link',
+            ],
+            'external_link' => [
+                'internal_hosts' => [],
+                'open_in_new_window' => true,
+                'nofollow' => ExternalLinkProcessor::APPLY_NONE,
+                'noopener' => ExternalLinkProcessor::APPLY_EXTERNAL,
+                'noreferrer' => ExternalLinkProcessor::APPLY_EXTERNAL,
+            ],
+            'heading_permalink' => [
+                'insert' => HeadingPermalinkProcessor::INSERT_AFTER,
+                'apply_id_to_heading' => true,
+                'id_prefix' => '',
+                'fragment_prefix' => '',
+                'symbol' => '#',
+            ],
+            'table_of_contents' => [
+                'position' => TableOfContentsBuilder::POSITION_PLACEHOLDER,
+                'placeholder' => '[TOC]',
+                'min_heading_level' => 2,
+                'max_heading_level' => 4,
+                'html_class' => 'studio-markdown-toc',
+            ],
+        ], $overrides);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function safeConfig(): array
+    {
+        return [
+            'allow_unsafe_links' => false,
+            'html_input' => 'escape',
+        ];
     }
 }

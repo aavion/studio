@@ -10,12 +10,15 @@ use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Package\PackageAssetSyncAction;
 use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageAssetSyncer;
+use App\Core\Translation\TranslationAggregateAction;
+use App\Core\Translation\TranslationCatalogueAggregator;
 
 final readonly class AssetRebuildQueueFactory
 {
     public function __construct(
         private string $projectDir,
         private PackageAssetSyncer $packageAssetSyncer,
+        private TranslationCatalogueAggregator $translationCatalogueAggregator,
     ) {
     }
 
@@ -27,6 +30,7 @@ final readonly class AssetRebuildQueueFactory
         $isProduction = 'prod' === $environment;
         $actions = [
             new PackageAssetSyncAction($this->packageAssetSyncer, $packages),
+            new TranslationAggregateAction($this->translationCatalogueAggregator, $packages),
             $this->consoleCommand('assets:install', $environment),
             $this->consoleCommand('importmap:install', $environment),
             $this->consoleCommand('tailwind:build', $environment, timeout: 300.0),

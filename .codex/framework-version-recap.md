@@ -1,7 +1,7 @@
 # Framework version recap
 
 > **Status:** Active  
-> **Updated:** 2026-05-22  
+> **Updated:** 2026-05-26  
 > **Owner:** Codex  
 > **Purpose:** Offline working notes for this repository's framework and bundle versions, based on official documentation checks. Use this before implementing Symfony, Doctrine, Twig, frontend, or test changes.  
 
@@ -14,7 +14,7 @@ The local `vendor/` directory is not installed in this workspace at the time of 
 | PHP | `>=8.4` | Use strict types for PHP code. |
 | Symfony components | `8.0.*`, locked around `8.0.8` to `8.0.12` | Avoid assuming Symfony `8.1+` features. Prefer Symfony 8.0 docs unless a feature is verified in the lockfile. |
 | Doctrine DBAL | `4.4.3` | Use DBAL 4 APIs and prepared statements. |
-| Doctrine ORM | `3.6.6` | Attribute mapping is the default project style. Avoid removed annotation-era patterns. |
+| Doctrine ORM | `3.6.7` | Attribute mapping is the default project style. Avoid removed annotation-era patterns. |
 | DoctrineBundle | `3.2.2` | Existing config uses attribute mapping for `App\Entity`. |
 | DoctrineMigrationsBundle | `4.0.0` | Multiple migration paths/namespaces are supported through bundle configuration. |
 | Twig | `3.26.0` | Avoid Twig 4-deprecated APIs where possible. |
@@ -23,7 +23,7 @@ The local `vendor/` directory is not installed in this workspace at the time of 
 | StimulusBundle | `3.0.0` | Project uses Symfony UX Stimulus loader plus importmap. |
 | Turbo | `8.0.23` via importmap | Use Hotwire/Turbo 8 behavior; test form/navigation interactions. |
 | Stimulus | `3.2.2` via importmap | Use controllers, targets, values, classes, and actions. |
-| PHPUnit | `13.1.11` | Official online manual search currently surfaced PHPUnit 12.5 docs; avoid features documented as incompatible with PHPUnit 13. |
+| PHPUnit | `13.1.12` | Official online manual search currently surfaced PHPUnit 12.5 docs; avoid features documented as incompatible with PHPUnit 13. |
 
 ## Symfony 8 implementation notes
 
@@ -84,7 +84,7 @@ Checked official Symfony docs for AssetMapper, service tags, service decoration,
 
 - Keep deterministic translation keys in synchronized English and German catalogues.
 - Symfony supports ICU MessageFormat with `+intl-icu` catalogue suffixes when ICU syntax is needed.
-- Existing project rules use `translations/messages.en.yaml` and `translations/messages.de.yaml`; keep them synchronized with `.codex/compare_translations.php`.
+- Existing project rules keep translation sources modular under `translations/languages/{locale}/*.yaml`; generated runtime catalogues use Symfony's default `messages` domain, and source catalogue pairs stay synchronized with `.codex/compare_translations.php`.
 
 ### AssetMapper, Importmap, Stimulus, and Turbo
 
@@ -149,7 +149,7 @@ Checked official Twig 3 deprecated-features and Symfony TwigBundle configuration
 
 ## PHPUnit notes
 
-- Project lockfile uses PHPUnit `13.1.10`.
+- Project lockfile uses PHPUnit `13.1.12`.
 - PHPUnit docs found during this pass prominently expose 12.5 as current public manual pages. Treat PHPUnit-13-specific behavior as needing verification before relying on new APIs.
 - PHPUnit supports `test*` method naming and `#[Test]` attributes.
 - Prefer explicit, deterministic tests with small fixtures.

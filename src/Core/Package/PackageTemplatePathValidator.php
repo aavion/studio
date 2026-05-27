@@ -7,7 +7,7 @@ namespace App\Core\Package;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
+use App\Core\Message\Message;
 use InvalidArgumentException;
 
 final readonly class PackageTemplatePathValidator
@@ -15,7 +15,7 @@ final readonly class PackageTemplatePathValidator
     /**
      * @param list<string> $templateFiles
      *
-     * @return list<OperationIssue>
+     * @return list<Message>
      */
     public function validate(PackageCandidate $candidate, array $templateFiles): array
     {
@@ -36,7 +36,7 @@ final readonly class PackageTemplatePathValidator
 
         foreach ($templateFiles as $file) {
             if (!$this->isAllowed($file, $packageSlug, $scopes)) {
-                $issues[] = OperationIssue::create(
+                $issues[] = Message::create(
                     MessageCode::PACKAGE_TEMPLATE_PATH_INVALID,
                     MessageKey::PACKAGE_TEMPLATE_PATH_INVALID,
                     ['%path%' => $file, '%scope%' => $scopeValue],
@@ -47,7 +47,7 @@ final readonly class PackageTemplatePathValidator
                         'file' => $file,
                         'scopes' => array_map(static fn (PackageScope $scope): string => $scope->value, $scopes),
                     ],
-                    level: MessageLevel::Warning,
+                    level: MessageLevel::Error,
                 );
             }
         }
@@ -128,9 +128,8 @@ final readonly class PackageTemplatePathValidator
 
     private function packageSlug(PackageCandidate $candidate): string
     {
-        $directory = str_replace('\\', '/', rtrim($candidate->directory(), '/'));
-        $slug = basename($directory);
+        $slug = trim((string) $candidate->manifest()->get('PACKAGE_SLUG', ''));
 
-        return '' === $slug ? 'package' : $slug;
+        return PackageManifestSpec::isValidSlug($slug) ? $slug : 'package';
     }
 }

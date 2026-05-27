@@ -11,13 +11,14 @@ use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\Filesystem\CopyFileAction;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Workflow\WorkflowResult;
 use InvalidArgumentException;
 
 final readonly class PackageOperationPlanner
 {
     public function __construct(
+        private WorkflowResultMessageReporterInterface $messageReporter,
         private PathGuard $pathGuard = new PathGuard(),
     ) {
     }
@@ -25,7 +26,7 @@ final readonly class PackageOperationPlanner
     /**
      * @param list<string> $files
      *
-     * @return OperationResult<ActionQueue>
+     * @return WorkflowResult<ActionQueue>
      */
     public function copyFiles(
         PackageCandidate $candidate,
@@ -34,7 +35,7 @@ final readonly class PackageOperationPlanner
         string $queueName = 'package copy',
         string $targetPrefix = '',
         bool $overwrite = false,
-    ): OperationResult {
+    ): WorkflowResult {
         $issues = [];
         $normalizedFiles = $this->normalizedFiles($files);
         $targetPrefix = $this->normalizeOptionalPrefix($targetPrefix);
@@ -43,34 +44,34 @@ final readonly class PackageOperationPlanner
             $sourcePath = $this->pathGuard->join($candidate->directory(), $file);
 
             if (is_link($sourcePath)) {
-                $issues[] = OperationIssue::create(MessageCode::PACKAGE_COPY_SOURCE_SYMLINK, MessageKey::PACKAGE_COPY_SOURCE_SYMLINK, [
+                $issues[] = Message::create(MessageCode::PACKAGE_COPY_SOURCE_SYMLINK, MessageKey::PACKAGE_COPY_SOURCE_SYMLINK, [
                     '%path%' => $sourcePath,
                 ], [
                     'source' => $candidate->source()->name(),
                     'package' => $candidate->directory(),
                     'file' => $file,
                     'path' => $sourcePath,
-                ], MessageLevel::Warning);
+                ], MessageLevel::Error);
             } elseif (!is_file($sourcePath)) {
-                $issues[] = OperationIssue::create(MessageCode::PACKAGE_COPY_SOURCE_MISSING, MessageKey::PACKAGE_COPY_SOURCE_MISSING, [
+                $issues[] = Message::create(MessageCode::PACKAGE_COPY_SOURCE_MISSING, MessageKey::PACKAGE_COPY_SOURCE_MISSING, [
                     '%path%' => $sourcePath,
                 ], [
                     'source' => $candidate->source()->name(),
                     'package' => $candidate->directory(),
                     'file' => $file,
                     'path' => $sourcePath,
-                ], MessageLevel::Warning);
+                ], MessageLevel::Error);
             }
         }
 
         if ([] !== $issues) {
-            return OperationResult::invalid($issues, [
+            return $this->report(WorkflowResult::invalid($issues, [
                 'source' => $candidate->source()->name(),
                 'package' => $candidate->directory(),
                 'target_root' => $targetRoot,
                 'target_prefix' => $targetPrefix,
                 'files' => $normalizedFiles,
-            ]);
+            ]), $candidate);
         }
 
         $queue = ActionQueue::create($queueName, context: [
@@ -91,10 +92,19 @@ final readonly class PackageOperationPlanner
             ));
         }
 
-        return OperationResult::success($queue, $queue->context(), [
-            Message::info(MessageCode::PACKAGE_COPY_PLAN_CREATED, MessageKey::PACKAGE_COPY_PLAN_CREATED, [
+        return $this->report(WorkflowResult::success($queue, $queue->context(), [
+            Message::create(MessageCode::PACKAGE_COPY_PLAN_CREATED, MessageKey::PACKAGE_COPY_PLAN_CREATED, [
                 '%count%' => count($normalizedFiles),
-            ], $queue->context()),
+            ], $queue->context(), MessageLevel::Success),
+        ]), $candidate);
+    }
+
+    private function report(WorkflowResult $result, PackageCandidate $candidate): WorkflowResult
+    {
+        return $this->messageReporter->report($result, [
+            'operation' => 'package.copy_plan',
+            'source' => $candidate->source()->name(),
+            'package' => $candidate->directory(),
         ]);
     }
 

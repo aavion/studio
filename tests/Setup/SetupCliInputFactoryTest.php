@@ -76,6 +76,7 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertSame('https://env.example.test', $input->defaultUri());
         self::assertSame(DatabaseDriver::MySql, $input->databaseDriver());
         self::assertSame('mysql://env_user:env_pass@db.example.test:3307/env_db', $input->databaseUrl());
+        self::assertSame('', $input->adminPassword());
     }
 
     public function testItPromptsInteractivelyInSelectedLanguage(): void

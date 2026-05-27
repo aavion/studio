@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\View\Template;
 
 use App\Core\Filesystem\PathGuard;
-use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageScope;
+use App\Entity\ExtensionPackage;
 
 final readonly class PackageTemplatePathResolver
 {
@@ -17,7 +17,7 @@ final readonly class PackageTemplatePathResolver
     }
 
     /**
-     * @param iterable<PackageAssetSyncPackage> $packages
+     * @param iterable<ExtensionPackage> $packages
      *
      * @return list<string>
      */
@@ -34,7 +34,7 @@ final readonly class PackageTemplatePathResolver
     }
 
     /**
-     * @param iterable<PackageAssetSyncPackage> $packages
+     * @param iterable<ExtensionPackage> $packages
      *
      * @return list<string>
      */
@@ -43,11 +43,11 @@ final readonly class PackageTemplatePathResolver
         $paths = [];
 
         foreach ($packages as $package) {
-            if (!$package instanceof PackageAssetSyncPackage || !$this->hasProviderScope($package)) {
+            if (!$package instanceof ExtensionPackage || !$this->hasProviderScope($package)) {
                 continue;
             }
 
-            $paths[] = $this->absolutePath($package->directory().'/templates/provider');
+            $paths[] = $this->absolutePath($package->path().'/templates/provider');
         }
 
         $paths[] = $this->absolutePath('templates/provider');
@@ -56,7 +56,7 @@ final readonly class PackageTemplatePathResolver
     }
 
     /**
-     * @param iterable<PackageAssetSyncPackage> $packages
+     * @param iterable<ExtensionPackage> $packages
      *
      * @return list<string>
      */
@@ -69,7 +69,7 @@ final readonly class PackageTemplatePathResolver
         $paths = [];
 
         foreach ($packages as $package) {
-            if (!$package instanceof PackageAssetSyncPackage) {
+            if (!$package instanceof ExtensionPackage) {
                 continue;
             }
 
@@ -81,13 +81,13 @@ final readonly class PackageTemplatePathResolver
                 continue;
             }
 
-            $paths[] = $this->absolutePath($package->directory().'/'.$namespace->packageRelativeDirectory());
+            $paths[] = $this->absolutePath($package->path().'/'.$namespace->packageRelativeDirectory());
         }
 
         return $paths;
     }
 
-    private function hasProviderScope(PackageAssetSyncPackage $package): bool
+    private function hasProviderScope(ExtensionPackage $package): bool
     {
         foreach ($package->scopes() as $scope) {
             if (str_ends_with($scope->value, '-provider')) {

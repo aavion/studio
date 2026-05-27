@@ -16,7 +16,9 @@
 - run without vendor dependencies already installed;
 - verify PHP version and required extensions;
 - resolve Composer through system Composer or `bin/composer`;
+- remove an existing `vendor/` tree before Composer install so corrupt vendor packages cannot poison dependency resolution;
 - install production dependencies first;
+- generate core-only runtime translation catalogues from `translations/languages/{locale}` before Symfony console consumers run;
 - resolve Symfony environment consistently with Symfony's dotenv behavior;
 - install development dependencies for `dev` and `test`;
 - rely on Composer auto-scripts for ImportMap, public assets, and Tailwind;
@@ -29,9 +31,9 @@ Symfony environment resolution should match Symfony precedence as closely as pra
 
 ## Setup responsibilities
 
-`bin/setup` remains separate from `bin/init`. Setup currently handles:
+`bin/setup` remains separate from `bin/init` and assumes `bin/init` already generated the core runtime translation catalogues. Setup currently handles:
 
-- installer language selection from discovered translation catalogues;
+- installer language selection from generated translation catalogues with source-directory fallback;
 - translated interactive CLI prompts when `bin/setup` runs in a TTY;
 - site title and default URL values;
 - database URL compilation for SQLite, MySQL/MariaDB, and PostgreSQL;
@@ -41,8 +43,11 @@ Symfony environment resolution should match Symfony precedence as closely as pra
 - env override writing and `composer dump-env`;
 - Doctrine migration execution;
 - database-backed default settings, including `localization.default_language`, disabled `localization.route_prefixes_enabled`, and `content.home_path`;
+- a minimal locked `static_page` schema plus published `/home` placeholder page so the configured public root can render immediately after setup;
 - dry-run planning without writing env files, running commands, or seeding the database;
 - setup action logs with halt-on-error results.
+
+Setup subprocesses provide a local `COMPOSER_HOME` under `var/composer-home` when no explicit Composer home is present, and fall back to `var` as `HOME` when the web server environment omits it. This keeps web setup compatible with Composer without relying on shell-only environment variables.
 
 Use `--no-interaction` for scripted CLI setup with defaults and explicit options. `--json` is also non-interactive so automation receives machine-readable output only.
 
@@ -51,6 +56,8 @@ Interactive CLI setup asks for the admin password twice. Non-interactive setup u
 ## Automation notes
 
 Automation workflows should call `bin/init` before reviews or tests when a fresh checkout may not have dependencies or built assets.
+
+When Composer packages look incomplete, corrupted, or inconsistent, run `bin/init` as the first recovery path. It removes the existing `vendor/` tree before Composer runs, then restores production dependencies for bootstrap and development dependencies for local `dev` or `test` workflows.
 
 `bin/init` should not mutate application data or ask interactive setup questions.
 

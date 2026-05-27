@@ -44,6 +44,7 @@ Validation rules:
 | `package.required_directory_missing` | Required package directory is absent. | `source`, `package`, `requirement`, `path` |
 | `package.file_unreadable` | Package file could not be read for linting. | `source`, `package`, `file`, `path` |
 | `package.php_syntax_error` | PHP linter found a syntax error. | `source`, `package`, `file`, `path` |
+| `package.php_namespace_invalid` | Package PHP source under `src/` is outside the declared `PACKAGE_NAMESPACE`. | `source`, `package`, `file`, `path`, `namespace`, `expected_namespace` |
 | `package.twig_syntax_error` | Twig linter found a syntax error. | `source`, `package`, `file`, `path` |
 | `package.json_syntax_error` | JSON linter found a syntax error. | `source`, `package`, `file`, `path` |
 | `package.yaml_syntax_error` | YAML linter found a syntax error. | `source`, `package`, `file`, `path` |
@@ -52,8 +53,24 @@ Validation rules:
 | `package.template_path_invalid` | Package template path is not allowed for root/shared, provider, or macro namespace rules. | `source`, `package`, `package_slug`, `file`, `scopes` |
 | `package.copy_source_missing` | Planned package copy source does not exist. | `source`, `package`, `file`, `path` |
 | `package.copy_source_symlink` | Planned package copy source is a symlink. | `source`, `package`, `file`, `path` |
+| `package.asset_rebuild_queued` | Package asset rebuild was queued for deferred Messenger processing. | `trigger`, `environment`, `deferred` |
+| `package.asset_rebuild_queue_failed` | Package asset rebuild could not be queued for deferred Messenger processing. | `trigger`, `environment`, `exception`, `message` |
+| `package.translation_english_missing` | Package translation sources exist but no English source catalogue is present. | `source`, `package`, `file`, `path` |
+| `package.translation_namespace_invalid` | Package translation source is outside the package-owned `pkg.<slug>` namespace. | `source`, `package`, `file`, `path`, `expected_prefix` |
+| `translation.aggregate_completed` | Core and active package translation sources were aggregated into runtime catalogues. | `packages`, `locales`, `files`, `targets` |
+| `translation.aggregate_failed` | Translation aggregation could not write runtime catalogues. | `exception`, `message`, `target_pattern` |
+| `package.discovery_queued` | Package discovery was queued for deferred Messenger processing. | `trigger`, `deferred` |
+| `package.discovery_queue_failed` | Package discovery could not be queued for deferred Messenger processing. | `trigger`, `exception`, `message` |
 | `package.discovery_completed` | Package discovery completed successfully. | `candidate_count` |
 | `package.validation_completed` | Package validation completed successfully. | `source`, `package`, `inventory_count` |
+| `package.lifecycle.cleanup_completed` | Package cleanup boundary completed. | `package`, `actions` |
+| `package.lifecycle.removed` | Package directory was removed and the registry row was marked removed. | `package`, `path` |
+| `package.lifecycle.purged` | Package cleanup completed and the registry row was deleted. | `package` |
+| `package.lifecycle.fault_reset` | Faulty package was validated and reset to inactive. | `package`, `path` |
+| `package.lifecycle.runtime_failure` | Package was marked faulty after a runtime failure. | `package`, `faulty` |
+| `package.lifecycle.php_load_failed` | Active package PHP loader failed and the package was marked faulty. | `package`, `path`, `loader`, `exception`, `message` |
+| `package.dependency.invalid` | Package dependency declaration could not be parsed. | `package`, `value` |
+| `package.dependency.cycle` | Package activation or installer preflight found a circular hard dependency. | `package`, `cycle` |
 | `package.copy_plan_created` | Package copy plan was created successfully. | `source`, `package`, `target_root`, `target_prefix`, `files` |
 | `filesystem.source_missing` | Filesystem copy source is missing. | `source`, `target` |
 | `filesystem.source_symlink` | Filesystem copy source is a symlink. | `source`, `target` |
@@ -83,14 +100,37 @@ Validation rules:
 |-----------------|---------|-------------------|
 | `message.manifest.parsed` | Manifest parsing completed. | N/A |
 | `message.manifest.validated` | Manifest validation completed. | N/A |
+| `message.package.discovery_queued` | Package discovery was queued for deferred processing. | `%trigger%` |
+| `message.package.discovery_queue_failed` | Package discovery could not be queued. | `%trigger%` |
 | `message.package.discovery_completed` | Package discovery completed successfully. | `%count%` |
 | `message.package.validation_completed` | Package validation completed successfully. | `%package%` |
+| `message.package.asset_rebuild_queued` | Package asset rebuild was queued for deferred processing. | `%trigger%` |
+| `message.package.asset_rebuild_queue_failed` | Package asset rebuild could not be queued. | `%trigger%` |
+| `message.package.translation_english_missing` | Package translation sources do not include the required English fallback. | `%package%` |
+| `message.package.translation_namespace_invalid` | Package translation source does not stay under the package-owned namespace. | `%path%`, `%package%` |
+| `message.translation.aggregate_completed` | Translation aggregation completed. | `%files%`, `%locales%`, `%packages%` |
+| `message.translation.aggregate_failed` | Translation aggregation failed. | `%path%` |
+| `message.package.lifecycle.cleanup_completed` | Package cleanup boundary completed. | `%package%` |
+| `message.package.lifecycle.dependent_deactivated` | Package was automatically deactivated because a dependency became unavailable. | `%package%`, `%dependency%` |
+| `message.package.lifecycle.removed` | Package directory was removed and the registry row was marked removed. | `%package%` |
+| `message.package.lifecycle.purged` | Package cleanup completed and the registry row was deleted. | `%package%` |
+| `message.package.lifecycle.fault_reset` | Faulty package was validated and reset to inactive. | `%package%` |
+| `message.package.lifecycle.runtime_failure` | Package was marked faulty after a runtime failure. | `%package%` |
+| `message.package.lifecycle.php_load_failed` | Active package PHP loader failed and the package was marked faulty. | `%package%` |
 | `message.package.copy_plan_created` | Package copy plan was created successfully. | `%count%` |
 | `message.filesystem.file_written` | File write completed. | `%path%` |
 | `message.filesystem.file_copied` | File copy completed. | `%target%` |
 | `message.filesystem.directory_ready` | Directory exists or was created. | `%path%` |
 | `message.filesystem.parent_directory_ready` | Parent directory exists or was created. | `%path%` |
 | `message.process.command_completed` | Process action exited successfully. | `%command%`, `%exit_code%` |
+| `message.backend.route_not_found` | Backend route resolver could not match an area path. | `%path%` |
+| `message.backend.setup_locked` | Setup route is locked after completed installation. | N/A |
+| `message.backend.action.unknown` | Submitted backend action is not registered. | `%action%` |
+| `message.backend.action.invalid_csrf` | Submitted backend action failed CSRF validation. | N/A |
+| `message.backend.action.cache_clear_completed` | Manual backend cache clear completed. | N/A |
+| `message.setup.environment_file_unreadable` | Setup environment override file could not be read. | `%file%` |
+| `message.setup.environment_file_write_failed` | Setup environment override file could not be written. | `%file%` |
+| `message.setup.admin_password.too_short` | Setup admin password does not satisfy the minimum length policy. | `%min_length%` |
 | `message.content.slug.invalid_format` | Content slug does not match the public slug rules. | `%slug%` |
 | `message.content.slug.reserved` | Content slug conflicts with a reserved system route prefix. | `%slug%` |
 | `message.content.path.empty_or_padded` | Content path is empty or padded with whitespace. | `%path%` |
@@ -118,6 +158,9 @@ Validation rules:
 | `message.access.level.invalid` | Access level is outside the supported 0-9 range. | `%level%` |
 | `message.access.group_identifier.invalid` | ACL group identifier is not lowercase snake_case. | `%identifier%` |
 | `message.config.key.invalid` | Configuration key does not use dotted lowercase segments. | `%key%` |
+| `message.config.read_failed` | Configuration storage could not read a key. | `%key%` |
+| `message.config.write_failed` | Configuration storage could not write a key. | `%key%` |
+| `message.config.value_invalid` | Configuration storage contains malformed JSON for a key. | `%key%` |
 | `message.user.username.invalid` | Username does not match the supported account-name format. | `%username%` |
 | `message.user.email.invalid` | User email address is invalid. | `%email%` |
 | `message.api_key.prefix.invalid` | API key prefix does not match the safe display format. | `%prefix%` |
@@ -136,6 +179,8 @@ Validation rules:
 | `message.api_key.permission.write_required` | API key lacks write permission for the requested operation. | N/A |
 | `message.api_key.permission.revoked` | API key is revoked and cannot authenticate. | N/A |
 | `message.package.identifier.invalid` | Managed package identifier contains unsupported characters. | `%identifier%` |
+| `message.package.dependency.invalid` | Package dependency declaration could not be parsed. | `%package%` |
+| `message.package.dependency.cycle` | Package dependency resolution found a circular hard dependency. | `%cycle%` |
 | `message.menu.identifier.invalid` | Menu identifier is not lowercase snake_case. | `%identifier%` |
 
 ## Notes for future UI

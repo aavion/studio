@@ -8,26 +8,25 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 
 final class ManifestValidator
 {
     /**
-     * @return OperationResult<Manifest>
+     * @return WorkflowResult<Manifest>
      */
-    public function validate(Manifest $manifest, ManifestSpec $spec): OperationResult
+    public function validate(Manifest $manifest, ManifestSpec $spec): WorkflowResult
     {
         $issues = [];
 
         foreach ($spec->requiredKeys() as $requiredKey) {
             if (!$manifest->has($requiredKey) || '' === trim((string) $manifest->get($requiredKey))) {
-                $issues[] = OperationIssue::create(
+                $issues[] = Message::create(
                     MessageCode::MANIFEST_MISSING_REQUIRED_KEY,
                     MessageKey::MANIFEST_MISSING_REQUIRED_KEY,
                     ['%key%' => $requiredKey],
                     context: ['key' => $requiredKey],
-                    level: MessageLevel::Warning,
+                    level: MessageLevel::Error,
                 );
             }
         }
@@ -36,22 +35,22 @@ final class ManifestValidator
         if (null !== $allowedKeys) {
             foreach ($manifest->keys() as $key) {
                 if (!in_array($key, $allowedKeys, true)) {
-                    $issues[] = OperationIssue::create(
+                    $issues[] = Message::create(
                         MessageCode::MANIFEST_UNKNOWN_KEY,
                         MessageKey::MANIFEST_UNKNOWN_KEY,
                         ['%key%' => $key],
                         context: ['key' => $key],
-                        level: MessageLevel::Warning,
+                        level: MessageLevel::Error,
                     );
                 }
             }
         }
 
         if ([] !== $issues) {
-            return OperationResult::invalid($issues);
+            return WorkflowResult::invalid($issues);
         }
 
-        return OperationResult::success($manifest, [
+        return WorkflowResult::success($manifest, [
             'required_keys' => $spec->requiredKeys(),
             'allowed_keys' => $spec->allowedKeys(),
         ], [

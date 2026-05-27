@@ -10,7 +10,6 @@ use App\Content\Routing\ContentSlug;
 use App\Content\Routing\ContentSystemRoute;
 use App\Content\Schema\ContentSchemaField;
 use App\Core\Access\AccessLevel;
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
@@ -430,7 +429,7 @@ class ContentItem
     public function setMetadataValue(string $key, mixed $value): void
     {
         if ('' === trim($key)) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_METADATA_KEY_EMPTY);
+            throw MessageException::invalidArgument(MessageKey::CONTENT_METADATA_KEY_EMPTY);
         }
 
         self::assertMetadataKey($key);
@@ -457,7 +456,7 @@ class ContentItem
     private static function assertUid(string $uid, string $label): string
     {
         if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $uid)) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_UID_INVALID, [
+            throw MessageException::invalidArgument(MessageKey::CONTENT_UID_INVALID, [
                 '%label%' => $label,
                 '%uid%' => $uid,
             ]);
@@ -488,7 +487,7 @@ class ContentItem
     {
         foreach (array_keys($metadata) as $key) {
             if (!is_string($key) || '' === trim($key)) {
-                throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_METADATA_KEY_EMPTY);
+                throw MessageException::invalidArgument(MessageKey::CONTENT_METADATA_KEY_EMPTY);
             }
 
             self::assertMetadataKey($key);
@@ -500,7 +499,7 @@ class ContentItem
     private static function assertMetadataKey(string $key): void
     {
         if (ContentSchemaField::isRequiredBaseIdentifier($key)) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_METADATA_RESERVED_SCHEMA_FIELD, [
+            throw MessageException::invalidArgument(MessageKey::CONTENT_METADATA_RESERVED_SCHEMA_FIELD, [
                 '%field_identifier%' => $key,
             ]);
         }
@@ -514,7 +513,7 @@ class ContentItem
     private static function assertNonEmptyStringList(array $values, string $label): array
     {
         if ([] === $values) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_STRING_LIST_EMPTY, [
+            throw MessageException::invalidArgument(MessageKey::CONTENT_STRING_LIST_EMPTY, [
                 '%label%' => $label,
             ]);
         }
@@ -531,7 +530,7 @@ class ContentItem
     {
         foreach ($values as $value) {
             if (!is_string($value) || '' === trim($value)) {
-                throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_STRING_LIST_INVALID, [
+                throw MessageException::invalidArgument(MessageKey::CONTENT_STRING_LIST_INVALID, [
                     '%label%' => $label,
                 ]);
             }

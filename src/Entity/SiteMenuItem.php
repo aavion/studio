@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Core\Access\AccessLevel;
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
@@ -124,7 +123,7 @@ class SiteMenuItem
 
         foreach ($values as $identifier) {
             if (!is_string($identifier)) {
-                throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
+                throw MessageException::invalidArgument(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
                     '%identifier%' => 'non-string',
                 ]);
             }

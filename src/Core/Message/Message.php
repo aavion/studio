@@ -51,9 +51,27 @@ final readonly class Message
      * @param array<string, mixed> $parameters
      * @param array<string, mixed> $context
      */
+    public static function invalidArgument(string $translationKey, array $parameters = [], array $context = []): self
+    {
+        return new self(MessageCode::E_INVALID_ARGUMENT, $translationKey, $parameters, $context, MessageLevel::Warning);
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $context
+     */
     public static function error(string $code, string $translationKey, array $parameters = [], array $context = []): self
     {
         return new self($code, $translationKey, $parameters, $context, MessageLevel::Error);
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $context
+     */
+    public static function exception(string $code, string $translationKey, array $parameters = [], array $context = []): self
+    {
+        return new self($code, $translationKey, $parameters, $context, MessageLevel::Exception);
     }
 
     /**
@@ -89,7 +107,7 @@ final readonly class Message
      */
     public static function success(string $translationKey, array $parameters = [], array $context = []): self
     {
-        return new self(MessageCode::SUCCESS, $translationKey, $parameters, $context, MessageLevel::Info);
+        return new self(MessageCode::SUCCESS, $translationKey, $parameters, $context, MessageLevel::Success);
     }
 
     public function code(): string
@@ -151,7 +169,7 @@ final readonly class Message
     private static function defaultLevelForCode(string $code): MessageLevel
     {
         if (MessageCode::SUCCESS === $code) {
-            return MessageLevel::Info;
+            return MessageLevel::Success;
         }
 
         if (MessageCode::E_INVALID_ARGUMENT === $code) {

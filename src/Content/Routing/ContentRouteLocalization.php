@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Content\Routing;
 
+use App\Core\Config\Config;
 use App\Localization\TranslationLanguageCatalog;
-use Doctrine\DBAL\Connection;
 
 final readonly class ContentRouteLocalization
 {
@@ -14,7 +14,7 @@ final readonly class ContentRouteLocalization
     public const HOME_PATH_KEY = 'content.home_path';
 
     public function __construct(
-        private Connection $connection,
+        private Config $config,
         private TranslationLanguageCatalog $languageCatalog,
     ) {
     }
@@ -138,16 +138,6 @@ final readonly class ContentRouteLocalization
 
     private function configValue(string $key, mixed $default): mixed
     {
-        $value = $this->connection->fetchOne('SELECT value FROM config_entry WHERE config_key = ?', [$key]);
-
-        if (!is_string($value)) {
-            return $default;
-        }
-
-        try {
-            return json_decode($value, true, flags: JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
-            return $default;
-        }
+        return $this->config->get($key, $default);
     }
 }

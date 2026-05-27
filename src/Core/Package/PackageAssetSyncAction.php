@@ -7,7 +7,7 @@ namespace App\Core\Package;
 use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Operation\OperationActionInterface;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 
 final readonly class PackageAssetSyncAction implements OperationActionInterface
 {
@@ -42,9 +42,9 @@ final readonly class PackageAssetSyncAction implements OperationActionInterface
     }
 
     /**
-     * @return OperationResult<array{packages: int, mirrored_assets: int, css_entries: int, javascript_entries: int, tailwind_sources: int}>
+     * @return WorkflowResult<array{packages: int, mirrored_assets: int, css_entries: int, javascript_entries: int, tailwind_sources: int}>
      */
-    public function execute(): OperationResult
+    public function execute(): WorkflowResult
     {
         return $this->syncer->sync($this->packages);
     }

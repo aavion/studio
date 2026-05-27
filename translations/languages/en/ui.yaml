@@ -1,0 +1,96 @@
+ui:
+  app:
+    name: 'aavion Studio'
+  navigation:
+    skip_to_content: 'Skip to content'
+  frontend:
+    navigation: 'Primary navigation'
+    footer: '%app%'
+  content:
+    fields: 'Content fields'
+    field: 'Field'
+    value: 'Value'
+    empty_value: 'Empty'
+  form:
+    required: 'Required'
+    submit: 'Submit'
+  empty_state:
+    title: 'Nothing to show'
+  user:
+    navigation:
+      account: 'Account'
+      admin: 'Admin'
+      studio: 'Studio'
+    login:
+      title: 'Sign in'
+      placeholder: 'Use your account credentials to continue.'
+      username: 'Username'
+      password: 'Password'
+      submit: 'Sign in'
+      invalid_credentials: 'The username or password is not valid.'
+    register:
+      title: 'Create account'
+      link: 'Create an account'
+      placeholder: 'Registration will be available once user flows are enabled.'
+    password_reset:
+      title: 'Reset password'
+      placeholder: 'Password reset will be available once mail flows are enabled.'
+    profile:
+      title: 'Profile'
+      placeholder: 'Profile settings will be available once account flows are enabled.'
+      username: 'Username'
+      email: 'Email'
+      access_level: 'Access level'
+    password:
+      title: 'Change password'
+      placeholder: 'Update the password for your account.'
+      current_password: 'Current password'
+      new_password: 'New password'
+      new_password_help: 'Use at least 12 characters.'
+      confirm_password: 'Confirm new password'
+      submit: 'Update password'
+      success: 'Your password was updated.'
+      errors:
+        invalid_csrf: 'The password form expired. Please try again.'
+        current_password: 'The current password is not correct.'
+        new_password_length: 'The new password must contain at least 12 characters.'
+        password_mismatch: 'The new passwords do not match.'
+    api_keys:
+      title: 'API keys'
+      subtitle: 'Only API keys assigned to your account are shown here.'
+      empty_title: 'No API keys'
+      empty_message: 'No API keys are assigned to this account yet.'
+      show_revoked: 'Show revoked keys'
+      prefix: 'Prefix'
+      status: 'Status'
+      created_at: 'Created'
+      revoked_at: 'Revoked'
+    invitation:
+      title: 'Accept invitation'
+      placeholder: 'Invitation acceptance will let invited users choose a username and password from their email link.'
+    logout:
+      title: 'Sign out'
+      placeholder: 'Confirm that you want to end your session.'
+      submit: 'Sign out'
+  error:
+    default:
+      title: 'Request failed'
+      message: 'The system could not complete the request.'
+    401:
+      title: 'Sign in required'
+      message: 'This content is only available after signing in with sufficient access.'
+    403:
+      title: 'Access denied'
+      message: 'This route is protected or not available for direct access.'
+    404:
+      title: 'Page not found'
+      message: 'The requested page could not be found or is not published.'
+    429:
+      title: 'Too many requests'
+      message: 'Please wait a moment before trying again.'
+    500:
+      title: 'Something went wrong'
+      message: 'The system could not complete the request.'
+    503:
+      title: 'Maintenance mode'
+      message: 'The site is temporarily unavailable while maintenance is active.'

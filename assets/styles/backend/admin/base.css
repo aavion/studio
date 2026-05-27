@@ -1,20 +1,28 @@
 .studio-admin-shell {
     display: grid;
-    grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+    grid-template-columns: minmax(13rem, 17rem) minmax(0, 1fr);
     min-height: calc(100vh - 4rem);
-    border: 1px solid var(--color-studio-line);
-    border-radius: var(--studio-radius);
-    background: var(--color-studio-paper);
+    overflow: hidden;
+    border: var(--studio-border);
+    border-radius: var(--studio-layout-radius);
+    background: var(--color-paper);
+    box-shadow: var(--studio-shadow-panel);
 }
 
 .studio-admin-sidebar {
-    border-right: 1px solid var(--color-studio-line);
-    background: #f0f4f8;
+    border-right: var(--studio-border);
+    background: var(--color-gray-50);
 }
 
 .studio-admin-content {
     min-width: 0;
-    padding: 1.5rem;
+    background: var(--color-paper);
+}
+
+.studio-admin-content-inner {
+    display: grid;
+    gap: 1rem;
+    padding: clamp(1rem, 3vw, 1.5rem);
 }
 
 @media (max-width: 760px) {
@@ -24,6 +32,6 @@
 
     .studio-admin-sidebar {
         border-right: 0;
-        border-bottom: 1px solid var(--color-studio-line);
+        border-bottom: var(--studio-border);
     }
 }

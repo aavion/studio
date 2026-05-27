@@ -8,5 +8,25 @@
             title: 'ui.user.profile.title'|trans,
             subtitle: 'ui.user.profile.placeholder'|trans,
         } only %}
+        <dl class="studio-user-summary">
+            <div>
+                <dt>{{ 'ui.user.profile.username'|trans }}</dt>
+                <dd>{{ user_account.username }}</dd>
+            </div>
+            <div>
+                <dt>{{ 'ui.user.profile.email'|trans }}</dt>
+                <dd>{{ user_account.email }}</dd>
+            </div>
+            <div>
+                <dt>{{ 'ui.user.profile.access_level'|trans }}</dt>
+                <dd>{{ user_account.maxAccessLevel }}</dd>
+            </div>
+        </dl>
+        {% include '@frontend/partials/actions/_button-group.html.twig' with {
+            actions: [
+                {label: 'ui.user.password.title'|trans, href: path('user_password'), variant: 'secondary'},
+                {label: 'ui.user.api_keys.title'|trans, href: path('user_api_keys'), variant: 'secondary'},
+            ],
+        } only %}
     </section>
 {% endblock %}

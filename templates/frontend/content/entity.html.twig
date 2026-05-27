@@ -11,7 +11,15 @@
                 subtitle: content_view.subtitle,
             } only %}
 
-            {% include '@frontend/content/partials/_generic-fields.html.twig' with {content_view: content_view} only %}
+            {% for injection in content_injections.before_content|default([]) %}
+                {{ injection.content|raw }}
+            {% endfor %}
+
+            {{ content_fieldset|raw }}
+
+            {% for injection in content_injections.after_content|default([]) %}
+                {{ injection.content|raw }}
+            {% endfor %}
         </article>
     </main>
 {% endblock %}

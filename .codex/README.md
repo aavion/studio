@@ -13,12 +13,13 @@
 - Info: [Grav Plugin Inspiration Notes](grav-plugin-inspiration-notes.md)
 - Info: [Symfony Documentation Notes](symfony-docs-notes.md)
 - Tool: [Render Symfony Output](render.php)
-- Tool: [Compare Translation-Keys](compare_translations.php)
+- Tool: [Compare Translation Keys](compare_translations.php)
 - Tool: [Resolve Cloud Artifacts](resolve_cloud_artifacts.php)
 - Tool: [Clean Ignored Artifacts](clean_ignored_artifacts.php)
 
 ## Usage
 - Additional agent notes should live directly under `.codex/`. Add markdown-files here for context-optimization.
 - Reusable scripts should live directly under `.codex/`. Add helpers here to avoid re-writing shell snippets.
+- Run `php .codex/compare_translations.php` to compare source catalogue files and keys across all locale directories under `translations/languages/`, using English as the reference locale when available.
 - Run `php .codex/resolve_cloud_artifacts.php` to inspect iCloud/Finder artifacts. Add `--apply` to delete safe duplicates and macOS metadata; add `--prefer-base` only after reviewing differing conflict copies.
 - Run `php .codex/clean_ignored_artifacts.php` to inspect ignored artifacts. Add `--apply` to delete everything ignored by Git.

@@ -39,26 +39,37 @@ final class SetupScriptTest extends TestCase
         self::assertStringContainsString('Dotenv', $contents);
         self::assertStringContainsString('bootEnv', $contents);
         self::assertStringContainsString('SetupRunner', $contents);
+        self::assertStringNotContainsString('CoreTranslationBootstrapper', $contents);
         self::assertStringContainsString('SetupCliInputFactory', $contents);
         self::assertStringContainsString('dry-run', $contents);
         self::assertStringContainsString('reset-password', $contents);
         self::assertStringContainsString('no-interaction', $contents);
         self::assertStringContainsString('json_encode', $contents);
+        self::assertStringContainsString('workflowResultMessageReporter($projectDir, $environment)', $contents);
     }
 
     public function testSetupScriptLocalizesHumanOutput(): void
     {
         $output = [];
         $exitCode = 1;
+        $projectDir = dirname(__DIR__, 2);
+        $testLog = $projectDir.'/var/log/test/operations.log';
+        $devLog = $projectDir.'/var/log/dev/operations.log';
+        $devLogSize = is_file($devLog) ? filesize($devLog) : false;
+
+        @unlink($testLog);
+
         $command = implode(' ', [
             escapeshellarg(PHP_BINARY),
             escapeshellarg($this->scriptPath),
             '--dry-run',
             '--no-interaction',
+            '--env=test',
             '--language=de',
             '--site-title='.escapeshellarg('Dry Studio'),
             '--url=https://dry.example.test',
             '--db-driver=sqlite',
+            '--admin-password='.escapeshellarg('admin-password'),
         ]);
 
         exec($command, $output, $exitCode);
@@ -69,5 +80,7 @@ final class SetupScriptTest extends TestCase
         self::assertStringContainsString('Installer-Sprache "de" ausgewählt.', $text);
         self::assertStringContainsString('Verfügbare Installer-Sprachen: de, en', $text);
         self::assertStringNotContainsString('message.setup.language_selected', $text);
+        self::assertFileExists($testLog);
+        self::assertSame($devLogSize, is_file($devLog) ? filesize($devLog) : false);
     }
 }

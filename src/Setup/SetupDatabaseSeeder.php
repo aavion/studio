@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Access\AccessLevel;
+use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateSubjectType;
 use Doctrine\DBAL\Connection;
@@ -21,17 +25,32 @@ final readonly class SetupDatabaseSeeder
      */
     public function seedDefaultSettings(string $projectDir, SetupInput $input, string $databaseUrl): array
     {
-        $connection = $this->connection($projectDir, $databaseUrl);
-        $now = $this->now();
+        $connection = $this->connection($projectDir, $databaseUrl, $input);
+        $config = new Config($connection);
+        $settings = [
+            ['site.title', $input->siteTitle(), ConfigValueType::String],
+            ['site.url', $input->defaultUri(), ConfigValueType::String],
+            ['localization.default_language', $input->language(), ConfigValueType::String],
+            ['localization.route_prefixes_enabled', false, ConfigValueType::Boolean],
+            ['content.home_path', '/home', ConfigValueType::String],
+            ['user.default_acl_group', 'registered', ConfigValueType::String],
+            ['user.menu.enabled', true, ConfigValueType::Boolean],
+            ['user.menu.sort_order', 900, ConfigValueType::Integer],
+            ['user.registration.enabled', false, ConfigValueType::Boolean],
+        ];
 
-        $this->upsertConfig($connection, 'site.title', $input->siteTitle(), ConfigValueType::String, $now);
-        $this->upsertConfig($connection, 'site.url', $input->defaultUri(), ConfigValueType::String, $now);
-        $this->upsertConfig($connection, 'localization.default_language', $input->language(), ConfigValueType::String, $now);
-        $this->upsertConfig($connection, 'localization.route_prefixes_enabled', false, ConfigValueType::Boolean, $now);
-        $this->upsertConfig($connection, 'content.home_path', '/home', ConfigValueType::String, $now);
-        $this->upsertConfig($connection, 'user.default_acl_group', 'registered', ConfigValueType::String, $now);
+        foreach ($settings as [$key, $value, $type]) {
+            if (!$config->set($key, $value, $type, modifiedBy: 'setup')) {
+                throw SetupStepFailedException::fromMessage(Message::error(
+                    MessageCode::CONFIG_WRITE_FAILED,
+                    MessageKey::CONFIG_WRITE_FAILED,
+                    ['%key%' => $key],
+                    ['operation' => 'setup.seed_default_settings', 'config_key' => $key],
+                ));
+            }
+        }
 
-        return ['settings' => ['site.title', 'site.url', 'localization.default_language', 'localization.route_prefixes_enabled', 'content.home_path', 'user.default_acl_group']];
+        return ['settings' => array_column($settings, 0)];
     }
 
     /**
@@ -39,7 +58,7 @@ final readonly class SetupDatabaseSeeder
      */
     public function seedAdminUser(string $projectDir, SetupInput $input, string $databaseUrl): array
     {
-        $connection = $this->connection($projectDir, $databaseUrl);
+        $connection = $this->connection($projectDir, $databaseUrl, $input);
         $now = $this->now();
         $groups = [
             ['00000000-0000-0000-0000-000000000102', 'registered', ['en' => 'Registered', 'de' => 'Registriert'], AccessLevel::REGISTERED, true, true],
@@ -63,19 +82,64 @@ final readonly class SetupDatabaseSeeder
         return ['admin_username' => $input->adminUsername(), 'admin_email' => $input->adminEmail()];
     }
 
-    private function upsertConfig(Connection $connection, string $key, mixed $value, ConfigValueType $type, string $now): void
+    /**
+     * @return array<string, mixed>
+     */
+    public function seedInitialContent(string $projectDir, SetupInput $input, string $databaseUrl): array
     {
-        $values = [
-            'value' => json_encode($value, JSON_THROW_ON_ERROR),
-            'value_type' => $type->value,
-            'sensitive' => 0,
-            'modified_at' => $now,
-            'modified_by' => 'setup',
+        $connection = $this->connection($projectDir, $databaseUrl, $input);
+        $now = $this->now();
+        $schemaUid = '10000000-0000-0000-0000-000000000001';
+        $schemaVersionUid = '10000000-0000-0000-0000-000000000101';
+        $contentUid = '20000000-0000-0000-0000-000000000001';
+        $revisionUid = '20000000-0000-0000-0000-000000000101';
+
+        $definition = [
+            'fields' => [
+                ['identifier' => 'title', 'type' => 'text', 'required' => true, 'localized' => true],
+                ['identifier' => 'subtitle', 'type' => 'text', 'required' => true, 'localized' => true],
+                ['identifier' => 'body', 'type' => 'rich_text', 'required' => true, 'localized' => true],
+                ['identifier' => 'seo_title', 'type' => 'text', 'required' => false, 'localized' => true],
+            ],
+            'order' => ['title', 'subtitle', 'body', 'seo_title'],
+        ];
+        $description = [
+            'en' => 'General pages with a rich text body.',
+            'de' => 'Allgemeine Seiten mit Rich-Text-Inhalt.',
         ];
 
-        $connection->fetchOne('SELECT config_key FROM config_entry WHERE config_key = ?', [$key])
-            ? $connection->update('config_entry', $values, ['config_key' => $key])
-            : $connection->insert('config_entry', ['config_key' => $key, ...$values]);
+        $schemaUid = $this->upsertContentSchema($connection, $schemaUid, $description, $now);
+        $schemaVersionUid = $this->upsertContentSchemaVersion($connection, $schemaVersionUid, $schemaUid, $definition, $description, $now);
+        $connection->update('content_schema', ['active_version_uid' => $schemaVersionUid], ['uid' => $schemaUid]);
+        $contentUid = $this->upsertContentItem($connection, $contentUid, $schemaUid, $now);
+        $revisionUid = $this->upsertContentRevision($connection, $revisionUid, $contentUid, $schemaUid, $schemaVersionUid);
+        $this->replaceContentFields($connection, $revisionUid, [
+            'title' => [
+                'en' => $input->siteTitle(),
+                'de' => $input->siteTitle(),
+            ],
+            'subtitle' => [
+                'en' => 'Your new Studio site is ready.',
+                'de' => 'Deine neue Studio-Seite ist bereit.',
+            ],
+            'body' => [
+                'en' => ['html' => '<p>This placeholder page was created during setup and can be replaced in the editor.</p>'],
+                'de' => ['html' => '<p>Diese Platzhalterseite wurde waehrend des Setups angelegt und kann im Editor ersetzt werden.</p>'],
+            ],
+            'seo_title' => [
+                'en' => $input->siteTitle(),
+                'de' => $input->siteTitle(),
+            ],
+        ]);
+
+        $connection->update('content_item', ['active_revision_uid' => $revisionUid], ['uid' => $contentUid]);
+        $this->upsertStateMarker($connection, StateSubjectType::CONTENT_SCHEMA, $schemaUid, StateMarkerKey::CREATED, $now, 'setup', null, ['identifier' => 'static_page']);
+        $this->upsertStateMarker($connection, StateSubjectType::CONTENT_SCHEMA_VERSION, $schemaVersionUid, StateMarkerKey::ACTIVATED, $now, 'setup', '1', ['schema_uid' => $schemaUid]);
+        $this->upsertStateMarker($connection, StateSubjectType::CONTENT_ITEM, $contentUid, StateMarkerKey::CREATED, $now, 'setup', null, ['slug' => 'home']);
+        $this->upsertStateMarker($connection, StateSubjectType::CONTENT_ITEM, $contentUid, StateMarkerKey::PUBLISHED, $now, 'setup', 'published', ['revision_uid' => $revisionUid]);
+        $this->upsertStateMarker($connection, StateSubjectType::CONTENT_REVISION, $revisionUid, StateMarkerKey::CREATED, $now, 'setup', null, ['content_uid' => $contentUid]);
+
+        return ['schema' => 'static_page', 'path' => '/home', 'content_uid' => $contentUid];
     }
 
     /**
@@ -143,6 +207,164 @@ final readonly class SetupDatabaseSeeder
     }
 
     /**
+     * @param array<string, string> $description
+     */
+    private function upsertContentSchema(Connection $connection, string $schemaUid, array $description, string $now): string
+    {
+        $values = [
+            'identifier' => 'static_page',
+            'source' => 'setup',
+            'locked' => 1,
+            'active_version_uid' => null,
+            'labels' => json_encode(['en' => 'Static page', 'de' => 'Statische Seite'], JSON_THROW_ON_ERROR),
+            'descriptions' => json_encode($description, JSON_THROW_ON_ERROR),
+            'metadata' => json_encode(['seeded_by' => 'setup', 'updated_at' => $now], JSON_THROW_ON_ERROR),
+        ];
+        $existingUid = $connection->fetchOne('SELECT uid FROM content_schema WHERE identifier = ?', ['static_page']);
+
+        if (is_string($existingUid) && '' !== $existingUid) {
+            $connection->update('content_schema', $values, ['uid' => $existingUid]);
+
+            return $existingUid;
+        }
+
+        $connection->insert('content_schema', ['uid' => $schemaUid, ...$values]);
+
+        return $schemaUid;
+    }
+
+    /**
+     * @param array<string, mixed> $definition
+     * @param array<string, string> $description
+     */
+    private function upsertContentSchemaVersion(
+        Connection $connection,
+        string $versionUid,
+        string $schemaUid,
+        array $definition,
+        array $description,
+        string $now,
+    ): string {
+        $definitionJson = json_encode($definition, JSON_THROW_ON_ERROR);
+        $values = [
+            'schema_uid' => $schemaUid,
+            'version' => 1,
+            'title' => json_encode(['en' => 'Static page schema', 'de' => 'Schema fuer statische Seiten'], JSON_THROW_ON_ERROR),
+            'description' => json_encode($description, JSON_THROW_ON_ERROR),
+            'definition' => $definitionJson,
+            'custom_twig' => null,
+            'definition_hash' => hash('sha256', $definitionJson),
+            'use_min_level' => null,
+            'use_group_identifiers' => null,
+            'edit_min_level' => null,
+            'edit_group_identifiers' => null,
+            'manage_min_level' => null,
+            'manage_group_identifiers' => null,
+            'metadata' => json_encode(['seeded_by' => 'setup', 'updated_at' => $now], JSON_THROW_ON_ERROR),
+        ];
+        $existingUid = $connection->fetchOne('SELECT uid FROM content_schema_version WHERE schema_uid = ? AND version = ?', [$schemaUid, 1]);
+
+        if (is_string($existingUid) && '' !== $existingUid) {
+            $connection->update('content_schema_version', $values, ['uid' => $existingUid]);
+
+            return $existingUid;
+        }
+
+        $connection->insert('content_schema_version', ['uid' => $versionUid, ...$values]);
+
+        return $versionUid;
+    }
+
+    private function upsertContentItem(Connection $connection, string $contentUid, string $schemaUid, string $now): string
+    {
+        $values = [
+            'slug' => 'home',
+            'status' => 'published',
+            'parent_uid' => '/',
+            'sort_order' => 10,
+            'custom_url' => null,
+            'redirect_target' => null,
+            'schema_uid' => $schemaUid,
+            'schema_version' => 1,
+            'active_revision_uid' => null,
+            'version' => 1,
+            'available_languages' => json_encode(['en', 'de'], JSON_THROW_ON_ERROR),
+            'available_variants' => json_encode(['default'], JSON_THROW_ON_ERROR),
+            'visibility' => 'public',
+            'acl_restrictions' => json_encode([], JSON_THROW_ON_ERROR),
+            'view_min_level' => AccessLevel::PUBLIC,
+            'view_group_identifiers' => null,
+            'edit_min_level' => AccessLevel::EDITOR,
+            'edit_group_identifiers' => null,
+            'manage_min_level' => AccessLevel::MANAGER,
+            'manage_group_identifiers' => null,
+            'metadata' => json_encode(['seeded_by' => 'setup', 'template_hint' => 'home', 'updated_at' => $now], JSON_THROW_ON_ERROR),
+        ];
+        $existingUid = $connection->fetchOne('SELECT uid FROM content_item WHERE parent_uid = ? AND slug = ?', ['/', 'home']);
+
+        if (is_string($existingUid) && '' !== $existingUid) {
+            $connection->update('content_item', $values, ['uid' => $existingUid]);
+
+            return $existingUid;
+        }
+
+        $connection->insert('content_item', ['uid' => $contentUid, ...$values]);
+
+        return $contentUid;
+    }
+
+    private function upsertContentRevision(
+        Connection $connection,
+        string $revisionUid,
+        string $contentUid,
+        string $schemaUid,
+        string $schemaVersionUid,
+    ): string {
+        $values = [
+            'content_uid' => $contentUid,
+            'version' => 1,
+            'schema_uid' => $schemaUid,
+            'schema_version_uid' => $schemaVersionUid,
+            'change_summary' => 'Seeded setup homepage.',
+            'metadata' => json_encode(['seeded_by' => 'setup'], JSON_THROW_ON_ERROR),
+        ];
+        $existingUid = $connection->fetchOne('SELECT uid FROM content_revision WHERE content_uid = ? AND version = ?', [$contentUid, 1]);
+
+        if (is_string($existingUid) && '' !== $existingUid) {
+            $connection->update('content_revision', $values, ['uid' => $existingUid]);
+
+            return $existingUid;
+        }
+
+        $connection->insert('content_revision', ['uid' => $revisionUid, ...$values]);
+
+        return $revisionUid;
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $fields
+     */
+    private function replaceContentFields(Connection $connection, string $revisionUid, array $fields): void
+    {
+        $connection->delete('content_field_value', ['revision_uid' => $revisionUid]);
+        $fieldIndex = 1;
+
+        foreach ($fields as $fieldIdentifier => $localizedValues) {
+            foreach ($localizedValues as $language => $fieldContent) {
+                $connection->insert('content_field_value', [
+                    'uid' => sprintf('20000000-0000-0000-0001-%012d', $fieldIndex),
+                    'revision_uid' => $revisionUid,
+                    'language' => $language,
+                    'variant' => 'default',
+                    'field_identifier' => $fieldIdentifier,
+                    'field_content' => json_encode($fieldContent, JSON_THROW_ON_ERROR),
+                ]);
+                ++$fieldIndex;
+            }
+        }
+    }
+
+    /**
      * @param array<string, mixed> $metadata
      */
     private function upsertStateMarker(
@@ -175,9 +397,9 @@ final readonly class SetupDatabaseSeeder
             : $connection->insert('state_marker', ['uid' => $this->uuid(), ...$where, ...$values]);
     }
 
-    private function connection(string $projectDir, string $databaseUrl): Connection
+    private function connection(string $projectDir, string $databaseUrl, SetupInput $input): Connection
     {
-        return $this->connectionFactory->create($projectDir, $databaseUrl);
+        return $this->connectionFactory->create($projectDir, $databaseUrl, $input->appEnv());
     }
 
     private function uuid(): string

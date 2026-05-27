@@ -13,9 +13,15 @@ final readonly class SetupLanguageCatalog
     {
         $languages = [];
 
-        foreach (glob($projectDir.'/translations/messages.*.yaml') ?: [] as $path) {
+        foreach (glob($projectDir.'/translations/runtime/messages.*.yaml') ?: [] as $path) {
             if (1 === preg_match('/messages\.([a-z][a-z0-9]*(?:[_-][a-zA-Z0-9]+)*)\.yaml$/', basename($path), $matches)) {
                 $languages[] = $matches[1];
+            }
+        }
+
+        foreach (glob($projectDir.'/translations/languages/*', GLOB_ONLYDIR) ?: [] as $path) {
+            if (1 === preg_match('/^[a-z][a-z0-9]*(?:[_-][a-zA-Z0-9]+)*$/', basename($path))) {
+                $languages[] = basename($path);
             }
         }
 

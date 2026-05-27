@@ -33,7 +33,7 @@ final readonly class SetupLanguageSelector
                     MessageKey::SETUP_LANGUAGE_SELECTED,
                     ['%language%' => $input->language()],
                 ),
-                Message::info(
+                Message::debug(
                     MessageCode::SETUP_AVAILABLE_LANGUAGES,
                     MessageKey::SETUP_AVAILABLE_LANGUAGES,
                     ['%languages%' => implode(', ', $availableLanguages)],

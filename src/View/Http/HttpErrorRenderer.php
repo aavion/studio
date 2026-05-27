@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\View\Http;
 
 use App\Content\Read\PublishedContentResolver;
+use App\Content\Render\ContentFieldsetRenderer;
 use App\Core\Access\AccessActor;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,6 +19,7 @@ final readonly class HttpErrorRenderer
     public function __construct(
         private Environment $twig,
         private PublishedContentResolver $contentResolver,
+        private ContentFieldsetRenderer $fieldsetRenderer,
         private Security $security,
         private bool $debug = false,
     ) {
@@ -51,7 +53,9 @@ final readonly class HttpErrorRenderer
         $variables = $this->variables($statusCode, $request, $exception, $context);
 
         if (Response::HTTP_UNAUTHORIZED === $statusCode && !$this->isAuthenticated()) {
-            return $this->renderTemplate('@frontend/user/login.html.twig', $variables, $statusCode);
+            return $this->renderTemplate('@frontend/user/login.html.twig', $variables + [
+                'return_to' => $this->returnTo($request),
+            ], $statusCode);
         }
 
         $renderFailure = null;
@@ -99,6 +103,8 @@ final readonly class HttpErrorRenderer
 
             return $this->renderTemplate('@frontend/content/entity.html.twig', array_replace($variables, [
                 'content_view' => $view,
+                'content_fieldset' => $this->fieldsetRenderer->render($view),
+                'content_injections' => [],
             ]), $statusCode);
         } catch (Throwable $error) {
             $renderFailure = $error;
@@ -164,6 +170,13 @@ final readonly class HttpErrorRenderer
         }
 
         return $request->getLocale();
+    }
+
+    private function returnTo(Request $request): ?string
+    {
+        $uri = $request->getRequestUri();
+
+        return str_starts_with($uri, '/') && !str_starts_with($uri, '//') ? $uri : null;
     }
 
     private function isAuthenticated(): bool

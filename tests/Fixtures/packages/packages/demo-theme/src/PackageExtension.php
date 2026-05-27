@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Fixtures\Packages\DemoTheme;
+namespace DemoTheme;
 
 final class PackageExtension
 {

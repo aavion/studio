@@ -1,0 +1,235 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Backend;
+
+use App\Core\Access\AccessLevel;
+
+final readonly class CoreBackendViewProvider implements BackendViewProviderInterface
+{
+    /**
+     * @return list<BackendViewDefinition>
+     */
+    public function backendViews(): array
+    {
+        return [
+            new BackendViewDefinition(
+                'backend-admin-dashboard',
+                BackendArea::Admin,
+                '',
+                'admin.navigation.dashboard',
+                '@backend/admin/index.html.twig',
+                10,
+                minimumAccessLevel: 8,
+            ),
+            new BackendViewDefinition(
+                'backend-admin-packages',
+                BackendArea::Admin,
+                'packages',
+                'admin.navigation.packages',
+                '@backend/admin/packages.html.twig',
+                20,
+                minimumAccessLevel: 8,
+            ),
+            new BackendViewDefinition(
+                'backend-admin-themes',
+                BackendArea::Admin,
+                'themes',
+                'admin.navigation.themes',
+                '@backend/admin/themes.html.twig',
+                30,
+                minimumAccessLevel: 8,
+            ),
+            new BackendViewDefinition(
+                'backend-admin-users',
+                BackendArea::Admin,
+                'users',
+                'admin.navigation.users',
+                '@backend/admin/section.html.twig',
+                40,
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.users.title',
+                    'foundation_title_key' => 'admin.users.foundation_title',
+                    'foundation_text_key' => 'admin.users.foundation_text',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-scheduler',
+                BackendArea::Admin,
+                'scheduler',
+                'admin.navigation.scheduler',
+                '@backend/admin/section.html.twig',
+                50,
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.scheduler.title',
+                    'foundation_title_key' => 'admin.scheduler.foundation_title',
+                    'foundation_text_key' => 'admin.scheduler.foundation_text',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-backups',
+                BackendArea::Admin,
+                'backups',
+                'admin.navigation.backups',
+                '@backend/admin/section.html.twig',
+                60,
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.backups.title',
+                    'foundation_title_key' => 'admin.backups.foundation_title',
+                    'foundation_text_key' => 'admin.backups.foundation_text',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-operations',
+                BackendArea::Admin,
+                'operations',
+                'admin.navigation.operations',
+                '@backend/admin/operations.html.twig',
+                70,
+                minimumAccessLevel: 8,
+            ),
+            new BackendViewDefinition(
+                'backend-admin-logs',
+                BackendArea::Admin,
+                'logs',
+                'admin.navigation.logs',
+                '@backend/admin/section.html.twig',
+                800,
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.logs.title',
+                    'foundation_title_key' => 'admin.logs.foundation_title',
+                    'foundation_text_key' => 'admin.logs.foundation_text',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-settings',
+                BackendArea::Admin,
+                'settings',
+                'admin.navigation.settings',
+                '@backend/admin/settings/index.html.twig',
+                900,
+                minimumAccessLevel: 8,
+            ),
+            new BackendViewDefinition(
+                'backend-admin-settings-general',
+                BackendArea::Admin,
+                'settings/general',
+                'admin.navigation.general_settings',
+                '@backend/admin/settings/section.html.twig',
+                10,
+                parentUid: 'backend-admin-settings',
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.settings.general.title',
+                    'foundation_title_key' => 'admin.settings.general.foundation_title',
+                    'foundation_text_key' => 'admin.settings.general.foundation_text',
+                    'settings_section' => 'general',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-settings-dashboard',
+                BackendArea::Admin,
+                'settings/dashboard',
+                'admin.navigation.dashboard_settings',
+                '@backend/admin/settings/section.html.twig',
+                20,
+                parentUid: 'backend-admin-settings',
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.settings.dashboard.title',
+                    'foundation_title_key' => 'admin.settings.dashboard.foundation_title',
+                    'foundation_text_key' => 'admin.settings.dashboard.foundation_text',
+                    'settings_section' => 'dashboard',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-settings-users',
+                BackendArea::Admin,
+                'settings/users',
+                'admin.navigation.user_settings',
+                '@backend/admin/settings/section.html.twig',
+                30,
+                parentUid: 'backend-admin-settings',
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.settings.users.title',
+                    'foundation_title_key' => 'admin.settings.users.foundation_title',
+                    'foundation_text_key' => 'admin.settings.users.foundation_text',
+                    'settings_section' => 'users',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-settings-mail',
+                BackendArea::Admin,
+                'settings/mail',
+                'admin.navigation.mail_settings',
+                '@backend/admin/settings/section.html.twig',
+                40,
+                parentUid: 'backend-admin-settings',
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.settings.mail.title',
+                    'foundation_title_key' => 'admin.settings.mail.foundation_title',
+                    'foundation_text_key' => 'admin.settings.mail.foundation_text',
+                    'settings_section' => 'mail',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-settings-security',
+                BackendArea::Admin,
+                'settings/security',
+                'admin.navigation.security_settings',
+                '@backend/admin/settings/section.html.twig',
+                50,
+                parentUid: 'backend-admin-settings',
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.settings.security.title',
+                    'foundation_title_key' => 'admin.settings.security.foundation_title',
+                    'foundation_text_key' => 'admin.settings.security.foundation_text',
+                    'settings_section' => 'security',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-settings-packages',
+                BackendArea::Admin,
+                'settings/packages',
+                'admin.navigation.package_settings',
+                '@backend/admin/settings/packages.html.twig',
+                60,
+                parentUid: 'backend-admin-settings',
+                minimumAccessLevel: 8,
+            ),
+            new BackendViewDefinition(
+                'backend-admin-settings-scheduler',
+                BackendArea::Admin,
+                'settings/scheduler',
+                'admin.navigation.scheduler_settings',
+                '@backend/admin/settings/section.html.twig',
+                70,
+                parentUid: 'backend-admin-settings',
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.settings.scheduler.title',
+                    'foundation_title_key' => 'admin.settings.scheduler.foundation_title',
+                    'foundation_text_key' => 'admin.settings.scheduler.foundation_text',
+                    'settings_section' => 'scheduler',
+                ],
+            ),
+            new BackendViewDefinition(
+                'backend-editor-dashboard',
+                BackendArea::Editor,
+                '',
+                'editor.navigation.dashboard',
+                '@backend/editor/index.html.twig',
+                10,
+                minimumAccessLevel: AccessLevel::EDITOR,
+            ),
+        ];
+    }
+}

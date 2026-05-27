@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace App\Core\Operation;
 
 use App\Core\ActionLog\ActionLog;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 
 final readonly class OperationExecution
 {
     /**
-     * @param OperationResult<mixed> $result
+     * @param WorkflowResult<mixed> $result
      */
     public function __construct(
         private ActionLog $actionLog,
-        private OperationResult $result,
+        private WorkflowResult $result,
     ) {
     }
 
@@ -24,9 +24,9 @@ final readonly class OperationExecution
     }
 
     /**
-     * @return OperationResult<mixed>
+     * @return WorkflowResult<mixed>
      */
-    public function result(): OperationResult
+    public function result(): WorkflowResult
     {
         return $this->result;
     }

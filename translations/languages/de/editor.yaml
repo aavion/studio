@@ -1,0 +1,15 @@
+ui:
+  editor:
+    area: 'Editor'
+    navigation: 'Editor-Navigation'
+
+editor:
+  navigation:
+    dashboard: 'Dashboard'
+  dashboard:
+    title: 'Editor-Dashboard'
+    status: 'Content-Arbeitsbereich'
+    foundation_title: 'Editor-Fundament'
+    foundation_text: 'Content-Routen können an diese Shell andocken, sobald Editor-Workflows, Schema-Werkzeuge und Package-Beiträge verdrahtet sind.'
+  message:
+    title: 'Editor-Route'

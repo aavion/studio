@@ -34,6 +34,7 @@ final class PackageDiscoveryTest extends TestCase
             MANIFEST);
         $this->writeManifest('packages/system-frontend', <<<'MANIFEST'
             PACKAGE_AUTHOR=Aavion
+            PACKAGE_SLUG=system-frontend
             PACKAGE_NAME=System Frontend
             PACKAGE_VERSION=1.0.0
             PACKAGE_SCOPE=frontend-theme
@@ -41,6 +42,7 @@ final class PackageDiscoveryTest extends TestCase
             MANIFEST);
         $this->writeManifest('packages/contact', <<<'MANIFEST'
             PACKAGE_AUTHOR=Aavion
+            PACKAGE_SLUG=contact
             PACKAGE_NAME=Contact
             PACKAGE_VERSION=1.0.0
             PACKAGE_SCOPE=[module, captcha-provider]
@@ -78,6 +80,7 @@ final class PackageDiscoveryTest extends TestCase
     {
         $this->writeManifest('.', 'APP_VERSION=0.1.0');
         $this->writeManifest('packages/broken', <<<'MANIFEST'
+            PACKAGE_SLUG=broken
             PACKAGE_NAME=Broken
             PACKAGE_SCOPE=unsupported-scope
             PACKAGE_DEPENDENCIES=[]
@@ -101,6 +104,7 @@ final class PackageDiscoveryTest extends TestCase
         $this->writeManifest('.', 'APP_VERSION=0.1.0');
         $this->writeManifest('packages/broken-scope', <<<'MANIFEST'
             PACKAGE_AUTHOR=Aavion
+            PACKAGE_SLUG=broken-scope
             PACKAGE_NAME=Broken Scope
             PACKAGE_VERSION=1.0.0
             PACKAGE_SCOPE=frontend-theme,unsupported-scope

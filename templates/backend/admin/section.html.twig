@@ -1,0 +1,25 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% set title_key = view.context.title_key|default('admin.message.title') %}
+{% set foundation_title_key = view.context.foundation_title_key|default(title_key) %}
+{% set foundation_text_key = view.context.foundation_text_key|default('admin.message.title') %}
+
+{% block title %}{{ title_key|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'ui.admin.area'|trans,
+        title: title_key|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ foundation_title_key|trans }}</h2>
+        <p class="studio-muted">{{ foundation_text_key|trans }}</p>
+    </section>
+{% endblock %}

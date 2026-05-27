@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Core\Access;
 
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 
@@ -27,7 +26,7 @@ final class AccessLevel
         }
 
         if ($level < self::PUBLIC || $level > self::ADMIN) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::ACCESS_LEVEL_INVALID, [
+            throw MessageException::invalidArgument(MessageKey::ACCESS_LEVEL_INVALID, [
                 '%level%' => $level,
             ]);
         }

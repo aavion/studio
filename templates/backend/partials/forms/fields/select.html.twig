@@ -1,6 +1,12 @@
 {% set field_id = id|default(name|default('field')) %}
 {% set select_control %}
-    <select id="{{ field_id }}" class="studio-backend-select" name="{{ name }}" {% if required|default(false) %}required{% endif %}>
+    <select
+        id="{{ field_id }}"
+        class="studio-backend-select"
+        name="{{ name }}"
+        {% if required|default(false) %}required{% endif %}
+        {{ studio_html_attributes(attributes|default({})) }}
+    >
         {% for option_value, option_label in options|default({}) %}
             <option value="{{ option_value }}" {% if option_value == value|default(null) %}selected{% endif %}>{{ option_label }}</option>
         {% endfor %}

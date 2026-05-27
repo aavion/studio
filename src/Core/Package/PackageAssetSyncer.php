@@ -13,8 +13,7 @@ use App\Core\Message\MessageLevel;
 use App\Core\Package\Event\PackageAssetRegistryBuildEvent;
 use App\Core\Package\Event\PackageAssetSyncCompletedEvent;
 use App\Core\Package\Event\PackageAssetSyncStartedEvent;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 use RuntimeException;
 use Throwable;
 
@@ -41,9 +40,9 @@ final readonly class PackageAssetSyncer
     /**
      * @param iterable<PackageAssetSyncPackage> $packages
      *
-     * @return OperationResult<array{packages: int, mirrored_assets: int, css_entries: int, javascript_entries: int, tailwind_sources: int}>
+     * @return WorkflowResult<array{packages: int, mirrored_assets: int, css_entries: int, javascript_entries: int, tailwind_sources: int}>
      */
-    public function sync(iterable $packages): OperationResult
+    public function sync(iterable $packages): WorkflowResult
     {
         try {
             return $this->doSync($packages);
@@ -53,10 +52,10 @@ final readonly class PackageAssetSyncer
                 'message' => $error->getMessage(),
             ];
 
-            return OperationResult::failed([
-                OperationIssue::create(MessageCode::PACKAGE_ASSET_SYNC_FAILED, MessageKey::PACKAGE_ASSET_SYNC_FAILED, [
+            return WorkflowResult::failed([
+                Message::exception(MessageCode::PACKAGE_ASSET_SYNC_FAILED, MessageKey::PACKAGE_ASSET_SYNC_FAILED, [
                     '%message%' => $error->getMessage(),
-                ], $context, MessageLevel::Error),
+                ], $context),
             ], $context);
         }
     }
@@ -64,9 +63,9 @@ final readonly class PackageAssetSyncer
     /**
      * @param iterable<PackageAssetSyncPackage> $packages
      *
-     * @return OperationResult<array{packages: int, mirrored_assets: int, css_entries: int, javascript_entries: int, tailwind_sources: int}>
+     * @return WorkflowResult<array{packages: int, mirrored_assets: int, css_entries: int, javascript_entries: int, tailwind_sources: int}>
      */
-    private function doSync(iterable $packages): OperationResult
+    private function doSync(iterable $packages): WorkflowResult
     {
         $packages = $this->sortedPackages($packages);
         $started = $this->dispatchHook(new PackageAssetSyncStartedEvent($packages));
@@ -127,7 +126,7 @@ final readonly class PackageAssetSyncer
                 'phase' => 'registry_build',
             ]);
             if (!$registryResult->isSuccess()) {
-                return OperationResult::failed($registryResult->issues(), [
+                return WorkflowResult::failed($registryResult->issues(), [
                     'packages' => count($packages),
                     'hook' => $registryEvent::class,
                 ]);
@@ -151,18 +150,18 @@ final readonly class PackageAssetSyncer
             return $completed;
         }
 
-        return OperationResult::success($context, $context, [
-            Message::info(MessageCode::PACKAGE_ASSET_SYNC_COMPLETED, MessageKey::PACKAGE_ASSET_SYNC_COMPLETED, [
+        return WorkflowResult::success($context, $context, [
+            Message::create(MessageCode::PACKAGE_ASSET_SYNC_COMPLETED, MessageKey::PACKAGE_ASSET_SYNC_COMPLETED, [
                 '%assets%' => (string) $mirroredAssets,
                 '%packages%' => (string) count($packages),
-            ], $context),
+            ], $context, MessageLevel::Success),
         ]);
     }
 
     /**
-     * @return OperationResult<array{packages: int, mirrored_assets: int, css_entries: int, javascript_entries: int, tailwind_sources: int}>|null
+     * @return WorkflowResult<array{packages: int, mirrored_assets: int, css_entries: int, javascript_entries: int, tailwind_sources: int}>|null
      */
-    private function dispatchHook(PackageAssetSyncStartedEvent|PackageAssetSyncCompletedEvent $event): ?OperationResult
+    private function dispatchHook(PackageAssetSyncStartedEvent|PackageAssetSyncCompletedEvent $event): ?WorkflowResult
     {
         if (null === $this->eventDispatcher) {
             return null;
@@ -186,7 +185,7 @@ final readonly class PackageAssetSyncer
             $context += $event->metrics();
         }
 
-        return OperationResult::failed($result->issues(), $context);
+        return WorkflowResult::failed($result->issues(), $context);
     }
 
     /**
@@ -209,15 +208,26 @@ final readonly class PackageAssetSyncer
 
     private function scopeForAsset(PackageAssetSyncPackage $package, string $assetFile): ?PackageScope
     {
-        if (str_starts_with($assetFile, 'assets/frontend/') && $package->hasScope(PackageScope::FrontendTheme)) {
-            return PackageScope::FrontendTheme;
+        if (str_starts_with($assetFile, 'assets/frontend/')) {
+            return $package->hasScope(PackageScope::FrontendTheme) ? PackageScope::FrontendTheme : null;
         }
 
-        if (str_starts_with($assetFile, 'assets/backend/') && $package->hasScope(PackageScope::BackendTheme)) {
-            return PackageScope::BackendTheme;
+        if (str_starts_with($assetFile, 'assets/backend/')) {
+            return $package->hasScope(PackageScope::BackendTheme) ? PackageScope::BackendTheme : null;
         }
 
-        return $this->primaryScope($package);
+        return $this->globalScope($package);
+    }
+
+    private function globalScope(PackageAssetSyncPackage $package): ?PackageScope
+    {
+        foreach ([PackageScope::Module, PackageScope::SystemTemplate, PackageScope::CaptchaProvider, PackageScope::EditorProvider] as $scope) {
+            if ($package->hasScope($scope)) {
+                return $scope;
+            }
+        }
+
+        return null;
     }
 
     private function primaryScope(PackageAssetSyncPackage $package): PackageScope

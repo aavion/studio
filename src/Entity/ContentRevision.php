@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Uid;
@@ -124,7 +123,7 @@ class ContentRevision
     private static function assertVersion(int $version): int
     {
         if ($version < 1) {
-            throw MessageException::forMessage(MessageCode::E_INVALID_ARGUMENT, MessageKey::CONTENT_FIELD_VALUE_VERSION_INVALID, [
+            throw MessageException::invalidArgument(MessageKey::CONTENT_FIELD_VALUE_VERSION_INVALID, [
                 '%version%' => $version,
             ]);
         }

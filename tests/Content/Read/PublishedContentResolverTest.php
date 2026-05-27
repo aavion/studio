@@ -15,6 +15,7 @@ use App\Repository\ContentFieldValueRepository;
 use App\Repository\ContentItemRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Tests\Support\NullMessageReporter;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class PublishedContentResolverTest extends KernelTestCase
@@ -33,6 +34,7 @@ final class PublishedContentResolverTest extends KernelTestCase
         $this->resolver = new PublishedContentResolver(
             $container->get(ContentItemRepository::class),
             $container->get(ContentFieldValueRepository::class),
+            new NullMessageReporter(),
         );
         $this->connection->beginTransaction();
     }

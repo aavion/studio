@@ -8,5 +8,6 @@ enum ExtensionPackageStatus: string
 {
     case Active = 'active';
     case Inactive = 'inactive';
-    case Archived = 'archived';
+    case Removed = 'removed';
+    case Faulty = 'faulty';
 }

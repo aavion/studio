@@ -8,9 +8,14 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Message\MessageReporterInterface;
 
 final class AccessResolver
 {
+    public function __construct(private MessageReporterInterface $messageReporter)
+    {
+    }
+
     public function decide(AccessActor $actor, AccessCapability $capability, AccessRule ...$rules): AccessDecision
     {
         [$rule, $source] = $this->effectiveRule($capability, $rules);
@@ -62,9 +67,16 @@ final class AccessResolver
         ];
 
         if ($granted) {
-            return Message::create(MessageCode::ACCESS_GRANTED, MessageKey::ACCESS_GRANTED, $parameters, $context, MessageLevel::Info);
+            return $this->report(Message::debug(MessageCode::ACCESS_GRANTED, MessageKey::ACCESS_GRANTED, $parameters, $context));
         }
 
-        return Message::create(MessageCode::ACCESS_DENIED, MessageKey::ACCESS_DENIED, $parameters, $context, MessageLevel::Warning);
+        return $this->report(Message::create(MessageCode::ACCESS_DENIED, MessageKey::ACCESS_DENIED, $parameters, $context, MessageLevel::Warning));
+    }
+
+    private function report(Message $message): Message
+    {
+        return $this->messageReporter->report($message, [
+            'source' => 'access_resolver',
+        ]);
     }
 }

@@ -9,7 +9,7 @@ use App\Core\Asset\AssetRebuildQueueFactory;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Operation\OperationExecutor;
 use App\Core\Package\ActivePackageAssetProviderInterface;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -124,7 +124,7 @@ final class AssetRebuildCommand extends Command
 
     private function entryWriter(SymfonyStyle $io): callable
     {
-        return static function (ActionLogEntry $entry, int $index, int $total, OperationResult $result) use ($io): void {
+        return static function (ActionLogEntry $entry, int $index, int $total, WorkflowResult $result) use ($io): void {
             foreach ($entry->issues() as $issue) {
                 $io->warning(sprintf('%s: %s', $issue->code(), $issue->translationKey()));
             }

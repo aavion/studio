@@ -110,6 +110,46 @@ final class PackageValidatorTest extends TestCase
         self::assertContains('.manifest', $result->context()['inventory']);
     }
 
+    public function testItRequiresPackageSlugForPackageCandidates(): void
+    {
+        $candidate = new PackageCandidate(
+            PackageSource::children('package', 'packages'),
+            $this->packageDir,
+            $this->packageDir.'/.manifest',
+            new Manifest(['PACKAGE_NAME' => 'System']),
+        );
+
+        $result = (new PackageValidator())->validate($candidate, PackageSpec::create());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('manifest.missing_required_key', $result->firstIssue()?->code());
+        self::assertSame('PACKAGE_SLUG', $result->firstIssue()?->context()['key']);
+    }
+
+    public function testItRejectsInvalidPackageSlugForPackageCandidates(): void
+    {
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => '../system']),
+            PackageSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.identifier.invalid', $result->firstIssue()?->code());
+        self::assertSame('PACKAGE_SLUG', $result->firstIssue()?->context()['key']);
+    }
+
+    public function testItRejectsMalformedPackageDependencies(): void
+    {
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_DEPENDENCIES' => '["demo-base >=1.0"]']),
+            PackageSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.dependency.invalid', $result->firstIssue()?->code());
+        self::assertSame('PACKAGE_DEPENDENCIES', $result->firstIssue()?->context()['key']);
+    }
+
     public function testItLimitsInventoryDepth(): void
     {
         $this->writeFile('one/two/three/file.txt', 'nested');
@@ -147,6 +187,34 @@ final class PackageValidatorTest extends TestCase
         self::assertFalse($result->isSuccess());
         self::assertSame('package.php_syntax_error', $result->firstIssue()?->code());
         self::assertSame('src/Broken.php', $result->firstIssue()?->context()['file']);
+    }
+
+    public function testItAcceptsPackageSourceFilesWithinDeclaredNamespace(): void
+    {
+        $this->writeFile('src/Root.php', '<?php namespace Demo\\Package; final class Root {}');
+        $this->writeFile('src/Nested.php', '<?php namespace Demo\\Package\\Nested; final class Nested {}');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_NAMESPACE' => 'Demo\\Package']),
+            PackageSpec::create(),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItRejectsPackageSourceFilesOutsideDeclaredNamespace(): void
+    {
+        $this->writeFile('src/Foreign.php', '<?php namespace Other\\Package; final class Foreign {}');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_NAMESPACE' => 'Demo\\Package']),
+            PackageSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.php_namespace_invalid', $result->firstIssue()?->code());
+        self::assertSame('Other\\Package', $result->firstIssue()?->context()['namespace']);
+        self::assertSame('Demo\\Package', $result->firstIssue()?->context()['expected_namespace']);
     }
 
     public function testItCanLintTwigFiles(): void
@@ -192,12 +260,11 @@ final class PackageValidatorTest extends TestCase
 
     public function testItAllowsTemplatesWithinDeclaredOverrideScopes(): void
     {
-        $packageSlug = basename($this->packageDir);
         $this->writeFile('templates/frontend/page.html.twig', '<main></main>');
         $this->writeFile('templates/backend/dashboard.html.twig', '<main></main>');
         $this->writeFile('templates/base.html.twig', '<main></main>');
         $this->writeFile('templates/macros/core/ui.html.twig', '{% macro badge(label) %}{{ label }}{% endmacro %}');
-        $this->writeFile(sprintf('templates/macros/%s/forms.html.twig', $packageSlug), '{% macro field(label) %}{{ label }}{% endmacro %}');
+        $this->writeFile('templates/macros/system/forms.html.twig', '{% macro field(label) %}{{ label }}{% endmacro %}');
 
         $result = (new PackageValidator())->validate(
             $this->candidateWithScope('[frontend-theme, backend-theme, system-template, module]'),
@@ -235,11 +302,22 @@ final class PackageValidatorTest extends TestCase
 
     public function testItAllowsPackageOwnedMacroNamespaceWithoutThemeScope(): void
     {
-        $packageSlug = basename($this->packageDir);
-        $this->writeFile(sprintf('templates/macros/%s/forms.html.twig', $packageSlug), '{% macro field(label) %}{{ label }}{% endmacro %}');
+        $this->writeFile('templates/macros/system/forms.html.twig', '{% macro field(label) %}{{ label }}{% endmacro %}');
 
         $result = (new PackageValidator())->validate(
             $this->candidateWithScope('module'),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItAllowsPackageOwnedMacroNamespaceUsingManifestSlugWhenDirectoryDiffers(): void
+    {
+        $this->writeFile('templates/macros/demo-module/forms.html.twig', '{% macro field(label) %}{{ label }}{% endmacro %}');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module', 'PACKAGE_SCOPE' => 'module']),
             PackageSpec::create()->withInventoryDepth(4),
         );
 
@@ -261,6 +339,58 @@ final class PackageValidatorTest extends TestCase
         );
 
         self::assertTrue($result->isSuccess());
+    }
+
+    public function testItAcceptsPackageTranslationFilesInOwnedNamespace(): void
+    {
+        $this->writeFile('languages/en/messages.yaml', "pkg:\n  system:\n    title: Demo\n");
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4)->withYamlLinting(),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItAcceptsPackageTranslationFilesUsingManifestSlugWhenDirectoryDiffers(): void
+    {
+        $this->writeFile('languages/en/messages.yaml', "pkg:\n  demo-module:\n    title: Demo\n");
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module']),
+            PackageSpec::create()->withInventoryDepth(4)->withYamlLinting(),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItRequiresEnglishWhenPackageTranslationsExist(): void
+    {
+        $this->writeFile('languages/de/messages.yaml', "pkg:\n  system:\n    title: Demo\n");
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4)->withYamlLinting(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.translation_english_missing', $result->firstIssue()?->code());
+        self::assertSame('languages/en', $result->firstIssue()?->context()['file']);
+    }
+
+    public function testItRejectsPackageTranslationFilesOutsideOwnedNamespace(): void
+    {
+        $this->writeFile('languages/en/messages.yaml', "ui:\n  app:\n    name: Demo\n");
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4)->withYamlLinting(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.translation_namespace_invalid', $result->firstIssue()?->code());
+        self::assertSame('languages/en/messages.yaml', $result->firstIssue()?->context()['file']);
     }
 
     public function testItReportsStructuredSyntaxErrors(): void
@@ -305,17 +435,25 @@ final class PackageValidatorTest extends TestCase
             PackageSource::children('package', 'packages'),
             $this->packageDir,
             $this->packageDir.'/.manifest',
-            new Manifest(['PACKAGE_NAME' => 'System']),
+            new Manifest(['PACKAGE_SLUG' => 'system', 'PACKAGE_NAME' => 'System']),
         );
     }
 
     private function candidateWithScope(string $scope): PackageCandidate
     {
+        return $this->candidateWithManifest(['PACKAGE_SCOPE' => $scope]);
+    }
+
+    /**
+     * @param array<string, string> $manifest
+     */
+    private function candidateWithManifest(array $manifest): PackageCandidate
+    {
         return new PackageCandidate(
             PackageSource::children('package', 'packages'),
             $this->packageDir,
             $this->packageDir.'/.manifest',
-            new Manifest(['PACKAGE_NAME' => 'System', 'PACKAGE_SCOPE' => $scope]),
+            new Manifest(['PACKAGE_SLUG' => 'system', 'PACKAGE_NAME' => 'System', ...$manifest]),
         );
     }
 

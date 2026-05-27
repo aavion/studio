@@ -1,0 +1,15 @@
+:root {
+    --studio-focus-ring: 0 0 0 3px rgb(81 112 255 / 28%);
+    --studio-transition-fast: 140ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 1ms !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}

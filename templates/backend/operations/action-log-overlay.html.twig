@@ -1,16 +1,69 @@
-<section class="studio-action-log-overlay" aria-labelledby="studio-action-log-heading">
-    <header class="studio-action-log-header">
-        <h2 id="studio-action-log-heading">{{ 'ui.operations.action_log.title'|trans }}</h2>
-        <p>{{ 'ui.operations.action_log.subtitle'|trans }}</p>
-    </header>
+<section
+    class="studio-action-log-overlay"
+    aria-labelledby="studio-action-log-heading"
+    data-operation-overlay-root
+    data-label-starting="{{ 'ui.operations.action_log.states.starting'|trans }}"
+    data-label-completed="{{ 'ui.operations.action_log.states.completed'|trans }}"
+    data-label-requires-review="{{ 'ui.operations.action_log.states.requires_review'|trans }}"
+    data-label-failed="{{ 'ui.operations.action_log.states.failed'|trans }}"
+    data-label-start-error="{{ 'ui.operations.action_log.states.start_error'|trans }}"
+    data-label-status-error="{{ 'ui.operations.action_log.states.status_error'|trans }}"
+    data-label-request-error="{{ 'ui.operations.action_log.states.request_error'|trans }}"
+    data-label-result="{{ 'ui.operations.action_log.result'|trans }}"
+    data-label-ok="{{ 'ui.operations.action_log.actions.ok'|trans }}"
+    data-label-continue="{{ 'ui.operations.action_log.actions.continue'|trans }}"
+    data-label-retry="{{ 'ui.operations.action_log.actions.retry'|trans }}"
+    data-label-cancel="{{ 'ui.operations.action_log.actions.cancel'|trans }}"
+    data-label-refresh="{{ 'ui.operations.action_log.actions.refresh'|trans }}"
+    data-label-close="{{ 'ui.operations.action_log.actions.close'|trans }}"
+    data-label-status-queued="{{ 'ui.operations.action_log.statuses.queued'|trans }}"
+    data-label-status-pending="{{ 'ui.operations.action_log.statuses.pending'|trans }}"
+    data-label-status-running="{{ 'ui.operations.action_log.statuses.running'|trans }}"
+    data-label-status-success="{{ 'ui.operations.action_log.statuses.success'|trans }}"
+    data-label-status-requires-review="{{ 'ui.operations.action_log.statuses.requires_review'|trans }}"
+    data-label-status-warning="{{ 'ui.operations.action_log.statuses.warning'|trans }}"
+    data-label-status-skipped="{{ 'ui.operations.action_log.statuses.skipped'|trans }}"
+    data-label-status-failed="{{ 'ui.operations.action_log.statuses.failed'|trans }}"
+    hidden
+>
+    <div class="studio-action-log-panel" role="dialog" aria-modal="true">
+        <header class="studio-action-log-header">
+            <div>
+                <h2 id="studio-action-log-heading">{{ 'ui.operations.action_log.title'|trans }}</h2>
+                <p data-operation-overlay-subtitle>{{ 'ui.operations.action_log.subtitle'|trans }}</p>
+            </div>
+            <span class="studio-action-log-spinner" data-operation-overlay-spinner aria-hidden="true"></span>
+        </header>
 
-    {% include '@backend/operations/partials/_action-log-summary.html.twig' with {summary: summary|default({})} only %}
+        {% include '@backend/operations/partials/_action-log-summary.html.twig' with {summary: summary|default({})} only %}
 
-    <ol class="studio-action-log-list">
-        {% for entry in entries|default([]) %}
-            {% include '@backend/operations/partials/_action-log-entry.html.twig' with {entry: entry} only %}
-        {% else %}
-            <li class="studio-muted">{{ 'ui.operations.action_log.empty'|trans }}</li>
-        {% endfor %}
-    </ol>
+        <ol class="studio-action-log-list" data-operation-overlay-list>
+            {% for entry in entries|default([]) %}
+                {% include '@backend/operations/partials/_action-log-entry.html.twig' with {entry: entry} only %}
+            {% else %}
+                <li class="studio-muted" data-operation-overlay-empty>{{ 'ui.operations.action_log.empty'|trans }}</li>
+            {% endfor %}
+        </ol>
+
+        <footer class="studio-action-log-footer">
+            <button class="studio-backend-button studio-button-success" type="button" data-operation-overlay-ok hidden>
+                {{ 'ui.operations.action_log.actions.ok'|trans }}
+            </button>
+            <button class="studio-backend-button studio-button-primary" type="button" data-operation-overlay-continue hidden>
+                {{ 'ui.operations.action_log.actions.continue'|trans }}
+            </button>
+            <button class="studio-backend-button studio-button-warning" type="button" data-operation-overlay-retry hidden>
+                {{ 'ui.operations.action_log.actions.retry'|trans }}
+            </button>
+            <button class="studio-backend-button studio-button-secondary" type="button" data-operation-overlay-refresh hidden>
+                {{ 'ui.operations.action_log.actions.refresh'|trans }}
+            </button>
+            <button class="studio-backend-button studio-button-danger" type="button" data-operation-overlay-cancel hidden>
+                {{ 'ui.operations.action_log.actions.cancel'|trans }}
+            </button>
+            <button class="studio-backend-button studio-button-secondary" type="button" data-operation-overlay-close hidden>
+                {{ 'ui.operations.action_log.actions.close'|trans }}
+            </button>
+        </footer>
+    </div>
 </section>

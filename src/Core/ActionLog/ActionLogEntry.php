@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace App\Core\ActionLog;
 
 use App\Core\Message\Message;
-use App\Core\Workflow\OperationIssue;
 use DateTimeImmutable;
 use InvalidArgumentException;
 
 final readonly class ActionLogEntry
 {
     /**
-     * @param list<OperationIssue> $issues
+     * @param list<Message> $issues
      * @param list<Message> $messages
      * @param array<string, mixed> $context
      */
@@ -30,8 +29,8 @@ final readonly class ActionLogEntry
         }
 
         foreach ($issues as $issue) {
-            if (!$issue instanceof OperationIssue) {
-                throw new InvalidArgumentException('Action log entry issues must contain only OperationIssue instances.');
+            if (!$issue instanceof Message) {
+                throw new InvalidArgumentException('Action log entry issues must contain only Message instances.');
             }
         }
 
@@ -60,7 +59,7 @@ final readonly class ActionLogEntry
     }
 
     /**
-     * @param list<OperationIssue> $issues
+     * @param list<Message> $issues
      * @param array<string, mixed> $context
      * @param list<Message> $messages
      */
@@ -114,7 +113,7 @@ final readonly class ActionLogEntry
     }
 
     /**
-     * @return list<OperationIssue>
+     * @return list<Message>
      */
     public function issues(): array
     {
@@ -153,7 +152,7 @@ final readonly class ActionLogEntry
             'started_at' => $this->startedAt?->format(DATE_ATOM),
             'finished_at' => $this->finishedAt?->format(DATE_ATOM),
             'duration_ms' => $this->durationMilliseconds(),
-            'issues' => array_map(static fn (OperationIssue $issue): array => $issue->toArray(), $this->issues),
+            'issues' => array_map(static fn (Message $issue): array => $issue->toArray(), $this->issues),
             'messages' => array_map(static fn (Message $message): array => $message->toArray(), $this->messages),
             'context' => $this->context,
         ];

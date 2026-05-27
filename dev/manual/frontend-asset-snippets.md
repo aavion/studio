@@ -24,11 +24,12 @@ The global package-aware rebuild entry point is `php bin/console studio:assets:r
 The command publishes a planned step count in dry-run mode and reports current step progress during execution. The order is:
 
 1. mirror active package assets and rewrite generated package asset registries;
-2. run `assets:install`;
-3. run `importmap:install`;
-4. run `tailwind:build`;
-5. only in `prod`, remove `public/assets` and run `asset-map:compile`;
-6. run `cache:clear` as the finalizer.
+2. aggregate core and active package translation sources into the runtime `messages` catalogues;
+3. run `assets:install`;
+4. run `importmap:install`;
+5. run `tailwind:build`;
+6. only in `prod`, remove `public/assets` and run `asset-map:compile`;
+7. run `cache:clear` as the finalizer.
 
 `cache:clear` intentionally runs last. The rebuild should run in a CLI worker or subprocess with persisted ActionLog entries, while the UI reads progress through streaming or `/api/live/operations/{operationId}/log?cursor=<number>`. If clearing the cache briefly interrupts polling, the UI can resume from the stored cursor. The command must not depend on the current HTTP request continuing after cache invalidation.
 
@@ -47,6 +48,8 @@ Packages should keep assets namespaced. Active package assets are not loaded dir
 
 `assets/styles/app.css` imports the CSS registries after native system styles. Tailwind therefore sees active package `@source` entries and `@import` entries before it writes the built aggregate CSS that AssetMapper serves instead of the source input. `assets/app.js` imports the JavaScript registries after native system JavaScript and before Alpine starts.
 
+Database-backed schema Twig is not part of Tailwind's normal filesystem scan. Before schema-authored CSS classes are supported in production, the schema renderer needs a build input layer that aggregates class usage from active custom schema Twig and exposes it to `tailwind:build`, for example through a generated safelist/source artifact written during `studio:assets:rebuild`.
+
 The deterministic order is:
 
 1. native system CSS/JS;
@@ -55,7 +58,9 @@ The deterministic order is:
 4. active backend theme package CSS/JS;
 5. project-local or entity-local assets where a renderer explicitly adds them.
 
-Template and asset scopes should mirror each other. Frontend-specific package assets belong to the frontend-theme bucket, backend-specific package assets belong to the backend-theme bucket, and shared module/provider assets belong to the extension bucket. Packages with `system-template` scope may affect shared root templates, but their CSS/JS still needs an explicit package asset contribution bucket so the rebuild order remains deterministic.
+Template and asset scopes should mirror each other. Frontend-specific package assets belong under `assets/frontend/**` and are written to the frontend-theme bucket only when the package has `frontend-theme`. Backend-specific package assets belong under `assets/backend/**` and are written to the backend-theme bucket only when the package has `backend-theme`. Package assets outside those folders are shared/global and are written to the extension bucket only when the package has a global runtime scope such as `module`, `captcha-provider`, `editor-provider`, or `system-template`. A frontend-theme-only package must not inject shared CSS/JS into the extension bucket because that would affect backend rendering after Tailwind aggregates everything into one CSS build.
+
+The generated buckets are imported into the native Tailwind build in a deterministic order, but they do not create a browser-level CSS sandbox. Package CSS that should affect only one shell should use area root selectors, for example `.studio-frontend` for public rendering and `.studio-backend` for admin/editor/setup rendering. A later package validator may enforce selector namespaces if practical testing shows that package CSS leakage is a recurring risk.
 
 Packages may ship self-contained third-party CSS or JavaScript inside their own `assets/` directory. The lifecycle mirrors those files as package assets instead of injecting package-managed third-party dependencies into the global importmap.
 

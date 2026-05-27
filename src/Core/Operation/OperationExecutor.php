@@ -10,14 +10,18 @@ use App\Core\ActionLog\ActionLogStatus;
 use App\Core\DryRun\DryRunPlan;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
-use App\Core\Message\MessageLevel;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
-use App\Core\Workflow\OperationStatus;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Message\Message;
+use App\Core\Workflow\WorkflowResult;
+use App\Core\Workflow\WorkflowStatus;
 use Throwable;
 
 final class OperationExecutor
 {
+    public function __construct(private WorkflowResultMessageReporterInterface $messageReporter)
+    {
+    }
+
     public function planQueue(ActionQueue $queue): DryRunPlan
     {
         $plan = DryRunPlan::create($queue->name(), $queue->context());
@@ -35,7 +39,7 @@ final class OperationExecutor
         $issues = [];
         $messages = [];
         $context = $queue->context();
-        $status = OperationStatus::Success;
+        $status = WorkflowStatus::Success;
         $index = 0;
         $total = count($queue);
 
@@ -51,19 +55,26 @@ final class OperationExecutor
             try {
                 $result = $action->execute();
             } catch (Throwable $error) {
-                $result = OperationResult::failed([
-                    OperationIssue::create(MessageCode::OPERATION_EXCEPTION, MessageKey::OPERATION_EXCEPTION, context: [
+                $result = WorkflowResult::failed([
+                    Message::exception(MessageCode::OPERATION_EXCEPTION, MessageKey::OPERATION_EXCEPTION, context: [
                         'action' => $action->label(),
                         'type' => $action->type(),
                         'exception' => $error::class,
                         'message' => $error->getMessage(),
-                    ], level: MessageLevel::Error),
+                    ]),
                 ]);
             }
 
             array_push($issues, ...$result->issues());
             array_push($messages, ...$result->messages());
+            if (WorkflowStatus::RequiresReview === $result->status()) {
+                $context = [
+                    ...$context,
+                    ...$result->context(),
+                ];
+            }
             $status = $this->highestSeverity($status, $result->status());
+            $this->reportResult($result, $queue, $action, $index, $total);
             $finishedEntry = $entry->finish(
                 $this->statusForResult($result),
                 $result->issues(),
@@ -84,51 +95,65 @@ final class OperationExecutor
             return new OperationExecution($log, $this->resultForIssues($status, $issues, $context, $messages));
         }
 
-        return new OperationExecution($log, OperationResult::success(context: $context, messages: $messages));
+        return new OperationExecution($log, WorkflowResult::success(context: $context, messages: $messages));
     }
 
     /**
-     * @param OperationResult<mixed> $result
+     * @param WorkflowResult<mixed> $result
      */
-    private function statusForResult(OperationResult $result): ActionLogStatus
+    private function statusForResult(WorkflowResult $result): ActionLogStatus
     {
         return match ($result->status()) {
-            OperationStatus::Success => ActionLogStatus::Success,
-            OperationStatus::Invalid, OperationStatus::RequiresReview => ActionLogStatus::Warning,
-            OperationStatus::Blocked, OperationStatus::Failed => ActionLogStatus::Failed,
+            WorkflowStatus::Success => ActionLogStatus::Success,
+            WorkflowStatus::Invalid, WorkflowStatus::RequiresReview => ActionLogStatus::Warning,
+            WorkflowStatus::Blocked, WorkflowStatus::Failed => ActionLogStatus::Failed,
         };
     }
 
     /**
-     * @param list<OperationIssue> $issues
+     * @param list<Message> $issues
      * @param array<string, mixed> $context
      *
-     * @return OperationResult<mixed>
+     * @return WorkflowResult<mixed>
      */
-    private function resultForIssues(OperationStatus $status, array $issues, array $context = [], array $messages = []): OperationResult
+    private function resultForIssues(WorkflowStatus $status, array $issues, array $context = [], array $messages = []): WorkflowResult
     {
         return match ($status) {
-            OperationStatus::Invalid => OperationResult::invalid($issues, $context, $messages),
-            OperationStatus::RequiresReview => OperationResult::requiresReview(null, $issues, $context, $messages),
-            OperationStatus::Blocked => OperationResult::blocked($issues, $context, $messages),
-            OperationStatus::Failed => OperationResult::failed($issues, $context, $messages),
-            OperationStatus::Success => OperationResult::success(context: $context, messages: $messages),
+            WorkflowStatus::Invalid => WorkflowResult::invalid($issues, $context, $messages),
+            WorkflowStatus::RequiresReview => WorkflowResult::requiresReview(null, $issues, $context, $messages),
+            WorkflowStatus::Blocked => WorkflowResult::blocked($issues, $context, $messages),
+            WorkflowStatus::Failed => WorkflowResult::failed($issues, $context, $messages),
+            WorkflowStatus::Success => WorkflowResult::success(context: $context, messages: $messages),
         };
     }
 
-    private function highestSeverity(OperationStatus $current, OperationStatus $next): OperationStatus
+    private function highestSeverity(WorkflowStatus $current, WorkflowStatus $next): WorkflowStatus
     {
         return $this->severity($next) > $this->severity($current) ? $next : $current;
     }
 
-    private function severity(OperationStatus $status): int
+    /**
+     * @param WorkflowResult<mixed> $result
+     */
+    private function reportResult(WorkflowResult $result, ActionQueue $queue, OperationActionInterface $action, int $index, int $total): void
+    {
+        $this->messageReporter->report($result, [
+            'queue' => $queue->name(),
+            'action' => $action->label(),
+            'type' => $action->type(),
+            'index' => $index,
+            'total' => $total,
+        ]);
+    }
+
+    private function severity(WorkflowStatus $status): int
     {
         return match ($status) {
-            OperationStatus::Success => 0,
-            OperationStatus::RequiresReview => 1,
-            OperationStatus::Invalid => 2,
-            OperationStatus::Blocked => 3,
-            OperationStatus::Failed => 4,
+            WorkflowStatus::Success => 0,
+            WorkflowStatus::RequiresReview => 1,
+            WorkflowStatus::Invalid => 2,
+            WorkflowStatus::Blocked => 3,
+            WorkflowStatus::Failed => 4,
         };
     }
 }

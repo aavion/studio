@@ -15,9 +15,9 @@ final class TranslationLanguageCatalogTest extends TestCase
     public function testItDiscoversLanguagesFromTranslationCatalogues(): void
     {
         $root = $this->createTemporaryDirectory('translation-language-catalog');
-        mkdir($root.'/translations', 0775, true);
-        touch($root.'/translations/messages.en.yaml');
-        touch($root.'/translations/messages.de.yaml');
+        mkdir($root.'/translations/runtime', 0775, true);
+        touch($root.'/translations/runtime/messages.en.yaml');
+        touch($root.'/translations/runtime/messages.de.yaml');
         touch($root.'/translations/validators.en.yaml');
 
         $catalog = new TranslationLanguageCatalog($root);

@@ -9,9 +9,10 @@ use App\Core\Operation\OperationExecutor;
 use App\Core\Package\PackageCandidate;
 use App\Core\Package\PackageOperationPlanner;
 use App\Core\Package\PackageSource;
-use App\Core\Workflow\OperationStatus;
+use App\Core\Workflow\WorkflowStatus;
 use App\Tests\Support\FilesystemTestHelper;
 use InvalidArgumentException;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use PHPUnit\Framework\TestCase;
 
 final class PackageOperationPlannerTest extends TestCase
@@ -40,7 +41,7 @@ final class PackageOperationPlannerTest extends TestCase
         $this->writePackageFile('templates/base.html.twig', '<main></main>');
         $this->writePackageFile('assets/app.css', 'body {}');
 
-        $result = (new PackageOperationPlanner())->copyFiles(
+        $result = (new PackageOperationPlanner(new NullWorkflowResultMessageReporter()))->copyFiles(
             $this->candidate(),
             $this->targetDir,
             ['templates/base.html.twig', 'assets/app.css', 'assets/app.css'],
@@ -56,7 +57,7 @@ final class PackageOperationPlannerTest extends TestCase
         self::assertSame('packages/system', $result->value()->context()['target_prefix']);
         self::assertCount(2, $result->value());
 
-        $plan = (new OperationExecutor())->planQueue($result->value());
+        $plan = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->planQueue($result->value());
 
         self::assertSame('import package files', $plan->name());
         self::assertSame(['copy_file' => 2], $plan->actionCounts());
@@ -70,14 +71,14 @@ final class PackageOperationPlannerTest extends TestCase
     {
         $this->writePackageFile('assets/app.css', 'body { color: red; }');
 
-        $queue = (new PackageOperationPlanner())->copyFiles(
+        $queue = (new PackageOperationPlanner(new NullWorkflowResultMessageReporter()))->copyFiles(
             $this->candidate(),
             $this->targetDir,
             ['assets/app.css'],
             targetPrefix: 'packages/system',
         )->value();
 
-        $execution = (new OperationExecutor())->executeQueue($queue);
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue($queue);
 
         self::assertTrue($execution->result()->isSuccess());
         self::assertSame('body { color: red; }', file_get_contents($this->targetDir.'/packages/system/assets/app.css'));
@@ -85,13 +86,13 @@ final class PackageOperationPlannerTest extends TestCase
 
     public function testItReportsMissingSourceFilesBeforeCreatingQueue(): void
     {
-        $result = (new PackageOperationPlanner())->copyFiles(
+        $result = (new PackageOperationPlanner(new NullWorkflowResultMessageReporter()))->copyFiles(
             $this->candidate(),
             $this->targetDir,
             ['missing.txt'],
         );
 
-        self::assertSame(OperationStatus::Invalid, $result->status());
+        self::assertSame(WorkflowStatus::Invalid, $result->status());
         self::assertSame('package.copy_source_missing', $result->firstIssue()?->code());
         self::assertSame(['missing.txt'], $result->context()['files']);
     }
@@ -101,13 +102,13 @@ final class PackageOperationPlannerTest extends TestCase
         $this->writePackageFile('real.txt', 'real');
         $this->createSymlinkOrSkip($this->packageDir.'/real.txt', $this->packageDir.'/linked.txt');
 
-        $result = (new PackageOperationPlanner())->copyFiles(
+        $result = (new PackageOperationPlanner(new NullWorkflowResultMessageReporter()))->copyFiles(
             $this->candidate(),
             $this->targetDir,
             ['linked.txt'],
         );
 
-        self::assertSame(OperationStatus::Invalid, $result->status());
+        self::assertSame(WorkflowStatus::Invalid, $result->status());
         self::assertSame('package.copy_source_symlink', $result->firstIssue()?->code());
     }
 
@@ -115,7 +116,7 @@ final class PackageOperationPlannerTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        (new PackageOperationPlanner())->copyFiles(
+        (new PackageOperationPlanner(new NullWorkflowResultMessageReporter()))->copyFiles(
             $this->candidate(),
             $this->targetDir,
             ['../outside.txt'],

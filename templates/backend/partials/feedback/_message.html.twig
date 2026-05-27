@@ -1,0 +1,13 @@
+{% if message %}
+    {% set alert_level = {
+        'SUCCESS': 'info',
+        'INFO': 'info',
+        'DEBUG': 'info',
+        'WARN': 'warning',
+        'ERROR': 'error',
+        'EXCEPTION': 'exception',
+    }[message.level]|default('info') %}
+    <section class="studio-alert studio-alert-{{ alert_level }}">
+        <p>{{ message.translation_key|trans(message.parameters) }}</p>
+    </section>
+{% endif %}

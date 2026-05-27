@@ -47,7 +47,7 @@ final class SetupMessageTranslator
             return $this->catalogues[$cacheKey];
         }
 
-        $path = $projectDir.'/translations/messages.'.$language.'.yaml';
+        $path = $projectDir.'/translations/runtime/messages.'.$language.'.yaml';
 
         if (!is_file($path)) {
             return $this->catalogues[$cacheKey] = [];

@@ -11,15 +11,18 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\MessageKey;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateSubjectType;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 use Doctrine\DBAL\Connection;
 
 final readonly class SetupPasswordResetRunner
 {
-    public function __construct(private SetupDatabaseConnectionFactory $connectionFactory = new SetupDatabaseConnectionFactory())
+    public function __construct(
+        private WorkflowResultMessageReporterInterface $messageReporter,
+        private SetupDatabaseConnectionFactory $connectionFactory = new SetupDatabaseConnectionFactory(),
+    )
     {
     }
 
@@ -44,16 +47,16 @@ final readonly class SetupPasswordResetRunner
     }
 
     /**
-     * @return OperationResult<ActionLog>
+     * @return WorkflowResult<ActionLog>
      */
-    public function reset(string $projectDir, string $databaseUrl, string $username, string $newPassword, string $actor = 'setup_cli'): OperationResult
+    public function reset(string $projectDir, string $databaseUrl, string $username, string $newPassword, string $actor = 'setup_cli'): WorkflowResult
     {
         $entry = ActionLogEntry::pending('reset_user_password')->start();
         $log = ActionLog::create();
         $user = $this->findUser($projectDir, $databaseUrl, $username);
 
         if (!$user instanceof SetupPasswordResetUser) {
-            $issue = OperationIssue::create(
+            $issue = Message::create(
                 MessageCode::E_INVALID_ARGUMENT,
                 MessageKey::SETUP_PASSWORD_RESET_USER_NOT_FOUND,
                 ['%username%' => $username],
@@ -61,10 +64,10 @@ final readonly class SetupPasswordResetRunner
                 MessageLevel::Warning,
             );
 
-            return OperationResult::invalid([$issue], [
+            return $this->report(WorkflowResult::invalid([$issue], [
                 'halt_on_error' => true,
                 'action_log' => $log->add($entry->finish(ActionLogStatus::Failed, [$issue]))->toArray(),
-            ]);
+            ]), $username, $actor);
         }
 
         $now = gmdate('Y-m-d H:i:s');
@@ -78,10 +81,19 @@ final readonly class SetupPasswordResetRunner
         $message = Message::success(MessageKey::SETUP_PASSWORD_RESET_COMPLETED, ['%username%' => $user->username()]);
         $log = $log->add($entry->finish(ActionLogStatus::Success, context: $user->toArray(), messages: [$message]));
 
-        return OperationResult::success($log, [
+        return $this->report(WorkflowResult::success($log, [
             'halt_on_error' => false,
             'username' => $user->username(),
             'uid' => $user->uid(),
+        ]), $username, $actor);
+    }
+
+    private function report(WorkflowResult $result, string $username, string $actor): WorkflowResult
+    {
+        return $this->messageReporter->report($result, [
+            'operation' => 'setup.password_reset',
+            'username' => $username,
+            'actor' => $actor,
         ]);
     }
 

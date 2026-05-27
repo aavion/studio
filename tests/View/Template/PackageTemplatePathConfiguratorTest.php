@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\View\Template;
 
-use App\Core\Package\ActivePackageAssetProviderInterface;
-use App\Core\Package\PackageAssetSyncPackage;
+use App\Core\Package\ActivePackageProviderInterface;
 use App\Core\Package\PackageScope;
+use App\Entity\ExtensionPackage;
 use App\Tests\Support\FilesystemTestHelper;
 use App\View\Template\PackageTemplatePathConfigurator;
 use App\View\Template\PackageTemplatePathResolver;
@@ -50,12 +50,12 @@ final class PackageTemplatePathConfiguratorTest extends TestCase
         $configurator = new PackageTemplatePathConfigurator(
             $twig,
             new StaticPackageProvider([
-                new PackageAssetSyncPackage('theme', 'packages/theme', [PackageScope::FrontendTheme]),
-                new PackageAssetSyncPackage('backend', 'packages/backend', [PackageScope::BackendTheme]),
-                new PackageAssetSyncPackage('system', 'packages/system', [PackageScope::SystemTemplate]),
-                new PackageAssetSyncPackage('module', 'packages/module', [PackageScope::Module]),
-                new PackageAssetSyncPackage('captcha', 'packages/captcha', [PackageScope::CaptchaProvider]),
-                new PackageAssetSyncPackage('editor', 'packages/editor', [PackageScope::EditorProvider]),
+                $this->package('theme', [PackageScope::FrontendTheme]),
+                $this->package('backend', [PackageScope::BackendTheme]),
+                $this->package('system', [PackageScope::SystemTemplate]),
+                $this->package('module', [PackageScope::Module]),
+                $this->package('captcha', [PackageScope::CaptchaProvider]),
+                $this->package('editor', [PackageScope::EditorProvider]),
             ]),
             new PackageTemplatePathResolver($this->root),
         );
@@ -99,7 +99,7 @@ final class PackageTemplatePathConfiguratorTest extends TestCase
         $configurator = new PackageTemplatePathConfigurator(
             $twig,
             new StaticPackageProvider([
-                new PackageAssetSyncPackage('captcha', 'packages/captcha', [PackageScope::CaptchaProvider]),
+                $this->package('captcha', [PackageScope::CaptchaProvider]),
             ]),
             new PackageTemplatePathResolver($this->root),
         );
@@ -109,19 +109,62 @@ final class PackageTemplatePathConfiguratorTest extends TestCase
         self::assertSame('captcha provider', $twig->render('@provider/captcha/field.html.twig'));
         self::assertSame('editor native', $twig->render('@provider/editor/richtext.html.twig'));
     }
+
+    /**
+     * @param list<PackageScope> $scopes
+     */
+    private function package(string $name, array $scopes): ExtensionPackage
+    {
+        return new ExtensionPackage(
+            $this->uuid(),
+            $scopes,
+            $name,
+            'packages/'.$name,
+        );
+    }
+
+    private function uuid(): string
+    {
+        $bytes = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+    }
 }
 
-final readonly class StaticPackageProvider implements ActivePackageAssetProviderInterface
+final readonly class StaticPackageProvider implements ActivePackageProviderInterface
 {
     /**
-     * @param list<PackageAssetSyncPackage> $packages
+     * @param list<ExtensionPackage> $packages
      */
     public function __construct(private array $packages)
     {
     }
 
-    public function packages(): array
+    /**
+     * @return list<ExtensionPackage>
+     */
+    public function packages(?PackageScope $scope = null): array
     {
-        return $this->packages;
+        if (null === $scope) {
+            return $this->packages;
+        }
+
+        return array_values(array_filter(
+            $this->packages,
+            static fn (ExtensionPackage $package): bool => $package->hasScope($scope),
+        ));
+    }
+
+    public function package(string $packageName): ?ExtensionPackage
+    {
+        foreach ($this->packages as $package) {
+            if ($package->packageName() === $packageName) {
+                return $package;
+            }
+        }
+
+        return null;
     }
 }

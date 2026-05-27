@@ -1,5 +1,7 @@
 PACKAGE_AUTHOR=Aavion Test Fixtures
+PACKAGE_SLUG=demo-module
 PACKAGE_NAME=Demo Module
+PACKAGE_DESCRIPTION=Demo module package used to exercise package lifecycle, assets, settings, and future admin UI flows.
 PACKAGE_VERSION=0.1.0
 PACKAGE_SCOPE=module
 PACKAGE_DEPENDENCIES=[]

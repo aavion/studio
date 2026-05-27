@@ -1,5 +1,43 @@
 .studio-editor-shell {
     display: grid;
-    gap: 1rem;
     min-height: calc(100vh - 4rem);
+    overflow: hidden;
+    border: var(--studio-border);
+    border-radius: var(--studio-layout-radius);
+    background: var(--color-paper);
+    box-shadow: var(--studio-shadow-panel);
+}
+
+.studio-editor-workspace {
+    display: grid;
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+    min-height: 0;
+}
+
+.studio-editor-panel,
+.studio-editor-canvas {
+    min-width: 0;
+    padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.studio-editor-panel {
+    border-right: var(--studio-border);
+    background: var(--color-gray-50);
+}
+
+.studio-editor-canvas {
+    display: grid;
+    align-content: start;
+    gap: 1rem;
+}
+
+@media (max-width: 900px) {
+    .studio-editor-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .studio-editor-panel {
+        border-right: 0;
+        border-bottom: var(--studio-border);
+    }
 }

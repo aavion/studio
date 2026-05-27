@@ -9,18 +9,21 @@ use App\Core\Access\AccessCapability;
 use App\Core\Access\AccessLevel;
 use App\Core\Access\AccessResolver;
 use App\Core\Access\AccessRule;
+use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Message\MessageReporterInterface;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
+use App\Tests\Support\NullMessageReporter;
 use PHPUnit\Framework\TestCase;
 
 final class AccessResolverTest extends TestCase
 {
     public function testItUsesDefaultCapabilityLevelsWhenAllRulesInherit(): void
     {
-        $resolver = new AccessResolver();
+        $resolver = new AccessResolver(new NullMessageReporter());
         $actor = AccessActor::anonymous();
 
         $viewDecision = $resolver->decide($actor, AccessCapability::View, AccessRule::inherit());
@@ -30,7 +33,7 @@ final class AccessResolverTest extends TestCase
         self::assertSame('default', $viewDecision->ruleSource());
         self::assertSame(MessageCode::ACCESS_GRANTED, $viewDecision->message()->code());
         self::assertSame(MessageKey::ACCESS_GRANTED, $viewDecision->message()->translationKey());
-        self::assertSame(MessageLevel::Info, $viewDecision->message()->level());
+        self::assertSame(MessageLevel::Debug, $viewDecision->message()->level());
 
         self::assertFalse($editDecision->isGranted());
         self::assertSame(AccessLevel::EDITOR, $editDecision->rule()->minLevel());
@@ -40,7 +43,7 @@ final class AccessResolverTest extends TestCase
 
     public function testItGrantsAccessByMinimumLevelOrExplicitGroupMembership(): void
     {
-        $resolver = new AccessResolver();
+        $resolver = new AccessResolver(new NullMessageReporter());
         $editor = AccessActor::fromAccess(AccessLevel::EDITOR);
         $projectMember = AccessActor::fromAccess(AccessLevel::PUBLIC, ['project_team']);
         $anonymous = AccessActor::anonymous();
@@ -53,7 +56,7 @@ final class AccessResolverTest extends TestCase
 
     public function testNearestExplicitRuleWinsBeforeInheritedFallbacks(): void
     {
-        $resolver = new AccessResolver();
+        $resolver = new AccessResolver(new NullMessageReporter());
         $manager = AccessActor::fromAccess(AccessLevel::MANAGER);
 
         $decision = $resolver->decide(
@@ -71,7 +74,7 @@ final class AccessResolverTest extends TestCase
 
     public function testEmptyRuleWithoutLevelStillInherits(): void
     {
-        $resolver = new AccessResolver();
+        $resolver = new AccessResolver(new NullMessageReporter());
         $anonymous = AccessActor::anonymous();
 
         $decision = $resolver->decide($anonymous, AccessCapability::View, AccessRule::from(null, []));
@@ -93,5 +96,47 @@ final class AccessResolverTest extends TestCase
         self::assertSame(AccessLevel::EDITOR, $actor->accessLevel());
         self::assertSame(['editor', 'project_team'], $actor->groupIdentifiers());
         self::assertTrue($actor->hasGroupIdentifier('project_team'));
+    }
+
+    public function testItReportsDecisionMessagesWhenReporterIsAvailable(): void
+    {
+        $reporter = new RecordingAccessMessageReporter();
+        $resolver = new AccessResolver($reporter);
+
+        $decision = $resolver->decide(AccessActor::anonymous(), AccessCapability::Edit, AccessRule::inherit());
+
+        self::assertFalse($decision->isGranted());
+        self::assertCount(1, $reporter->records);
+        self::assertSame($decision->message(), $reporter->records[0]['message']);
+        self::assertSame(['source' => 'access_resolver'], $reporter->records[0]['context']);
+    }
+}
+
+final class RecordingAccessMessageReporter implements MessageReporterInterface
+{
+    /**
+     * @var list<array{message: Message, context: array<string, mixed>}>
+     */
+    public array $records = [];
+
+    public function report(Message $message, array $context = []): Message
+    {
+        $this->records[] = [
+            'message' => $message,
+            'context' => $context,
+        ];
+
+        return $message;
+    }
+
+    public function reportBatch(iterable $records): array
+    {
+        $messages = [];
+
+        foreach ($records as $record) {
+            $messages[] = $this->report($record['message'], $record['context'] ?? []);
+        }
+
+        return $messages;
     }
 }

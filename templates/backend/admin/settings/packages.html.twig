@@ -1,0 +1,39 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% set settings_form = studio_core_settings_form('packages') %}
+{% set package_settings = studio_package_setting_packages() %}
+
+{% block title %}{{ 'admin.settings.packages.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.settings.title'|trans,
+        title: 'admin.settings.packages.title'|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.settings.packages.foundation_title'|trans }}</h2>
+        {% include '@backend/partials/forms/_dynamic.html.twig' with {form: settings_form} only %}
+        {% if package_settings|length > 0 %}
+            <ul>
+                {% for package in package_settings %}
+                    <li>
+                        <a href="{{ package.path }}">{{ package.label }}</a>
+                        <code>{{ package.package_name }}</code>
+                        {% if package.description %}
+                            <p class="studio-muted">{{ package.description }}</p>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="studio-muted">{{ 'admin.settings.packages.empty'|trans }}</p>
+        {% endif %}
+    </section>
+{% endblock %}

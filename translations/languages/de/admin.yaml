@@ -1,0 +1,324 @@
+ui:
+  backend:
+    navigation: 'Backend-Navigation'
+  admin:
+    area: 'Administration'
+    navigation: 'Admin-Navigation'
+
+admin:
+  navigation:
+    dashboard: 'Dashboard'
+    users: 'Benutzer'
+    packages: 'Packages'
+    themes: 'Themes'
+    scheduler: 'Scheduler'
+    backups: 'Backups'
+    operations: 'Operationen'
+    logs: 'Logs'
+    settings: 'Einstellungen'
+    general_settings: 'Allgemein'
+    dashboard_settings: 'Dashboard'
+    user_settings: 'Benutzer'
+    mail_settings: 'Mail'
+    security_settings: 'Sicherheit'
+    package_settings: 'Pakete'
+    scheduler_settings: 'Scheduler'
+  actions:
+    package_discovery:
+      label: 'Registry aktualisieren'
+    asset_rebuild:
+      label: 'Assets neu bauen'
+    cache_clear:
+      label: 'Cache leeren'
+  dashboard:
+    title: 'Admin-Dashboard'
+    foundation_title: 'Backend-Fundament'
+    foundation_text: 'Administrative Routen werden jetzt durch den nativen Backend-Router aufgelöst. Funktionale Seiten können hier andocken, sobald Authentifizierung, Navigation und Zugriffsprüfungen bereit sind.'
+  packages:
+    title: 'Paketverwaltung'
+    foundation_title: 'Paket-View-Fundament'
+    foundation_text: 'Die Paketverwaltung dockt hier an, sobald Installations-, Update-, Aktivierungs- und Cleanup-Workflows verdrahtet sind.'
+    registry_title: 'Registrierte Pakete'
+    registry_text: 'In der Registry gefundene Pakete werden hier aufgelistet. Lifecycle-Aktionen docken an, sobald Operation-Flows verdrahtet sind.'
+    empty: 'Noch sind keine Pakete registriert.'
+    unknown_value: 'Unbekannt'
+    table:
+      package: 'Paket'
+      status: 'Status'
+      scopes: 'Scopes'
+      version: 'Version'
+      path: 'Pfad'
+      actions: 'Aktionen'
+    status:
+      active: 'Aktiv'
+      inactive: 'Inaktiv'
+      removed: 'Entfernt'
+      faulty: 'Fehlerhaft'
+    scope:
+      frontend_theme: 'Frontend-Theme'
+      backend_theme: 'Backend-Theme'
+      system_template: 'System-Template'
+      module: 'Modul'
+      captcha_provider: 'Captcha-Provider'
+      editor_provider: 'Editor-Provider'
+    actions:
+      settings: 'Einstellungen'
+      no_settings: 'Keine Einstellungen'
+      none: 'Keine Aktionen'
+    install:
+      label: 'Installieren'
+      title: 'Paket installieren'
+      text: 'Lade ein Paket-ZIP hoch. Das Paket-Manifest wird zuerst geprüft und die finale Installation wartet im ActionLog auf Bestätigung.'
+      file: 'Paket-ZIP'
+      submit: 'Paket prüfen'
+      close: 'Schließen'
+    meta:
+      author: 'Von %author%'
+    detail:
+      overview_title: 'Paketübersicht'
+      immutable: 'Unveränderlich'
+      description: 'Beschreibung'
+      author: 'Autor'
+      license: 'Lizenz'
+      dependencies: 'Abhängigkeiten'
+      dependencies_empty: 'Keine Paketabhängigkeiten'
+      homepage: 'Homepage'
+      source: 'Quelle'
+      readme_title: 'README'
+    lifecycle:
+      review_title: 'Änderungen prüfen'
+      immutable: 'Dieses Systempaket ist unveränderlich und kann seinen Lifecycle-State nicht ändern.'
+      unavailable: 'Diese Lifecycle-Aktion ist nicht verfügbar.'
+      no_changes: 'Diese Aktion muss keinen Paketstatus ändern.'
+      cancel: 'Abbrechen'
+      table:
+        action: 'Aktion'
+      activate:
+        label: 'Aktivieren'
+        title: '%package% aktivieren'
+        text: 'Prüfe Abhängigkeiten und Konflikte, bevor dieses Paket aktiviert wird.'
+        submit: 'Paket aktivieren'
+      deactivate:
+        label: 'Deaktivieren'
+        title: '%package% deaktivieren'
+        text: 'Prüfe die geplante Statusänderung, bevor dieses Paket deaktiviert wird.'
+        submit: 'Paket deaktivieren'
+      reset_fault:
+        label: 'Fehler zurücksetzen'
+        title: 'Fehler für %package% zurücksetzen'
+        text: 'Das Paket wird erneut validiert und bei erfolgreicher Wiederherstellung auf inaktiv gesetzt.'
+        submit: 'Fehler zurücksetzen'
+      purge:
+        label: 'Daten löschen'
+        title: 'Daten für %package% löschen'
+        text: 'Prüfe den Cleanup paketbezogener Daten, bevor diese Paketregistrierung zurückgesetzt wird.'
+        warning: 'Dieser Schritt ist irreversibel. Paketeigene Einstellungen und spätere paketeigene Cleanup-Ziele werden gelöscht.'
+        submit: 'Daten löschen'
+      delete:
+        label: 'Paket löschen'
+        title: '%package% löschen'
+        text: 'Prüfe die Dateisystem-Entfernung, bevor dieses Paket von der Festplatte gelöscht wird.'
+        warning: 'Dieser Schritt ist irreversibel. Die Paketdateien werden gelöscht und der Registry-Eintrag bleibt als entfernt bestehen, bis Daten separat gelöscht werden.'
+        submit: 'Paket löschen'
+  themes:
+    title: 'Theme-Verwaltung'
+    foundation_title: 'Theme-Verwaltungsfundament'
+    foundation_text: 'Theme-Auswahl, Aktivierung, Vorschau und Variantenverwaltung docken hier an.'
+    empty: 'Für diesen Bereich sind noch keine Themes registriert.'
+    sections:
+      frontend:
+        title: 'Frontend-Themes'
+        text: 'Öffentliche Themes und der native System-Fallback werden hier aufgelistet.'
+      backend:
+        title: 'Backend-Themes'
+        text: 'Themes für Administrations- und Editor-Shells sowie der native System-Fallback werden hier aufgelistet.'
+    type:
+      system: 'System'
+      package: 'Paket'
+    quick:
+      use: 'Verwenden'
+      active: 'Aktiv'
+      repair: 'Heilen'
+    table:
+      theme: 'Theme'
+      status: 'Status'
+      type: 'Typ'
+      version: 'Version'
+      path: 'Pfad'
+  users:
+    title: 'Benutzerverwaltung'
+    foundation_title: 'Benutzer- und ACL-Fundament'
+    foundation_text: 'Benutzerkonten, ACL-Gruppen, Einladungen und administrative Zugriffswiederherstellung docken hier an.'
+  scheduler:
+    title: 'Scheduler'
+    foundation_title: 'Scheduler-Operations-Fundament'
+    foundation_text: 'Geplante Jobs, Queue-Trigger, Intervalle und Ausführungsdiagnostik docken hier an.'
+  backups:
+    title: 'Backup und Restore'
+    foundation_title: 'Backup- und Restore-Fundament'
+    foundation_text: 'Backup-Pläne, Restore-Flows, Aufbewahrungsregeln und Wiederherstellungsdiagnostik docken hier an.'
+  operations:
+    title: 'Operationen'
+    unknown_value: 'Unbekannt'
+    seconds: '%seconds% Sekunde(n)'
+    lock:
+      title: 'Runner-Lock'
+      empty: 'Aktuell ist kein Live-Operation-Lock aktiv.'
+      operation: 'Operation'
+      updated_at: 'Letzte Aktualisierung'
+      age: 'Alter'
+      status: 'Status'
+      pid: 'Runner-PID'
+      active: 'Aktiv'
+      stale: 'Stale'
+      clear_note: 'Nur stale Locks können aus dieser Ansicht entfernt werden. Das Notfall-Stop-Icon erscheint nur, wenn die gespeicherte PID noch zum passenden Live-Runner gehört.'
+    runs:
+      title: 'Letzte Live-Operationen'
+      text: 'Eingereihte, laufende und kürzlich abgeschlossene Live-Operationen bleiben sichtbar, bis ihre transiente TTL abläuft.'
+      empty: 'Aktuell ist kein Live-Operation-State verfügbar.'
+    table:
+      operation: 'Operation'
+      status: 'Status'
+      progress: 'Fortschritt'
+      updated_at: 'Letzte Aktualisierung'
+    detail:
+      title: '%operation%'
+      overview: 'Operationsübersicht'
+      operation_id: 'Operation-ID'
+      operation_key: 'Operation-Key'
+      created_at: 'Erstellt'
+      entries: 'Action-Log-Einträge'
+      entries_empty: 'Es wurden keine Action-Log-Einträge aufgezeichnet.'
+      result: 'Ergebnis'
+      result_empty: 'Die Operation wurde ohne Ergebnismeldungen abgeschlossen.'
+    actions:
+      continue: 'Fortfahren'
+      cleanup: 'Abgelaufene Operationen aufräumen'
+      cleanup_completed: 'Operations-Cleanup hat %removed% abgelaufene Run(s) entfernt.'
+      clear_stale_lock: 'Stale Lock entfernen'
+      kill_stale_runner: 'Stale Runner notfallmäßig killen'
+      stale_lock_cleared: 'Der stale Operation-Lock wurde entfernt.'
+      kill_killed: 'Der stale Runner-Prozess %pid% wurde gestoppt und sein Lock entfernt.'
+      kill_missing_lock: 'Es ist kein Live-Operation-Lock aktiv.'
+      kill_lock_active: 'Der Runner-Lock ist noch nicht stale.'
+      kill_invalid_operation: 'Der stale Runner-Lock hatte keine gültige Operation-ID und wurde entfernt.'
+      kill_missing_pid: 'Der stale Runner-Lock hatte keine gespeicherte Prozess-ID und wurde entfernt.'
+      kill_process_mismatch: 'Die gespeicherte Prozess-ID %pid% gehört nicht zum erwarteten Live-Runner.'
+      kill_signal_failed: 'Der stale Runner-Prozess %pid% konnte nicht gestoppt werden.'
+      invalid_csrf: 'Das Operations-Formular ist abgelaufen. Bitte versuche es erneut.'
+      noop: 'Es wurde keine Operations-Wartungsaktion angewandt.'
+  logs:
+    title: 'Logs'
+    foundation_title: 'Log- und Audit-Fundament'
+    foundation_text: 'Operations-Logs, Audit-Ansichten, Paketdiagnostik und sicherheitsrelevante Ereignisse docken hier an.'
+  settings:
+    title: 'Einstellungen'
+    redirect_title: 'Einstellungsbereiche'
+    redirect_text: 'Allgemeine Einstellungen sind der erste eingebaute Einstellungsbereich. Aktive Pakete mit einfachen Setting-Definitionen erscheinen unter den Paket-Einstellungen.'
+    general:
+      title: 'Allgemeine Einstellungen'
+      foundation_title: 'Allgemeines Konfigurationsfundament'
+      foundation_text: 'Allgemeine Website-Konfiguration wird hier über den gemeinsamen Konfigurations-Layer verwaltet.'
+    dashboard:
+      title: 'Dashboard-Einstellungen'
+      foundation_title: 'Dashboard-Konfigurationsfundament'
+      foundation_text: 'Dashboard-Widget-Auswahl und Einstellungen für die Admin-Startseite docken hier an.'
+    users:
+      title: 'Benutzer-Einstellungen'
+      foundation_title: 'Benutzer-Konfigurationsfundament'
+      foundation_text: 'Registrierungsfreigabe, Profilfeld-Konfiguration und Standardwerte für Account-Flows docken hier an.'
+    mail:
+      title: 'Mail-Einstellungen'
+      foundation_title: 'Mail-Konfigurationsfundament'
+      foundation_text: 'Mail-Transport, Absender-Defaults und Template-bezogene Einstellungen docken hier an.'
+    security:
+      title: 'Sicherheits-Einstellungen'
+      foundation_title: 'Sicherheits-Konfigurationsfundament'
+      foundation_text: 'Sicherheits-, Captcha-, Logging- und Missbrauchsschutz-Einstellungen docken hier an.'
+    packages:
+      title: 'Paket-Einstellungen'
+      foundation_title: 'Pakete mit Einstellungen'
+      empty: 'Noch kein aktives Paket stellt Einstellungen bereit.'
+    package:
+      title: 'Einstellungen für %package%'
+      foundation_title: 'Paket-Einstellungen'
+      empty: 'Dieses Paket stellt keine konfigurierbaren Einstellungen bereit.'
+      options: '%count% Option(en)'
+      validation: '%count% Validierungsregel(n)'
+    scheduler:
+      title: 'Scheduler-Einstellungen'
+      foundation_title: 'Scheduler-Konfigurationsfundament'
+      foundation_text: 'Scheduler-Defaults, Intervalle und Automations-bezogene Einstellungen docken hier an.'
+    form:
+      saved: 'Einstellungen gespeichert.'
+      save: 'Einstellungen speichern'
+      errors:
+        choice: 'Wähle eine der verfügbaren Optionen.'
+        integer: 'Gib eine ganze Zahl ein.'
+        invalid: 'Gib einen gültigen Wert ein.'
+        invalid_csrf: 'Das Einstellungsformular ist abgelaufen. Bitte versuche es erneut.'
+        json: 'Gib gültiges JSON ein.'
+        max: 'Gib einen kleineren Wert ein.'
+        max_length: 'Gib einen kürzeren Wert ein.'
+        min: 'Gib einen größeren Wert ein.'
+        min_length: 'Gib einen längeren Wert ein.'
+        number: 'Gib eine gültige Zahl ein.'
+        pattern: 'Der gesendete Wert entspricht nicht dem erwarteten Format.'
+        required: 'Dieses Feld ist erforderlich.'
+        save_failed: 'Die Einstellungen konnten nicht gespeichert werden.'
+    fields:
+      site_title:
+        label: 'Seitentitel'
+      site_url:
+        label: 'Website-URL'
+      default_language:
+        label: 'Standardsprache'
+      route_prefixes_enabled:
+        label: 'Sprachpräfixe in Routen verwenden'
+      home_path:
+        label: 'Startseiten-Pfad'
+      dashboard_widgets:
+        label: 'Dashboard-Widgets'
+      registration_enabled:
+        label: 'Registrierung erlauben'
+      default_acl_group:
+        label: 'Standard-ACL-Gruppe'
+      user_menu_enabled:
+        label: 'System-Benutzermenü anzeigen'
+      user_menu_sort_order:
+        label: 'Sortierung des Benutzermenüs'
+      mail_enabled:
+        label: 'Mail aktivieren'
+      mail_from_address:
+        label: 'Standard-Absender-E-Mail'
+      mail_from_name:
+        label: 'Standard-Absendername'
+      captcha_enabled:
+        label: 'Captcha aktivieren'
+      captcha_provider:
+        label: 'Captcha-Provider'
+      captcha_preview:
+        label: 'Captcha-Vorschau'
+      package_update_interval:
+        label: 'Update-Check-Intervall'
+      package_auto_updates:
+        label: 'Automatische Paket-Updates erlauben'
+      scheduler_enabled:
+        label: 'Scheduler aktivieren'
+      scheduler_default_interval:
+        label: 'Standard-Scheduler-Intervall'
+    options:
+      dashboard:
+        system_status: 'Systemstatus'
+        packages: 'Paketstatus'
+        recent_activity: 'Letzte Aktivität'
+        setup_warnings: 'Setup-Warnungen'
+      captcha:
+        none: 'Kein Captcha-Provider'
+      interval:
+        manual: 'Manuell'
+        hourly: 'Stündlich'
+        daily: 'Täglich'
+        weekly: 'Wöchentlich'
+  message:
+    title: 'Admin-Route'

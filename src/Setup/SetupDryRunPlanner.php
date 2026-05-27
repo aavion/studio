@@ -27,7 +27,7 @@ final readonly class SetupDryRunPlanner
         return [
             ['write_environment', fn (): array => [
                 '_messages' => [
-                    Message::info(MessageCode::SETUP_DRY_RUN, MessageKey::SETUP_DRY_RUN),
+                    Message::debug(MessageCode::SETUP_DRY_RUN, MessageKey::SETUP_DRY_RUN),
                 ],
                 'dry_run' => true,
                 'path' => '.env.'.$input->appEnv().'.local',
@@ -54,6 +54,9 @@ final readonly class SetupDryRunPlanner
                     'localization.route_prefixes_enabled' => false,
                     'content.home_path' => '/home',
                     'user.default_acl_group' => 'registered',
+                    'user.menu.enabled' => true,
+                    'user.menu.sort_order' => 900,
+                    'user.registration.enabled' => false,
                 ],
             ], ActionLogStatus::Skipped],
             ['seed_admin_user', fn (): array => [
@@ -62,6 +65,22 @@ final readonly class SetupDryRunPlanner
                 'admin_email' => $input->adminEmail(),
                 'admin_password' => '[hidden]',
                 'groups' => ['admin'],
+            ], ActionLogStatus::Skipped],
+            ['seed_initial_content', fn (): array => [
+                'dry_run' => true,
+                'schema' => 'static_page',
+                'path' => '/home',
+                'title' => $input->siteTitle(),
+            ], ActionLogStatus::Skipped],
+            ['clear_cache', fn (): array => [
+                'dry_run' => true,
+                'command' => [PHP_BINARY, $projectDir.'/bin/console', 'cache:clear', '--env='.$input->appEnv()],
+            ], ActionLogStatus::Skipped],
+            ['mark_setup_completed', fn (): array => [
+                'dry_run' => true,
+                'would_write' => [
+                    'APP_SETUP_COMPLETED' => '1',
+                ],
             ], ActionLogStatus::Skipped],
         ];
     }

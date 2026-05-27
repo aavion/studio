@@ -6,6 +6,7 @@
         name="{{ name }}"
         rows="{{ rows|default(6) }}"
         {% if required|default(false) %}required{% endif %}
+        {{ studio_html_attributes(attributes|default({})) }}
     >{{ value|default('') }}</textarea>
 {% endset %}
 {% include '@backend/partials/forms/_field.html.twig' with {

@@ -13,8 +13,9 @@ use App\Core\Package\PackageAssetContribution;
 use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageAssetSyncer;
 use App\Core\Package\PackageScope;
-use App\Core\Workflow\OperationStatus;
+use App\Core\Workflow\WorkflowStatus;
 use App\Tests\Support\FilesystemTestHelper;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -72,6 +73,8 @@ final class PackageAssetSyncerTest extends TestCase
     {
         $this->writeTestFile($this->root, 'packages/dual/assets/frontend/app.css', '.front {}');
         $this->writeTestFile($this->root, 'packages/dual/assets/backend/app.css', '.back {}');
+        $this->writeTestFile($this->root, 'packages/dual/assets/shared/app.css', '.shared {}');
+        $this->writeTestFile($this->root, 'packages/dual/assets/theme.css', '.root {}');
 
         (new PackageAssetSyncer($this->root))->sync([
             new PackageAssetSyncPackage('dual', 'packages/dual', [PackageScope::FrontendTheme, PackageScope::BackendTheme]),
@@ -79,7 +82,41 @@ final class PackageAssetSyncerTest extends TestCase
 
         self::assertStringContainsString('@import "../../packages/dual/frontend/app.css";', (string) file_get_contents($this->root.'/assets/styles/packages/frontend-theme.css'));
         self::assertStringContainsString('@import "../../packages/dual/backend/app.css";', (string) file_get_contents($this->root.'/assets/styles/packages/backend-theme.css'));
+        self::assertStringNotContainsString('dual/theme.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringNotContainsString('dual/shared/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
         self::assertStringNotContainsString('dual/frontend/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringNotContainsString('dual/theme.css', (string) file_get_contents($this->root.'/assets/styles/packages/frontend-theme.css'));
+        self::assertStringNotContainsString('dual/theme.css', (string) file_get_contents($this->root.'/assets/styles/packages/backend-theme.css'));
+    }
+
+    public function testItAllowsSharedAssetsOnlyForGlobalPackageScopes(): void
+    {
+        $this->writeTestFile($this->root, 'packages/theme-module/assets/frontend/app.css', '.front {}');
+        $this->writeTestFile($this->root, 'packages/theme-module/assets/theme.css', '.global {}');
+
+        (new PackageAssetSyncer($this->root))->sync([
+            new PackageAssetSyncPackage('theme-module', 'packages/theme-module', [PackageScope::FrontendTheme, PackageScope::Module]),
+        ]);
+
+        self::assertStringContainsString('@import "../../packages/theme-module/frontend/app.css";', (string) file_get_contents($this->root.'/assets/styles/packages/frontend-theme.css'));
+        self::assertStringContainsString('@import "../../packages/theme-module/theme.css";', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+    }
+
+    public function testItDoesNotRouteAreaAssetsForPackagesWithoutMatchingThemeScope(): void
+    {
+        $this->writeTestFile($this->root, 'packages/module/assets/frontend/app.css', '.front {}');
+        $this->writeTestFile($this->root, 'packages/module/assets/backend/app.css', '.back {}');
+        $this->writeTestFile($this->root, 'packages/module/assets/theme.css', '.global {}');
+
+        (new PackageAssetSyncer($this->root))->sync([
+            new PackageAssetSyncPackage('module', 'packages/module', [PackageScope::Module]),
+        ]);
+
+        self::assertStringContainsString('@import "../../packages/module/theme.css";', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringNotContainsString('module/frontend/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringNotContainsString('module/backend/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertStringNotContainsString('module/frontend/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/frontend-theme.css'));
+        self::assertStringNotContainsString('module/backend/app.css', (string) file_get_contents($this->root.'/assets/styles/packages/backend-theme.css'));
     }
 
     public function testItRegistersModuleJavaScriptEntrypoints(): void
@@ -146,7 +183,7 @@ final class PackageAssetSyncerTest extends TestCase
 
         $result = (new PackageAssetSyncer(
             $this->root,
-            eventDispatcher: new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry()),
+            eventDispatcher: new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter()),
         ))->sync([
             new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
         ]);
@@ -168,12 +205,12 @@ final class PackageAssetSyncerTest extends TestCase
 
         $result = (new PackageAssetSyncer(
             $this->root,
-            eventDispatcher: new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry()),
+            eventDispatcher: new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter()),
         ))->sync([
             new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
         ]);
 
-        self::assertSame(OperationStatus::Failed, $result->status());
+        self::assertSame(WorkflowStatus::Failed, $result->status());
         self::assertSame('event.hook_listener_failed', $result->firstIssue()?->code());
         self::assertSame(PackageAssetRegistryBuildEvent::class, $result->firstIssue()?->context()['event']);
     }
@@ -211,7 +248,7 @@ final class PackageAssetSyncerTest extends TestCase
         unlink($this->root.'/assets/packages');
         mkdir($this->root.'/assets/packages', 0775, true);
 
-        self::assertSame(OperationStatus::Failed, $result->status());
+        self::assertSame(WorkflowStatus::Failed, $result->status());
         self::assertSame('package.asset_sync_failed', $result->firstIssue()?->code());
     }
 
@@ -227,7 +264,7 @@ final class PackageAssetSyncerTest extends TestCase
         ]);
         unlink($this->root.'/packages/demo');
 
-        self::assertSame(OperationStatus::Failed, $result->status());
+        self::assertSame(WorkflowStatus::Failed, $result->status());
         self::assertSame('package.asset_sync_failed', $result->firstIssue()?->code());
     }
 
@@ -242,7 +279,7 @@ final class PackageAssetSyncerTest extends TestCase
         ]);
         unlink($this->root.'/packages/demo/templates');
 
-        self::assertSame(OperationStatus::Failed, $result->status());
+        self::assertSame(WorkflowStatus::Failed, $result->status());
         self::assertSame('package.asset_sync_failed', $result->firstIssue()?->code());
     }
 }

@@ -1,3 +1,30 @@
+{% macro render_items(items) %}
+    {% if items is not empty %}
+        <ul class="studio-frontend-navigation-list">
+            {% for item in items %}
+                {% if item.label is not empty %}
+                    {% set item_classes = [
+                        'studio-frontend-navigation-item',
+                        'studio-frontend-navigation-level-' ~ item.level,
+                        item.active ? 'is-active' : '',
+                        item.active_ancestor ? 'is-active-ancestor' : '',
+                    ]|filter(item_class => item_class is not empty)|join(' ') %}
+                    {% set link_attributes = item.metadata.link_attributes|default({})|merge({
+                        'aria-current': item.active ? 'page' : false,
+                    }) %}
+                    <li class="{{ item_classes }}">
+                        <a class="studio-frontend-navigation-link" href="{{ item.url }}" {{ studio_html_attributes(link_attributes) }}>{{ item.label|trans }}</a>
+                        {{ _self.render_items(item.children) }}
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endmacro %}
+
 <nav class="studio-frontend-navigation" aria-label="{{ 'ui.frontend.navigation'|trans }}">
-    {% block frontend_navigation_items %}{% endblock %}
+    {% set items = studio_navigation('main', app.request.locale|default('en'), 3) %}
+    {% block frontend_navigation_items %}
+        {{ _self.render_items(items) }}
+    {% endblock %}
 </nav>

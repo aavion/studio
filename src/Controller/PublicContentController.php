@@ -5,17 +5,25 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Content\Event\ContentRenderContextEvent;
+use App\Content\Event\ContentRenderedEvent;
 use App\Content\Read\PublishedContentResolver;
 use App\Content\Read\PublishedContentResolveStatus;
+use App\Content\Render\ContentFieldsetRenderer;
 use App\Content\Routing\ContentRedirectResolveStatus;
 use App\Content\Routing\ContentRedirectResolver;
 use App\Content\Routing\ContentRouteLocalization;
 use App\Content\Routing\ContentRoutePath;
 use App\Content\Routing\ContentRouteGuard;
 use App\Core\Access\AccessActor;
+use App\Core\Access\AccessRule;
 use App\Core\Event\PublicEventDispatcher;
 use App\Core\Message\MessageException;
+use App\Entity\UserAccount;
 use App\View\Http\HttpErrorRenderer;
+use App\View\Injection\DynamicViewInjectionRenderer;
+use App\View\Injection\DynamicViewInjectionSlot;
+use App\View\Injection\ViewInjectionRegistry;
+use App\View\Injection\ViewSurface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,6 +39,9 @@ final class PublicContentController extends AbstractController
         private readonly ContentRouteGuard $routeGuard,
         private readonly HttpErrorRenderer $httpError,
         private readonly PublicEventDispatcher $eventDispatcher,
+        private readonly ViewInjectionRegistry $viewInjectionRegistry,
+        private readonly DynamicViewInjectionRenderer $dynamicInjectionRenderer,
+        private readonly ContentFieldsetRenderer $fieldsetRenderer,
     ) {
     }
 
@@ -115,15 +126,43 @@ final class PublicContentController extends AbstractController
 
         $result = $this->contentResolver->resolveByPath(
             $path,
-            AccessActor::anonymous(),
+            $this->actor(),
             $language,
             $routePath->variant() ?? $this->readQueryString($request, 'variant', 'default'),
         );
         $view = $result->view();
 
         if (null !== $view) {
+            $actor = $this->actor();
+            $dynamicRoute = null === $routePath->variant() || !$view->context()->variantFallbackUsed()
+                ? null
+                : $this->viewInjectionRegistry->findDynamicRoute(ViewSurface::Public, $view, $routePath->variant());
+
+            if (null !== $dynamicRoute) {
+                $content = $this->dynamicInjectionRenderer->renderRoute($dynamicRoute, $view, $request, $actor);
+
+                if (null !== $content) {
+                    return new Response($content);
+                }
+            }
+
             $context = [
                 'content_view' => $view,
+                'content_fieldset' => $this->fieldsetRenderer->render($view),
+                'content_injections' => [
+                    DynamicViewInjectionSlot::BeforeContent->value => $this->dynamicInjectionRenderer->renderSlot(
+                        $view,
+                        $request,
+                        DynamicViewInjectionSlot::BeforeContent,
+                        $actor,
+                    ),
+                    DynamicViewInjectionSlot::AfterContent->value => $this->dynamicInjectionRenderer->renderSlot(
+                        $view,
+                        $request,
+                        DynamicViewInjectionSlot::AfterContent,
+                        $actor,
+                    ),
+                ],
             ];
             $event = new ContentRenderContextEvent($view, $request, $context);
             $dispatchResult = $this->eventDispatcher->dispatch($event, [
@@ -140,11 +179,19 @@ final class PublicContentController extends AbstractController
                 );
             }
 
-            return $this->render('@frontend/content/entity.html.twig', $context);
-        }
+            $content = $this->renderView('@frontend/content/entity.html.twig', $context);
+            $renderedEvent = new ContentRenderedEvent($view, $request, $content);
+            $renderedResult = $this->eventDispatcher->dispatch($renderedEvent, [
+                'operation' => 'content_rendered',
+                'path' => $path,
+                'language' => $language,
+            ]);
 
-        if (PublishedContentResolveStatus::ContextUnavailable === $result->status()) {
-            return $this->httpError->notFound($request);
+            if ($renderedResult->isSuccess()) {
+                $content = $renderedEvent->content();
+            }
+
+            return new Response($content);
         }
 
         if ($result->isUnauthorized()) {
@@ -153,6 +200,33 @@ final class PublicContentController extends AbstractController
 
         if ($result->isForbidden()) {
             return $this->httpError->forbidden($request);
+        }
+
+        if (!in_array($result->status(), [
+            PublishedContentResolveStatus::NotFound,
+            PublishedContentResolveStatus::ContextUnavailable,
+        ], true)) {
+            return $this->httpError->notFound($request);
+        }
+
+        $staticInjection = $this->viewInjectionRegistry->findStatic(ViewSurface::Public, $path);
+
+        if (null !== $staticInjection) {
+            $actor = $this->actor();
+            $accessRule = null === $staticInjection->accessLevel() && [] === $staticInjection->accessGroups()
+                ? AccessRule::from(0)
+                : AccessRule::from($staticInjection->accessLevel(), $staticInjection->accessGroups());
+
+            if (!$accessRule->allows($actor)) {
+                return null === $actor->userUid()
+                    ? $this->httpError->unauthorized($request)
+                    : $this->httpError->forbidden($request);
+            }
+
+            return $this->render($staticInjection->template(), [
+                'injection' => $staticInjection,
+                'request' => $request,
+            ]);
         }
 
         return $this->httpError->notFound($request);
@@ -183,6 +257,13 @@ final class PublicContentController extends AbstractController
         }
 
         return $this->readQueryString($request, 'language', $default);
+    }
+
+    private function actor(): AccessActor
+    {
+        $user = $this->getUser();
+
+        return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
     }
 
     private function redirectUri(?string $path, Request $request): string

@@ -12,8 +12,7 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationActionInterface;
-use App\Core\Workflow\OperationIssue;
-use App\Core\Workflow\OperationResult;
+use App\Core\Workflow\WorkflowResult;
 
 final readonly class EnsureDirectoryAction implements OperationActionInterface
 {
@@ -53,24 +52,24 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
     }
 
     /**
-     * @return OperationResult<array{path: string, created: bool}>
+     * @return WorkflowResult<array{path: string, created: bool}>
      */
-    public function execute(): OperationResult
+    public function execute(): WorkflowResult
     {
         $target = $this->targetPath();
         $symlinkAncestor = $this->pathGuard->symlinkAncestor($this->root, $this->relativePath);
 
         if (is_link($target)) {
-            return OperationResult::blocked([
-                OperationIssue::create(MessageCode::FILESYSTEM_TARGET_SYMLINK, MessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
+            return WorkflowResult::blocked([
+                Message::create(MessageCode::FILESYSTEM_TARGET_SYMLINK, MessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
                     'path' => $this->relativePath,
                 ], level: MessageLevel::Warning),
             ]);
         }
 
         if (null !== $symlinkAncestor) {
-            return OperationResult::blocked([
-                OperationIssue::create(MessageCode::FILESYSTEM_PARENT_SYMLINK, MessageKey::FILESYSTEM_PARENT_SYMLINK, context: [
+            return WorkflowResult::blocked([
+                Message::create(MessageCode::FILESYSTEM_PARENT_SYMLINK, MessageKey::FILESYSTEM_PARENT_SYMLINK, context: [
                     'path' => $this->relativePath,
                     'parent' => $symlinkAncestor,
                 ], level: MessageLevel::Warning),
@@ -78,15 +77,15 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
         }
 
         if (is_file($target)) {
-            return OperationResult::blocked([
-                OperationIssue::create(MessageCode::FILESYSTEM_DIRECTORY_CONFLICT, MessageKey::FILESYSTEM_DIRECTORY_CONFLICT, context: [
+            return WorkflowResult::blocked([
+                Message::create(MessageCode::FILESYSTEM_DIRECTORY_CONFLICT, MessageKey::FILESYSTEM_DIRECTORY_CONFLICT, context: [
                     'path' => $this->relativePath,
                 ], level: MessageLevel::Warning),
             ]);
         }
 
         if (is_dir($target)) {
-            return OperationResult::success([
+            return WorkflowResult::success([
                 'path' => $this->relativePath,
                 'created' => false,
             ], [
@@ -103,26 +102,26 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
         }
 
         if (!mkdir($target, $this->mode, true) && !is_dir($target)) {
-            return OperationResult::failed([
-                OperationIssue::create(MessageCode::FILESYSTEM_DIRECTORY_CREATE_FAILED, MessageKey::FILESYSTEM_DIRECTORY_CREATE_FAILED, context: [
+            return WorkflowResult::failed([
+                Message::create(MessageCode::FILESYSTEM_DIRECTORY_CREATE_FAILED, MessageKey::FILESYSTEM_DIRECTORY_CREATE_FAILED, context: [
                     'path' => $this->relativePath,
                 ], level: MessageLevel::Error),
             ]);
         }
 
-        return OperationResult::success([
+        return WorkflowResult::success([
             'path' => $this->relativePath,
             'created' => true,
             ], [
                 'path' => $this->relativePath,
                 'created' => true,
             ], [
-                Message::info(MessageCode::FILESYSTEM_DIRECTORY_READY, MessageKey::FILESYSTEM_DIRECTORY_READY, [
+                Message::create(MessageCode::FILESYSTEM_DIRECTORY_READY, MessageKey::FILESYSTEM_DIRECTORY_READY, [
                     '%path%' => $this->relativePath,
                 ], [
                     'path' => $this->relativePath,
                     'created' => true,
-                ]),
+                ], MessageLevel::Success),
             ]);
     }
 
