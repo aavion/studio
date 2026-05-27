@@ -16,12 +16,16 @@ use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class PackageRuntimeFailureHandler
 {
+    private PackageDependentDeactivator $dependentDeactivator;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private WorkflowResultMessageReporterInterface $messageReporter,
         private ?PackageAssetRebuildDispatcher $assetRebuildDispatcher = null,
         private string $environment = 'test',
+        ?PackageDependentDeactivator $dependentDeactivator = null,
     ) {
+        $this->dependentDeactivator = $dependentDeactivator ?? new PackageDependentDeactivator($entityManager);
     }
 
     /**
@@ -73,6 +77,8 @@ final readonly class PackageRuntimeFailureHandler
         ];
 
         $faulty = false;
+        $dependentChanges = [];
+        $dependentMessages = [];
 
         if (ExtensionPackageStatus::Active === $package->status()) {
             $faulty = $package->markFaulty($package->path(), $package->manifestVersion(), [
@@ -80,6 +86,12 @@ final readonly class PackageRuntimeFailureHandler
                 'registry_state' => 'faulty',
                 'runtime_failure' => $failure,
             ]);
+
+            if ($faulty) {
+                $deactivation = $this->dependentDeactivator->deactivateActiveDependents($package, 'runtime_fault');
+                $dependentChanges = $deactivation['changes'];
+                $dependentMessages = $deactivation['messages'];
+            }
         } else {
             $package->recordRuntimeFailure($failure);
         }
@@ -93,10 +105,12 @@ final readonly class PackageRuntimeFailureHandler
             'package' => $packageName,
             'faulty' => $faulty,
             'asset_rebuild' => null !== $assetRebuild && $assetRebuild->isSuccess(),
+            'deactivated_dependents' => array_column($dependentChanges, 'package'),
         ], [
             'package' => $packageName,
             'faulty' => $faulty,
             'asset_rebuild' => $assetRebuild?->toArray(),
+            'deactivated_dependents' => $dependentChanges,
         ], [
             Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_RUNTIME_FAILURE,
@@ -105,6 +119,7 @@ final readonly class PackageRuntimeFailureHandler
                 ['package' => $packageName, 'faulty' => $faulty],
                 $faulty ? MessageLevel::Error : MessageLevel::Warning,
             ),
+            ...$dependentMessages,
         ]);
     }
 

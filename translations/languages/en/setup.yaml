@@ -30,6 +30,7 @@ setup:
       label: 'Admin username'
     admin_password:
       label: 'Admin password'
+      help: 'Use at least 12 characters.'
     admin_password_confirm:
       label: 'Confirm admin password'
     admin_email:
@@ -47,6 +48,7 @@ setup:
       invalid: 'The submitted setup data could not be used.'
       invalid_csrf: 'The setup form expired. Please try again.'
       password_mismatch: 'The password confirmation does not match.'
+      password_length: 'The admin password must contain at least 12 characters.'
       required: 'This field is required.'
   result:
     success_title: 'Setup result'

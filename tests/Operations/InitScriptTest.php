@@ -38,6 +38,12 @@ final class InitScriptTest extends TestCase
         self::assertIsString($contents);
         self::assertStringContainsString("'composer', '--version'", $contents);
         self::assertStringContainsString("/bin/composer'", $contents);
+        self::assertStringContainsString('resetVendorDirectory()', $contents);
+        self::assertStringContainsString('Existing vendor directory removed before Composer install.', $contents);
+        self::assertLessThan(
+            strpos($contents, "'install', '--no-dev', '--no-scripts', '--optimize-autoloader'"),
+            strpos($contents, 'resetVendorDirectory()'),
+        );
         self::assertStringContainsString("'install', '--no-dev', '--no-scripts', '--optimize-autoloader'", $contents);
         self::assertStringContainsString('CoreTranslationBootstrapper', $contents);
         self::assertLessThan(

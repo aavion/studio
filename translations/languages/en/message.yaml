@@ -56,6 +56,7 @@ message:
       status_blocked: 'Package "%package%" cannot change lifecycle state while it is "%status%".'
       activated: 'Package "%package%" was activated.'
       deactivated: 'Package "%package%" was deactivated.'
+      dependent_deactivated: 'Package "%package%" was deactivated because dependency "%dependency%" became unavailable.'
       cleanup_completed: 'Package "%package%" cleanup completed.'
       removed: 'Package "%package%" was removed.'
       purged: 'Package "%package%" registry entry was deleted.'
@@ -188,6 +189,8 @@ message:
       password_reset_continue: 'Reset the password for "%username%"?'
       password_reset_new_password: 'New password'
       password_reset_confirm_password: 'Confirm new password'
+    admin_password:
+      too_short: 'The setup admin password must contain at least %min_length% characters.'
     password_reset:
       database_url_missing: 'DATABASE_URL is required for password reset.'
       user_not_found: 'User "%username%" was not found.'

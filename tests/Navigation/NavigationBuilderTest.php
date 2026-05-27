@@ -91,6 +91,47 @@ final class NavigationBuilderTest extends KernelTestCase
         self::assertSame(['max_depth' => 3, 'start_level' => 1, 'root_uid' => null], $seenRequest);
     }
 
+    public function testItSanitizesUnsafeUrlTargets(): void
+    {
+        self::bootKernel();
+        $connection = self::getContainer()->get(Connection::class);
+        self::assertInstanceOf(Connection::class, $connection);
+        $persistedUid = '30000000-0000-0000-0000-000000000960';
+
+        self::getContainer()->get(EventDispatcherInterface::class)->addListener(
+            NavigationBuilderEvent::class,
+            static function (NavigationBuilderEvent $event): void {
+                $event->addItem(new NavigationItem(
+                    '30000000-0000-0000-0000-000000000959',
+                    'Hook Script',
+                    'url',
+                    'javascript:alert(1)',
+                    sortOrder: 34,
+                ));
+                $event->addItem(new NavigationItem(
+                    '30000000-0000-0000-0000-000000000958',
+                    'External Docs',
+                    'url',
+                    'https://example.test/docs',
+                    sortOrder: 33,
+                ));
+            },
+        );
+
+        try {
+            $this->insertMenuItem($connection, $persistedUid, 'Persisted Script', 'data:text/html,boom', null, null, 35);
+
+            $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'en');
+            $urlsByLabel = array_column($navigation, 'url', 'label');
+
+            self::assertSame('https://example.test/docs', $urlsByLabel['External Docs']);
+            self::assertSame('#', $urlsByLabel['Hook Script']);
+            self::assertSame('#', $urlsByLabel['Persisted Script']);
+        } finally {
+            $connection->delete('site_menu_item', ['uid' => $persistedUid]);
+        }
+    }
+
     public function testItBuildsInjectedParentChildHierarchyAndSortOrder(): void
     {
         self::bootKernel();

@@ -12,6 +12,7 @@ final readonly class SetupWebInputFactory
         private string $projectDir,
         private string $environment,
         private SetupLanguageCatalog $languageCatalog = new SetupLanguageCatalog(),
+        private SetupPasswordPolicy $passwordPolicy = new SetupPasswordPolicy(),
     ) {
     }
 
@@ -140,6 +141,12 @@ final readonly class SetupWebInputFactory
 
         if ((string) $values['admin_password'] !== (string) $values['admin_password_confirm']) {
             $errors['admin_password_confirm'][] = 'setup.form.errors.password_mismatch';
+        }
+
+        $adminPassword = (string) $values['admin_password'];
+
+        if ('' !== trim($adminPassword) && !$this->passwordPolicy->isValidAdminPassword($adminPassword)) {
+            $errors['admin_password'][] = 'setup.form.errors.password_length';
         }
 
         if (1 !== preg_match('/^[^@\s]+@[^@\s]+$/', (string) $values['admin_email'])) {

@@ -42,6 +42,7 @@
 - If a requested narrow change exposes unrelated drift, fix it only when it blocks the task; otherwise record the follow-up in `dev/WORKLOG.md`.
 
 ## Build and Verification Commands
+- `bin/init` initializes the repository, refreshes dependencies and assets, and is the preferred recovery path for broken or incomplete `vendor/` packages because it removes an existing `vendor/` tree before Composer runs.
 - `composer install` installs PHP dependencies and verifies required extensions.
 - `php -l <path>` checks PHP syntax for a changed file.
 - `php bin/console lint:container` validates Symfony container wiring after service or configuration changes.

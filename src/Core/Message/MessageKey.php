@@ -59,6 +59,7 @@ final class MessageKey
     public const PACKAGE_LIFECYCLE_STATUS_BLOCKED = 'message.package.lifecycle.status_blocked';
     public const PACKAGE_LIFECYCLE_ACTIVATED = 'message.package.lifecycle.activated';
     public const PACKAGE_LIFECYCLE_DEACTIVATED = 'message.package.lifecycle.deactivated';
+    public const PACKAGE_LIFECYCLE_DEPENDENT_DEACTIVATED = 'message.package.lifecycle.dependent_deactivated';
     public const PACKAGE_LIFECYCLE_CLEANUP_COMPLETED = 'message.package.lifecycle.cleanup_completed';
     public const PACKAGE_LIFECYCLE_REMOVED = 'message.package.lifecycle.removed';
     public const PACKAGE_LIFECYCLE_PURGED = 'message.package.lifecycle.purged';
@@ -160,6 +161,7 @@ final class MessageKey
     public const SETUP_PROMPT_APP_SECRET = 'message.setup.prompt.app_secret';
     public const SETUP_PROMPT_INVALID_CHOICE = 'message.setup.prompt.invalid_choice';
     public const SETUP_PROMPT_PASSWORD_MISMATCH = 'message.setup.prompt.password_mismatch';
+    public const SETUP_ADMIN_PASSWORD_TOO_SHORT = 'message.setup.admin_password.too_short';
     public const SETUP_PROMPT_PASSWORD_RESET_CONTINUE = 'message.setup.prompt.password_reset_continue';
     public const SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD = 'message.setup.prompt.password_reset_new_password';
     public const SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD = 'message.setup.prompt.password_reset_confirm_password';

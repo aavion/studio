@@ -124,6 +124,31 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('Example Studio', json_decode((string) $homeTitle, true, flags: JSON_THROW_ON_ERROR));
     }
 
+    public function testItRejectsShortAdminPasswordBeforeSetupSteps(): void
+    {
+        $databasePath = $this->root.'/var/setup.db';
+        $this->createSchema($databasePath);
+        $executor = new RecordingSetupCommandExecutor();
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Example Studio',
+            defaultUri: 'https://example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///'.$databasePath,
+            adminUsername: 'admin',
+            adminPassword: 'short',
+            adminEmail: 'admin@example.test',
+            appSecret: 'test-secret',
+        ));
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('setup.admin_password.too_short', $result->firstIssue()?->code());
+        self::assertSame([], $executor->commands);
+    }
+
     public function testItSeedsTheSameSqliteDatabaseThatSymfonyMigratesWhenUrlUsesKernelEnvironmentPlaceholder(): void
     {
         $databasePath = $this->root.'/var/data_dev.db';

@@ -58,7 +58,7 @@ final class SetupCliInputFactory
             adminPassword: $this->prompter->confirmedValue(
                 $options,
                 'admin-password',
-                'admin',
+                '',
                 $interactive,
                 $language,
                 MessageKey::SETUP_PROMPT_ADMIN_PASSWORD,

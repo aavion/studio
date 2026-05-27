@@ -107,7 +107,7 @@ Current public hooks:
 - `App\View\ViewContextEvent`: extend the universal Twig context.
 - `App\Content\Event\ContentRenderContextEvent`: extend Twig context for one public content render.
 - `App\Content\Event\ContentRenderedEvent`: adjust generated HTML for one public content render.
-- `App\Navigation\Event\NavigationBuilderEvent`: extend navigation items before tree hierarchy and active state are resolved.
+- `App\Navigation\Event\NavigationBuilderEvent`: extend navigation items before tree hierarchy and active state are resolved. URL targets may use relative paths or safe `http`/`https` links; unsafe schemes are normalized away by the core builder before rendering.
 - `App\View\Injection\Event\StaticViewInjectionRegistryEvent`: add static route/menu view injections for the `public`, `admin`, or `editor` surface.
 - `App\View\Injection\Event\DynamicViewInjectionRegistryEvent`: add content-aware dynamic slot or variant-route injections for physical Twig templates.
 - `App\View\Event\ResponseHeadersEvent`: adjust HTTP response headers before sending.

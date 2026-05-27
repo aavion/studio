@@ -521,6 +521,7 @@ message:
             status_blocked: 'Paket "%package%" kann den Lifecycle-Status nicht wechseln, solange es "%status%" ist.'
             activated: 'Paket "%package%" wurde aktiviert.'
             deactivated: 'Paket "%package%" wurde deaktiviert.'
+            dependent_deactivated: 'Paket "%package%" wurde deaktiviert, weil die Abhängigkeit "%dependency%" nicht mehr verfügbar ist.'
             cleanup_completed: 'Paket "%package%"-Cleanup abgeschlossen.'
             removed: 'Paket "%package%" wurde entfernt.'
             purged: 'Registry-Eintrag für Paket "%package%" wurde gelöscht.'
@@ -653,6 +654,8 @@ message:
             password_reset_continue: 'Passwort für "%username%" zurücksetzen?'
             password_reset_new_password: 'Neues Passwort'
             password_reset_confirm_password: 'Neues Passwort bestätigen'
+        admin_password:
+            too_short: 'Das Setup-Admin-Passwort muss mindestens %min_length% Zeichen enthalten.'
         password_reset:
             database_url_missing: 'DATABASE_URL wird für den Passwort-Reset benötigt.'
             user_not_found: 'Nutzer "%username%" wurde nicht gefunden.'
@@ -761,6 +764,7 @@ setup:
             label: Admin-Benutzername
         admin_password:
             label: Admin-Passwort
+            help: 'Nutze mindestens 12 Zeichen.'
         admin_password_confirm:
             label: 'Admin-Passwort bestätigen'
         admin_email:
@@ -778,6 +782,7 @@ setup:
             invalid: 'Die gesendeten Setup-Daten konnten nicht verwendet werden.'
             invalid_csrf: 'Das Setup-Formular ist abgelaufen. Bitte versuche es erneut.'
             password_mismatch: 'Die Passwortbestätigung stimmt nicht überein.'
+            password_length: 'Das Admin-Passwort muss mindestens 12 Zeichen enthalten.'
             required: 'Dieses Feld ist erforderlich.'
     result:
         success_title: Setup-Ergebnis

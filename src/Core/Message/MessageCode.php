@@ -97,6 +97,7 @@ final class MessageCode
     public const PACKAGE_LIFECYCLE_STATUS_BLOCKED = 'package.lifecycle.status_blocked';
     public const PACKAGE_LIFECYCLE_ACTIVATED = 'package.lifecycle.activated';
     public const PACKAGE_LIFECYCLE_DEACTIVATED = 'package.lifecycle.deactivated';
+    public const PACKAGE_LIFECYCLE_DEPENDENT_DEACTIVATED = 'package.lifecycle.dependent_deactivated';
     public const PACKAGE_LIFECYCLE_CLEANUP_COMPLETED = 'package.lifecycle.cleanup_completed';
     public const PACKAGE_LIFECYCLE_REMOVED = 'package.lifecycle.removed';
     public const PACKAGE_LIFECYCLE_PURGED = 'package.lifecycle.purged';
@@ -148,6 +149,7 @@ final class MessageCode
     public const SETUP_PROMPT_APP_SECRET = 'setup.prompt.app_secret';
     public const SETUP_PROMPT_INVALID_CHOICE = 'setup.prompt.invalid_choice';
     public const SETUP_PROMPT_PASSWORD_MISMATCH = 'setup.prompt.password_mismatch';
+    public const SETUP_ADMIN_PASSWORD_TOO_SHORT = 'setup.admin_password.too_short';
     public const SETUP_PROMPT_PASSWORD_RESET_CONTINUE = 'setup.prompt.password_reset_continue';
     public const SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD = 'setup.prompt.password_reset_new_password';
     public const SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD = 'setup.prompt.password_reset_confirm_password';

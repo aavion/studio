@@ -80,6 +80,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Added a `bin/init` pre-install vendor reset so corrupt existing `vendor/` trees are removed before Composer installs dependencies.
+- Continued CI review hardening: navigation URL targets are normalized to relative or HTTP(S) links before templates see them, setup enforces the same 12-character minimum admin password policy as account password changes, and runtime package faults now deactivate active dependents with explicit lifecycle messages.
 - Hardened Admin Package detail metadata links so untrusted manifest homepage/source values only become links for safe HTTP(S) URLs; unsafe values render as plain text and the controller coverage now guards the behavior.
 - Continued the package review-fix pass: setup password reset logging uses the selected environment, macro validation uses manifest slugs for wrapped ZIPs, malformed dependency declarations are blocked during validation and activation/preflight, runtime `package.php` contributions are committed atomically, and purge is restricted to already removed packages.
 - Completed the package lifecycle review-fix pass: active in-place rediscovery queues package-aware asset rebuilds, registry updates keep `installed_version` aligned with `manifest_version`, package removal cascades active dependents, dependency cycles are blocked during activation and installer preflight, and ZIP validation checks translation namespaces against manifest `PACKAGE_SLUG`.

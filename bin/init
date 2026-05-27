@@ -97,6 +97,14 @@ final class InitCommand
             return 1;
         }
 
+        $this->resetVendorDirectory();
+
+        if ($this->reporter->hasFailures()) {
+            $this->reporter->printSummary();
+
+            return 1;
+        }
+
         $this->runRequiredCommand(
             [...$composer, 'install', '--no-dev', '--no-scripts', '--optimize-autoloader'],
             'Production Composer packages are available for bootstrap.',
@@ -433,6 +441,64 @@ final class InitCommand
     private function hasVendorAutoload(): bool
     {
         return is_file($this->projectDir.'/vendor/autoload.php');
+    }
+
+    private function resetVendorDirectory(): void
+    {
+        $vendorPath = $this->projectDir.'/vendor';
+
+        if (!file_exists($vendorPath) && !is_link($vendorPath)) {
+            $this->reporter->success('No existing vendor directory found.');
+
+            return;
+        }
+
+        try {
+            $this->removePath($vendorPath);
+            $this->reporter->success('Existing vendor directory removed before Composer install.');
+        } catch (Throwable $throwable) {
+            $this->reporter->failure('Existing vendor directory could not be removed: '.$throwable->getMessage());
+        }
+    }
+
+    private function removePath(string $path): void
+    {
+        if (is_link($path) || is_file($path)) {
+            if (!unlink($path)) {
+                throw new RuntimeException(sprintf('Unable to remove file "%s".', basename($path)));
+            }
+
+            return;
+        }
+
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($iterator as $item) {
+            $itemPath = $item->getPathname();
+
+            if ($item->isLink() || $item->isFile()) {
+                if (!unlink($itemPath)) {
+                    throw new RuntimeException(sprintf('Unable to remove file "%s".', basename($itemPath)));
+                }
+
+                continue;
+            }
+
+            if ($item->isDir() && !rmdir($itemPath)) {
+                throw new RuntimeException(sprintf('Unable to remove directory "%s".', basename($itemPath)));
+            }
+        }
+
+        if (!rmdir($path)) {
+            throw new RuntimeException(sprintf('Unable to remove directory "%s".', basename($path)));
+        }
     }
 
     /**

@@ -91,6 +91,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
     public function testRuntimeHookFailureMarksIdentifiedActivePackageFaulty(): void
     {
         $this->insertPackage('demo-module', ['module'], 'active');
+        $this->insertPackage('demo-addon', ['module'], 'active', dependencies: '[["demo-module", "1.0.0"]]');
 
         $messageBus = new RecordingMessageBus();
 
@@ -111,8 +112,14 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         self::assertTrue($result->isSuccess());
         self::assertTrue($result->value()['faulty']);
         self::assertSame('faulty', $this->packageStatus('demo-module'));
+        self::assertSame('inactive', $this->packageStatus('demo-addon'));
+        self::assertSame(['demo-addon'], $result->value()['deactivated_dependents']);
         self::assertSame(ViewContextEvent::class, $this->metadata('demo-module')['runtime_failure']['hook']);
         self::assertSame('faulty', $this->metadata('demo-module')['registry_state']);
+        self::assertContains('message.package.lifecycle.dependent_deactivated', array_map(
+            static fn (Message $message): string => $message->translationKey(),
+            $result->messages(),
+        ));
         self::assertCount(1, $messageBus->messages());
         self::assertInstanceOf(PackageAssetRebuildMessage::class, $messageBus->messages()[0]);
         self::assertSame('test', $messageBus->messages()[0]->environment());
@@ -305,11 +312,17 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
     public function testPackagePhpLoaderMarksFailingPackagesFaulty(): void
     {
         $this->insertPackage('broken-module', ['module'], 'active');
+        $this->insertPackage('broken-addon', ['module'], 'active', dependencies: '[["broken-module", "1.0.0"]]');
         $messageBus = new RecordingMessageBus();
         $this->writeTestFile($this->projectDir, 'packages/broken-module/package.php', <<<'PHP'
             <?php
 
             throw new RuntimeException('broken package loader');
+            PHP);
+        $this->writeTestFile($this->projectDir, 'packages/broken-addon/package.php', <<<'PHP'
+            <?php
+
+            file_put_contents(__DIR__.'/loaded.txt', 'yes');
             PHP);
 
         $result = (new PackagePhpLoader(
@@ -324,7 +337,13 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         self::assertFalse($result->isSuccess());
         self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
         self::assertSame('faulty', $this->packageStatus('broken-module'));
+        self::assertSame('inactive', $this->packageStatus('broken-addon'));
+        self::assertFileDoesNotExist($this->projectDir.'/packages/broken-addon/loaded.txt');
         self::assertSame('RuntimeException', $this->metadata('broken-module')['runtime_loader']['exception']);
+        self::assertContains('message.package.lifecycle.dependent_deactivated', array_map(
+            static fn (Message $message): string => $message->translationKey(),
+            $result->messages(),
+        ));
         self::assertCount(1, $messageBus->messages());
         self::assertInstanceOf(PackageAssetRebuildMessage::class, $messageBus->messages()[0]);
         self::assertSame('package_php_loader_faulty', $messageBus->messages()[0]->trigger());

@@ -261,7 +261,10 @@ final readonly class NavigationBuilder
     {
         return array_map(function (NavigationItem $item): NavigationItem {
             if ('route' !== $item->targetType()) {
-                return $item;
+                return $item->withResolvedUrl(match ($item->targetType()) {
+                    'url', 'content' => $this->safeNavigationUrl($item->targetValue()),
+                    default => '#',
+                });
             }
 
             $parameters = $item->metadata()['route_parameters'] ?? [];
@@ -276,6 +279,33 @@ final readonly class NavigationBuilder
                 return $item->withResolvedUrl('#');
             }
         }, $items);
+    }
+
+    private function safeNavigationUrl(string $targetValue): string
+    {
+        $targetValue = trim($targetValue);
+
+        if ('' === $targetValue || 1 === preg_match('/[\x00-\x1F\x7F]/', $targetValue)) {
+            return '#';
+        }
+
+        if (str_starts_with($targetValue, '//') || str_starts_with($targetValue, '/\\')) {
+            return '#';
+        }
+
+        $scheme = parse_url($targetValue, PHP_URL_SCHEME);
+
+        if (null === $scheme) {
+            return $targetValue;
+        }
+
+        if (!is_string($scheme) || !in_array(strtolower($scheme), ['http', 'https'], true)) {
+            return '#';
+        }
+
+        $host = parse_url($targetValue, PHP_URL_HOST);
+
+        return is_string($host) && '' !== trim($host) ? $targetValue : '#';
     }
 
     /**

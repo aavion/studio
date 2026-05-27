@@ -69,6 +69,7 @@ final class SetupScriptTest extends TestCase
             '--site-title='.escapeshellarg('Dry Studio'),
             '--url=https://dry.example.test',
             '--db-driver=sqlite',
+            '--admin-password='.escapeshellarg('admin-password'),
         ]);
 
         exec($command, $output, $exitCode);

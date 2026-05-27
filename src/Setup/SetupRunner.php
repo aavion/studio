@@ -28,6 +28,7 @@ final class SetupRunner
         private readonly SetupLanguageSelector $languageSelector = new SetupLanguageSelector(),
         private readonly SetupComposerCommandResolver $composerCommandResolver = new SetupComposerCommandResolver(),
         private readonly SetupDryRunPlanner $dryRunPlanner = new SetupDryRunPlanner(),
+        private readonly SetupPasswordPolicy $passwordPolicy = new SetupPasswordPolicy(),
     ) {
     }
 
@@ -84,6 +85,16 @@ final class SetupRunner
     private function prepare(SetupInput $input, ActionLog $log): array|WorkflowResult
     {
         try {
+            $validationIssues = $this->validate($input);
+
+            if ([] !== $validationIssues) {
+                return WorkflowResult::invalid($validationIssues, [
+                    'halt_on_error' => true,
+                    'failed_step' => 'validate_setup',
+                    'action_log' => $log->toArray(),
+                ]);
+            }
+
             $appSecret = $this->appSecret($input);
             $databaseUrl = $this->databaseUrlFactory->create($input, $this->projectDir);
 
@@ -97,6 +108,25 @@ final class SetupRunner
                 'action_log' => $log->toArray(),
             ]);
         }
+    }
+
+    /**
+     * @return list<Message>
+     */
+    private function validate(SetupInput $input): array
+    {
+        if ($this->passwordPolicy->isValidAdminPassword($input->adminPassword())) {
+            return [];
+        }
+
+        return [
+            Message::error(
+                MessageCode::SETUP_ADMIN_PASSWORD_TOO_SHORT,
+                MessageKey::SETUP_ADMIN_PASSWORD_TOO_SHORT,
+                ['%min_length%' => SetupPasswordPolicy::MIN_ADMIN_PASSWORD_LENGTH],
+                ['field' => 'admin_password', 'min_length' => SetupPasswordPolicy::MIN_ADMIN_PASSWORD_LENGTH],
+            ),
+        ];
     }
 
     /**

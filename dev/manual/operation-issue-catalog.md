@@ -111,6 +111,7 @@ Validation rules:
 | `message.translation.aggregate_completed` | Translation aggregation completed. | `%files%`, `%locales%`, `%packages%` |
 | `message.translation.aggregate_failed` | Translation aggregation failed. | `%path%` |
 | `message.package.lifecycle.cleanup_completed` | Package cleanup boundary completed. | `%package%` |
+| `message.package.lifecycle.dependent_deactivated` | Package was automatically deactivated because a dependency became unavailable. | `%package%`, `%dependency%` |
 | `message.package.lifecycle.removed` | Package directory was removed and the registry row was marked removed. | `%package%` |
 | `message.package.lifecycle.purged` | Package cleanup completed and the registry row was deleted. | `%package%` |
 | `message.package.lifecycle.fault_reset` | Faulty package was validated and reset to inactive. | `%package%` |
@@ -129,6 +130,7 @@ Validation rules:
 | `message.backend.action.cache_clear_completed` | Manual backend cache clear completed. | N/A |
 | `message.setup.environment_file_unreadable` | Setup environment override file could not be read. | `%file%` |
 | `message.setup.environment_file_write_failed` | Setup environment override file could not be written. | `%file%` |
+| `message.setup.admin_password.too_short` | Setup admin password does not satisfy the minimum length policy. | `%min_length%` |
 | `message.content.slug.invalid_format` | Content slug does not match the public slug rules. | `%slug%` |
 | `message.content.slug.reserved` | Content slug conflicts with a reserved system route prefix. | `%slug%` |
 | `message.content.path.empty_or_padded` | Content path is empty or padded with whitespace. | `%path%` |

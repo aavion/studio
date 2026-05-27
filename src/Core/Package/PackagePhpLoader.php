@@ -25,6 +25,7 @@ final class PackagePhpLoader implements EventSubscriberInterface
      * @var array<string, true>
      */
     private array $loadedPackages = [];
+    private PackageDependentDeactivator $dependentDeactivator;
 
     public function __construct(
         private readonly ActivePackageProviderInterface $packageProvider,
@@ -35,7 +36,9 @@ final class PackagePhpLoader implements EventSubscriberInterface
         private readonly string $environment = 'test',
         private readonly ?PackageRuntimeContributionRegistry $runtimeContributions = null,
         private readonly PathGuard $pathGuard = new PathGuard(),
+        ?PackageDependentDeactivator $dependentDeactivator = null,
     ) {
+        $this->dependentDeactivator = $dependentDeactivator ?? new PackageDependentDeactivator($entityManager);
     }
 
     public static function getSubscribedEvents(): array
@@ -77,9 +80,15 @@ final class PackagePhpLoader implements EventSubscriberInterface
         $skipped = [];
         $issues = [];
         $messages = [];
+        $dependentChanges = [];
         $assetRebuildNeeded = false;
 
         foreach ($packages as $package) {
+            if (ExtensionPackageStatus::Active !== $package->status()) {
+                $skipped[] = $package->packageName();
+                continue;
+            }
+
             if (isset($this->loadedPackages[$package->packageName()])) {
                 $skipped[] = $package->packageName();
                 continue;
@@ -112,8 +121,10 @@ final class PackagePhpLoader implements EventSubscriberInterface
                     ['%package%' => $package->packageName()],
                     $issue->context(),
                 );
-                $this->markFaulty($package, $loaderPath, $error);
-                $assetRebuildNeeded = true;
+                $fault = $this->markFaulty($package, $loaderPath, $error);
+                array_push($messages, ...$fault['messages']);
+                array_push($dependentChanges, ...$fault['dependent_changes']);
+                $assetRebuildNeeded = $assetRebuildNeeded || $fault['changed'] || [] !== $fault['dependent_changes'];
             }
         }
 
@@ -125,7 +136,7 @@ final class PackagePhpLoader implements EventSubscriberInterface
         $context = ['loaded' => $loaded, 'skipped' => $skipped, 'failed' => array_map(
             static fn (Message $issue): array => $issue->context(),
             $issues,
-        ), 'asset_rebuild' => $assetRebuild?->toArray()];
+        ), 'deactivated_dependents' => $dependentChanges, 'asset_rebuild' => $assetRebuild?->toArray()];
 
         if ([] !== $issues) {
             return WorkflowResult::failed($issues, $context, $messages);
@@ -158,9 +169,12 @@ final class PackagePhpLoader implements EventSubscriberInterface
         })($loaderPath, $package);
     }
 
-    private function markFaulty(ExtensionPackage $package, string $loaderPath, Throwable $error): void
+    /**
+     * @return array{changed: bool, dependent_changes: list<array{package: string, action: string, status: string, dependency: string, reason: string}>, messages: list<Message>}
+     */
+    private function markFaulty(ExtensionPackage $package, string $loaderPath, Throwable $error): array
     {
-        $package->markFaulty($package->path(), $package->manifestVersion(), [
+        $changed = $package->markFaulty($package->path(), $package->manifestVersion(), [
             ...$package->metadata(),
             'registry_state' => 'faulty',
             'runtime_loader' => [
@@ -170,11 +184,21 @@ final class PackagePhpLoader implements EventSubscriberInterface
                 'message' => $error->getMessage(),
             ],
         ]);
+        $dependentChanges = [];
+        $messages = [];
+
+        if ($changed) {
+            $deactivation = $this->dependentDeactivator->deactivateActiveDependents($package, 'package_php_loader_fault');
+            $dependentChanges = $deactivation['changes'];
+            $messages = $deactivation['messages'];
+        }
 
         try {
             $this->entityManager->flush();
         } catch (Throwable) {
         }
+
+        return ['changed' => $changed, 'dependent_changes' => $dependentChanges, 'messages' => $messages];
     }
 
     private function phpLoadIssue(ExtensionPackage $package, string $loaderPath, Throwable $error): Message
