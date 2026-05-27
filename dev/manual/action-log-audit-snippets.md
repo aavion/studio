@@ -85,6 +85,8 @@ Keep audit records for:
 
 Access logs, audit logs, security logs, and operational action logs may share message levels or rendering helpers, but they should remain separate storage and retention concerns. The first built-in channels are `studio_message`, `studio_operation`, `studio_audit`, and `studio_access`, each configured as file-based Monolog channels with 30-day retention.
 
+`studio_operation` stores terminal live-operation summaries. These entries keep operation id, operation name, result status, timing, step/message/issue counts, and whether a continuation is available. They intentionally omit live-operation payloads, polling tokens, and raw runner output; those stay transient transport/debug artifacts.
+
 ## References
 
 - [Operation issue catalog](operation-issue-catalog.md)

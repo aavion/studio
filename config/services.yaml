@@ -153,6 +153,9 @@ services:
     App\Core\Log\AccessLoggerInterface:
         alias: App\Core\Log\AccessLogger
 
+    App\Core\Log\OperationLoggerInterface:
+        alias: App\Core\Log\OperationLogger
+
     App\Core\Message\MessageReporterInterface:
         alias: App\Core\Message\MessageReporter
 
@@ -170,6 +173,10 @@ services:
     App\Core\Log\AccessLogger:
         arguments:
             $logger: '@monolog.logger.studio_access'
+
+    App\Core\Log\OperationLogger:
+        arguments:
+            $logger: '@monolog.logger.studio_operation'
 
     App\Core\Log\LogFileBrowser:
         arguments:
@@ -189,6 +196,7 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
+            $operationLogger: '@App\Core\Log\OperationLoggerInterface'
 
     App\Core\Operation\Live\LiveOperationQueueFactory:
         arguments:

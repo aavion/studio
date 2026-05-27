@@ -88,6 +88,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Added durable live-operation summaries for the `studio_operation` channel: terminal runs now log compact operation id/name, status, timing, entry/message/issue counts, and continuation availability while omitting payloads, polling tokens, and raw runner output.
 - Added the first access-statistics aggregation boundary: raw `studio_access` log files are parsed through a shared Monolog line parser, anonymized snapshots expose total request counts, status families, top routes, frequent 404 routes, and countries, and Admin Logs now shows the snapshot without exposing IP addresses.
 - Extended the audit slice so admin maintenance actions, package ZIP verification starts, and package lifecycle actions report actor, action, mode, target, and result status to the `studio_audit` channel without letting audit failures interrupt the UI flow.
 - Completed the first log foundation slice: MessageLog now writes through Monolog's `studio_message` channel with redacted structured context, dedicated rotating `studio_message`/`studio_operation`/`studio_audit`/`studio_access` channels keep 30-day retention, access and audit service boundaries were added, authentication events enter the audit log, access entries use GeoIP `n/a` placeholders, and Admin Logs can read/filter known log files.

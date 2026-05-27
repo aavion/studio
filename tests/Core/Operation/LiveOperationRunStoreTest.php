@@ -9,6 +9,7 @@ use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Log\OperationLoggerInterface;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Workflow\WorkflowResult;
 use App\Tests\Support\FilesystemTestHelper;
@@ -43,6 +44,23 @@ final class LiveOperationRunStoreTest extends TestCase
         self::assertSame(['status' => 'success'], $payload['result']);
         self::assertStringEndsWith('/var/operations/test/'.$run['operation_id'].'.out', $store->outputPath($run['operation_id']));
         self::assertNull($store->pollingPayload($run['operation_id'], 'wrong-token'));
+    }
+
+    public function testItReportsFinishedOperationsToOperationLogger(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('live-operation-logger');
+        $logger = new RecordingOperationLogger();
+        $store = new LiveOperationRunStore($projectDir, 'test', operationLogger: $logger);
+        $run = $store->create('backend.cache_clear', ['token' => 'hidden'], 'Cache clear');
+
+        $store->markRunning($run['operation_id'], 1);
+        $store->finish($run['operation_id'], true, ['status' => 'success']);
+
+        self::assertCount(1, $logger->states);
+        self::assertSame($run['operation_id'], $logger->states[0]['operation_id']);
+        self::assertSame('backend.cache_clear', $logger->states[0]['operation']);
+        self::assertSame('success', $logger->states[0]['status']);
+        self::assertSame(['token' => 'hidden'], $logger->states[0]['payload']);
     }
 
     public function testItFiltersEntriesByCursor(): void
@@ -309,5 +327,18 @@ final class LiveOperationRunStoreTest extends TestCase
         $path = dirname($store->outputPath(str_repeat('a', 32))).'/runner.lock/state.json';
 
         file_put_contents($path, json_encode($state, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+    }
+}
+
+final class RecordingOperationLogger implements OperationLoggerInterface
+{
+    /**
+     * @var list<array<string, mixed>>
+     */
+    public array $states = [];
+
+    public function logFinished(array $state): void
+    {
+        $this->states[] = $state;
     }
 }

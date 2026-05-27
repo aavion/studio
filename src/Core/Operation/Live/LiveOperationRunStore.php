@@ -8,6 +8,7 @@ use App\Core\ActionLog\ActionLogEntry;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Log\OperationLoggerInterface;
 use App\Core\Workflow\WorkflowResult;
 use RuntimeException;
 use Throwable;
@@ -27,6 +28,7 @@ final readonly class LiveOperationRunStore
         private string $projectDir,
         private string $environment,
         private int $staleAfterSeconds = 3600,
+        private ?OperationLoggerInterface $operationLogger = null,
     )
     {
     }
@@ -446,6 +448,7 @@ final readonly class LiveOperationRunStore
 
             return $state;
         });
+        $this->logFinished($operationId);
     }
 
     /**
@@ -614,6 +617,25 @@ final readonly class LiveOperationRunStore
         ], ['operation' => $operation, 'operation_id' => $operationId]);
 
         $this->finish($operationId, false, $result->toArray());
+    }
+
+    private function logFinished(string $operationId): void
+    {
+        if (null === $this->operationLogger) {
+            return;
+        }
+
+        $state = $this->read($operationId);
+
+        if (null === $state) {
+            return;
+        }
+
+        try {
+            $this->operationLogger->logFinished($state);
+        } catch (Throwable) {
+            return;
+        }
     }
 
     /**
