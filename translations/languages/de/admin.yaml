@@ -337,6 +337,10 @@ admin:
         label: 'Captcha-Provider'
       captcha_preview:
         label: 'Captcha-Vorschau'
+      audit_enabled:
+        label: 'Audit-Logging aktivieren'
+      audit_events:
+        label: 'Audit-Ereigniskategorien'
       package_update_interval:
         label: 'Update-Check-Intervall'
       package_auto_updates:
@@ -353,6 +357,13 @@ admin:
         setup_warnings: 'Setup-Warnungen'
       captcha:
         none: 'Kein Captcha-Provider'
+      audit:
+        authentication: 'Authentifizierungsereignisse'
+        backend_actions: 'Backend-Wartungsaktionen'
+        operations: 'Operations-Wartungsaktionen'
+        packages: 'Paket-Lifecycle-Aktionen'
+        settings: 'Einstellungsänderungen'
+        other: 'Weitere zukünftige Audit-Ereignisse'
       interval:
         manual: 'Manuell'
         hourly: 'Stündlich'

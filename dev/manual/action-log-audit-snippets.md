@@ -80,10 +80,13 @@ Keep audit records for:
 - package activation or removal;
 - package ZIP verification or installation starts;
 - admin maintenance actions such as discovery, rebuild, and cache clearing;
+- Operations maintenance actions such as cleanup, stale-lock clearing, and stale-runner emergency handling;
 - backup and restore actions;
 - configuration changes.
 
 Built-in settings audit entries record only the actor, route, settings section or package name, result status, and changed setting keys. Submitted values are intentionally omitted.
+
+Audit logging can be controlled from Security settings. The production default keeps the master switch enabled and records authentication, backend maintenance, Operations maintenance, package lifecycle, settings, and unknown future audit categories. Unknown categories stay enabled by default so newly introduced audit calls do not silently disappear before administrators review them.
 
 Access logs, audit logs, security logs, and operational action logs may share message levels or rendering helpers, but they should remain separate storage and retention concerns. The first built-in channels are `studio_message`, `studio_operation`, `studio_audit`, and `studio_access`, each configured as file-based Monolog channels with 30-day retention.
 

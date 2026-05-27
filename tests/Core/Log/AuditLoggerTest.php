@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Log;
 
 use App\Core\Access\AccessActor;
+use App\Core\Log\AuditLogPolicyInterface;
 use App\Core\Log\AuditLogger;
 use Monolog\Handler\TestHandler;
 use Monolog\Level;
@@ -38,5 +39,27 @@ final class AuditLoggerTest extends TestCase
         self::assertSame('package.activate', $records[0]->context['action']);
         self::assertSame('demo-module', $records[0]->context['context']['package']);
         self::assertSame('[redacted]', $records[0]->context['context']['api_token']);
+    }
+
+    public function testItSkipsActionsDeniedByPolicy(): void
+    {
+        $handler = new TestHandler();
+        $monolog = new Logger('studio_audit');
+        $monolog->pushHandler($handler);
+
+        (new AuditLogger($monolog, new DenyAllAuditLogPolicy()))->log(
+            AccessActor::fromAccess(9, ['admin'], '10000000-0000-0000-0000-000000000001', 'admin'),
+            'settings.core.save',
+        );
+
+        self::assertSame([], $handler->getRecords());
+    }
+}
+
+final class DenyAllAuditLogPolicy implements AuditLogPolicyInterface
+{
+    public function allows(string $action): bool
+    {
+        return false;
     }
 }

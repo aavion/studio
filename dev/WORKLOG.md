@@ -88,6 +88,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Added configurable audit policy settings under Security: audit logging has a production-default enabled master switch plus selectable audit event categories, and `AuditLogger` now applies the policy before writing to Monolog.
+- Extended Operations maintenance auditing so cleanup, stale-lock clearing, stale-runner emergency handling, and unsupported maintenance requests write compact `studio_audit` entries.
 - Extended settings audit coverage: successful core and package setting form submissions now write actor, route, section/package, result status, and changed setting keys to `studio_audit` without logging submitted values.
 - Added durable live-operation summaries for the `studio_operation` channel: terminal runs now log compact operation id/name, status, timing, entry/message/issue counts, and continuation availability while omitting payloads, polling tokens, and raw runner output.
 - Added the first access-statistics aggregation boundary: raw `studio_access` log files are parsed through a shared Monolog line parser, anonymized snapshots expose total request counts, status families, top routes, frequent 404 routes, and countries, and Admin Logs now shows the snapshot without exposing IP addresses.

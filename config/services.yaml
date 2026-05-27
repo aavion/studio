@@ -150,6 +150,9 @@ services:
     App\Core\Log\AuditLoggerInterface:
         alias: App\Core\Log\AuditLogger
 
+    App\Core\Log\AuditLogPolicyInterface:
+        alias: App\Core\Log\ConfigAuditLogPolicy
+
     App\Core\Log\AccessLoggerInterface:
         alias: App\Core\Log\AccessLogger
 

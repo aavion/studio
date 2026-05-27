@@ -609,6 +609,21 @@ final class BackendController extends AbstractController
     }
 
     /**
+     * @param array<string, mixed> $context
+     */
+    private function auditOperationMaintenance(string $action, array $context = []): void
+    {
+        try {
+            $this->auditLogger->log($this->actor(), $action, [
+                ...$context,
+                'result_status' => 'success',
+            ]);
+        } catch (Throwable) {
+            return;
+        }
+    }
+
+    /**
      * @param WorkflowResult<mixed> $result
      */
     private function liveOperationResponse(WorkflowResult $result): Response
@@ -643,6 +658,10 @@ final class BackendController extends AbstractController
 
         if ('cleanup' === $action) {
             $result = $this->liveOperationRunStore->cleanup(3600);
+            $this->auditOperationMaintenance('operations.cleanup', [
+                'removed' => $result['removed'],
+                'ttl_seconds' => 3600,
+            ]);
             $this->addFlash('success', [
                 'translation_key' => 'admin.operations.actions.cleanup_completed',
                 'parameters' => ['%removed%' => $result['removed']],
@@ -652,6 +671,9 @@ final class BackendController extends AbstractController
         }
 
         if ('clear_stale_lock' === $action && $this->liveOperationRunStore->clearRunnerLock(staleOnly: true, ttlSeconds: 3600)) {
+            $this->auditOperationMaintenance('operations.clear_stale_lock', [
+                'ttl_seconds' => 3600,
+            ]);
             $this->addFlash('success', 'admin.operations.actions.stale_lock_cleared');
 
             return $this->redirect($request->getPathInfo());
@@ -659,6 +681,13 @@ final class BackendController extends AbstractController
 
         if ('kill_stale_runner' === $action) {
             $result = $this->liveOperationRunStore->killStaleRunner(3600);
+            $this->auditOperationMaintenance('operations.kill_stale_runner', [
+                'killed' => $result['killed'],
+                'lock_cleared' => $result['lock_cleared'],
+                'reason' => $result['reason'],
+                'pid' => $result['pid'] ?? null,
+                'ttl_seconds' => 3600,
+            ]);
             $this->addFlash($result['killed'] || $result['lock_cleared'] ? 'success' : 'warning', [
                 'translation_key' => 'admin.operations.actions.kill_'.$result['reason'],
                 'parameters' => ['%pid%' => (string) ($result['pid'] ?? '')],
@@ -667,6 +696,9 @@ final class BackendController extends AbstractController
             return $this->redirect($request->getPathInfo());
         }
 
+        $this->auditOperationMaintenance('operations.noop', [
+            'requested_action' => $action,
+        ]);
         $this->addFlash('warning', 'admin.operations.actions.noop');
 
         return $this->redirect($request->getPathInfo());

@@ -7,6 +7,7 @@ namespace App\Setup;
 use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
@@ -37,6 +38,8 @@ final readonly class SetupDatabaseSeeder
             ['user.menu.enabled', true, ConfigValueType::Boolean],
             ['user.menu.sort_order', 900, ConfigValueType::Integer],
             ['user.registration.enabled', false, ConfigValueType::Boolean],
+            [ConfigAuditLogPolicy::ENABLED_KEY, true, ConfigValueType::Boolean],
+            [ConfigAuditLogPolicy::EVENTS_KEY, ConfigAuditLogPolicy::DEFAULT_CATEGORIES, ConfigValueType::Json],
         ];
 
         foreach ($settings as [$key, $value, $type]) {

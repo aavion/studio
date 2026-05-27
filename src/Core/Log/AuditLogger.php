@@ -11,7 +11,10 @@ final readonly class AuditLogger implements AuditLoggerInterface
 {
     private const REDACTED = '[redacted]';
 
-    public function __construct(private LoggerInterface $logger)
+    public function __construct(
+        private LoggerInterface $logger,
+        private ?AuditLogPolicyInterface $policy = null,
+    )
     {
     }
 
@@ -20,6 +23,10 @@ final readonly class AuditLogger implements AuditLoggerInterface
      */
     public function log(AccessActor $actor, string $action, array $context = []): void
     {
+        if (null !== $this->policy && !$this->policy->allows($action)) {
+            return;
+        }
+
         $this->logger->info($action, [
             'user' => $actor->username() ?? 'anonymous',
             'user_uid' => $actor->userUid(),

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Support\DatabaseSeed;
 
+use App\Core\Log\ConfigAuditLogPolicy;
+
 final class TestDatabaseConfigSeeder
 {
     public static function seed(TestDatabaseSeedWriter $writer): void
@@ -20,6 +22,8 @@ final class TestDatabaseConfigSeeder
             ['user.menu.enabled', true, 'boolean'],
             ['user.menu.sort_order', 900, 'integer'],
             ['user.registration.enabled', false, 'boolean'],
+            [ConfigAuditLogPolicy::ENABLED_KEY, true, 'boolean'],
+            [ConfigAuditLogPolicy::EVENTS_KEY, ConfigAuditLogPolicy::DEFAULT_CATEGORIES, 'json'],
         ];
 
         foreach ($entries as [$key, $value, $type]) {

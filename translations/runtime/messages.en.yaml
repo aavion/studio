@@ -469,6 +469,10 @@ admin:
                 label: 'Captcha provider'
             captcha_preview:
                 label: 'Captcha preview'
+            audit_enabled:
+                label: 'Enable audit logging'
+            audit_events:
+                label: 'Audit event categories'
             package_update_interval:
                 label: 'Update check interval'
             package_auto_updates:
@@ -485,6 +489,13 @@ admin:
                 setup_warnings: 'Setup warnings'
             captcha:
                 none: 'No captcha provider'
+            audit:
+                authentication: 'Authentication events'
+                backend_actions: 'Backend maintenance actions'
+                operations: 'Operations maintenance actions'
+                packages: 'Package lifecycle actions'
+                settings: 'Settings changes'
+                other: 'Other future audit events'
             interval:
                 manual: Manual
                 hourly: Hourly

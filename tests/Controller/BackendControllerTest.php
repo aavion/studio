@@ -8,6 +8,7 @@ use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
@@ -310,6 +311,29 @@ final class BackendControllerTest extends WebTestCase
             @unlink($store->outputPath($run['operation_id']));
             @unlink($store->pidPath($run['operation_id']));
         }
+    }
+
+    public function testAdminOperationsCleanupWritesAuditEntry(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
+        $crawler = $client->request('GET', '/admin/operations');
+        $form = $crawler->selectButton('Clean up expired operations')->form();
+
+        $client->submit($form);
+
+        self::assertResponseRedirects('/admin/operations');
+
+        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+        self::assertStringContainsString('operations.cleanup', $auditLog);
+        self::assertStringContainsString('"ttl_seconds":3600', $auditLog);
+        self::assertStringContainsString('"result_status":"success"', $auditLog);
     }
 
     public function testAdminOperationDetailShowsRetainedActionLogEntries(): void
@@ -704,6 +728,8 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Security settings');
         self::assertSelectorExists('form#admin-settings-security');
         self::assertSelectorExists('select[name="security.captcha.provider"]');
+        self::assertSelectorExists(sprintf('input[name="%s"]', ConfigAuditLogPolicy::ENABLED_KEY));
+        self::assertSelectorExists(sprintf('input[name="%s[]"]', ConfigAuditLogPolicy::EVENTS_KEY));
     }
 
     public function testAdminSettingsFormsPersistCoreSettings(): void
