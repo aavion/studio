@@ -1,3 +1,27 @@
+{% set request_trace = studio_request_trace() %}
+{% if request_trace.request_id|default(null) or request_trace.visitor_id|default(null) %}
+    <aside class="studio-error-reference" aria-label="{{ 'ui.error.reference.label'|trans }}">
+        <dl>
+            {% if request_trace.request_id|default(null) %}
+                <dt>{{ 'ui.error.reference.request_id'|trans }}</dt>
+                <dd><code>{{ request_trace.request_id }}</code></dd>
+            {% endif %}
+            {% if request_trace.visitor_id|default(null) %}
+                <dt>{{ 'ui.error.reference.visitor_id'|trans }}</dt>
+                <dd><code>{{ request_trace.visitor_id }}</code></dd>
+            {% endif %}
+            {% if request_trace.requested_path|default(null) %}
+                <dt>{{ 'ui.error.reference.requested_path'|trans }}</dt>
+                <dd><code>{{ request_trace.requested_path }}</code></dd>
+            {% endif %}
+            {% if request_trace.resolved_route|default(null) %}
+                <dt>{{ 'ui.error.reference.resolved_route'|trans }}</dt>
+                <dd><code>{{ request_trace.resolved_route }}</code></dd>
+            {% endif %}
+        </dl>
+    </aside>
+{% endif %}
+
 {% if http_error and http_error.debug is defined %}
     <details class="studio-debug-trace">
         <summary>Debug trace</summary>

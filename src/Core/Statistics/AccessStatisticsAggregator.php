@@ -130,7 +130,7 @@ final readonly class AccessStatisticsAggregator
     {
         try {
             return $this->connection->fetchAllAssociative(
-                'SELECT visitor_id, method, path, route, surface, http_status, duration_ms, browser_family, device_type, is_bot, referrer_host, preferred_language, country FROM access_statistic_event ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
+                'SELECT visitor_id, method, path, requested_path, route, resolved_route, surface, http_status, duration_ms, browser_family, device_type, is_bot, referrer_host, preferred_language, country FROM access_statistic_event ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
             );
         } catch (Throwable) {
             return [];
@@ -142,13 +142,17 @@ final readonly class AccessStatisticsAggregator
      */
     private function routeLabel(array $row): string
     {
-        $route = $this->stringValue($row, 'route', '');
+        $route = $this->stringValue($row, 'resolved_route', '');
+
+        if ('' === $route || 'n/a' === $route) {
+            $route = $this->stringValue($row, 'route', '');
+        }
 
         if ('' !== $route && 'n/a' !== $route) {
             return $route;
         }
 
-        return $this->stringValue($row, 'method', 'GET').' '.$this->stringValue($row, 'path', '/');
+        return $this->stringValue($row, 'method', 'GET').' '.$this->stringValue($row, 'requested_path', $this->stringValue($row, 'path', '/'));
     }
 
     /**

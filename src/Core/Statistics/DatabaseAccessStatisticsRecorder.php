@@ -36,7 +36,9 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
                 'visitor_id' => $this->visitorIdGenerator->generate($request),
                 'method' => substr($request->getMethod(), 0, 16),
                 'path' => substr($request->getPathInfo(), 0, 1024),
-                'route' => substr($this->route($request), 0, 190),
+                'requested_path' => substr($request->getPathInfo(), 0, 1024),
+                'route' => $this->accessRequestMetadata->resolvedRoute($request),
+                'resolved_route' => $this->accessRequestMetadata->resolvedRoute($request),
                 'surface' => $this->accessRequestMetadata->surface($request),
                 'http_status' => $response->getStatusCode(),
                 'duration_ms' => $this->accessRequestMetadata->durationMs($request),
@@ -57,13 +59,6 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
         } catch (Throwable) {
             return;
         }
-    }
-
-    private function route(Request $request): string
-    {
-        $route = $request->attributes->get('_route');
-
-        return is_string($route) && '' !== $route ? $route : self::PLACEHOLDER;
     }
 
     private function uuid(): string

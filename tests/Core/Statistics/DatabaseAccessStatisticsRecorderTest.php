@@ -29,7 +29,9 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
                 visitor_id VARCHAR(64) NOT NULL,
                 method VARCHAR(16) NOT NULL,
                 path VARCHAR(1024) NOT NULL,
+                requested_path VARCHAR(1024) NOT NULL,
                 route VARCHAR(190) NOT NULL,
+                resolved_route VARCHAR(190) NOT NULL,
                 surface VARCHAR(40) NOT NULL,
                 http_status INTEGER NOT NULL,
                 duration_ms INTEGER DEFAULT NULL,
@@ -78,7 +80,9 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
         self::assertSame($metadata->requestId($request), $row['request_id']);
         self::assertSame('GET', $row['method']);
         self::assertSame('/docs', $row['path']);
+        self::assertSame('/docs', $row['requested_path']);
         self::assertSame('content_view', $row['route']);
+        self::assertSame('content_view', $row['resolved_route']);
         self::assertSame('public', $row['surface']);
         self::assertSame(404, (int) $row['http_status']);
         self::assertIsNumeric($row['duration_ms']);

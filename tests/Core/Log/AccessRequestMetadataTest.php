@@ -21,14 +21,22 @@ final class AccessRequestMetadataTest extends TestCase
             'CONTENT_TYPE' => 'application/json; charset=utf-8',
         ]);
         $metadata->markStarted($request);
+        $request->attributes->set('_route', 'backend_admin_route');
 
         self::assertSame('request123', $metadata->requestId($request));
         self::assertIsInt($metadata->durationMs($request));
         self::assertSame('admin', $metadata->surface($request));
+        self::assertSame('backend_admin_route', $metadata->resolvedRoute($request));
         self::assertSame('https://example.org/source', $metadata->referrer($request));
         self::assertSame('example.org', $metadata->referrerHost($request));
         self::assertSame('de-de', $metadata->preferredLanguage($request));
         self::assertSame('application/json', $metadata->contentType($request->headers->get('Content-Type')));
         self::assertSame(7, $metadata->responseSize(new Response('content')));
+        self::assertSame([
+            'request_id' => 'request123',
+            'visitor_id' => 'visitor-a',
+            'requested_path' => '/admin/logs',
+            'resolved_route' => 'backend_admin_route',
+        ], $metadata->trace($request, 'visitor-a'));
     }
 }

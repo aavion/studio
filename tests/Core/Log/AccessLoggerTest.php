@@ -45,7 +45,9 @@ final class AccessLoggerTest extends TestCase
         self::assertSame('access.request', $records[0]->message);
         self::assertSame('POST', $records[0]->context['method']);
         self::assertSame('/admin/logs', $records[0]->context['path']);
+        self::assertSame('/admin/logs', $records[0]->context['requested_path']);
         self::assertSame('backend_admin_route', $records[0]->context['route']);
+        self::assertSame('backend_admin_route', $records[0]->context['resolved_route']);
         self::assertSame('admin', $records[0]->context['surface']);
         self::assertSame('level=error', $records[0]->context['query_string']);
         self::assertSame(401, $records[0]->context['http_status']);

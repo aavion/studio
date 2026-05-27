@@ -14,6 +14,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_access_statistic_occurred_at', columns: ['occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_visitor_at', columns: ['visitor_id', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_route_at', columns: ['route', 'occurred_at'])]
+#[ORM\Index(name: 'idx_access_statistic_resolved_at', columns: ['resolved_route', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_surface_at', columns: ['surface', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_status_at', columns: ['http_status', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_browser_at', columns: ['browser_family', 'occurred_at'])]
@@ -42,8 +43,14 @@ class AccessStatisticEvent
     #[ORM\Column(length: 1024)]
     private string $path;
 
+    #[ORM\Column(length: 1024)]
+    private string $requestedPath;
+
     #[ORM\Column(length: 190)]
     private string $route;
+
+    #[ORM\Column(length: 190)]
+    private string $resolvedRoute;
 
     #[ORM\Column(length: 40)]
     private string $surface;
@@ -106,7 +113,9 @@ class AccessStatisticEvent
         string $visitorId,
         string $method,
         string $path,
+        string $requestedPath,
         string $route,
+        string $resolvedRoute,
         string $surface,
         int $httpStatus,
         ?int $durationMs = null,
@@ -130,7 +139,9 @@ class AccessStatisticEvent
         $this->visitorId = $visitorId;
         $this->method = substr($method, 0, 16);
         $this->path = substr($path, 0, 1024);
+        $this->requestedPath = substr($requestedPath, 0, 1024);
         $this->route = substr($route, 0, 190);
+        $this->resolvedRoute = substr($resolvedRoute, 0, 190);
         $this->surface = substr($surface, 0, 40);
         $this->httpStatus = $httpStatus;
         $this->durationMs = null === $durationMs ? null : max(0, $durationMs);
@@ -179,9 +190,19 @@ class AccessStatisticEvent
         return $this->path;
     }
 
+    public function requestedPath(): string
+    {
+        return $this->requestedPath;
+    }
+
     public function route(): string
     {
         return $this->route;
+    }
+
+    public function resolvedRoute(): string
+    {
+        return $this->resolvedRoute;
     }
 
     public function surface(): string

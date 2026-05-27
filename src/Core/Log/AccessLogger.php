@@ -28,7 +28,9 @@ final readonly class AccessLogger implements AccessLoggerInterface
             'request_id' => $this->accessRequestMetadata->requestId($request),
             'method' => $request->getMethod(),
             'path' => $request->getPathInfo(),
-            'route' => $this->route($request),
+            'requested_path' => $request->getPathInfo(),
+            'route' => $this->accessRequestMetadata->resolvedRoute($request),
+            'resolved_route' => $this->accessRequestMetadata->resolvedRoute($request),
             'surface' => $this->accessRequestMetadata->surface($request),
             'query_string' => $request->getQueryString() ?? '',
             'http_status' => $response->getStatusCode(),
@@ -53,13 +55,6 @@ final readonly class AccessLogger implements AccessLoggerInterface
             'country' => self::GEO_PLACEHOLDER,
             'continent' => self::GEO_PLACEHOLDER,
         ]);
-    }
-
-    private function route(Request $request): string
-    {
-        $route = $request->attributes->get('_route');
-
-        return is_string($route) && '' !== $route ? $route : self::GEO_PLACEHOLDER;
     }
 
     private function userAgent(Request $request): string

@@ -94,3 +94,9 @@ ui:
     503:
       title: 'Wartungsmodus'
       message: 'Die Seite ist vorübergehend nicht verfügbar, solange die Wartung aktiv ist.'
+    reference:
+      label: 'Anfragereferenz'
+      request_id: 'Request-ID'
+      visitor_id: 'Visitor-ID'
+      requested_path: 'Angefragter Pfad'
+      resolved_route: 'Aufgelöste Route'

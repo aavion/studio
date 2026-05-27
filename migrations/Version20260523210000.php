@@ -72,7 +72,9 @@ final class Version20260523210000 extends AbstractMigration
         $accessStatistic->addColumn('visitor_id', 'string', ['length' => 64]);
         $accessStatistic->addColumn('method', 'string', ['length' => 16]);
         $accessStatistic->addColumn('path', 'string', ['length' => 1024]);
+        $accessStatistic->addColumn('requested_path', 'string', ['length' => 1024]);
         $accessStatistic->addColumn('route', 'string', ['length' => 190]);
+        $accessStatistic->addColumn('resolved_route', 'string', ['length' => 190]);
         $accessStatistic->addColumn('surface', 'string', ['length' => 40]);
         $accessStatistic->addColumn('http_status', 'integer');
         $accessStatistic->addColumn('duration_ms', 'integer', ['notnull' => false]);
@@ -94,6 +96,7 @@ final class Version20260523210000 extends AbstractMigration
         $accessStatistic->addIndex(['occurred_at'], 'idx_access_statistic_occurred_at');
         $accessStatistic->addIndex(['visitor_id', 'occurred_at'], 'idx_access_statistic_visitor_at');
         $accessStatistic->addIndex(['route', 'occurred_at'], 'idx_access_statistic_route_at');
+        $accessStatistic->addIndex(['resolved_route', 'occurred_at'], 'idx_access_statistic_resolved_at');
         $accessStatistic->addIndex(['surface', 'occurred_at'], 'idx_access_statistic_surface_at');
         $accessStatistic->addIndex(['http_status', 'occurred_at'], 'idx_access_statistic_status_at');
         $accessStatistic->addIndex(['browser_family', 'occurred_at'], 'idx_access_statistic_browser_at');

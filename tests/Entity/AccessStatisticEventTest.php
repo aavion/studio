@@ -19,6 +19,8 @@ final class AccessStatisticEventTest extends TestCase
             str_repeat('a', 64),
             'GET',
             '/docs',
+            '/docs',
+            'content_view',
             'content_view',
             'public',
             200,
@@ -37,7 +39,9 @@ final class AccessStatisticEventTest extends TestCase
         self::assertSame(str_repeat('a', 64), $event->visitorId());
         self::assertSame('GET', $event->method());
         self::assertSame('/docs', $event->path());
+        self::assertSame('/docs', $event->requestedPath());
         self::assertSame('content_view', $event->route());
+        self::assertSame('content_view', $event->resolvedRoute());
         self::assertSame('public', $event->surface());
         self::assertSame(200, $event->httpStatus());
         self::assertSame(12, $event->durationMs());

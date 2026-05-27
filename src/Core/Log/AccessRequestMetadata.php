@@ -61,6 +61,13 @@ final readonly class AccessRequestMetadata
         };
     }
 
+    public function resolvedRoute(Request $request): string
+    {
+        $route = $request->attributes->get('_route');
+
+        return is_string($route) && '' !== $route ? substr($route, 0, 190) : 'n/a';
+    }
+
     public function referrer(Request $request): string
     {
         $referrer = trim((string) $request->headers->get('Referer', ''));
@@ -131,6 +138,19 @@ final readonly class AccessRequestMetadata
         $content = $response->getContent();
 
         return is_string($content) ? strlen($content) : null;
+    }
+
+    /**
+     * @return array{request_id: string, visitor_id: string, requested_path: string, resolved_route: string}
+     */
+    public function trace(Request $request, string $visitorId): array
+    {
+        return [
+            'request_id' => $this->requestId($request),
+            'visitor_id' => $visitorId,
+            'requested_path' => $request->getPathInfo(),
+            'resolved_route' => $this->resolvedRoute($request),
+        ];
     }
 
     private function headerToken(?string $value): ?string
