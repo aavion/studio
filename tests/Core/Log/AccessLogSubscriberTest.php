@@ -1,0 +1,102 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Core\Log;
+
+use App\Core\Log\AccessLoggerInterface;
+use App\Core\Log\AccessLogSubscriber;
+use App\Core\Log\AccessRequestMetadata;
+use App\Core\Message\Message;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageReporterInterface;
+use App\Core\Statistics\AccessStatisticsRecorderInterface;
+use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
+
+final class AccessLogSubscriberTest extends TestCase
+{
+    public function testItKeepsTheResponsePathAliveWhenAccessLoggingFails(): void
+    {
+        $statisticsRecorder = new RecordingAccessStatisticsRecorder();
+        $reporter = new RecordingAccessMessageReporter();
+        $request = Request::create('/docs');
+        $response = new Response('OK', 200);
+
+        (new AccessLogSubscriber(
+            new FailingAccessLogger(),
+            $statisticsRecorder,
+            new AccessRequestMetadata(),
+            $reporter,
+        ))->onKernelResponse(new ResponseEvent(
+            new AccessSubscriberTestKernel(),
+            $request,
+            HttpKernelInterface::MAIN_REQUEST,
+            $response,
+        ));
+
+        self::assertCount(1, $statisticsRecorder->records);
+        self::assertCount(1, $reporter->records);
+        self::assertSame(MessageKey::ACCESS_LOG_FAILED, $reporter->records[0]['message']->translationKey());
+        self::assertSame('access.log', $reporter->records[0]['context']['operation']);
+    }
+}
+
+final class FailingAccessLogger implements AccessLoggerInterface
+{
+    public function log(Request $request, Response $response): void
+    {
+        throw new RuntimeException('Log target is not writable.');
+    }
+}
+
+final class RecordingAccessStatisticsRecorder implements AccessStatisticsRecorderInterface
+{
+    /**
+     * @var list<array{path: string, status: int}>
+     */
+    public array $records = [];
+
+    public function record(Request $request, Response $response): void
+    {
+        $this->records[] = [
+            'path' => $request->getPathInfo(),
+            'status' => $response->getStatusCode(),
+        ];
+    }
+}
+
+final class RecordingAccessMessageReporter implements MessageReporterInterface
+{
+    /**
+     * @var list<array{message: Message, context: array<string, mixed>}>
+     */
+    public array $records = [];
+
+    public function report(Message $message, array $context = []): Message
+    {
+        $this->records[] = [
+            'message' => $message,
+            'context' => $context,
+        ];
+
+        return $message;
+    }
+
+    public function reportBatch(iterable $records): array
+    {
+        return [];
+    }
+}
+
+final class AccessSubscriberTestKernel implements HttpKernelInterface
+{
+    public function handle(Request $request, int $type = self::MAIN_REQUEST, bool $catch = true): Response
+    {
+        return new Response();
+    }
+}

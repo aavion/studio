@@ -139,6 +139,7 @@ final class MessageKey
 
     public const ACCESS_GRANTED = 'message.access.granted';
     public const ACCESS_DENIED = 'message.access.denied';
+    public const ACCESS_LOG_FAILED = 'message.access.log_failed';
     public const BACKEND_ROUTE_NOT_FOUND = 'message.backend.route_not_found';
     public const BACKEND_SETUP_LOCKED = 'message.backend.setup_locked';
     public const BACKEND_ACTION_UNKNOWN = 'message.backend.action.unknown';

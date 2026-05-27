@@ -156,6 +156,7 @@ message:
   access:
     granted: 'Zugriff für "%capability%" erlaubt.'
     denied: 'Zugriff für "%capability%" verweigert: erforderlich ist Level %required_level%; Actor hat Level %actor_level%.'
+    log_failed: 'Zugriffslogging für die aktuelle Response ist fehlgeschlagen.'
     level:
       invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
     group_identifier:
