@@ -19,7 +19,11 @@ final class AccessLoggerTest extends TestCase
         $handler = new TestHandler();
         $monolog = new Logger('studio_access');
         $monolog->pushHandler($handler);
-        $request = Request::create('/admin/logs?level=error', 'POST', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $request = Request::create('/admin/logs?level=error', 'POST', server: [
+            'REMOTE_ADDR' => '203.0.113.10',
+            'HTTP_USER_AGENT' => 'Studio Browser/1.0',
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.23, 203.0.113.10',
+        ]);
         $request->attributes->set('_route', 'backend_admin_route');
 
         (new AccessLogger($monolog))->log($request, new Response('', 401));
@@ -35,6 +39,10 @@ final class AccessLoggerTest extends TestCase
         self::assertSame('level=error', $records[0]->context['query_string']);
         self::assertSame(401, $records[0]->context['http_status']);
         self::assertSame('203.0.113.10', $records[0]->context['ip']);
+        self::assertSame('203.0.113.10', $records[0]->context['client_ip']);
+        self::assertSame('198.51.100.23', $records[0]->context['proxy_client_ip']);
+        self::assertSame(['198.51.100.23', '203.0.113.10'], $records[0]->context['proxy_ip_chain']);
+        self::assertSame('Studio Browser/1.0', $records[0]->context['user_agent']);
         self::assertSame('n/a', $records[0]->context['city']);
         self::assertSame('n/a', $records[0]->context['state']);
         self::assertSame('n/a', $records[0]->context['country']);

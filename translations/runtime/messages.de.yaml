@@ -376,6 +376,7 @@ admin:
         statistics:
             title: Zugriffsstatistiken
             summary: '%count% Access-Log-Einträge sind in diesem anonymisierten Snapshot enthalten.'
+            unique_visitors: 'Eindeutige Besucher'
             status_families: Statusfamilien
             top_routes: Top-Routen
             top_not_found: 'Häufige 404-Routen'

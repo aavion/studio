@@ -391,6 +391,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('.studio-log-table', '127.0.0.1');
             self::assertSelectorTextContains('body', 'Access statistics');
             self::assertSelectorTextContains('body', '1 access-log entries are included');
+            self::assertSelectorTextContains('body', 'Unique visitors');
         } finally {
             @unlink($logFile);
         }

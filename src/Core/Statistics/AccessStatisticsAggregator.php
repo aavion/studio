@@ -24,6 +24,7 @@ final readonly class AccessStatisticsAggregator
      * @return array{
      *     generated_at: string,
      *     total_requests: int,
+     *     unique_visitors: int,
      *     status_families: array<string, int>,
      *     top_routes: list<array{label: string, count: int}>,
      *     top_not_found: list<array{label: string, count: int}>,
@@ -38,6 +39,7 @@ final readonly class AccessStatisticsAggregator
         $routes = [];
         $notFound = [];
         $countries = [];
+        $visitors = [];
         $files = $this->files();
 
         foreach ($files as $file) {
@@ -50,6 +52,12 @@ final readonly class AccessStatisticsAggregator
 
                 $context = is_array($entry['context'] ?? null) ? $entry['context'] : [];
                 ++$total;
+                $visitorKey = $this->visitorKey($context);
+
+                if (null !== $visitorKey) {
+                    $visitors[$visitorKey] = true;
+                }
+
                 $status = $this->intContext($context, 'http_status');
                 $family = $this->statusFamily($status);
                 ++$statusFamilies[$family];
@@ -69,6 +77,7 @@ final readonly class AccessStatisticsAggregator
         return [
             'generated_at' => (new \DateTimeImmutable())->format(DATE_ATOM),
             'total_requests' => $total,
+            'unique_visitors' => count($visitors),
             'status_families' => $statusFamilies,
             'top_routes' => $this->top($routes),
             'top_not_found' => $this->top($notFound),
@@ -154,6 +163,30 @@ final readonly class AccessStatisticsAggregator
         $path = $this->stringContext($context, 'path', '/');
 
         return $method.' '.$path;
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function visitorKey(array $context): ?string
+    {
+        $ip = $this->stringContext($context, 'proxy_client_ip', '');
+
+        if ('' === $ip || 'n/a' === $ip) {
+            $ip = $this->stringContext($context, 'client_ip', '');
+        }
+
+        if ('' === $ip || 'n/a' === $ip) {
+            $ip = $this->stringContext($context, 'ip', '');
+        }
+
+        if ('' === $ip || 'n/a' === $ip) {
+            return null;
+        }
+
+        $userAgent = strtolower($this->stringContext($context, 'user_agent', 'n/a'));
+
+        return hash('sha256', $ip.'|'.$userAgent);
     }
 
     private function statusFamily(int $status): string

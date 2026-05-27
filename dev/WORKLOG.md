@@ -88,6 +88,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Extended access logging and anonymized statistics so raw access entries capture user-agent and proxy IP hints, while stored statistics expose only aggregate request counts plus approximate unique visitors derived from IP/user-agent combinations.
 - Split access statistics away from raw log browsing with an explicit snapshot provider and file-backed store under `var/statistics/{environment}/access/latest.json`; Admin Logs now consumes the anonymized snapshot boundary that can later move to database storage.
 - Added configurable audit policy settings under Security: audit logging has a production-default enabled master switch plus selectable audit event categories, and `AuditLogger` now applies the policy before writing to Monolog.
 - Extended Operations maintenance auditing so cleanup, stale-lock clearing, stale-runner emergency handling, and unsupported maintenance requests write compact `studio_audit` entries.
