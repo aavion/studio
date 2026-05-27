@@ -80,6 +80,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Fixed locked setup POST handling so stale setup forms with valid CSRF tokens cannot execute the web setup runner after the resolver has closed `/setup`.
 - Fixed public static injection precedence so protected, private, denied, or otherwise resolved content paths cannot be shadowed by package static routes, and public static injection menu entries skip reserved route prefixes such as admin, editor, setup, user, and api.
 - Fixed registry version synchronization so successful package discovery writes `installed_version` together with `manifest_version`, keeping ZIP update gates and dependency checks aligned after package upgrades.
 - Fixed package removal dependency handling so deleting an active package cascades active dependent deactivation before file removal, and registry discovery defensively deactivates active dependents when a package is marked removed or faulty.

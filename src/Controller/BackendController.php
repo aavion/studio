@@ -315,7 +315,7 @@ final class BackendController extends AbstractController
             'navigation' => $this->navigation($request, $area),
         ];
 
-        if (BackendArea::Setup === $area && '' === trim($path, '/')) {
+        if (BackendArea::Setup === $area && '' === trim($path, '/') && Response::HTTP_OK === $result->statusCode()) {
             $templateVariables += $this->setupVariables($request);
         }
 

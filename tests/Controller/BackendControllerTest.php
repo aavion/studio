@@ -85,6 +85,47 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
+    public function testSetupPostIsIgnoredAfterSetupLock(): void
+    {
+        $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
+        $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
+        $previousPutenvValue = getenv(SetupCompletionMarker::KEY);
+
+        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
+        putenv(SetupCompletionMarker::KEY);
+
+        try {
+            $client = self::createClient();
+            $crawler = $client->request('GET', '/setup');
+            $form = $crawler->selectButton('Run setup')->form([
+                'language' => 'en',
+                'site_title' => 'Locked Setup Studio',
+                'default_uri' => 'http://localhost',
+                'database_driver' => 'sqlite',
+                'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+                'admin_username' => 'admin',
+                'admin_password' => 'admin',
+                'admin_password_confirm' => 'admin',
+                'admin_email' => 'admin@localhost',
+                'dry_run' => '1',
+            ]);
+
+            $_SERVER[SetupCompletionMarker::KEY] = '1';
+            $_ENV[SetupCompletionMarker::KEY] = '1';
+            putenv(SetupCompletionMarker::KEY.'=1');
+
+            $client->submit($form);
+
+            self::assertResponseStatusCodeSame(404);
+            $html = (string) $client->getResponse()->getContent();
+            self::assertStringContainsString('Setup is already completed and is no longer available.', $html);
+            self::assertStringNotContainsString('Setup result', $html);
+            self::assertStringNotContainsString('Write environment', $html);
+        } finally {
+            $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
+        }
+    }
+
     public function testAdminRouteRequiresAdministrativeAccess(): void
     {
         $client = self::createClient();
