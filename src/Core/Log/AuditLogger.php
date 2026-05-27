@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Log;
 
 use App\Core\Access\AccessActor;
+use App\Core\Statistics\VisitorIdGenerator;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 final readonly class AuditLogger implements AuditLoggerInterface
 {
@@ -14,8 +16,10 @@ final readonly class AuditLogger implements AuditLoggerInterface
     public function __construct(
         private LoggerInterface $logger,
         private ?AuditLogPolicyInterface $policy = null,
-    )
-    {
+        private ?RequestStack $requestStack = null,
+        private ?AccessRequestMetadata $accessRequestMetadata = null,
+        private ?VisitorIdGenerator $visitorIdGenerator = null,
+    ) {
     }
 
     /**
@@ -32,8 +36,31 @@ final readonly class AuditLogger implements AuditLoggerInterface
             'user_uid' => $actor->userUid(),
             'user_max_access_level' => $actor->accessLevel(),
             'action' => $action,
-            'context' => $this->normalize($context),
+            'context' => $this->normalize($this->withRequestTrace($context)),
         ]);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     *
+     * @return array<string, mixed>
+     */
+    private function withRequestTrace(array $context): array
+    {
+        if (null === $this->requestStack || null === $this->accessRequestMetadata || null === $this->visitorIdGenerator) {
+            return $context;
+        }
+
+        $request = $this->requestStack->getCurrentRequest();
+
+        if (null === $request) {
+            return $context;
+        }
+
+        return [
+            ...$context,
+            ...$this->accessRequestMetadata->trace($request, $this->visitorIdGenerator->generate($request)),
+        ];
     }
 
     private function normalize(mixed $value, string $key = ''): mixed
