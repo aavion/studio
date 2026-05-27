@@ -449,6 +449,8 @@ final class BackendController extends AbstractController
         $token = $this->stringField($request, '_csrf_token');
         $result = null;
         $expectedFormId = null;
+        $auditAction = null;
+        $auditContext = [];
 
         if ($this->isBackendActionRequest($request)) {
             return $this->handleBackendAction($request);
@@ -456,16 +458,22 @@ final class BackendController extends AbstractController
 
         if (isset($context['settings_section']) && is_string($context['settings_section'])) {
             $expectedFormId = 'admin-settings-'.$context['settings_section'];
+            $auditAction = 'settings.core.save';
+            $auditContext = ['section' => $context['settings_section']];
             $result = $this->validFormToken($expectedFormId, $formId, $token)
                 ? $this->coreSettingsFormHandler->submit($context['settings_section'], $request->request->all(), $this->actor()->userUid())
                 : $this->invalidCsrfResult($request);
         } elseif ('backend-admin-settings-packages' === $view->uid()) {
             $expectedFormId = 'admin-settings-packages';
+            $auditAction = 'settings.core.save';
+            $auditContext = ['section' => 'packages'];
             $result = $this->validFormToken($expectedFormId, $formId, $token)
                 ? $this->coreSettingsFormHandler->submit('packages', $request->request->all(), $this->actor()->userUid())
                 : $this->invalidCsrfResult($request);
         } elseif (isset($context['package_name']) && is_string($context['package_name'])) {
             $expectedFormId = 'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($context['package_name']));
+            $auditAction = 'settings.package.save';
+            $auditContext = ['package' => $context['package_name']];
             $result = $this->validFormToken($expectedFormId, $formId, $token)
                 ? $this->packageSettingsFormHandler->submit($context['package_name'], $request->request->all(), $this->actor()->userUid())
                 : $this->invalidCsrfResult($request);
@@ -481,6 +489,13 @@ final class BackendController extends AbstractController
         }
 
         if ($result->isValid()) {
+            if (is_string($auditAction)) {
+                $this->auditFormSubmission($auditAction, $result, [
+                    ...$auditContext,
+                    'route' => $request->getPathInfo(),
+                ]);
+            }
+
             $this->addFlash('success', 'admin.settings.form.saved');
 
             return $this->redirect($request->getPathInfo());
@@ -568,6 +583,25 @@ final class BackendController extends AbstractController
             $this->auditLogger->log($this->actor(), $action, [
                 ...$context,
                 'result_status' => $result->status()->value,
+            ]);
+        } catch (Throwable) {
+            return;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function auditFormSubmission(string $action, FormSubmissionResult $result, array $context = []): void
+    {
+        $settingKeys = array_keys($result->values());
+        sort($settingKeys);
+
+        try {
+            $this->auditLogger->log($this->actor(), $action, [
+                ...$context,
+                'result_status' => 'success',
+                'setting_keys' => $settingKeys,
             ]);
         } catch (Throwable) {
             return;

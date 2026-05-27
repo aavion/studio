@@ -711,6 +711,11 @@ final class BackendControllerTest extends WebTestCase
         $client = self::createClient();
         $client->loginUser($this->createUserWithLevel(8));
         $config = self::getContainer()->get(Config::class);
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
 
         try {
             $crawler = $client->request('GET', '/admin/settings/general');
@@ -727,6 +732,13 @@ final class BackendControllerTest extends WebTestCase
             self::assertSame('Saved Admin Title', $config->get('site.title'));
             self::assertSame('https://example.test', $config->get('site.url'));
             self::assertSame('/saved-home', $config->get('content.home_path'));
+
+            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+            self::assertStringContainsString('settings.core.save', $auditLog);
+            self::assertStringContainsString('"section":"general"', $auditLog);
+            self::assertStringContainsString('"setting_keys":["content.home_path","localization.default_language","localization.route_prefixes_enabled","site.title","site.url"]', $auditLog);
+            self::assertStringNotContainsString('Saved Admin Title', $auditLog);
+            self::assertStringNotContainsString('https://example.test', $auditLog);
 
             $client->followRedirect();
 
