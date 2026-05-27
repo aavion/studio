@@ -178,6 +178,7 @@ class ExtensionPackage
         $changed = $this->scopeValues !== $scopeValues
             || $this->path !== $path
             || $this->manifestVersion !== $manifestVersion
+            || $this->installedVersion !== $manifestVersion
             || $this->metadata !== $metadata
             || $this->status !== $nextStatus;
 
@@ -188,6 +189,7 @@ class ExtensionPackage
         $this->scopeValues = $scopeValues;
         $this->path = $path;
         $this->manifestVersion = $manifestVersion;
+        $this->installedVersion = $manifestVersion;
         $this->metadata = $metadata;
         $this->status = $nextStatus;
         $this->touch();

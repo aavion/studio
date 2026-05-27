@@ -235,6 +235,7 @@ final class PackageZipInstallerTest extends KernelTestCase
         self::assertStringContainsString('new package', (string) file_get_contents($target.'/README.md'));
         self::assertSame(ExtensionPackageStatus::Active, $this->packageStatus($slug));
         self::assertSame(ExtensionPackageStatus::Active, $this->packageStatus($dependentSlug));
+        self::assertSame('1.1.0', $this->packageVersion($slug));
 
         $this->removePath($target);
         $this->removePath($this->projectDir.'/packages/'.$dependentSlug);
@@ -341,6 +342,17 @@ final class PackageZipInstallerTest extends KernelTestCase
         self::assertInstanceOf(ExtensionPackage::class, $package);
 
         return $package->status();
+    }
+
+    private function packageVersion(string $slug): ?string
+    {
+        $package = $this->entityManager->getRepository(ExtensionPackage::class)->findOneBy([
+            'packageName' => $slug,
+        ]);
+
+        self::assertInstanceOf(ExtensionPackage::class, $package);
+
+        return $package->installedVersion();
     }
 
     private function deletePackageRow(string $slug): void

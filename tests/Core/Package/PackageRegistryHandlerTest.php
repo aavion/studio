@@ -64,6 +64,7 @@ final class PackageRegistryHandlerTest extends KernelTestCase
         self::assertSame('inactive', $row['status']);
         self::assertSame('packages/demo-module', $row['path']);
         self::assertSame('1.0.0', $row['manifest_version']);
+        self::assertSame('1.0.0', $row['installed_version']);
         self::assertSame(['module'], json_decode((string) $row['package_scopes'], true, flags: JSON_THROW_ON_ERROR));
         self::assertSame('Demo Module', $this->metadata($row)['display_name']);
         self::assertSame('Registry handler demo package.', $this->metadata($row)['description']);
@@ -121,7 +122,7 @@ final class PackageRegistryHandlerTest extends KernelTestCase
 
     public function testItUpdatesVersionMismatches(): void
     {
-        $this->insertPackage('demo-module', 'packages/demo-module', '1.0.0', 'inactive');
+        $this->insertPackage('demo-module', 'packages/demo-module', '1.0.0', 'inactive', installedVersion: '1.0.0');
         $this->writePackageManifest('demo-module', '1.1.0');
 
         $result = $this->handler()->synchronize($this->candidates());
@@ -135,6 +136,7 @@ final class PackageRegistryHandlerTest extends KernelTestCase
 
         $row = $this->packageRow('demo-module');
         self::assertSame('1.1.0', $row['manifest_version']);
+        self::assertSame('1.1.0', $row['installed_version']);
         self::assertSame('1.1.0', $this->metadata($row)['manifest']['PACKAGE_VERSION']);
     }
 
@@ -252,6 +254,7 @@ final class PackageRegistryHandlerTest extends KernelTestCase
         string $version,
         string $status,
         string $dependencies = '[]',
+        ?string $installedVersion = null,
     ): void
     {
         $this->connection->insert('extension_package', [
@@ -260,7 +263,7 @@ final class PackageRegistryHandlerTest extends KernelTestCase
             'package_name' => $packageName,
             'path' => $path,
             'manifest_version' => $version,
-            'installed_version' => null,
+            'installed_version' => $installedVersion,
             'status' => $status,
             'metadata' => json_encode([
                 'registry_state' => 'available',

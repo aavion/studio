@@ -72,19 +72,20 @@ final readonly class PackageRegistryHandler
 
             $seen[$packageName] = true;
             $isNew = !isset($packages[$packageName]);
+            $manifestVersion = $candidate->manifest()->get('PACKAGE_VERSION');
             $package = $packages[$packageName] ?? new ExtensionPackage(
                 $this->uuid(),
                 $scopes,
                 $packageName,
                 $path,
+                manifestVersion: $manifestVersion,
+                installedVersion: $manifestVersion,
             );
 
             if ($isNew) {
                 $this->entityManager->persist($package);
                 $packages[$packageName] = $package;
             }
-
-            $manifestVersion = $candidate->manifest()->get('PACKAGE_VERSION');
 
             if (!$isNew && $this->keepsExistingFaultyState($package, $path, $manifestVersion)) {
                 continue;
