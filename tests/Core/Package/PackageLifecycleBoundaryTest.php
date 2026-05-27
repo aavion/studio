@@ -267,6 +267,40 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         self::assertSame('faulty', $this->packageStatus('broken-module'));
     }
 
+    public function testPackagePhpLoaderConvertsRuntimeProviderFailuresIntoFaults(): void
+    {
+        $this->insertPackage('broken-provider-module', ['module'], 'active');
+        $messageBus = new RecordingMessageBus();
+        $this->writeTestFile($this->projectDir, 'packages/broken-provider-module/package.php', <<<'PHP'
+            <?php
+
+            use App\View\Injection\StaticViewInjectionProviderInterface;
+
+            return new class implements StaticViewInjectionProviderInterface {
+                public function staticViewInjections(): array
+                {
+                    throw new RuntimeException('broken static provider');
+                }
+            };
+            PHP);
+        $registry = new PackageRuntimeContributionRegistry();
+
+        $result = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            new PackageAssetRebuildDispatcher($messageBus, new NullWorkflowResultMessageReporter()),
+            'test',
+            runtimeContributions: $registry,
+        ))->loadActivePackages();
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame([], $registry->staticViewInjections());
+        self::assertSame('faulty', $this->packageStatus('broken-provider-module'));
+    }
+
     public function testPackagePhpLoaderCanReloadPackagePhpAcrossLoaderInstances(): void
     {
         $this->insertPackage('demo-module', ['module'], 'active');

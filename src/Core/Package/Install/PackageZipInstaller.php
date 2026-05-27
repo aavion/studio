@@ -31,6 +31,9 @@ use ZipArchive;
 
 final readonly class PackageZipInstaller
 {
+    private const ZIP_UNIX_FILE_TYPE_MASK = 0o170000;
+    private const ZIP_UNIX_SYMLINK_TYPE = 0o120000;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private PackageDiscoveryRunner $discoveryRunner,
@@ -308,6 +311,21 @@ final readonly class PackageZipInstaller
                     MessageCode::PACKAGE_INSTALL_ROOT_INVALID,
                     MessageKey::PACKAGE_INSTALL_ROOT_INVALID,
                     context: ['install_id' => $installId, 'package' => $slug],
+                ),
+            ]);
+        }
+
+        $symlink = $this->firstSymlinkPath($packageRoot);
+        if (null !== $symlink) {
+            return WorkflowResult::invalid([
+                Message::warning(
+                    MessageCode::PACKAGE_INSTALL_ZIP_INVALID,
+                    MessageKey::PACKAGE_INSTALL_ZIP_INVALID,
+                    context: [
+                        'install_id' => $installId,
+                        'reason' => 'symlink_entry',
+                        'entry' => $this->relativePath($symlink),
+                    ],
                 ),
             ]);
         }
@@ -853,6 +871,16 @@ final readonly class PackageZipInstaller
                         ),
                     ]);
                 }
+
+                if ($this->symlinkZipEntry($zip, $index)) {
+                    return WorkflowResult::invalid([
+                        Message::warning(
+                            MessageCode::PACKAGE_INSTALL_ZIP_INVALID,
+                            MessageKey::PACKAGE_INSTALL_ZIP_INVALID,
+                            context: ['reason' => 'symlink_entry', 'entry' => $name],
+                        ),
+                    ]);
+                }
             }
 
             $this->removePath($stagePath);
@@ -864,6 +892,20 @@ final readonly class PackageZipInstaller
                         MessageCode::PACKAGE_INSTALL_ZIP_INVALID,
                         MessageKey::PACKAGE_INSTALL_ZIP_INVALID,
                         context: ['reason' => 'extract_failed', 'zip_path' => $this->relativePath($zipPath)],
+                    ),
+                ]);
+            }
+
+            $symlink = $this->firstSymlinkPath($stagePath);
+            if (null !== $symlink) {
+                return WorkflowResult::invalid([
+                    Message::warning(
+                        MessageCode::PACKAGE_INSTALL_ZIP_INVALID,
+                        MessageKey::PACKAGE_INSTALL_ZIP_INVALID,
+                        context: [
+                            'reason' => 'symlink_entry',
+                            'entry' => $this->relativePath($symlink),
+                        ],
                     ),
                 ]);
             }
@@ -943,6 +985,10 @@ final readonly class PackageZipInstaller
             $relative = substr($item->getPathname(), strlen($source) + 1);
             $destination = $target.DIRECTORY_SEPARATOR.$relative;
 
+            if ($item->isLink()) {
+                throw new \RuntimeException(sprintf('Symlink "%s" must not be copied into a package.', $relative));
+            }
+
             if ($item->isDir()) {
                 $this->ensureDirectory($destination);
                 continue;
@@ -957,7 +1003,7 @@ final readonly class PackageZipInstaller
 
     private function removePath(string $path): void
     {
-        if (!file_exists($path)) {
+        if (!file_exists($path) && !is_link($path)) {
             return;
         }
 
@@ -977,10 +1023,52 @@ final readonly class PackageZipInstaller
                 continue;
             }
 
-            $item->isDir() ? rmdir($item->getPathname()) : unlink($item->getPathname());
+            $item->isDir() && !$item->isLink() ? rmdir($item->getPathname()) : unlink($item->getPathname());
         }
 
         rmdir($path);
+    }
+
+    private function symlinkZipEntry(ZipArchive $zip, int $index): bool
+    {
+        if (!method_exists($zip, 'getExternalAttributesIndex')) {
+            return false;
+        }
+
+        $operatingSystem = 0;
+        $attributes = 0;
+
+        if (!$zip->getExternalAttributesIndex($index, $operatingSystem, $attributes)) {
+            return false;
+        }
+
+        $mode = ($attributes >> 16) & self::ZIP_UNIX_FILE_TYPE_MASK;
+
+        return self::ZIP_UNIX_SYMLINK_TYPE === $mode;
+    }
+
+    private function firstSymlinkPath(string $root): ?string
+    {
+        if (is_link($root)) {
+            return $root;
+        }
+
+        if (!is_dir($root)) {
+            return null;
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST,
+        );
+
+        foreach ($iterator as $item) {
+            if ($item instanceof \SplFileInfo && $item->isLink()) {
+                return $item->getPathname();
+            }
+        }
+
+        return null;
     }
 
     private function unsafeZipEntry(string $entry): bool

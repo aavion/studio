@@ -265,6 +265,33 @@ final class SetupRunnerTest extends TestCase
         self::assertArrayHasKey('action_log', $result->context());
     }
 
+    public function testItDoesNotLockSetupWhenFinalCacheClearFails(): void
+    {
+        $databasePath = $this->root.'/var/setup.db';
+        $this->createSchema($databasePath);
+        $executor = new RecordingSetupCommandExecutor(failureAt: 4, failure: new SetupCommandResult(1, '', 'cache clear failed'));
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Example Studio',
+            defaultUri: 'https://example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///'.$databasePath,
+            adminUsername: 'admin',
+            adminPassword: 'secret-password',
+            adminEmail: 'admin@example.test',
+            appSecret: 'test-secret',
+        ));
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('clear_cache', $result->context()['failed_step']);
+        self::assertFileExists($this->root.'/.env.local.php');
+        $dumpedEnvironment = include $this->root.'/.env.local.php';
+        self::assertArrayNotHasKey('APP_SETUP_COMPLETED', $dumpedEnvironment);
+    }
+
     public function testItStopsWhenEnvironmentOverridesCannotBeWritten(): void
     {
         mkdir($this->root.'/.env.test.local');
@@ -361,9 +388,9 @@ final class SetupRunnerTest extends TestCase
         self::assertFalse($entries[4]['context']['settings']['user.registration.enabled']);
         self::assertSame('seed_initial_content', $entries[6]['name']);
         self::assertSame('/home', $entries[6]['context']['path']);
-        self::assertSame('mark_setup_completed', $entries[7]['name']);
-        self::assertSame('clear_cache', $entries[8]['name']);
-        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'], $entries[8]['context']['command']);
+        self::assertSame('clear_cache', $entries[7]['name']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'], $entries[7]['context']['command']);
+        self::assertSame('mark_setup_completed', $entries[8]['name']);
     }
 
     public function testDryRunMasksDatabasePasswordsInActionLogContext(): void

@@ -41,21 +41,6 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
      */
     private array $packageSettingDefinitions = [];
 
-    /**
-     * @var list<StaticViewInjectionProviderInterface>
-     */
-    private array $staticViewProviders = [];
-
-    /**
-     * @var list<DynamicViewInjectionProviderInterface>
-     */
-    private array $dynamicViewProviders = [];
-
-    /**
-     * @var list<PackageSettingProviderInterface>
-     */
-    private array $packageSettingProviders = [];
-
     public function add(ExtensionPackage $package, mixed $contribution): void
     {
         $staged = clone $this;
@@ -93,22 +78,33 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
             return;
         }
 
+        $providerHandled = false;
+
         if ($contribution instanceof StaticViewInjectionProviderInterface) {
-            $this->staticViewProviders[] = $contribution;
+            foreach ($contribution->staticViewInjections() as $injection) {
+                $this->addToRegistry($package, $injection);
+            }
+
+            $providerHandled = true;
         }
 
         if ($contribution instanceof DynamicViewInjectionProviderInterface) {
-            $this->dynamicViewProviders[] = $contribution;
+            foreach ($contribution->dynamicViewInjections() as $injection) {
+                $this->addToRegistry($package, $injection);
+            }
+
+            $providerHandled = true;
         }
 
         if ($contribution instanceof PackageSettingProviderInterface) {
-            $this->packageSettingProviders[] = $contribution;
+            foreach ($contribution->packageSettings() as $definition) {
+                $this->addToRegistry($package, $definition);
+            }
+
+            $providerHandled = true;
         }
 
-        if ($contribution instanceof StaticViewInjectionProviderInterface
-            || $contribution instanceof DynamicViewInjectionProviderInterface
-            || $contribution instanceof PackageSettingProviderInterface
-        ) {
+        if ($providerHandled) {
             return;
         }
 
@@ -132,18 +128,11 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
         $this->configurableStaticViewInjectionSets = $registry->configurableStaticViewInjectionSets;
         $this->dynamicViewInjections = $registry->dynamicViewInjections;
         $this->packageSettingDefinitions = $registry->packageSettingDefinitions;
-        $this->staticViewProviders = $registry->staticViewProviders;
-        $this->dynamicViewProviders = $registry->dynamicViewProviders;
-        $this->packageSettingProviders = $registry->packageSettingProviders;
     }
 
     public function staticViewInjections(): array
     {
         $injections = $this->staticViewInjections;
-
-        foreach ($this->staticViewProviders as $provider) {
-            array_push($injections, ...$provider->staticViewInjections());
-        }
 
         foreach ($this->configurableStaticViewInjectionSets as $set) {
             $configuredBaseSlug = $this->packageSettingsStore?->get(
@@ -159,23 +148,11 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
 
     public function dynamicViewInjections(): array
     {
-        $injections = $this->dynamicViewInjections;
-
-        foreach ($this->dynamicViewProviders as $provider) {
-            array_push($injections, ...$provider->dynamicViewInjections());
-        }
-
-        return $injections;
+        return $this->dynamicViewInjections;
     }
 
     public function packageSettings(): array
     {
-        $settings = $this->packageSettingDefinitions;
-
-        foreach ($this->packageSettingProviders as $provider) {
-            array_push($settings, ...$provider->packageSettings());
-        }
-
-        return $settings;
+        return $this->packageSettingDefinitions;
     }
 }

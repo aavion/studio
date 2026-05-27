@@ -89,14 +89,22 @@ export default class extends Controller {
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                 });
-                const payload = await response.json();
 
                 if (!response.ok) {
+                    if (response.status === 404) {
+                        this.clearStoredOperation();
+                        this.fail(this.label('statusError'));
+                        this.retryButton.hidden = false;
+
+                        return;
+                    }
+
                     this.fail(this.label('statusError'), true);
 
                     return;
                 }
 
+                const payload = await response.json();
                 cursor = Number(payload.cursor || cursor);
                 this.storeOperation(statusUrl, cursor, payload.continue_url || null);
                 this.render(payload);

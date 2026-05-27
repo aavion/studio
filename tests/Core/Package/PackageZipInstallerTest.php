@@ -25,7 +25,7 @@ final class PackageZipInstallerTest extends KernelTestCase
         $this->projectDir = (string) self::getContainer()->getParameter('kernel.project_dir');
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
 
-        foreach (['zip-install-rollback', 'zip-install-dependent', 'zip-install-dependent-addon'] as $slug) {
+        foreach (['zip-install-rollback', 'zip-install-dependent', 'zip-install-dependent-addon', 'zip-install-symlink'] as $slug) {
             $this->removePath($this->projectDir.'/packages/'.$slug);
             $this->deletePackageRow($slug);
         }
@@ -191,6 +191,46 @@ final class PackageZipInstallerTest extends KernelTestCase
         $this->removePath($target);
         $this->removePath($this->installRoot($installId));
         $this->deletePackageRow($slug);
+    }
+
+    public function testItRejectsSymlinkEntriesBeforeExtraction(): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            self::markTestSkipped('ZipArchive is required for package ZIP installer tests.');
+        }
+
+        $installId = '777777777777777777777777';
+        $slug = 'zip-install-symlink';
+        $root = $this->installRoot($installId);
+        $this->removePath($root);
+        mkdir($root, 0775, true);
+
+        $zip = new ZipArchive();
+        self::assertTrue(true === $zip->open($root.'/upload.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE));
+        $zip->addFromString($slug.'/.manifest', <<<MANIFEST
+            PACKAGE_AUTHOR=Aavion Test
+            PACKAGE_SLUG={$slug}
+            PACKAGE_NAME=ZIP Install Test
+            PACKAGE_DESCRIPTION=Package ZIP installer test fixture.
+            PACKAGE_VERSION=1.0.0
+            PACKAGE_SCOPE=module
+            PACKAGE_DEPENDENCIES=[]
+            MANIFEST);
+        $zip->addFromString($slug.'/assets/host-file.txt', '/etc/passwd');
+        self::assertTrue($zip->setExternalAttributesName(
+            $slug.'/assets/host-file.txt',
+            ZipArchive::OPSYS_UNIX,
+            0o120777 << 16,
+        ));
+        $zip->close();
+
+        $verify = $this->installer()->verify(['install_id' => $installId]);
+
+        self::assertSame(WorkflowStatus::Invalid, $verify->status());
+        self::assertSame('package.install.zip_invalid', $verify->firstIssue()?->code());
+        self::assertSame('symlink_entry', $verify->firstIssue()?->context()['reason'] ?? null);
+
+        $this->removePath($root);
     }
 
     public function testItRestoresActiveReverseDependentsAfterSuccessfulOverwrite(): void
@@ -397,7 +437,7 @@ final class PackageZipInstallerTest extends KernelTestCase
                 continue;
             }
 
-            $item->isDir() ? rmdir($item->getPathname()) : unlink($item->getPathname());
+            $item->isDir() && !$item->isLink() ? rmdir($item->getPathname()) : unlink($item->getPathname());
         }
 
         rmdir($path);
