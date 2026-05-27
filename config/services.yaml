@@ -191,6 +191,14 @@ services:
             $logDir: '%kernel.logs_dir%'
             $environment: '%kernel.environment%'
 
+    App\Core\Statistics\AccessStatisticsStoreInterface:
+        alias: App\Core\Statistics\FileAccessStatisticsStore
+
+    App\Core\Statistics\FileAccessStatisticsStore:
+        arguments:
+            $statisticsDir: '%kernel.project_dir%/var/statistics'
+            $environment: '%kernel.environment%'
+
     App\Core\Asset\AssetRebuildQueueFactory:
         arguments:
             $projectDir: '%kernel.project_dir%'

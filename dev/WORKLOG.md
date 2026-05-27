@@ -61,7 +61,7 @@
     - [x] Add small service boundaries for audit and access logging so later features can record actions without depending on UI code.
     - [x] Keep raw access logs retraceable for at most 30 days; write unavailable GeoIP values as `n/a` until a GeoIP provider is implemented.
     - [x] Add an access-statistics aggregation boundary that reads raw access logs, emits anonymized counts only, and can later be replaced by database-backed long-term aggregates.
-    - [ ] Keep the statistics branch separate from raw access logs so long-term aggregated statistics can later move to database-backed storage.
+    - [x] Keep the statistics branch separate from raw access logs so long-term aggregated statistics can later move to database-backed storage.
     - [x] Add a functional Admin Logs view with log selection, basic filtering, and bounded file reads; visual refinement stays out of this feature slice.
 
 - [ ] **0.5.x Release lifecycle**
@@ -88,6 +88,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Split access statistics away from raw log browsing with an explicit snapshot provider and file-backed store under `var/statistics/{environment}/access/latest.json`; Admin Logs now consumes the anonymized snapshot boundary that can later move to database storage.
 - Added configurable audit policy settings under Security: audit logging has a production-default enabled master switch plus selectable audit event categories, and `AuditLogger` now applies the policy before writing to Monolog.
 - Extended Operations maintenance auditing so cleanup, stale-lock clearing, stale-runner emergency handling, and unsupported maintenance requests write compact `studio_audit` entries.
 - Extended settings audit coverage: successful core and package setting form submissions now write actor, route, section/package, result status, and changed setting keys to `studio_audit` without logging submitted values.
