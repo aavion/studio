@@ -17,11 +17,11 @@ final readonly class AccessStatisticsWindow
     public function options(): array
     {
         return [
-            ['key' => '1h', 'label_key' => 'admin.logs.statistics.windows.1h'],
-            ['key' => '24h', 'label_key' => 'admin.logs.statistics.windows.24h'],
-            ['key' => '7d', 'label_key' => 'admin.logs.statistics.windows.7d'],
-            ['key' => '30d', 'label_key' => 'admin.logs.statistics.windows.30d'],
-            ['key' => 'all', 'label_key' => 'admin.logs.statistics.windows.all'],
+            ['key' => '1h', 'label_key' => 'admin.statistics.windows.1h'],
+            ['key' => '24h', 'label_key' => 'admin.statistics.windows.24h'],
+            ['key' => '7d', 'label_key' => 'admin.statistics.windows.7d'],
+            ['key' => '30d', 'label_key' => 'admin.statistics.windows.30d'],
+            ['key' => 'all', 'label_key' => 'admin.statistics.windows.all'],
         ];
     }
 

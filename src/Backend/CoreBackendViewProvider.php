@@ -102,6 +102,15 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 minimumAccessLevel: 8,
             ),
             new BackendViewDefinition(
+                'backend-admin-statistics',
+                BackendArea::Admin,
+                'statistics',
+                'admin.navigation.statistics',
+                '@backend/admin/statistics.html.twig',
+                810,
+                minimumAccessLevel: 8,
+            ),
+            new BackendViewDefinition(
                 'backend-admin-settings',
                 BackendArea::Admin,
                 'settings',

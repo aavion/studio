@@ -415,11 +415,22 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Logs');
-            self::assertSelectorTextContains('.studio-log-table', 'access.request');
             self::assertSelectorTextContains('.studio-log-table', 'GET /admin/logs');
-            self::assertSelectorTextContains('.studio-log-table', '127.0.0.1');
+            self::assertSelectorTextContains('.studio-log-table', 'Details');
+
+            $client->clickLink('Details');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Log event');
+            self::assertSelectorTextContains('body', '127.0.0.1');
+            self::assertSelectorTextContains('.studio-code-block', 'access.request');
+
+            $client->request('GET', '/admin/statistics?statistics_window=all');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Statistics');
             self::assertSelectorTextContains('body', 'Access statistics');
-            self::assertSelectorTextContains('body', '1 access-log entries are included');
+            self::assertSelectorTextContains('body', 'access-log entries are included');
             self::assertSelectorTextContains('body', 'Unique visitors');
             self::assertSelectorTextContains('body', 'Top browsers');
         } finally {

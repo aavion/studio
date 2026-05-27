@@ -62,7 +62,8 @@
     - [x] Keep raw access logs retraceable for at most 30 days; write unavailable GeoIP values as `n/a` until a GeoIP provider is implemented.
     - [x] Add an access-statistics aggregation boundary that reads raw access logs, emits anonymized counts only, and can later be replaced by database-backed long-term aggregates.
     - [x] Keep the statistics branch separate from raw access logs so long-term aggregated statistics can later move to database-backed storage.
-    - [x] Add a functional Admin Logs view with log selection, basic filtering, and bounded file reads; visual refinement stays out of this feature slice.
+    - [x] Add a functional Admin Logs view with log selection, basic filtering, bounded file reads, pagination, and a separate entry-detail view; visual refinement stays out of this feature slice.
+    - [x] Move access statistics into a separate top-level Admin Statistics view so raw logs and end-user statistics remain distinct UI concerns.
 
 - [ ] **0.5.x Release lifecycle**
   - [ ] Self-update and release workflow

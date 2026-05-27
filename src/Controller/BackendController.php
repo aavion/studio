@@ -309,6 +309,29 @@ final class BackendController extends AbstractController
         return $this->redirectToRoute('backend_admin_operation_detail', ['operationId' => $operationId]);
     }
 
+    #[Route('/admin/logs/{entryId}', name: 'backend_admin_log_detail', requirements: ['entryId' => '[a-f0-9]{24}'], methods: ['GET'])]
+    public function logDetail(Request $request, string $entryId): Response
+    {
+        $access = $this->adminAccessResponse($request);
+
+        if (null !== $access) {
+            return $access;
+        }
+
+        $source = $request->query->get('source', 'message');
+        $entry = $this->logFileBrowser->entry(is_string($source) ? $source : 'message', $entryId);
+
+        if (null === $entry) {
+            return $this->httpError->notFound($request);
+        }
+
+        return $this->render('@backend/admin/log-detail.html.twig', [
+            'area' => BackendArea::Admin,
+            'navigation' => $this->navigation($request, BackendArea::Admin),
+            'log_entry' => $entry,
+        ]);
+    }
+
     #[Route('/admin/{path}', name: 'backend_admin_route', requirements: ['path' => '.+'], methods: ['GET', 'POST'])]
     public function adminRoute(Request $request, string $path): Response
     {
@@ -382,6 +405,9 @@ final class BackendController extends AbstractController
 
         if (BackendArea::Admin === $area && 'backend-admin-logs' === $view?->uid()) {
             $templateVariables['log_view'] = $this->logFileBrowser->browse($request->query->all());
+        }
+
+        if (BackendArea::Admin === $area && 'backend-admin-statistics' === $view?->uid()) {
             $templateVariables['access_statistics'] = $this->accessStatisticsSnapshotProvider->snapshot($request->query->get('statistics_window'));
             $templateVariables['access_statistics_windows'] = $this->accessStatisticsSnapshotProvider->windows();
         }
