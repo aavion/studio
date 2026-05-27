@@ -39,4 +39,15 @@ final class AccessRequestMetadataTest extends TestCase
             'resolved_route' => 'backend_admin_route',
         ], $metadata->trace($request, 'visitor-a'));
     }
+
+    public function testItRedactsSensitivePathSegments(): void
+    {
+        $metadata = new AccessRequestMetadata();
+        $request = Request::create('/user/invitation/test-token');
+        $request->attributes->set('_route', 'user_invitation_accept');
+        $request->attributes->set('token', 'test-token');
+
+        self::assertSame('/user/invitation/[redacted]', $metadata->sanitizedPath($request));
+        self::assertSame('/user/invitation/[redacted]', $metadata->trace($request, 'visitor-a')['requested_path']);
+    }
 }

@@ -77,4 +77,27 @@ final class AccessLoggerTest extends TestCase
         self::assertSame('n/a', $records[0]->context['country']);
         self::assertSame('n/a', $records[0]->context['continent']);
     }
+
+    public function testItRedactsTokenizedPathSegments(): void
+    {
+        $handler = new TestHandler();
+        $monolog = new Logger('studio_access');
+        $monolog->pushHandler($handler);
+        $request = Request::create('/user/invitation/test-token', 'GET', server: [
+            'REMOTE_ADDR' => '203.0.113.10',
+        ]);
+        $request->attributes->set('_route', 'user_invitation_accept');
+        $request->attributes->set('token', 'test-token');
+
+        $visitorIdGenerator = new VisitorIdGenerator('test-secret');
+        $metadata = new AccessRequestMetadata();
+
+        (new AccessLogger($monolog, $visitorIdGenerator, $metadata, new NullGeoIpResolver()))->log($request, new Response('', 200));
+
+        $records = $handler->getRecords();
+
+        self::assertSame('/user/invitation/[redacted]', $records[0]->context['path']);
+        self::assertSame('/user/invitation/[redacted]', $records[0]->context['requested_path']);
+        self::assertStringNotContainsString('test-token', json_encode($records[0]->context, JSON_THROW_ON_ERROR));
+    }
 }

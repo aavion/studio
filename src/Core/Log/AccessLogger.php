@@ -27,12 +27,13 @@ final readonly class AccessLogger implements AccessLoggerInterface
     {
         $clientIp = $request->getClientIp() ?? self::GEO_PLACEHOLDER;
         $geoIp = $this->geoIpResolver->resolve($this->visitorIdGenerator->sourceIp($request));
+        $path = $this->accessRequestMetadata->sanitizedPath($request);
 
         $this->logger->info('access.request', [
             'request_id' => $this->accessRequestMetadata->requestId($request),
             'method' => $request->getMethod(),
-            'path' => $request->getPathInfo(),
-            'requested_path' => $request->getPathInfo(),
+            'path' => $path,
+            'requested_path' => $path,
             'route' => $this->accessRequestMetadata->resolvedRoute($request),
             'resolved_route' => $this->accessRequestMetadata->resolvedRoute($request),
             'surface' => $this->accessRequestMetadata->surface($request),

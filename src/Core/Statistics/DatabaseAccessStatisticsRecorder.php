@@ -44,6 +44,7 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
             $client = $this->userAgentClassifier->classify($userAgent);
             $geoIp = $this->geoIpResolver->resolve($this->visitorIdGenerator->sourceIp($request));
             $doNotTrack = $this->policy?->requestHasDoNotTrack($request) ?? '1' === trim((string) $request->headers->get('DNT', ''));
+            $path = $this->accessRequestMetadata->sanitizedPath($request);
 
             $this->connection->insert('access_statistic_event', [
                 'uid' => $this->uuid(),
@@ -51,8 +52,8 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
                 'request_id' => $this->accessRequestMetadata->requestId($request),
                 'visitor_id' => $this->visitorIdGenerator->generate($request),
                 'method' => substr($request->getMethod(), 0, 16),
-                'path' => substr($request->getPathInfo(), 0, 1024),
-                'requested_path' => substr($request->getPathInfo(), 0, 1024),
+                'path' => substr($path, 0, 1024),
+                'requested_path' => substr($path, 0, 1024),
                 'route' => $this->accessRequestMetadata->resolvedRoute($request),
                 'resolved_route' => $this->accessRequestMetadata->resolvedRoute($request),
                 'surface' => $this->accessRequestMetadata->surface($request),
@@ -109,12 +110,12 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
             MessageCode::E_OPERATION_FAILED,
             MessageKey::STATISTICS_RECORD_FAILED,
             [],
-            [
-                'operation' => 'statistics.record',
-                'path' => $request->getPathInfo(),
-                'exception' => $error::class,
-                'message' => $error->getMessage(),
-            ],
+                [
+                    'operation' => 'statistics.record',
+                    'path' => $this->accessRequestMetadata->sanitizedPath($request),
+                    'exception' => $error::class,
+                    'message' => $error->getMessage(),
+                ],
         ), [
             'operation' => 'statistics.record',
         ]);

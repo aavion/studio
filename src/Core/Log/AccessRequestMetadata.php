@@ -11,6 +11,7 @@ final readonly class AccessRequestMetadata
 {
     public const REQUEST_ID_ATTRIBUTE = '_studio_access_request_id';
     public const STARTED_AT_ATTRIBUTE = '_studio_access_started_at';
+    private const REDACTED_SEGMENT = '[redacted]';
 
     public function markStarted(Request $request): void
     {
@@ -66,6 +67,30 @@ final readonly class AccessRequestMetadata
         $route = $request->attributes->get('_route');
 
         return is_string($route) && '' !== $route ? substr($route, 0, 190) : 'n/a';
+    }
+
+    public function sanitizedPath(Request $request): string
+    {
+        $path = $request->getPathInfo();
+
+        if ('/' === $path || '' === $path) {
+            return '/';
+        }
+
+        $sensitiveValues = $this->sensitiveRouteValues($request);
+        $segments = explode('/', trim($path, '/'));
+        $sanitized = [];
+
+        foreach ($segments as $index => $segment) {
+            $decoded = rawurldecode($segment);
+            $previous = $segments[$index - 1] ?? '';
+
+            $sanitized[] = $this->isSensitivePathKey($previous) || in_array($decoded, $sensitiveValues, true) || in_array($segment, $sensitiveValues, true)
+                ? self::REDACTED_SEGMENT
+                : $segment;
+        }
+
+        return '/'.implode('/', $sanitized);
     }
 
     public function referrer(Request $request): string
@@ -148,9 +173,38 @@ final readonly class AccessRequestMetadata
         return [
             'request_id' => $this->requestId($request),
             'visitor_id' => $visitorId,
-            'requested_path' => $request->getPathInfo(),
+            'requested_path' => $this->sanitizedPath($request),
             'resolved_route' => $this->resolvedRoute($request),
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function sensitiveRouteValues(Request $request): array
+    {
+        $values = [];
+
+        foreach ($request->attributes->all() as $key => $value) {
+            if (!$this->isSensitivePathKey((string) $key) || !is_scalar($value)) {
+                continue;
+            }
+
+            $value = trim((string) $value);
+
+            if ('' !== $value) {
+                $values[] = $value;
+            }
+        }
+
+        return array_values(array_unique($values));
+    }
+
+    private function isSensitivePathKey(string $key): bool
+    {
+        $normalized = strtolower((string) preg_replace('/[^a-zA-Z0-9]+/', '_', $key));
+
+        return 1 === preg_match('/(?:password|secret|token|credential|authorization|cookie|hmac|encrypted|api_key|private_key|code|signature|signed|session|csrf|nonce|reset|invite|invitation|(?:^|_)key(?:_|$))/', $normalized);
     }
 
     private function headerToken(?string $value): ?string

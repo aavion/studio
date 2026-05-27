@@ -108,6 +108,28 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
         self::assertStringNotContainsString('secret', implode(' ', array_map('strval', $row)));
     }
 
+    public function testItRedactsTokenizedPathSegments(): void
+    {
+        $request = Request::create('/user/invitation/test-token', 'GET');
+        $request->attributes->set('_route', 'user_invitation_accept');
+        $request->attributes->set('token', 'test-token');
+
+        (new DatabaseAccessStatisticsRecorder(
+            $this->connection,
+            new VisitorIdGenerator('test-secret'),
+            new UserAgentClassifier(),
+            new AccessRequestMetadata(),
+            new NullGeoIpResolver(),
+        ))->record($request, new Response('', 200));
+
+        $row = $this->connection->fetchAssociative('SELECT path, requested_path FROM access_statistic_event');
+
+        self::assertIsArray($row);
+        self::assertSame('/user/invitation/[redacted]', $row['path']);
+        self::assertSame('/user/invitation/[redacted]', $row['requested_path']);
+        self::assertStringNotContainsString('test-token', implode(' ', array_map('strval', $row)));
+    }
+
     public function testItDoesNotThrowWhenStatisticsTableIsUnavailable(): void
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
