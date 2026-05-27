@@ -182,6 +182,32 @@ final class PackageActivatorTest extends KernelTestCase
         self::assertSame('inactive', $this->packageStatus('new-theme'));
     }
 
+    public function testItBlocksCircularPackageDependencies(): void
+    {
+        $this->insertPackage('demo-module', ['module'], 'inactive', "[['demo-tools', '1.0.0']]");
+        $this->insertPackage('demo-tools', ['module'], 'inactive', "[['demo-module', '1.0.0']]");
+
+        $result = $this->activator()->planActivation('demo-module');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.dependency.cycle', $result->firstIssue()?->code());
+        self::assertSame(['demo-module', 'demo-tools', 'demo-module'], $result->firstIssue()?->context()['cycle']);
+        self::assertSame('inactive', $this->packageStatus('demo-module'));
+        self::assertSame('inactive', $this->packageStatus('demo-tools'));
+    }
+
+    public function testItBlocksPackageSelfDependencies(): void
+    {
+        $this->insertPackage('demo-module', ['module'], 'inactive', "[['demo-module', '1.0.0']]");
+
+        $result = $this->activator()->planActivation('demo-module');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.dependency.cycle', $result->firstIssue()?->code());
+        self::assertSame(['demo-module', 'demo-module'], $result->firstIssue()?->context()['cycle']);
+        self::assertSame('inactive', $this->packageStatus('demo-module'));
+    }
+
     public function testItDeactivatesActivePackages(): void
     {
         $this->insertPackage('demo-module', ['module'], 'active');

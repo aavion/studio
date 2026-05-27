@@ -111,14 +111,31 @@ final readonly class PackageDependencyResolver
      * @param array<string, ExtensionPackage> $packages
      * @param list<array<string, mixed>> $dependencies
      * @param list<Message> $issues
+     * @param list<string> $stack
      */
-    private function resolvePackage(ExtensionPackage $package, array &$packages, array &$dependencies, array &$issues): void
+    private function resolvePackage(ExtensionPackage $package, array &$packages, array &$dependencies, array &$issues, array $stack = []): void
     {
+        if (in_array($package->packageName(), $stack, true)) {
+            $cycleStart = array_search($package->packageName(), $stack, true);
+            $cycle = array_slice($stack, false === $cycleStart ? 0 : $cycleStart);
+            $cycle[] = $package->packageName();
+            $issues[] = Message::create(
+                MessageCode::PACKAGE_DEPENDENCY_CYCLE,
+                MessageKey::PACKAGE_DEPENDENCY_CYCLE,
+                ['%cycle%' => implode(' -> ', $cycle)],
+                ['package' => $package->packageName(), 'cycle' => $cycle],
+                MessageLevel::Error,
+            );
+
+            return;
+        }
+
         if (isset($packages[$package->packageName()])) {
             return;
         }
 
         $packages[$package->packageName()] = $package;
+        $stack[] = $package->packageName();
 
         foreach ($this->dependencies($package) as [$dependencyName, $minVersion]) {
             if ('system' === $dependencyName) {
@@ -177,7 +194,7 @@ final readonly class PackageDependencyResolver
                 continue;
             }
 
-            $this->resolvePackage($dependency, $packages, $dependencies, $issues);
+            $this->resolvePackage($dependency, $packages, $dependencies, $issues, $stack);
         }
     }
 

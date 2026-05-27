@@ -73,6 +73,7 @@ final class MessageKey
     public const PACKAGE_DEPENDENCY_MISSING = 'message.package.dependency.missing';
     public const PACKAGE_DEPENDENCY_VERSION_UNSATISFIED = 'message.package.dependency.version_unsatisfied';
     public const PACKAGE_DEPENDENCY_STATUS_BLOCKED = 'message.package.dependency.status_blocked';
+    public const PACKAGE_DEPENDENCY_CYCLE = 'message.package.dependency.cycle';
     public const PACKAGE_DEPENDENCY_RESOLVED = 'message.package.dependency.resolved';
     public const EVENT_HOOK_INVALID = 'message.event.hook.invalid';
     public const EVENT_HOOK_UNREGISTERED = 'message.event.hook.unregistered';

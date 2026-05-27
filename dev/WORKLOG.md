@@ -80,6 +80,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Added hard package dependency cycle blocking so self-referential or mutually referential `PACKAGE_DEPENDENCIES` stop activation and installer preflight with a localized diagnostic instead of being treated as a valid activation group.
 - Fixed package registry rediscovery so active packages that keep their active status but receive changed manifest metadata or versions queue the package-aware asset rebuild path.
 - Fixed locked setup POST handling so stale setup forms with valid CSRF tokens cannot execute the web setup runner after the resolver has closed `/setup`.
 - Fixed public static injection precedence so protected, private, denied, or otherwise resolved content paths cannot be shadowed by package static routes, and public static injection menu entries skip reserved route prefixes such as admin, editor, setup, user, and api.

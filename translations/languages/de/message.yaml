@@ -72,6 +72,7 @@ message:
       missing: 'Paket-Abhängigkeit "%package%" für "%required_by%" ist nicht installiert.'
       version_unsatisfied: 'Paket-Abhängigkeit "%package%" erfordert mindestens Version %required_version%; installiert ist %installed_version%.'
       status_blocked: 'Paket-Abhängigkeit "%package%" kann nicht genutzt werden, solange sie "%status%" ist.'
+      cycle: 'Zirkuläre Paket-Abhängigkeit erkannt: %cycle%.'
       resolved: 'Paket "%package%" hat %count% Abhängigkeits-Eintrag(e) aufgelöst.'
   translation:
     aggregate_completed: 'Translation-Aggregation hat %files% Datei(en) für %locales% Locale(s) aus Core und %packages% aktiven Paket(en) zusammengeführt.'

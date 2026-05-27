@@ -72,6 +72,7 @@ message:
       missing: 'Package dependency "%package%" required by "%required_by%" is not installed.'
       version_unsatisfied: 'Package dependency "%package%" requires at least version %required_version%; installed version is %installed_version%.'
       status_blocked: 'Package dependency "%package%" cannot be used while it is "%status%".'
+      cycle: 'Circular package dependency detected: %cycle%.'
       resolved: 'Package "%package%" resolved %count% dependency item(s).'
   translation:
     aggregate_completed: 'Translation aggregation merged %files% file(s) for %locales% locale(s) from core and %packages% active package(s).'
