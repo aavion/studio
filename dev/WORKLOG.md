@@ -80,6 +80,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Hardened Admin Package detail metadata links so untrusted manifest homepage/source values only become links for safe HTTP(S) URLs; unsafe values render as plain text and the controller coverage now guards the behavior.
 - Continued the package review-fix pass: setup password reset logging uses the selected environment, macro validation uses manifest slugs for wrapped ZIPs, malformed dependency declarations are blocked during validation and activation/preflight, runtime `package.php` contributions are committed atomically, and purge is restricted to already removed packages.
 - Completed the package lifecycle review-fix pass: active in-place rediscovery queues package-aware asset rebuilds, registry updates keep `installed_version` aligned with `manifest_version`, package removal cascades active dependents, dependency cycles are blocked during activation and installer preflight, and ZIP validation checks translation namespaces against manifest `PACKAGE_SLUG`.
 - Hardened ZIP install/update replacement safety: registry-known downgrades are blocked before review, active replacements preflight new dependencies before deactivation, active reverse dependents are restored after replacement, existing package folders stay available until a prepared replacement is ready, and failed discovery or reactivation rolls back to the previous package/status set.

@@ -517,6 +517,45 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
+    public function testAdminPackageDetailRendersUnsafeMetadataUrlsAsPlainText(): void
+    {
+        $client = self::createClient();
+        $this->removePackageByName('test-unsafe-metadata');
+
+        $client->loginUser($this->createUserWithLevel(8));
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $package = new ExtensionPackage(
+            '00000000-0000-0000-0000-000000000598',
+            [PackageScope::Module],
+            'test-unsafe-metadata',
+            'packages/test-unsafe-metadata',
+            ExtensionPackageStatus::Inactive,
+            [
+                'display_name' => 'Unsafe Metadata',
+                'homepage' => 'javascript:alert(1)',
+                'source' => 'data:text/plain,package',
+                'manifest' => ['PACKAGE_DEPENDENCIES' => '[]'],
+            ],
+            manifestVersion: '1.0.0',
+        );
+        $entityManager->persist($package);
+        $entityManager->flush();
+
+        try {
+            $client->request('GET', '/admin/packages/test-unsafe-metadata');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-table', 'javascript:alert(1)');
+            self::assertSelectorTextContains('.studio-table', 'data:text/plain,package');
+
+            $content = (string) $client->getResponse()->getContent();
+            self::assertStringNotContainsString('href="javascript:alert(1)"', $content);
+            self::assertStringNotContainsString('href="data:text/plain,package"', $content);
+        } finally {
+            $this->removePackageByName('test-unsafe-metadata');
+        }
+    }
+
     public function testAdminSettingsRoutesRenderThroughRegistry(): void
     {
         $client = self::createClient();

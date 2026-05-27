@@ -95,13 +95,25 @@
                 {% if package.homepage %}
                     <tr>
                         <th scope="row">{{ 'admin.packages.detail.homepage'|trans }}</th>
-                        <td><a href="{{ package.homepage }}" rel="noreferrer">{{ package.homepage }}</a></td>
+                        <td>
+                            {% if package.homepage_url|default(null) %}
+                                <a href="{{ package.homepage_url }}" rel="noreferrer noopener">{{ package.homepage }}</a>
+                            {% else %}
+                                {{ package.homepage }}
+                            {% endif %}
+                        </td>
                     </tr>
                 {% endif %}
                 {% if package.source %}
                     <tr>
                         <th scope="row">{{ 'admin.packages.detail.source'|trans }}</th>
-                        <td><a href="{{ package.source_url|default(package.source) }}" rel="noreferrer">{{ package.source_url|default(package.source) }}</a></td>
+                        <td>
+                            {% if package.source_url|default(null) %}
+                                <a href="{{ package.source_url }}" rel="noreferrer noopener">{{ package.source_url }}</a>
+                            {% else %}
+                                {{ package.source }}
+                            {% endif %}
+                        </td>
                     </tr>
                 {% endif %}
             </tbody>

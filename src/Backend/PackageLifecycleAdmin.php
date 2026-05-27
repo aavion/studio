@@ -121,6 +121,7 @@ final readonly class PackageLifecycleAdmin
             'license' => $metadata['license'] ?? null,
             'dependencies' => [],
             'homepage' => $metadata['homepage'] ?? null,
+            'homepage_url' => $this->safeExternalUrl($metadata['homepage'] ?? null),
             'source' => $metadata['source'] ?? null,
             'source_url' => $this->sourceUrl($metadata['source'] ?? null, $metadata['channel'] ?? null),
             'readme' => $this->readReadme('.'),
@@ -154,6 +155,7 @@ final readonly class PackageLifecycleAdmin
             'license' => $this->metadataString($metadata, 'license') ?? $manifest?->get('PACKAGE_LICENSE'),
             'dependencies' => $this->dependencies($dependencies),
             'homepage' => $this->metadataString($metadata, 'homepage') ?? $manifest?->get('PACKAGE_HOMEPAGE'),
+            'homepage_url' => $this->safeExternalUrl($this->metadataString($metadata, 'homepage') ?? $manifest?->get('PACKAGE_HOMEPAGE')),
             'source' => $source,
             'source_url' => $this->sourceUrl($source, $channel),
             'readme' => $this->readReadme($package->path()),
@@ -410,16 +412,50 @@ final readonly class PackageLifecycleAdmin
         }
 
         $source = preg_replace('/\.git$/', '', trim($source)) ?? trim($source);
+        $safeSource = $this->safeExternalUrl($source);
+
+        if (null === $safeSource) {
+            return null;
+        }
 
         if (null === $channel || '' === trim($channel)) {
-            return $source;
+            return $safeSource;
         }
 
-        if (1 === preg_match('#^https://github\.com/[^/\s]+/[^/\s]+$#', $source)) {
-            return rtrim($source, '/').'/tree/'.rawurlencode(trim($channel));
+        if (1 === preg_match('#^https://github\.com/[^/\s]+/[^/\s]+$#', $safeSource)) {
+            return rtrim($safeSource, '/').'/tree/'.rawurlencode(trim($channel));
         }
 
-        return $source;
+        return $safeSource;
+    }
+
+    private function safeExternalUrl(?string $url): ?string
+    {
+        if (null === $url || '' === trim($url)) {
+            return null;
+        }
+
+        $url = trim($url);
+
+        if (1 === preg_match('/[\x00-\x1F\x7F]/', $url)) {
+            return null;
+        }
+
+        $parts = parse_url($url);
+
+        if (!is_array($parts)) {
+            return null;
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return null;
+        }
+
+        $host = $parts['host'] ?? null;
+
+        return is_string($host) && '' !== trim($host) ? $url : null;
     }
 
     private function absolutePath(string $basePath, string $relativePath): string
