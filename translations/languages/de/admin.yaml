@@ -249,6 +249,9 @@ admin:
       top_routes: 'Top-Routen'
       top_not_found: 'Häufige 404-Routen'
       top_countries: 'Top-Länder'
+      top_browsers: 'Top-Browser'
+      device_types: 'Gerätetypen'
+      bot_requests: 'Bot-Aufrufe'
       empty: 'Noch keine Daten verfügbar.'
   settings:
     title: 'Einstellungen'

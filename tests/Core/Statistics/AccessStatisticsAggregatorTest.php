@@ -25,6 +25,9 @@ final class AccessStatisticsAggregatorTest extends TestCase
                 path VARCHAR(1024) NOT NULL,
                 route VARCHAR(190) NOT NULL,
                 http_status INTEGER NOT NULL,
+                browser_family VARCHAR(40) NOT NULL,
+                device_type VARCHAR(40) NOT NULL,
+                is_bot BOOLEAN NOT NULL,
                 city VARCHAR(80) NOT NULL,
                 state VARCHAR(80) NOT NULL,
                 country VARCHAR(80) NOT NULL,
@@ -36,9 +39,9 @@ final class AccessStatisticsAggregatorTest extends TestCase
 
     public function testItAggregatesDatabaseStatisticsWithoutExposingVisitorIds(): void
     {
-        $this->insertEvent('00000000-0000-0000-0000-000000000001', 'visitor-a', 'GET', '/', 'content_home', 200, 'DE');
-        $this->insertEvent('00000000-0000-0000-0000-000000000002', 'visitor-a', 'GET', '/missing', 'content_view', 404, 'DE');
-        $this->insertEvent('00000000-0000-0000-0000-000000000003', 'visitor-b', 'POST', '/admin', 'backend_admin_index', 302, 'n/a');
+        $this->insertEvent('00000000-0000-0000-0000-000000000001', 'visitor-a', 'GET', '/', 'content_home', 200, 'DE', 'safari', 'mobile', false);
+        $this->insertEvent('00000000-0000-0000-0000-000000000002', 'visitor-a', 'GET', '/missing', 'content_view', 404, 'DE', 'safari', 'mobile', false);
+        $this->insertEvent('00000000-0000-0000-0000-000000000003', 'visitor-b', 'POST', '/admin', 'backend_admin_index', 302, 'n/a', 'bot', 'bot', true);
 
         $snapshot = (new AccessStatisticsAggregator($this->connection))->snapshot();
         $encoded = json_encode($snapshot, JSON_THROW_ON_ERROR);
@@ -51,11 +54,14 @@ final class AccessStatisticsAggregatorTest extends TestCase
         self::assertContains(['label' => 'content_home', 'count' => 1], $snapshot['top_routes']);
         self::assertSame([['label' => 'content_view', 'count' => 1]], $snapshot['top_not_found']);
         self::assertContains(['label' => 'DE', 'count' => 2], $snapshot['top_countries']);
+        self::assertSame([['label' => 'safari', 'count' => 2], ['label' => 'bot', 'count' => 1]], $snapshot['top_browsers']);
+        self::assertSame([['label' => 'mobile', 'count' => 2], ['label' => 'bot', 'count' => 1]], $snapshot['device_types']);
+        self::assertSame(1, $snapshot['bot_requests']);
         self::assertStringNotContainsString('visitor-a', $encoded);
         self::assertStringNotContainsString('visitor-b', $encoded);
     }
 
-    private function insertEvent(string $uid, string $visitorId, string $method, string $path, string $route, int $status, string $country): void
+    private function insertEvent(string $uid, string $visitorId, string $method, string $path, string $route, int $status, string $country, string $browserFamily, string $deviceType, bool $isBot): void
     {
         $this->connection->insert('access_statistic_event', [
             'uid' => $uid,
@@ -65,6 +71,9 @@ final class AccessStatisticsAggregatorTest extends TestCase
             'path' => $path,
             'route' => $route,
             'http_status' => $status,
+            'browser_family' => $browserFamily,
+            'device_type' => $deviceType,
+            'is_bot' => $isBot,
             'city' => 'n/a',
             'state' => 'n/a',
             'country' => $country,

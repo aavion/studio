@@ -14,6 +14,9 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_access_statistic_visitor_at', columns: ['visitor_id', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_route_at', columns: ['route', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_status_at', columns: ['http_status', 'occurred_at'])]
+#[ORM\Index(name: 'idx_access_statistic_browser_at', columns: ['browser_family', 'occurred_at'])]
+#[ORM\Index(name: 'idx_access_statistic_device_at', columns: ['device_type', 'occurred_at'])]
+#[ORM\Index(name: 'idx_access_statistic_bot_at', columns: ['is_bot', 'occurred_at'])]
 class AccessStatisticEvent
 {
     #[ORM\Id]
@@ -37,6 +40,15 @@ class AccessStatisticEvent
 
     #[ORM\Column]
     private int $httpStatus;
+
+    #[ORM\Column(length: 40)]
+    private string $browserFamily;
+
+    #[ORM\Column(length: 40)]
+    private string $deviceType;
+
+    #[ORM\Column]
+    private bool $isBot;
 
     #[ORM\Column(length: 80)]
     private string $city;
@@ -67,6 +79,9 @@ class AccessStatisticEvent
         string $path,
         string $route,
         int $httpStatus,
+        string $browserFamily = 'other',
+        string $deviceType = 'other',
+        bool $isBot = false,
         string $city = 'n/a',
         string $state = 'n/a',
         string $country = 'n/a',
@@ -80,6 +95,9 @@ class AccessStatisticEvent
         $this->path = substr($path, 0, 1024);
         $this->route = substr($route, 0, 190);
         $this->httpStatus = $httpStatus;
+        $this->browserFamily = substr($browserFamily, 0, 40);
+        $this->deviceType = substr($deviceType, 0, 40);
+        $this->isBot = $isBot;
         $this->city = substr($city, 0, 80);
         $this->state = substr($state, 0, 80);
         $this->country = substr($country, 0, 80);
@@ -120,6 +138,21 @@ class AccessStatisticEvent
     public function httpStatus(): int
     {
         return $this->httpStatus;
+    }
+
+    public function browserFamily(): string
+    {
+        return $this->browserFamily;
+    }
+
+    public function deviceType(): string
+    {
+        return $this->deviceType;
+    }
+
+    public function isBot(): bool
+    {
+        return $this->isBot;
     }
 
     public function country(): string

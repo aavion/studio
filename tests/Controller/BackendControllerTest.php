@@ -390,6 +390,9 @@ final class BackendControllerTest extends WebTestCase
             'path' => '/admin/logs',
             'route' => 'backend_admin_route',
             'http_status' => 200,
+            'browser_family' => 'firefox',
+            'device_type' => 'desktop',
+            'is_bot' => false,
             'city' => 'n/a',
             'state' => 'n/a',
             'country' => 'n/a',
@@ -408,6 +411,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('body', 'Access statistics');
             self::assertSelectorTextContains('body', '1 access-log entries are included');
             self::assertSelectorTextContains('body', 'Unique visitors');
+            self::assertSelectorTextContains('body', 'Top browsers');
         } finally {
             @unlink($logFile);
             $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);

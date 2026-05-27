@@ -177,6 +177,10 @@ services:
         arguments:
             $logger: '@monolog.logger.studio_access'
 
+    App\Core\Statistics\VisitorIdGenerator:
+        arguments:
+            $secret: '%kernel.secret%'
+
     App\Core\Log\OperationLogger:
         arguments:
             $logger: '@monolog.logger.studio_operation'
@@ -188,10 +192,6 @@ services:
 
     App\Core\Statistics\AccessStatisticsRecorderInterface:
         alias: App\Core\Statistics\DatabaseAccessStatisticsRecorder
-
-    App\Core\Statistics\DatabaseAccessStatisticsRecorder:
-        arguments:
-            $visitorSecret: '%kernel.secret%'
 
     App\Core\Statistics\AccessStatisticsStoreInterface:
         alias: App\Core\Statistics\FileAccessStatisticsStore

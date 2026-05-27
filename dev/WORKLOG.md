@@ -90,6 +90,7 @@
 ### 2026-05-27
 - Established the statistics database model and parallel write path: each request still writes the raw 30-day access log, and a separate `access_statistic_event` row stores anonymized visitor/request facts for granular future statistics without persisting IP addresses or user-agents.
 - Extended access logging and anonymized statistics so raw access entries capture user-agent and proxy IP hints, while stored statistics expose only aggregate request counts plus approximate unique visitors derived from IP/user-agent combinations.
+- Shared the anonymized visitor ID between `studio_access` and the database-backed statistics recorder, then added coarse browser family, device type, and bot classification to statistics events and snapshots without storing raw user-agents in the statistics model.
 - Split access statistics away from raw log browsing with an explicit snapshot provider and file-backed store under `var/statistics/{environment}/access/latest.json`; Admin Logs now consumes the anonymized snapshot boundary that can later move to database storage.
 - Added configurable audit policy settings under Security: audit logging has a production-default enabled master switch plus selectable audit event categories, and `AuditLogger` now applies the policy before writing to Monolog.
 - Extended Operations maintenance auditing so cleanup, stale-lock clearing, stale-runner emergency handling, and unsupported maintenance requests write compact `studio_audit` entries.

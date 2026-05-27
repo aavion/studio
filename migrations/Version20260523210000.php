@@ -73,6 +73,9 @@ final class Version20260523210000 extends AbstractMigration
         $accessStatistic->addColumn('path', 'string', ['length' => 1024]);
         $accessStatistic->addColumn('route', 'string', ['length' => 190]);
         $accessStatistic->addColumn('http_status', 'integer');
+        $accessStatistic->addColumn('browser_family', 'string', ['length' => 40]);
+        $accessStatistic->addColumn('device_type', 'string', ['length' => 40]);
+        $accessStatistic->addColumn('is_bot', 'boolean');
         $accessStatistic->addColumn('city', 'string', ['length' => 80]);
         $accessStatistic->addColumn('state', 'string', ['length' => 80]);
         $accessStatistic->addColumn('country', 'string', ['length' => 80]);
@@ -83,6 +86,9 @@ final class Version20260523210000 extends AbstractMigration
         $accessStatistic->addIndex(['visitor_id', 'occurred_at'], 'idx_access_statistic_visitor_at');
         $accessStatistic->addIndex(['route', 'occurred_at'], 'idx_access_statistic_route_at');
         $accessStatistic->addIndex(['http_status', 'occurred_at'], 'idx_access_statistic_status_at');
+        $accessStatistic->addIndex(['browser_family', 'occurred_at'], 'idx_access_statistic_browser_at');
+        $accessStatistic->addIndex(['device_type', 'occurred_at'], 'idx_access_statistic_device_at');
+        $accessStatistic->addIndex(['is_bot', 'occurred_at'], 'idx_access_statistic_bot_at');
 
         $aclGroup = $schema->createTable('acl_group');
         $aclGroup->addColumn('uid', 'string', ['length' => 36]);

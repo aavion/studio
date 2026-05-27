@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Log;
 
 use App\Core\Log\AccessLogger;
+use App\Core\Statistics\VisitorIdGenerator;
 use Monolog\Handler\TestHandler;
 use Monolog\Level;
 use Monolog\Logger;
@@ -26,7 +27,9 @@ final class AccessLoggerTest extends TestCase
         ]);
         $request->attributes->set('_route', 'backend_admin_route');
 
-        (new AccessLogger($monolog))->log($request, new Response('', 401));
+        $visitorIdGenerator = new VisitorIdGenerator('test-secret');
+
+        (new AccessLogger($monolog, $visitorIdGenerator))->log($request, new Response('', 401));
 
         $records = $handler->getRecords();
 
@@ -38,6 +41,7 @@ final class AccessLoggerTest extends TestCase
         self::assertSame('backend_admin_route', $records[0]->context['route']);
         self::assertSame('level=error', $records[0]->context['query_string']);
         self::assertSame(401, $records[0]->context['http_status']);
+        self::assertSame($visitorIdGenerator->generate($request), $records[0]->context['visitor_id']);
         self::assertSame('203.0.113.10', $records[0]->context['ip']);
         self::assertSame('203.0.113.10', $records[0]->context['client_ip']);
         self::assertSame('198.51.100.23', $records[0]->context['proxy_client_ip']);

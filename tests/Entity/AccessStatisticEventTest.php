@@ -20,6 +20,9 @@ final class AccessStatisticEventTest extends TestCase
             '/docs',
             'content_view',
             200,
+            browserFamily: 'safari',
+            deviceType: 'mobile',
+            isBot: false,
             country: 'DE',
         );
 
@@ -29,6 +32,9 @@ final class AccessStatisticEventTest extends TestCase
         self::assertSame('/docs', $event->path());
         self::assertSame('content_view', $event->route());
         self::assertSame(200, $event->httpStatus());
+        self::assertSame('safari', $event->browserFamily());
+        self::assertSame('mobile', $event->deviceType());
+        self::assertFalse($event->isBot());
         self::assertSame('DE', $event->country());
     }
 }

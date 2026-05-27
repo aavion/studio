@@ -25,6 +25,9 @@ final readonly class AccessStatisticsAggregator
      *     top_routes: list<array{label: string, count: int}>,
      *     top_not_found: list<array{label: string, count: int}>,
      *     top_countries: list<array{label: string, count: int}>,
+     *     top_browsers: list<array{label: string, count: int}>,
+     *     device_types: list<array{label: string, count: int}>,
+     *     bot_requests: int,
      *     source_files: list<string>
      * }
      */
@@ -35,6 +38,9 @@ final readonly class AccessStatisticsAggregator
         $routes = [];
         $notFound = [];
         $countries = [];
+        $browsers = [];
+        $devices = [];
+        $botRequests = 0;
         $visitors = [];
 
         foreach ($this->rows() as $row) {
@@ -58,6 +64,16 @@ final readonly class AccessStatisticsAggregator
 
             $country = $this->stringValue($row, 'country', 'n/a');
             $countries[$country] = ($countries[$country] ?? 0) + 1;
+
+            $browser = $this->stringValue($row, 'browser_family', 'other');
+            $browsers[$browser] = ($browsers[$browser] ?? 0) + 1;
+
+            $device = $this->stringValue($row, 'device_type', 'other');
+            $devices[$device] = ($devices[$device] ?? 0) + 1;
+
+            if ($this->boolValue($row, 'is_bot')) {
+                ++$botRequests;
+            }
         }
 
         return [
@@ -68,6 +84,9 @@ final readonly class AccessStatisticsAggregator
             'top_routes' => $this->top($routes),
             'top_not_found' => $this->top($notFound),
             'top_countries' => $this->top($countries),
+            'top_browsers' => $this->top($browsers),
+            'device_types' => $this->top($devices),
+            'bot_requests' => $botRequests,
             'source_files' => [],
         ];
     }
@@ -79,7 +98,7 @@ final readonly class AccessStatisticsAggregator
     {
         try {
             return $this->connection->fetchAllAssociative(
-                'SELECT visitor_id, method, path, route, http_status, country FROM access_statistic_event ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
+                'SELECT visitor_id, method, path, route, http_status, browser_family, device_type, is_bot, country FROM access_statistic_event ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
             );
         } catch (Throwable) {
             return [];
@@ -118,6 +137,16 @@ final readonly class AccessStatisticsAggregator
         $value = $row[$key] ?? null;
 
         return is_string($value) && '' !== trim($value) ? $value : $fallback;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function boolValue(array $row, string $key): bool
+    {
+        $value = $row[$key] ?? false;
+
+        return true === $value || 1 === $value || '1' === $value || 'true' === $value;
     }
 
     private function statusFamily(int $status): string

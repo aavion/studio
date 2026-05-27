@@ -127,6 +127,18 @@
                     <h3>{{ 'admin.logs.statistics.top_not_found'|trans }}</h3>
                     {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_not_found} only %}
                 </div>
+                <div>
+                    <h3>{{ 'admin.logs.statistics.top_browsers'|trans }}</h3>
+                    {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_browsers} only %}
+                </div>
+                <div>
+                    <h3>{{ 'admin.logs.statistics.device_types'|trans }}</h3>
+                    {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.device_types} only %}
+                </div>
+                <div>
+                    <h3>{{ 'admin.logs.statistics.bot_requests'|trans }}</h3>
+                    <p class="studio-stat-number">{{ access_statistics.bot_requests|default(0) }}</p>
+                </div>
             </div>
             <h3>{{ 'admin.logs.statistics.top_countries'|trans }}</h3>
             {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_countries} only %}

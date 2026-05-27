@@ -381,6 +381,9 @@ admin:
             top_routes: 'Top routes'
             top_not_found: 'Frequent 404 routes'
             top_countries: 'Top countries'
+            top_browsers: 'Top browsers'
+            device_types: 'Device types'
+            bot_requests: 'Bot requests'
             empty: 'No data available yet.'
     settings:
         title: Settings

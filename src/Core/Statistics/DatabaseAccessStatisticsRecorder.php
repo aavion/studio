@@ -16,21 +16,28 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
 
     public function __construct(
         private Connection $connection,
-        private string $visitorSecret,
+        private VisitorIdGenerator $visitorIdGenerator,
+        private UserAgentClassifier $userAgentClassifier,
     ) {
     }
 
     public function record(Request $request, Response $response): void
     {
         try {
+            $userAgent = trim((string) $request->headers->get('User-Agent', self::PLACEHOLDER));
+            $client = $this->userAgentClassifier->classify($userAgent);
+
             $this->connection->insert('access_statistic_event', [
                 'uid' => $this->uuid(),
                 'occurred_at' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
-                'visitor_id' => $this->visitorId($request),
+                'visitor_id' => $this->visitorIdGenerator->generate($request),
                 'method' => substr($request->getMethod(), 0, 16),
                 'path' => substr($request->getPathInfo(), 0, 1024),
                 'route' => substr($this->route($request), 0, 190),
                 'http_status' => $response->getStatusCode(),
+                'browser_family' => $client['browser_family'],
+                'device_type' => $client['device_type'],
+                'is_bot' => $client['is_bot'],
                 'city' => self::PLACEHOLDER,
                 'state' => self::PLACEHOLDER,
                 'country' => self::PLACEHOLDER,
@@ -42,71 +49,11 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
         }
     }
 
-    private function visitorId(Request $request): string
-    {
-        return hash_hmac('sha256', $this->visitorSourceIp($request).'|'.$this->userAgent($request), $this->visitorSecret);
-    }
-
-    private function visitorSourceIp(Request $request): string
-    {
-        return $this->proxyIpChain($request)[0] ?? $request->getClientIp() ?? self::PLACEHOLDER;
-    }
-
-    private function userAgent(Request $request): string
-    {
-        $userAgent = trim((string) $request->headers->get('User-Agent', self::PLACEHOLDER));
-
-        return '' === $userAgent ? self::PLACEHOLDER : substr(strtolower($userAgent), 0, 500);
-    }
-
     private function route(Request $request): string
     {
         $route = $request->attributes->get('_route');
 
         return is_string($route) && '' !== $route ? $route : self::PLACEHOLDER;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function proxyIpChain(Request $request): array
-    {
-        $candidates = [
-            ...$this->splitHeader($request->headers->get('X-Forwarded-For')),
-            ...$this->splitHeader($request->headers->get('Forwarded')),
-            ...$this->splitHeader($request->headers->get('X-Real-IP')),
-            ...$this->splitHeader($request->headers->get('CF-Connecting-IP')),
-            ...$this->splitHeader($request->headers->get('True-Client-IP')),
-        ];
-        $ips = [];
-
-        foreach ($candidates as $candidate) {
-            $ip = trim($candidate, " \t\n\r\0\x0B\"[]");
-
-            if (str_contains($ip, '=')) {
-                $parts = [];
-                parse_str(str_replace(';', '&', $ip), $parts);
-                $ip = is_string($parts['for'] ?? null) ? trim($parts['for'], " \t\n\r\0\x0B\"[]") : $ip;
-            }
-
-            if (filter_var($ip, FILTER_VALIDATE_IP) && !in_array($ip, $ips, true)) {
-                $ips[] = $ip;
-            }
-        }
-
-        return $ips;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function splitHeader(?string $value): array
-    {
-        if (null === $value || '' === trim($value)) {
-            return [];
-        }
-
-        return array_values(array_filter(array_map('trim', preg_split('/,/', $value) ?: [])));
     }
 
     private function uuid(): string
