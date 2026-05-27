@@ -18,6 +18,7 @@ use App\Core\Package\PackageLifecycleCleanupRunnerInterface;
 use App\Core\Package\PackageLifecycleAssetRebuilderInterface;
 use App\Core\Package\PackagePhpLoader;
 use App\Core\Package\PackageRemover;
+use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageRuntimeContributionRegistry;
 use App\Core\Package\PackageRuntimeFailureHandler;
 use App\Core\Package\PackageScope;
@@ -304,13 +305,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         $this->writeTestFile($this->projectDir, 'packages/demo-module/.manifest', 'PACKAGE_NAME=Demo');
         $this->writeTestFile($this->projectDir, 'packages/demo-module/src/Demo.php', '<?php');
 
-        $result = (new PackageRemover(
-            $this->entityManager,
-            $this->assetRebuilder,
-            $this->cleanupRunner,
-            $this->projectDir,
-            new NullWorkflowResultMessageReporter(),
-        ))->remove('demo-module', 'test');
+        $result = $this->remover()->remove('demo-module', 'test');
 
         self::assertTrue($result->isSuccess());
         self::assertDirectoryDoesNotExist($this->projectDir.'/packages/demo-module');
@@ -321,17 +316,30 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         self::assertSame(['demo-module', 'demo-module'], array_column($result->value()['changes'], 'package'));
     }
 
+    public function testPackageRemoverDeactivatesActiveDependentsBeforeDeletingPackage(): void
+    {
+        $this->insertPackage('demo-module', ['module'], 'active');
+        $this->insertPackage('demo-addon', ['module'], 'active', dependencies: '[["demo-module", "1.0.0"]]');
+        $this->writeTestFile($this->projectDir, 'packages/demo-module/.manifest', 'PACKAGE_NAME=Demo');
+
+        $plan = $this->remover()->planRemoval('demo-module');
+        self::assertTrue($plan->isSuccess());
+        self::assertSame(['demo-addon', 'demo-module', 'demo-module'], array_column($plan->value()['changes'], 'package'));
+
+        $result = $this->remover()->remove('demo-module', 'test');
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+        self::assertSame('removed', $this->packageStatus('demo-module'));
+        self::assertSame('inactive', $this->packageStatus('demo-addon'));
+        self::assertSame(['test'], $this->assetRebuilder->environments);
+        self::assertSame(['demo-addon', 'demo-module', 'demo-module'], array_column($result->value()['changes'], 'package'));
+    }
+
     public function testPackageRemoverPurgeRunsCleanupAndDeletesRegistryRow(): void
     {
         $this->insertPackage('demo-module', ['module'], 'removed');
 
-        $result = (new PackageRemover(
-            $this->entityManager,
-            $this->assetRebuilder,
-            $this->cleanupRunner,
-            $this->projectDir,
-            new NullWorkflowResultMessageReporter(),
-        ))->purge('demo-module');
+        $result = $this->remover()->purge('demo-module');
 
         self::assertTrue($result->isSuccess());
         self::assertSame(['demo-module'], $this->cleanupRunner->packages);
@@ -407,6 +415,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         array $scopes,
         string $status,
         string $path = '',
+        string $dependencies = '[]',
     ): void {
         $this->connection->insert('extension_package', [
             'uid' => $this->uuid(),
@@ -419,11 +428,25 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
             'metadata' => json_encode([
                 'registry_state' => 'available',
                 'manifest' => [
-                    'PACKAGE_DEPENDENCIES' => '[]',
+                    'PACKAGE_DEPENDENCIES' => $dependencies,
                 ],
             ], JSON_THROW_ON_ERROR),
             'modified_at' => '2026-05-25 00:00:00',
         ]);
+    }
+
+    private function remover(): PackageRemover
+    {
+        $reporter = new NullWorkflowResultMessageReporter();
+
+        return new PackageRemover(
+            $this->entityManager,
+            new PackageActivator($this->entityManager, $this->assetRebuilder, $reporter),
+            $this->assetRebuilder,
+            $this->cleanupRunner,
+            $this->projectDir,
+            $reporter,
+        );
     }
 
     private function packageStatus(string $packageName): string

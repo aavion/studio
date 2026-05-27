@@ -19,6 +19,7 @@ final readonly class PackageRemover
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
+        private PackageActivator $activator,
         private PackageLifecycleAssetRebuilderInterface $assetRebuilder,
         private PackageLifecycleCleanupRunnerInterface $cleanupRunner,
         private string $projectDir,
@@ -37,9 +38,35 @@ final readonly class PackageRemover
             return $this->report($this->packageNotFound($packageName), 'package.remove.plan', ['package' => $packageName]);
         }
 
+        $changes = $this->plannedRemovalChanges($package);
+
+        if (ExtensionPackageStatus::Active === $package->status()) {
+            $plan = $this->activator->planDeactivation($packageName);
+
+            if (!$plan->isSuccess()) {
+                return $this->report(WorkflowResult::failed($plan->issues(), [
+                    'package' => $packageName,
+                    'path' => $package->path(),
+                    'plan_context' => $plan->context(),
+                ], $plan->messages()), 'package.remove.plan', ['package' => $packageName]);
+            }
+
+            $planChanges = $plan->value()['changes'] ?? [];
+            if (is_array($planChanges)) {
+                $changes = array_values(array_filter(
+                    $planChanges,
+                    static fn (mixed $change): bool => is_array($change),
+                ));
+            }
+
+            if (ExtensionPackageStatus::Removed !== $package->status()) {
+                $changes[] = ['package' => $package->packageName(), 'action' => 'removed', 'status' => ExtensionPackageStatus::Removed->value];
+            }
+        }
+
         return $this->report(WorkflowResult::success([
             'package' => $packageName,
-            'changes' => $this->plannedRemovalChanges($package),
+            'changes' => $changes,
         ], [
             'package' => $packageName,
             'path' => $package->path(),
@@ -59,31 +86,54 @@ final readonly class PackageRemover
 
         $messages = [];
         $changes = [];
-        $previousStatus = $package->status();
+        $previousStatuses = [$packageName => $package->status()];
 
-        if (ExtensionPackageStatus::Active === $package->status() && $package->deactivate()) {
-            $changes[] = $this->change($package, 'deactivated');
-            $messages[] = Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_DEACTIVATED,
-                MessageKey::PACKAGE_LIFECYCLE_DEACTIVATED,
-                ['%package%' => $packageName],
-                ['package' => $packageName],
-                MessageLevel::Success,
-            );
+        if (ExtensionPackageStatus::Active === $package->status()) {
+            $plan = $this->activator->planDeactivation($packageName);
+
+            if (!$plan->isSuccess()) {
+                return $this->report(WorkflowResult::failed($plan->issues(), [
+                    'package' => $packageName,
+                    'path' => $package->path(),
+                    'plan_context' => $plan->context(),
+                ], $plan->messages()), 'package.remove', ['package' => $packageName, 'environment' => $environment]);
+            }
+
+            $deactivationTargets = $this->packageNameList($plan->value()['deactivate'] ?? []);
+            $previousStatuses = $this->statusSnapshots($deactivationTargets);
+            $deactivation = $this->activator->deactivate($packageName, $environment, rebuildAssets: false);
+            $messages = [...$messages, ...$deactivation->messages()];
+
+            if (!$deactivation->isSuccess()) {
+                return $this->report(WorkflowResult::failed($deactivation->issues(), [
+                    'package' => $packageName,
+                    'path' => $package->path(),
+                    'deactivation_context' => $deactivation->context(),
+                ], $messages), 'package.remove', ['package' => $packageName, 'environment' => $environment]);
+            }
+
+            $deactivationChanges = $deactivation->value()['changes'] ?? [];
+            if (is_array($deactivationChanges)) {
+                $changes = [...$changes, ...array_values(array_filter(
+                    $deactivationChanges,
+                    static fn (mixed $change): bool => is_array($change),
+                ))];
+            }
         }
 
         $filesystem = $this->removeFilesystemPackage($package);
         $messages = [...$messages, ...$filesystem->messages()];
 
         if (!$filesystem->isSuccess()) {
-            $package->restoreStatus($previousStatus);
+            $rollbackMessages = $this->restorePackageStatuses($previousStatuses);
 
             return $this->report(WorkflowResult::failed($filesystem->issues(), [
                 'package' => $packageName,
                 'path' => $package->path(),
                 'changes' => $changes,
                 'filesystem_context' => $filesystem->context(),
-            ], $messages), 'package.remove', ['package' => $packageName, 'environment' => $environment]);
+                'rolled_back' => [] === $rollbackMessages,
+            ], [...$messages, ...$rollbackMessages]), 'package.remove', ['package' => $packageName, 'environment' => $environment]);
         }
 
         if ($package->markRemoved($this->removedMetadata($package, $filesystem->context()))) {
@@ -172,6 +222,77 @@ final readonly class PackageRemover
                 MessageLevel::Success,
             ),
         ]), 'package.purge', ['package' => $packageName]);
+    }
+
+    /**
+     * @param mixed $value
+     *
+     * @return list<string>
+     */
+    private function packageNameList(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $value,
+            static fn (mixed $packageName): bool => is_string($packageName) && '' !== trim($packageName),
+        ));
+    }
+
+    /**
+     * @param list<string> $packageNames
+     *
+     * @return array<string, ExtensionPackageStatus>
+     */
+    private function statusSnapshots(array $packageNames): array
+    {
+        $snapshots = [];
+
+        foreach (array_unique($packageNames) as $packageName) {
+            $package = $this->package($packageName);
+
+            if ($package instanceof ExtensionPackage) {
+                $snapshots[$packageName] = $package->status();
+            }
+        }
+
+        return $snapshots;
+    }
+
+    /**
+     * @param array<string, ExtensionPackageStatus> $statuses
+     *
+     * @return list<Message>
+     */
+    private function restorePackageStatuses(array $statuses): array
+    {
+        try {
+            foreach ($statuses as $packageName => $status) {
+                $package = $this->package($packageName);
+
+                if ($package instanceof ExtensionPackage) {
+                    $package->restoreStatus($status);
+                }
+            }
+
+            $this->entityManager->flush();
+        } catch (Throwable $error) {
+            return [
+                Message::exception(
+                    MessageCode::OPERATION_EXCEPTION,
+                    MessageKey::OPERATION_EXCEPTION,
+                    context: [
+                        'exception' => $error::class,
+                        'message' => $error->getMessage(),
+                        'rollback' => true,
+                    ],
+                ),
+            ];
+        }
+
+        return [];
     }
 
     private function package(string $packageName): ?ExtensionPackage

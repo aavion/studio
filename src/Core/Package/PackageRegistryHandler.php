@@ -17,6 +17,7 @@ use InvalidArgumentException;
 final readonly class PackageRegistryHandler
 {
     private PackageSpec $validationSpec;
+    private PackageDependencyResolver $dependencyResolver;
 
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -26,10 +27,12 @@ final readonly class PackageRegistryHandler
         private ?PackageAssetRebuildDispatcher $assetRebuildDispatcher = null,
         private string $environment = 'test',
         ?PackageSpec $validationSpec = null,
+        ?PackageDependencyResolver $dependencyResolver = null,
     ) {
         $this->validationSpec = $validationSpec ?? PackageSpec::create()
             ->withInventoryDepth(4)
             ->withLintingChecks();
+        $this->dependencyResolver = $dependencyResolver ?? new PackageDependencyResolver($entityManager);
     }
 
     /**
@@ -105,6 +108,10 @@ final readonly class PackageRegistryHandler
 
                 if ($changed && $wasActive) {
                     $assetRebuildTriggers[] = $this->assetRebuildTrigger($packageName, 'package_registry_faulty');
+                    $dependentChanges = $this->deactivateActiveDependents($package, 'package_registry_faulty');
+                    $changes = [...$changes, ...$dependentChanges['changes']];
+                    $messages = [...$messages, ...$dependentChanges['messages']];
+                    $assetRebuildTriggers = [...$assetRebuildTriggers, ...$dependentChanges['asset_rebuild_triggers']];
                 }
 
                 continue;
@@ -143,6 +150,10 @@ final readonly class PackageRegistryHandler
 
                 if ($wasActive) {
                     $assetRebuildTriggers[] = $this->assetRebuildTrigger($packageName, 'package_registry_removed');
+                    $dependentChanges = $this->deactivateActiveDependents($package, 'package_registry_removed');
+                    $changes = [...$changes, ...$dependentChanges['changes']];
+                    $messages = [...$messages, ...$dependentChanges['messages']];
+                    $assetRebuildTriggers = [...$assetRebuildTriggers, ...$dependentChanges['asset_rebuild_triggers']];
                 }
             }
         }
@@ -169,6 +180,42 @@ final readonly class PackageRegistryHandler
             'change_count' => count($changes),
             'changes' => $changes,
         ], $messages);
+    }
+
+    /**
+     * @return array{
+     *     changes: list<array{package: string, action: string, status: string}>,
+     *     messages: list<Message>,
+     *     asset_rebuild_triggers: list<string>
+     * }
+     */
+    private function deactivateActiveDependents(ExtensionPackage $package, string $trigger): array
+    {
+        $changes = [];
+        $messages = [];
+        $assetRebuildTriggers = [];
+
+        foreach ($this->dependencyResolver->activeDependentsOf($package) as $dependent) {
+            if (!$dependent->deactivate()) {
+                continue;
+            }
+
+            $changes[] = $this->change($dependent->packageName(), 'deactivated', ExtensionPackageStatus::Inactive);
+            $messages[] = Message::create(
+                MessageCode::PACKAGE_LIFECYCLE_DEACTIVATED,
+                MessageKey::PACKAGE_LIFECYCLE_DEACTIVATED,
+                ['%package%' => $dependent->packageName()],
+                ['package' => $dependent->packageName(), 'required_package' => $package->packageName()],
+                MessageLevel::Success,
+            );
+            $assetRebuildTriggers[] = $this->assetRebuildTrigger($dependent->packageName(), $trigger);
+        }
+
+        return [
+            'changes' => $changes,
+            'messages' => $messages,
+            'asset_rebuild_triggers' => $assetRebuildTriggers,
+        ];
     }
 
     /**

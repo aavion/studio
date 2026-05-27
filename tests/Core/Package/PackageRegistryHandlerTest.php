@@ -93,6 +93,32 @@ final class PackageRegistryHandlerTest extends KernelTestCase
         self::assertSame('package_registry_state_exit', $messageBus->messages()[0]->trigger());
     }
 
+    public function testItDeactivatesActiveDependentsWhenPackageIsMarkedRemoved(): void
+    {
+        $this->insertPackage('missing-module', 'packages/missing-module', '1.0.0', 'active');
+        $this->insertPackage(
+            'dependent-module',
+            'packages/dependent-module',
+            '1.0.0',
+            'active',
+            dependencies: '[["missing-module", "1.0.0"]]',
+        );
+        $this->writePackageManifest('dependent-module', '1.0.0', '[["missing-module", "1.0.0"]]');
+        $messageBus = new RecordingMessageBus();
+
+        $result = $this->handler($messageBus)->synchronize($this->candidates());
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+        self::assertSame('removed', $this->packageRow('missing-module')['status']);
+        self::assertSame('inactive', $this->packageRow('dependent-module')['status']);
+        self::assertContains([
+            'package' => 'dependent-module',
+            'action' => 'deactivated',
+            'status' => 'inactive',
+        ], $result->value());
+        self::assertCount(1, $messageBus->messages());
+    }
+
     public function testItUpdatesVersionMismatches(): void
     {
         $this->insertPackage('demo-module', 'packages/demo-module', '1.0.0', 'inactive');
@@ -205,7 +231,7 @@ final class PackageRegistryHandlerTest extends KernelTestCase
         return $result->value();
     }
 
-    private function writePackageManifest(string $slug, string $version): void
+    private function writePackageManifest(string $slug, string $version, string $dependencies = '[]'): void
     {
         $this->writeTestFile($this->projectDir, 'packages/'.$slug.'/.manifest', <<<MANIFEST
             PACKAGE_AUTHOR=Aavion
@@ -214,13 +240,19 @@ final class PackageRegistryHandlerTest extends KernelTestCase
             PACKAGE_DESCRIPTION=Registry handler demo package.
             PACKAGE_VERSION={$version}
             PACKAGE_SCOPE=module
-            PACKAGE_DEPENDENCIES=[]
+            PACKAGE_DEPENDENCIES={$dependencies}
             PACKAGE_LICENSE=MIT
             PACKAGE_IMAGE=assets/preview.svg
             MANIFEST);
     }
 
-    private function insertPackage(string $packageName, string $path, string $version, string $status): void
+    private function insertPackage(
+        string $packageName,
+        string $path,
+        string $version,
+        string $status,
+        string $dependencies = '[]',
+    ): void
     {
         $this->connection->insert('extension_package', [
             'uid' => $this->uuid(),
@@ -230,7 +262,12 @@ final class PackageRegistryHandlerTest extends KernelTestCase
             'manifest_version' => $version,
             'installed_version' => null,
             'status' => $status,
-            'metadata' => json_encode(['registry_state' => 'available'], JSON_THROW_ON_ERROR),
+            'metadata' => json_encode([
+                'registry_state' => 'available',
+                'manifest' => [
+                    'PACKAGE_DEPENDENCIES' => $dependencies,
+                ],
+            ], JSON_THROW_ON_ERROR),
             'modified_at' => '2026-05-25 00:00:00',
         ]);
     }
