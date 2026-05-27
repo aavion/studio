@@ -69,6 +69,7 @@ Validation rules:
 | `package.lifecycle.fault_reset` | Faulty package was validated and reset to inactive. | `package`, `path` |
 | `package.lifecycle.runtime_failure` | Package was marked faulty after a runtime failure. | `package`, `faulty` |
 | `package.lifecycle.php_load_failed` | Active package PHP loader failed and the package was marked faulty. | `package`, `path`, `loader`, `exception`, `message` |
+| `package.dependency.invalid` | Package dependency declaration could not be parsed. | `package`, `value` |
 | `package.dependency.cycle` | Package activation or installer preflight found a circular hard dependency. | `package`, `cycle` |
 | `package.copy_plan_created` | Package copy plan was created successfully. | `source`, `package`, `target_root`, `target_prefix`, `files` |
 | `filesystem.source_missing` | Filesystem copy source is missing. | `source`, `target` |
@@ -176,6 +177,7 @@ Validation rules:
 | `message.api_key.permission.write_required` | API key lacks write permission for the requested operation. | N/A |
 | `message.api_key.permission.revoked` | API key is revoked and cannot authenticate. | N/A |
 | `message.package.identifier.invalid` | Managed package identifier contains unsupported characters. | `%identifier%` |
+| `message.package.dependency.invalid` | Package dependency declaration could not be parsed. | `%package%` |
 | `message.package.dependency.cycle` | Package dependency resolution found a circular hard dependency. | `%cycle%` |
 | `message.menu.identifier.invalid` | Menu identifier is not lowercase snake_case. | `%identifier%` |
 
