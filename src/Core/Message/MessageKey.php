@@ -48,6 +48,12 @@ final class MessageKey
     public const PACKAGE_REGISTRY_PACKAGE_UPDATED = 'message.package.registry.updated';
     public const PACKAGE_REGISTRY_PACKAGE_REMOVED = 'message.package.registry.removed';
     public const PACKAGE_REGISTRY_PACKAGE_FAULTY = 'message.package.registry.faulty';
+    public const PACKAGE_INSTALL_UPLOAD_INVALID = 'message.package.install.upload_invalid';
+    public const PACKAGE_INSTALL_ZIP_INVALID = 'message.package.install.zip_invalid';
+    public const PACKAGE_INSTALL_ROOT_INVALID = 'message.package.install.root_invalid';
+    public const PACKAGE_INSTALL_READY = 'message.package.install.ready';
+    public const PACKAGE_INSTALL_OVERWRITE = 'message.package.install.overwrite';
+    public const PACKAGE_INSTALL_COMPLETED = 'message.package.install.completed';
     public const PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND = 'message.package.lifecycle.not_found';
     public const PACKAGE_LIFECYCLE_STATUS_BLOCKED = 'message.package.lifecycle.status_blocked';
     public const PACKAGE_LIFECYCLE_ACTIVATED = 'message.package.lifecycle.activated';

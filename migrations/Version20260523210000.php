@@ -121,6 +121,7 @@ final class Version20260523210000 extends AbstractMigration
         $extension->addColumn('path', 'string', ['length' => 512]);
         $extension->addColumn('manifest_version', 'string', ['length' => 40, 'notnull' => false]);
         $extension->addColumn('installed_version', 'string', ['length' => 40, 'notnull' => false]);
+        $extension->addColumn('available_version', 'string', ['length' => 40, 'notnull' => false]);
         $extension->addColumn('status', 'string', ['length' => 255]);
         $extension->addColumn('metadata', 'json');
         $extension->addColumn('modified_at', 'datetime_immutable');

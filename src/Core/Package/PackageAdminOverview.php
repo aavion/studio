@@ -74,6 +74,7 @@ final readonly class PackageAdminOverview
             ], $package->scopeValues()),
             'manifest_version' => $package->manifestVersion(),
             'installed_version' => $package->installedVersion(),
+            'available_version' => $package->availableVersion(),
             'settings_path' => $settingsPath,
         ];
     }
@@ -103,6 +104,7 @@ final readonly class PackageAdminOverview
             ], $metadata['scopes']),
             'manifest_version' => is_string($version) && '' !== trim($version) ? $version : null,
             'installed_version' => null,
+            'available_version' => null,
             'settings_path' => null,
         ];
     }

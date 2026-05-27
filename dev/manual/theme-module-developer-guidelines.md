@@ -47,6 +47,7 @@ Required manifest keys:
 
 ```text
 PACKAGE_AUTHOR=Aavion
+PACKAGE_SLUG=example-package
 PACKAGE_NAME=Example Package
 PACKAGE_VERSION=1.0.0
 PACKAGE_SCOPE=[frontend-theme, module]

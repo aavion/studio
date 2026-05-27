@@ -86,4 +86,28 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
         self::assertFalse($result->isSuccess());
         self::assertSame('message.operation.invalid_payload', $result->firstIssue()?->translationKey());
     }
+
+    public function testItCreatesPackageInstallQueues(): void
+    {
+        self::bootKernel();
+        $factory = self::getContainer()->get(LiveOperationQueueFactory::class);
+
+        $verify = $factory->create(LiveOperationQueueFactory::PACKAGE_INSTALL_VERIFY, [
+            'install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa',
+            'trigger' => 'admin_ui',
+        ]);
+        $apply = $factory->create(LiveOperationQueueFactory::PACKAGE_INSTALL_APPLY, [
+            'install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa',
+            'package' => 'demo-module',
+            'trigger' => 'admin_ui',
+        ]);
+
+        self::assertTrue($verify->isSuccess());
+        self::assertSame('package install verification', $verify->value()?->name());
+        self::assertCount(1, $verify->value()?->actions());
+        self::assertTrue($apply->isSuccess());
+        self::assertSame('package install', $apply->value()?->name());
+        self::assertSame('demo-module', $apply->value()?->context()['package']);
+        self::assertCount(1, $apply->value()?->actions());
+    }
 }

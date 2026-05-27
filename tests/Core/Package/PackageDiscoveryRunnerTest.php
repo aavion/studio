@@ -129,6 +129,7 @@ final class PackageDiscoveryRunnerTest extends KernelTestCase
     {
         $this->writeTestFile($this->projectDir, 'packages/'.$slug.'/.manifest', <<<MANIFEST
             PACKAGE_AUTHOR=Aavion
+            PACKAGE_SLUG={$slug}
             PACKAGE_NAME=Demo Module
             PACKAGE_VERSION=1.0.0
             PACKAGE_SCOPE={$scope}

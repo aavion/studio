@@ -65,6 +65,13 @@ admin:
       settings: 'Settings'
       no_settings: 'No settings'
       none: 'No actions'
+    install:
+      label: 'Install'
+      title: 'Install package'
+      text: 'Upload a package ZIP. The package manifest is verified first and the final installation waits for confirmation in the ActionLog.'
+      file: 'Package ZIP'
+      submit: 'Verify package'
+      close: 'Close'
     meta:
       author: 'By %author%'
     detail:

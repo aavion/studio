@@ -189,7 +189,13 @@ final readonly class PackageRegistryHandler
 
     private function packageName(PackageCandidate $candidate): string
     {
-        return $this->pathGuard->relativePath(basename($candidate->directory()));
+        $slug = trim((string) $candidate->manifest()->get('PACKAGE_SLUG', ''));
+
+        if (!PackageManifestSpec::isValidSlug($slug)) {
+            throw new InvalidArgumentException(sprintf('Package slug "%s" is invalid.', $slug));
+        }
+
+        return $this->pathGuard->relativePath($slug);
     }
 
     private function relativePackagePath(PackageCandidate $candidate): string
@@ -214,6 +220,7 @@ final readonly class PackageRegistryHandler
         return [
             'registry_state' => $state,
             'manifest' => $candidate->manifest()->all(),
+            'slug' => $candidate->manifest()->get('PACKAGE_SLUG'),
             'display_name' => $candidate->manifest()->get('PACKAGE_NAME'),
             'author' => $candidate->manifest()->get('PACKAGE_AUTHOR'),
             'description' => $candidate->manifest()->get('PACKAGE_DESCRIPTION'),

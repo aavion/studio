@@ -65,6 +65,13 @@ admin:
       settings: 'Einstellungen'
       no_settings: 'Keine Einstellungen'
       none: 'Keine Aktionen'
+    install:
+      label: 'Installieren'
+      title: 'Paket installieren'
+      text: 'Lade ein Paket-ZIP hoch. Das Paket-Manifest wird zuerst geprüft und die finale Installation wartet im ActionLog auf Bestätigung.'
+      file: 'Paket-ZIP'
+      submit: 'Paket prüfen'
+      close: 'Schließen'
     meta:
       author: 'Von %author%'
     detail:

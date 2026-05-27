@@ -333,6 +333,7 @@ final class BackendControllerTest extends WebTestCase
         }
         file_put_contents($packageDir.'/.manifest', <<<'MANIFEST'
             PACKAGE_AUTHOR=Test Suite
+            PACKAGE_SLUG=test-lifecycle
             PACKAGE_NAME=Test Lifecycle
             PACKAGE_DESCRIPTION=Lifecycle package fixture
             PACKAGE_VERSION=1.0.0

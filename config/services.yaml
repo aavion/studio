@@ -97,6 +97,11 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Core\Package\Install\PackageZipInstaller:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
     App\Core\Package\PackageFaultResetter:
         arguments:
             $projectDir: '%kernel.project_dir%'

@@ -18,6 +18,7 @@ use App\Core\Message\MessageKey;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Operation\Live\LiveOperationStarter;
+use App\Core\Package\Install\PackageZipInstaller;
 use App\Core\Output\JsonOutputRenderer;
 use App\Core\Package\Settings\PackageSettingsFormHandler;
 use App\Core\Workflow\WorkflowResult;
@@ -28,6 +29,7 @@ use App\Setup\SetupRunner;
 use App\Setup\SetupWebInputFactory;
 use App\View\Http\HttpErrorRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -45,6 +47,7 @@ final class BackendController extends AbstractController
         private readonly PackageSettingsFormHandler $packageSettingsFormHandler,
         private readonly BackendActions $backendActions,
         private readonly PackageLifecycleAdmin $packageLifecycleAdmin,
+        private readonly PackageZipInstaller $packageZipInstaller,
         private readonly LiveOperationRunStore $liveOperationRunStore,
         private readonly LiveOperationStarter $liveOperationStarter,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
@@ -70,6 +73,66 @@ final class BackendController extends AbstractController
     public function adminIndex(Request $request): Response
     {
         return $this->handle($request, BackendArea::Admin);
+    }
+
+    #[Route('/admin/packages/install', name: 'backend_admin_package_install', methods: ['POST'])]
+    public function packageInstall(Request $request): Response
+    {
+        $access = $this->adminAccessResponse($request);
+
+        if (null !== $access) {
+            return $access;
+        }
+
+        $validToken = $this->validFormToken('package-install', $this->stringField($request, '_form_id'), $this->stringField($request, '_csrf_token'));
+
+        if (!$validToken) {
+            $result = WorkflowResult::invalid([
+                Message::warning(
+                    MessageCode::E_INVALID_ARGUMENT,
+                    MessageKey::BACKEND_ACTION_INVALID_CSRF,
+                    context: ['action' => 'package_install'],
+                ),
+            ]);
+
+            if ('1' === $this->stringField($request, '_operation_live')) {
+                return $this->liveOperationResponse($result);
+            }
+
+            $this->flashResult($result);
+
+            return $this->redirect('/admin/packages');
+        }
+
+        $uploaded = $request->files->get('package_zip');
+        $stage = $this->packageZipInstaller->stageUpload($uploaded instanceof UploadedFile ? $uploaded : null);
+
+        if (!$stage->isSuccess()) {
+            if ('1' === $this->stringField($request, '_operation_live')) {
+                return $this->liveOperationResponse($stage);
+            }
+
+            $this->flashResult($stage);
+
+            return $this->redirect('/admin/packages');
+        }
+
+        $result = $this->liveOperationStarter->start(
+            LiveOperationQueueFactory::PACKAGE_INSTALL_VERIFY,
+            [
+                'install_id' => $stage->value()['install_id'],
+                'trigger' => 'admin_ui',
+            ],
+            'Verify package ZIP',
+        );
+
+        if ('1' === $this->stringField($request, '_operation_live')) {
+            return $this->liveOperationResponse($result);
+        }
+
+        $this->flashResult($result);
+
+        return $this->redirect('/admin/operations');
     }
 
     #[Route('/admin/packages/{packageName}', name: 'backend_admin_package_detail', requirements: ['packageName' => '[^/]+'], methods: ['GET', 'POST'])]

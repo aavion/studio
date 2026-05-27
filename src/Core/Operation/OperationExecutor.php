@@ -67,6 +67,12 @@ final class OperationExecutor
 
             array_push($issues, ...$result->issues());
             array_push($messages, ...$result->messages());
+            if (WorkflowStatus::RequiresReview === $result->status()) {
+                $context = [
+                    ...$context,
+                    ...$result->context(),
+                ];
+            }
             $status = $this->highestSeverity($status, $result->status());
             $this->reportResult($result, $queue, $action, $index, $total);
             $finishedEntry = $entry->finish(

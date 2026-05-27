@@ -1,4 +1,5 @@
 PACKAGE_AUTHOR=Aavion Demo
+PACKAGE_SLUG=demo-captcha-provider
 PACKAGE_NAME=Demo Captcha Provider
 PACKAGE_DESCRIPTION=Demo captcha provider used to exercise provider package discovery and future security setting flows.
 PACKAGE_VERSION=0.1.1

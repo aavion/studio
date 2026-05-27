@@ -94,6 +94,10 @@ html {
     justify-content: flex-end;
 }
 
+.studio-backend-button-group-inline {
+    display: contents;
+}
+
 .studio-button,
 .studio-backend-button {
     display: inline-flex;
@@ -193,6 +197,41 @@ html {
     border-radius: var(--studio-radius);
     padding-inline: 0;
     text-decoration: none;
+}
+
+.studio-dialog {
+    width: min(32rem, calc(100vw - 2rem));
+    padding: 1.25rem;
+    border: var(--studio-border);
+    border-radius: var(--studio-radius);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    box-shadow: var(--studio-shadow);
+}
+
+.studio-dialog::backdrop {
+    background: rgb(15 23 42 / 0.35);
+}
+
+.studio-dialog h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.studio-dialog p {
+    margin: 0 0 1rem;
+}
+
+.studio-dialog form:not(.studio-dialog-close) {
+    display: grid;
+    gap: 1rem;
+}
+
+.studio-dialog-close {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 1rem;
 }
 
 .studio-icon {

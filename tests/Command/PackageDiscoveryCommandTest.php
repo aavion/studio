@@ -71,6 +71,7 @@ final class PackageDiscoveryCommandTest extends KernelTestCase
     {
         $this->writeTestFile($this->projectDir, 'packages/demo-module/.manifest', <<<MANIFEST
             PACKAGE_AUTHOR=Aavion
+            PACKAGE_SLUG=demo-module
             PACKAGE_NAME=Demo Module
             PACKAGE_VERSION=1.0.0
             PACKAGE_SCOPE=module

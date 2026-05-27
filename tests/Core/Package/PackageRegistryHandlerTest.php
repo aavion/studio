@@ -209,6 +209,7 @@ final class PackageRegistryHandlerTest extends KernelTestCase
     {
         $this->writeTestFile($this->projectDir, 'packages/'.$slug.'/.manifest', <<<MANIFEST
             PACKAGE_AUTHOR=Aavion
+            PACKAGE_SLUG={$slug}
             PACKAGE_NAME=Demo Module
             PACKAGE_DESCRIPTION=Registry handler demo package.
             PACKAGE_VERSION={$version}

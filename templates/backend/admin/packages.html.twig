@@ -12,9 +12,15 @@
 
 {% block admin_body %}
     {% set backend_actions %}
-        {% include '@backend/admin/partials/_backend-actions.html.twig' with {
-            actions: studio_backend_actions(['package_discovery']),
-        } only %}
+        <div class="studio-backend-button-group">
+            <button class="studio-backend-button studio-button-primary" type="button" onclick="document.getElementById('package-install-dialog')?.showModal()">
+                {{ 'admin.packages.install.label'|trans }}
+            </button>
+            {% include '@backend/admin/partials/_backend-actions.html.twig' with {
+                actions: studio_backend_actions(['package_discovery']),
+                class: 'studio-backend-button-group-inline',
+            } only %}
+        </div>
     {% endset %}
 
     {% include '@backend/admin/partials/_page-header.html.twig' with {
@@ -24,6 +30,35 @@
     } only %}
 
     {% include '@backend/partials/feedback/_message.html.twig' with {message: message} only %}
+
+    <dialog id="package-install-dialog" class="studio-dialog">
+        <form method="dialog" class="studio-dialog-close">
+            <button class="studio-backend-button studio-button-secondary" type="submit">
+                {{ 'admin.packages.install.close'|trans }}
+            </button>
+        </form>
+        <h2>{{ 'admin.packages.install.title'|trans }}</h2>
+        <p class="studio-muted">{{ 'admin.packages.install.text'|trans }}</p>
+        <form
+            method="post"
+            action="{{ path('backend_admin_package_install') }}"
+            enctype="multipart/form-data"
+            data-controller="operation-overlay"
+            data-action="submit->operation-overlay#submit"
+            data-operation-overlay-enabled-value="true"
+            data-operation-overlay-redirect-on-success-value="/admin/packages"
+        >
+            <input type="hidden" name="_form_id" value="package-install">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('package-install') }}">
+            <label class="studio-form-field">
+                <span>{{ 'admin.packages.install.file'|trans }}</span>
+                <input type="file" name="package_zip" accept=".zip,application/zip" required>
+            </label>
+            <button class="studio-backend-button studio-button-primary" type="submit">
+                {{ 'admin.packages.install.submit'|trans }}
+            </button>
+        </form>
+    </dialog>
 
     <section class="studio-panel">
         <h2>{{ 'admin.packages.registry_title'|trans }}</h2>
@@ -41,7 +76,7 @@
                 <tbody>
                     {% for package in packages %}
                         {% set row_classes = package.immutable ? 'is-immutable' : '' %}
-                        {% set row_classes = package.update_version|default(null) ? (row_classes ~ ' has-update')|trim : row_classes %}
+                        {% set row_classes = package.available_version|default(null) ? (row_classes ~ ' has-update')|trim : row_classes %}
                         <tr {{ studio_html_attributes({
                             class: row_classes ?: null,
                             'data-package-name': package.package_name,
@@ -56,8 +91,8 @@
                                 {% if package_version %}
                                     <span class="studio-muted">{{ package_version }}</span>
                                 {% endif %}
-                                {% if package.update_version|default(null) %}
-                                    <strong class="studio-badge studio-badge-warning">&gt; {{ package.update_version }}</strong>
+                                {% if package.available_version|default(null) %}
+                                    <strong class="studio-badge studio-badge-warning">&gt; {{ package.available_version }}</strong>
                                 {% endif %}
                             </th>
                             <td>

@@ -43,6 +43,13 @@ message:
       updated: 'Package "%package%" registry metadata was updated.'
       removed: 'Package "%package%" is missing on disk and was marked as removed.'
       faulty: 'Package "%package%" failed validation and was marked as faulty.'
+    install:
+      upload_invalid: 'The package upload is missing, invalid, or not a ZIP file.'
+      zip_invalid: 'The package ZIP could not be read safely.'
+      root_invalid: 'The package ZIP must contain one package root with a .manifest file.'
+      ready: 'Package "%package%" version %version% can now be installed. Continue?'
+      overwrite: 'Package "%package%" already exists and will be deactivated if active, then overwritten before discovery runs.'
+      completed: 'Package "%package%" was installed.'
     lifecycle:
       not_found: 'Package "%package%" is not registered.'
       status_blocked: 'Package "%package%" cannot change lifecycle state while it is "%status%".'

@@ -16,6 +16,8 @@ final readonly class LiveOperationQueueFactory
     public const PACKAGE_DISCOVERY = 'package.discovery';
     public const PACKAGE_ASSET_REBUILD = 'package.asset_rebuild';
     public const PACKAGE_LIFECYCLE = 'package.lifecycle';
+    public const PACKAGE_INSTALL_VERIFY = 'package.install.verify';
+    public const PACKAGE_INSTALL_APPLY = 'package.install.apply';
 
     /**
      * @param iterable<LiveOperationQueueProviderInterface> $providers

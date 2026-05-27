@@ -129,6 +129,29 @@ final class OperationExecutorTest extends TestCase
         ], $execution->actionLog()->statusCounts());
     }
 
+    public function testItPreservesReviewRequiredActionContext(): void
+    {
+        $issue = Message::info(MessageCode::OPERATION_ACTION_REQUIRED, MessageKey::OPERATION_ACTION_REQUIRED, [
+            '%operation%' => 'Install package',
+        ]);
+
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue(ActionQueue::create('continue', [
+            new TestOperationAction('review', 'Review change', WorkflowResult::requiresReview(null, [$issue], [
+                'live_operation_continuation' => [
+                    'operation' => 'package.install.apply',
+                    'payload' => ['install_id' => 'abc'],
+                    'label' => 'Install package',
+                ],
+            ])),
+        ], context: [
+            'operation' => 'package.install.verify',
+        ]));
+
+        self::assertSame(WorkflowStatus::RequiresReview, $execution->result()->status());
+        self::assertSame('package.install.verify', $execution->result()->context()['operation']);
+        self::assertSame('package.install.apply', $execution->result()->context()['live_operation_continuation']['operation']);
+    }
+
     public function testItPreservesFailedStatusWhenContinuingAfterFailures(): void
     {
         $issue = Message::create('import.failed', 'message.import.failed');

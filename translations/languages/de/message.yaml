@@ -43,6 +43,13 @@ message:
       updated: 'Registry-Metadaten für Paket "%package%" wurden aktualisiert.'
       removed: 'Paket "%package%" fehlt im Dateisystem und wurde als entfernt markiert.'
       faulty: 'Paket "%package%" hat die Validierung nicht bestanden und wurde als fehlerhaft markiert.'
+    install:
+      upload_invalid: 'Der Paket-Upload fehlt, ist ungültig oder keine ZIP-Datei.'
+      zip_invalid: 'Das Paket-ZIP konnte nicht sicher gelesen werden.'
+      root_invalid: 'Das Paket-ZIP muss genau ein Paket-Root mit .manifest-Datei enthalten.'
+      ready: 'Paket "%package%" Version %version% kann jetzt installiert werden. Fortfahren?'
+      overwrite: 'Paket "%package%" existiert bereits und wird bei aktivem Status deaktiviert, anschließend überschrieben und danach per Discovery neu registriert.'
+      completed: 'Paket "%package%" wurde installiert.'
     lifecycle:
       not_found: 'Paket "%package%" ist nicht registriert.'
       status_blocked: 'Paket "%package%" kann den Lifecycle-Status nicht wechseln, solange es "%status%" ist.'

@@ -1,4 +1,5 @@
 PACKAGE_AUTHOR=Aavion Demo
+PACKAGE_SLUG=demo-frontend-theme
 PACKAGE_NAME=Demo Frontend Theme
 PACKAGE_DESCRIPTION=Demo frontend theme used to exercise single-active theme registry and scoped assets.
 PACKAGE_VERSION=0.1.1

@@ -131,15 +131,15 @@ export default class extends Controller {
             status.textContent = this.statusLabel(entry.status);
             item.append(status);
 
-            if (entry.issues?.length) {
+            for (const issue of entry.issues || []) {
                 const message = document.createElement('p');
-                message.textContent = entry.issues[0].message || entry.issues[0].translation_key || entry.issues[0].code;
+                message.textContent = issue.message || issue.translation_key || issue.code;
                 item.append(message);
             }
 
-            if (entry.messages?.length) {
+            for (const entryMessage of entry.messages || []) {
                 const message = document.createElement('p');
-                message.textContent = entry.messages[0].message || entry.messages[0].translation_key || entry.messages[0].code;
+                message.textContent = entryMessage.message || entryMessage.translation_key || entryMessage.code;
                 item.append(message);
             }
 
@@ -153,9 +153,11 @@ export default class extends Controller {
             title.textContent = this.label('result');
             item.append(title);
 
-            const message = document.createElement('p');
-            message.textContent = payload.result.issues[0].message || payload.result.issues[0].translation_key || payload.result.issues[0].code;
-            item.append(message);
+            for (const issue of payload.result.issues) {
+                const message = document.createElement('p');
+                message.textContent = issue.message || issue.translation_key || issue.code;
+                item.append(message);
+            }
             this.listElement.append(item);
             this.resultRendered = true;
         }

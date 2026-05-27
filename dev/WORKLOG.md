@@ -81,6 +81,10 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Added the first staged package ZIP installer: Admin Package Management exposes a ZIP upload dialog, uploads are staged below `var/cache/{APP_ENV}/package-installs`, live operations verify manifests and package lint rules, pause with a review-required confirmation, then replace existing package folders, run discovery, and restore activation when the overwritten package was active.
+- Added required `PACKAGE_SLUG` package manifest support so registry identifiers and ZIP install target folders use a stable manifest-declared slug instead of inferring only from the discovered folder name.
+- Prepared package update metadata by adding nullable registry storage for a future externally discovered available version and surfacing it through the package overview model.
+- Adjusted live operation result aggregation so `requires_review` action context, including continuation metadata, is preserved in the terminal operation result without changing normal success result context semantics.
 - Hardened the live Operations/ActionLog foundation with tagged queue providers, stale-run detection, persisted start failures, expired-run cleanup, localized polling payload messages, and a `studio:operations:cleanup` command.
 - Added an atomic runner claim so a staged live operation can only be executed once, added a stale-safe global live-runner lock so different live operations cannot mutate packages/assets/cache concurrently, let completed runners clean expired operation artifacts with a 3600-second TTL, and taught the overlay to resume in-flight operations from session storage after page reloads instead of starting duplicates.
 - Moved the Admin package registry refresh onto the live ActionLog provider path while preserving the synchronous POST fallback for non-JavaScript submissions.

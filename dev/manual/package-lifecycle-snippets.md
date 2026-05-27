@@ -55,6 +55,7 @@ Required package manifest keys:
 | Key | Purpose |
 |-----|---------|
 | `PACKAGE_AUTHOR` | Human-readable author or vendor. |
+| `PACKAGE_SLUG` | Stable package identifier and target folder name under `packages/`. |
 | `PACKAGE_NAME` | Human-readable package name. |
 | `PACKAGE_VERSION` | Package version. |
 | `PACKAGE_SCOPE` | One or more scopes, for example `[frontend-theme, module]`. |
@@ -62,7 +63,7 @@ Required package manifest keys:
 
 Optional keys include `PACKAGE_SOURCE`, `PACKAGE_CHANNEL`, `PACKAGE_IMAGE`, `PACKAGE_NAMESPACE`, `PACKAGE_DESCRIPTION`, `PACKAGE_LICENSE`, and `PACKAGE_HOMEPAGE`. `PACKAGE_SOURCE` should point to the repository or release source root without a branch suffix, while `PACKAGE_CHANNEL` names the branch or channel; admin UI links may combine both values into a branch-specific URL where the source host supports it. Dependency entries use a compact JSON-like list of `[package, minimum-version]` pairs such as `[["system","0.1.0"],["demo-frontend-theme","0.1.1"]]`. The virtual `system` package is treated as an active dependency backed by the root `.manifest`; real package dependencies still resolve against the persistent package registry.
 
-The installer should only stage or extract packages into their dedicated package folders, or intentionally replace an existing package folder during a manual update, and then trigger discovery. Validation belongs to the discovery and registry workflow. Update execution is deferred: a later updater should compare registered versions with manifest source metadata and use a narrow Git-backed stub for package or system updates.
+The ZIP installer stages uploads under `var/cache/{APP_ENV}/package-installs`, verifies the manifest and package lint rules, then pauses the live operation with a review-required confirmation before copying files. `PACKAGE_SLUG` defines the target folder. If that package already exists, the apply step removes the existing package folder first, preserving whether it was active so activation can be restored after discovery. Update execution beyond ZIP uploads is deferred: a later updater should compare registered versions with manifest source metadata and use a narrow Git-backed stub for package or system updates.
 
 Current allowed scopes are `frontend-theme`, `backend-theme`, `system-template`, `module`, `captcha-provider`, and `editor-provider`. Frontend themes, backend themes, system-template packages, and provider scopes are single-active scopes: activating a new package with the same single-active scope deactivates the previously active package. Module packages may be active in parallel.
 

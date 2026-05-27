@@ -154,26 +154,7 @@ final readonly class PackageDiscovery
                 ['VERSION', 'DATE', 'NAME', 'AUTHOR', 'DESCRIPTION', 'CHANNEL', 'SOURCE', 'LICENSE', 'HOMEPAGE', 'IMAGE'],
                 ['VERSION'],
             )),
-            PackageSource::children('package', 'packages', ManifestSpec::create()
-                ->allowOnly(
-                    'PACKAGE_AUTHOR',
-                    'PACKAGE_NAME',
-                    'PACKAGE_VERSION',
-                    'PACKAGE_SCOPE',
-                    'PACKAGE_DEPENDENCIES',
-                    'PACKAGE_SOURCE',
-                    'PACKAGE_CHANNEL',
-                    'PACKAGE_IMAGE',
-                    'PACKAGE_NAMESPACE',
-                    'PACKAGE_DESCRIPTION',
-                    'PACKAGE_LICENSE',
-                    'PACKAGE_HOMEPAGE',
-                )
-                ->require('PACKAGE_AUTHOR')
-                ->require('PACKAGE_NAME')
-                ->require('PACKAGE_VERSION')
-                ->require('PACKAGE_SCOPE')
-                ->require('PACKAGE_DEPENDENCIES')),
+            PackageSource::children('package', 'packages', PackageManifestSpec::create()),
             PackageSource::children('import', 'var/cache/'.$environment.'/imports'),
         ];
     }

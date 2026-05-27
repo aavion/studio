@@ -40,6 +40,9 @@ class ExtensionPackage
     #[ORM\Column(length: 40, nullable: true)]
     private ?string $installedVersion = null;
 
+    #[ORM\Column(length: 40, nullable: true)]
+    private ?string $availableVersion = null;
+
     #[ORM\Column(enumType: ExtensionPackageStatus::class)]
     private ExtensionPackageStatus $status;
 
@@ -66,6 +69,7 @@ class ExtensionPackage
         ?DateTimeImmutable $modifiedAt = null,
         ?string $manifestVersion = null,
         ?string $installedVersion = null,
+        ?string $availableVersion = null,
     ) {
         $this->uid = Uid::assert($uid, 'Extension package UID');
         $this->scopeValues = self::normalizeScopes($scopes);
@@ -73,6 +77,7 @@ class ExtensionPackage
         $this->path = $path;
         $this->manifestVersion = $manifestVersion;
         $this->installedVersion = $installedVersion;
+        $this->availableVersion = $availableVersion;
         $this->status = $status;
         $this->metadata = $metadata;
         $this->modifiedAt = $modifiedAt ?? new DateTimeImmutable();
@@ -127,9 +132,28 @@ class ExtensionPackage
         return $this->installedVersion;
     }
 
+    public function availableVersion(): ?string
+    {
+        return $this->availableVersion;
+    }
+
     public function status(): ExtensionPackageStatus
     {
         return $this->status;
+    }
+
+    public function updateAvailableVersion(?string $availableVersion): bool
+    {
+        $availableVersion = is_string($availableVersion) && '' !== trim($availableVersion) ? trim($availableVersion) : null;
+
+        if ($this->availableVersion === $availableVersion) {
+            return false;
+        }
+
+        $this->availableVersion = $availableVersion;
+        $this->touch();
+
+        return true;
     }
 
     /**

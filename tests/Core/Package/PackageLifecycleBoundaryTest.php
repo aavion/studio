@@ -442,6 +442,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
     {
         $this->writeTestFile($this->projectDir, 'packages/'.$packageName.'/.manifest', <<<'MANIFEST'
             PACKAGE_AUTHOR=Aavion Test Fixtures
+            PACKAGE_SLUG=demo-module
             PACKAGE_NAME=Demo Module
             PACKAGE_DESCRIPTION=Lifecycle boundary demo package.
             PACKAGE_VERSION=1.0.1
