@@ -9,6 +9,7 @@ use App\Core\Config\Config;
 use App\Navigation\Event\NavigationBuilderEvent;
 use App\Navigation\NavigationBuilder;
 use App\Navigation\NavigationItem;
+use Doctrine\DBAL\Connection;
 use RuntimeException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -332,6 +333,49 @@ final class NavigationBuilderTest extends KernelTestCase
         self::assertNotContains('Group Blocked', array_column($navigation, 'label'));
     }
 
+    public function testItFiltersPersistedNavigationItemsByAccessColumns(): void
+    {
+        self::bootKernel();
+        $connection = self::getContainer()->get(Connection::class);
+        self::assertInstanceOf(Connection::class, $connection);
+        $uids = [
+            '30000000-0000-0000-0000-000000000961',
+            '30000000-0000-0000-0000-000000000962',
+        ];
+
+        try {
+            $this->insertMenuItem($connection, $uids[0], 'Editor Area', '/editor-area', 3, null, 35);
+            $this->insertMenuItem($connection, $uids[1], 'Project Team', '/project-team', null, ['content_team'], 36);
+
+            $anonymousNavigation = self::getContainer()->get(NavigationBuilder::class)->build(
+                'main',
+                'en',
+                actor: AccessActor::anonymous(),
+            );
+            $editorNavigation = self::getContainer()->get(NavigationBuilder::class)->build(
+                'main',
+                'en',
+                actor: AccessActor::fromAccess(3),
+            );
+            $groupNavigation = self::getContainer()->get(NavigationBuilder::class)->build(
+                'main',
+                'en',
+                actor: AccessActor::fromAccess(1, ['content_team']),
+            );
+
+            self::assertNotContains('Editor Area', array_column($anonymousNavigation, 'label'));
+            self::assertNotContains('Project Team', array_column($anonymousNavigation, 'label'));
+            self::assertContains('Editor Area', array_column($editorNavigation, 'label'));
+            self::assertNotContains('Project Team', array_column($editorNavigation, 'label'));
+            self::assertNotContains('Editor Area', array_column($groupNavigation, 'label'));
+            self::assertContains('Project Team', array_column($groupNavigation, 'label'));
+        } finally {
+            foreach ($uids as $uid) {
+                $connection->delete('site_menu_item', ['uid' => $uid]);
+            }
+        }
+    }
+
     public function testItAddsUserNavigationWithAccessAwareChildren(): void
     {
         self::bootKernel();
@@ -423,5 +467,31 @@ final class NavigationBuilderTest extends KernelTestCase
     private function setConfig(string $key, mixed $value): void
     {
         self::getContainer()->get(Config::class)->set($key, $value);
+    }
+
+    /**
+     * @param list<string>|null $groups
+     */
+    private function insertMenuItem(
+        Connection $connection,
+        string $uid,
+        string $label,
+        string $targetValue,
+        ?int $minLevel,
+        ?array $groups,
+        int $sortOrder,
+    ): void {
+        $connection->insert('site_menu_item', [
+            'uid' => $uid,
+            'menu_uid' => '30000000-0000-0000-0000-000000000001',
+            'parent_uid' => null,
+            'sort_order' => $sortOrder,
+            'labels' => json_encode(['en' => $label], JSON_THROW_ON_ERROR),
+            'target_type' => 'url',
+            'target_value' => $targetValue,
+            'view_min_level' => $minLevel,
+            'view_group_identifiers' => null === $groups ? null : json_encode($groups, JSON_THROW_ON_ERROR),
+            'metadata' => json_encode(['test' => true], JSON_THROW_ON_ERROR),
+        ]);
     }
 }

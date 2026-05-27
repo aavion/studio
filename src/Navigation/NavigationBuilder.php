@@ -92,15 +92,12 @@ final readonly class NavigationBuilder
             }
 
             $rows = $this->connection->fetchAllAssociative(
-                'SELECT uid, parent_uid, sort_order, labels, target_type, target_value, metadata
+                'SELECT uid, parent_uid, sort_order, labels, target_type, target_value, view_min_level, view_group_identifiers, metadata
                  FROM site_menu_item
                  WHERE menu_uid = :menu_uid
-                   AND (view_min_level IS NULL OR view_min_level <= 0)
-                   AND (view_group_identifiers IS NULL OR view_group_identifiers = :empty_json)
                  ORDER BY parent_uid ASC, sort_order ASC, uid ASC',
                 [
                     'menu_uid' => $menu['uid'],
-                    'empty_json' => '[]',
                 ],
             );
         } catch (Throwable) {
@@ -117,11 +114,38 @@ final readonly class NavigationBuilder
                 (string) $row['target_value'],
                 null === $row['parent_uid'] ? null : (string) $row['parent_uid'],
                 (int) $row['sort_order'],
-                $this->decodeJson((string) $row['metadata']),
+                $this->metadata($row),
             );
         }
 
         return $items;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     *
+     * @return array<string, mixed>
+     */
+    private function metadata(array $row): array
+    {
+        $metadata = $this->decodeJson((string) $row['metadata']);
+        $minLevel = null === $row['view_min_level'] ? null : (int) $row['view_min_level'];
+        $accessGroups = null === $row['view_group_identifiers']
+            ? []
+            : $this->decodeJson((string) $row['view_group_identifiers']);
+
+        if (null !== $minLevel && 0 < $minLevel) {
+            $metadata['min_access_level'] = $minLevel;
+        }
+
+        if ([] !== $accessGroups) {
+            $metadata['access_groups'] = array_values(array_filter(
+                $accessGroups,
+                static fn (mixed $group): bool => is_string($group),
+            ));
+        }
+
+        return $metadata;
     }
 
     /**
