@@ -380,6 +380,22 @@ final class BackendControllerTest extends WebTestCase
             @unlink($existingLogFile);
         }
         file_put_contents($logFile, '[2099-01-01T10:00:00.000000+00:00] studio_access.INFO: access.request {"method":"GET","path":"/admin/logs","route":"backend_admin_route","http_status":200,"ip":"127.0.0.1","city":"n/a","state":"n/a","country":"n/a","continent":"n/a"} []'.PHP_EOL);
+        $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
+        $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);
+        $connection->insert('access_statistic_event', [
+            'uid' => '99999999-0000-0000-0000-000000000901',
+            'occurred_at' => '2099-01-01 10:00:00',
+            'visitor_id' => hash('sha256', 'test-visitor'),
+            'method' => 'GET',
+            'path' => '/admin/logs',
+            'route' => 'backend_admin_route',
+            'http_status' => 200,
+            'city' => 'n/a',
+            'state' => 'n/a',
+            'country' => 'n/a',
+            'continent' => 'n/a',
+            'metadata' => '{}',
+        ]);
 
         try {
             $client->request('GET', '/admin/logs?source=access&q=/admin/logs');
@@ -394,6 +410,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('body', 'Unique visitors');
         } finally {
             @unlink($logFile);
+            $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);
         }
     }
 

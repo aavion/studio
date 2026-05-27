@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Core\Log;
 
+use App\Core\Statistics\AccessStatisticsRecorderInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 final readonly class AccessLogSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private AccessLoggerInterface $accessLogger)
+    public function __construct(
+        private AccessLoggerInterface $accessLogger,
+        private AccessStatisticsRecorderInterface $accessStatisticsRecorder,
+    )
     {
     }
 
@@ -28,6 +32,7 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
         }
 
         $this->accessLogger->log($event->getRequest(), $event->getResponse());
+        $this->accessStatisticsRecorder->record($event->getRequest(), $event->getResponse());
     }
 
     private function shouldSkip(string $path): bool

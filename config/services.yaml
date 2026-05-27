@@ -186,10 +186,12 @@ services:
             $logDir: '%kernel.logs_dir%'
             $environment: '%kernel.environment%'
 
-    App\Core\Statistics\AccessStatisticsAggregator:
+    App\Core\Statistics\AccessStatisticsRecorderInterface:
+        alias: App\Core\Statistics\DatabaseAccessStatisticsRecorder
+
+    App\Core\Statistics\DatabaseAccessStatisticsRecorder:
         arguments:
-            $logDir: '%kernel.logs_dir%'
-            $environment: '%kernel.environment%'
+            $visitorSecret: '%kernel.secret%'
 
     App\Core\Statistics\AccessStatisticsStoreInterface:
         alias: App\Core\Statistics\FileAccessStatisticsStore

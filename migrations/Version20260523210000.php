@@ -65,6 +65,25 @@ final class Version20260523210000 extends AbstractMigration
         $stateMarker->addIndex(['marker_key', 'marker_at'], 'idx_state_marker_key_at');
         $stateMarker->addIndex(['subject_type', 'marker_by'], 'idx_state_marker_by');
 
+        $accessStatistic = $schema->createTable('access_statistic_event');
+        $accessStatistic->addColumn('uid', 'string', ['length' => 36]);
+        $accessStatistic->addColumn('occurred_at', 'datetime_immutable');
+        $accessStatistic->addColumn('visitor_id', 'string', ['length' => 64]);
+        $accessStatistic->addColumn('method', 'string', ['length' => 16]);
+        $accessStatistic->addColumn('path', 'string', ['length' => 1024]);
+        $accessStatistic->addColumn('route', 'string', ['length' => 190]);
+        $accessStatistic->addColumn('http_status', 'integer');
+        $accessStatistic->addColumn('city', 'string', ['length' => 80]);
+        $accessStatistic->addColumn('state', 'string', ['length' => 80]);
+        $accessStatistic->addColumn('country', 'string', ['length' => 80]);
+        $accessStatistic->addColumn('continent', 'string', ['length' => 80]);
+        $accessStatistic->addColumn('metadata', 'json');
+        $this->addPrimaryKey($accessStatistic, 'uid');
+        $accessStatistic->addIndex(['occurred_at'], 'idx_access_statistic_occurred_at');
+        $accessStatistic->addIndex(['visitor_id', 'occurred_at'], 'idx_access_statistic_visitor_at');
+        $accessStatistic->addIndex(['route', 'occurred_at'], 'idx_access_statistic_route_at');
+        $accessStatistic->addIndex(['http_status', 'occurred_at'], 'idx_access_statistic_status_at');
+
         $aclGroup = $schema->createTable('acl_group');
         $aclGroup->addColumn('uid', 'string', ['length' => 36]);
         $aclGroup->addColumn('identifier', 'string', ['length' => 80]);
@@ -280,6 +299,7 @@ final class Version20260523210000 extends AbstractMigration
         $schema->dropTable('acl_group');
         $schema->dropTable('package_setting_entry');
         $schema->dropTable('config_entry');
+        $schema->dropTable('access_statistic_event');
         $schema->dropTable('state_marker');
         $schema->dropTable('messenger_messages');
     }

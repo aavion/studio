@@ -4,20 +4,16 @@ declare(strict_types=1);
 
 namespace App\Core\Statistics;
 
-use App\Core\Log\MonologLineParser;
-use SplFileObject;
+use Doctrine\DBAL\Connection;
+use Throwable;
 
 final readonly class AccessStatisticsAggregator
 {
-    private const MAX_FILES = 30;
-    private const MAX_LINES_PER_FILE = 10000;
+    private const MAX_ROWS = 10000;
     private const TOP_LIMIT = 10;
 
-    public function __construct(
-        private string $logDir,
-        private string $environment,
-        private MonologLineParser $lineParser = new MonologLineParser(),
-    ) {
+    public function __construct(private Connection $connection)
+    {
     }
 
     /**
@@ -40,38 +36,28 @@ final readonly class AccessStatisticsAggregator
         $notFound = [];
         $countries = [];
         $visitors = [];
-        $files = $this->files();
 
-        foreach ($files as $file) {
-            foreach ($this->readLines($file) as $line) {
-                $entry = $this->lineParser->parse($line, $file);
+        foreach ($this->rows() as $row) {
+            ++$total;
+            $visitorId = $this->stringValue($row, 'visitor_id', '');
 
-                if ('studio_access' !== ($entry['channel'] ?? null)) {
-                    continue;
-                }
-
-                $context = is_array($entry['context'] ?? null) ? $entry['context'] : [];
-                ++$total;
-                $visitorKey = $this->visitorKey($context);
-
-                if (null !== $visitorKey) {
-                    $visitors[$visitorKey] = true;
-                }
-
-                $status = $this->intContext($context, 'http_status');
-                $family = $this->statusFamily($status);
-                ++$statusFamilies[$family];
-
-                $route = $this->routeLabel($context);
-                $routes[$route] = ($routes[$route] ?? 0) + 1;
-
-                if (404 === $status) {
-                    $notFound[$route] = ($notFound[$route] ?? 0) + 1;
-                }
-
-                $country = $this->stringContext($context, 'country', 'n/a');
-                $countries[$country] = ($countries[$country] ?? 0) + 1;
+            if ('' !== $visitorId) {
+                $visitors[$visitorId] = true;
             }
+
+            $status = $this->intValue($row, 'http_status');
+            $family = $this->statusFamily($status);
+            ++$statusFamilies[$family];
+
+            $route = $this->routeLabel($row);
+            $routes[$route] = ($routes[$route] ?? 0) + 1;
+
+            if (404 === $status) {
+                $notFound[$route] = ($notFound[$route] ?? 0) + 1;
+            }
+
+            $country = $this->stringValue($row, 'country', 'n/a');
+            $countries[$country] = ($countries[$country] ?? 0) + 1;
         }
 
         return [
@@ -82,111 +68,56 @@ final readonly class AccessStatisticsAggregator
             'top_routes' => $this->top($routes),
             'top_not_found' => $this->top($notFound),
             'top_countries' => $this->top($countries),
-            'source_files' => array_map('basename', $files),
+            'source_files' => [],
         ];
     }
 
     /**
-     * @return list<string>
+     * @return list<array<string, mixed>>
      */
-    private function files(): array
+    private function rows(): array
     {
-        $files = glob($this->logDir.'/'.$this->environment.'.studio-access-*.log') ?: [];
-        $files = array_values(array_filter($files, 'is_file'));
-
-        usort($files, static fn (string $left, string $right): int => [
-            filemtime($right) ?: 0,
-            basename($right),
-        ] <=> [
-            filemtime($left) ?: 0,
-            basename($left),
-        ]);
-
-        return array_slice($files, 0, self::MAX_FILES);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function readLines(string $file): array
-    {
-        $object = new SplFileObject($file, 'r');
-        $object->seek(PHP_INT_MAX);
-        $lastLine = $object->key();
-        $start = max(0, $lastLine - self::MAX_LINES_PER_FILE);
-        $lines = [];
-
-        for ($lineNumber = $lastLine; $lineNumber >= $start; --$lineNumber) {
-            $object->seek($lineNumber);
-            $line = trim((string) $object->current());
-
-            if ('' !== $line) {
-                $lines[] = $line;
-            }
+        try {
+            return $this->connection->fetchAllAssociative(
+                'SELECT visitor_id, method, path, route, http_status, country FROM access_statistic_event ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
+            );
+        } catch (Throwable) {
+            return [];
         }
-
-        return $lines;
     }
 
     /**
-     * @param array<string, mixed> $context
+     * @param array<string, mixed> $row
      */
-    private function intContext(array $context, string $key): int
+    private function routeLabel(array $row): string
     {
-        $value = $context[$key] ?? null;
-
-        return is_numeric($value) ? (int) $value : 0;
-    }
-
-    /**
-     * @param array<string, mixed> $context
-     */
-    private function stringContext(array $context, string $key, string $fallback): string
-    {
-        $value = $context[$key] ?? null;
-
-        return is_string($value) && '' !== trim($value) ? $value : $fallback;
-    }
-
-    /**
-     * @param array<string, mixed> $context
-     */
-    private function routeLabel(array $context): string
-    {
-        $route = $this->stringContext($context, 'route', '');
+        $route = $this->stringValue($row, 'route', '');
 
         if ('' !== $route && 'n/a' !== $route) {
             return $route;
         }
 
-        $method = $this->stringContext($context, 'method', 'GET');
-        $path = $this->stringContext($context, 'path', '/');
-
-        return $method.' '.$path;
+        return $this->stringValue($row, 'method', 'GET').' '.$this->stringValue($row, 'path', '/');
     }
 
     /**
-     * @param array<string, mixed> $context
+     * @param array<string, mixed> $row
      */
-    private function visitorKey(array $context): ?string
+    private function intValue(array $row, string $key): int
     {
-        $ip = $this->stringContext($context, 'proxy_client_ip', '');
+        $value = $row[$key] ?? null;
 
-        if ('' === $ip || 'n/a' === $ip) {
-            $ip = $this->stringContext($context, 'client_ip', '');
-        }
+        return is_numeric($value) ? (int) $value : 0;
+    }
 
-        if ('' === $ip || 'n/a' === $ip) {
-            $ip = $this->stringContext($context, 'ip', '');
-        }
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function stringValue(array $row, string $key, string $fallback): string
+    {
+        $value = $row[$key] ?? null;
 
-        if ('' === $ip || 'n/a' === $ip) {
-            return null;
-        }
-
-        $userAgent = strtolower($this->stringContext($context, 'user_agent', 'n/a'));
-
-        return hash('sha256', $ip.'|'.$userAgent);
+        return is_string($value) && '' !== trim($value) ? $value : $fallback;
     }
 
     private function statusFamily(int $status): string
