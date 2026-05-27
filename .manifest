@@ -3,7 +3,7 @@
 # APP_CHANNEL defines the target branch inside the specified repository.
 
 ##> aavion/studio manifest ###
-APP_VERSION=0.1.0
+APP_VERSION=0.2.0
 APP_DATE=2026-05-24
 APP_NAME=aavion Studio
 APP_AUTHOR=Dominik Letica

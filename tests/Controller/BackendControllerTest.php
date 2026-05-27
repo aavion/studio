@@ -192,6 +192,7 @@ final class BackendControllerTest extends WebTestCase
 
     public function testAdminRegisteredBackendViewRouteRendersThroughRegistry(): void
     {
+        $manifest = $this->rootManifest();
         $client = self::createClient();
         $client->loginUser($this->createUserWithLevel(8));
         $client->request('GET', '/admin/packages');
@@ -207,8 +208,8 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorNotExists('.studio-page-actions form input[name="_backend_action"][value="cache_clear"]');
         self::assertSelectorExists('.studio-backend-nav .is-collapsed a[href="/admin/settings"][aria-expanded="false"]');
         self::assertSelectorNotExists('.studio-backend-nav a[href="/admin/settings/general"]');
-        self::assertSelectorTextContains('.studio-table', 'aavion Studio');
-        self::assertSelectorTextContains('.studio-table', '0.1.0');
+        self::assertSelectorTextContains('.studio-table', $manifest['APP_NAME']);
+        self::assertSelectorTextContains('.studio-table', $manifest['APP_VERSION']);
         self::assertSelectorTextContains('.studio-table', 'Active');
         self::assertSelectorTextContains('.studio-table', 'System template');
         self::assertSelectorExists('.studio-table tr.is-immutable[data-package-name="system"][data-immutable="true"]');
@@ -223,15 +224,15 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="asset_rebuild"]');
         self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="cache_clear"]');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'Frontend themes');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'aavion Studio');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', '0.1.0');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', $manifest['APP_NAME']);
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', $manifest['APP_VERSION']);
         self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] a[href="/admin/packages/system"]');
         self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card.is-immutable[data-package-name="system"][data-theme-status="active"]');
         self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-preview');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card[data-package-name="system"]', 'Active');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', 'Backend themes');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', 'aavion Studio');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', '0.1.0');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', $manifest['APP_NAME']);
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', $manifest['APP_VERSION']);
         self::assertSelectorExists('.studio-theme-overview[data-theme-section="backend"] a[href="/admin/packages/system"]');
         self::assertSelectorExists('.studio-theme-overview[data-theme-section="backend"] .studio-theme-card.is-immutable[data-package-name="system"][data-theme-status="active"]');
 
@@ -932,6 +933,26 @@ final class BackendControllerTest extends WebTestCase
 
         $entityManager->remove($package);
         $entityManager->flush();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function rootManifest(): array
+    {
+        $manifest = [];
+        $lines = file(dirname(__DIR__, 2).'/.manifest', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+
+        foreach ($lines as $line) {
+            if (str_starts_with(trim($line), '#') || !str_contains($line, '=')) {
+                continue;
+            }
+
+            [$key, $value] = explode('=', $line, 2);
+            $manifest[trim($key)] = trim($value);
+        }
+
+        return $manifest;
     }
 
     private function restoreSetupMarker(mixed $serverValue, mixed $envValue, mixed $putenvValue): void

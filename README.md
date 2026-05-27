@@ -1,6 +1,6 @@
 # aavion.studio
 
-> **Version**: 0.1.0-dev  
+> **Version**: 0.2.0-dev  
 > **Status**: Active development  
 > **Updated**: 2026-05-27  
 > **Owner**: Dominik Letica  
