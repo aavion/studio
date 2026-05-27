@@ -131,6 +131,10 @@ final readonly class PackageRegistryHandler
                     MessageLevel::Success,
                 );
             }
+
+            if ($changed && ExtensionPackageStatus::Active === $package->status()) {
+                $assetRebuildTriggers[] = $this->assetRebuildTrigger($packageName, 'package_registry_active_updated');
+            }
         }
 
         foreach ($packages as $packageName => $package) {

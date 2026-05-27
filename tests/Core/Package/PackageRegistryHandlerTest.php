@@ -140,6 +140,26 @@ final class PackageRegistryHandlerTest extends KernelTestCase
         self::assertSame('1.1.0', $this->metadata($row)['manifest']['PACKAGE_VERSION']);
     }
 
+    public function testItQueuesAssetRebuildWhenActivePackageUpdates(): void
+    {
+        $this->insertPackage('demo-module', 'packages/demo-module', '1.0.0', 'active', installedVersion: '1.0.0');
+        $this->writePackageManifest('demo-module', '1.1.0');
+        $messageBus = new RecordingMessageBus();
+
+        $result = $this->handler($messageBus)->synchronize($this->candidates());
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame([[
+            'package' => 'demo-module',
+            'action' => 'updated',
+            'status' => 'active',
+        ]], $result->value());
+        self::assertSame('active', $this->packageRow('demo-module')['status']);
+        self::assertCount(1, $messageBus->messages());
+        self::assertInstanceOf(PackageAssetRebuildMessage::class, $messageBus->messages()[0]);
+        self::assertSame('package_registry_state_exit', $messageBus->messages()[0]->trigger());
+    }
+
     public function testItMarksValidationFailuresAsFaulty(): void
     {
         $this->writePackageManifest('broken-module', '1.0.0');
