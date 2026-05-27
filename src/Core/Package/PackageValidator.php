@@ -39,7 +39,7 @@ final class PackageValidator
      */
     public function validate(PackageCandidate $candidate, PackageSpec $spec): WorkflowResult
     {
-        $issues = [];
+        $issues = $this->validatePackageSlug($candidate);
 
         foreach ($spec->requiredFiles() as $path) {
             $absolutePath = $candidate->directory().DIRECTORY_SEPARATOR.$path;
@@ -120,6 +120,44 @@ final class PackageValidator
                 'inventory_count' => count($inspection->inventory()),
             ]),
         ]);
+    }
+
+    /**
+     * @return list<Message>
+     */
+    private function validatePackageSlug(PackageCandidate $candidate): array
+    {
+        if ('package' !== $candidate->source()->name()) {
+            return [];
+        }
+
+        $slug = trim((string) $candidate->manifest()->get('PACKAGE_SLUG', ''));
+
+        if ('' === $slug) {
+            return [
+                Message::create(
+                    MessageCode::MANIFEST_MISSING_REQUIRED_KEY,
+                    MessageKey::MANIFEST_MISSING_REQUIRED_KEY,
+                    ['%key%' => 'PACKAGE_SLUG'],
+                    ['source' => $candidate->source()->name(), 'path' => $candidate->manifestPath(), 'key' => 'PACKAGE_SLUG'],
+                    MessageLevel::Error,
+                ),
+            ];
+        }
+
+        if (!PackageManifestSpec::isValidSlug($slug)) {
+            return [
+                Message::create(
+                    MessageCode::PACKAGE_IDENTIFIER_INVALID,
+                    MessageKey::PACKAGE_IDENTIFIER_INVALID,
+                    ['%identifier%' => $slug],
+                    ['source' => $candidate->source()->name(), 'path' => $candidate->manifestPath(), 'key' => 'PACKAGE_SLUG', 'slug' => $slug],
+                    MessageLevel::Error,
+                ),
+            ];
+        }
+
+        return [];
     }
 
     /**

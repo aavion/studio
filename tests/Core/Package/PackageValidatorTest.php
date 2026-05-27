@@ -110,6 +110,34 @@ final class PackageValidatorTest extends TestCase
         self::assertContains('.manifest', $result->context()['inventory']);
     }
 
+    public function testItRequiresPackageSlugForPackageCandidates(): void
+    {
+        $candidate = new PackageCandidate(
+            PackageSource::children('package', 'packages'),
+            $this->packageDir,
+            $this->packageDir.'/.manifest',
+            new Manifest(['PACKAGE_NAME' => 'System']),
+        );
+
+        $result = (new PackageValidator())->validate($candidate, PackageSpec::create());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('manifest.missing_required_key', $result->firstIssue()?->code());
+        self::assertSame('PACKAGE_SLUG', $result->firstIssue()?->context()['key']);
+    }
+
+    public function testItRejectsInvalidPackageSlugForPackageCandidates(): void
+    {
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => '../system']),
+            PackageSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.identifier.invalid', $result->firstIssue()?->code());
+        self::assertSame('PACKAGE_SLUG', $result->firstIssue()?->context()['key']);
+    }
+
     public function testItLimitsInventoryDepth(): void
     {
         $this->writeFile('one/two/three/file.txt', 'nested');
@@ -375,7 +403,7 @@ final class PackageValidatorTest extends TestCase
             PackageSource::children('package', 'packages'),
             $this->packageDir,
             $this->packageDir.'/.manifest',
-            new Manifest(['PACKAGE_NAME' => 'System']),
+            new Manifest(['PACKAGE_SLUG' => 'system', 'PACKAGE_NAME' => 'System']),
         );
     }
 
@@ -393,7 +421,7 @@ final class PackageValidatorTest extends TestCase
             PackageSource::children('package', 'packages'),
             $this->packageDir,
             $this->packageDir.'/.manifest',
-            new Manifest(['PACKAGE_NAME' => 'System', ...$manifest]),
+            new Manifest(['PACKAGE_SLUG' => 'system', 'PACKAGE_NAME' => 'System', ...$manifest]),
         );
     }
 

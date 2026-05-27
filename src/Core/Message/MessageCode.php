@@ -121,6 +121,7 @@ final class MessageCode
     public const CONFIG_VALUE_INVALID = 'config.value_invalid';
     public const CONTENT_LANGUAGE_FALLBACK = 'content.language_fallback';
     public const CONTENT_VARIANT_FALLBACK = 'content.variant_fallback';
+    public const PACKAGE_IDENTIFIER_INVALID = 'package.identifier.invalid';
     public const SETUP_STEP_FAILED = 'setup.step_failed';
     public const SETUP_ENVIRONMENT_FILE_UNREADABLE = 'setup.environment_file_unreadable';
     public const SETUP_ENVIRONMENT_FILE_WRITE_FAILED = 'setup.environment_file_write_failed';

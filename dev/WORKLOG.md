@@ -83,6 +83,7 @@
 ### 2026-05-27
 - Added the first staged package ZIP installer: Admin Package Management exposes a ZIP upload dialog, uploads are staged below `var/cache/{APP_ENV}/package-installs`, live operations verify manifests and package lint rules, pause with a review-required confirmation, then replace existing package folders, run discovery, and restore activation when the overwritten package was active.
 - Added required `PACKAGE_SLUG` package manifest support so registry identifiers and ZIP install target folders use a stable manifest-declared slug instead of inferring only from the discovered folder name.
+- Hardened `PackageValidator` so package candidates without a valid `PACKAGE_SLUG` fail validation even after manifest-level checks have already run.
 - Prepared package update metadata by adding nullable registry storage for a future externally discovered available version and surfacing it through the package overview model.
 - Adjusted live operation result aggregation so `requires_review` action context, including continuation metadata, is preserved in the terminal operation result without changing normal success result context semantics.
 - Hardened the live Operations/ActionLog foundation with tagged queue providers, stale-run detection, persisted start failures, expired-run cleanup, localized polling payload messages, and a `studio:operations:cleanup` command.
