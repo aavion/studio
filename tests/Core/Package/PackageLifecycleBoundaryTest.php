@@ -221,6 +221,45 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         self::assertSame('display.mode', $registry->packageSettings()[0]->key());
     }
 
+    public function testPackagePhpLoaderDoesNotKeepPartialRuntimeContributionsAfterFailure(): void
+    {
+        $this->insertPackage('broken-module', ['module'], 'active');
+        $messageBus = new RecordingMessageBus();
+        $this->writeTestFile($this->projectDir, 'packages/broken-module/package.php', <<<'PHP'
+            <?php
+
+            use App\View\Injection\StaticViewInjection;
+            use App\View\Injection\ViewSurface;
+
+            return [
+                new StaticViewInjection(
+                    'pkg-broken-module-route',
+                    ViewSurface::Public,
+                    'broken-module',
+                    'pkg.broken-module.widget',
+                    '@frontend/broken-module/frontend.html.twig',
+                ),
+                new stdClass(),
+            ];
+            PHP);
+        $registry = new PackageRuntimeContributionRegistry();
+
+        $result = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            new PackageAssetRebuildDispatcher($messageBus, new NullWorkflowResultMessageReporter()),
+            'test',
+            runtimeContributions: $registry,
+        ))->loadActivePackages();
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame([], $registry->staticViewInjections());
+        self::assertSame('faulty', $this->packageStatus('broken-module'));
+    }
+
     public function testPackagePhpLoaderCanReloadPackagePhpAcrossLoaderInstances(): void
     {
         $this->insertPackage('demo-module', ['module'], 'active');
@@ -345,6 +384,19 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         self::assertSame(['demo-module'], $this->cleanupRunner->packages);
         self::assertFalse($this->packageRowExists('demo-module'));
         self::assertSame('purged', $result->value()['changes'][0]['action']);
+    }
+
+    public function testPackageRemoverPurgeBlocksNonRemovedPackages(): void
+    {
+        $this->insertPackage('demo-module', ['module'], 'active');
+
+        $result = $this->remover()->purge('demo-module');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.lifecycle.status_blocked', $result->firstIssue()?->code());
+        self::assertSame([], $this->cleanupRunner->packages);
+        self::assertTrue($this->packageRowExists('demo-module'));
+        self::assertSame('active', $this->packageStatus('demo-module'));
     }
 
     public function testPackageFaultResetterReturnsValidatedFaultyPackageToInactive(): void

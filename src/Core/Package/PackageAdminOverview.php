@@ -126,9 +126,9 @@ final readonly class PackageAdminOverview
             ExtensionPackageStatus::Removed => [],
         };
 
-        $cleanupActions = [
-            $this->action($package, 'purge', 'danger'),
-        ];
+        $cleanupActions = ExtensionPackageStatus::Removed === $package->status()
+            ? [$this->action($package, 'purge', 'danger')]
+            : [];
 
         if (ExtensionPackageStatus::Removed !== $package->status()) {
             $cleanupActions[] = $this->action($package, 'delete', 'danger');

@@ -432,7 +432,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('.studio-markdown h1', 'Lifecycle README');
             self::assertSelectorTextContains('.studio-markdown strong', 'markdown');
             self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/activate"]');
-            self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/purge"]');
+            self::assertSelectorNotExists('a[href="/admin/packages/test-lifecycle/purge"]');
             self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/delete"]');
 
             $client->request('GET', '/admin/packages/test-lifecycle/activate');
@@ -447,9 +447,11 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Delete data for Test Lifecycle');
-            self::assertSelectorTextContains('.studio-table', 'purged');
-            self::assertSelectorTextContains('.studio-alert-warning', 'This step is irreversible.');
-            self::assertSelectorExists('button.studio-button-danger[type="submit"]');
+            self::assertStringContainsString(
+                'Package &quot;test-lifecycle&quot; cannot change lifecycle state while it is &quot;inactive&quot;.',
+                (string) $client->getResponse()->getContent(),
+            );
+            self::assertSelectorNotExists('button.studio-button-danger[type="submit"]');
 
             $client->request('GET', '/admin/packages/test-lifecycle/delete');
 

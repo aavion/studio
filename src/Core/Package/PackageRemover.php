@@ -190,6 +190,10 @@ final readonly class PackageRemover
             return $this->report($this->packageNotFound($packageName), 'package.purge', ['package' => $packageName]);
         }
 
+        if (ExtensionPackageStatus::Removed !== $package->status()) {
+            return $this->report($this->statusBlocked($package, 'package.purge'), 'package.purge', ['package' => $packageName]);
+        }
+
         $cleanup = $this->cleanupRunner->cleanup($package);
 
         if (!$cleanup->isSuccess()) {
@@ -395,6 +399,19 @@ final readonly class PackageRemover
                 MessageKey::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
                 ['%package%' => $packageName],
                 ['package' => $packageName],
+                MessageLevel::Warning,
+            ),
+        ]);
+    }
+
+    private function statusBlocked(ExtensionPackage $package, string $operation): WorkflowResult
+    {
+        return WorkflowResult::blocked([
+            Message::create(
+                MessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                ['%package%' => $package->packageName(), '%status%' => $package->status()->value],
+                ['package' => $package->packageName(), 'status' => $package->status()->value, 'operation' => $operation],
                 MessageLevel::Warning,
             ),
         ]);

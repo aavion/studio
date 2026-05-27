@@ -10,6 +10,7 @@ use App\Core\Manifest\ManifestParser;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageFaultResetter;
@@ -186,9 +187,9 @@ final readonly class PackageLifecycleAdmin
             ExtensionPackageStatus::Removed => [],
         };
 
-        $cleanupActions = [
-            $this->action($package, self::ACTION_PURGE, 'danger'),
-        ];
+        $cleanupActions = ExtensionPackageStatus::Removed === $package->status()
+            ? [$this->action($package, self::ACTION_PURGE, 'danger')]
+            : [];
 
         if (ExtensionPackageStatus::Removed !== $package->status()) {
             $cleanupActions[] = $this->action($package, self::ACTION_DELETE, 'danger');
@@ -232,6 +233,18 @@ final readonly class PackageLifecycleAdmin
      */
     private function purgePlan(array $package): WorkflowResult
     {
+        if (ExtensionPackageStatus::Removed->value !== ($package['status'] ?? null)) {
+            return WorkflowResult::blocked([
+                Message::create(
+                    MessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                    MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                    ['%package%' => $package['package_name'], '%status%' => (string) ($package['status'] ?? 'unknown')],
+                    ['package' => $package['package_name'], 'status' => $package['status'] ?? null, 'action' => self::ACTION_PURGE],
+                    MessageLevel::Warning,
+                ),
+            ]);
+        }
+
         return WorkflowResult::success([
             'package' => $package['package_name'],
             'changes' => [[

@@ -58,6 +58,13 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
 
     public function add(ExtensionPackage $package, mixed $contribution): void
     {
+        $staged = clone $this;
+        $staged->addToRegistry($package, $contribution);
+        $this->replaceWith($staged);
+    }
+
+    private function addToRegistry(ExtensionPackage $package, mixed $contribution): void
+    {
         if (null === $contribution) {
             return;
         }
@@ -107,7 +114,7 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
 
         if (is_iterable($contribution)) {
             foreach ($contribution as $item) {
-                $this->add($package, $item);
+                $this->addToRegistry($package, $item);
             }
 
             return;
@@ -117,6 +124,17 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
             'Unsupported runtime contribution returned by package "%s".',
             $package->packageName(),
         ));
+    }
+
+    private function replaceWith(self $registry): void
+    {
+        $this->staticViewInjections = $registry->staticViewInjections;
+        $this->configurableStaticViewInjectionSets = $registry->configurableStaticViewInjectionSets;
+        $this->dynamicViewInjections = $registry->dynamicViewInjections;
+        $this->packageSettingDefinitions = $registry->packageSettingDefinitions;
+        $this->staticViewProviders = $registry->staticViewProviders;
+        $this->dynamicViewProviders = $registry->dynamicViewProviders;
+        $this->packageSettingProviders = $registry->packageSettingProviders;
     }
 
     public function staticViewInjections(): array
