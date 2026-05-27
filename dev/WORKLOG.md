@@ -87,6 +87,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Extended the audit slice so admin maintenance actions, package ZIP verification starts, and package lifecycle actions report actor, action, mode, target, and result status to the `studio_audit` channel without letting audit failures interrupt the UI flow.
 - Completed the first log foundation slice: MessageLog now writes through Monolog's `studio_message` channel with redacted structured context, dedicated rotating `studio_message`/`studio_operation`/`studio_audit`/`studio_access` channels keep 30-day retention, access and audit service boundaries were added, authentication events enter the audit log, access entries use GeoIP `n/a` placeholders, and Admin Logs can read/filter known log files.
 - Started the log/statistics foundation plan: MessageLog moves to Monolog first, dedicated message/operation/audit/access channels follow, raw access logs keep 30-day retention with `n/a` GeoIP placeholders, long-term statistics remain a later DB-backed aggregate, and the first Admin Logs UI stays functional rather than visually final.
 - Continued package/design review hardening: registry asset rebuild dispatch failures now trigger one synchronous rebuild fallback instead of silently leaving stale assets, package-install rollback restores saved package statuses even when rollback discovery reports issues, and Admin Operations detail pages expose CSRF-protected continuation for review-required live runs.

@@ -78,6 +78,8 @@ Keep audit records for:
 - role/ACL updates;
 - destructive operations;
 - package activation or removal;
+- package ZIP verification or installation starts;
+- admin maintenance actions such as discovery, rebuild, and cache clearing;
 - backup and restore actions;
 - configuration changes.
 

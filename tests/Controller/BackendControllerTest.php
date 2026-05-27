@@ -406,9 +406,13 @@ final class BackendControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $demoPackages = ['demo-module', 'demo-frontend-theme', 'demo-captcha-provider'];
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
         foreach ($demoPackages as $packageName) {
             $this->removePackageByName($packageName);
+        }
+        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
         }
 
         try {
@@ -434,6 +438,9 @@ final class BackendControllerTest extends WebTestCase
                 ExtensionPackage::class,
                 $entityManager->getRepository(ExtensionPackage::class)->findOneBy(['packageName' => 'demo-module']),
             );
+            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+            self::assertStringContainsString('backend.action.package_discovery', $auditLog);
+            self::assertStringContainsString('"result_status":"success"', $auditLog);
         } finally {
             foreach ($demoPackages as $packageName) {
                 $this->removePackageByName($packageName);

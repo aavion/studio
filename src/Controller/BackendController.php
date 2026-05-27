@@ -12,10 +12,11 @@ use App\Backend\BackendViewDefinition;
 use App\Backend\PackageLifecycleAdmin;
 use App\Core\Access\AccessActor;
 use App\Core\Config\Settings\CoreSettingsFormHandler;
+use App\Core\Log\AuditLoggerInterface;
+use App\Core\Log\LogFileBrowser;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
-use App\Core\Log\LogFileBrowser;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Operation\Live\LiveOperationStarter;
@@ -36,6 +37,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Throwable;
 
 final class BackendController extends AbstractController
 {
@@ -50,6 +52,7 @@ final class BackendController extends AbstractController
         private readonly PackageLifecycleAdmin $packageLifecycleAdmin,
         private readonly PackageZipInstaller $packageZipInstaller,
         private readonly LogFileBrowser $logFileBrowser,
+        private readonly AuditLoggerInterface $auditLogger,
         private readonly LiveOperationRunStore $liveOperationRunStore,
         private readonly LiveOperationStarter $liveOperationStarter,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
@@ -127,6 +130,9 @@ final class BackendController extends AbstractController
             ],
             'Verify package ZIP',
         );
+        $this->auditResult('package.install_verify_started', $result, [
+            'operation' => LiveOperationQueueFactory::PACKAGE_INSTALL_VERIFY,
+        ]);
 
         if ('1' === $this->stringField($request, '_operation_live')) {
             return $this->liveOperationResponse($result);
@@ -213,6 +219,11 @@ final class BackendController extends AbstractController
             }
 
             $result = $this->packageLifecycleAdmin->apply($packageName, $action);
+            $this->auditResult('package.lifecycle.'.$action, $result, [
+                'package' => $packageName,
+                'action' => $action,
+                'mode' => 'sync',
+            ]);
             $this->flashResult($result);
 
             if ($result->isSuccess()) {
@@ -500,6 +511,10 @@ final class BackendController extends AbstractController
             ], ['action' => $action]);
 
         $this->flashResult($result);
+        $this->auditResult('backend.action.'.$action, $result, [
+            'action' => $action,
+            'mode' => 'sync',
+        ]);
 
         return $this->redirect($request->getPathInfo());
     }
@@ -515,6 +530,10 @@ final class BackendController extends AbstractController
                     context: ['action' => $action],
                 ),
             ], ['action' => $action]);
+        $this->auditResult('backend.action.'.$action, $result, [
+            'action' => $action,
+            'mode' => 'live',
+        ]);
 
         return $this->liveOperationResponse($result);
     }
@@ -527,8 +546,29 @@ final class BackendController extends AbstractController
             ['package' => $packageName, 'action' => $action, 'trigger' => 'admin_ui'],
             $label,
         );
+        $this->auditResult('package.lifecycle.'.$action, $result, [
+            'package' => $packageName,
+            'action' => $action,
+            'mode' => 'live',
+        ]);
 
         return $this->liveOperationResponse($result);
+    }
+
+    /**
+     * @param WorkflowResult<mixed> $result
+     * @param array<string, mixed> $context
+     */
+    private function auditResult(string $action, WorkflowResult $result, array $context = []): void
+    {
+        try {
+            $this->auditLogger->log($this->actor(), $action, [
+                ...$context,
+                'result_status' => $result->status()->value,
+            ]);
+        } catch (Throwable) {
+            return;
+        }
     }
 
     /**
