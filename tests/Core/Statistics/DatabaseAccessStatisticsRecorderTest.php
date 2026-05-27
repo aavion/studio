@@ -118,28 +118,10 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
         self::assertTrue(true);
     }
 
-    public function testItKeepsRecordingWhenStatisticsDisplayIsDisabled(): void
+    public function testItStopsRecordingWhenStatisticsAreDisabled(): void
     {
         $config = new Config($this->connection);
         $config->set(AccessStatisticsPolicy::ENABLED_KEY, false, ConfigValueType::Boolean);
-
-        (new DatabaseAccessStatisticsRecorder(
-            $this->connection,
-            new VisitorIdGenerator('test-secret'),
-            new UserAgentClassifier(),
-            new AccessRequestMetadata(),
-            new NullGeoIpResolver(),
-            new AccessStatisticsPolicy($config),
-        ))->record(Request::create('/docs', 'GET'), new Response('', 200));
-
-        self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM access_statistic_event'));
-    }
-
-    public function testItCanCoupleRecordingToStatisticsDisplayWhenConfigured(): void
-    {
-        $config = new Config($this->connection);
-        $config->set(AccessStatisticsPolicy::ENABLED_KEY, false, ConfigValueType::Boolean);
-        $config->set(AccessStatisticsPolicy::RECORDING_FOLLOWS_DISPLAY_KEY, true, ConfigValueType::Boolean);
 
         (new DatabaseAccessStatisticsRecorder(
             $this->connection,

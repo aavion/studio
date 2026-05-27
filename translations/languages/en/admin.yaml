@@ -320,7 +320,7 @@ admin:
     statistics:
       title: 'Statistics settings'
       foundation_title: 'Statistics configuration'
-      foundation_text: 'Access statistics can be disabled independently from raw access logging. Raw access logs remain available for operational security and are retained for 30 days.'
+      foundation_text: 'Access statistics recording and display can be disabled independently from raw access logging. Raw access logs remain available for operational security and are retained for 30 days.'
     packages:
       title: 'Package settings'
       foundation_title: 'Packages with settings'

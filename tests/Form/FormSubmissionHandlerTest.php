@@ -53,4 +53,17 @@ final class FormSubmissionHandlerTest extends TestCase
         self::assertSame(['admin.settings.form.errors.choice'], $result->errors()['mode']);
         self::assertSame(['admin.settings.form.errors.integer'], $result->errors()['sort_order']);
     }
+
+    public function testItTreatsMissingMultiSelectValuesAsAnEmptySelection(): void
+    {
+        $result = (new FormSubmissionHandler())->submit([
+            new FormFieldDefinition('audit_events', 'Audit events', ['authentication'], ConfigValueType::Json, FormInputType::MultiSelect, options: [
+                'authentication' => 'Authentication',
+                'settings' => 'Settings',
+            ]),
+        ], []);
+
+        self::assertTrue($result->isValid());
+        self::assertSame([], $result->value('audit_events'));
+    }
 }

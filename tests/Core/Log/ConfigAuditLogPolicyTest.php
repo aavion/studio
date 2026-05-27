@@ -47,6 +47,18 @@ final class ConfigAuditLogPolicyTest extends TestCase
         self::assertFalse($policy->allows('package.lifecycle.activate'));
     }
 
+    public function testItPreservesEmptyAuditCategorySelections(): void
+    {
+        $connection = $this->connection();
+        $config = new Config($connection);
+        $config->set(ConfigAuditLogPolicy::EVENTS_KEY, [], ConfigValueType::Json);
+
+        $policy = new ConfigAuditLogPolicy($config);
+
+        self::assertFalse($policy->allows('auth.login_success'));
+        self::assertFalse($policy->allows('settings.core.save'));
+    }
+
     private function connection(): \Doctrine\DBAL\Connection
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);

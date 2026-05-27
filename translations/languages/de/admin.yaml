@@ -320,7 +320,7 @@ admin:
     statistics:
       title: 'Statistik-Einstellungen'
       foundation_title: 'Statistik-Konfiguration'
-      foundation_text: 'Zugriffsstatistiken können unabhängig vom Raw-Access-Logging deaktiviert werden. Raw-Access-Logs bleiben für operative Sicherheit verfügbar und werden 30 Tage aufbewahrt.'
+      foundation_text: 'Aufzeichnung und Anzeige von Zugriffsstatistiken können unabhängig vom Raw-Access-Logging deaktiviert werden. Raw-Access-Logs bleiben für operative Sicherheit verfügbar und werden 30 Tage aufbewahrt.'
     packages:
       title: 'Paket-Einstellungen'
       foundation_title: 'Pakete mit Einstellungen'
