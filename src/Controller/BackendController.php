@@ -15,6 +15,10 @@ use App\Core\Config\Settings\CoreSettingsFormHandler;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Operation\Live\LiveOperationQueueFactory;
+use App\Core\Operation\Live\LiveOperationRunStore;
+use App\Core\Operation\Live\LiveOperationStarter;
+use App\Core\Output\JsonOutputRenderer;
 use App\Core\Package\Settings\PackageSettingsFormHandler;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\UserAccount;
@@ -41,7 +45,10 @@ final class BackendController extends AbstractController
         private readonly PackageSettingsFormHandler $packageSettingsFormHandler,
         private readonly BackendActions $backendActions,
         private readonly PackageLifecycleAdmin $packageLifecycleAdmin,
+        private readonly LiveOperationRunStore $liveOperationRunStore,
+        private readonly LiveOperationStarter $liveOperationStarter,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
+        private readonly JsonOutputRenderer $json,
         private readonly SetupRunner $setupRunner,
         private readonly SetupWebInputFactory $setupWebInputFactory,
     ) {
@@ -136,6 +143,10 @@ final class BackendController extends AbstractController
                 return $this->redirect($request->getPathInfo());
             }
 
+            if ('1' === $this->stringField($request, '_operation_live')) {
+                return $this->handleLivePackageLifecycle($packageName, $action);
+            }
+
             $result = $this->packageLifecycleAdmin->apply($packageName, $action);
             $this->flashResult($result);
 
@@ -150,6 +161,31 @@ final class BackendController extends AbstractController
             'area' => BackendArea::Admin,
             'navigation' => $this->navigation($request, BackendArea::Admin),
             'review' => $review,
+        ]);
+    }
+
+    #[Route('/admin/operations/{operationId}', name: 'backend_admin_operation_detail', requirements: ['operationId' => '[a-f0-9]{32}'], methods: ['GET'])]
+    public function operationDetail(Request $request, string $operationId): Response
+    {
+        $access = $this->adminAccessResponse($request);
+
+        if (null !== $access) {
+            return $access;
+        }
+
+        $report = $this->liveOperationRunStore->report($operationId);
+
+        if (null === $report) {
+            return $this->httpError->render(Response::HTTP_NOT_FOUND, $request, context: [
+                'area' => BackendArea::Admin->value,
+                'operation_id' => $operationId,
+            ]);
+        }
+
+        return $this->render('@backend/admin/operations/detail.html.twig', [
+            'area' => BackendArea::Admin,
+            'navigation' => $this->navigation($request, BackendArea::Admin),
+            'operation_report' => $report,
         ]);
     }
 
@@ -218,6 +254,10 @@ final class BackendController extends AbstractController
 
         if (BackendArea::Setup === $area && '' === trim($path, '/')) {
             $templateVariables += $this->setupVariables($request);
+        }
+
+        if (BackendArea::Admin === $area && 'backend-admin-operations' === $view?->uid()) {
+            $templateVariables += $this->operationVariables();
         }
 
         return $this->render($result->template(), $templateVariables, new Response(status: $result->statusCode()));
@@ -304,6 +344,8 @@ final class BackendController extends AbstractController
             $result = $this->validFormToken($expectedFormId, $formId, $token)
                 ? $this->packageSettingsFormHandler->submit($context['package_name'], $request->request->all(), $this->actor()->userUid())
                 : $this->invalidCsrfResult($request);
+        } elseif ('backend-admin-operations' === $view->uid()) {
+            return $this->handleOperationsPost($request, $formId, $token);
         }
 
         if (!$result instanceof FormSubmissionResult) {
@@ -330,7 +372,13 @@ final class BackendController extends AbstractController
         $action = $this->stringField($request, '_backend_action');
         $formId = $this->stringField($request, '_form_id');
         $token = $this->stringField($request, '_csrf_token');
-        $result = $this->validFormToken('backend-action-'.$action, $formId, $token)
+        $validToken = $this->validFormToken('backend-action-'.$action, $formId, $token);
+
+        if ('1' === $this->stringField($request, '_operation_live')) {
+            return $this->handleLiveBackendAction($action, $validToken);
+        }
+
+        $result = $validToken
             ? $this->backendActions->run($action)
             : WorkflowResult::invalid([
                 Message::warning(
@@ -343,6 +391,108 @@ final class BackendController extends AbstractController
         $this->flashResult($result);
 
         return $this->redirect($request->getPathInfo());
+    }
+
+    private function handleLiveBackendAction(string $action, bool $validToken): Response
+    {
+        $result = $validToken
+            ? $this->backendActions->startLive($action)
+            : WorkflowResult::invalid([
+                Message::warning(
+                    MessageCode::E_INVALID_ARGUMENT,
+                    MessageKey::BACKEND_ACTION_INVALID_CSRF,
+                    context: ['action' => $action],
+                ),
+            ], ['action' => $action]);
+
+        return $this->liveOperationResponse($result);
+    }
+
+    private function handleLivePackageLifecycle(string $packageName, string $action): Response
+    {
+        $label = sprintf('Package %s %s', $packageName, $action);
+        $result = $this->liveOperationStarter->start(
+            LiveOperationQueueFactory::PACKAGE_LIFECYCLE,
+            ['package' => $packageName, 'action' => $action, 'trigger' => 'admin_ui'],
+            $label,
+        );
+
+        return $this->liveOperationResponse($result);
+    }
+
+    /**
+     * @param WorkflowResult<mixed> $result
+     */
+    private function liveOperationResponse(WorkflowResult $result): Response
+    {
+        $payload = $result->toArray();
+
+        if ($result->isSuccess() && is_array($result->value())) {
+            $value = $result->value();
+            $operationId = (string) ($value['operation_id'] ?? '');
+            $token = (string) ($value['token'] ?? '');
+
+            if ('' !== $operationId && '' !== $token) {
+                $payload['value']['status_url'] = $this->generateUrl('api_live_operation_status', [
+                    'operationId' => $operationId,
+                    'token' => $token,
+                ]);
+            }
+        }
+
+        return $this->json->render($payload, $result->isSuccess() ? Response::HTTP_ACCEPTED : Response::HTTP_BAD_REQUEST);
+    }
+
+    private function handleOperationsPost(Request $request, string $formId, string $token): Response
+    {
+        if (!$this->validFormToken('admin-operations', $formId, $token)) {
+            $this->addFlash('error', 'admin.operations.actions.invalid_csrf');
+
+            return $this->redirect($request->getPathInfo());
+        }
+
+        $action = $this->stringField($request, '_operations_action');
+
+        if ('cleanup' === $action) {
+            $result = $this->liveOperationRunStore->cleanup(3600);
+            $this->addFlash('success', [
+                'translation_key' => 'admin.operations.actions.cleanup_completed',
+                'parameters' => ['%removed%' => $result['removed']],
+            ]);
+
+            return $this->redirect($request->getPathInfo());
+        }
+
+        if ('clear_stale_lock' === $action && $this->liveOperationRunStore->clearRunnerLock(staleOnly: true, ttlSeconds: 3600)) {
+            $this->addFlash('success', 'admin.operations.actions.stale_lock_cleared');
+
+            return $this->redirect($request->getPathInfo());
+        }
+
+        if ('kill_stale_runner' === $action) {
+            $result = $this->liveOperationRunStore->killStaleRunner(3600);
+            $this->addFlash($result['killed'] || $result['lock_cleared'] ? 'success' : 'warning', [
+                'translation_key' => 'admin.operations.actions.kill_'.$result['reason'],
+                'parameters' => ['%pid%' => (string) ($result['pid'] ?? '')],
+            ]);
+
+            return $this->redirect($request->getPathInfo());
+        }
+
+        $this->addFlash('warning', 'admin.operations.actions.noop');
+
+        return $this->redirect($request->getPathInfo());
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function operationVariables(): array
+    {
+        return [
+            'operation_runs' => $this->liveOperationRunStore->summaries(),
+            'operation_lock' => $this->liveOperationRunStore->runnerLockStatus(3600),
+        ];
     }
 
     private function isBackendActionRequest(Request $request): bool

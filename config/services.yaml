@@ -25,6 +25,8 @@ services:
             tags: ['studio.dynamic_view_injection_provider']
         App\Core\Package\Settings\PackageSettingProviderInterface:
             tags: ['studio.package_setting_provider']
+        App\Core\Operation\Live\LiveOperationQueueProviderInterface:
+            tags: ['studio.live_operation_queue_provider']
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -146,6 +148,15 @@ services:
     App\Core\Asset\AssetRebuildQueueFactory:
         arguments:
             $projectDir: '%kernel.project_dir%'
+
+    App\Core\Operation\Live\LiveOperationRunStore:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
+    App\Core\Operation\Live\LiveOperationQueueFactory:
+        arguments:
+            $providers: !tagged_iterator studio.live_operation_queue_provider
 
     App\Security\MaintenanceModeSubscriber:
         arguments:

@@ -8,6 +8,8 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Operation\ActionQueue;
+use App\Core\Operation\Live\LiveOperationQueueFactory;
+use App\Core\Operation\Live\LiveOperationStarter;
 use App\Core\Operation\OperationExecutor;
 use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Package\PackageAssetRebuildDispatcher;
@@ -26,13 +28,14 @@ final readonly class BackendActions
         private PackageDiscoveryRunner $packageDiscoveryRunner,
         private PackageAssetRebuildDispatcher $assetRebuildDispatcher,
         private OperationExecutor $operationExecutor,
+        private LiveOperationStarter $liveOperationStarter,
     ) {
     }
 
     /**
      * @param list<string> $ids
      *
-     * @return list<array{id: string, label_key: string, variant: string}>
+     * @return list<array{id: string, label_key: string, variant: string, live: bool}>
      */
     public function definitions(array $ids = []): array
     {
@@ -41,16 +44,19 @@ final readonly class BackendActions
                 'id' => self::PACKAGE_DISCOVERY,
                 'label_key' => 'admin.actions.package_discovery.label',
                 'variant' => 'secondary',
+                'live' => true,
             ],
             self::ASSET_REBUILD => [
                 'id' => self::ASSET_REBUILD,
                 'label_key' => 'admin.actions.asset_rebuild.label',
                 'variant' => 'secondary',
+                'live' => true,
             ],
             self::CACHE_CLEAR => [
                 'id' => self::CACHE_CLEAR,
                 'label_key' => 'admin.actions.cache_clear.label',
                 'variant' => 'secondary',
+                'live' => true,
             ],
         ];
 
@@ -72,6 +78,38 @@ final readonly class BackendActions
             self::PACKAGE_DISCOVERY => ($this->packageDiscoveryRunner)('admin_ui'),
             self::ASSET_REBUILD => $this->assetRebuildDispatcher->dispatch($this->kernel->getEnvironment(), 'admin_ui'),
             self::CACHE_CLEAR => $this->clearCache(),
+            default => WorkflowResult::invalid([
+                Message::warning(
+                    MessageCode::BACKEND_ACTION_UNKNOWN,
+                    MessageKey::BACKEND_ACTION_UNKNOWN,
+                    ['%action%' => $action],
+                    ['action' => $action],
+                ),
+            ], ['action' => $action]),
+        };
+    }
+
+    /**
+     * @return WorkflowResult<array<string, mixed>>
+     */
+    public function startLive(string $action): WorkflowResult
+    {
+        return match ($action) {
+            self::PACKAGE_DISCOVERY => $this->liveOperationStarter->start(
+                LiveOperationQueueFactory::PACKAGE_DISCOVERY,
+                ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
+                'Package discovery',
+            ),
+            self::ASSET_REBUILD => $this->liveOperationStarter->start(
+                LiveOperationQueueFactory::PACKAGE_ASSET_REBUILD,
+                ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
+                'Asset rebuild',
+            ),
+            self::CACHE_CLEAR => $this->liveOperationStarter->start(
+                LiveOperationQueueFactory::BACKEND_CACHE_CLEAR,
+                ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
+                'Cache clear',
+            ),
             default => WorkflowResult::invalid([
                 Message::warning(
                     MessageCode::BACKEND_ACTION_UNKNOWN,

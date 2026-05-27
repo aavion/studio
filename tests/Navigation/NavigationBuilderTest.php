@@ -255,6 +255,7 @@ final class NavigationBuilderTest extends KernelTestCase
             'admin.navigation.users',
             'admin.navigation.scheduler',
             'admin.navigation.backups',
+            'admin.navigation.operations',
             'admin.navigation.logs',
             'admin.navigation.settings',
         ], array_column($navigation, 'label'));
@@ -265,6 +266,7 @@ final class NavigationBuilderTest extends KernelTestCase
             '/admin/users',
             '/admin/scheduler',
             '/admin/backups',
+            '/admin/operations',
             '/admin/logs',
             '/admin/settings',
         ], array_column($navigation, 'url'));
@@ -278,7 +280,7 @@ final class NavigationBuilderTest extends KernelTestCase
             'admin.navigation.security_settings',
             'admin.navigation.package_settings',
             'admin.navigation.scheduler_settings',
-        ], array_column($navigation[7]['children'], 'label'));
+        ], array_column($navigation[8]['children'], 'label'));
     }
 
     public function testItFiltersNavigationItemsByAccessLevel(): void

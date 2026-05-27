@@ -52,7 +52,14 @@
                 <p class="studio-muted">{{ 'admin.packages.lifecycle.no_changes'|trans }}</p>
             {% endif %}
 
-            <form method="post" action="{{ app.request.pathInfo }}">
+            <form
+                method="post"
+                action="{{ app.request.pathInfo }}"
+                data-controller="operation-overlay"
+                data-action="submit->operation-overlay#submit"
+                data-operation-overlay-enabled-value="true"
+                data-operation-overlay-redirect-on-success-value="{{ action_key == 'purge' ? '/admin/packages' : '/admin/packages/' ~ (package.package_name|url_encode) }}"
+            >
                 <input type="hidden" name="_form_id" value="package-lifecycle-{{ review.action }}-{{ package.package_name }}">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('package-lifecycle-' ~ review.action ~ '-' ~ package.package_name) }}">
                 <button class="studio-backend-button studio-button-{{ action_key in ['purge', 'delete'] ? 'danger' : 'primary' }}" type="submit">

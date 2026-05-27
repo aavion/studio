@@ -11,7 +11,7 @@ use Throwable;
 final readonly class CoreTranslationBootstrapper
 {
     public const SOURCE_DIRECTORY = 'translations/languages';
-    public const TARGET_PATTERN = 'translations/messages.%s.yaml';
+    public const TARGET_PATTERN = 'translations/runtime/messages.%s.yaml';
 
     /**
      * @return array{success: bool, locales: list<string>, files: int, error?: string}

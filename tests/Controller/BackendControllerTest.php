@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Core\ActionLog\ActionLogEntry;
+use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
 use App\Entity\AclGroup;
@@ -190,6 +193,7 @@ final class BackendControllerTest extends WebTestCase
             '/admin/users' => 'User management',
             '/admin/scheduler' => 'Scheduler',
             '/admin/backups' => 'Backup and restore',
+            '/admin/operations' => 'Operations',
             '/admin/logs' => 'Logs',
         ] as $path => $title) {
             $client->request('GET', $path);
@@ -197,6 +201,63 @@ final class BackendControllerTest extends WebTestCase
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', $title);
             self::assertSelectorExists(sprintf('.studio-backend-nav a[href="%s"][aria-current="page"]', $path));
+        }
+    }
+
+    public function testAdminOperationsViewListsTransientLiveOperationState(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $store = self::getContainer()->get(LiveOperationRunStore::class);
+        self::assertInstanceOf(LiveOperationRunStore::class, $store);
+        $run = $store->create('backend.cache_clear', [], 'Cache clear');
+        $lock = $store->acquireRunnerLock($run['operation_id']);
+
+        try {
+            self::assertNotNull($lock);
+            $client->request('GET', '/admin/operations');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Operations');
+            self::assertSelectorExists(sprintf('tr[data-operation-id="%s"][data-operation-status="queued"]', $run['operation_id']));
+            self::assertSelectorExists('form input[name="_operations_action"][value="cleanup"]');
+            self::assertSelectorNotExists('form input[name="_operations_action"][value="kill_stale_runner"]');
+            self::assertSelectorExists('.studio-backend-nav a[href="/admin/operations"][aria-current="page"]');
+        } finally {
+            $lock?->release();
+            @unlink(dirname($store->outputPath($run['operation_id'])).'/'.$run['operation_id'].'.json');
+            @unlink($store->outputPath($run['operation_id']));
+            @unlink($store->pidPath($run['operation_id']));
+        }
+    }
+
+    public function testAdminOperationDetailShowsRetainedActionLogEntries(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $store = self::getContainer()->get(LiveOperationRunStore::class);
+        self::assertInstanceOf(LiveOperationRunStore::class, $store);
+        $run = $store->create('backend.cache_clear', [], 'Cache clear');
+        $store->appendEntry(
+            $run['operation_id'],
+            ActionLogEntry::pending('Clear cache')->start()->finish(ActionLogStatus::Success),
+            1,
+            1,
+        );
+        $store->finish($run['operation_id'], true, ['status' => 'success', 'issues' => [], 'messages' => []]);
+
+        try {
+            $client->request('GET', '/admin/operations/'.$run['operation_id']);
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Cache clear');
+            self::assertSelectorTextContains('.studio-panel', 'Operation overview');
+            self::assertSelectorTextContains('.studio-action-log-list', 'Clear cache');
+            self::assertSelectorTextContains('.studio-action-log-list', 'Successful');
+        } finally {
+            @unlink(dirname($store->outputPath($run['operation_id'])).'/'.$run['operation_id'].'.json');
+            @unlink($store->outputPath($run['operation_id']));
+            @unlink($store->pidPath($run['operation_id']));
         }
     }
 
@@ -338,6 +399,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('h1', 'Activate Test Lifecycle');
             self::assertSelectorTextContains('.studio-table', 'activated');
             self::assertSelectorExists('button[type="submit"]');
+            self::assertSelectorExists('form[data-controller="operation-overlay"][data-operation-overlay-enabled-value="true"]');
 
             $client->request('GET', '/admin/packages/test-lifecycle/purge');
 

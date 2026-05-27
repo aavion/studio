@@ -141,6 +141,26 @@ html {
     border-color: var(--color-gray-300);
 }
 
+.studio-button-success {
+    background: var(--color-success);
+    color: #ffffff;
+}
+
+.studio-button.studio-button-success,
+.studio-backend-button.studio-button-success {
+    color: #ffffff;
+}
+
+.studio-button-warning {
+    background: var(--color-warning);
+    color: #ffffff;
+}
+
+.studio-button.studio-button-warning,
+.studio-backend-button.studio-button-warning {
+    color: #ffffff;
+}
+
 .studio-button-ghost {
     background: transparent;
     color: var(--color-gray-700);
@@ -263,13 +283,83 @@ html {
     padding: 1rem;
 }
 
+.studio-panel-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
 .studio-panel > h2:first-child,
-.studio-panel > h3:first-child {
+.studio-panel > h3:first-child,
+.studio-panel-header h2 {
     margin-top: 0;
     font-size: 1rem;
     font-weight: 900;
     line-height: 1.35;
     color: var(--color-ink);
+}
+
+.studio-panel-header h2,
+.studio-panel-header p {
+    margin-bottom: 0;
+}
+
+.studio-definition-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 0.75rem;
+    margin: 0 0 1rem;
+}
+
+.studio-definition-list div {
+    min-width: 0;
+}
+
+.studio-definition-list dt {
+    color: var(--color-muted);
+    font-size: var(--studio-text-sm);
+    font-weight: 750;
+}
+
+.studio-definition-list dd {
+    margin: 0.25rem 0 0;
+    overflow-wrap: anywhere;
+}
+
+.studio-definition-list dd:has(.studio-inline-icon-form) {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.studio-inline-icon-form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.studio-icon-action {
+    display: inline-grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    place-items: center;
+    border: var(--studio-border);
+    border-radius: var(--studio-radius);
+    background: var(--color-paper);
+    color: var(--color-muted);
+    cursor: pointer;
+}
+
+.studio-icon-action:hover,
+.studio-icon-action:focus-visible {
+    color: var(--color-ink);
+}
+
+.studio-icon-action-danger:hover,
+.studio-icon-action-danger:focus-visible {
+    border-color: var(--color-error);
+    color: var(--color-error);
 }
 
 .studio-empty-state,
@@ -716,6 +806,103 @@ html {
 .studio-code-block {
     overflow-x: auto;
     padding: 1rem;
+}
+
+.studio-action-log-overlay[hidden] {
+    display: none;
+}
+
+.studio-action-log-overlay {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+    background: color-mix(in srgb, var(--color-ink) 42%, transparent);
+    backdrop-filter: blur(4px);
+}
+
+.studio-action-log-panel {
+    display: grid;
+    gap: 1rem;
+    width: min(42rem, 100%);
+    max-height: min(36rem, calc(100vh - 4rem));
+    overflow: hidden;
+    border: var(--studio-border);
+    border-radius: var(--studio-radius);
+    background: var(--color-paper);
+    box-shadow: var(--studio-shadow-panel);
+}
+
+.studio-action-log-header,
+.studio-action-log-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: var(--studio-border);
+}
+
+.studio-action-log-footer {
+    justify-content: flex-end;
+    border-top: var(--studio-border);
+    border-bottom: 0;
+}
+
+.studio-action-log-header h2,
+.studio-action-log-header p {
+    margin: 0;
+}
+
+.studio-action-log-spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex: 0 0 auto;
+    border: 3px solid var(--color-line);
+    border-top-color: var(--color-primary-action);
+    border-radius: 999px;
+    animation: studio-spin 0.8s linear infinite;
+}
+
+.studio-action-log-summary {
+    margin: 0 1rem;
+    padding: 0.75rem;
+    border: var(--studio-border);
+    border-radius: var(--studio-radius-sm);
+    background: var(--color-gray-50);
+}
+
+.studio-action-log-list {
+    display: grid;
+    gap: 0.5rem;
+    min-height: 8rem;
+    margin: 0;
+    padding: 0 1rem;
+    overflow: auto;
+    list-style: none;
+}
+
+.studio-action-log-entry {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: var(--studio-border);
+    border-radius: var(--studio-radius-sm);
+}
+
+.studio-action-log-entry p {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+@keyframes studio-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .studio-demo-grid {

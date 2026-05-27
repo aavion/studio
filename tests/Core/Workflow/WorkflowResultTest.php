@@ -118,6 +118,16 @@ final class WorkflowResultTest extends TestCase
         WorkflowResult::invalid([]);
     }
 
+    public function testRequiresReviewRequiresAUserFacingPromptIssue(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Workflow result status "requires_review" requires a user-facing confirmation prompt issue.');
+
+        WorkflowResult::requiresReview(null, [
+            Message::error(MessageCode::E_OPERATION_FAILED, MessageKey::OPERATION_EXCEPTION),
+        ]);
+    }
+
     public function testIssuesMustBeMessageInstances(): void
     {
         $this->expectException(InvalidArgumentException::class);

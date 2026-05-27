@@ -84,6 +84,15 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 ],
             ),
             new BackendViewDefinition(
+                'backend-admin-operations',
+                BackendArea::Admin,
+                'operations',
+                'admin.navigation.operations',
+                '@backend/admin/operations.html.twig',
+                70,
+                minimumAccessLevel: 8,
+            ),
+            new BackendViewDefinition(
                 'backend-admin-logs',
                 BackendArea::Admin,
                 'logs',

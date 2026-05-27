@@ -34,7 +34,7 @@ final readonly class TranslationAggregateAction implements OperationActionInterf
     public function dryRun(): DryRunAction
     {
         return DryRunAction::create($this->type(), $this->label(), DryRunRisk::Low, [
-            'translations/messages.*.yaml',
+            'translations/runtime/messages.*.yaml',
         ], context: [
             'packages' => array_map(static fn (PackageAssetSyncPackage $package): string => $package->identifier(), $this->packages),
         ]);

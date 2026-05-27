@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Workflow;
 
 use App\Core\Message\Message;
+use App\Core\Message\MessageLevel;
 use InvalidArgumentException;
 
 /**
@@ -39,6 +40,10 @@ final readonly class WorkflowResult
 
         if ($status->requiresIssue() && [] === $issues) {
             throw new InvalidArgumentException(sprintf('Workflow result status "%s" requires at least one issue.', $status->value));
+        }
+
+        if (WorkflowStatus::RequiresReview === $status && !$this->hasReviewPrompt($issues)) {
+            throw new InvalidArgumentException('Workflow result status "requires_review" requires a user-facing confirmation prompt issue.');
         }
     }
 
@@ -178,5 +183,19 @@ final readonly class WorkflowResult
             'messages' => array_map(static fn (Message $message): array => $message->toArray(), $this->messages),
             'context' => $this->context,
         ];
+    }
+
+    /**
+     * @param list<Message> $issues
+     */
+    private function hasReviewPrompt(array $issues): bool
+    {
+        foreach ($issues as $issue) {
+            if (in_array($issue->level(), [MessageLevel::Info, MessageLevel::Warning], true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

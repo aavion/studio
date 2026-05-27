@@ -159,7 +159,7 @@ final class DemoControllerTest extends WebTestCase
     private function aggregateDemoTranslations(): void
     {
         $projectDir = dirname(__DIR__, 2);
-        foreach (['translations/messages.en.yaml', 'translations/messages.de.yaml'] as $relativePath) {
+        foreach (['translations/runtime/messages.en.yaml', 'translations/runtime/messages.de.yaml'] as $relativePath) {
             $path = $projectDir.'/'.$relativePath;
             $this->catalogueBackups[$path] = is_file($path) ? (string) file_get_contents($path) : null;
         }

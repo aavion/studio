@@ -24,7 +24,7 @@ final class TranslationCatalogueAggregatorTest extends TestCase
         $this->root = $this->createTemporaryDirectory('studio-package-translations');
         $this->writeTestFile($this->root, 'translations/languages/en/ui.yaml', "ui:\n  app:\n    name: Studio\n");
         $this->writeTestFile($this->root, 'translations/languages/de/ui.yaml', "ui:\n  app:\n    name: Studio\n");
-        $this->writeTestFile($this->root, 'translations/messages.fr.yaml', "stale: true\n");
+        $this->writeTestFile($this->root, 'translations/runtime/messages.fr.yaml', "stale: true\n");
     }
 
     protected function tearDown(): void
@@ -46,11 +46,11 @@ final class TranslationCatalogueAggregatorTest extends TestCase
         self::assertSame(2, $result->context()['locales']);
         self::assertSame(4, $result->context()['files']);
         self::assertSame(MessageKey::TRANSLATION_AGGREGATE_COMPLETED, $result->messages()[0]->translationKey());
-        self::assertFileExists($this->root.'/translations/messages.en.yaml');
-        self::assertFileExists($this->root.'/translations/messages.de.yaml');
-        self::assertFileDoesNotExist($this->root.'/translations/messages.fr.yaml');
+        self::assertFileExists($this->root.'/translations/runtime/messages.en.yaml');
+        self::assertFileExists($this->root.'/translations/runtime/messages.de.yaml');
+        self::assertFileDoesNotExist($this->root.'/translations/runtime/messages.fr.yaml');
 
-        $english = Yaml::parseFile($this->root.'/translations/messages.en.yaml');
+        $english = Yaml::parseFile($this->root.'/translations/runtime/messages.en.yaml');
         self::assertSame('Studio', $english['ui']['app']['name']);
         self::assertSame('Demo', $english['pkg']['demo']['label']);
         self::assertArrayNotHasKey('inactive', $english['pkg']);
@@ -66,7 +66,7 @@ final class TranslationCatalogueAggregatorTest extends TestCase
 
         self::assertTrue($result->isSuccess());
         self::assertSame(2, $result->context()['files']);
-        self::assertFileExists($this->root.'/translations/messages.en.yaml');
+        self::assertFileExists($this->root.'/translations/runtime/messages.en.yaml');
     }
 
     public function testItRejectsTranslationKeyCollisions(): void

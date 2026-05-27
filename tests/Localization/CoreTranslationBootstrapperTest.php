@@ -36,9 +36,9 @@ final class CoreTranslationBootstrapperTest extends TestCase
         self::assertTrue($result['success']);
         self::assertSame(['de', 'en'], $result['locales']);
         self::assertSame(3, $result['files']);
-        self::assertFileExists($this->root.'/translations/messages.en.yaml');
+        self::assertFileExists($this->root.'/translations/runtime/messages.en.yaml');
 
-        $english = Yaml::parseFile($this->root.'/translations/messages.en.yaml');
+        $english = Yaml::parseFile($this->root.'/translations/runtime/messages.en.yaml');
         self::assertSame('Ready', $english['message']['setup']['ok']);
         self::assertSame('Studio', $english['ui']['app']['name']);
     }

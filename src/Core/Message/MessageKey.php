@@ -109,6 +109,13 @@ final class MessageKey
     public const FILESYSTEM_PARENT_DIRECTORY_READY = 'message.filesystem.parent_directory_ready';
 
     public const OPERATION_EXCEPTION = 'message.operation.exception';
+    public const OPERATION_UNKNOWN = 'message.operation.unknown';
+    public const OPERATION_STARTED = 'message.operation.started';
+    public const OPERATION_START_FAILED = 'message.operation.start_failed';
+    public const OPERATION_INVALID_PAYLOAD = 'message.operation.invalid_payload';
+    public const OPERATION_STALE = 'message.operation.stale';
+    public const OPERATION_LOCKED = 'message.operation.locked';
+    public const OPERATION_ACTION_REQUIRED = 'message.operation.action_required';
     public const PROCESS_COMMAND_FAILED = 'message.process.command_failed';
     public const PROCESS_COMMAND_COMPLETED = 'message.process.command_completed';
 

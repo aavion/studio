@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-05-26  
+> **Updated**: 2026-05-27  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -26,6 +26,14 @@
   - [ ] Event hooks and Messenger conventions
   - [ ] Package discovery and lifecycle
   - Open: first dashboard widgets; setup UI; package activation/install/uninstall flows; package uninstall/data cleanup execution; package service loading for active packages; Messenger mode/routing conventions.
+  - Package/theme completion mini-roadmap before PR review:
+    - Add an Operations/ActionLog foundation with token-protected action starts, live stream/fetch status below `api/live` or `api/operations`, dry-run confirmation handoff, and a small JS overlay app; a static overlay-like runner view is acceptable if true overlay POST flows are brittle.
+      Current implementation plan: use ActionLog for synchronously executed `ActionQueue` runs, but start those runs in a small background console process so the original page request stays short. Store run state and ActionLog entries in `var/operations/{APP_ENV}`, expose token-protected polling below `/api/live/operations/{id}`, and let the backend UI start live operations through the existing CSRF-protected action forms. Keep dry-run confirmation as an explicit follow-up state rather than baking it into every operation now.
+    - Prepare staged ZIP install/update boundaries: add explicit manifest package slug validation, stage uploads before applying, and add registry storage for a future externally discovered available version while leaving online updater/system self-update logic for later.
+    - Harden the package contribution contract without adding pretend permission flags to manifests; document supported runtime contributions, collision diagnostics, and failure-to-faulty behavior.
+    - Make deferred Messenger work actually run soon after dispatch through a clear worker/runner mechanism so cache-warmup discovery and longer tasks do not stay queued forever.
+    - Keep theme activation, asset/translation lifecycle, delete/purge semantics, and POST handling on non-POST backend views covered by focused tests rather than broad UI work.
+    - Keep developer docs intentionally short for now: enough snippets for manifest keys, `package.php` contributions, settings, configurable/static routes, dynamic slots, theme scopes, and template namespace precedence.
 
 - [ ] **0.3.x Structured authoring and resolver foundation**
   - [ ] Schema-driven content fields
@@ -72,7 +80,24 @@
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
+### 2026-05-27
+- Hardened the live Operations/ActionLog foundation with tagged queue providers, stale-run detection, persisted start failures, expired-run cleanup, localized polling payload messages, and a `studio:operations:cleanup` command.
+- Added an atomic runner claim so a staged live operation can only be executed once, added a stale-safe global live-runner lock so different live operations cannot mutate packages/assets/cache concurrently, let completed runners clean expired operation artifacts with a 3600-second TTL, and taught the overlay to resume in-flight operations from session storage after page reloads instead of starting duplicates.
+- Moved the Admin package registry refresh onto the live ActionLog provider path while preserving the synchronous POST fallback for non-JavaScript submissions.
+- Added an Admin Operations view that lists queued, running, and still-retained terminal live-operation state, reports the current runner lock, supports expired-run cleanup, and can clear stale locks without exposing a web process-kill control.
+- Added an emergency stale-runner stop path that records the detached runner PID, exposes it in Admin Operations, and only enables kill for stale locks whose stored PID still belongs to the matching `studio:operations:run` command.
+- Added retained live-operation detail pages under Admin Operations so operators can inspect stored ActionLog entries and final result messages after the overlay has been closed, without exposing run tokens or payloads.
+- Implemented review-required live-operation completion: `WorkflowResult::requiresReview()` now produces terminal `requires_review` operation state, token-protected continuation URLs, and overlay Continue/Cancel actions that start a provider-declared follow-up operation instead of suspending the runner.
+- Enforced review-required workflow results to include a user-facing `INFO` or `WARN` confirmation prompt issue, so an operation cannot ask for Continue/Cancel without explaining what the user is accepting or rejecting.
+- Refined overlay actions so running operations show no action buttons, successful operations show an OK action that refreshes/redirects, failed operations show Retry and UI-only Cancel, and polling failures expose Refresh plus Close for the same operation; production log downloads and destructive process cancellation remain intentionally out of scope.
+- Moved generated Symfony runtime translation catalogues to `translations/runtime/messages.{locale}.yaml` so Symfony does not scan source catalogues or local conflict files directly while language discovery still reads `translations/languages/{locale}`.
+- Recorded the review-required live-operation handoff contract, provider payload/capability boundary, detached runner production follow-up, and confirmed that message-layer output is forwarded to the durable operation message log while transient ActionLog-only steps remain TTL-bound.
+- Verified the Operations/ActionLog slice with translation comparison, YAML/Twig/container linting, Tailwind and AssetMapper builds, targeted Operations/BackendController coverage, and the full PHPUnit suite.
+
 ### 2026-05-26
+- Added the first live Operations/ActionLog foundation: backend action forms can start tokenized live operations, a detached `studio:operations:run` console process executes reconstructed ActionQueues, progress is written below `var/operations/{APP_ENV}`, `/api/live/operations/{id}` exposes cursor polling payloads, and the Admin shell includes a rudimentary Stimulus overlay for live entries.
+- Moved package lifecycle apply actions behind the live operation layer while keeping the existing synchronous POST fallback for non-JavaScript submissions.
+- Removed generated conflict catalogues that exposed invalid locales such as `de 2`; keep Symfony locale discovery open so future language catalogues can be added through the normal translation source directories.
 - Moved the shell and typography demo routes out of Core and into the demo module as portable configurable static view injections under `/demo/**`, added a package setting for the route parent, kept the frontend shell on top-level `/demo`, and adjusted demo route tests to activate the module fixture while skipping with a notice if the module is intentionally absent.
 - Added a setup-time minimal `static_page` schema and published `/home` placeholder content item so fresh installations render the configured public home path instead of falling through to a `404`.
 - Expanded the `/demo/typography` guide into renderer-backed Markdown input/output examples for basic, allrounder, and design profiles, including fenced code blocks, tables, task lists, footnotes, attributes, trusted HTML, and embeds for later user-guide reuse.

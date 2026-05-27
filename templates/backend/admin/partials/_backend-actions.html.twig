@@ -1,7 +1,15 @@
 {% if actions|default([]) is not empty %}
     <div class="studio-backend-button-group {{ class|default('') }}">
         {% for action in actions %}
-            <form method="post" action="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')) }}">
+            <form
+                method="post"
+                action="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')) }}"
+                {% if action.live %}
+                    data-controller="operation-overlay"
+                    data-action="submit->operation-overlay#submit"
+                    data-operation-overlay-enabled-value="true"
+                {% endif %}
+            >
                 <input type="hidden" name="_form_id" value="backend-action-{{ action.id }}">
                 <input type="hidden" name="_backend_action" value="{{ action.id }}">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('backend-action-' ~ action.id) }}">

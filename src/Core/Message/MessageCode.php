@@ -71,6 +71,7 @@ final class MessageCode
     public const FILESYSTEM_PARENT_DIRECTORY_READY = 'filesystem.parent_directory_ready';
 
     public const OPERATION_EXCEPTION = 'operation.exception';
+    public const OPERATION_ACTION_REQUIRED = 'operation.action_required';
     public const PROCESS_COMMAND_FAILED = 'process.command_failed';
     public const PROCESS_COMMAND_COMPLETED = 'process.command_completed';
     public const MANIFEST_PARSED = 'manifest.parsed';

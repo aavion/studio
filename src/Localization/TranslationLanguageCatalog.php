@@ -17,7 +17,7 @@ final readonly class TranslationLanguageCatalog
     {
         $languages = [];
 
-        foreach (glob($this->projectDir.'/translations/messages.*.yaml') ?: [] as $path) {
+        foreach (glob($this->projectDir.'/translations/runtime/messages.*.yaml') ?: [] as $path) {
             if (1 === preg_match('/messages\.([a-z][a-z0-9]*(?:[_-][a-zA-Z0-9]+)*)\.yaml$/', basename($path), $matches)) {
                 $languages[] = $matches[1];
             }

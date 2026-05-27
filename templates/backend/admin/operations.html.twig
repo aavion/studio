@@ -1,0 +1,124 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.operations.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'ui.admin.area'|trans,
+        title: 'admin.operations.title'|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.operations.lock.title'|trans }}</h2>
+        {% if operation_lock %}
+            <dl class="studio-definition-list">
+                <div>
+                    <dt>{{ 'admin.operations.lock.operation'|trans }}</dt>
+                    <dd><code>{{ operation_lock.operation_id|default('admin.operations.unknown_value'|trans) }}</code></dd>
+                </div>
+                <div>
+                    <dt>{{ 'admin.operations.lock.updated_at'|trans }}</dt>
+                    <dd>{{ operation_lock.updated_at|default('admin.operations.unknown_value'|trans) }}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'admin.operations.lock.age'|trans }}</dt>
+                    <dd>{{ operation_lock.age_seconds is same as(null) ? 'admin.operations.unknown_value'|trans : 'admin.operations.seconds'|trans({'%seconds%': operation_lock.age_seconds}) }}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'admin.operations.lock.status'|trans }}</dt>
+                    <dd>
+                        <span class="studio-badge studio-badge-{{ operation_lock.stale ? 'warning' : 'neutral' }}">
+                            {{ operation_lock.stale ? 'admin.operations.lock.stale'|trans : 'admin.operations.lock.active'|trans }}
+                        </span>
+                        {% if operation_lock.killable %}
+                            <form class="studio-inline-icon-form" method="post" action="{{ app.request.pathInfo }}">
+                                <input type="hidden" name="_form_id" value="admin-operations">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-operations') }}">
+                                <input type="hidden" name="_operations_action" value="kill_stale_runner">
+                                <button class="studio-icon-action studio-icon-action-danger" type="submit" title="{{ 'admin.operations.actions.kill_stale_runner'|trans }}" aria-label="{{ 'admin.operations.actions.kill_stale_runner'|trans }}">
+                                    <span class="ti ti-x" aria-hidden="true"></span>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt>{{ 'admin.operations.lock.pid'|trans }}</dt>
+                    <dd>{{ operation_lock.pid|default('admin.operations.unknown_value'|trans) }}</dd>
+                </div>
+            </dl>
+            {% if operation_lock.stale %}
+                <form method="post" action="{{ app.request.pathInfo }}">
+                    <input type="hidden" name="_form_id" value="admin-operations">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-operations') }}">
+                    <input type="hidden" name="_operations_action" value="clear_stale_lock">
+                    <button class="studio-backend-button studio-button-warning" type="submit">
+                        {{ 'admin.operations.actions.clear_stale_lock'|trans }}
+                    </button>
+                </form>
+                <p class="studio-muted">{{ 'admin.operations.lock.clear_note'|trans }}</p>
+            {% endif %}
+        {% else %}
+            <p class="studio-muted">{{ 'admin.operations.lock.empty'|trans }}</p>
+        {% endif %}
+    </section>
+
+    <section class="studio-panel">
+        <div class="studio-panel-header">
+            <div>
+                <h2>{{ 'admin.operations.runs.title'|trans }}</h2>
+                <p class="studio-muted">{{ 'admin.operations.runs.text'|trans }}</p>
+            </div>
+            <form method="post" action="{{ app.request.pathInfo }}">
+                <input type="hidden" name="_form_id" value="admin-operations">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-operations') }}">
+                <input type="hidden" name="_operations_action" value="cleanup">
+                <button class="studio-backend-button studio-button-secondary" type="submit">
+                    {{ 'admin.operations.actions.cleanup'|trans }}
+                </button>
+            </form>
+        </div>
+
+        {% if operation_runs is not empty %}
+            <table class="studio-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.operations.table.operation'|trans }}</th>
+                        <th scope="col">{{ 'admin.operations.table.status'|trans }}</th>
+                        <th scope="col">{{ 'admin.operations.table.progress'|trans }}</th>
+                        <th scope="col">{{ 'admin.operations.table.updated_at'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for run in operation_runs %}
+                        {% set progress = run.progress|default({}) %}
+                        <tr data-operation-id="{{ run.operation_id }}" data-operation-status="{{ run.status }}">
+                            <th scope="row">
+                                <strong><a href="/admin/operations/{{ run.operation_id }}">{{ run.label ?: run.operation }}</a></strong>
+                                <code>{{ run.operation_id }}</code>
+                                {% if run.issue.translation_key|default(null) %}
+                                    <p class="studio-muted">{{ run.issue.translation_key|trans(run.issue.parameters|default({})) }}</p>
+                                {% endif %}
+                            </th>
+                            <td>
+                                <span class="studio-badge studio-badge-{{ run.status == 'success' ? 'success' : (run.status == 'failed' ? 'error' : (run.status == 'requires_review' ? 'warning' : 'neutral')) }}">
+                                    {{ ('ui.operations.action_log.statuses.' ~ run.status)|trans }}
+                                </span>
+                            </td>
+                            <td>{{ progress.index|default(0) }}/{{ progress.total|default(0) }}</td>
+                            <td>{{ run.updated_at|default('admin.operations.unknown_value'|trans) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="studio-muted">{{ 'admin.operations.runs.empty'|trans }}</p>
+        {% endif %}
+    </section>
+{% endblock %}

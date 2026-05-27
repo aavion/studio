@@ -17,7 +17,7 @@ use Throwable;
 final readonly class TranslationCatalogueAggregator
 {
     private const CORE_SOURCE_DIRECTORY = 'translations/languages';
-    private const TARGET_PATTERN = 'translations/messages.%s.yaml';
+    private const TARGET_PATTERN = 'translations/runtime/messages.%s.yaml';
 
     public function __construct(
         private string $projectDir,
@@ -43,7 +43,7 @@ final readonly class TranslationCatalogueAggregator
 
             return WorkflowResult::failed([
                 Message::exception(MessageCode::TRANSLATION_AGGREGATE_FAILED, MessageKey::TRANSLATION_AGGREGATE_FAILED, [
-                    '%path%' => 'translations/messages.*.yaml',
+                    '%path%' => 'translations/runtime/messages.*.yaml',
                 ], $context),
             ], $context);
         }
@@ -233,7 +233,7 @@ final readonly class TranslationCatalogueAggregator
 
     private function removeGeneratedCatalogues(): void
     {
-        foreach (glob($this->projectDir.'/translations/messages.*.yaml') ?: [] as $path) {
+        foreach (glob($this->projectDir.'/translations/runtime/messages.*.yaml') ?: [] as $path) {
             if (is_file($path) && !is_link($path)) {
                 unlink($path);
             }

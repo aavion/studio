@@ -123,6 +123,13 @@ message:
     parent_directory_ready: 'Übergeordnetes Verzeichnis "%path%" ist bereit.'
   operation:
     exception: 'Operation ist mit einer unerwarteten Exception fehlgeschlagen.'
+    unknown: 'Operation "%operation%" ist nicht verfügbar.'
+    started: 'Operation "%operation%" wurde gestartet.'
+    start_failed: 'Operation "%operation%" konnte nicht gestartet werden.'
+    invalid_payload: 'Operation "%operation%" hat ungültige Eingabedaten erhalten.'
+    stale: 'Operation "%operation%" hat nicht rechtzeitig Fortschritt gemeldet und wurde als fehlgeschlagen markiert.'
+    locked: 'Operation "%operation%" konnte nicht ausgeführt werden, weil bereits eine andere Live-Operation läuft.'
+    action_required: 'Operation "%operation%" benötigt eine Bestätigung, bevor sie fortgesetzt werden kann.'
   process:
     command_failed: 'Befehl "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
     command_completed: 'Befehl "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'

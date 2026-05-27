@@ -32,8 +32,8 @@ final class MessageKeyTest extends TestCase
         $knownKeys = array_values($constants);
         $root = dirname(__DIR__, 3);
 
-        $englishKeys = array_keys(self::flatten(Yaml::parseFile($root . '/translations/messages.en.yaml')));
-        $germanKeys = array_keys(self::flatten(Yaml::parseFile($root . '/translations/messages.de.yaml')));
+        $englishKeys = array_keys(self::flatten(Yaml::parseFile($root . '/translations/runtime/messages.en.yaml')));
+        $germanKeys = array_keys(self::flatten(Yaml::parseFile($root . '/translations/runtime/messages.de.yaml')));
 
         self::assertSame([], array_values(array_diff($knownKeys, $englishKeys)));
         self::assertSame([], array_values(array_diff($knownKeys, $germanKeys)));

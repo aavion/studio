@@ -1,7 +1,7 @@
 # Core architecture snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-24  
+> **Updated**: 2026-05-27  
 > **Owner**: Core  
 > **Purpose:** Collect practical implementation snippets, notes, and pseudocode for the first Core architecture before they are consolidated into contributor and user manuals.  
 
@@ -67,6 +67,12 @@ $execution = $executor->executeQueue($queue);
 ```
 
 Use the dry-run plan for previews. Use the execution result and action log for final status, diagnostics, UI summaries, and level-filtered log inspection. Completed high-level actions should generally emit `SUCCESS`; informational progress should emit `INFO`; noisy per-file or per-manifest details should emit `DEBUG`.
+
+Live UI operations use the same `ActionQueue`/`OperationExecutor` path, but the queue is reconstructed by a detached `studio:operations:run` console process instead of being executed inside the page request. The web request only creates a tokenized run record below `var/operations/{APP_ENV}`; `/api/live/operations/{id}?token=...` returns cursor-based ActionLog polling payloads for the overlay UI. Keep this route public but unguessable through the run token, because long operations may outlive the original authenticated browser session. The runner claims staged runs atomically, so duplicate console invocations cannot execute the same operation twice. Add new live operation types through `LiveOperationQueueProviderInterface` providers instead of extending the runner directly. Use `studio:operations:cleanup` to remove expired terminal and stale run files.
+
+Live operation providers must keep payloads small, serializable, and safe to persist temporarily. Validate payload shape inside the provider, resolve the actor or capability at the web entry point, and never place secrets, CSRF tokens, or raw request bodies in the payload, ActionLog context, or continuation data.
+
+If a live operation needs review before it can continue, return `WorkflowResult::requiresReview()` with a translated `INFO` or `WARN` confirmation prompt and safe continuation metadata. The prompt must explain what the user is accepting or rejecting; error/exception issues alone are invalid for review prompts. The original runner must finish and release its lock. The UI may then start a new tokenized operation from the continuation instead of keeping PHP alive while waiting for the user.
 
 Use `WARN` for recoverable or expected fallback behavior that does not leave the system in a broken state, such as content language/variant fallbacks or denied optional access. Use `ERROR` when something needs operator attention or a fix, such as faulty packages, invalid package manifests, missing required package files, broken package dependencies, or failed writes. Use `EXCEPTION` when a real `Throwable` was caught and converted into a structured message.
 
