@@ -28,6 +28,10 @@ final readonly class AccessStatisticsAggregator
      *     top_browsers: list<array{label: string, count: int}>,
      *     device_types: list<array{label: string, count: int}>,
      *     bot_requests: int,
+     *     surfaces: list<array{label: string, count: int}>,
+     *     top_referrers: list<array{label: string, count: int}>,
+     *     languages: list<array{label: string, count: int}>,
+     *     average_duration_ms: int|null,
      *     source_files: list<string>
      * }
      */
@@ -40,7 +44,12 @@ final readonly class AccessStatisticsAggregator
         $countries = [];
         $browsers = [];
         $devices = [];
+        $surfaces = [];
+        $referrers = [];
+        $languages = [];
         $botRequests = 0;
+        $durationSum = 0;
+        $durationCount = 0;
         $visitors = [];
 
         foreach ($this->rows() as $row) {
@@ -74,6 +83,25 @@ final readonly class AccessStatisticsAggregator
             if ($this->boolValue($row, 'is_bot')) {
                 ++$botRequests;
             }
+
+            $surface = $this->stringValue($row, 'surface', 'public');
+            $surfaces[$surface] = ($surfaces[$surface] ?? 0) + 1;
+
+            $referrer = $this->stringValue($row, 'referrer_host', 'n/a');
+
+            if ('n/a' !== $referrer) {
+                $referrers[$referrer] = ($referrers[$referrer] ?? 0) + 1;
+            }
+
+            $language = $this->stringValue($row, 'preferred_language', 'n/a');
+            $languages[$language] = ($languages[$language] ?? 0) + 1;
+
+            $durationMs = $this->nullableIntValue($row, 'duration_ms');
+
+            if (null !== $durationMs) {
+                $durationSum += $durationMs;
+                ++$durationCount;
+            }
         }
 
         return [
@@ -87,6 +115,10 @@ final readonly class AccessStatisticsAggregator
             'top_browsers' => $this->top($browsers),
             'device_types' => $this->top($devices),
             'bot_requests' => $botRequests,
+            'surfaces' => $this->top($surfaces),
+            'top_referrers' => $this->top($referrers),
+            'languages' => $this->top($languages),
+            'average_duration_ms' => $durationCount > 0 ? (int) round($durationSum / $durationCount) : null,
             'source_files' => [],
         ];
     }
@@ -98,7 +130,7 @@ final readonly class AccessStatisticsAggregator
     {
         try {
             return $this->connection->fetchAllAssociative(
-                'SELECT visitor_id, method, path, route, http_status, browser_family, device_type, is_bot, country FROM access_statistic_event ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
+                'SELECT visitor_id, method, path, route, surface, http_status, duration_ms, browser_family, device_type, is_bot, referrer_host, preferred_language, country FROM access_statistic_event ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
             );
         } catch (Throwable) {
             return [];
@@ -127,6 +159,16 @@ final readonly class AccessStatisticsAggregator
         $value = $row[$key] ?? null;
 
         return is_numeric($value) ? (int) $value : 0;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function nullableIntValue(array $row, string $key): ?int
+    {
+        $value = $row[$key] ?? null;
+
+        return is_numeric($value) ? (int) $value : null;
     }
 
     /**

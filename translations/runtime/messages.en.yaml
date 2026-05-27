@@ -384,6 +384,10 @@ admin:
             top_browsers: 'Top browsers'
             device_types: 'Device types'
             bot_requests: 'Bot requests'
+            average_duration: 'Average duration'
+            surfaces: Surfaces
+            languages: Languages
+            top_referrers: 'Top referrers'
             empty: 'No data available yet.'
     settings:
         title: Settings

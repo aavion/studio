@@ -20,14 +20,22 @@ final class AccessStatisticsAggregatorTest extends TestCase
             CREATE TABLE access_statistic_event (
                 uid VARCHAR(36) NOT NULL PRIMARY KEY,
                 occurred_at DATETIME NOT NULL,
+                request_id VARCHAR(64) NOT NULL,
                 visitor_id VARCHAR(64) NOT NULL,
                 method VARCHAR(16) NOT NULL,
                 path VARCHAR(1024) NOT NULL,
                 route VARCHAR(190) NOT NULL,
+                surface VARCHAR(40) NOT NULL,
                 http_status INTEGER NOT NULL,
+                duration_ms INTEGER DEFAULT NULL,
                 browser_family VARCHAR(40) NOT NULL,
                 device_type VARCHAR(40) NOT NULL,
                 is_bot BOOLEAN NOT NULL,
+                referrer_host VARCHAR(255) NOT NULL,
+                preferred_language VARCHAR(20) NOT NULL,
+                request_content_type VARCHAR(120) NOT NULL,
+                response_content_type VARCHAR(120) NOT NULL,
+                response_size INTEGER DEFAULT NULL,
                 city VARCHAR(80) NOT NULL,
                 state VARCHAR(80) NOT NULL,
                 country VARCHAR(80) NOT NULL,
@@ -39,9 +47,9 @@ final class AccessStatisticsAggregatorTest extends TestCase
 
     public function testItAggregatesDatabaseStatisticsWithoutExposingVisitorIds(): void
     {
-        $this->insertEvent('00000000-0000-0000-0000-000000000001', 'visitor-a', 'GET', '/', 'content_home', 200, 'DE', 'safari', 'mobile', false);
-        $this->insertEvent('00000000-0000-0000-0000-000000000002', 'visitor-a', 'GET', '/missing', 'content_view', 404, 'DE', 'safari', 'mobile', false);
-        $this->insertEvent('00000000-0000-0000-0000-000000000003', 'visitor-b', 'POST', '/admin', 'backend_admin_index', 302, 'n/a', 'bot', 'bot', true);
+        $this->insertEvent('00000000-0000-0000-0000-000000000001', 'request-a', 'visitor-a', 'GET', '/', 'content_home', 'public', 200, 20, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de');
+        $this->insertEvent('00000000-0000-0000-0000-000000000002', 'request-b', 'visitor-a', 'GET', '/missing', 'content_view', 'public', 404, 40, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de');
+        $this->insertEvent('00000000-0000-0000-0000-000000000003', 'request-c', 'visitor-b', 'POST', '/admin', 'backend_admin_index', 'admin', 302, 60, 'n/a', 'bot', 'bot', true, 'n/a', 'en-us');
 
         $snapshot = (new AccessStatisticsAggregator($this->connection))->snapshot();
         $encoded = json_encode($snapshot, JSON_THROW_ON_ERROR);
@@ -57,23 +65,35 @@ final class AccessStatisticsAggregatorTest extends TestCase
         self::assertSame([['label' => 'safari', 'count' => 2], ['label' => 'bot', 'count' => 1]], $snapshot['top_browsers']);
         self::assertSame([['label' => 'mobile', 'count' => 2], ['label' => 'bot', 'count' => 1]], $snapshot['device_types']);
         self::assertSame(1, $snapshot['bot_requests']);
+        self::assertSame([['label' => 'public', 'count' => 2], ['label' => 'admin', 'count' => 1]], $snapshot['surfaces']);
+        self::assertSame([['label' => 'example.org', 'count' => 2]], $snapshot['top_referrers']);
+        self::assertSame([['label' => 'de-de', 'count' => 2], ['label' => 'en-us', 'count' => 1]], $snapshot['languages']);
+        self::assertSame(40, $snapshot['average_duration_ms']);
         self::assertStringNotContainsString('visitor-a', $encoded);
         self::assertStringNotContainsString('visitor-b', $encoded);
     }
 
-    private function insertEvent(string $uid, string $visitorId, string $method, string $path, string $route, int $status, string $country, string $browserFamily, string $deviceType, bool $isBot): void
+    private function insertEvent(string $uid, string $requestId, string $visitorId, string $method, string $path, string $route, string $surface, int $status, int $durationMs, string $country, string $browserFamily, string $deviceType, bool $isBot, string $referrerHost, string $preferredLanguage): void
     {
         $this->connection->insert('access_statistic_event', [
             'uid' => $uid,
             'occurred_at' => '2026-05-27 10:00:00',
+            'request_id' => $requestId,
             'visitor_id' => $visitorId,
             'method' => $method,
             'path' => $path,
             'route' => $route,
+            'surface' => $surface,
             'http_status' => $status,
+            'duration_ms' => $durationMs,
             'browser_family' => $browserFamily,
             'device_type' => $deviceType,
             'is_bot' => $isBot,
+            'referrer_host' => $referrerHost,
+            'preferred_language' => $preferredLanguage,
+            'request_content_type' => 'n/a',
+            'response_content_type' => 'text/html',
+            'response_size' => 100,
             'city' => 'n/a',
             'state' => 'n/a',
             'country' => $country,

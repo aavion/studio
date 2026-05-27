@@ -139,6 +139,22 @@
                     <h3>{{ 'admin.logs.statistics.bot_requests'|trans }}</h3>
                     <p class="studio-stat-number">{{ access_statistics.bot_requests|default(0) }}</p>
                 </div>
+                <div>
+                    <h3>{{ 'admin.logs.statistics.average_duration'|trans }}</h3>
+                    <p class="studio-stat-number">{{ access_statistics.average_duration_ms is same as(null) ? 'admin.logs.statistics.empty'|trans : access_statistics.average_duration_ms ~ ' ms' }}</p>
+                </div>
+                <div>
+                    <h3>{{ 'admin.logs.statistics.surfaces'|trans }}</h3>
+                    {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.surfaces} only %}
+                </div>
+                <div>
+                    <h3>{{ 'admin.logs.statistics.languages'|trans }}</h3>
+                    {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.languages} only %}
+                </div>
+                <div>
+                    <h3>{{ 'admin.logs.statistics.top_referrers'|trans }}</h3>
+                    {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_referrers} only %}
+                </div>
             </div>
             <h3>{{ 'admin.logs.statistics.top_countries'|trans }}</h3>
             {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_countries} only %}

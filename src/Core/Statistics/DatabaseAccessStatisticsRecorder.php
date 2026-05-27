@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Statistics;
 
+use App\Core\Log\AccessRequestMetadata;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,6 +19,7 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
         private Connection $connection,
         private VisitorIdGenerator $visitorIdGenerator,
         private UserAgentClassifier $userAgentClassifier,
+        private AccessRequestMetadata $accessRequestMetadata,
     ) {
     }
 
@@ -30,14 +32,22 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
             $this->connection->insert('access_statistic_event', [
                 'uid' => $this->uuid(),
                 'occurred_at' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
+                'request_id' => $this->accessRequestMetadata->requestId($request),
                 'visitor_id' => $this->visitorIdGenerator->generate($request),
                 'method' => substr($request->getMethod(), 0, 16),
                 'path' => substr($request->getPathInfo(), 0, 1024),
                 'route' => substr($this->route($request), 0, 190),
+                'surface' => $this->accessRequestMetadata->surface($request),
                 'http_status' => $response->getStatusCode(),
+                'duration_ms' => $this->accessRequestMetadata->durationMs($request),
                 'browser_family' => $client['browser_family'],
                 'device_type' => $client['device_type'],
                 'is_bot' => $client['is_bot'],
+                'referrer_host' => $this->accessRequestMetadata->referrerHost($request),
+                'preferred_language' => $this->accessRequestMetadata->preferredLanguage($request),
+                'request_content_type' => $this->accessRequestMetadata->contentType($request->headers->get('Content-Type')),
+                'response_content_type' => $this->accessRequestMetadata->contentType($response->headers->get('Content-Type')),
+                'response_size' => $this->accessRequestMetadata->responseSize($response),
                 'city' => self::PLACEHOLDER,
                 'state' => self::PLACEHOLDER,
                 'country' => self::PLACEHOLDER,
