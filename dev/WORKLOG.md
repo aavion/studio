@@ -80,6 +80,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Added a Symfony form-login user checker so inactive and deleted user accounts are rejected during authentication before they can create an admin/editor-capable session.
 - Completed the first review-ready Operations/ActionLog slice: detached tokenized live-operation runners, cursor polling below `/api/live/operations/{id}`, retained Admin Operations inspection/detail views, stale cleanup and emergency stale-runner handling, atomic runner claims, a global live-operation lock, overlay resume behavior, review-required continuation handoff, and contextual overlay actions.
 - Completed the staged package ZIP installer boundary: enforced `PACKAGE_SLUG`, cache-staged uploads, manifest/package validation, review-required apply, overwrite handling without purge, post-install discovery, reactivation of previously active packages, and nullable available-version registry storage for a future updater.
 - Moved package registry refresh into the live-operation path, added the post-response deferred Messenger drain for due `async` jobs, kept non-JavaScript fallbacks, and verified the slice with focused package/operation tests plus container, Twig/YAML, translation, Tailwind, AssetMapper, and full PHPUnit checks.

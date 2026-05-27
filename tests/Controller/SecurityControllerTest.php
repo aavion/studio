@@ -7,6 +7,7 @@ namespace App\Tests\Controller;
 use App\Core\Config\Config;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
+use App\Security\UserAccountStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -126,6 +127,30 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorTextContains('.studio-auth-notice', 'The username or password is not valid.');
     }
 
+    public function testLoginFormRejectsInactiveAndDeletedAccounts(): void
+    {
+        $client = self::createClient();
+        $inactive = $this->createUserWithLevel(8, 'inactiveadmin', 'correct-password', UserAccountStatus::Inactive);
+        $deleted = $this->createUserWithLevel(8, 'deletedadmin', 'correct-password', UserAccountStatus::Deleted);
+
+        foreach ([$inactive, $deleted] as $user) {
+            $crawler = $client->request('GET', '/user/login');
+            $form = $crawler->selectButton('Sign in')->form([
+                'username' => $user->username(),
+                'password' => 'correct-password',
+            ]);
+
+            $client->submit($form);
+            $client->followRedirect();
+
+            self::assertSelectorTextContains('.studio-auth-notice', 'The username or password is not valid.');
+
+            $client->request('GET', '/admin');
+
+            self::assertResponseStatusCodeSame(401);
+        }
+    }
+
     public function testLoginRouteAllowsOnlyLocalReturnTargets(): void
     {
         $client = self::createClient();
@@ -180,7 +205,12 @@ final class SecurityControllerTest extends WebTestCase
         self::getContainer()->get(Config::class)->set('user.registration.enabled', $enabled);
     }
 
-    private function createUserWithLevel(int $level, string $username, string $password): UserAccount
+    private function createUserWithLevel(
+        int $level,
+        string $username,
+        string $password,
+        UserAccountStatus $status = UserAccountStatus::Active,
+    ): UserAccount
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $group = $entityManager->getRepository(AclGroup::class)->findOneBy([
@@ -192,6 +222,9 @@ final class SecurityControllerTest extends WebTestCase
         $existingUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
 
         if ($existingUser instanceof UserAccount) {
+            $existingUser->changeStatus($status);
+            $entityManager->flush();
+
             return $existingUser;
         }
 
@@ -200,6 +233,7 @@ final class SecurityControllerTest extends WebTestCase
             $username,
             $username.'@example.test',
             'pending',
+            status: $status,
         );
         $user->changePassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, $password));
         $user->addGroup($group);
