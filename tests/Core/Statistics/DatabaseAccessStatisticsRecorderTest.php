@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Statistics;
 
 use App\Core\Log\AccessRequestMetadata;
+use App\Core\Geo\NullGeoIpResolver;
 use App\Core\Statistics\DatabaseAccessStatisticsRecorder;
 use App\Core\Statistics\UserAgentClassifier;
 use App\Core\Statistics\VisitorIdGenerator;
@@ -68,7 +69,7 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
         $metadata = new AccessRequestMetadata();
         $metadata->markStarted($request);
 
-        (new DatabaseAccessStatisticsRecorder($this->connection, $visitorIdGenerator, new UserAgentClassifier(), $metadata))->record(
+        (new DatabaseAccessStatisticsRecorder($this->connection, $visitorIdGenerator, new UserAgentClassifier(), $metadata, new NullGeoIpResolver()))->record(
             $request,
             new Response('Missing', 404, ['Content-Type' => 'text/html']),
         );
@@ -106,7 +107,7 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $request = Request::create('/docs', 'GET');
 
-        (new DatabaseAccessStatisticsRecorder($connection, new VisitorIdGenerator('test-secret'), new UserAgentClassifier(), new AccessRequestMetadata()))->record($request, new Response('', 200));
+        (new DatabaseAccessStatisticsRecorder($connection, new VisitorIdGenerator('test-secret'), new UserAgentClassifier(), new AccessRequestMetadata(), new NullGeoIpResolver()))->record($request, new Response('', 200));
 
         self::assertTrue(true);
     }

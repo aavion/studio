@@ -156,6 +156,9 @@ services:
     App\Core\Log\AccessLoggerInterface:
         alias: App\Core\Log\AccessLogger
 
+    App\Core\Geo\GeoIpResolverInterface:
+        alias: App\Core\Geo\NullGeoIpResolver
+
     App\Core\Log\OperationLoggerInterface:
         alias: App\Core\Log\OperationLogger
 

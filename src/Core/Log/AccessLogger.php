@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Log;
 
+use App\Core\Geo\GeoIpResolverInterface;
 use App\Core\Statistics\VisitorIdGenerator;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,12 +18,14 @@ final readonly class AccessLogger implements AccessLoggerInterface
         private LoggerInterface $logger,
         private VisitorIdGenerator $visitorIdGenerator,
         private AccessRequestMetadata $accessRequestMetadata,
+        private GeoIpResolverInterface $geoIpResolver,
     ) {
     }
 
     public function log(Request $request, Response $response): void
     {
         $clientIp = $request->getClientIp() ?? self::GEO_PLACEHOLDER;
+        $geoIp = $this->geoIpResolver->resolve($this->visitorIdGenerator->sourceIp($request));
 
         $this->logger->info('access.request', [
             'request_id' => $this->accessRequestMetadata->requestId($request),
@@ -50,10 +53,10 @@ final readonly class AccessLogger implements AccessLoggerInterface
             'request_content_type' => $this->accessRequestMetadata->contentType($request->headers->get('Content-Type')),
             'response_content_type' => $this->accessRequestMetadata->contentType($response->headers->get('Content-Type')),
             'response_size' => $this->accessRequestMetadata->responseSize($response),
-            'city' => self::GEO_PLACEHOLDER,
-            'state' => self::GEO_PLACEHOLDER,
-            'country' => self::GEO_PLACEHOLDER,
-            'continent' => self::GEO_PLACEHOLDER,
+            'city' => $geoIp->city,
+            'state' => $geoIp->state,
+            'country' => $geoIp->country,
+            'continent' => $geoIp->continent,
         ]);
     }
 

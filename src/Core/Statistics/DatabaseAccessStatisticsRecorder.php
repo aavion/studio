@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Statistics;
 
 use App\Core\Log\AccessRequestMetadata;
+use App\Core\Geo\GeoIpResolverInterface;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,6 +21,7 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
         private VisitorIdGenerator $visitorIdGenerator,
         private UserAgentClassifier $userAgentClassifier,
         private AccessRequestMetadata $accessRequestMetadata,
+        private GeoIpResolverInterface $geoIpResolver,
     ) {
     }
 
@@ -28,6 +30,7 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
         try {
             $userAgent = trim((string) $request->headers->get('User-Agent', self::PLACEHOLDER));
             $client = $this->userAgentClassifier->classify($userAgent);
+            $geoIp = $this->geoIpResolver->resolve($this->visitorIdGenerator->sourceIp($request));
 
             $this->connection->insert('access_statistic_event', [
                 'uid' => $this->uuid(),
@@ -50,10 +53,10 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
                 'request_content_type' => $this->accessRequestMetadata->contentType($request->headers->get('Content-Type')),
                 'response_content_type' => $this->accessRequestMetadata->contentType($response->headers->get('Content-Type')),
                 'response_size' => $this->accessRequestMetadata->responseSize($response),
-                'city' => self::PLACEHOLDER,
-                'state' => self::PLACEHOLDER,
-                'country' => self::PLACEHOLDER,
-                'continent' => self::PLACEHOLDER,
+                'city' => $geoIp->city,
+                'state' => $geoIp->state,
+                'country' => $geoIp->country,
+                'continent' => $geoIp->continent,
                 'metadata' => json_encode(['query_present' => null !== $request->getQueryString()], JSON_THROW_ON_ERROR),
             ]);
         } catch (Throwable) {

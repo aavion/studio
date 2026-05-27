@@ -6,6 +6,7 @@ namespace App\Tests\Core\Log;
 
 use App\Core\Log\AccessLogger;
 use App\Core\Log\AccessRequestMetadata;
+use App\Core\Geo\NullGeoIpResolver;
 use App\Core\Statistics\VisitorIdGenerator;
 use Monolog\Handler\TestHandler;
 use Monolog\Level;
@@ -36,7 +37,7 @@ final class AccessLoggerTest extends TestCase
         $metadata->markStarted($request);
         $response = new Response('Denied', 401, ['Content-Type' => 'text/html; charset=UTF-8']);
 
-        (new AccessLogger($monolog, $visitorIdGenerator, $metadata))->log($request, $response);
+        (new AccessLogger($monolog, $visitorIdGenerator, $metadata, new NullGeoIpResolver()))->log($request, $response);
 
         $records = $handler->getRecords();
 
