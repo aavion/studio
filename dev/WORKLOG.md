@@ -18,22 +18,21 @@
   - [x] Static/dynamic content model
   - [x] Package-scoped theme engine
   - [ ] Native frontend/backend system package and design system
-  - Open: native template scaffold exists; finish the visual/design-system pass and first release-readiness verification shape.
+  - Open: functional native template/system package scaffold exists; finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.
 
 - [ ] **0.2.x Security and extension baseline**
   - [x] Security/ACL baseline
   - [ ] Admin interface and setup UI
-  - [ ] Event hooks and Messenger conventions
-  - [ ] Package discovery and lifecycle
-  - Open: first dashboard widgets; setup UI; package activation/install/uninstall flows; package uninstall/data cleanup execution; package service loading for active packages; Messenger mode/routing conventions.
+  - [x] Event hooks and Messenger conventions
+  - [x] Package discovery and lifecycle
+  - Open: final Admin UI/UX pass, first dashboard widgets, setup UI refinement, production updater/marketplace, package-owned migration purge execution, final public extension API naming, and one manual package/theme smoke before PR review.
   - Package/theme completion mini-roadmap before PR review:
-    - Add an Operations/ActionLog foundation with token-protected action starts, live stream/fetch status below `api/live` or `api/operations`, dry-run confirmation handoff, and a small JS overlay app; a static overlay-like runner view is acceptable if true overlay POST flows are brittle.
-      Current implementation plan: use ActionLog for synchronously executed `ActionQueue` runs, but start those runs in a small background console process so the original page request stays short. Store run state and ActionLog entries in `var/operations/{APP_ENV}`, expose token-protected polling below `/api/live/operations/{id}`, and let the backend UI start live operations through the existing CSRF-protected action forms. Keep dry-run confirmation as an explicit follow-up state rather than baking it into every operation now.
-    - Prepare staged ZIP install/update boundaries: add explicit manifest package slug validation, stage uploads before applying, and add registry storage for a future externally discovered available version while leaving online updater/system self-update logic for later.
-    - Harden the package contribution contract without adding pretend permission flags to manifests; document supported runtime contributions, collision diagnostics, and failure-to-faulty behavior.
-    - Make deferred Messenger work actually run soon after dispatch through a clear worker/runner mechanism so cache-warmup discovery and longer tasks do not stay queued forever.
-    - Keep theme activation, asset/translation lifecycle, delete/purge semantics, and POST handling on non-POST backend views covered by focused tests rather than broad UI work.
-    - Keep developer docs intentionally short for now: enough snippets for manifest keys, `package.php` contributions, settings, configurable/static routes, dynamic slots, theme scopes, and template namespace precedence.
+    - [x] Add the Operations/ActionLog foundation with token-protected action starts, detached runners, polling below `/api/live/operations/{id}`, review-required continuation handoff, an Admin Operations inspection view, and transient run cleanup.
+    - [x] Prepare staged ZIP install/update boundaries with enforced manifest slugs, cache-staged uploads, review-required apply, overwrite handling, post-install discovery, reactivation, and nullable registry storage for a future externally discovered available version.
+    - [x] Harden the package contribution contract without pretend manifest permission flags; document manifest keys, package settings, runtime `package.php` contributions, static/dynamic view injections, theme scopes, and template namespace precedence.
+    - [x] Make deferred Messenger work run soon after dispatch through a post-response `async` drain guarded by an environment-scoped cooldown lock.
+    - [x] Cover theme activation, dependency cascades, asset/translation lifecycle, delete/purge semantics, ZIP install, and backend action POST handling with focused tests.
+    - [ ] Run one final manual smoke before PR review: fresh setup, package/theme overviews, demo package lifecycle, dependency cascade, ZIP install confirmation, delete vs purge, and setup/public-home behavior.
 
 - [ ] **0.3.x Structured authoring and resolver foundation**
   - [ ] Schema-driven content fields
@@ -55,7 +54,7 @@
   - [ ] Backup and restore
   - [ ] Contact, mail, logging, and statistics
   - [ ] IconCaptcha integration
-  - Open: API write scope; public delivery snapshot vs cache-backed read model; ActionLog UI/storage beyond current operation output; exact audit log channels/levels/retention; backup/log/submission retention defaults; Scheduler execution implementation; IconCaptcha provider interface, secret rotation, and asset policy details.
+  - Open: ActionLog live-operation foundation exists; finish durable audit retention, API write scope, public delivery snapshot vs cache-backed read model, backup/log/submission retention defaults, Scheduler execution implementation, IconCaptcha provider interface, secret rotation, and asset policy details.
 
 - [ ] **0.5.x Release lifecycle**
   - [ ] Self-update and release workflow
@@ -71,80 +70,26 @@
 ## To-Do
 **Usage:** Track deferred tasks and keep the list up-to-date.
 
-- [ ] Keep roadmap sub-items aligned with feature drafts when implementation changes scope, order, or dependencies. Last reviewed: 2026-05-25.
+- [ ] Keep roadmap sub-items aligned with feature drafts when implementation changes scope, order, or dependencies. Last reviewed: 2026-05-27.
 - [ ] Before the first stable `1.0.0` release, keep Doctrine migrations consolidated into one current baseline migration.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
-- [ ] Define the package manifest syntax for static and dynamic view injections now that the core registry uses the shared `public`, `admin`, and `editor` surfaces.
+- [ ] Before `1.0.0`, decide whether package view injections stay `package.php` runtime contributions only or also get a manifest-level syntax; the current package/design PR documents and tests the runtime contribution contract.
 - [ ] Before production readiness, review public package/developer-facing class, interface, function, and Twig helper names for clarity and ergonomics; decide whether to rename directly or provide stable aliases so extension APIs read as intentional rather than provisional.
 
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
-- Added the first staged package ZIP installer: Admin Package Management exposes a ZIP upload dialog, uploads are staged below `var/cache/{APP_ENV}/package-installs`, live operations verify manifests and package lint rules, pause with a review-required confirmation, then replace existing package folders, run discovery, and restore activation when the overwritten package was active.
-- Added required `PACKAGE_SLUG` package manifest support so registry identifiers and ZIP install target folders use a stable manifest-declared slug instead of inferring only from the discovered folder name.
-- Hardened `PackageValidator` so package candidates without a valid `PACKAGE_SLUG` fail validation even after manifest-level checks have already run.
-- Added a post-response deferred Messenger drain that checks for due `async` transport rows after HTTP termination, starts one detached `messenger:consume async` worker behind an environment-scoped cooldown lock, and no-ops gracefully when setup-time database state is unavailable.
-- Prepared package update metadata by adding nullable registry storage for a future externally discovered available version and surfacing it through the package overview model.
-- Adjusted live operation result aggregation so `requires_review` action context, including continuation metadata, is preserved in the terminal operation result without changing normal success result context semantics.
-- Hardened the live Operations/ActionLog foundation with tagged queue providers, stale-run detection, persisted start failures, expired-run cleanup, localized polling payload messages, and a `studio:operations:cleanup` command.
-- Added an atomic runner claim so a staged live operation can only be executed once, added a stale-safe global live-runner lock so different live operations cannot mutate packages/assets/cache concurrently, let completed runners clean expired operation artifacts with a 3600-second TTL, and taught the overlay to resume in-flight operations from session storage after page reloads instead of starting duplicates.
-- Moved the Admin package registry refresh onto the live ActionLog provider path while preserving the synchronous POST fallback for non-JavaScript submissions.
-- Added an Admin Operations view that lists queued, running, and still-retained terminal live-operation state, reports the current runner lock, supports expired-run cleanup, and can clear stale locks without exposing a web process-kill control.
-- Added an emergency stale-runner stop path that records the detached runner PID, exposes it in Admin Operations, and only enables kill for stale locks whose stored PID still belongs to the matching `studio:operations:run` command.
-- Added retained live-operation detail pages under Admin Operations so operators can inspect stored ActionLog entries and final result messages after the overlay has been closed, without exposing run tokens or payloads.
-- Implemented review-required live-operation completion: `WorkflowResult::requiresReview()` now produces terminal `requires_review` operation state, token-protected continuation URLs, and overlay Continue/Cancel actions that start a provider-declared follow-up operation instead of suspending the runner.
-- Enforced review-required workflow results to include a user-facing `INFO` or `WARN` confirmation prompt issue, so an operation cannot ask for Continue/Cancel without explaining what the user is accepting or rejecting.
-- Refined overlay actions so running operations show no action buttons, successful operations show an OK action that refreshes/redirects, failed operations show Retry and UI-only Cancel, and polling failures expose Refresh plus Close for the same operation; production log downloads and destructive process cancellation remain intentionally out of scope.
-- Moved generated Symfony runtime translation catalogues to `translations/runtime/messages.{locale}.yaml` so Symfony does not scan source catalogues or local conflict files directly while language discovery still reads `translations/languages/{locale}`.
-- Recorded the review-required live-operation handoff contract, provider payload/capability boundary, detached runner production follow-up, and confirmed that message-layer output is forwarded to the durable operation message log while transient ActionLog-only steps remain TTL-bound.
-- Verified the Operations/ActionLog slice with translation comparison, YAML/Twig/container linting, Tailwind and AssetMapper builds, targeted Operations/BackendController coverage, and the full PHPUnit suite.
+- Completed the first review-ready Operations/ActionLog slice: detached tokenized live-operation runners, cursor polling below `/api/live/operations/{id}`, retained Admin Operations inspection/detail views, stale cleanup and emergency stale-runner handling, atomic runner claims, a global live-operation lock, overlay resume behavior, review-required continuation handoff, and contextual overlay actions.
+- Completed the staged package ZIP installer boundary: enforced `PACKAGE_SLUG`, cache-staged uploads, manifest/package validation, review-required apply, overwrite handling without purge, post-install discovery, reactivation of previously active packages, and nullable available-version registry storage for a future updater.
+- Moved package registry refresh into the live-operation path, added the post-response deferred Messenger drain for due `async` jobs, kept non-JavaScript fallbacks, and verified the slice with focused package/operation tests plus container, Twig/YAML, translation, Tailwind, AssetMapper, and full PHPUnit checks.
+- Kept supporting contracts and docs aligned: runtime translation catalogues moved to `translations/runtime`, review-required action prompts are enforced, message-layer diagnostics remain durable in the operation message log, and package/install/lifecycle snippets, drafts, class map, and tests were updated.
 
 ### 2026-05-26
-- Added the first live Operations/ActionLog foundation: backend action forms can start tokenized live operations, a detached `studio:operations:run` console process executes reconstructed ActionQueues, progress is written below `var/operations/{APP_ENV}`, `/api/live/operations/{id}` exposes cursor polling payloads, and the Admin shell includes a rudimentary Stimulus overlay for live entries.
-- Moved package lifecycle apply actions behind the live operation layer while keeping the existing synchronous POST fallback for non-JavaScript submissions.
-- Removed generated conflict catalogues that exposed invalid locales such as `de 2`; keep Symfony locale discovery open so future language catalogues can be added through the normal translation source directories.
-- Moved the shell and typography demo routes out of Core and into the demo module as portable configurable static view injections under `/demo/**`, added a package setting for the route parent, kept the frontend shell on top-level `/demo`, and adjusted demo route tests to activate the module fixture while skipping with a notice if the module is intentionally absent.
-- Added a setup-time minimal `static_page` schema and published `/home` placeholder content item so fresh installations render the configured public home path instead of falling through to a `404`.
-- Expanded the `/demo/typography` guide into renderer-backed Markdown input/output examples for basic, allrounder, and design profiles, including fenced code blocks, tables, task lists, footnotes, attributes, trusted HTML, and embeds for later user-guide reuse.
-- Fixed package deactivation planning/execution so active reverse dependencies are deactivated before the target package, including implicit single-active scope conflicts such as switching themes that have active dependent provider packages.
-- Fixed Admin UI maintenance actions so top-bar forms are handled before backend view resolution on package detail and lifecycle routes, and made the Admin package registry refresh run discovery synchronously so purged package rows reappear immediately when their package files still exist.
-- Added active package runtime contributions from `package.php` return values for static/dynamic view injections and package setting definitions, and gave the demo module a tiny public route plus package setting contribution.
-- Replaced the package detail manifest dump with structured metadata, optional GitHub-Flavored README markdown rendering through `league/commonmark`, optional package image data-URI previews, and branch-aware source links while extending system/package manifest metadata for license, homepage, source, and channel fields.
-- Split Markdown rendering into README, trusted design, rich allrounder, and safety-first basic profiles, and added a tiny package-owned dynamic view contribution to the demo module so static route, dynamic slot, and settings contributions are all covered by one demo package.
-- Added `/demo/typography` as a Markdown-rendered typography guide for the basic, allrounder, and design profiles, hardened shared Markdown CSS through Tailwind-style `@apply` rules, and wired demo package dependencies through the virtual `system` package plus a demo theme dependency chain.
-- Reworked the Admin Theme Management overview into scope-separated theme cards with reserved preview image space, package detail links, removed-theme filtering, and single quick use/active/repair controls.
-- Added package detail and non-menu lifecycle review routes for package activation, deactivation, fault reset, data purge, and physical package deletion, with explicit overview action buttons instead of clickable status badges.
-- Verified the package lifecycle UI slice with PHP syntax checks, Twig linting, translation catalogue comparison, container linting, targeted backend controller coverage, and the full PHPUnit suite.
-- Added a first BackendActions foundation with CSRF-protected Admin UI buttons for package discovery, asset rebuild dispatch, and synchronous cache clearing on package and theme overview screens.
-- Surfaced root `.manifest` name, author, and description metadata through the virtual system package and mirrored those values into package and theme admin overviews.
-- Marked system package/theme rows as immutable in admin overviews, kept the virtual system package visible for package update workflows, and made theme sections show the system fallback as active only when no active theme package owns that area.
-- Aligned application package discovery with the current root `.manifest` metadata keys used by the virtual system package.
-- Added the first Admin Theme Management overview with separate frontend/backend theme sections and the immutable native system theme fallback shown in both areas.
-- Relaxed the Twig syntax linter so package templates may use Symfony, Studio, theme, or package-provided filters, functions, and tests without failing discovery in the isolated lint environment.
-- Added small inactive demo packages for module, frontend-theme, and captcha-provider discovery plus a regression test proving package cleanup removes only the purged package settings.
-- Rendered the first read-only Admin Package Management overview from the extension package registry, including status, scopes, versions, paths, and generic package settings links when available.
-- Collapsed inactive backend navigation branches so admin menu children only render for active parents or active ancestors while keeping active-state classes available for later UI styling.
-- Added local `COMPOSER_HOME`/`HOME` fallbacks to setup subprocess execution so web setup can run Composer even when the web server environment omits shell home variables.
-- Disabled Turbo interception on the first web setup form so non-redirect POST responses can render setup validation, dry-run results, and ActionLog output in the browser.
-- Added a first functional web setup form on `/setup` that stays DB-free while rendering, submits through the shared `SetupRunner`, supports CSRF-protected dry-runs for local verification, and renders ActionLog step results with localized labels.
-- Made generated Admin Settings forms functional with CSRF-protected POST handling, neutral form submission casting/validation, persisted core settings, persisted package settings, translated validation feedback, and backend flash rendering.
-- Added a reusable form-definition foundation outside the backend namespace, wired core and package setting definitions into it, rendered the first typed Admin Settings forms with validation metadata, and prepared the native captcha provider field slot for future provider packages.
-- Added top-level Admin Shell placeholders for User Management, Scheduler, Backups, and Logs so administrative surfaces from the drafts have navigable ACL-protected anchors while content, schema, and import/export work stays with the Editor area.
-- Added `/admin/themes` as the first top-level Theme Management placeholder so theme selection, activation, previews, and variants can evolve outside the settings tree.
-- Added the first Admin Settings information architecture with `/admin/settings/general` as the default section plus Dashboard, Users, Mail, Security, Packages, and Scheduler placeholder sections under the shared backend view registry.
-- Extended package settings with input-type and validation metadata for future generic forms, added `/admin/settings/packages` as the package settings overview, and nested package-specific settings pages below it by package slug while keeping labels from package metadata.
-- Added the first package settings foundation: a package-scoped settings table, typed setting definitions/providers, active-package filtering, generic Admin Settings views, purge cleanup for package settings, and `PACKAGE_DESCRIPTION` metadata propagation for package UI surfaces.
-- Added a DB-free setup redirect subscriber so fresh installations route public catch-all requests to `/setup` before content, navigation, or config services can query missing tables.
-- Fixed unauthenticated `401` login rendering so protected route requests include a local `_target_path` callback to the originally requested URL.
-- Added the first package-facing view injection foundation: shared `public`, `admin`, and `editor` surfaces; static route/menu injection definitions; dynamic content slot and variant-route injections; public hook events for both registries; schema custom-Twig fieldset rendering with generic fallback; access-aware navigation filtering for groups; and tests proving content/core views win before injected package routes.
-- Added backend routing and account foundations: shared `/setup`, `/admin`, and `/editor` routing with ACL checks and setup locking; `/user/*` login, logout, profile/password, registration/reset/invitation skeletons, user-scoped API-key listing, config-gated account flows, and access-filtered account navigation.
-- Added a backend view registry/provider foundation so core and package views can define area paths, templates, navigation labels, access levels, route parameters, and sort order from one shared contract; registered the first `/admin/packages` placeholder view through it.
-- Added safe navigation link metadata rendering for optional `data-*`, `aria-*`, and selected link attributes, including Turbo-prefetch opt-out metadata for the logout menu link.
-- Hardened logout routing so `GET /user/logout` renders a translated confirmation page while only a CSRF-protected `POST /user/logout` can terminate the session and redirect to the homepage.
-- Strengthened setup and configuration behavior: message-backed setup failures, DB-free completion marker persistence, SQLite placeholder resolution, post-completion `cache:clear` for package discovery warmup, Config get/set diagnostics, and test-safe `bin/setup` operation logging based on the selected setup environment.
-- Reworked translation handling into language-grouped source catalogues with generated default-domain runtime catalogues, early CLI bootstrap support, active-package aggregation, package namespace/fallback validation, collision checks, Twig default-domain usage, and updated comparison tooling/docs/tests.
-- Updated the baseline migration to Doctrine DBAL's primary-key constraint API and kept setup/class map/worklog/tests aligned with the new backend, setup, config, and translation behavior.
+- Completed the backend/package/admin foundation pass: `/setup`, `/admin`, `/editor`, `/user/*`, account navigation, access-aware backend view registry, Admin Settings forms and sections, package settings storage/metadata, setup redirect, setup web form, setup subprocess environment fallback, logout hardening, and protected-route login callbacks.
+- Completed the package contribution and demo pass: shared `public`/`admin`/`editor` view injection surfaces, static and dynamic injections, runtime `package.php` contributions, package setting definitions, demo packages, demo module routes, configurable `/demo` parent, Markdown profile rendering, typography demo, package image/README/source metadata, and package/template lint relaxation.
+- Completed the package/theme management pass: package registry overview, package detail metadata, lifecycle review routes, delete/purge/activate/deactivate/reset flows, dependency deactivation cascades, virtual system package metadata/immutability, Theme Management cards, system fallback behavior, backend menu child collapsing, and top-bar action handling on nested routes.
+- Completed supporting platform cleanup: language-grouped translation sources with generated runtime catalogues, active package translation aggregation, setup-time `/home` placeholder seed, DBAL baseline migration API update, and verification across targeted backend/package tests plus syntax, Twig, translation, container, and full PHPUnit checks.
 
 ### 2026-05-25
 - Built the first system UI/design-system slice with tokenized frontend/backend/admin/editor/setup shells, demo preview routes, package-scoped template namespaces, provider fallbacks, CodeMirror provider wiring, and frontend error templates.
