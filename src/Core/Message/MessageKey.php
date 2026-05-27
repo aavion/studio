@@ -71,6 +71,7 @@ final class MessageKey
     public const PACKAGE_SETTING_DELETE_FAILED = 'message.package.setting.delete_failed';
     public const PACKAGE_SETTING_VALUE_INVALID = 'message.package.setting.value_invalid';
     public const PACKAGE_DEPENDENCY_MISSING = 'message.package.dependency.missing';
+    public const PACKAGE_DEPENDENCY_INVALID = 'message.package.dependency.invalid';
     public const PACKAGE_DEPENDENCY_VERSION_UNSATISFIED = 'message.package.dependency.version_unsatisfied';
     public const PACKAGE_DEPENDENCY_STATUS_BLOCKED = 'message.package.dependency.status_blocked';
     public const PACKAGE_DEPENDENCY_CYCLE = 'message.package.dependency.cycle';

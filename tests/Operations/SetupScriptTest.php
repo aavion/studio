@@ -45,6 +45,7 @@ final class SetupScriptTest extends TestCase
         self::assertStringContainsString('reset-password', $contents);
         self::assertStringContainsString('no-interaction', $contents);
         self::assertStringContainsString('json_encode', $contents);
+        self::assertStringContainsString('workflowResultMessageReporter($projectDir, $environment)', $contents);
     }
 
     public function testSetupScriptLocalizesHumanOutput(): void

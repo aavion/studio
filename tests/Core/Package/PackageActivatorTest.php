@@ -170,6 +170,17 @@ final class PackageActivatorTest extends KernelTestCase
         self::assertSame('inactive', $this->packageStatus('new-theme'));
     }
 
+    public function testItBlocksMalformedPackageDependencies(): void
+    {
+        $this->insertPackage('new-theme', ['frontend-theme'], 'inactive', '["theme-tools >=1.0"]');
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.dependency.invalid', $result->firstIssue()?->code());
+        self::assertSame('inactive', $this->packageStatus('new-theme'));
+    }
+
     public function testItBlocksUnsatisfiedPackageDependencyVersions(): void
     {
         $this->insertPackage('theme-tools', ['module'], 'active', version: '1.0.0');

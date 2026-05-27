@@ -70,6 +70,7 @@ message:
       value_invalid: 'Package setting "%package%:%key%" contains an invalid stored value.'
     dependency:
       missing: 'Package dependency "%package%" required by "%required_by%" is not installed.'
+      invalid: 'Package "%package%" declares malformed package dependencies.'
       version_unsatisfied: 'Package dependency "%package%" requires at least version %required_version%; installed version is %installed_version%.'
       status_blocked: 'Package dependency "%package%" cannot be used while it is "%status%".'
       cycle: 'Circular package dependency detected: %cycle%.'

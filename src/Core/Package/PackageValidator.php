@@ -31,6 +31,7 @@ final class PackageValidator
         private readonly JavaScriptLinter $javaScriptLinter = new JavaScriptLinter(),
         private readonly FileInventoryScanner $fileInventoryScanner = new FileInventoryScanner(),
         private readonly PackageTemplatePathValidator $templatePathValidator = new PackageTemplatePathValidator(),
+        private readonly PackageDependencyParser $dependencyParser = new PackageDependencyParser(),
     ) {
     }
 
@@ -39,7 +40,10 @@ final class PackageValidator
      */
     public function validate(PackageCandidate $candidate, PackageSpec $spec): WorkflowResult
     {
-        $issues = $this->validatePackageSlug($candidate);
+        $issues = [
+            ...$this->validatePackageSlug($candidate),
+            ...$this->validateDependencySyntax($candidate),
+        ];
 
         foreach ($spec->requiredFiles() as $path) {
             $absolutePath = $candidate->directory().DIRECTORY_SEPARATOR.$path;
@@ -158,6 +162,33 @@ final class PackageValidator
         }
 
         return [];
+    }
+
+    /**
+     * @return list<Message>
+     */
+    private function validateDependencySyntax(PackageCandidate $candidate): array
+    {
+        $value = $candidate->manifest()->get('PACKAGE_DEPENDENCIES');
+
+        if (null !== $this->dependencyParser->parse($value)) {
+            return [];
+        }
+
+        return [
+            Message::create(
+                MessageCode::PACKAGE_DEPENDENCY_INVALID,
+                MessageKey::PACKAGE_DEPENDENCY_INVALID,
+                ['%package%' => trim((string) $candidate->manifest()->get('PACKAGE_SLUG', ''))],
+                [
+                    'source' => $candidate->source()->name(),
+                    'path' => $candidate->manifestPath(),
+                    'key' => 'PACKAGE_DEPENDENCIES',
+                    'value' => $value,
+                ],
+                MessageLevel::Error,
+            ),
+        ];
     }
 
     /**

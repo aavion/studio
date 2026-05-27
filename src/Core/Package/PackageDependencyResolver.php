@@ -18,6 +18,7 @@ final readonly class PackageDependencyResolver
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ?SystemPackageMetadataProvider $systemPackageMetadata = null,
+        private PackageDependencyParser $dependencyParser = new PackageDependencyParser(),
     ) {
     }
 
@@ -137,7 +138,7 @@ final readonly class PackageDependencyResolver
         $packages[$package->packageName()] = $package;
         $stack[] = $package->packageName();
 
-        foreach ($this->dependencies($package) as [$dependencyName, $minVersion]) {
+        foreach ($this->dependencies($package, $issues) as [$dependencyName, $minVersion]) {
             if ('system' === $dependencyName) {
                 $this->resolveSystemPackage($package, $minVersion, $dependencies, $issues);
 
@@ -283,7 +284,7 @@ final readonly class PackageDependencyResolver
     /**
      * @return list<array{0: string, 1: string}>
      */
-    private function dependencies(ExtensionPackage $package): array
+    private function dependencies(ExtensionPackage $package, ?array &$issues = null): array
     {
         $metadata = $package->metadata();
         $manifest = $metadata['manifest'] ?? [];
@@ -291,15 +292,22 @@ final readonly class PackageDependencyResolver
             ? ($manifest['PACKAGE_DEPENDENCIES'] ?? null)
             : ($metadata['dependencies'] ?? null);
 
-        if (!is_string($value) || '' === trim($value) || '[]' === trim($value)) {
-            return [];
+        $dependencies = $this->dependencyParser->parse($value);
+
+        if (null !== $dependencies) {
+            return $dependencies;
         }
 
-        preg_match_all('/\[\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\s*\]/', $value, $matches, PREG_SET_ORDER);
+        if (null !== $issues) {
+            $issues[] = Message::create(
+                MessageCode::PACKAGE_DEPENDENCY_INVALID,
+                MessageKey::PACKAGE_DEPENDENCY_INVALID,
+                ['%package%' => $package->packageName()],
+                ['package' => $package->packageName(), 'value' => $value],
+                MessageLevel::Error,
+            );
+        }
 
-        return array_map(
-            static fn (array $match): array => [$match[1], $match[2]],
-            $matches,
-        );
+        return [];
     }
 }

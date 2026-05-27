@@ -128,9 +128,8 @@ final readonly class PackageTemplatePathValidator
 
     private function packageSlug(PackageCandidate $candidate): string
     {
-        $directory = str_replace('\\', '/', rtrim($candidate->directory(), '/'));
-        $slug = basename($directory);
+        $slug = trim((string) $candidate->manifest()->get('PACKAGE_SLUG', ''));
 
-        return '' === $slug ? 'package' : $slug;
+        return PackageManifestSpec::isValidSlug($slug) ? $slug : 'package';
     }
 }

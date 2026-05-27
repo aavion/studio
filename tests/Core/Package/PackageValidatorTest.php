@@ -138,6 +138,18 @@ final class PackageValidatorTest extends TestCase
         self::assertSame('PACKAGE_SLUG', $result->firstIssue()?->context()['key']);
     }
 
+    public function testItRejectsMalformedPackageDependencies(): void
+    {
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_DEPENDENCIES' => '["demo-base >=1.0"]']),
+            PackageSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.dependency.invalid', $result->firstIssue()?->code());
+        self::assertSame('PACKAGE_DEPENDENCIES', $result->firstIssue()?->context()['key']);
+    }
+
     public function testItLimitsInventoryDepth(): void
     {
         $this->writeFile('one/two/three/file.txt', 'nested');
@@ -248,12 +260,11 @@ final class PackageValidatorTest extends TestCase
 
     public function testItAllowsTemplatesWithinDeclaredOverrideScopes(): void
     {
-        $packageSlug = basename($this->packageDir);
         $this->writeFile('templates/frontend/page.html.twig', '<main></main>');
         $this->writeFile('templates/backend/dashboard.html.twig', '<main></main>');
         $this->writeFile('templates/base.html.twig', '<main></main>');
         $this->writeFile('templates/macros/core/ui.html.twig', '{% macro badge(label) %}{{ label }}{% endmacro %}');
-        $this->writeFile(sprintf('templates/macros/%s/forms.html.twig', $packageSlug), '{% macro field(label) %}{{ label }}{% endmacro %}');
+        $this->writeFile('templates/macros/system/forms.html.twig', '{% macro field(label) %}{{ label }}{% endmacro %}');
 
         $result = (new PackageValidator())->validate(
             $this->candidateWithScope('[frontend-theme, backend-theme, system-template, module]'),
@@ -291,11 +302,22 @@ final class PackageValidatorTest extends TestCase
 
     public function testItAllowsPackageOwnedMacroNamespaceWithoutThemeScope(): void
     {
-        $packageSlug = basename($this->packageDir);
-        $this->writeFile(sprintf('templates/macros/%s/forms.html.twig', $packageSlug), '{% macro field(label) %}{{ label }}{% endmacro %}');
+        $this->writeFile('templates/macros/system/forms.html.twig', '{% macro field(label) %}{{ label }}{% endmacro %}');
 
         $result = (new PackageValidator())->validate(
             $this->candidateWithScope('module'),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItAllowsPackageOwnedMacroNamespaceUsingManifestSlugWhenDirectoryDiffers(): void
+    {
+        $this->writeFile('templates/macros/demo-module/forms.html.twig', '{% macro field(label) %}{{ label }}{% endmacro %}');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module', 'PACKAGE_SCOPE' => 'module']),
             PackageSpec::create()->withInventoryDepth(4),
         );
 
