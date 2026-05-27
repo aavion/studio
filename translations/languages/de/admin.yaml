@@ -241,6 +241,14 @@ admin:
       action: 'Aktion'
       channel: 'Channel'
       context: 'Kontext'
+    statistics:
+      title: 'Zugriffsstatistiken'
+      summary: '%count% Access-Log-Einträge sind in diesem anonymisierten Snapshot enthalten.'
+      status_families: 'Statusfamilien'
+      top_routes: 'Top-Routen'
+      top_not_found: 'Häufige 404-Routen'
+      top_countries: 'Top-Länder'
+      empty: 'Noch keine Daten verfügbar.'
   settings:
     title: 'Einstellungen'
     redirect_title: 'Einstellungsbereiche'

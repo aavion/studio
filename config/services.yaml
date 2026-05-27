@@ -176,6 +176,11 @@ services:
             $logDir: '%kernel.logs_dir%'
             $environment: '%kernel.environment%'
 
+    App\Core\Statistics\AccessStatisticsAggregator:
+        arguments:
+            $logDir: '%kernel.logs_dir%'
+            $environment: '%kernel.environment%'
+
     App\Core\Asset\AssetRebuildQueueFactory:
         arguments:
             $projectDir: '%kernel.project_dir%'

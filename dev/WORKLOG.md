@@ -60,6 +60,7 @@
     - [x] Define dedicated file-based Monolog channels for message, operation, audit, and access logs with 30-day retention.
     - [x] Add small service boundaries for audit and access logging so later features can record actions without depending on UI code.
     - [x] Keep raw access logs retraceable for at most 30 days; write unavailable GeoIP values as `n/a` until a GeoIP provider is implemented.
+    - [x] Add an access-statistics aggregation boundary that reads raw access logs, emits anonymized counts only, and can later be replaced by database-backed long-term aggregates.
     - [ ] Keep the statistics branch separate from raw access logs so long-term aggregated statistics can later move to database-backed storage.
     - [x] Add a functional Admin Logs view with log selection, basic filtering, and bounded file reads; visual refinement stays out of this feature slice.
 
@@ -87,6 +88,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Added the first access-statistics aggregation boundary: raw `studio_access` log files are parsed through a shared Monolog line parser, anonymized snapshots expose total request counts, status families, top routes, frequent 404 routes, and countries, and Admin Logs now shows the snapshot without exposing IP addresses.
 - Extended the audit slice so admin maintenance actions, package ZIP verification starts, and package lifecycle actions report actor, action, mode, target, and result status to the `studio_audit` channel without letting audit failures interrupt the UI flow.
 - Completed the first log foundation slice: MessageLog now writes through Monolog's `studio_message` channel with redacted structured context, dedicated rotating `studio_message`/`studio_operation`/`studio_audit`/`studio_access` channels keep 30-day retention, access and audit service boundaries were added, authentication events enter the audit log, access entries use GeoIP `n/a` placeholders, and Admin Logs can read/filter known log files.
 - Started the log/statistics foundation plan: MessageLog moves to Monolog first, dedicated message/operation/audit/access channels follow, raw access logs keep 30-day retention with `n/a` GeoIP placeholders, long-term statistics remain a later DB-backed aggregate, and the first Admin Logs UI stays functional rather than visually final.

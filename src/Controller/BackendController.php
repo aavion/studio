@@ -23,6 +23,7 @@ use App\Core\Operation\Live\LiveOperationStarter;
 use App\Core\Package\Install\PackageZipInstaller;
 use App\Core\Output\JsonOutputRenderer;
 use App\Core\Package\Settings\PackageSettingsFormHandler;
+use App\Core\Statistics\AccessStatisticsAggregator;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\UserAccount;
 use App\Form\FormSubmissionResult;
@@ -52,6 +53,7 @@ final class BackendController extends AbstractController
         private readonly PackageLifecycleAdmin $packageLifecycleAdmin,
         private readonly PackageZipInstaller $packageZipInstaller,
         private readonly LogFileBrowser $logFileBrowser,
+        private readonly AccessStatisticsAggregator $accessStatisticsAggregator,
         private readonly AuditLoggerInterface $auditLogger,
         private readonly LiveOperationRunStore $liveOperationRunStore,
         private readonly LiveOperationStarter $liveOperationStarter,
@@ -380,6 +382,7 @@ final class BackendController extends AbstractController
 
         if (BackendArea::Admin === $area && 'backend-admin-logs' === $view?->uid()) {
             $templateVariables['log_view'] = $this->logFileBrowser->browse($request->query->all());
+            $templateVariables['access_statistics'] = $this->accessStatisticsAggregator->snapshot();
         }
 
         return $this->render($result->template(), $templateVariables, new Response(status: $result->statusCode()));

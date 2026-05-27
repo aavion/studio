@@ -100,4 +100,32 @@
             </div>
         {% endif %}
     </section>
+
+    {% if access_statistics is defined %}
+        <section class="studio-panel">
+            <h2>{{ 'admin.logs.statistics.title'|trans }}</h2>
+            <p class="studio-muted">{{ 'admin.logs.statistics.summary'|trans({'%count%': access_statistics.total_requests}) }}</p>
+            <div class="studio-grid studio-grid-3">
+                <div>
+                    <h3>{{ 'admin.logs.statistics.status_families'|trans }}</h3>
+                    <dl>
+                        {% for family, count in access_statistics.status_families %}
+                            <dt>{{ family }}</dt>
+                            <dd>{{ count }}</dd>
+                        {% endfor %}
+                    </dl>
+                </div>
+                <div>
+                    <h3>{{ 'admin.logs.statistics.top_routes'|trans }}</h3>
+                    {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_routes} only %}
+                </div>
+                <div>
+                    <h3>{{ 'admin.logs.statistics.top_not_found'|trans }}</h3>
+                    {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_not_found} only %}
+                </div>
+            </div>
+            <h3>{{ 'admin.logs.statistics.top_countries'|trans }}</h3>
+            {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_countries} only %}
+        </section>
+    {% endif %}
 {% endblock %}
