@@ -4,7 +4,7 @@
 declare(strict_types=1);
 
 use App\Core\ActionLog\ActionLog;
-use App\Core\Log\FileMessageLogger;
+use App\Core\Log\MonologMessageLogger;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporter;
 use App\Core\Message\WorkflowResultMessageReporter;
@@ -14,6 +14,8 @@ use App\Setup\SetupLanguageCatalog;
 use App\Setup\SetupMessageTranslator;
 use App\Setup\SetupPasswordResetRunner;
 use App\Setup\SetupRunner;
+use Monolog\Handler\RotatingFileHandler;
+use Monolog\Logger;
 use Symfony\Component\Dotenv\Dotenv;
 
 require dirname(__DIR__).'/vendor/autoload.php';
@@ -168,8 +170,22 @@ function translationParameters(mixed $parameters): array
 function workflowResultMessageReporter(string $projectDir, string $environment): WorkflowResultMessageReporter
 {
     return new WorkflowResultMessageReporter(
-        new MessageReporter(new FileMessageLogger($projectDir, $environment)),
+        new MessageReporter(new MonologMessageLogger(messageLogger($projectDir, $environment))),
     );
+}
+
+function messageLogger(string $projectDir, string $environment): Logger
+{
+    $logger = new Logger('studio_message');
+    $logger->pushHandler(new RotatingFileHandler(
+        rtrim($projectDir, DIRECTORY_SEPARATOR.'/\\').DIRECTORY_SEPARATOR.'var'.DIRECTORY_SEPARATOR.'log'.DIRECTORY_SEPARATOR.$environment.'.studio-message.log',
+        30,
+        Logger::DEBUG,
+        true,
+        0664,
+    ));
+
+    return $logger;
 }
 
 /**

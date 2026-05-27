@@ -15,6 +15,7 @@ use App\Core\Config\Settings\CoreSettingsFormHandler;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Log\LogFileBrowser;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Operation\Live\LiveOperationStarter;
@@ -48,6 +49,7 @@ final class BackendController extends AbstractController
         private readonly BackendActions $backendActions,
         private readonly PackageLifecycleAdmin $packageLifecycleAdmin,
         private readonly PackageZipInstaller $packageZipInstaller,
+        private readonly LogFileBrowser $logFileBrowser,
         private readonly LiveOperationRunStore $liveOperationRunStore,
         private readonly LiveOperationStarter $liveOperationStarter,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
@@ -363,6 +365,10 @@ final class BackendController extends AbstractController
 
         if (BackendArea::Admin === $area && 'backend-admin-operations' === $view?->uid()) {
             $templateVariables += $this->operationVariables();
+        }
+
+        if (BackendArea::Admin === $area && 'backend-admin-logs' === $view?->uid()) {
+            $templateVariables['log_view'] = $this->logFileBrowser->browse($request->query->all());
         }
 
         return $this->render($result->template(), $templateVariables, new Response(status: $result->statusCode()));

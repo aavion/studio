@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Core\Log;
 
 use App\Core\Message\Message;
-use DateTimeImmutable;
+use App\Core\Message\MessageLevel;
 use DateTimeInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use Throwable;
 use UnitEnum;
 
-final class FileMessageLogger implements MessageLoggerInterface
+final class MonologMessageLogger implements MessageLoggerInterface
 {
     private const REDACTED = '[redacted]';
 
@@ -19,10 +21,8 @@ final class FileMessageLogger implements MessageLoggerInterface
      */
     private array $seenSignatures = [];
 
-    public function __construct(
-        private readonly string $projectDir,
-        private readonly string $environment,
-    ) {
+    public function __construct(private readonly LoggerInterface $logger)
+    {
     }
 
     /**
@@ -40,9 +40,6 @@ final class FileMessageLogger implements MessageLoggerInterface
 
     public function logBatch(iterable $records): void
     {
-        $lines = [];
-        $timestamp = (new DateTimeImmutable())->format(DATE_ATOM);
-
         foreach ($records as $record) {
             $message = $record['message'];
             $context = $record['context'] ?? [];
@@ -51,83 +48,43 @@ final class FileMessageLogger implements MessageLoggerInterface
                 continue;
             }
 
-            $entry = $this->formatEntry($timestamp, $message, $context);
+            $context = $this->context($message, is_array($context) ? $context : []);
+            $signature = $this->signature($message, $context);
 
-            if (null !== $entry) {
-                $lines[] = $entry;
+            if (isset($this->seenSignatures[$signature])) {
+                continue;
             }
-        }
 
-        if ([] === $lines) {
-            return;
+            $this->seenSignatures[$signature] = true;
+            $this->logger->log($this->psrLevel($message->level()), $message->translationKey(), $context);
         }
+    }
 
-        $this->append(implode('', $lines));
+    private function psrLevel(MessageLevel $level): string
+    {
+        return match ($level) {
+            MessageLevel::Success => LogLevel::NOTICE,
+            MessageLevel::Exception => LogLevel::CRITICAL,
+            MessageLevel::Error => LogLevel::ERROR,
+            MessageLevel::Warning => LogLevel::WARNING,
+            MessageLevel::Info => LogLevel::INFO,
+            MessageLevel::Debug => LogLevel::DEBUG,
+        };
     }
 
     /**
      * @param array<string, mixed> $context
+     *
+     * @return array<string, mixed>
      */
-    private function formatEntry(string $timestamp, Message $message, array $context): ?string
+    private function context(Message $message, array $context): array
     {
-        $context = $this->normalize([
+        return $this->normalize([
             'code' => $message->code(),
             'parameters' => $message->parameters(),
             'message_context' => $message->context(),
             ...$context,
         ]);
-        $signature = $this->signature($message, $context);
-
-        if (isset($this->seenSignatures[$signature])) {
-            return null;
-        }
-
-        $this->seenSignatures[$signature] = true;
-
-        return sprintf(
-            '[%s] [%s] %s%s%s%s',
-            $timestamp,
-            $message->level()->value,
-            $message->translationKey(),
-            PHP_EOL,
-            $this->encodeContext($context),
-            PHP_EOL,
-        );
-    }
-
-    private function append(string $contents): void
-    {
-        $path = $this->logPath();
-        $directory = dirname($path);
-
-        try {
-            if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
-                return;
-            }
-
-            file_put_contents($path, $contents, FILE_APPEND | LOCK_EX);
-        } catch (Throwable) {
-            return;
-        }
-    }
-
-    private function logPath(): string
-    {
-        return rtrim($this->projectDir, DIRECTORY_SEPARATOR.'/\\')
-            .DIRECTORY_SEPARATOR.'var'
-            .DIRECTORY_SEPARATOR.'log'
-            .DIRECTORY_SEPARATOR.$this->environment
-            .DIRECTORY_SEPARATOR.'operations.log';
-    }
-
-    /**
-     * @param array<string, mixed> $context
-     */
-    private function encodeContext(array $context): string
-    {
-        $encoded = json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-        return false === $encoded ? '{}' : $encoded;
     }
 
     /**
@@ -183,6 +140,13 @@ final class FileMessageLogger implements MessageLoggerInterface
         }
 
         return get_debug_type($value);
+    }
+
+    private function encodeContext(array $context): string
+    {
+        $encoded = json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        return false === $encoded ? '{}' : $encoded;
     }
 
     private function isSensitiveKey(string $key): bool

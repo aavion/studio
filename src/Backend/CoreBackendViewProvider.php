@@ -97,14 +97,9 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 BackendArea::Admin,
                 'logs',
                 'admin.navigation.logs',
-                '@backend/admin/section.html.twig',
+                '@backend/admin/logs.html.twig',
                 800,
                 minimumAccessLevel: 8,
-                context: [
-                    'title_key' => 'admin.logs.title',
-                    'foundation_title_key' => 'admin.logs.foundation_title',
-                    'foundation_text_key' => 'admin.logs.foundation_text',
-                ],
             ),
             new BackendViewDefinition(
                 'backend-admin-settings',

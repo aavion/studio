@@ -342,6 +342,31 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
+    public function testAdminLogsViewReadsSelectedLogSource(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+        $logFile = $logDir.'/test.studio-access-2099-01-01.log';
+
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0775, true);
+        }
+        file_put_contents($logFile, '[2099-01-01T10:00:00.000000+00:00] studio_access.INFO: access.request {"method":"GET","path":"/admin/logs","route":"backend_admin_route","http_status":200,"ip":"127.0.0.1","city":"n/a","state":"n/a","country":"n/a","continent":"n/a"} []'.PHP_EOL);
+
+        try {
+            $client->request('GET', '/admin/logs?source=access&q=/admin/logs');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Logs');
+            self::assertSelectorTextContains('.studio-log-table', 'access.request');
+            self::assertSelectorTextContains('.studio-log-table', 'GET /admin/logs');
+            self::assertSelectorTextContains('.studio-log-table', '127.0.0.1');
+        } finally {
+            @unlink($logFile);
+        }
+    }
+
     public function testAdminOperationDetailExposesReviewContinuation(): void
     {
         $client = self::createClient();

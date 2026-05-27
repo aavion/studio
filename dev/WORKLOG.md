@@ -55,6 +55,13 @@
   - [ ] Contact, mail, logging, and statistics
   - [ ] IconCaptcha integration
   - Open: ActionLog live-operation foundation exists; finish durable audit retention, API write scope, public delivery snapshot vs cache-backed read model, backup/log/submission retention defaults, Scheduler execution implementation, IconCaptcha provider interface, secret rotation, and asset policy details.
+  - Logging/statistics mini-roadmap:
+    - [x] Replace the development-only message file logger with a Monolog-backed message logger while preserving message translation keys and structured context.
+    - [x] Define dedicated file-based Monolog channels for message, operation, audit, and access logs with 30-day retention.
+    - [x] Add small service boundaries for audit and access logging so later features can record actions without depending on UI code.
+    - [x] Keep raw access logs retraceable for at most 30 days; write unavailable GeoIP values as `n/a` until a GeoIP provider is implemented.
+    - [ ] Keep the statistics branch separate from raw access logs so long-term aggregated statistics can later move to database-backed storage.
+    - [x] Add a functional Admin Logs view with log selection, basic filtering, and bounded file reads; visual refinement stays out of this feature slice.
 
 - [ ] **0.5.x Release lifecycle**
   - [ ] Self-update and release workflow
@@ -80,6 +87,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Completed the first log foundation slice: MessageLog now writes through Monolog's `studio_message` channel with redacted structured context, dedicated rotating `studio_message`/`studio_operation`/`studio_audit`/`studio_access` channels keep 30-day retention, access and audit service boundaries were added, authentication events enter the audit log, access entries use GeoIP `n/a` placeholders, and Admin Logs can read/filter known log files.
+- Started the log/statistics foundation plan: MessageLog moves to Monolog first, dedicated message/operation/audit/access channels follow, raw access logs keep 30-day retention with `n/a` GeoIP placeholders, long-term statistics remain a later DB-backed aggregate, and the first Admin Logs UI stays functional rather than visually final.
 - Continued package/design review hardening: registry asset rebuild dispatch failures now trigger one synchronous rebuild fallback instead of silently leaving stale assets, package-install rollback restores saved package statuses even when rollback discovery reports issues, and Admin Operations detail pages expose CSRF-protected continuation for review-required live runs.
 - Continued CI review hardening: setup completion is written only after final blocking setup steps succeed, package ZIP uploads reject symlink entries before or after extraction, stale live-operation polling references are cleared on missing runs, and package runtime providers are evaluated inside the loader fault boundary.
 - Added a `bin/init` pre-install vendor reset so corrupt existing `vendor/` trees are removed before Composer installs dependencies.

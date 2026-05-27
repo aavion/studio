@@ -1,0 +1,103 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.logs.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'ui.admin.area'|trans,
+        title: 'admin.logs.title'|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.logs.filters.title'|trans }}</h2>
+        <form method="get" class="studio-form studio-log-filter-form">
+            <div class="studio-form-grid">
+                <label>
+                    <span>{{ 'admin.logs.filters.source'|trans }}</span>
+                    <select name="source">
+                        {% for source in log_view.sources %}
+                            <option value="{{ source.key }}" {% if source.key == log_view.selected_source %}selected{% endif %}>{{ source.label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.logs.filters.level'|trans }}</span>
+                    <select name="level">
+                        <option value="">{{ 'admin.logs.filters.any_level'|trans }}</option>
+                        {% for level in ['DEBUG', 'INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'] %}
+                            <option value="{{ level }}" {% if level == log_view.filters.level %}selected{% endif %}>{{ level }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.logs.filters.search'|trans }}</span>
+                    <input type="search" name="q" value="{{ log_view.filters.search }}" maxlength="120">
+                </label>
+                <label>
+                    <span>{{ 'admin.logs.filters.limit'|trans }}</span>
+                    <input type="number" name="limit" min="1" max="500" value="{{ log_view.filters.limit }}">
+                </label>
+            </div>
+            <button type="submit" class="studio-button">{{ 'admin.logs.filters.apply'|trans }}</button>
+        </form>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.logs.entries.title'|trans }}</h2>
+        {% if log_view.files is empty %}
+            <p class="studio-muted">{{ 'admin.logs.entries.no_files'|trans }}</p>
+        {% elseif log_view.entries is empty %}
+            <p class="studio-muted">{{ 'admin.logs.entries.empty'|trans }}</p>
+        {% else %}
+            <p class="studio-muted">{{ 'admin.logs.entries.files'|trans({'%files%': log_view.files|join(', ')}) }}</p>
+            <div class="studio-table-wrapper">
+                <table class="studio-table studio-log-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'admin.logs.columns.timestamp'|trans }}</th>
+                            <th>{{ 'admin.logs.columns.level'|trans }}</th>
+                            <th>{{ 'admin.logs.columns.message'|trans }}</th>
+                            {% if log_view.selected_source == 'access' %}
+                                <th>{{ 'admin.logs.columns.request'|trans }}</th>
+                                <th>{{ 'admin.logs.columns.http_status'|trans }}</th>
+                                <th>{{ 'admin.logs.columns.location'|trans }}</th>
+                            {% elseif log_view.selected_source == 'audit' %}
+                                <th>{{ 'admin.logs.columns.user'|trans }}</th>
+                                <th>{{ 'admin.logs.columns.action'|trans }}</th>
+                            {% else %}
+                                <th>{{ 'admin.logs.columns.channel'|trans }}</th>
+                            {% endif %}
+                            <th>{{ 'admin.logs.columns.context'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in log_view.entries %}
+                            <tr>
+                                <td>{{ entry.timestamp|default('') }}</td>
+                                <td><span class="studio-badge">{{ entry.level|default('') }}</span></td>
+                                <td>{{ entry.message|default(entry.raw) }}</td>
+                                {% if log_view.selected_source == 'access' %}
+                                    <td>{{ entry.context.method|default('n/a') }} {{ entry.context.path|default('n/a') }}<br><span class="studio-muted">{{ entry.context.route|default('n/a') }}</span></td>
+                                    <td>{{ entry.context.http_status|default('n/a') }}</td>
+                                    <td>{{ entry.context.city|default('n/a') }}, {{ entry.context.state|default('n/a') }}, {{ entry.context.country|default('n/a') }} / {{ entry.context.continent|default('n/a') }}<br><span class="studio-muted">{{ entry.context.ip|default('n/a') }}</span></td>
+                                {% elseif log_view.selected_source == 'audit' %}
+                                    <td>{{ entry.context.user|default('n/a') }}<br><span class="studio-muted">{{ entry.context.user_max_access_level|default('0') }}</span></td>
+                                    <td>{{ entry.context.action|default(entry.message) }}</td>
+                                {% else %}
+                                    <td>{{ entry.channel|default('') }}</td>
+                                {% endif %}
+                                <td><code>{{ entry.context_json|default(entry.raw_context)|default('') }}</code></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

@@ -343,6 +343,36 @@ admin:
         title: Logs
         foundation_title: 'Log- und Audit-Fundament'
         foundation_text: 'Operations-Logs, Audit-Ansichten, Paketdiagnostik und sicherheitsrelevante Ereignisse docken hier an.'
+        sources:
+            application: Anwendung
+            message: Meldungen
+            operation: Operationen
+            audit: Audit
+            access: Zugriffe
+        filters:
+            title: Filter
+            source: Log
+            level: Level
+            any_level: 'Alle Level'
+            search: Suche
+            limit: Limit
+            apply: 'Filter anwenden'
+        entries:
+            title: Einträge
+            empty: 'Keine Log-Einträge entsprechen den aktuellen Filtern.'
+            no_files: 'Für diese Auswahl existiert noch keine Log-Datei.'
+            files: 'Gelesen wird: %files%'
+        columns:
+            timestamp: Zeitpunkt
+            level: Level
+            message: Meldung
+            request: Request
+            http_status: HTTP
+            location: Ort
+            user: Nutzer
+            action: Aktion
+            channel: Channel
+            context: Kontext
     settings:
         title: Einstellungen
         redirect_title: Einstellungsbereiche
