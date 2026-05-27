@@ -161,6 +161,7 @@ admin:
         mail_settings: Mail
         security_settings: Sicherheit
         package_settings: Pakete
+        statistics_settings: Statistiken
         scheduler_settings: Scheduler
     actions:
         package_discovery:
@@ -423,6 +424,7 @@ admin:
         languages: Sprachen
         top_referrers: Top-Referrer
         empty: 'Noch keine Daten verfügbar.'
+        disabled: 'Statistik-Aufzeichnung und Anzeige sind aktuell deaktiviert.'
         windows:
             1h: 'Letzte Stunde'
             24h: 'Letzte 24 Stunden'
@@ -453,6 +455,10 @@ admin:
             title: Sicherheits-Einstellungen
             foundation_title: Sicherheits-Konfigurationsfundament
             foundation_text: 'Sicherheits-, Captcha-, Logging- und Missbrauchsschutz-Einstellungen docken hier an.'
+        statistics:
+            title: Statistik-Einstellungen
+            foundation_title: Statistik-Konfiguration
+            foundation_text: 'Zugriffsstatistiken können unabhängig vom Raw-Access-Logging deaktiviert werden. Raw-Access-Logs bleiben für operative Sicherheit verfügbar und werden 30 Tage aufbewahrt.'
         packages:
             title: Paket-Einstellungen
             foundation_title: 'Pakete mit Einstellungen'
@@ -521,6 +527,10 @@ admin:
                 label: 'Audit-Logging aktivieren'
             audit_events:
                 label: Audit-Ereigniskategorien
+            statistics_enabled:
+                label: 'Zugriffsstatistiken aktivieren'
+            statistics_respect_dnt:
+                label: 'Do Not Track respektieren'
             package_update_interval:
                 label: Update-Check-Intervall
             package_auto_updates:
@@ -642,6 +652,10 @@ message:
     translation:
         aggregate_completed: 'Translation-Aggregation hat %files% Datei(en) für %locales% Locale(s) aus Core und %packages% aktiven Paket(en) zusammengeführt.'
         aggregate_failed: 'Translation-Aggregation konnte "%path%" nicht schreiben.'
+    statistics:
+        record_failed: 'Zugriffsstatistiken konnten den aktuellen Request nicht aufzeichnen.'
+        aggregate_failed: 'Zugriffsstatistik-Aggregation ist fehlgeschlagen.'
+        snapshot_store_failed: 'Speicherung des Zugriffsstatistik-Snapshots ist fehlgeschlagen.'
     event:
         hook:
             invalid: 'Event-Hook "%event%" ist keine gültige öffentliche Hook-Definition.'

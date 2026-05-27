@@ -92,6 +92,16 @@ Access logs, audit logs, security logs, and operational action logs may share me
 
 `studio_operation` stores terminal live-operation summaries. These entries keep operation id, operation name, result status, timing, step/message/issue counts, and whether a continuation is available. They intentionally omit live-operation payloads, polling tokens, and raw runner output; those stay transient transport/debug artifacts.
 
+## Access logs and statistics
+
+Raw access logging and access statistics are separate product surfaces. `studio_access` keeps operational request traces for security and diagnostics, including IP address, proxy hints, user-agent, request id, visitor id, requested path, resolved route, status, duration, content metadata, and GeoIP placeholders. The Monolog rotating handler keeps at most 30 daily files and should remain enabled because future rate-limit and suspicious-traffic features depend on this short-lived operational trail.
+
+Access statistics write a parallel database row per request with anonymized or coarse fields only. The statistics model keeps request id, visitor id, route/status/timing facts, browser family, device type, bot flag, referrer host, preferred language, response metadata, and normalized GeoIP fields, but does not store raw IP addresses or raw user-agents. Current statistics are aggregated on demand when the Admin Statistics page is opened; scheduled caching can be added later if needed.
+
+Statistics can be disabled independently from raw access logging through Statistics settings. When disabled, the database recorder and Admin Statistics snapshot output stop producing data while the raw access log remains active. The first policy setting also respects `DNT: 1` by default for statistics recording only. Long-term compaction of granular statistic events is intentionally deferred until the final statistic dimensions are known; premature per-field compaction would add complexity before the reporting surface is stable.
+
+Aggregation, recording, and snapshot-store failures should be reported through the message layer so they are visible in `studio_message` without blocking the user request.
+
 ## References
 
 - [Operation issue catalog](operation-issue-catalog.md)

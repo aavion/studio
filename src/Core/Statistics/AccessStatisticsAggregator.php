@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Statistics;
 
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageReporterInterface;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Throwable;
@@ -16,6 +20,7 @@ final readonly class AccessStatisticsAggregator
     public function __construct(
         private Connection $connection,
         private AccessStatisticsWindow $window,
+        private ?MessageReporterInterface $messageReporter = null,
     ) {
     }
 
@@ -148,7 +153,21 @@ final readonly class AccessStatisticsAggregator
             return $this->connection->fetchAllAssociative(
                 'SELECT visitor_id, method, path, requested_path, route, resolved_route, surface, http_status, duration_ms, browser_family, device_type, is_bot, referrer_host, preferred_language, country FROM access_statistic_event ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
             );
-        } catch (Throwable) {
+        } catch (Throwable $error) {
+            $this->messageReporter?->report(Message::exception(
+                MessageCode::E_OPERATION_FAILED,
+                MessageKey::STATISTICS_AGGREGATE_FAILED,
+                [],
+                [
+                    'operation' => 'statistics.aggregate',
+                    'since' => $since?->format(DATE_ATOM),
+                    'exception' => $error::class,
+                    'message' => $error->getMessage(),
+                ],
+            ), [
+                'operation' => 'statistics.aggregate',
+            ]);
+
             return [];
         }
     }

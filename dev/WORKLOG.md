@@ -64,6 +64,9 @@
     - [x] Keep the statistics branch separate from raw access logs so long-term aggregated statistics can later move to database-backed storage.
     - [x] Add a functional Admin Logs view with log selection, basic filtering, bounded file reads, pagination, and a separate entry-detail view; visual refinement stays out of this feature slice.
     - [x] Move access statistics into a separate top-level Admin Statistics view so raw logs and end-user statistics remain distinct UI concerns.
+    - [x] Keep raw access logs on deterministic 30-file Monolog rotation, add separate Statistics settings with enable/DNT policy, keep raw access logging always available for future security features, and report statistics recorder/aggregation/store failures through the message layer.
+    - [x] Confirm and extend statistic-event indexes for the current filter dimensions: time, request id, visitor, route, resolved route, surface, status, method, browser, device, bot flag, referrer, language, country, and continent.
+    - [ ] Decide long-term statistic-event compaction after the final reporting dimensions are known; granular anonymized events remain intentionally un-compacted for now.
 
 - [ ] **0.5.x Release lifecycle**
   - [ ] Self-update and release workflow

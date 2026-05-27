@@ -79,6 +79,10 @@ message:
   translation:
     aggregate_completed: 'Translation aggregation merged %files% file(s) for %locales% locale(s) from core and %packages% active package(s).'
     aggregate_failed: 'Translation aggregation could not write "%path%".'
+  statistics:
+    record_failed: 'Access statistics could not record the current request.'
+    aggregate_failed: 'Access statistics aggregation failed.'
+    snapshot_store_failed: 'Access statistics snapshot storage failed.'
   event:
     hook:
       invalid: 'Event hook "%event%" is not a valid public hook definition.'

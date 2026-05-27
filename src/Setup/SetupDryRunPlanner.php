@@ -6,6 +6,7 @@ namespace App\Setup;
 
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Log\ConfigAuditLogPolicy;
+use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
@@ -60,6 +61,8 @@ final readonly class SetupDryRunPlanner
                     'user.registration.enabled' => false,
                     ConfigAuditLogPolicy::ENABLED_KEY => true,
                     ConfigAuditLogPolicy::EVENTS_KEY => ConfigAuditLogPolicy::DEFAULT_CATEGORIES,
+                    AccessStatisticsPolicy::ENABLED_KEY => true,
+                    AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY => true,
                 ],
             ], ActionLogStatus::Skipped],
             ['seed_admin_user', fn (): array => [

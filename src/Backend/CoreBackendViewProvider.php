@@ -200,6 +200,22 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 ],
             ),
             new BackendViewDefinition(
+                'backend-admin-settings-statistics',
+                BackendArea::Admin,
+                'settings/statistics',
+                'admin.navigation.statistics_settings',
+                '@backend/admin/settings/section.html.twig',
+                55,
+                parentUid: 'backend-admin-settings',
+                minimumAccessLevel: 8,
+                context: [
+                    'title_key' => 'admin.settings.statistics.title',
+                    'foundation_title_key' => 'admin.settings.statistics.foundation_title',
+                    'foundation_text_key' => 'admin.settings.statistics.foundation_text',
+                    'settings_section' => 'statistics',
+                ],
+            ),
+            new BackendViewDefinition(
                 'backend-admin-settings-packages',
                 BackendArea::Admin,
                 'settings/packages',

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Core\Statistics;
 
 use App\Core\Statistics\AccessStatisticsAggregator;
+use App\Core\Config\Config;
+use App\Core\Config\ConfigValueType;
+use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Core\Statistics\AccessStatisticsSnapshotProvider;
 use App\Core\Statistics\AccessStatisticsWindow;
 use App\Core\Statistics\FileAccessStatisticsStore;
@@ -76,6 +79,27 @@ final class AccessStatisticsSnapshotProviderTest extends TestCase
         self::assertSame(['1h', '24h', '7d', '30d', 'all'], array_column($provider->windows(), 'key'));
     }
 
+    public function testItReturnsDisabledSnapshotWhenStatisticsAreDisabled(): void
+    {
+        $connection = $this->connection();
+        $config = new Config($connection);
+        $config->set(AccessStatisticsPolicy::ENABLED_KEY, false, ConfigValueType::Boolean);
+
+        $provider = new AccessStatisticsSnapshotProvider(
+            new AccessStatisticsAggregator($connection, new AccessStatisticsWindow()),
+            new FileAccessStatisticsStore($this->root.'/statistics', 'test'),
+            new AccessStatisticsWindow(),
+            new AccessStatisticsPolicy($config),
+        );
+
+        $snapshot = $provider->snapshot('7d');
+
+        self::assertFalse($snapshot['enabled']);
+        self::assertSame('7d', $snapshot['window']);
+        self::assertSame(0, $snapshot['total_requests']);
+        self::assertFileDoesNotExist($this->root.'/statistics/test/access/latest.json');
+    }
+
     private function connection(): Connection
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
@@ -108,6 +132,7 @@ final class AccessStatisticsSnapshotProviderTest extends TestCase
                 metadata CLOB NOT NULL
             )
             SQL);
+        $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL, modified_at DATETIME NOT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
 
         return $connection;
     }

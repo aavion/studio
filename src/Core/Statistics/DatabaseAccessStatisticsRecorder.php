@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Core\Statistics;
 
-use App\Core\Log\AccessRequestMetadata;
 use App\Core\Geo\GeoIpResolverInterface;
+use App\Core\Log\AccessRequestMetadata;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageReporterInterface;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,12 +26,18 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
         private UserAgentClassifier $userAgentClassifier,
         private AccessRequestMetadata $accessRequestMetadata,
         private GeoIpResolverInterface $geoIpResolver,
+        private ?AccessStatisticsPolicy $policy = null,
+        private ?MessageReporterInterface $messageReporter = null,
     ) {
     }
 
     public function record(Request $request, Response $response): void
     {
         try {
+            if (null !== $this->policy && !$this->policy->isRecordingEnabled($request)) {
+                return;
+            }
+
             $userAgent = trim((string) $request->headers->get('User-Agent', self::PLACEHOLDER));
             $client = $this->userAgentClassifier->classify($userAgent);
             $geoIp = $this->geoIpResolver->resolve($this->visitorIdGenerator->sourceIp($request));
@@ -59,9 +69,26 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
                 'continent' => $geoIp->continent,
                 'metadata' => json_encode(['query_present' => null !== $request->getQueryString()], JSON_THROW_ON_ERROR),
             ]);
-        } catch (Throwable) {
-            return;
+        } catch (Throwable $error) {
+            $this->report($error, $request);
         }
+    }
+
+    private function report(Throwable $error, Request $request): void
+    {
+        $this->messageReporter?->report(Message::exception(
+            MessageCode::E_OPERATION_FAILED,
+            MessageKey::STATISTICS_RECORD_FAILED,
+            [],
+            [
+                'operation' => 'statistics.record',
+                'path' => $request->getPathInfo(),
+                'exception' => $error::class,
+                'message' => $error->getMessage(),
+            ],
+        ), [
+            'operation' => 'statistics.record',
+        ]);
     }
 
     private function uuid(): string

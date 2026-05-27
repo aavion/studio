@@ -277,6 +277,7 @@ final class BackendControllerTest extends WebTestCase
             '/admin/backups' => 'Backup and restore',
             '/admin/operations' => 'Operations',
             '/admin/logs' => 'Logs',
+            '/admin/statistics' => 'Statistics',
         ] as $path => $title) {
             $client->request('GET', $path);
 

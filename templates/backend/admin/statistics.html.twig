@@ -16,6 +16,9 @@
 
     <section class="studio-panel">
         <h2>{{ 'admin.statistics.access_title'|trans }}</h2>
+        {% if access_statistics.enabled|default(true) == false %}
+            <p class="studio-muted">{{ 'admin.statistics.disabled'|trans }}</p>
+        {% endif %}
         <p class="studio-muted">{{ 'admin.statistics.summary'|trans({'%count%': access_statistics.total_requests}) }}</p>
         <form method="get" class="studio-form studio-log-filter-form">
             <label>

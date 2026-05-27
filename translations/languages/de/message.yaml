@@ -79,6 +79,10 @@ message:
   translation:
     aggregate_completed: 'Translation-Aggregation hat %files% Datei(en) für %locales% Locale(s) aus Core und %packages% aktiven Paket(en) zusammengeführt.'
     aggregate_failed: 'Translation-Aggregation konnte "%path%" nicht schreiben.'
+  statistics:
+    record_failed: 'Zugriffsstatistiken konnten den aktuellen Request nicht aufzeichnen.'
+    aggregate_failed: 'Zugriffsstatistik-Aggregation ist fehlgeschlagen.'
+    snapshot_store_failed: 'Speicherung des Zugriffsstatistik-Snapshots ist fehlgeschlagen.'
   event:
     hook:
       invalid: 'Event-Hook "%event%" ist keine gültige öffentliche Hook-Definition.'

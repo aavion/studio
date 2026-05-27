@@ -99,11 +99,14 @@ final class Version20260523210000 extends AbstractMigration
         $accessStatistic->addIndex(['resolved_route', 'occurred_at'], 'idx_access_statistic_resolved_at');
         $accessStatistic->addIndex(['surface', 'occurred_at'], 'idx_access_statistic_surface_at');
         $accessStatistic->addIndex(['http_status', 'occurred_at'], 'idx_access_statistic_status_at');
+        $accessStatistic->addIndex(['method', 'occurred_at'], 'idx_access_statistic_method_at');
         $accessStatistic->addIndex(['browser_family', 'occurred_at'], 'idx_access_statistic_browser_at');
         $accessStatistic->addIndex(['device_type', 'occurred_at'], 'idx_access_statistic_device_at');
         $accessStatistic->addIndex(['is_bot', 'occurred_at'], 'idx_access_statistic_bot_at');
         $accessStatistic->addIndex(['referrer_host', 'occurred_at'], 'idx_access_statistic_referrer_at');
         $accessStatistic->addIndex(['preferred_language', 'occurred_at'], 'idx_access_statistic_language_at');
+        $accessStatistic->addIndex(['country', 'occurred_at'], 'idx_access_statistic_country_at');
+        $accessStatistic->addIndex(['continent', 'occurred_at'], 'idx_access_statistic_continent_at');
 
         $aclGroup = $schema->createTable('acl_group');
         $aclGroup->addColumn('uid', 'string', ['length' => 36]);

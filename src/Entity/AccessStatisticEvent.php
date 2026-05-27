@@ -17,11 +17,14 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_access_statistic_resolved_at', columns: ['resolved_route', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_surface_at', columns: ['surface', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_status_at', columns: ['http_status', 'occurred_at'])]
+#[ORM\Index(name: 'idx_access_statistic_method_at', columns: ['method', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_browser_at', columns: ['browser_family', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_device_at', columns: ['device_type', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_bot_at', columns: ['is_bot', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_referrer_at', columns: ['referrer_host', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_language_at', columns: ['preferred_language', 'occurred_at'])]
+#[ORM\Index(name: 'idx_access_statistic_country_at', columns: ['country', 'occurred_at'])]
+#[ORM\Index(name: 'idx_access_statistic_continent_at', columns: ['continent', 'occurred_at'])]
 class AccessStatisticEvent
 {
     #[ORM\Id]

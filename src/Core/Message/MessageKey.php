@@ -36,6 +36,9 @@ final class MessageKey
     public const PACKAGE_ASSET_SYNC_FAILED = 'message.package.asset_sync_failed';
     public const TRANSLATION_AGGREGATE_COMPLETED = 'message.translation.aggregate_completed';
     public const TRANSLATION_AGGREGATE_FAILED = 'message.translation.aggregate_failed';
+    public const STATISTICS_RECORD_FAILED = 'message.statistics.record_failed';
+    public const STATISTICS_AGGREGATE_FAILED = 'message.statistics.aggregate_failed';
+    public const STATISTICS_SNAPSHOT_STORE_FAILED = 'message.statistics.snapshot_store_failed';
     public const PACKAGE_ASSET_REBUILD_QUEUED = 'message.package.asset_rebuild_queued';
     public const PACKAGE_ASSET_REBUILD_QUEUE_FAILED = 'message.package.asset_rebuild_queue_failed';
     public const PACKAGE_DISCOVERY_QUEUED = 'message.package.discovery_queued';

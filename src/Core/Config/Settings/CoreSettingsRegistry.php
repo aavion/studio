@@ -6,6 +6,7 @@ namespace App\Core\Config\Settings;
 
 use App\Core\Config\ConfigValueType;
 use App\Core\Log\ConfigAuditLogPolicy;
+use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
 
@@ -66,6 +67,9 @@ final readonly class CoreSettingsRegistry
                 ConfigAuditLogPolicy::CATEGORY_SETTINGS => 'admin.settings.options.audit.settings',
                 ConfigAuditLogPolicy::CATEGORY_OTHER => 'admin.settings.options.audit.other',
             ], sortOrder: 50),
+
+            new CoreSettingDefinition('statistics', AccessStatisticsPolicy::ENABLED_KEY, 'admin.settings.fields.statistics_enabled.label', true, ConfigValueType::Boolean, sortOrder: 10),
+            new CoreSettingDefinition('statistics', AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'admin.settings.fields.statistics_respect_dnt.label', true, ConfigValueType::Boolean, sortOrder: 20),
 
             new CoreSettingDefinition('packages', 'packages.update_check_interval', 'admin.settings.fields.package_update_interval.label', 'daily', ConfigValueType::String, FormInputType::Select, options: [
                 'manual' => 'admin.settings.options.interval.manual',

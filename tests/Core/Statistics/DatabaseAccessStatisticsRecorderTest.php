@@ -6,6 +6,9 @@ namespace App\Tests\Core\Statistics;
 
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Geo\NullGeoIpResolver;
+use App\Core\Config\Config;
+use App\Core\Config\ConfigValueType;
+use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Core\Statistics\DatabaseAccessStatisticsRecorder;
 use App\Core\Statistics\UserAgentClassifier;
 use App\Core\Statistics\VisitorIdGenerator;
@@ -51,6 +54,7 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
                 metadata CLOB NOT NULL
             )
             SQL);
+        $this->connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL, modified_at DATETIME NOT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
     }
 
     public function testItRecordsAnonymizedRequestEvents(): void
@@ -110,5 +114,41 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
         (new DatabaseAccessStatisticsRecorder($connection, new VisitorIdGenerator('test-secret'), new UserAgentClassifier(), new AccessRequestMetadata(), new NullGeoIpResolver()))->record($request, new Response('', 200));
 
         self::assertTrue(true);
+    }
+
+    public function testItSkipsRecordingWhenStatisticsAreDisabled(): void
+    {
+        $config = new Config($this->connection);
+        $config->set(AccessStatisticsPolicy::ENABLED_KEY, false, ConfigValueType::Boolean);
+
+        (new DatabaseAccessStatisticsRecorder(
+            $this->connection,
+            new VisitorIdGenerator('test-secret'),
+            new UserAgentClassifier(),
+            new AccessRequestMetadata(),
+            new NullGeoIpResolver(),
+            new AccessStatisticsPolicy($config),
+        ))->record(Request::create('/docs', 'GET'), new Response('', 200));
+
+        self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM access_statistic_event'));
+    }
+
+    public function testItSkipsRecordingWhenDoNotTrackIsEnabled(): void
+    {
+        $config = new Config($this->connection);
+        $config->set(AccessStatisticsPolicy::ENABLED_KEY, true, ConfigValueType::Boolean);
+        $config->set(AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, true, ConfigValueType::Boolean);
+        $request = Request::create('/docs', 'GET', server: ['HTTP_DNT' => '1']);
+
+        (new DatabaseAccessStatisticsRecorder(
+            $this->connection,
+            new VisitorIdGenerator('test-secret'),
+            new UserAgentClassifier(),
+            new AccessRequestMetadata(),
+            new NullGeoIpResolver(),
+            new AccessStatisticsPolicy($config),
+        ))->record($request, new Response('', 200));
+
+        self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM access_statistic_event'));
     }
 }

@@ -161,6 +161,7 @@ admin:
         mail_settings: Mail
         security_settings: Security
         package_settings: Packages
+        statistics_settings: Statistics
         scheduler_settings: Scheduler
     actions:
         package_discovery:
@@ -423,6 +424,7 @@ admin:
         languages: Languages
         top_referrers: 'Top referrers'
         empty: 'No data available yet.'
+        disabled: 'Statistics recording and display are currently disabled.'
         windows:
             1h: 'Last hour'
             24h: 'Last 24 hours'
@@ -453,6 +455,10 @@ admin:
             title: 'Security settings'
             foundation_title: 'Security configuration foundation'
             foundation_text: 'Security, captcha, logging, and abuse-control settings will attach here.'
+        statistics:
+            title: 'Statistics settings'
+            foundation_title: 'Statistics configuration'
+            foundation_text: 'Access statistics can be disabled independently from raw access logging. Raw access logs remain available for operational security and are retained for 30 days.'
         packages:
             title: 'Package settings'
             foundation_title: 'Packages with settings'
@@ -521,6 +527,10 @@ admin:
                 label: 'Enable audit logging'
             audit_events:
                 label: 'Audit event categories'
+            statistics_enabled:
+                label: 'Enable access statistics'
+            statistics_respect_dnt:
+                label: 'Respect Do Not Track'
             package_update_interval:
                 label: 'Update check interval'
             package_auto_updates:
@@ -642,6 +652,10 @@ message:
     translation:
         aggregate_completed: 'Translation aggregation merged %files% file(s) for %locales% locale(s) from core and %packages% active package(s).'
         aggregate_failed: 'Translation aggregation could not write "%path%".'
+    statistics:
+        record_failed: 'Access statistics could not record the current request.'
+        aggregate_failed: 'Access statistics aggregation failed.'
+        snapshot_store_failed: 'Access statistics snapshot storage failed.'
     event:
         hook:
             invalid: 'Event hook "%event%" is not a valid public hook definition.'
