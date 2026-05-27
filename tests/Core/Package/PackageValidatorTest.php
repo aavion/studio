@@ -321,8 +321,7 @@ final class PackageValidatorTest extends TestCase
 
     public function testItAcceptsPackageTranslationFilesInOwnedNamespace(): void
     {
-        $packageSlug = basename($this->packageDir);
-        $this->writeFile('languages/en/messages.yaml', sprintf("pkg:\n  %s:\n    title: Demo\n", $packageSlug));
+        $this->writeFile('languages/en/messages.yaml', "pkg:\n  system:\n    title: Demo\n");
 
         $result = (new PackageValidator())->validate(
             $this->candidate(),
@@ -332,10 +331,21 @@ final class PackageValidatorTest extends TestCase
         self::assertTrue($result->isSuccess());
     }
 
+    public function testItAcceptsPackageTranslationFilesUsingManifestSlugWhenDirectoryDiffers(): void
+    {
+        $this->writeFile('languages/en/messages.yaml', "pkg:\n  demo-module:\n    title: Demo\n");
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module']),
+            PackageSpec::create()->withInventoryDepth(4)->withYamlLinting(),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
     public function testItRequiresEnglishWhenPackageTranslationsExist(): void
     {
-        $packageSlug = basename($this->packageDir);
-        $this->writeFile('languages/de/messages.yaml', sprintf("pkg:\n  %s:\n    title: Demo\n", $packageSlug));
+        $this->writeFile('languages/de/messages.yaml', "pkg:\n  system:\n    title: Demo\n");
 
         $result = (new PackageValidator())->validate(
             $this->candidate(),

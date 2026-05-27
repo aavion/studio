@@ -386,7 +386,7 @@ final class PackageValidator
      */
     private function validateTranslationNamespaces(PackageCandidate $candidate, array $files): array
     {
-        $packageName = basename($candidate->directory());
+        $packageName = $this->translationPackageName($candidate);
         $translationFiles = array_values(array_filter(
             $files,
             static fn (string $file): bool => 1 === preg_match('#^languages/[a-z][a-z0-9]*(?:[_-][A-Za-z0-9]+)*/[^/]+\.yaml$#', $file),
@@ -439,5 +439,12 @@ final class PackageValidator
         }
 
         return $issues;
+    }
+
+    private function translationPackageName(PackageCandidate $candidate): string
+    {
+        $slug = trim((string) $candidate->manifest()->get('PACKAGE_SLUG', ''));
+
+        return PackageManifestSpec::isValidSlug($slug) ? $slug : basename($candidate->directory());
     }
 }

@@ -80,6 +80,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Fixed package ZIP validation so translation namespaces are checked against manifest `PACKAGE_SLUG` instead of the temporary extracted directory name.
 - Fixed persisted menu ACL handling so database-backed `site_menu_item` rows with `view_min_level` or `view_group_identifiers` are loaded, mapped into navigation access metadata, and filtered for the current actor instead of being dropped before access checks.
 - Added a Symfony form-login user checker so inactive and deleted user accounts are rejected during authentication before they can create an admin/editor-capable session.
 - Completed the first review-ready Operations/ActionLog slice: detached tokenized live-operation runners, cursor polling below `/api/live/operations/{id}`, retained Admin Operations inspection/detail views, stale cleanup and emergency stale-runner handling, atomic runner claims, a global live-operation lock, overlay resume behavior, review-required continuation handoff, and contextual overlay actions.
