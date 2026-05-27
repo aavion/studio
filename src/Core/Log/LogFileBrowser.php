@@ -17,7 +17,6 @@ final readonly class LogFileBrowser
     private const SOURCES = [
         'application' => ['label' => 'admin.logs.sources.application', 'pattern' => '%env%.log'],
         'message' => ['label' => 'admin.logs.sources.message', 'pattern' => '%env%.studio-message-*.log'],
-        'operation' => ['label' => 'admin.logs.sources.operation', 'pattern' => '%env%.studio-operation-*.log'],
         'audit' => ['label' => 'admin.logs.sources.audit', 'pattern' => '%env%.studio-audit-*.log'],
         'access' => ['label' => 'admin.logs.sources.access', 'pattern' => '%env%.studio-access-*.log'],
     ];
@@ -162,7 +161,7 @@ final readonly class LogFileBrowser
 
     private function timeWindow(mixed $window): string
     {
-        return in_array($window, ['1h', '24h', '7d', '30d'], true) ? $window : '30d';
+        return in_array($window, ['1h', '24h', '7d', '30d'], true) ? $window : '24h';
     }
 
     private function perPage(mixed $perPage): int|string

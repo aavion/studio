@@ -217,7 +217,6 @@ admin:
     sources:
       application: 'Application'
       message: 'Messages'
-      operation: 'Operations'
       audit: 'Audit'
       access: 'Access'
     filters:
@@ -281,6 +280,7 @@ admin:
     top_browsers: 'Top browsers'
     device_types: 'Device types'
     bot_requests: 'Bot requests'
+    do_not_track_requests: 'Do Not Track requests'
     average_duration: 'Average duration'
     surfaces: 'Surfaces'
     languages: 'Languages'

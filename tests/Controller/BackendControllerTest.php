@@ -399,6 +399,7 @@ final class BackendControllerTest extends WebTestCase
             'browser_family' => 'firefox',
             'device_type' => 'desktop',
             'is_bot' => false,
+            'do_not_track' => false,
             'referrer_host' => 'n/a',
             'preferred_language' => 'en-us',
             'request_content_type' => 'n/a',

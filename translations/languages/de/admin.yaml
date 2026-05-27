@@ -217,7 +217,6 @@ admin:
     sources:
       application: 'Anwendung'
       message: 'Meldungen'
-      operation: 'Operationen'
       audit: 'Audit'
       access: 'Zugriffe'
     filters:
@@ -281,6 +280,7 @@ admin:
     top_browsers: 'Top-Browser'
     device_types: 'Gerätetypen'
     bot_requests: 'Bot-Aufrufe'
+    do_not_track_requests: 'Do-Not-Track-Aufrufe'
     average_duration: 'Durchschnittsdauer'
     surfaces: 'Bereiche'
     languages: 'Sprachen'

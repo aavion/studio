@@ -10,6 +10,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
+use DateInterval;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,6 +20,7 @@ use Throwable;
 final readonly class DatabaseAccessStatisticsRecorder implements AccessStatisticsRecorderInterface
 {
     private const PLACEHOLDER = 'n/a';
+    private const RETENTION_INTERVAL = 'P3M';
 
     public function __construct(
         private Connection $connection,
@@ -41,6 +43,7 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
             $userAgent = trim((string) $request->headers->get('User-Agent', self::PLACEHOLDER));
             $client = $this->userAgentClassifier->classify($userAgent);
             $geoIp = $this->geoIpResolver->resolve($this->visitorIdGenerator->sourceIp($request));
+            $doNotTrack = $this->policy?->requestHasDoNotTrack($request) ?? '1' === trim((string) $request->headers->get('DNT', ''));
 
             $this->connection->insert('access_statistic_event', [
                 'uid' => $this->uuid(),
@@ -58,6 +61,7 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
                 'browser_family' => $client['browser_family'],
                 'device_type' => $client['device_type'],
                 'is_bot' => $client['is_bot'],
+                'do_not_track' => $doNotTrack,
                 'referrer_host' => $this->accessRequestMetadata->referrerHost($request),
                 'preferred_language' => $this->accessRequestMetadata->preferredLanguage($request),
                 'request_content_type' => $this->accessRequestMetadata->contentType($request->headers->get('Content-Type')),
@@ -69,8 +73,33 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
                 'continent' => $geoIp->continent,
                 'metadata' => json_encode(['query_present' => null !== $request->getQueryString()], JSON_THROW_ON_ERROR),
             ]);
+            $this->deleteExpiredEvents();
         } catch (Throwable $error) {
             $this->report($error, $request);
+        }
+    }
+
+    private function deleteExpiredEvents(): void
+    {
+        try {
+            $cutoff = (new DateTimeImmutable())->sub(new DateInterval(self::RETENTION_INTERVAL));
+            $this->connection->executeStatement('DELETE FROM access_statistic_event WHERE occurred_at < ?', [
+                $cutoff->format('Y-m-d H:i:s'),
+            ]);
+        } catch (Throwable $error) {
+            $this->messageReporter?->report(Message::exception(
+                MessageCode::E_OPERATION_FAILED,
+                MessageKey::STATISTICS_CLEANUP_FAILED,
+                [],
+                [
+                    'operation' => 'statistics.cleanup',
+                    'retention_interval' => self::RETENTION_INTERVAL,
+                    'exception' => $error::class,
+                    'message' => $error->getMessage(),
+                ],
+            ), [
+                'operation' => 'statistics.cleanup',
+            ]);
         }
     }
 

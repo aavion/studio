@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Core\Log;
 
-use Psr\Log\LoggerInterface;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
+use App\Core\Message\MessageReporterInterface;
 
 final readonly class OperationLogger implements OperationLoggerInterface
 {
-    public function __construct(private LoggerInterface $logger)
+    public function __construct(private MessageReporterInterface $messageReporter)
     {
     }
 
@@ -35,12 +39,17 @@ final readonly class OperationLogger implements OperationLoggerInterface
             'can_continue' => $this->canContinue($result),
         ];
 
-        match ($status) {
-            'success' => $this->logger->info('operation.finished', $context),
-            'requires_review' => $this->logger->notice('operation.requires_review', $context),
-            'failed' => $this->logger->error('operation.failed', $context),
-            default => $this->logger->warning('operation.finished_unknown', $context),
+        $parameters = ['%operation%' => $context['operation']];
+        $message = match ($status) {
+            'success' => Message::info(MessageCode::SUCCESS, MessageKey::OPERATION_FINISHED, $parameters, $context),
+            'requires_review' => Message::create(MessageCode::OPERATION_ACTION_REQUIRED, MessageKey::OPERATION_REQUIRES_REVIEW, $parameters, $context, MessageLevel::Warning),
+            'failed' => Message::error(MessageCode::E_OPERATION_FAILED, MessageKey::OPERATION_FAILED, $parameters, $context),
+            default => Message::warning(MessageCode::E_OPERATION_FAILED, MessageKey::OPERATION_FINISHED_UNKNOWN, $parameters, $context),
         };
+
+        $this->messageReporter->report($message, [
+            'operation' => 'live_operation.summary',
+        ]);
     }
 
     private function stringValue(mixed $value, string $fallback): string

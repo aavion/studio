@@ -28,6 +28,7 @@ final class AccessStatisticEventTest extends TestCase
             browserFamily: 'safari',
             deviceType: 'mobile',
             isBot: false,
+            doNotTrack: true,
             referrerHost: 'example.org',
             preferredLanguage: 'de-de',
             responseSize: 42,
@@ -48,6 +49,7 @@ final class AccessStatisticEventTest extends TestCase
         self::assertSame('safari', $event->browserFamily());
         self::assertSame('mobile', $event->deviceType());
         self::assertFalse($event->isBot());
+        self::assertTrue($event->doNotTrack());
         self::assertSame('example.org', $event->referrerHost());
         self::assertSame('de-de', $event->preferredLanguage());
         self::assertSame(42, $event->responseSize());

@@ -40,6 +40,7 @@ final class LogFileBrowserTest extends TestCase
 
         self::assertSame('message', $view['selected_source']);
         self::assertSame('ERROR', $view['filters']['level']);
+        self::assertSame('24h', $view['filters']['time_window']);
         self::assertSame(50, $view['filters']['per_page']);
         self::assertSame(1, $view['pagination']['total']);
         self::assertCount(1, $view['entries']);

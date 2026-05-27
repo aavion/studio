@@ -5,20 +5,19 @@ declare(strict_types=1);
 namespace App\Tests\Core\Log;
 
 use App\Core\Log\OperationLogger;
-use Monolog\Handler\TestHandler;
-use Monolog\Level;
-use Monolog\Logger;
+use App\Core\Log\MessageLoggerInterface;
+use App\Core\Message\Message;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageReporter;
 use PHPUnit\Framework\TestCase;
 
 final class OperationLoggerTest extends TestCase
 {
     public function testItWritesFinishedOperationSummaries(): void
     {
-        $handler = new TestHandler();
-        $monolog = new Logger('studio_operation');
-        $monolog->pushHandler($handler);
+        $logger = new RecordingOperationMessageLogger();
 
-        (new OperationLogger($monolog))->logFinished([
+        (new OperationLogger(new MessageReporter($logger)))->logFinished([
             'operation_id' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
             'operation' => 'backend.cache_clear',
             'label' => 'Cache clear',
@@ -33,25 +32,23 @@ final class OperationLoggerTest extends TestCase
             ],
         ]);
 
-        $records = $handler->getRecords();
+        $records = $logger->records;
 
         self::assertCount(1, $records);
-        self::assertSame(Level::Info, $records[0]->level);
-        self::assertSame('operation.finished', $records[0]->message);
-        self::assertSame('backend.cache_clear', $records[0]->context['operation']);
-        self::assertSame('success', $records[0]->context['status']);
-        self::assertSame(1, $records[0]->context['entry_count']);
-        self::assertSame(0, $records[0]->context['issue_count']);
-        self::assertSame(1, $records[0]->context['message_count']);
-        self::assertFalse($records[0]->context['can_continue']);
+        self::assertSame(MessageKey::OPERATION_FINISHED, $records[0]['message']->translationKey());
+        self::assertSame('live_operation.summary', $records[0]['context']['operation']);
+        self::assertSame('backend.cache_clear', $records[0]['message']->context()['operation']);
+        self::assertSame('success', $records[0]['message']->context()['status']);
+        self::assertSame(1, $records[0]['message']->context()['entry_count']);
+        self::assertSame(0, $records[0]['message']->context()['issue_count']);
+        self::assertSame(1, $records[0]['message']->context()['message_count']);
+        self::assertFalse($records[0]['message']->context()['can_continue']);
     }
 
     public function testItUsesReviewAndFailureLevels(): void
     {
-        $handler = new TestHandler();
-        $monolog = new Logger('studio_operation');
-        $monolog->pushHandler($handler);
-        $logger = new OperationLogger($monolog);
+        $messageLogger = new RecordingOperationMessageLogger();
+        $logger = new OperationLogger(new MessageReporter($messageLogger));
 
         $logger->logFinished([
             'operation' => 'package.install.verify',
@@ -67,12 +64,30 @@ final class OperationLoggerTest extends TestCase
             'result' => ['status' => 'failed', 'issues' => [['code' => 'failed']]],
         ]);
 
-        $records = $handler->getRecords();
+        $records = $messageLogger->records;
 
-        self::assertSame(Level::Notice, $records[0]->level);
-        self::assertSame('operation.requires_review', $records[0]->message);
-        self::assertTrue($records[0]->context['can_continue']);
-        self::assertSame(Level::Error, $records[1]->level);
-        self::assertSame('operation.failed', $records[1]->message);
+        self::assertSame(MessageKey::OPERATION_REQUIRES_REVIEW, $records[0]['message']->translationKey());
+        self::assertTrue($records[0]['message']->context()['can_continue']);
+        self::assertSame(MessageKey::OPERATION_FAILED, $records[1]['message']->translationKey());
+    }
+}
+
+final class RecordingOperationMessageLogger implements MessageLoggerInterface
+{
+    /**
+     * @var list<array{message: Message, context: array<string, mixed>}>
+     */
+    public array $records = [];
+
+    public function log(Message $message, array $context = []): void
+    {
+        $this->records[] = ['message' => $message, 'context' => $context];
+    }
+
+    public function logBatch(iterable $records): void
+    {
+        foreach ($records as $record) {
+            $this->log($record['message'], $record['context'] ?? []);
+        }
     }
 }

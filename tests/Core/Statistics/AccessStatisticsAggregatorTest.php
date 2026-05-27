@@ -34,6 +34,7 @@ final class AccessStatisticsAggregatorTest extends TestCase
                 browser_family VARCHAR(40) NOT NULL,
                 device_type VARCHAR(40) NOT NULL,
                 is_bot BOOLEAN NOT NULL,
+                do_not_track BOOLEAN NOT NULL,
                 referrer_host VARCHAR(255) NOT NULL,
                 preferred_language VARCHAR(20) NOT NULL,
                 request_content_type VARCHAR(120) NOT NULL,
@@ -51,7 +52,7 @@ final class AccessStatisticsAggregatorTest extends TestCase
     public function testItAggregatesDatabaseStatisticsWithoutExposingVisitorIds(): void
     {
         $this->insertEvent('00000000-0000-0000-0000-000000000001', 'request-a', 'visitor-a', 'GET', '/', 'content_home', 'public', 200, 20, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2026-05-27 10:00:00');
-        $this->insertEvent('00000000-0000-0000-0000-000000000002', 'request-b', 'visitor-a', 'GET', '/missing', 'content_view', 'public', 404, 40, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2026-05-27 10:00:00');
+        $this->insertEvent('00000000-0000-0000-0000-000000000002', 'request-b', 'visitor-a', 'GET', '/missing', 'content_view', 'public', 404, 40, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2026-05-27 10:00:00', true);
         $this->insertEvent('00000000-0000-0000-0000-000000000003', 'request-c', 'visitor-b', 'POST', '/admin', 'backend_admin_index', 'admin', 302, 60, 'n/a', 'bot', 'bot', true, 'n/a', 'en-us', '2026-05-27 10:00:00');
 
         $snapshot = (new AccessStatisticsAggregator($this->connection, new AccessStatisticsWindow()))->snapshot('all');
@@ -70,6 +71,7 @@ final class AccessStatisticsAggregatorTest extends TestCase
         self::assertSame([['label' => 'safari', 'count' => 2], ['label' => 'bot', 'count' => 1]], $snapshot['top_browsers']);
         self::assertSame([['label' => 'mobile', 'count' => 2], ['label' => 'bot', 'count' => 1]], $snapshot['device_types']);
         self::assertSame(1, $snapshot['bot_requests']);
+        self::assertSame(1, $snapshot['do_not_track_requests']);
         self::assertSame([['label' => 'public', 'count' => 2], ['label' => 'admin', 'count' => 1]], $snapshot['surfaces']);
         self::assertSame([['label' => 'example.org', 'count' => 2]], $snapshot['top_referrers']);
         self::assertSame([['label' => 'de-de', 'count' => 2], ['label' => 'en-us', 'count' => 1]], $snapshot['languages']);
@@ -89,7 +91,7 @@ final class AccessStatisticsAggregatorTest extends TestCase
         self::assertSame(0, $snapshot['total_requests']);
     }
 
-    private function insertEvent(string $uid, string $requestId, string $visitorId, string $method, string $path, string $route, string $surface, int $status, int $durationMs, string $country, string $browserFamily, string $deviceType, bool $isBot, string $referrerHost, string $preferredLanguage, string $occurredAt): void
+    private function insertEvent(string $uid, string $requestId, string $visitorId, string $method, string $path, string $route, string $surface, int $status, int $durationMs, string $country, string $browserFamily, string $deviceType, bool $isBot, string $referrerHost, string $preferredLanguage, string $occurredAt, bool $doNotTrack = false): void
     {
         $this->connection->insert('access_statistic_event', [
             'uid' => $uid,
@@ -107,6 +109,7 @@ final class AccessStatisticsAggregatorTest extends TestCase
             'browser_family' => $browserFamily,
             'device_type' => $deviceType,
             'is_bot' => $isBot,
+            'do_not_track' => $doNotTrack,
             'referrer_host' => $referrerHost,
             'preferred_language' => $preferredLanguage,
             'request_content_type' => 'n/a',

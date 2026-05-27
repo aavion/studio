@@ -50,6 +50,10 @@
                 <p class="studio-stat-number">{{ access_statistics.bot_requests|default(0) }}</p>
             </div>
             <div>
+                <h3>{{ 'admin.statistics.do_not_track_requests'|trans }}</h3>
+                <p class="studio-stat-number">{{ access_statistics.do_not_track_requests|default(0) }}</p>
+            </div>
+            <div>
                 <h3>{{ 'admin.statistics.average_duration'|trans }}</h3>
                 <p class="studio-stat-number">{{ access_statistics.average_duration_ms is same as(null) ? 'admin.statistics.empty'|trans : access_statistics.average_duration_ms ~ ' ms' }}</p>
             </div>

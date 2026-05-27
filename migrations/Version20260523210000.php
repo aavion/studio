@@ -81,6 +81,7 @@ final class Version20260523210000 extends AbstractMigration
         $accessStatistic->addColumn('browser_family', 'string', ['length' => 40]);
         $accessStatistic->addColumn('device_type', 'string', ['length' => 40]);
         $accessStatistic->addColumn('is_bot', 'boolean');
+        $accessStatistic->addColumn('do_not_track', 'boolean');
         $accessStatistic->addColumn('referrer_host', 'string', ['length' => 255]);
         $accessStatistic->addColumn('preferred_language', 'string', ['length' => 20]);
         $accessStatistic->addColumn('request_content_type', 'string', ['length' => 120]);
@@ -103,6 +104,7 @@ final class Version20260523210000 extends AbstractMigration
         $accessStatistic->addIndex(['browser_family', 'occurred_at'], 'idx_access_statistic_browser_at');
         $accessStatistic->addIndex(['device_type', 'occurred_at'], 'idx_access_statistic_device_at');
         $accessStatistic->addIndex(['is_bot', 'occurred_at'], 'idx_access_statistic_bot_at');
+        $accessStatistic->addIndex(['do_not_track', 'occurred_at'], 'idx_access_statistic_dnt_at');
         $accessStatistic->addIndex(['referrer_host', 'occurred_at'], 'idx_access_statistic_referrer_at');
         $accessStatistic->addIndex(['preferred_language', 'occurred_at'], 'idx_access_statistic_language_at');
         $accessStatistic->addIndex(['country', 'occurred_at'], 'idx_access_statistic_country_at');

@@ -21,6 +21,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_access_statistic_browser_at', columns: ['browser_family', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_device_at', columns: ['device_type', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_bot_at', columns: ['is_bot', 'occurred_at'])]
+#[ORM\Index(name: 'idx_access_statistic_dnt_at', columns: ['do_not_track', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_referrer_at', columns: ['referrer_host', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_language_at', columns: ['preferred_language', 'occurred_at'])]
 #[ORM\Index(name: 'idx_access_statistic_country_at', columns: ['country', 'occurred_at'])]
@@ -72,6 +73,9 @@ class AccessStatisticEvent
 
     #[ORM\Column]
     private bool $isBot;
+
+    #[ORM\Column]
+    private bool $doNotTrack;
 
     #[ORM\Column(length: 255)]
     private string $referrerHost;
@@ -125,6 +129,7 @@ class AccessStatisticEvent
         string $browserFamily = 'other',
         string $deviceType = 'other',
         bool $isBot = false,
+        bool $doNotTrack = false,
         string $referrerHost = 'n/a',
         string $preferredLanguage = 'n/a',
         string $requestContentType = 'n/a',
@@ -151,6 +156,7 @@ class AccessStatisticEvent
         $this->browserFamily = substr($browserFamily, 0, 40);
         $this->deviceType = substr($deviceType, 0, 40);
         $this->isBot = $isBot;
+        $this->doNotTrack = $doNotTrack;
         $this->referrerHost = substr($referrerHost, 0, 255);
         $this->preferredLanguage = substr($preferredLanguage, 0, 20);
         $this->requestContentType = substr($requestContentType, 0, 120);
@@ -236,6 +242,11 @@ class AccessStatisticEvent
     public function isBot(): bool
     {
         return $this->isBot;
+    }
+
+    public function doNotTrack(): bool
+    {
+        return $this->doNotTrack;
     }
 
     public function referrerHost(): string

@@ -38,6 +38,7 @@ final readonly class AccessStatisticsAggregator
      *     top_browsers: list<array{label: string, count: int}>,
      *     device_types: list<array{label: string, count: int}>,
      *     bot_requests: int,
+     *     do_not_track_requests: int,
      *     surfaces: list<array{label: string, count: int}>,
      *     top_referrers: list<array{label: string, count: int}>,
      *     languages: list<array{label: string, count: int}>,
@@ -60,6 +61,7 @@ final readonly class AccessStatisticsAggregator
         $referrers = [];
         $languages = [];
         $botRequests = 0;
+        $doNotTrackRequests = 0;
         $durationSum = 0;
         $durationCount = 0;
         $visitors = [];
@@ -96,6 +98,10 @@ final readonly class AccessStatisticsAggregator
                 ++$botRequests;
             }
 
+            if ($this->boolValue($row, 'do_not_track')) {
+                ++$doNotTrackRequests;
+            }
+
             $surface = $this->stringValue($row, 'surface', 'public');
             $surfaces[$surface] = ($surfaces[$surface] ?? 0) + 1;
 
@@ -129,6 +135,7 @@ final readonly class AccessStatisticsAggregator
             'top_browsers' => $this->top($browsers),
             'device_types' => $this->top($devices),
             'bot_requests' => $botRequests,
+            'do_not_track_requests' => $doNotTrackRequests,
             'surfaces' => $this->top($surfaces),
             'top_referrers' => $this->top($referrers),
             'languages' => $this->top($languages),
@@ -145,13 +152,13 @@ final readonly class AccessStatisticsAggregator
         try {
             if (null !== $since) {
                 return $this->connection->fetchAllAssociative(
-                    'SELECT visitor_id, method, path, requested_path, route, resolved_route, surface, http_status, duration_ms, browser_family, device_type, is_bot, referrer_host, preferred_language, country FROM access_statistic_event WHERE occurred_at >= ? ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
+                    'SELECT visitor_id, method, path, requested_path, route, resolved_route, surface, http_status, duration_ms, browser_family, device_type, is_bot, do_not_track, referrer_host, preferred_language, country FROM access_statistic_event WHERE occurred_at >= ? ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
                     [$since->format('Y-m-d H:i:s')],
                 );
             }
 
             return $this->connection->fetchAllAssociative(
-                'SELECT visitor_id, method, path, requested_path, route, resolved_route, surface, http_status, duration_ms, browser_family, device_type, is_bot, referrer_host, preferred_language, country FROM access_statistic_event ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
+                'SELECT visitor_id, method, path, requested_path, route, resolved_route, surface, http_status, duration_ms, browser_family, device_type, is_bot, do_not_track, referrer_host, preferred_language, country FROM access_statistic_event ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
             );
         } catch (Throwable $error) {
             $this->messageReporter?->report(Message::exception(

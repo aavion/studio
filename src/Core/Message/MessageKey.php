@@ -39,6 +39,7 @@ final class MessageKey
     public const STATISTICS_RECORD_FAILED = 'message.statistics.record_failed';
     public const STATISTICS_AGGREGATE_FAILED = 'message.statistics.aggregate_failed';
     public const STATISTICS_SNAPSHOT_STORE_FAILED = 'message.statistics.snapshot_store_failed';
+    public const STATISTICS_CLEANUP_FAILED = 'message.statistics.cleanup_failed';
     public const PACKAGE_ASSET_REBUILD_QUEUED = 'message.package.asset_rebuild_queued';
     public const PACKAGE_ASSET_REBUILD_QUEUE_FAILED = 'message.package.asset_rebuild_queue_failed';
     public const PACKAGE_DISCOVERY_QUEUED = 'message.package.discovery_queued';
@@ -129,6 +130,10 @@ final class MessageKey
     public const OPERATION_STALE = 'message.operation.stale';
     public const OPERATION_LOCKED = 'message.operation.locked';
     public const OPERATION_ACTION_REQUIRED = 'message.operation.action_required';
+    public const OPERATION_FINISHED = 'message.operation.finished';
+    public const OPERATION_REQUIRES_REVIEW = 'message.operation.requires_review';
+    public const OPERATION_FAILED = 'message.operation.failed';
+    public const OPERATION_FINISHED_UNKNOWN = 'message.operation.finished_unknown';
     public const PROCESS_COMMAND_FAILED = 'message.process.command_failed';
     public const PROCESS_COMMAND_COMPLETED = 'message.process.command_completed';
 

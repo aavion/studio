@@ -42,6 +42,7 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
                 browser_family VARCHAR(40) NOT NULL,
                 device_type VARCHAR(40) NOT NULL,
                 is_bot BOOLEAN NOT NULL,
+                do_not_track BOOLEAN NOT NULL,
                 referrer_host VARCHAR(255) NOT NULL,
                 preferred_language VARCHAR(20) NOT NULL,
                 request_content_type VARCHAR(120) NOT NULL,
@@ -94,6 +95,7 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
         self::assertSame('other', $row['browser_family']);
         self::assertSame('desktop', $row['device_type']);
         self::assertFalse((bool) $row['is_bot']);
+        self::assertFalse((bool) $row['do_not_track']);
         self::assertSame('example.org', $row['referrer_host']);
         self::assertSame('en-us', $row['preferred_language']);
         self::assertSame('application/json', $row['request_content_type']);
@@ -116,10 +118,28 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
         self::assertTrue(true);
     }
 
-    public function testItSkipsRecordingWhenStatisticsAreDisabled(): void
+    public function testItKeepsRecordingWhenStatisticsDisplayIsDisabled(): void
     {
         $config = new Config($this->connection);
         $config->set(AccessStatisticsPolicy::ENABLED_KEY, false, ConfigValueType::Boolean);
+
+        (new DatabaseAccessStatisticsRecorder(
+            $this->connection,
+            new VisitorIdGenerator('test-secret'),
+            new UserAgentClassifier(),
+            new AccessRequestMetadata(),
+            new NullGeoIpResolver(),
+            new AccessStatisticsPolicy($config),
+        ))->record(Request::create('/docs', 'GET'), new Response('', 200));
+
+        self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM access_statistic_event'));
+    }
+
+    public function testItCanCoupleRecordingToStatisticsDisplayWhenConfigured(): void
+    {
+        $config = new Config($this->connection);
+        $config->set(AccessStatisticsPolicy::ENABLED_KEY, false, ConfigValueType::Boolean);
+        $config->set(AccessStatisticsPolicy::RECORDING_FOLLOWS_DISPLAY_KEY, true, ConfigValueType::Boolean);
 
         (new DatabaseAccessStatisticsRecorder(
             $this->connection,
@@ -150,5 +170,63 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
         ))->record($request, new Response('', 200));
 
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM access_statistic_event'));
+    }
+
+    public function testItStoresDoNotTrackWhenHeaderIsNotRespected(): void
+    {
+        $config = new Config($this->connection);
+        $config->set(AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, false, ConfigValueType::Boolean);
+        $request = Request::create('/docs', 'GET', server: ['HTTP_DNT' => '1']);
+
+        (new DatabaseAccessStatisticsRecorder(
+            $this->connection,
+            new VisitorIdGenerator('test-secret'),
+            new UserAgentClassifier(),
+            new AccessRequestMetadata(),
+            new NullGeoIpResolver(),
+            new AccessStatisticsPolicy($config),
+        ))->record($request, new Response('', 200));
+
+        self::assertTrue((bool) $this->connection->fetchOne('SELECT do_not_track FROM access_statistic_event'));
+    }
+
+    public function testItDeletesStatisticEventsOlderThanThreeMonths(): void
+    {
+        $this->connection->insert('access_statistic_event', [
+            'uid' => '00000000-0000-0000-0000-000000000999',
+            'occurred_at' => (new \DateTimeImmutable('-4 months'))->format('Y-m-d H:i:s'),
+            'request_id' => 'old-request',
+            'visitor_id' => 'old-visitor',
+            'method' => 'GET',
+            'path' => '/old',
+            'requested_path' => '/old',
+            'route' => 'old_route',
+            'resolved_route' => 'old_route',
+            'surface' => 'public',
+            'http_status' => 200,
+            'duration_ms' => 1,
+            'browser_family' => 'other',
+            'device_type' => 'desktop',
+            'is_bot' => false,
+            'do_not_track' => false,
+            'referrer_host' => 'n/a',
+            'preferred_language' => 'n/a',
+            'request_content_type' => 'n/a',
+            'response_content_type' => 'text/html',
+            'response_size' => 1,
+            'city' => 'n/a',
+            'state' => 'n/a',
+            'country' => 'n/a',
+            'continent' => 'n/a',
+            'metadata' => '{}',
+        ]);
+
+        (new DatabaseAccessStatisticsRecorder($this->connection, new VisitorIdGenerator('test-secret'), new UserAgentClassifier(), new AccessRequestMetadata(), new NullGeoIpResolver()))->record(
+            Request::create('/docs', 'GET'),
+            new Response('', 200),
+        );
+
+        self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM access_statistic_event WHERE request_id = ?', ['old-request']));
+        self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM access_statistic_event WHERE path = ?', ['/docs']));
     }
 }

@@ -355,7 +355,6 @@ admin:
         sources:
             application: Application
             message: Messages
-            operation: Operations
             audit: Audit
             access: Access
         filters:
@@ -419,6 +418,7 @@ admin:
         top_browsers: 'Top browsers'
         device_types: 'Device types'
         bot_requests: 'Bot requests'
+        do_not_track_requests: 'Do Not Track requests'
         average_duration: 'Average duration'
         surfaces: Surfaces
         languages: Languages
@@ -656,6 +656,7 @@ message:
         record_failed: 'Access statistics could not record the current request.'
         aggregate_failed: 'Access statistics aggregation failed.'
         snapshot_store_failed: 'Access statistics snapshot storage failed.'
+        cleanup_failed: 'Access statistics retention cleanup failed.'
     event:
         hook:
             invalid: 'Event hook "%event%" is not a valid public hook definition.'
@@ -718,6 +719,10 @@ message:
         stale: 'Operation "%operation%" did not report progress in time and was marked as failed.'
         locked: 'Operation "%operation%" could not run because another live operation is already running.'
         action_required: 'Operation "%operation%" needs confirmation before it can continue.'
+        finished: 'Operation "%operation%" finished.'
+        requires_review: 'Operation "%operation%" needs review before continuing.'
+        failed: 'Operation "%operation%" failed.'
+        finished_unknown: 'Operation "%operation%" finished with an unknown status.'
     process:
         command_failed: 'Command "%command%" failed with exit code %exit_code%.'
         command_completed: 'Command "%command%" completed with exit code %exit_code%.'

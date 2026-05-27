@@ -77,6 +77,7 @@ final readonly class AccessStatisticsSnapshotProvider
             'top_browsers' => [],
             'device_types' => [],
             'bot_requests' => 0,
+            'do_not_track_requests' => 0,
             'surfaces' => [],
             'top_referrers' => [],
             'languages' => [],

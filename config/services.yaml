@@ -184,10 +184,6 @@ services:
         arguments:
             $secret: '%kernel.secret%'
 
-    App\Core\Log\OperationLogger:
-        arguments:
-            $logger: '@monolog.logger.studio_operation'
-
     App\Core\Log\LogFileBrowser:
         arguments:
             $logDir: '%kernel.logs_dir%'
