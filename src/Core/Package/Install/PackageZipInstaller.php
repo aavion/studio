@@ -15,9 +15,9 @@ use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageCandidate;
+use App\Core\Package\PackageDependencyResolver;
 use App\Core\Package\PackageDiscoveryRunner;
 use App\Core\Package\PackageManifestSpec;
-use App\Core\Package\PackageRemover;
 use App\Core\Package\PackageScope;
 use App\Core\Package\PackageSource;
 use App\Core\Package\PackageSpec;
@@ -35,7 +35,7 @@ final readonly class PackageZipInstaller
         private EntityManagerInterface $entityManager,
         private PackageDiscoveryRunner $discoveryRunner,
         private PackageActivator $activator,
-        private PackageRemover $remover,
+        private PackageDependencyResolver $dependencyResolver,
         private string $projectDir,
         private string $environment,
         private ManifestParser $manifestParser = new ManifestParser(),
@@ -164,7 +164,7 @@ final readonly class PackageZipInstaller
         }
 
         try {
-            PackageScope::fromManifestValue($scope);
+            $scopes = PackageScope::fromManifestValue($scope);
         } catch (\InvalidArgumentException) {
             return WorkflowResult::invalid([
                 Message::error(
@@ -192,6 +192,47 @@ final readonly class PackageZipInstaller
 
         $existing = $this->package($slug);
         $wasActive = $existing instanceof ExtensionPackage && ExtensionPackageStatus::Active === $existing->status();
+        $versionGate = $this->ensureInstallOrUpdateAllowed($manifestValue, $existing, $installId, $slug);
+        if ($versionGate instanceof WorkflowResult) {
+            return $versionGate;
+        }
+
+        $dependencyPreflight = null;
+        $deactivationTargets = [];
+
+        if ($wasActive) {
+            $dependencyPreflight = $this->preflightReplacementDependencies($manifestValue, $slug, $scopes);
+
+            if (!$dependencyPreflight->isSuccess()) {
+                return WorkflowResult::blocked($dependencyPreflight->issues(), [
+                    'install_id' => $installId,
+                    'package' => $slug,
+                    'dependencies' => $dependencyPreflight->context()['dependencies'] ?? [],
+                ], [
+                    ...$validation->messages(),
+                    ...$packageValidation->messages(),
+                    ...$dependencyPreflight->messages(),
+                ]);
+            }
+
+            $deactivationPlan = $this->activator->planDeactivation($slug);
+
+            if (!$deactivationPlan->isSuccess()) {
+                return WorkflowResult::blocked($deactivationPlan->issues(), [
+                    'install_id' => $installId,
+                    'package' => $slug,
+                    'deactivation_context' => $deactivationPlan->context(),
+                ], [
+                    ...$validation->messages(),
+                    ...$packageValidation->messages(),
+                    ...$dependencyPreflight->messages(),
+                    ...$deactivationPlan->messages(),
+                ]);
+            }
+
+            $deactivationTargets = $this->packageNameList($deactivationPlan->value()['deactivate'] ?? []);
+        }
+
         $issues = [
             Message::info(
                 MessageCode::PACKAGE_INSTALL_READY,
@@ -216,12 +257,16 @@ final readonly class PackageZipInstaller
             'name' => $name,
             'version' => $version,
             'was_active' => $wasActive,
+            'dependencies' => $dependencyPreflight?->context()['dependencies'] ?? [],
+            'deactivate' => $deactivationTargets,
         ], $issues, [
             'install_id' => $installId,
             'package' => $slug,
             'name' => $name,
             'version' => $version,
             'was_active' => $wasActive,
+            'dependencies' => $dependencyPreflight?->context()['dependencies'] ?? [],
+            'deactivate' => $deactivationTargets,
             'live_operation_continuation' => [
                 'operation' => LiveOperationQueueFactory::PACKAGE_INSTALL_APPLY,
                 'label' => sprintf('Install package %s', $slug),
@@ -248,7 +293,6 @@ final readonly class PackageZipInstaller
     {
         $installId = $this->payloadString($payload, 'install_id');
         $slug = $this->payloadString($payload, 'package');
-        $wasActive = true === ($payload['was_active'] ?? false);
 
         if (null === $installId || null === $slug || !PackageManifestSpec::isValidSlug($slug)) {
             return $this->invalidPayload('apply', array_keys($payload));
@@ -270,27 +314,79 @@ final readonly class PackageZipInstaller
 
         $messages = [];
         $existing = $this->package($slug);
+        $wasActive = $existing instanceof ExtensionPackage && ExtensionPackageStatus::Active === $existing->status();
+        $previousStatus = $existing?->status();
+        $target = $this->projectDir.DIRECTORY_SEPARATOR.'packages'.DIRECTORY_SEPARATOR.$slug;
+        $prepared = $root.DIRECTORY_SEPARATOR.'prepared'.DIRECTORY_SEPARATOR.$slug;
+        $backup = $root.DIRECTORY_SEPARATOR.'backup'.DIRECTORY_SEPARATOR.$slug;
+        $deactivationTargets = [];
+        $previousStatuses = $previousStatus instanceof ExtensionPackageStatus ? [$slug => $previousStatus] : [];
 
-        if ($existing instanceof ExtensionPackage) {
-            $remove = $this->remover->remove($slug, $this->environment, rebuildAssets: false);
-            $messages = [...$messages, ...$remove->messages()];
+        $manifest = $this->readManifest($packageRoot);
+        if (!$manifest->isSuccess()) {
+            return $manifest;
+        }
 
-            if (!$remove->isSuccess()) {
-                return WorkflowResult::failed($remove->issues(), [
+        $manifestValue = $manifest->value();
+        try {
+            $scopes = PackageScope::fromManifestValue((string) $manifestValue->get('PACKAGE_SCOPE', ''));
+        } catch (\InvalidArgumentException) {
+            return WorkflowResult::invalid([
+                Message::error(
+                    MessageCode::PACKAGE_SCOPE_INVALID,
+                    MessageKey::PACKAGE_SCOPE_INVALID,
+                    ['%scope%' => (string) $manifestValue->get('PACKAGE_SCOPE', '')],
+                    ['install_id' => $installId, 'package' => $slug],
+                ),
+            ]);
+        }
+
+        $versionGate = $this->ensureInstallOrUpdateAllowed($manifestValue, $existing, $installId, $slug);
+        if ($versionGate instanceof WorkflowResult) {
+            return $versionGate;
+        }
+
+        if ($wasActive) {
+            $dependencyPreflight = $this->preflightReplacementDependencies($manifestValue, $slug, $scopes);
+
+            if (!$dependencyPreflight->isSuccess()) {
+                return WorkflowResult::blocked($dependencyPreflight->issues(), [
                     'install_id' => $installId,
                     'package' => $slug,
-                    'remove_context' => $remove->context(),
+                    'dependencies' => $dependencyPreflight->context()['dependencies'] ?? [],
+                ], $dependencyPreflight->messages());
+            }
+
+            $deactivationPlan = $this->activator->planDeactivation($slug);
+
+            if (!$deactivationPlan->isSuccess()) {
+                return WorkflowResult::blocked($deactivationPlan->issues(), [
+                    'install_id' => $installId,
+                    'package' => $slug,
+                    'deactivation_context' => $deactivationPlan->context(),
+                ], $deactivationPlan->messages());
+            }
+
+            $deactivationTargets = $this->packageNameList($deactivationPlan->value()['deactivate'] ?? []);
+            $previousStatuses = $this->statusSnapshots($deactivationTargets);
+            $deactivation = $this->activator->deactivate($slug, $this->environment, rebuildAssets: false);
+            $messages = [...$messages, ...$deactivation->messages()];
+
+            if (!$deactivation->isSuccess()) {
+                return WorkflowResult::failed($deactivation->issues(), [
+                    'install_id' => $installId,
+                    'package' => $slug,
+                    'deactivation_context' => $deactivation->context(),
                 ], $messages);
             }
         }
 
-        $target = $this->projectDir.DIRECTORY_SEPARATOR.'packages'.DIRECTORY_SEPARATOR.$slug;
-
         try {
-            $this->removePath($target);
-            $this->ensureDirectory(dirname($target));
-            $this->copyDirectory($packageRoot, $target);
+            $this->prepareReplacement($packageRoot, $prepared);
+            $this->swapPreparedPackage($prepared, $target, $backup);
         } catch (Throwable $error) {
+            $rollbackMessages = $this->restorePackageStatuses($previousStatuses);
+
             return WorkflowResult::failed([
                 Message::exception(
                     MessageCode::OPERATION_EXCEPTION,
@@ -302,30 +398,91 @@ final readonly class PackageZipInstaller
                         'message' => $error->getMessage(),
                     ],
                 ),
-            ], ['install_id' => $installId, 'package' => $slug], $messages);
+            ], [
+                'install_id' => $installId,
+                'package' => $slug,
+                'replacement_stage' => 'filesystem_swap',
+                'rolled_back' => [] === $rollbackMessages,
+            ], [...$messages, ...$rollbackMessages]);
         }
 
         $discovery = ($this->discoveryRunner)('package_install');
         $messages = [...$messages, ...$discovery->messages()];
 
         if (!$discovery->isSuccess()) {
+            $rollbackMessages = $this->restorePreviousPackage($slug, $target, $backup, $previousStatuses);
+
             return WorkflowResult::failed($discovery->issues(), [
                 'install_id' => $installId,
                 'package' => $slug,
                 'discovery_context' => $discovery->context(),
-            ], $messages);
+                'rolled_back' => [] === $rollbackMessages,
+            ], [...$messages, ...$rollbackMessages]);
+        }
+
+        $installed = $this->package($slug);
+        if ($installed instanceof ExtensionPackage && ExtensionPackageStatus::Active === $installed->status()) {
+            $installed->restoreStatus(ExtensionPackageStatus::Inactive);
+            $this->entityManager->flush();
+        }
+
+        $installed = $this->package($slug);
+        if (!$this->isInstalledInactivePackage($installed, $manifestValue)) {
+            $rollbackMessages = $this->restorePreviousPackage($slug, $target, $backup, $previousStatuses);
+            $status = $installed?->status()->value;
+
+            return WorkflowResult::failed([
+                Message::error(
+                    MessageCode::PACKAGE_REGISTRY_PACKAGE_FAULTY,
+                    MessageKey::PACKAGE_REGISTRY_PACKAGE_FAULTY,
+                    ['%package%' => $slug],
+                    [
+                        'install_id' => $installId,
+                        'package' => $slug,
+                        'status' => $status,
+                        'expected_status' => ExtensionPackageStatus::Inactive->value,
+                    ],
+                ),
+            ], [
+                'install_id' => $installId,
+                'package' => $slug,
+                'status' => $status,
+                'rolled_back' => [] === $rollbackMessages,
+            ], [...$messages, ...$rollbackMessages]);
         }
 
         if ($wasActive) {
-            $activation = $this->activator->activate($slug, $this->environment);
+            $reactivationTargets = $this->reactivationOrder($slug, $deactivationTargets, $previousStatuses);
+            $activation = $this->activator->activate($slug, $this->environment, rebuildAssets: [] === $reactivationTargets);
             $messages = [...$messages, ...$activation->messages()];
 
             if (!$activation->isSuccess()) {
+                $rollbackMessages = $this->restorePreviousPackage($slug, $target, $backup, $previousStatuses);
+
                 return WorkflowResult::failed($activation->issues(), [
                     'install_id' => $installId,
                     'package' => $slug,
                     'activation_context' => $activation->context(),
-                ], $messages);
+                    'rolled_back' => [] === $rollbackMessages,
+                ], [...$messages, ...$rollbackMessages]);
+            }
+
+            $lastReactivationIndex = count($reactivationTargets) - 1;
+            foreach ($reactivationTargets as $index => $packageName) {
+                $reactivation = $this->activator->activate($packageName, $this->environment, rebuildAssets: $index === $lastReactivationIndex);
+                $messages = [...$messages, ...$reactivation->messages()];
+
+                if (!$reactivation->isSuccess()) {
+                    $rollbackMessages = $this->restorePreviousPackage($slug, $target, $backup, $previousStatuses);
+
+                    return WorkflowResult::failed($reactivation->issues(), [
+                        'install_id' => $installId,
+                        'package' => $slug,
+                        'reactivation_package' => $packageName,
+                        'reactivation_context' => $reactivation->context(),
+                        'rolled_back' => [] === $rollbackMessages,
+                    ], [...$messages, ...$rollbackMessages]);
+                }
             }
         }
 
@@ -345,6 +502,306 @@ final readonly class PackageZipInstaller
                 ['package' => $slug, 'was_active' => $wasActive],
             ),
         ]);
+    }
+
+    /**
+     * @param list<PackageScope> $scopes
+     *
+     * @return WorkflowResult<array{packages: list<ExtensionPackage>, dependencies: list<array<string, mixed>>}>
+     */
+    private function preflightReplacementDependencies(Manifest $manifest, string $slug, array $scopes): WorkflowResult
+    {
+        $version = trim((string) $manifest->get('PACKAGE_VERSION', ''));
+        $package = new ExtensionPackage(
+            $this->uuid(),
+            $scopes,
+            $slug,
+            'packages/'.$slug,
+            ExtensionPackageStatus::Inactive,
+            ['manifest' => $manifest->all()],
+            manifestVersion: '' !== $version ? $version : null,
+            installedVersion: '' !== $version ? $version : null,
+        );
+
+        return $this->dependencyResolver->resolve($package);
+    }
+
+    /**
+     * @return WorkflowResult<array<string, mixed>>|null
+     */
+    private function ensureInstallOrUpdateAllowed(
+        Manifest $manifest,
+        ?ExtensionPackage $existing,
+        string $installId,
+        string $slug,
+    ): ?WorkflowResult {
+        if (!$existing instanceof ExtensionPackage) {
+            return null;
+        }
+
+        $version = trim((string) $manifest->get('PACKAGE_VERSION', ''));
+        $installedVersion = $this->installedPackageVersion($existing);
+
+        if (null === $installedVersion || '' === $version || version_compare($version, $installedVersion, '>')) {
+            return null;
+        }
+
+        if (
+            0 === version_compare($version, $installedVersion)
+            && in_array($existing->status(), [ExtensionPackageStatus::Faulty, ExtensionPackageStatus::Removed], true)
+        ) {
+            return null;
+        }
+
+        return WorkflowResult::blocked([
+            Message::warning(
+                MessageCode::PACKAGE_INSTALL_VERSION_BLOCKED,
+                MessageKey::PACKAGE_INSTALL_VERSION_BLOCKED,
+                [
+                    '%package%' => $slug,
+                    '%version%' => '' !== $version ? $version : 'unknown',
+                    '%installed_version%' => $installedVersion ?? 'unknown',
+                ],
+                [
+                    'install_id' => $installId,
+                    'package' => $slug,
+                    'version' => '' !== $version ? $version : null,
+                    'installed_version' => $installedVersion,
+                    'status' => $existing->status()->value,
+                ],
+            ),
+        ], [
+            'install_id' => $installId,
+            'package' => $slug,
+            'version' => '' !== $version ? $version : null,
+            'installed_version' => $installedVersion,
+            'status' => $existing->status()->value,
+        ]);
+    }
+
+    private function installedPackageVersion(ExtensionPackage $package): ?string
+    {
+        $version = $package->installedVersion() ?? $package->manifestVersion();
+
+        return is_string($version) && '' !== trim($version) ? trim($version) : null;
+    }
+
+    /**
+     * @param mixed $value
+     *
+     * @return list<string>
+     */
+    private function packageNameList(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $value,
+            static fn (mixed $packageName): bool => is_string($packageName) && '' !== trim($packageName),
+        ));
+    }
+
+    /**
+     * @param list<string> $packageNames
+     *
+     * @return array<string, ExtensionPackageStatus>
+     */
+    private function statusSnapshots(array $packageNames): array
+    {
+        $snapshots = [];
+
+        foreach (array_unique($packageNames) as $packageName) {
+            $package = $this->package($packageName);
+
+            if ($package instanceof ExtensionPackage) {
+                $snapshots[$packageName] = $package->status();
+            }
+        }
+
+        return $snapshots;
+    }
+
+    /**
+     * @param array<string, ExtensionPackageStatus> $statuses
+     *
+     * @return list<Message>
+     */
+    private function restorePackageStatuses(array $statuses): array
+    {
+        try {
+            foreach ($statuses as $packageName => $status) {
+                $package = $this->package($packageName);
+
+                if ($package instanceof ExtensionPackage) {
+                    $package->restoreStatus($status);
+                }
+            }
+
+            $this->entityManager->flush();
+        } catch (Throwable $error) {
+            return [
+                Message::exception(
+                    MessageCode::OPERATION_EXCEPTION,
+                    MessageKey::OPERATION_EXCEPTION,
+                    context: [
+                        'exception' => $error::class,
+                        'message' => $error->getMessage(),
+                        'rollback' => true,
+                    ],
+                ),
+            ];
+        }
+
+        return [];
+    }
+
+    /**
+     * @param array<string, ExtensionPackageStatus> $previousStatuses
+     *
+     * @return list<string>
+     */
+    private function reactivationOrder(string $slug, array $deactivationTargets, array $previousStatuses): array
+    {
+        $targets = [];
+
+        foreach (array_reverse($deactivationTargets) as $packageName) {
+            if (
+                $slug === $packageName
+                || ExtensionPackageStatus::Active !== ($previousStatuses[$packageName] ?? null)
+            ) {
+                continue;
+            }
+
+            $targets[$packageName] = $packageName;
+        }
+
+        return array_values($targets);
+    }
+
+    private function isInstalledInactivePackage(?ExtensionPackage $package, Manifest $manifest): bool
+    {
+        if (!$package instanceof ExtensionPackage || ExtensionPackageStatus::Inactive !== $package->status()) {
+            return false;
+        }
+
+        $expectedVersion = trim((string) $manifest->get('PACKAGE_VERSION', ''));
+
+        return '' === $expectedVersion || $package->manifestVersion() === $expectedVersion;
+    }
+
+    private function uuid(): string
+    {
+        $bytes = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+    }
+
+    private function prepareReplacement(string $packageRoot, string $prepared): void
+    {
+        $this->removePath($prepared);
+        $this->ensureDirectory(dirname($prepared));
+        $this->copyDirectory($packageRoot, $prepared);
+    }
+
+    private function swapPreparedPackage(string $prepared, string $target, string $backup): void
+    {
+        $this->removePath($backup);
+        $this->ensureDirectory(dirname($backup));
+
+        if ($this->pathExists($target)) {
+            $this->movePath($target, $backup);
+        }
+
+        try {
+            $this->ensureDirectory(dirname($target));
+            $this->movePath($prepared, $target);
+        } catch (Throwable $error) {
+            $this->removePath($target);
+
+            if ($this->pathExists($backup)) {
+                $this->movePath($backup, $target);
+            }
+
+            throw $error;
+        }
+    }
+
+    /**
+     * @param array<string, ExtensionPackageStatus> $previousStatuses
+     *
+     * @return list<Message>
+     */
+    private function restorePreviousPackage(
+        string $slug,
+        string $target,
+        string $backup,
+        array $previousStatuses,
+    ): array {
+        try {
+            $this->removePath($target);
+
+            if ($this->pathExists($backup)) {
+                $this->ensureDirectory(dirname($target));
+                $this->movePath($backup, $target);
+            }
+
+            if ($this->pathExists($target)) {
+                $rollbackDiscovery = ($this->discoveryRunner)('package_install_rollback');
+                if (!$rollbackDiscovery->isSuccess()) {
+                    return [...$rollbackDiscovery->messages(), ...$rollbackDiscovery->issues()];
+                }
+            }
+
+            $statusMessages = $this->restorePackageStatuses($previousStatuses);
+            if ([] !== $statusMessages) {
+                return $statusMessages;
+            }
+        } catch (Throwable $error) {
+            return [
+                Message::exception(
+                    MessageCode::OPERATION_EXCEPTION,
+                    MessageKey::OPERATION_EXCEPTION,
+                    context: [
+                        'package' => $slug,
+                        'exception' => $error::class,
+                        'message' => $error->getMessage(),
+                        'rollback' => true,
+                    ],
+                ),
+            ];
+        }
+
+        return [];
+    }
+
+    private function movePath(string $source, string $target): void
+    {
+        if (@rename($source, $target)) {
+            return;
+        }
+
+        if (is_dir($source)) {
+            $this->copyDirectory($source, $target);
+            $this->removePath($source);
+
+            return;
+        }
+
+        $this->ensureDirectory(dirname($target));
+        if (!copy($source, $target)) {
+            throw new \RuntimeException(sprintf('Path "%s" could not be moved.', basename($source)));
+        }
+
+        unlink($source);
+    }
+
+    private function pathExists(string $path): bool
+    {
+        return file_exists($path) || is_link($path);
     }
 
     private function package(string $packageName): ?ExtensionPackage

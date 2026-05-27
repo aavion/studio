@@ -80,6 +80,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Hardened package ZIP install/update so registry-known downgrades are blocked before review, active replacements preflight new dependencies before deactivation, active reverse dependents are restored after replacement, existing package folders stay available until a prepared replacement is ready, and failed discovery or reactivation rolls back to the previous package/status set.
 - Fixed package ZIP validation so translation namespaces are checked against manifest `PACKAGE_SLUG` instead of the temporary extracted directory name.
 - Fixed persisted menu ACL handling so database-backed `site_menu_item` rows with `view_min_level` or `view_group_identifiers` are loaded, mapped into navigation access metadata, and filtered for the current actor instead of being dropped before access checks.
 - Added a Symfony form-login user checker so inactive and deleted user accounts are rejected during authentication before they can create an admin/editor-capable session.

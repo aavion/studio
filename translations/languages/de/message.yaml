@@ -49,6 +49,7 @@ message:
       root_invalid: 'Das Paket-ZIP muss genau ein Paket-Root mit .manifest-Datei enthalten.'
       ready: 'Paket "%package%" Version %version% kann jetzt installiert werden. Fortfahren?'
       overwrite: 'Paket "%package%" existiert bereits und wird bei aktivem Status deaktiviert, anschließend überschrieben und danach per Discovery neu registriert.'
+      version_blocked: 'Paket "%package%" Version %version% kann die registrierte Version %installed_version% nicht ersetzen. Downgrades sind blockiert und Same-Version-Replacements sind nur für fehlerhafte oder entfernte Pakete erlaubt; entferne und purge das bestehende Paket zuerst, wenn dieser Austausch beabsichtigt ist.'
       completed: 'Paket "%package%" wurde installiert.'
     lifecycle:
       not_found: 'Paket "%package%" ist nicht registriert.'

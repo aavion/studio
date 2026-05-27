@@ -91,6 +91,7 @@ final class MessageCode
     public const PACKAGE_INSTALL_ROOT_INVALID = 'package.install.root_invalid';
     public const PACKAGE_INSTALL_READY = 'package.install.ready';
     public const PACKAGE_INSTALL_OVERWRITE = 'package.install.overwrite';
+    public const PACKAGE_INSTALL_VERSION_BLOCKED = 'package.install.version_blocked';
     public const PACKAGE_INSTALL_COMPLETED = 'package.install.completed';
     public const PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND = 'package.lifecycle.not_found';
     public const PACKAGE_LIFECYCLE_STATUS_BLOCKED = 'package.lifecycle.status_blocked';

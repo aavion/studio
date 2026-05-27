@@ -49,6 +49,7 @@ message:
       root_invalid: 'The package ZIP must contain one package root with a .manifest file.'
       ready: 'Package "%package%" version %version% can now be installed. Continue?'
       overwrite: 'Package "%package%" already exists and will be deactivated if active, then overwritten before discovery runs.'
+      version_blocked: 'Package "%package%" version %version% cannot replace registered version %installed_version%. Downgrades are blocked, and same-version replacements are only allowed for faulty or removed packages; remove and purge the existing package first if this replacement is intentional.'
       completed: 'Package "%package%" was installed.'
     lifecycle:
       not_found: 'Package "%package%" is not registered.'
