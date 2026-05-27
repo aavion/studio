@@ -382,6 +382,7 @@ admin:
         statistics:
             title: 'Access statistics'
             summary: '%count% access-log entries are included in this anonymized snapshot.'
+            window: 'Time window'
             unique_visitors: 'Unique visitors'
             status_families: 'Status families'
             top_routes: 'Top routes'
@@ -395,6 +396,12 @@ admin:
             languages: Languages
             top_referrers: 'Top referrers'
             empty: 'No data available yet.'
+            windows:
+                1h: 'Last hour'
+                24h: 'Last 24 hours'
+                7d: 'Last 7 days'
+                30d: 'Last 30 days'
+                all: 'All stored events'
     settings:
         title: Settings
         redirect_title: 'Settings sections'

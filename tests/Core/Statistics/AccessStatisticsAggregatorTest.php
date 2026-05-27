@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Statistics;
 
 use App\Core\Statistics\AccessStatisticsAggregator;
+use App\Core\Statistics\AccessStatisticsWindow;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
@@ -49,13 +50,15 @@ final class AccessStatisticsAggregatorTest extends TestCase
 
     public function testItAggregatesDatabaseStatisticsWithoutExposingVisitorIds(): void
     {
-        $this->insertEvent('00000000-0000-0000-0000-000000000001', 'request-a', 'visitor-a', 'GET', '/', 'content_home', 'public', 200, 20, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de');
-        $this->insertEvent('00000000-0000-0000-0000-000000000002', 'request-b', 'visitor-a', 'GET', '/missing', 'content_view', 'public', 404, 40, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de');
-        $this->insertEvent('00000000-0000-0000-0000-000000000003', 'request-c', 'visitor-b', 'POST', '/admin', 'backend_admin_index', 'admin', 302, 60, 'n/a', 'bot', 'bot', true, 'n/a', 'en-us');
+        $this->insertEvent('00000000-0000-0000-0000-000000000001', 'request-a', 'visitor-a', 'GET', '/', 'content_home', 'public', 200, 20, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2026-05-27 10:00:00');
+        $this->insertEvent('00000000-0000-0000-0000-000000000002', 'request-b', 'visitor-a', 'GET', '/missing', 'content_view', 'public', 404, 40, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2026-05-27 10:00:00');
+        $this->insertEvent('00000000-0000-0000-0000-000000000003', 'request-c', 'visitor-b', 'POST', '/admin', 'backend_admin_index', 'admin', 302, 60, 'n/a', 'bot', 'bot', true, 'n/a', 'en-us', '2026-05-27 10:00:00');
 
-        $snapshot = (new AccessStatisticsAggregator($this->connection))->snapshot();
+        $snapshot = (new AccessStatisticsAggregator($this->connection, new AccessStatisticsWindow()))->snapshot('all');
         $encoded = json_encode($snapshot, JSON_THROW_ON_ERROR);
 
+        self::assertSame('all', $snapshot['window']);
+        self::assertNull($snapshot['since']);
         self::assertSame(3, $snapshot['total_requests']);
         self::assertSame(2, $snapshot['unique_visitors']);
         self::assertSame(1, $snapshot['status_families']['2xx']);
@@ -75,11 +78,22 @@ final class AccessStatisticsAggregatorTest extends TestCase
         self::assertStringNotContainsString('visitor-b', $encoded);
     }
 
-    private function insertEvent(string $uid, string $requestId, string $visitorId, string $method, string $path, string $route, string $surface, int $status, int $durationMs, string $country, string $browserFamily, string $deviceType, bool $isBot, string $referrerHost, string $preferredLanguage): void
+    public function testItFiltersStatisticsByWindow(): void
+    {
+        $this->insertEvent('00000000-0000-0000-0000-000000000001', 'request-a', 'visitor-a', 'GET', '/', 'content_home', 'public', 200, 20, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2000-01-01 10:00:00');
+
+        $snapshot = (new AccessStatisticsAggregator($this->connection, new AccessStatisticsWindow()))->snapshot('24h');
+
+        self::assertSame('24h', $snapshot['window']);
+        self::assertIsString($snapshot['since']);
+        self::assertSame(0, $snapshot['total_requests']);
+    }
+
+    private function insertEvent(string $uid, string $requestId, string $visitorId, string $method, string $path, string $route, string $surface, int $status, int $durationMs, string $country, string $browserFamily, string $deviceType, bool $isBot, string $referrerHost, string $preferredLanguage, string $occurredAt): void
     {
         $this->connection->insert('access_statistic_event', [
             'uid' => $uid,
-            'occurred_at' => '2026-05-27 10:00:00',
+            'occurred_at' => $occurredAt,
             'request_id' => $requestId,
             'visitor_id' => $visitorId,
             'method' => $method,

@@ -6,6 +6,7 @@ namespace App\Tests\Core\Statistics;
 
 use App\Core\Statistics\AccessStatisticsAggregator;
 use App\Core\Statistics\AccessStatisticsSnapshotProvider;
+use App\Core\Statistics\AccessStatisticsWindow;
 use App\Core\Statistics\FileAccessStatisticsStore;
 use App\Tests\Support\FilesystemTestHelper;
 use Doctrine\DBAL\Connection;
@@ -60,16 +61,19 @@ final class AccessStatisticsSnapshotProviderTest extends TestCase
         ]);
 
         $provider = new AccessStatisticsSnapshotProvider(
-            new AccessStatisticsAggregator($connection),
+            new AccessStatisticsAggregator($connection, new AccessStatisticsWindow()),
             new FileAccessStatisticsStore($this->root.'/statistics', 'test'),
+            new AccessStatisticsWindow(),
         );
 
-        $snapshot = $provider->snapshot();
+        $snapshot = $provider->snapshot('all');
         $stored = json_decode((string) file_get_contents($this->root.'/statistics/test/access/latest.json'), true, flags: JSON_THROW_ON_ERROR);
 
+        self::assertSame('all', $snapshot['window']);
         self::assertSame(1, $snapshot['total_requests']);
         self::assertSame($stored, $snapshot);
         self::assertStringNotContainsString('visitor-a', json_encode($stored, JSON_THROW_ON_ERROR));
+        self::assertSame(['1h', '24h', '7d', '30d', 'all'], array_column($provider->windows(), 'key'));
     }
 
     private function connection(): Connection

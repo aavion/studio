@@ -105,6 +105,22 @@
         <section class="studio-panel">
             <h2>{{ 'admin.logs.statistics.title'|trans }}</h2>
             <p class="studio-muted">{{ 'admin.logs.statistics.summary'|trans({'%count%': access_statistics.total_requests}) }}</p>
+            <form method="get" class="studio-form studio-log-filter-form">
+                {% for key, value in app.request.query.all %}
+                    {% if key != 'statistics_window' and value is not iterable %}
+                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    {% endif %}
+                {% endfor %}
+                <label>
+                    <span>{{ 'admin.logs.statistics.window'|trans }}</span>
+                    <select name="statistics_window">
+                        {% for window in access_statistics_windows|default([]) %}
+                            <option value="{{ window.key }}" {% if window.key == access_statistics.window %}selected{% endif %}>{{ window.label_key|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <button type="submit" class="studio-button">{{ 'admin.logs.filters.apply'|trans }}</button>
+            </form>
             <div class="studio-grid studio-grid-3">
                 <div>
                     <h3>{{ 'admin.logs.statistics.unique_visitors'|trans }}</h3>

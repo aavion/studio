@@ -382,7 +382,8 @@ final class BackendController extends AbstractController
 
         if (BackendArea::Admin === $area && 'backend-admin-logs' === $view?->uid()) {
             $templateVariables['log_view'] = $this->logFileBrowser->browse($request->query->all());
-            $templateVariables['access_statistics'] = $this->accessStatisticsSnapshotProvider->snapshot();
+            $templateVariables['access_statistics'] = $this->accessStatisticsSnapshotProvider->snapshot($request->query->get('statistics_window'));
+            $templateVariables['access_statistics_windows'] = $this->accessStatisticsSnapshotProvider->windows();
         }
 
         return $this->render($result->template(), $templateVariables, new Response(status: $result->statusCode()));

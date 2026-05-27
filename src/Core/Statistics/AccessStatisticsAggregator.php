@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Statistics;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Throwable;
 
@@ -12,13 +13,17 @@ final readonly class AccessStatisticsAggregator
     private const MAX_ROWS = 10000;
     private const TOP_LIMIT = 10;
 
-    public function __construct(private Connection $connection)
-    {
+    public function __construct(
+        private Connection $connection,
+        private AccessStatisticsWindow $window,
+    ) {
     }
 
     /**
      * @return array{
      *     generated_at: string,
+     *     window: string,
+     *     since: string|null,
      *     total_requests: int,
      *     unique_visitors: int,
      *     status_families: array<string, int>,
@@ -35,8 +40,10 @@ final readonly class AccessStatisticsAggregator
      *     source_files: list<string>
      * }
      */
-    public function snapshot(): array
+    public function snapshot(string $window = AccessStatisticsWindow::DEFAULT): array
     {
+        $window = $this->window->normalize($window);
+        $since = $this->window->since($window);
         $total = 0;
         $statusFamilies = ['2xx' => 0, '3xx' => 0, '4xx' => 0, '5xx' => 0, 'other' => 0];
         $routes = [];
@@ -52,7 +59,7 @@ final readonly class AccessStatisticsAggregator
         $durationCount = 0;
         $visitors = [];
 
-        foreach ($this->rows() as $row) {
+        foreach ($this->rows($since) as $row) {
             ++$total;
             $visitorId = $this->stringValue($row, 'visitor_id', '');
 
@@ -106,6 +113,8 @@ final readonly class AccessStatisticsAggregator
 
         return [
             'generated_at' => (new \DateTimeImmutable())->format(DATE_ATOM),
+            'window' => $window,
+            'since' => $since?->format(DATE_ATOM),
             'total_requests' => $total,
             'unique_visitors' => count($visitors),
             'status_families' => $statusFamilies,
@@ -126,9 +135,16 @@ final readonly class AccessStatisticsAggregator
     /**
      * @return list<array<string, mixed>>
      */
-    private function rows(): array
+    private function rows(?DateTimeImmutable $since): array
     {
         try {
+            if (null !== $since) {
+                return $this->connection->fetchAllAssociative(
+                    'SELECT visitor_id, method, path, requested_path, route, resolved_route, surface, http_status, duration_ms, browser_family, device_type, is_bot, referrer_host, preferred_language, country FROM access_statistic_event WHERE occurred_at >= ? ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
+                    [$since->format('Y-m-d H:i:s')],
+                );
+            }
+
             return $this->connection->fetchAllAssociative(
                 'SELECT visitor_id, method, path, requested_path, route, resolved_route, surface, http_status, duration_ms, browser_family, device_type, is_bot, referrer_host, preferred_language, country FROM access_statistic_event ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
             );

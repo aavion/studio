@@ -382,6 +382,7 @@ admin:
         statistics:
             title: Zugriffsstatistiken
             summary: '%count% Access-Log-Einträge sind in diesem anonymisierten Snapshot enthalten.'
+            window: Zeitraum
             unique_visitors: 'Eindeutige Besucher'
             status_families: Statusfamilien
             top_routes: Top-Routen
@@ -395,6 +396,12 @@ admin:
             languages: Sprachen
             top_referrers: Top-Referrer
             empty: 'Noch keine Daten verfügbar.'
+            windows:
+                1h: 'Letzte Stunde'
+                24h: 'Letzte 24 Stunden'
+                7d: 'Letzte 7 Tage'
+                30d: 'Letzte 30 Tage'
+                all: 'Alle gespeicherten Events'
     settings:
         title: Einstellungen
         redirect_title: Einstellungsbereiche
