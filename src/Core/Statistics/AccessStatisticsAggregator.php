@@ -14,7 +14,6 @@ use Throwable;
 
 final readonly class AccessStatisticsAggregator
 {
-    private const MAX_ROWS = 10000;
     private const TOP_LIMIT = 10;
 
     public function __construct(
@@ -50,133 +49,167 @@ final readonly class AccessStatisticsAggregator
     {
         $window = $this->window->normalize($window);
         $since = $this->window->since($window);
-        $total = 0;
-        $statusFamilies = ['2xx' => 0, '3xx' => 0, '4xx' => 0, '5xx' => 0, 'other' => 0];
-        $routes = [];
-        $notFound = [];
-        $countries = [];
-        $browsers = [];
-        $devices = [];
-        $surfaces = [];
-        $referrers = [];
-        $languages = [];
-        $botRequests = 0;
-        $doNotTrackRequests = 0;
-        $durationSum = 0;
-        $durationCount = 0;
-        $visitors = [];
-
-        foreach ($this->rows($since) as $row) {
-            ++$total;
-            $visitorId = $this->stringValue($row, 'visitor_id', '');
-
-            if ('' !== $visitorId) {
-                $visitors[$visitorId] = true;
-            }
-
-            $status = $this->intValue($row, 'http_status');
-            $family = $this->statusFamily($status);
-            ++$statusFamilies[$family];
-
-            $route = $this->routeLabel($row);
-            $routes[$route] = ($routes[$route] ?? 0) + 1;
-
-            if (404 === $status) {
-                $notFound[$route] = ($notFound[$route] ?? 0) + 1;
-            }
-
-            $country = $this->stringValue($row, 'country', 'n/a');
-            $countries[$country] = ($countries[$country] ?? 0) + 1;
-
-            $browser = $this->stringValue($row, 'browser_family', 'other');
-            $browsers[$browser] = ($browsers[$browser] ?? 0) + 1;
-
-            $device = $this->stringValue($row, 'device_type', 'other');
-            $devices[$device] = ($devices[$device] ?? 0) + 1;
-
-            if ($this->boolValue($row, 'is_bot')) {
-                ++$botRequests;
-            }
-
-            if ($this->boolValue($row, 'do_not_track')) {
-                ++$doNotTrackRequests;
-            }
-
-            $surface = $this->stringValue($row, 'surface', 'public');
-            $surfaces[$surface] = ($surfaces[$surface] ?? 0) + 1;
-
-            $referrer = $this->stringValue($row, 'referrer_host', 'n/a');
-
-            if ('n/a' !== $referrer) {
-                $referrers[$referrer] = ($referrers[$referrer] ?? 0) + 1;
-            }
-
-            $language = $this->stringValue($row, 'preferred_language', 'n/a');
-            $languages[$language] = ($languages[$language] ?? 0) + 1;
-
-            $durationMs = $this->nullableIntValue($row, 'duration_ms');
-
-            if (null !== $durationMs) {
-                $durationSum += $durationMs;
-                ++$durationCount;
-            }
-        }
+        $summary = $this->summary($since);
 
         return [
             'generated_at' => (new \DateTimeImmutable())->format(DATE_ATOM),
             'window' => $window,
             'since' => $since?->format(DATE_ATOM),
-            'total_requests' => $total,
-            'unique_visitors' => count($visitors),
-            'status_families' => $statusFamilies,
-            'top_routes' => $this->top($routes),
-            'top_not_found' => $this->top($notFound),
-            'top_countries' => $this->top($countries),
-            'top_browsers' => $this->top($browsers),
-            'device_types' => $this->top($devices),
-            'bot_requests' => $botRequests,
-            'do_not_track_requests' => $doNotTrackRequests,
-            'surfaces' => $this->top($surfaces),
-            'top_referrers' => $this->top($referrers),
-            'languages' => $this->top($languages),
-            'average_duration_ms' => $durationCount > 0 ? (int) round($durationSum / $durationCount) : null,
+            'total_requests' => $summary['total_requests'],
+            'unique_visitors' => $summary['unique_visitors'],
+            'status_families' => $summary['status_families'],
+            'top_routes' => $this->topRoutes($since),
+            'top_not_found' => $this->topRoutes($since, 404),
+            'top_countries' => $this->topField($since, 'country', 'n/a'),
+            'top_browsers' => $this->topField($since, 'browser_family', 'other'),
+            'device_types' => $this->topField($since, 'device_type', 'other'),
+            'bot_requests' => $summary['bot_requests'],
+            'do_not_track_requests' => $summary['do_not_track_requests'],
+            'surfaces' => $this->topField($since, 'surface', 'public'),
+            'top_referrers' => $this->topField($since, 'referrer_host', 'n/a', skipPlaceholder: true),
+            'languages' => $this->topField($since, 'preferred_language', 'n/a'),
+            'average_duration_ms' => $summary['average_duration_ms'],
             'source_files' => [],
         ];
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * @return array{
+     *     total_requests: int,
+     *     unique_visitors: int,
+     *     status_families: array<string, int>,
+     *     bot_requests: int,
+     *     do_not_track_requests: int,
+     *     average_duration_ms: int|null
+     * }
      */
-    private function rows(?DateTimeImmutable $since): array
+    private function summary(?DateTimeImmutable $since): array
     {
         try {
-            if (null !== $since) {
-                return $this->connection->fetchAllAssociative(
-                    'SELECT visitor_id, method, path, requested_path, route, resolved_route, surface, http_status, duration_ms, browser_family, device_type, is_bot, do_not_track, referrer_host, preferred_language, country FROM access_statistic_event WHERE occurred_at >= ? ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
-                    [$since->format('Y-m-d H:i:s')],
-                );
+            [$where, $parameters] = $this->where($since);
+            $base = $this->connection->fetchAssociative(
+                'SELECT COUNT(*) AS total_requests, COUNT(DISTINCT visitor_id) AS unique_visitors, SUM(CASE WHEN is_bot THEN 1 ELSE 0 END) AS bot_requests, SUM(CASE WHEN do_not_track THEN 1 ELSE 0 END) AS do_not_track_requests, AVG(duration_ms) AS average_duration_ms FROM access_statistic_event'.$where,
+                $parameters,
+            ) ?: [];
+            $statusFamilies = ['2xx' => 0, '3xx' => 0, '4xx' => 0, '5xx' => 0, 'other' => 0];
+
+            foreach ($this->connection->fetchAllAssociative(
+                'SELECT http_status, COUNT(*) AS count FROM access_statistic_event'.$where.' GROUP BY http_status',
+                $parameters,
+            ) as $row) {
+                $statusFamilies[$this->statusFamily($this->intValue($row, 'http_status'))] += $this->intValue($row, 'count');
             }
 
-            return $this->connection->fetchAllAssociative(
-                'SELECT visitor_id, method, path, requested_path, route, resolved_route, surface, http_status, duration_ms, browser_family, device_type, is_bot, do_not_track, referrer_host, preferred_language, country FROM access_statistic_event ORDER BY occurred_at DESC LIMIT '.self::MAX_ROWS,
-            );
+            return [
+                'total_requests' => $this->intValue($base, 'total_requests'),
+                'unique_visitors' => $this->intValue($base, 'unique_visitors'),
+                'status_families' => $statusFamilies,
+                'bot_requests' => $this->intValue($base, 'bot_requests'),
+                'do_not_track_requests' => $this->intValue($base, 'do_not_track_requests'),
+                'average_duration_ms' => $this->nullableIntValue($base, 'average_duration_ms'),
+            ];
         } catch (Throwable $error) {
-            $this->messageReporter?->report(Message::exception(
-                MessageCode::E_OPERATION_FAILED,
-                MessageKey::STATISTICS_AGGREGATE_FAILED,
-                [],
-                [
-                    'operation' => 'statistics.aggregate',
-                    'since' => $since?->format(DATE_ATOM),
-                    'exception' => $error::class,
-                    'message' => $error->getMessage(),
-                ],
-            ), [
-                'operation' => 'statistics.aggregate',
-            ]);
+            $this->report($error, $since);
+
+            return [
+                'total_requests' => 0,
+                'unique_visitors' => 0,
+                'status_families' => ['2xx' => 0, '3xx' => 0, '4xx' => 0, '5xx' => 0, 'other' => 0],
+                'bot_requests' => 0,
+                'do_not_track_requests' => 0,
+                'average_duration_ms' => null,
+            ];
+        }
+    }
+
+    /**
+     * @return list<array{label: string, count: int}>
+     */
+    private function topRoutes(?DateTimeImmutable $since, ?int $status = null): array
+    {
+        try {
+            [$where, $parameters] = $this->where($since);
+
+            if (null !== $status) {
+                $where .= '' === $where ? ' WHERE http_status = ?' : ' AND http_status = ?';
+                $parameters[] = $status;
+            }
+
+            $counts = [];
+
+            foreach ($this->connection->fetchAllAssociative(
+                'SELECT method, path, requested_path, route, resolved_route, COUNT(*) AS count FROM access_statistic_event'.$where.' GROUP BY method, path, requested_path, route, resolved_route',
+                $parameters,
+            ) as $row) {
+                $label = $this->routeLabel($row);
+                $counts[$label] = ($counts[$label] ?? 0) + $this->intValue($row, 'count');
+            }
+
+            return $this->top($counts);
+        } catch (Throwable $error) {
+            $this->report($error, $since);
 
             return [];
         }
+    }
+
+    /**
+     * @return list<array{label: string, count: int}>
+     */
+    private function topField(?DateTimeImmutable $since, string $field, string $fallback, bool $skipPlaceholder = false): array
+    {
+        try {
+            [$where, $parameters] = $this->where($since);
+            $rows = $this->connection->fetchAllAssociative(
+                sprintf(
+                    'SELECT %s AS label, COUNT(*) AS count FROM access_statistic_event%s%s GROUP BY %s ORDER BY count DESC LIMIT %d',
+                    $field,
+                    $where,
+                    $skipPlaceholder ? ('' === $where ? ' WHERE '.$field.' <> ?' : ' AND '.$field.' <> ?') : '',
+                    $field,
+                    self::TOP_LIMIT,
+                ),
+                $skipPlaceholder ? [...$parameters, $fallback] : $parameters,
+            );
+        } catch (Throwable $error) {
+            $this->report($error, $since);
+
+            return [];
+        }
+
+        return array_map(fn (array $row): array => [
+            'label' => $this->stringValue($row, 'label', $fallback),
+            'count' => $this->intValue($row, 'count'),
+        ], $rows);
+    }
+
+    /**
+     * @return array{0: string, 1: list<string>}
+     */
+    private function where(?DateTimeImmutable $since): array
+    {
+        if (null === $since) {
+            return ['', []];
+        }
+
+        return [' WHERE occurred_at >= ?', [$since->format('Y-m-d H:i:s')]];
+    }
+
+    private function report(Throwable $error, ?DateTimeImmutable $since): void
+    {
+        $this->messageReporter?->report(Message::exception(
+            MessageCode::E_OPERATION_FAILED,
+            MessageKey::STATISTICS_AGGREGATE_FAILED,
+            [],
+            [
+                'operation' => 'statistics.aggregate',
+                'since' => $since?->format(DATE_ATOM),
+                'exception' => $error::class,
+                'message' => $error->getMessage(),
+            ],
+        ), [
+            'operation' => 'statistics.aggregate',
+        ]);
     }
 
     /**

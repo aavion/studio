@@ -91,6 +91,47 @@ final class AccessStatisticsAggregatorTest extends TestCase
         self::assertSame(0, $snapshot['total_requests']);
     }
 
+    public function testItAggregatesAllRowsBeforeTopListLimits(): void
+    {
+        $this->connection->beginTransaction();
+
+        try {
+            for ($index = 0; $index < 10005; ++$index) {
+                $this->insertEvent(
+                    sprintf('10000000-0000-0000-0000-%012d', $index),
+                    'request-'.$index,
+                    'visitor-'.$index,
+                    'GET',
+                    '/docs',
+                    'docs_index',
+                    'public',
+                    200,
+                    10,
+                    'DE',
+                    'firefox',
+                    'desktop',
+                    false,
+                    'n/a',
+                    'en-us',
+                    '2026-05-27 10:00:00',
+                );
+            }
+
+            $this->connection->commit();
+        } catch (\Throwable $error) {
+            $this->connection->rollBack();
+
+            throw $error;
+        }
+
+        $snapshot = (new AccessStatisticsAggregator($this->connection, new AccessStatisticsWindow()))->snapshot('all');
+
+        self::assertSame(10005, $snapshot['total_requests']);
+        self::assertSame(10005, $snapshot['unique_visitors']);
+        self::assertSame(10005, $snapshot['status_families']['2xx']);
+        self::assertSame([['label' => 'docs_index', 'count' => 10005]], $snapshot['top_routes']);
+    }
+
     private function insertEvent(string $uid, string $requestId, string $visitorId, string $method, string $path, string $route, string $surface, int $status, int $durationMs, string $country, string $browserFamily, string $deviceType, bool $isBot, string $referrerHost, string $preferredLanguage, string $occurredAt, bool $doNotTrack = false): void
     {
         $this->connection->insert('access_statistic_event', [
