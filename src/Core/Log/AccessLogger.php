@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 final readonly class AccessLogger implements AccessLoggerInterface
 {
     private const GEO_PLACEHOLDER = 'n/a';
+    private const REDACTED = '[redacted]';
 
     public function __construct(
         private LoggerInterface $logger,
@@ -35,7 +36,7 @@ final readonly class AccessLogger implements AccessLoggerInterface
             'route' => $this->accessRequestMetadata->resolvedRoute($request),
             'resolved_route' => $this->accessRequestMetadata->resolvedRoute($request),
             'surface' => $this->accessRequestMetadata->surface($request),
-            'query_string' => $request->getQueryString() ?? '',
+            'query_string' => $this->redactedQueryString($request),
             'http_status' => $response->getStatusCode(),
             'duration_ms' => $this->accessRequestMetadata->durationMs($request),
             'visitor_id' => $this->visitorIdGenerator->generate($request),
@@ -65,5 +66,50 @@ final readonly class AccessLogger implements AccessLoggerInterface
         $userAgent = trim((string) $request->headers->get('User-Agent', self::GEO_PLACEHOLDER));
 
         return '' === $userAgent ? self::GEO_PLACEHOLDER : substr($userAgent, 0, 500);
+    }
+
+    private function redactedQueryString(Request $request): string
+    {
+        $queryString = $request->getQueryString();
+
+        if (null === $queryString || '' === $queryString) {
+            return '';
+        }
+
+        parse_str($queryString, $parameters);
+
+        if ([] === $parameters) {
+            return self::REDACTED;
+        }
+
+        return http_build_query($this->redactParameters($parameters), '', '&', PHP_QUERY_RFC3986);
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     *
+     * @return array<string, mixed>
+     */
+    private function redactParameters(array $parameters): array
+    {
+        $redacted = [];
+
+        foreach ($parameters as $key => $value) {
+            if ($this->isSensitiveKey((string) $key)) {
+                $redacted[$key] = self::REDACTED;
+                continue;
+            }
+
+            $redacted[$key] = is_array($value) ? $this->redactParameters($value) : $value;
+        }
+
+        return $redacted;
+    }
+
+    private function isSensitiveKey(string $key): bool
+    {
+        $normalized = strtolower((string) preg_replace('/[^a-zA-Z0-9]+/', '_', $key));
+
+        return 1 === preg_match('/(?:password|secret|token|credential|authorization|cookie|hmac|encrypted|api_key|private_key|code|signature|signed|session|csrf|nonce|reset|invite)/', $normalized);
     }
 }

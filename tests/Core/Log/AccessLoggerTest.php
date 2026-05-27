@@ -22,7 +22,7 @@ final class AccessLoggerTest extends TestCase
         $handler = new TestHandler();
         $monolog = new Logger('studio_access');
         $monolog->pushHandler($handler);
-        $request = Request::create('/admin/logs?level=error', 'POST', server: [
+        $request = Request::create('/admin/logs?level=error&reset_token=hidden&filter[code]=oauth-code', 'POST', server: [
             'REMOTE_ADDR' => '203.0.113.10',
             'HTTP_USER_AGENT' => 'Studio Browser/1.0',
             'HTTP_X_FORWARDED_FOR' => '198.51.100.23, 203.0.113.10',
@@ -50,7 +50,10 @@ final class AccessLoggerTest extends TestCase
         self::assertSame('backend_admin_route', $records[0]->context['route']);
         self::assertSame('backend_admin_route', $records[0]->context['resolved_route']);
         self::assertSame('admin', $records[0]->context['surface']);
-        self::assertSame('level=error', $records[0]->context['query_string']);
+        self::assertSame(
+            'filter%5Bcode%5D=%5Bredacted%5D&level=error&reset_token=%5Bredacted%5D',
+            $records[0]->context['query_string'],
+        );
         self::assertSame(401, $records[0]->context['http_status']);
         self::assertIsString($records[0]->context['request_id']);
         self::assertIsInt($records[0]->context['duration_ms']);
