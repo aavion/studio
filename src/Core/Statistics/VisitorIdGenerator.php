@@ -21,7 +21,7 @@ final readonly class VisitorIdGenerator
 
     public function sourceIp(Request $request): string
     {
-        return $this->proxyIpChain($request)[0] ?? $request->getClientIp() ?? self::PLACEHOLDER;
+        return $request->getClientIp() ?? self::PLACEHOLDER;
     }
 
     public function clientIp(Request $request): string

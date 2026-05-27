@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 final class VisitorIdGeneratorTest extends TestCase
 {
-    public function testItGeneratesStableIdsFromProxyIpAndUserAgent(): void
+    public function testItGeneratesStableIdsFromTrustedClientIpAndUserAgent(): void
     {
         $request = Request::create('/docs', server: [
             'REMOTE_ADDR' => '203.0.113.10',
@@ -20,7 +20,7 @@ final class VisitorIdGeneratorTest extends TestCase
         $generator = new VisitorIdGenerator('test-secret');
 
         self::assertSame($generator->generate($request), $generator->generate($request));
-        self::assertSame('198.51.100.23', $generator->sourceIp($request));
+        self::assertSame('203.0.113.10', $generator->sourceIp($request));
         self::assertSame('198.51.100.23', $generator->proxyClientIp($request));
         self::assertSame(['198.51.100.23', '203.0.113.10'], $generator->proxyIpChain($request));
     }
