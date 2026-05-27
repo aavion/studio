@@ -56,6 +56,11 @@ final class UserControllerTest extends WebTestCase
         $client = self::createClient();
         $user = $this->createUserWithLevel(1, 'passworduser', 'current-password');
         $client->loginUser($user);
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
 
         $crawler = $client->request('GET', '/user/password');
         $form = $crawler->selectButton('Update password')->form([
@@ -73,12 +78,21 @@ final class UserControllerTest extends WebTestCase
         self::assertInstanceOf(UserAccount::class, $updatedUser);
         self::assertFalse(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($updatedUser, 'current-password'));
         self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($updatedUser, 'new-password-value'));
+        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+        self::assertStringContainsString('auth.password_change_success', $auditLog);
+        self::assertStringContainsString('"result_status":"success"', $auditLog);
+        self::assertStringNotContainsString('new-password-value', $auditLog);
     }
 
     public function testPasswordRouteReportsValidationErrors(): void
     {
         $client = self::createClient();
         $client->loginUser($this->createUserWithLevel(1, 'passworderror', 'current-password'));
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
 
         $crawler = $client->request('GET', '/user/password');
         $form = $crawler->selectButton('Update password')->form([
@@ -93,6 +107,10 @@ final class UserControllerTest extends WebTestCase
         self::assertSelectorTextContains('.studio-form-errors', 'The current password is not correct.');
         self::assertSelectorTextContains('.studio-form-errors', 'The new password must contain at least 12 characters.');
         self::assertSelectorTextContains('.studio-form-errors', 'The new passwords do not match.');
+        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+        self::assertStringContainsString('auth.password_change_failed', $auditLog);
+        self::assertStringContainsString('ui.user.password.errors.current_password', $auditLog);
+        self::assertStringNotContainsString('wrong-password', $auditLog);
     }
 
     public function testApiKeysRouteRendersForAuthenticatedUsers(): void

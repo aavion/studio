@@ -95,6 +95,7 @@
 - Separated requested path and resolved route in access/statistics records and exposed request id, visitor id, requested path, and resolved route to Twig error pages for support/debug references.
 - Added selectable Admin Logs statistics windows (`1h`, `24h`, `7d`, `30d`, `all`) over database-backed anonymized access-statistic events while leaving long-term compaction intentionally deferred.
 - Added the replaceable GeoIP lookup boundary with a null provider so access logging and statistics can consume normalized location values now and swap in MaxMind/local database lookups later.
+- Extended audit coverage for the existing account password-change flow, logging success/failure metadata and validation keys without storing submitted password values.
 - Split access statistics away from raw log browsing with an explicit snapshot provider and file-backed store under `var/statistics/{environment}/access/latest.json`; Admin Logs now consumes the anonymized snapshot boundary that can later move to database storage.
 - Added configurable audit policy settings under Security: audit logging has a production-default enabled master switch plus selectable audit event categories, and `AuditLogger` now applies the policy before writing to Monolog.
 - Extended Operations maintenance auditing so cleanup, stale-lock clearing, stale-runner emergency handling, and unsupported maintenance requests write compact `studio_audit` entries.
