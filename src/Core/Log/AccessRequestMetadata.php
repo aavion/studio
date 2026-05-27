@@ -71,26 +71,7 @@ final readonly class AccessRequestMetadata
 
     public function sanitizedPath(Request $request): string
     {
-        $path = $request->getPathInfo();
-
-        if ('/' === $path || '' === $path) {
-            return '/';
-        }
-
-        $sensitiveValues = $this->sensitiveRouteValues($request);
-        $segments = explode('/', trim($path, '/'));
-        $sanitized = [];
-
-        foreach ($segments as $index => $segment) {
-            $decoded = rawurldecode($segment);
-            $previous = $segments[$index - 1] ?? '';
-
-            $sanitized[] = $this->isSensitivePathKey($previous) || in_array($decoded, $sensitiveValues, true) || in_array($segment, $sensitiveValues, true)
-                ? self::REDACTED_SEGMENT
-                : $segment;
-        }
-
-        return '/'.implode('/', $sanitized);
+        return $this->sanitizePathString($request->getPathInfo(), $this->sensitiveRouteValues($request));
     }
 
     public function referrer(Request $request): string
@@ -109,7 +90,7 @@ final readonly class AccessRequestMetadata
 
         $scheme = is_string($parts['scheme'] ?? null) ? $parts['scheme'].'://' : '';
         $host = is_string($parts['host'] ?? null) ? $parts['host'] : '';
-        $path = is_string($parts['path'] ?? null) ? $parts['path'] : '';
+        $path = is_string($parts['path'] ?? null) ? $this->sanitizePathString($parts['path']) : '';
 
         return substr(($host ? $scheme.$host : '').$path, 0, 1024) ?: 'n/a';
     }
@@ -198,6 +179,30 @@ final readonly class AccessRequestMetadata
         }
 
         return array_values(array_unique($values));
+    }
+
+    /**
+     * @param list<string> $sensitiveValues
+     */
+    private function sanitizePathString(string $path, array $sensitiveValues = []): string
+    {
+        if ('/' === $path || '' === $path) {
+            return '/';
+        }
+
+        $segments = explode('/', trim($path, '/'));
+        $sanitized = [];
+
+        foreach ($segments as $index => $segment) {
+            $decoded = rawurldecode($segment);
+            $previous = $segments[$index - 1] ?? '';
+
+            $sanitized[] = $this->isSensitivePathKey($previous) || in_array($decoded, $sensitiveValues, true) || in_array($segment, $sensitiveValues, true)
+                ? self::REDACTED_SEGMENT
+                : $segment;
+        }
+
+        return '/'.implode('/', $sanitized);
     }
 
     private function isSensitivePathKey(string $key): bool

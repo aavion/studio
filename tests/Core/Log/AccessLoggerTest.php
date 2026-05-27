@@ -100,4 +100,22 @@ final class AccessLoggerTest extends TestCase
         self::assertSame('/user/invitation/[redacted]', $records[0]->context['requested_path']);
         self::assertStringNotContainsString('test-token', json_encode($records[0]->context, JSON_THROW_ON_ERROR));
     }
+
+    public function testItRedactsTokenizedReferrerPathSegments(): void
+    {
+        $handler = new TestHandler();
+        $monolog = new Logger('studio_access');
+        $monolog->pushHandler($handler);
+        $request = Request::create('/docs', 'GET', server: [
+            'REMOTE_ADDR' => '203.0.113.10',
+            'HTTP_REFERER' => 'https://example.org/user/invitation/test-token?utm=source',
+        ]);
+
+        (new AccessLogger($monolog, new VisitorIdGenerator('test-secret'), new AccessRequestMetadata(), new NullGeoIpResolver()))->log($request, new Response('', 200));
+
+        $records = $handler->getRecords();
+
+        self::assertSame('https://example.org/user/invitation/[redacted]', $records[0]->context['referrer']);
+        self::assertStringNotContainsString('test-token', json_encode($records[0]->context, JSON_THROW_ON_ERROR));
+    }
 }

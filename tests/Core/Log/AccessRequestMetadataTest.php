@@ -50,4 +50,14 @@ final class AccessRequestMetadataTest extends TestCase
         self::assertSame('/user/invitation/[redacted]', $metadata->sanitizedPath($request));
         self::assertSame('/user/invitation/[redacted]', $metadata->trace($request, 'visitor-a')['requested_path']);
     }
+
+    public function testItRedactsSensitiveReferrerPathSegments(): void
+    {
+        $metadata = new AccessRequestMetadata();
+        $request = Request::create('/docs', server: [
+            'HTTP_REFERER' => 'https://example.org/user/invitation/test-token?utm=source#fragment',
+        ]);
+
+        self::assertSame('https://example.org/user/invitation/[redacted]', $metadata->referrer($request));
+    }
 }

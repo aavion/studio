@@ -23,6 +23,7 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Sign in');
         self::assertSelectorExists('form[action="/user/login"][method="post"]');
         self::assertSelectorExists('input[name="_csrf_token"]');
+        self::assertSelectorNotExists('.studio-error-reference');
         self::assertSelectorNotExists('a[href="/user/register"]');
     }
 

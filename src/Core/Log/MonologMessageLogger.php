@@ -55,8 +55,12 @@ final class MonologMessageLogger implements MessageLoggerInterface
                 continue;
             }
 
-            $this->seenSignatures[$signature] = true;
-            $this->logger->log($this->psrLevel($message->level()), $message->translationKey(), $context);
+            try {
+                $this->logger->log($this->psrLevel($message->level()), $message->translationKey(), $context);
+                $this->seenSignatures[$signature] = true;
+            } catch (Throwable) {
+                continue;
+            }
         }
     }
 

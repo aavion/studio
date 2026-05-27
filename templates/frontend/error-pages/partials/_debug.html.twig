@@ -1,38 +1,41 @@
-{% set request_trace = studio_request_trace() %}
-{% if request_trace.request_id|default(null) or request_trace.visitor_id|default(null) %}
-    <aside class="studio-error-reference" aria-label="{{ 'ui.error.reference.label'|trans }}">
-        <dl>
-            {% if request_trace.request_id|default(null) %}
-                <dt>{{ 'ui.error.reference.request_id'|trans }}</dt>
-                <dd><code>{{ request_trace.request_id }}</code></dd>
-            {% endif %}
-            {% if request_trace.visitor_id|default(null) %}
-                <dt>{{ 'ui.error.reference.visitor_id'|trans }}</dt>
-                <dd><code>{{ request_trace.visitor_id }}</code></dd>
-            {% endif %}
-            {% if request_trace.requested_path|default(null) %}
-                <dt>{{ 'ui.error.reference.requested_path'|trans }}</dt>
-                <dd><code>{{ request_trace.requested_path }}</code></dd>
-            {% endif %}
-            {% if request_trace.resolved_route|default(null) %}
-                <dt>{{ 'ui.error.reference.resolved_route'|trans }}</dt>
-                <dd><code>{{ request_trace.resolved_route }}</code></dd>
-            {% endif %}
-        </dl>
-    </aside>
+{% set error_context = http_error|default(null) %}
+{% if error_context %}
+    {% set request_trace = studio_request_trace() %}
+    {% if request_trace.request_id|default(null) or request_trace.visitor_id|default(null) %}
+        <aside class="studio-error-reference" aria-label="{{ 'ui.error.reference.label'|trans }}">
+            <dl>
+                {% if request_trace.request_id|default(null) %}
+                    <dt>{{ 'ui.error.reference.request_id'|trans }}</dt>
+                    <dd><code>{{ request_trace.request_id }}</code></dd>
+                {% endif %}
+                {% if request_trace.visitor_id|default(null) %}
+                    <dt>{{ 'ui.error.reference.visitor_id'|trans }}</dt>
+                    <dd><code>{{ request_trace.visitor_id }}</code></dd>
+                {% endif %}
+                {% if request_trace.requested_path|default(null) %}
+                    <dt>{{ 'ui.error.reference.requested_path'|trans }}</dt>
+                    <dd><code>{{ request_trace.requested_path }}</code></dd>
+                {% endif %}
+                {% if request_trace.resolved_route|default(null) %}
+                    <dt>{{ 'ui.error.reference.resolved_route'|trans }}</dt>
+                    <dd><code>{{ request_trace.resolved_route }}</code></dd>
+                {% endif %}
+            </dl>
+        </aside>
+    {% endif %}
 {% endif %}
 
-{% if http_error and http_error.debug is defined %}
+{% if error_context and error_context.debug is defined %}
     <details class="studio-debug-trace">
         <summary>Debug trace</summary>
         <dl>
             <dt>Exception</dt>
-            <dd>{{ http_error.debug.exception_class }}</dd>
+            <dd>{{ error_context.debug.exception_class }}</dd>
             <dt>Message</dt>
-            <dd>{{ http_error.debug.message }}</dd>
+            <dd>{{ error_context.debug.message }}</dd>
             <dt>Location</dt>
-            <dd>{{ http_error.debug.file }}:{{ http_error.debug.line }}</dd>
+            <dd>{{ error_context.debug.file }}:{{ error_context.debug.line }}</dd>
         </dl>
-        <pre class="studio-code-block">{{ http_error.debug.trace }}</pre>
+        <pre class="studio-code-block">{{ error_context.debug.trace }}</pre>
     </details>
 {% endif %}

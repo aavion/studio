@@ -15,7 +15,7 @@ The future logger should start with an explicit recorder/service boundary. A gen
 
 Current logging baseline: callers that want to emit a single feedback item should use `MessageReporterInterface`: create a `Message`, report it, and receive the same structured message back for UI/API output. Operation boundaries should use `WorkflowResultMessageReporterInterface` before returning a `WorkflowResult`. That bridge lives in the message layer, extracts messages from workflow results and action-log payloads, logs through `MessageReporterInterface`, and returns the same result unchanged. `OperationExecutor` uses the bridge for action results; direct package lifecycle, setup, discovery, asset rebuild dispatch, PHP-loader, and public-hook failure boundaries use the same bridge instead of being forced through an `ActionQueue`.
 
-`MessageLoggerInterface` is backed by Monolog through the `studio_message` channel. It writes translation keys as the log message, keeps structured message metadata in Monolog context, maps message levels to PSR log levels, and redacts sensitive context values before logging. The channel uses a 30-day rotating file handler.
+`MessageLoggerInterface` is backed by Monolog through the `studio_message` channel. It writes translation keys as the log message, keeps structured message metadata in Monolog context, maps message levels to PSR log levels, and redacts sensitive context values before logging. Log-write failures are swallowed so reporting an issue cannot break the original recovery path. The channel uses a 30-day rotating file handler.
 
 Log entry shape:
 
@@ -94,7 +94,7 @@ Live-operation terminal summaries are written into the message channel with `mes
 
 ## Access logs and statistics
 
-Raw access logging and access statistics are separate product surfaces. `studio_access` keeps operational request traces for security and diagnostics, including IP address, proxy hints, user-agent, request id, visitor id, requested path, resolved route, status, duration, content metadata, and GeoIP placeholders. Known token-bearing query values and path segments are redacted before logs, trace data, or statistics rows are written. The Monolog rotating handler keeps at most 30 daily files and should remain enabled because future rate-limit and suspicious-traffic features depend on this short-lived operational trail.
+Raw access logging and access statistics are separate product surfaces. `studio_access` keeps operational request traces for security and diagnostics, including IP address, proxy hints, user-agent, request id, visitor id, requested path, resolved route, status, duration, content metadata, and GeoIP placeholders. Known token-bearing query values, request path segments, and referrer path segments are redacted before logs, trace data, or statistics rows are written. The Monolog rotating handler keeps at most 30 daily files and should remain enabled because future rate-limit and suspicious-traffic features depend on this short-lived operational trail.
 
 Access statistics write a parallel database row per request with anonymized or coarse fields only. The statistics model keeps request id, visitor id, route/status/timing facts, browser family, device type, bot flag, referrer host, preferred language, response metadata, and normalized GeoIP fields, but does not store raw IP addresses or raw user-agents. Current statistics are aggregated on demand when the Admin Statistics page is opened; scheduled caching can be added later if needed.
 

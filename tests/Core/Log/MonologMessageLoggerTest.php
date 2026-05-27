@@ -8,10 +8,13 @@ use App\Core\Log\MonologMessageLogger;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use Monolog\Handler\AbstractHandler;
 use Monolog\Handler\TestHandler;
 use Monolog\Level;
+use Monolog\LogRecord;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 final class MonologMessageLoggerTest extends TestCase
 {
@@ -130,5 +133,24 @@ final class MonologMessageLoggerTest extends TestCase
         ]);
 
         self::assertCount(1, $this->handler->getRecords());
+    }
+
+    public function testItKeepsMessageLoggingFailuresNonFatal(): void
+    {
+        $monolog = new Logger('studio_message');
+        $monolog->pushHandler(new ThrowingMessageLogHandler());
+        $logger = new MonologMessageLogger($monolog);
+
+        $logger->log(Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED));
+
+        self::assertTrue(true);
+    }
+}
+
+final class ThrowingMessageLogHandler extends AbstractHandler
+{
+    public function handle(LogRecord $record): bool
+    {
+        throw new RuntimeException('log target unavailable');
     }
 }
