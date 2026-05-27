@@ -8,9 +8,13 @@ use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\AclGroup;
 use App\Entity\ExtensionPackage;
 use App\Entity\UserAccount;
@@ -331,6 +335,41 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('.studio-panel', 'Operation overview');
             self::assertSelectorTextContains('.studio-action-log-list', 'Clear cache');
             self::assertSelectorTextContains('.studio-action-log-list', 'Successful');
+        } finally {
+            @unlink(dirname($store->outputPath($run['operation_id'])).'/'.$run['operation_id'].'.json');
+            @unlink($store->outputPath($run['operation_id']));
+            @unlink($store->pidPath($run['operation_id']));
+        }
+    }
+
+    public function testAdminOperationDetailExposesReviewContinuation(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $store = self::getContainer()->get(LiveOperationRunStore::class);
+        self::assertInstanceOf(LiveOperationRunStore::class, $store);
+        $run = $store->create('package.install.verify', [], 'Install package');
+        $result = WorkflowResult::requiresReview(null, [
+            Message::info(
+                MessageCode::OPERATION_ACTION_REQUIRED,
+                MessageKey::OPERATION_ACTION_REQUIRED,
+                ['%operation%' => 'Install package'],
+            ),
+        ], [
+            'live_operation_continuation' => [
+                'operation' => 'package.install.apply',
+                'payload' => ['install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa', 'package' => 'demo-module'],
+                'label' => 'Install package',
+            ],
+        ]);
+        $store->finish($run['operation_id'], false, $result->toArray());
+
+        try {
+            $client->request('GET', '/admin/operations/'.$run['operation_id']);
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists(sprintf('form[action="/admin/operations/%s/continue"][method="post"]', $run['operation_id']));
+            self::assertSelectorTextContains('form[action$="/continue"] button', 'Continue');
         } finally {
             @unlink(dirname($store->outputPath($run['operation_id'])).'/'.$run['operation_id'].'.json');
             @unlink($store->outputPath($run['operation_id']));

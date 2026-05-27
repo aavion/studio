@@ -9,14 +9,22 @@ use App\Core\Package\PackageAssetRebuildDispatcher;
 use App\Core\Package\PackageAssetRebuildMessage;
 use App\Core\Package\PackageCandidate;
 use App\Core\Package\PackageDiscovery;
+use App\Core\Package\PackageLifecycleAssetRebuilderInterface;
 use App\Core\Package\PackageRegistryHandler;
 use App\Core\Package\PackageSource;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Workflow\WorkflowResult;
 use App\Tests\Support\FilesystemTestHelper;
 use App\Tests\Support\RecordingMessageBus;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
+use RuntimeException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 final class PackageRegistryHandlerTest extends KernelTestCase
 {
@@ -160,6 +168,45 @@ final class PackageRegistryHandlerTest extends KernelTestCase
         self::assertSame('package_registry_state_exit', $messageBus->messages()[0]->trigger());
     }
 
+    public function testItFallsBackToSynchronousAssetRebuildWhenDeferredDispatchFails(): void
+    {
+        $this->insertPackage('demo-module', 'packages/demo-module', '1.0.0', 'active', installedVersion: '1.0.0');
+        $this->writePackageManifest('demo-module', '1.1.0');
+        $assetRebuilder = new RegistryHandlerPackageLifecycleAssetRebuilder();
+
+        $result = $this->handler(new FailingRegistryHandlerMessageBus(), $assetRebuilder)->synchronize($this->candidates());
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+        self::assertSame(['test'], $assetRebuilder->environments);
+        self::assertTrue($result->context()['asset_rebuild']['value']['fallback_completed']);
+        self::assertFalse($result->context()['asset_rebuild']['context']['stale_risk']);
+        self::assertContains('message.package.asset_rebuild_queue_failed', array_map(
+            static fn ($message): string => $message->translationKey(),
+            $result->messages(),
+        ));
+    }
+
+    public function testItFailsWhenDeferredAndFallbackAssetRebuildsFail(): void
+    {
+        $this->insertPackage('demo-module', 'packages/demo-module', '1.0.0', 'active', installedVersion: '1.0.0');
+        $this->writePackageManifest('demo-module', '1.1.0');
+        $assetRebuilder = new RegistryHandlerPackageLifecycleAssetRebuilder(WorkflowResult::failed([
+            Message::error(
+                MessageCode::PACKAGE_ASSET_SYNC_FAILED,
+                MessageKey::PACKAGE_ASSET_SYNC_FAILED,
+                ['%message%' => 'fallback failed'],
+            ),
+        ]));
+
+        $result = $this->handler(new FailingRegistryHandlerMessageBus(), $assetRebuilder)->synchronize($this->candidates());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame(['test'], $assetRebuilder->environments);
+        self::assertFalse($result->context()['asset_rebuild']['value']['fallback_completed']);
+        self::assertTrue($result->context()['asset_rebuild']['context']['stale_risk']);
+        self::assertSame('package.asset_sync_failed', $result->firstIssue()?->code());
+    }
+
     public function testItMarksValidationFailuresAsFaulty(): void
     {
         $this->writePackageManifest('broken-module', '1.0.0');
@@ -229,12 +276,13 @@ final class PackageRegistryHandlerTest extends KernelTestCase
         self::assertSame('inactive', $this->packageRow('broken-module')['status']);
     }
 
-    private function handler(?RecordingMessageBus $messageBus = null): PackageRegistryHandler
+    private function handler(?MessageBusInterface $messageBus = null, ?PackageLifecycleAssetRebuilderInterface $assetRebuilder = null): PackageRegistryHandler
     {
         return new PackageRegistryHandler(
             $this->entityManager,
             $this->projectDir,
             assetRebuildDispatcher: null === $messageBus ? null : new PackageAssetRebuildDispatcher($messageBus, new NullWorkflowResultMessageReporter()),
+            assetRebuildFallback: $assetRebuilder,
             environment: 'test',
         );
     }
@@ -330,5 +378,35 @@ final class PackageRegistryHandlerTest extends KernelTestCase
         $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
 
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+    }
+}
+
+final class FailingRegistryHandlerMessageBus implements MessageBusInterface
+{
+    public function dispatch(object $message, array $stamps = []): Envelope
+    {
+        throw new RuntimeException('queue unavailable');
+    }
+}
+
+final class RegistryHandlerPackageLifecycleAssetRebuilder implements PackageLifecycleAssetRebuilderInterface
+{
+    /**
+     * @var list<string>
+     */
+    public array $environments = [];
+
+    /**
+     * @param WorkflowResult<mixed>|null $result
+     */
+    public function __construct(private ?WorkflowResult $result = null)
+    {
+    }
+
+    public function rebuild(string $environment): WorkflowResult
+    {
+        $this->environments[] = $environment;
+
+        return $this->result ?? WorkflowResult::success(context: ['fallback' => true]);
     }
 }

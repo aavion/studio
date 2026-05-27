@@ -80,6 +80,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-27
+- Continued package/design review hardening: registry asset rebuild dispatch failures now trigger one synchronous rebuild fallback instead of silently leaving stale assets, package-install rollback restores saved package statuses even when rollback discovery reports issues, and Admin Operations detail pages expose CSRF-protected continuation for review-required live runs.
 - Continued CI review hardening: setup completion is written only after final blocking setup steps succeed, package ZIP uploads reject symlink entries before or after extraction, stale live-operation polling references are cleared on missing runs, and package runtime providers are evaluated inside the loader fault boundary.
 - Added a `bin/init` pre-install vendor reset so corrupt existing `vendor/` trees are removed before Composer installs dependencies.
 - Continued CI review hardening: navigation URL targets are normalized to relative or HTTP(S) links before templates see them, setup enforces the same 12-character minimum admin password policy as account password changes, and runtime package faults now deactivate active dependents with explicit lifecycle messages.

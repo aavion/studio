@@ -767,16 +767,21 @@ final readonly class PackageZipInstaller
                 $this->movePath($backup, $target);
             }
 
+            $discoveryMessages = [];
             if ($this->pathExists($target)) {
                 $rollbackDiscovery = ($this->discoveryRunner)('package_install_rollback');
                 if (!$rollbackDiscovery->isSuccess()) {
-                    return [...$rollbackDiscovery->messages(), ...$rollbackDiscovery->issues()];
+                    $discoveryMessages = [...$rollbackDiscovery->messages(), ...$rollbackDiscovery->issues()];
                 }
             }
 
             $statusMessages = $this->restorePackageStatuses($previousStatuses);
             if ([] !== $statusMessages) {
-                return $statusMessages;
+                return [...$discoveryMessages, ...$statusMessages];
+            }
+
+            if ([] !== $discoveryMessages) {
+                return $discoveryMessages;
             }
         } catch (Throwable $error) {
             return [

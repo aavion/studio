@@ -544,6 +544,24 @@ final readonly class LiveOperationRunStore
     }
 
     /**
+     * @return array{operation: string, payload: array<string, mixed>, label: string}|null
+     */
+    public function continuationForOperator(string $operationId): ?array
+    {
+        if (!$this->validOperationId($operationId)) {
+            return null;
+        }
+
+        $state = $this->read($operationId);
+
+        if (null === $state || self::STATUS_REQUIRES_REVIEW !== (string) ($state['status'] ?? '')) {
+            return null;
+        }
+
+        return $this->continuationFromResult($state['result'] ?? null);
+    }
+
+    /**
      * @param callable(array<string, mixed>): array<string, mixed> $mutator
      */
     private function mutate(string $operationId, callable $mutator): void

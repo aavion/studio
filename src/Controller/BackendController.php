@@ -252,6 +252,48 @@ final class BackendController extends AbstractController
         ]);
     }
 
+    #[Route('/admin/operations/{operationId}/continue', name: 'backend_admin_operation_continue', requirements: ['operationId' => '[a-f0-9]{32}'], methods: ['POST'])]
+    public function operationContinue(Request $request, string $operationId): Response
+    {
+        $access = $this->adminAccessResponse($request);
+
+        if (null !== $access) {
+            return $access;
+        }
+
+        if (!$this->csrfTokenManager->isTokenValid(new CsrfToken('admin-operations', (string) $request->request->get('_csrf_token', '')))) {
+            $this->addFlash('error', 'admin.operations.actions.invalid_csrf');
+
+            return $this->redirectToRoute('backend_admin_operation_detail', ['operationId' => $operationId]);
+        }
+
+        $continuation = $this->liveOperationRunStore->continuationForOperator($operationId);
+
+        if (null === $continuation) {
+            return $this->redirectToRoute('backend_admin_operation_detail', ['operationId' => $operationId]);
+        }
+
+        $result = $this->liveOperationStarter->start(
+            $continuation['operation'],
+            $continuation['payload'],
+            $continuation['label'],
+        );
+
+        if ($result->isSuccess() && is_array($result->value())) {
+            $continuedOperationId = $result->value()['operation_id'] ?? null;
+
+            if (is_string($continuedOperationId) && '' !== $continuedOperationId) {
+                return $this->redirectToRoute('backend_admin_operation_detail', ['operationId' => $continuedOperationId]);
+            }
+        }
+
+        foreach ($result->issues() as $issue) {
+            $this->addFlash('error', $issue->translationKey());
+        }
+
+        return $this->redirectToRoute('backend_admin_operation_detail', ['operationId' => $operationId]);
+    }
+
     #[Route('/admin/{path}', name: 'backend_admin_route', requirements: ['path' => '.+'], methods: ['GET', 'POST'])]
     public function adminRoute(Request $request, string $path): Response
     {

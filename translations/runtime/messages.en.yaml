@@ -324,6 +324,7 @@ admin:
             result: Result
             result_empty: 'The operation finished without result messages.'
         actions:
+            continue: Continue
             cleanup: 'Clean up expired operations'
             cleanup_completed: 'Operation cleanup removed %removed% expired run(s).'
             clear_stale_lock: 'Clear stale lock'

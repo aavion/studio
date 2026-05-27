@@ -25,6 +25,7 @@ final readonly class PackageRegistryHandler
         private PackageValidator $validator = new PackageValidator(),
         private PathGuard $pathGuard = new PathGuard(),
         private ?PackageAssetRebuildDispatcher $assetRebuildDispatcher = null,
+        private ?PackageLifecycleAssetRebuilderInterface $assetRebuildFallback = null,
         private string $environment = 'test',
         ?PackageSpec $validationSpec = null,
         ?PackageDependencyResolver $dependencyResolver = null,
@@ -169,8 +170,43 @@ final readonly class PackageRegistryHandler
 
         $this->entityManager->flush();
 
+        $assetRebuild = null;
         if ([] !== $assetRebuildTriggers) {
-            $this->assetRebuildDispatcher?->dispatch($this->environment, 'package_registry_state_exit');
+            $assetRebuild = $this->assetRebuildDispatcher?->dispatch($this->environment, 'package_registry_state_exit');
+            $messages = [...$messages, ...($assetRebuild?->messages() ?? [])];
+
+            if (null !== $assetRebuild && !$assetRebuild->isSuccess()) {
+                $dispatchFailure = $assetRebuild;
+                $fallback = $this->assetRebuildFallback?->rebuild($this->environment);
+                $fallbackCompleted = null !== $fallback && $fallback->isSuccess();
+                $messages = [
+                    ...$messages,
+                    ...$dispatchFailure->issues(),
+                    ...($fallback?->messages() ?? []),
+                    ...($fallback?->issues() ?? []),
+                ];
+                $assetRebuild = WorkflowResult::success([
+                    'deferred' => false,
+                    'dispatch' => $dispatchFailure->toArray(),
+                    'fallback' => $fallback?->toArray(),
+                    'fallback_completed' => $fallbackCompleted,
+                ], [
+                    'deferred' => false,
+                    'dispatch' => $dispatchFailure->toArray(),
+                    'fallback' => $fallback?->toArray(),
+                    'fallback_completed' => $fallbackCompleted,
+                    'stale_risk' => !$fallbackCompleted,
+                ]);
+
+                if (!$fallbackCompleted) {
+                    return WorkflowResult::failed($fallback?->issues() ?: $dispatchFailure->issues(), [
+                        'change_count' => count($changes),
+                        'changes' => $changes,
+                        'asset_rebuild' => $assetRebuild->toArray(),
+                        'asset_rebuild_triggers' => array_values(array_unique($assetRebuildTriggers)),
+                    ], $messages);
+                }
+            }
         }
 
         $messages[] = Message::create(
@@ -184,6 +220,8 @@ final readonly class PackageRegistryHandler
         return WorkflowResult::success($changes, [
             'change_count' => count($changes),
             'changes' => $changes,
+            'asset_rebuild' => $assetRebuild?->toArray(),
+            'asset_rebuild_triggers' => array_values(array_unique($assetRebuildTriggers)),
         ], $messages);
     }
 

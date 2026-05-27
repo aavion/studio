@@ -87,6 +87,14 @@
             {% if report.result.issues is empty and report.result.messages is empty %}
                 <p class="studio-muted">{{ 'admin.operations.detail.result_empty'|trans }}</p>
             {% endif %}
+            {% if report.result.can_continue|default(false) %}
+                <form method="post" action="/admin/operations/{{ report.operation_id }}/continue">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-operations') }}">
+                    <button class="studio-backend-button studio-button-primary" type="submit">
+                        {{ 'admin.operations.actions.continue'|trans }}
+                    </button>
+                </form>
+            {% endif %}
         </section>
     {% endif %}
 {% endblock %}

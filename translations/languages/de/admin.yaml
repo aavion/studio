@@ -192,6 +192,7 @@ admin:
       result: 'Ergebnis'
       result_empty: 'Die Operation wurde ohne Ergebnismeldungen abgeschlossen.'
     actions:
+      continue: 'Fortfahren'
       cleanup: 'Abgelaufene Operationen aufräumen'
       cleanup_completed: 'Operations-Cleanup hat %removed% abgelaufene Run(s) entfernt.'
       clear_stale_lock: 'Stale Lock entfernen'
