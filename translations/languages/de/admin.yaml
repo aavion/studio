@@ -10,6 +10,7 @@ admin:
     dashboard: 'Dashboard'
     users: 'Benutzer'
     user_groups: 'ACL-Gruppen'
+    user_reviews: 'Reviews'
     packages: 'Packages'
     themes: 'Themes'
     scheduler: 'Scheduler'
@@ -210,6 +211,40 @@ admin:
         email_in_use: 'Für diese E-Mail-Adresse existiert bereits ein Benutzerkonto.'
         invalid_status: 'Wähle einen gültigen Account-Status.'
     saved: 'Benutzer gespeichert.'
+  user_reviews:
+    title: 'Benutzer-Reviews'
+    subtitle: 'Prüfe ausstehende Account-Anfragen und Sicherheitsmeldungen.'
+    empty_title: 'Keine Reviews'
+    empty_message: 'Keine Account-Anfrage oder Sicherheitsprüfung benötigt Aufmerksamkeit.'
+    requested_at: 'Angefragt %datetime%'
+    groups: 'Gruppen: %groups%'
+    filters:
+      label: 'Review-Filter'
+      all: 'Alle'
+      registrations: 'Registrierungen'
+      invitations: 'Einladungen'
+      disputes: 'Disputes'
+      expired: 'Abgelaufen'
+    kind:
+      registration_approval: 'Registrierungsfreigabe'
+      registration: 'Registrierungslink'
+      invitation: 'Einladung'
+      password_dispute: 'Passwort-Dispute'
+    status:
+      pending_approval: 'Wartet auf Freigabe'
+      open: 'Offen'
+      expired: 'Link abgelaufen'
+      locked: 'Gesperrt'
+    actions:
+      accept: 'Annehmen'
+      reject: 'Ablehnen'
+      reissue: 'Neu senden'
+      reactivate: 'Reaktivieren'
+      delete: 'Löschen'
+      confirm_delete: 'Löschung bestätigen'
+      reactivated: 'Account reaktiviert. Der Nutzer wurde informiert, Passwort vergessen zu verwenden.'
+      deleted: 'Account als gelöscht markiert.'
+      delete_confirmation_required: 'Bestätige die Löschung, bevor der Account gelöscht wird.'
   groups:
     title: 'ACL-Gruppen'
     create:

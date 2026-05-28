@@ -15,4 +15,5 @@ enum AccountMailFlow: string
     case RegistrationExistingAccount = 'account.registration.existing_account';
     case PasswordChanged = 'account.password.changed';
     case PasswordChangeDisputed = 'account.password_change.disputed';
+    case PasswordChangeReactivated = 'account.password_change.reactivated';
 }

@@ -249,7 +249,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-notice', 'Your account setup link was created.');
+            self::assertSelectorTextContains('.studio-auth-notice', 'If the address can be registered, an email with account setup instructions was created.');
 
             $token = self::getContainer()->get(EntityManagerInterface::class)
                 ->getRepository(AccountToken::class)
@@ -259,6 +259,34 @@ final class UserControllerTest extends WebTestCase
             $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
             self::assertStringContainsString('account.registration.existing_account', $messageLog);
             self::assertStringContainsString('"username":"admin"', $messageLog);
+        } finally {
+            $config->set('user.registration.mode', 'disabled');
+        }
+    }
+
+    public function testAdminApprovalRegistrationExplainsDelayedMail(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $config->set('user.registration.mode', 'admin_approval');
+        $email = 'approval-copy@example.test';
+
+        try {
+            $crawler = $client->request('GET', '/user/register');
+            $client->submit($crawler->selectButton('Request account')->form([
+                'email' => $email,
+            ]));
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
+
+            $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+            $token = $entityManager->getRepository(AccountToken::class)->findOneBy(['email' => $email]);
+
+            if ($token instanceof AccountToken) {
+                $entityManager->remove($token);
+                $entityManager->flush();
+            }
         } finally {
             $config->set('user.registration.mode', 'disabled');
         }

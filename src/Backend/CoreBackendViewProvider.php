@@ -66,6 +66,16 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 minimumAccessLevel: 8,
             ),
             new BackendViewDefinition(
+                'backend-admin-user-reviews',
+                BackendArea::Admin,
+                'users/reviews',
+                'admin.navigation.user_reviews',
+                '@backend/admin/users/reviews.html.twig',
+                20,
+                parentUid: 'backend-admin-users',
+                minimumAccessLevel: 8,
+            ),
+            new BackendViewDefinition(
                 'backend-admin-scheduler',
                 BackendArea::Admin,
                 'scheduler',

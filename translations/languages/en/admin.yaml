@@ -10,6 +10,7 @@ admin:
     dashboard: 'Dashboard'
     users: 'Users'
     user_groups: 'ACL groups'
+    user_reviews: 'Reviews'
     packages: 'Packages'
     themes: 'Themes'
     scheduler: 'Scheduler'
@@ -210,6 +211,40 @@ admin:
         email_in_use: 'A user account already exists for this email address.'
         invalid_status: 'Choose a valid account status.'
     saved: 'User saved.'
+  user_reviews:
+    title: 'User reviews'
+    subtitle: 'Review pending account requests and security disputes.'
+    empty_title: 'No reviews'
+    empty_message: 'No account request or security review needs attention.'
+    requested_at: 'Requested %datetime%'
+    groups: 'Groups: %groups%'
+    filters:
+      label: 'Review filters'
+      all: 'All'
+      registrations: 'Registrations'
+      invitations: 'Invitations'
+      disputes: 'Disputes'
+      expired: 'Expired'
+    kind:
+      registration_approval: 'Registration approval'
+      registration: 'Registration link'
+      invitation: 'Invitation'
+      password_dispute: 'Password dispute'
+    status:
+      pending_approval: 'Waiting for approval'
+      open: 'Open'
+      expired: 'Link expired'
+      locked: 'Locked'
+    actions:
+      accept: 'Accept'
+      reject: 'Reject'
+      reissue: 'Resend'
+      reactivate: 'Reactivate'
+      delete: 'Delete'
+      confirm_delete: 'Confirm deletion'
+      reactivated: 'Account reactivated. The user was notified to use password reset.'
+      deleted: 'Account marked as deleted.'
+      delete_confirmation_required: 'Confirm deletion before deleting the account.'
   groups:
     title: 'ACL groups'
     create:

@@ -93,6 +93,9 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-28
+- Added the Admin User Reviews queue with filters and compact review rows for registration approvals, invitation/registration links, expired links, and password-change disputes; password-reset tokens stay out of the queue.
+- Added review actions for approving/rejecting registrations, resending/deleting account links, and reactivating disputed accounts by setting a random password plus `account.password_change.reactivated` notification, with confirmed delete marking disputed users as deleted.
+- Updated registration success copy so auto-approval explains that setup instructions were mailed while admin-approval explains that review happens first and the setup mail follows approval.
 - Added password-change security-review handling: authenticated password changes and password-reset completions now create a `security_review` token, deliver `account.password.changed` with a review link, and the review link marks the account inactive while emitting `account.password_change.disputed` for administrator review.
 - Added account-link reissue handling: admins can reissue pending invitation, registration, and password-reset links; reissues rotate the token hash and stored expiry while keeping already used/revoked/pending-approval tokens unavailable.
 - Hardened account-link duplication behavior: new invitation/registration/reset requests revoke older pending tokens for the same email or user, admin invitations reject existing account emails, and public registration for existing account emails keeps the same UI success response while emitting `account.registration.existing_account` with the username for the future mailer.

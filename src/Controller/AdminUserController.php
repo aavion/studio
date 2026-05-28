@@ -25,6 +25,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Throwable;
 
@@ -39,6 +40,7 @@ final class AdminUserController extends AbstractController
         private readonly AccountLinkDeliveryInterface $linkDelivery,
         private readonly UserFlowConfig $userFlowConfig,
         private readonly AuditLoggerInterface $auditLogger,
+        private readonly UserPasswordHasherInterface $passwordHasher,
     ) {
     }
 
@@ -60,6 +62,31 @@ final class AdminUserController extends AbstractController
         ]);
     }
 
+    #[Route('/admin/users/reviews', name: 'backend_admin_user_reviews', priority: 10, methods: ['GET'])]
+    public function reviews(Request $request): Response
+    {
+        if ($response = $this->adminAccessResponse($request)) {
+            return $response;
+        }
+
+        $filter = $this->reviewFilter($request);
+        $items = $this->reviewItems();
+
+        if ('all' !== $filter) {
+            $items = array_values(array_filter(
+                $items,
+                static fn (array $item): bool => $filter === $item['filter'] || ('expired' === $filter && true === $item['expired']),
+            ));
+        }
+
+        return $this->render('@backend/admin/users/reviews.html.twig', [
+            'navigation' => $this->navigation($request),
+            'review_items' => $items,
+            'review_filter' => $filter,
+            'review_filters' => ['all', 'registrations', 'invitations', 'disputes', 'expired'],
+        ]);
+    }
+
     #[Route('/admin/users/invitations', name: 'backend_admin_user_invite', priority: 10, methods: ['POST'])]
     public function invite(Request $request): Response
     {
@@ -70,7 +97,7 @@ final class AdminUserController extends AbstractController
         if (!$this->isCsrfTokenValid('admin_user_invite', $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
-            return $this->redirectToRoute('backend_admin_users');
+            return $this->redirectAfterTokenAction($request);
         }
 
         $email = $this->field($request, 'email');
@@ -107,7 +134,7 @@ final class AdminUserController extends AbstractController
         if (!$this->isCsrfTokenValid('admin_user_token_'.$uid, $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
-            return $this->redirectToRoute('backend_admin_users');
+            return $this->redirectAfterTokenAction($request);
         }
 
         $token = $this->entityManager->find(AccountToken::class, $uid);
@@ -115,7 +142,7 @@ final class AdminUserController extends AbstractController
         if (!$token instanceof AccountToken || AccountTokenStatus::PendingApproval !== $token->status()) {
             $this->addFlash('error', 'admin.users.invitation.unavailable');
 
-            return $this->redirectToRoute('backend_admin_users');
+            return $this->redirectAfterTokenAction($request);
         }
 
         $plainToken = $this->tokenIssuer->reissue($token, $this->userFlowConfig->accountLinkTtl());
@@ -126,7 +153,7 @@ final class AdminUserController extends AbstractController
         $this->audit('user.registration_approved', ['email' => $token->email(), 'token_uid' => $token->uid()]);
         $this->addFlash('success', 'admin.users.invitation.approved');
 
-        return $this->redirectToRoute('backend_admin_users');
+        return $this->redirectAfterTokenAction($request);
     }
 
     #[Route('/admin/users/invitations/{uid}/reissue', name: 'backend_admin_user_invitation_reissue', priority: 10, methods: ['POST'])]
@@ -139,7 +166,7 @@ final class AdminUserController extends AbstractController
         if (!$this->isCsrfTokenValid('admin_user_token_'.$uid, $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
-            return $this->redirectToRoute('backend_admin_users');
+            return $this->redirectAfterTokenAction($request);
         }
 
         $token = $this->entityManager->find(AccountToken::class, $uid);
@@ -147,7 +174,7 @@ final class AdminUserController extends AbstractController
         if (!$token instanceof AccountToken || AccountTokenStatus::Pending !== $token->status()) {
             $this->addFlash('error', 'admin.users.invitation.unavailable');
 
-            return $this->redirectToRoute('backend_admin_users');
+            return $this->redirectAfterTokenAction($request);
         }
 
         $plainToken = $this->tokenIssuer->reissue($token, $this->ttlForToken($token));
@@ -156,7 +183,7 @@ final class AdminUserController extends AbstractController
         $this->audit('user.account_token_reissued', ['email' => $token->email(), 'token_uid' => $token->uid(), 'token_type' => $token->type()->value]);
         $this->addFlash('success', 'admin.users.invitation.reissued');
 
-        return $this->redirectToRoute('backend_admin_users');
+        return $this->redirectAfterTokenAction($request);
     }
 
     #[Route('/admin/users/invitations/{uid}/revoke', name: 'backend_admin_user_invitation_revoke', priority: 10, methods: ['POST'])]
@@ -169,7 +196,7 @@ final class AdminUserController extends AbstractController
         if (!$this->isCsrfTokenValid('admin_user_token_'.$uid, $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
-            return $this->redirectToRoute('backend_admin_users');
+            return $this->redirectAfterTokenAction($request);
         }
 
         $token = $this->entityManager->find(AccountToken::class, $uid);
@@ -187,7 +214,72 @@ final class AdminUserController extends AbstractController
             $this->addFlash('success', 'admin.users.invitation.revoked');
         }
 
-        return $this->redirectToRoute('backend_admin_users');
+        return $this->redirectAfterTokenAction($request);
+    }
+
+    #[Route('/admin/users/reviews/{uid}/reactivate', name: 'backend_admin_user_review_reactivate', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['POST'])]
+    public function reactivateReviewUser(Request $request, string $uid): Response
+    {
+        if ($response = $this->adminAccessResponse($request)) {
+            return $response;
+        }
+
+        $user = $this->entityManager->find(UserAccount::class, $uid);
+
+        if (!$user instanceof UserAccount) {
+            return $this->httpError->notFound($request);
+        }
+
+        if (!$this->isCsrfTokenValid('admin_user_review_'.$uid, $this->field($request, '_csrf_token'))) {
+            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+
+            return $this->redirectToRoute('backend_admin_user_reviews');
+        }
+
+        $user->changePassword($this->passwordHasher->hashPassword($user, bin2hex(random_bytes(32))));
+        $user->changeStatus(UserAccountStatus::Active);
+        $this->entityManager->flush();
+        $this->linkDelivery->notifyAddress($user->email(), AccountMailFlow::PasswordChangeReactivated, [
+            'username' => $user->username(),
+            'user_uid' => $user->uid(),
+        ]);
+        $this->audit('user.security_review_reactivated', ['target_user' => $user->uid()]);
+        $this->addFlash('success', 'admin.user_reviews.actions.reactivated');
+
+        return $this->redirectToRoute('backend_admin_user_reviews');
+    }
+
+    #[Route('/admin/users/reviews/{uid}/delete', name: 'backend_admin_user_review_delete', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['POST'])]
+    public function deleteReviewUser(Request $request, string $uid): Response
+    {
+        if ($response = $this->adminAccessResponse($request)) {
+            return $response;
+        }
+
+        $user = $this->entityManager->find(UserAccount::class, $uid);
+
+        if (!$user instanceof UserAccount) {
+            return $this->httpError->notFound($request);
+        }
+
+        if (!$this->isCsrfTokenValid('admin_user_review_'.$uid, $this->field($request, '_csrf_token'))) {
+            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+
+            return $this->redirectToRoute('backend_admin_user_reviews');
+        }
+
+        if ('1' !== $this->field($request, 'confirm_delete')) {
+            $this->addFlash('error', 'admin.user_reviews.actions.delete_confirmation_required');
+
+            return $this->redirectToRoute('backend_admin_user_reviews');
+        }
+
+        $user->changeStatus(UserAccountStatus::Deleted);
+        $this->entityManager->flush();
+        $this->audit('user.security_review_deleted', ['target_user' => $user->uid()]);
+        $this->addFlash('success', 'admin.user_reviews.actions.deleted');
+
+        return $this->redirectToRoute('backend_admin_user_reviews');
     }
 
     #[Route('/admin/users/{uid}', name: 'backend_admin_user_detail', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['GET', 'POST'])]
@@ -434,6 +526,109 @@ final class AdminUserController extends AbstractController
             'SELECT COUNT(*) FROM user_acl_group WHERE group_uid = ?',
             [$group->uid()],
         );
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function reviewItems(): array
+    {
+        $items = [];
+        $tokens = $this->entityManager->getRepository(AccountToken::class)->findBy(
+            [
+                'type' => [AccountTokenType::Invitation, AccountTokenType::Registration, AccountTokenType::SecurityReview],
+                'status' => [AccountTokenStatus::Pending, AccountTokenStatus::PendingApproval, AccountTokenStatus::Used],
+            ],
+            ['createdAt' => 'DESC'],
+        );
+
+        foreach ($tokens as $token) {
+            if (!$token instanceof AccountToken) {
+                continue;
+            }
+
+            $item = match ($token->type()) {
+                AccountTokenType::Invitation, AccountTokenType::Registration => $this->accountLinkReviewItem($token),
+                AccountTokenType::SecurityReview => $this->securityReviewItem($token),
+                AccountTokenType::PasswordReset => null,
+            };
+
+            if (null !== $item) {
+                $items[] = $item;
+            }
+        }
+
+        usort($items, static fn (array $left, array $right): int => $right['requested_at']->getTimestamp() <=> $left['requested_at']->getTimestamp());
+
+        return $items;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function accountLinkReviewItem(AccountToken $token): ?array
+    {
+        if (!in_array($token->status(), [AccountTokenStatus::Pending, AccountTokenStatus::PendingApproval], true)) {
+            return null;
+        }
+
+        $expired = AccountTokenStatus::Pending === $token->status() && $token->isExpired();
+        $approval = AccountTokenStatus::PendingApproval === $token->status();
+        $type = $token->type();
+
+        return [
+            'kind' => $approval ? 'registration_approval' : $type->value,
+            'filter' => $type === AccountTokenType::Invitation ? 'invitations' : 'registrations',
+            'status' => $approval ? 'pending_approval' : ($expired ? 'expired' : 'open'),
+            'expired' => $expired,
+            'token' => $token,
+            'user' => null,
+            'email' => $token->email(),
+            'username' => null,
+            'requested_at' => $token->createdAt(),
+            'groups' => $token->groupIdentifiers(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function securityReviewItem(AccountToken $token): ?array
+    {
+        $user = $token->user();
+
+        if (AccountTokenStatus::Used !== $token->status() || !$user instanceof UserAccount || UserAccountStatus::Inactive !== $user->status()) {
+            return null;
+        }
+
+        return [
+            'kind' => 'password_dispute',
+            'filter' => 'disputes',
+            'status' => 'locked',
+            'expired' => false,
+            'token' => $token,
+            'user' => $user,
+            'email' => $user->email(),
+            'username' => $user->username(),
+            'requested_at' => $token->consumedAt() ?? $token->createdAt(),
+            'groups' => [],
+        ];
+    }
+
+    private function reviewFilter(Request $request): string
+    {
+        $filter = $request->query->get('filter');
+
+        return is_string($filter) && in_array($filter, ['all', 'registrations', 'invitations', 'disputes', 'expired'], true)
+            ? $filter
+            : 'all';
+    }
+
+    private function redirectAfterTokenAction(Request $request): Response
+    {
+        return 'reviews' === $this->field($request, 'return_to')
+            ? $this->redirectToRoute('backend_admin_user_reviews')
+            : $this->redirectToRoute('backend_admin_users');
     }
 
     /**

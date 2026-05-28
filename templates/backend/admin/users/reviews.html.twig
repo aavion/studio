@@ -1,0 +1,102 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.user_reviews.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.users.title'|trans,
+        title: 'admin.user_reviews.title'|trans,
+        subtitle: 'admin.user_reviews.subtitle'|trans,
+    } only %}
+
+    <nav class="studio-tabs" aria-label="{{ 'admin.user_reviews.filters.label'|trans }}">
+        {% for filter in review_filters %}
+            <a class="studio-tab{% if review_filter == filter %} studio-tab-active{% endif %}" href="{{ path('backend_admin_user_reviews', filter == 'all' ? {} : {filter: filter}) }}">
+                {{ ('admin.user_reviews.filters.' ~ filter)|trans }}
+            </a>
+        {% endfor %}
+    </nav>
+
+    <section class="studio-panel">
+        {% if review_items is empty %}
+            {% include '@backend/partials/feedback/_empty-state.html.twig' with {
+                title: 'admin.user_reviews.empty_title'|trans,
+                message: 'admin.user_reviews.empty_message'|trans,
+            } only %}
+        {% else %}
+            <div class="studio-review-list">
+                {% for item in review_items %}
+                    {% set token = item.token %}
+                    {% set user = item.user %}
+                    <article class="studio-review-row">
+                        <div class="studio-review-main">
+                            <div class="studio-review-badges">
+                                <span class="studio-badge">{{ ('admin.user_reviews.kind.' ~ item.kind)|trans }}</span>
+                                <span class="studio-badge">{{ ('admin.user_reviews.status.' ~ item.status)|trans }}</span>
+                            </div>
+                            <h2>
+                                {% if user %}
+                                    {{ user.username }}
+                                    <span class="studio-muted">{{ user.email }}</span>
+                                {% else %}
+                                    {{ item.email }}
+                                {% endif %}
+                            </h2>
+                            <p class="studio-muted">
+                                {{ 'admin.user_reviews.requested_at'|trans({'%datetime%': item.requested_at|date('Y-m-d H:i')}) }}
+                                {% if item.groups is not empty %}
+                                    · {{ 'admin.user_reviews.groups'|trans({'%groups%': item.groups|join(', ')}) }}
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <div class="studio-review-actions">
+                            {% if item.kind == 'registration_approval' %}
+                                <form method="post" action="{{ path('backend_admin_user_invitation_approve', {uid: token.uid}) }}" class="studio-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
+                                    <input type="hidden" name="return_to" value="reviews">
+                                    <button class="studio-button" type="submit">{{ 'admin.user_reviews.actions.accept'|trans }}</button>
+                                </form>
+                                <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="studio-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
+                                    <input type="hidden" name="return_to" value="reviews">
+                                    <button class="studio-button studio-button-secondary" type="submit">{{ 'admin.user_reviews.actions.reject'|trans }}</button>
+                                </form>
+                            {% elseif item.kind in ['invitation', 'registration'] %}
+                                <form method="post" action="{{ path('backend_admin_user_invitation_reissue', {uid: token.uid}) }}" class="studio-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
+                                    <input type="hidden" name="return_to" value="reviews">
+                                    <button class="studio-button" type="submit">{{ 'admin.user_reviews.actions.reissue'|trans }}</button>
+                                </form>
+                                <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="studio-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
+                                    <input type="hidden" name="return_to" value="reviews">
+                                    <button class="studio-button studio-button-secondary" type="submit">{{ 'admin.user_reviews.actions.delete'|trans }}</button>
+                                </form>
+                            {% elseif item.kind == 'password_dispute' and user %}
+                                <form method="post" action="{{ path('backend_admin_user_review_reactivate', {uid: user.uid}) }}" class="studio-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_review_' ~ user.uid) }}">
+                                    <button class="studio-button" type="submit">{{ 'admin.user_reviews.actions.reactivate'|trans }}</button>
+                                </form>
+                                <form method="post" action="{{ path('backend_admin_user_review_delete', {uid: user.uid}) }}" class="studio-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_review_' ~ user.uid) }}">
+                                    <label class="studio-muted">
+                                        <input type="checkbox" name="confirm_delete" value="1">
+                                        {{ 'admin.user_reviews.actions.confirm_delete'|trans }}
+                                    </label>
+                                    <button class="studio-button studio-button-secondary" type="submit">{{ 'admin.user_reviews.actions.delete'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}
