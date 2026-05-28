@@ -157,6 +157,7 @@ admin:
       submit: 'Create invitation'
       created: 'Invitation created. The account link was written to the message log.'
       approved: 'Registration approved. The account link was written to the message log.'
+      reissued: 'Account link reissued. The new link was written to the message log.'
       revoked: 'Account token revoked.'
       unavailable: 'The invitation is no longer available.'
     accounts:
@@ -184,6 +185,7 @@ admin:
       expires_at: 'Expires'
     actions:
       approve: 'Approve'
+      reissue: 'Reissue link'
       revoke: 'Revoke'
       details: 'Details'
       save: 'Save'
@@ -204,6 +206,7 @@ admin:
       errors:
         invalid_csrf: 'The form expired. Please try again.'
         invalid_invitation: 'The invitation could not be created.'
+        email_in_use: 'A user account already exists for this email address.'
         invalid_status: 'Choose a valid account status.'
     saved: 'User saved.'
   groups:

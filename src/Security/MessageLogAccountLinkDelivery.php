@@ -58,4 +58,22 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
             ],
         );
     }
+
+    public function notifyAddress(string $recipientEmail, AccountMailFlow $flow, array $context = []): void
+    {
+        $this->messageLogger->log(
+            Message::info(MessageCode::ACCOUNT_NOTIFICATION_DELIVERED, MessageKey::ACCOUNT_NOTIFICATION_DELIVERED, [
+                '%email%' => $recipientEmail,
+                '%type%' => 'account',
+                '%flow%' => $flow->value,
+            ]),
+            [
+                'component' => self::class,
+                'mail_flow_key' => $flow->value,
+                'recipient_email' => strtolower($recipientEmail),
+                'recipient_configured' => true,
+                'context' => $context,
+            ],
+        );
+    }
 }

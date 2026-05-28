@@ -38,4 +38,23 @@ final class AccountTokenIssuerTest extends TestCase
             $token->expiresAt()->getTimestamp(),
         );
     }
+
+    public function testItReissuesExistingTokensWithNewHashAndExpiry(): void
+    {
+        $issuer = new AccountTokenIssuer();
+        [$token] = $issuer->issue(
+            AccountTokenType::Invitation,
+            'invitee@example.test',
+            ttl: '-1 hour',
+        );
+        $originalHash = $token->tokenHash();
+        $originalExpiry = $token->expiresAt();
+
+        $plainToken = $issuer->reissue($token, '+24 hours');
+
+        self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $plainToken);
+        self::assertNotSame($originalHash, $token->tokenHash());
+        self::assertGreaterThan($originalExpiry, $token->expiresAt());
+        self::assertSame($issuer->hash($plainToken), $token->tokenHash());
+    }
 }

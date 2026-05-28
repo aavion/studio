@@ -8,7 +8,9 @@ use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
+use App\Core\Config\Config;
 use App\Security\AccountTokenIssuer;
+use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -169,6 +171,81 @@ final class UserControllerTest extends WebTestCase
             $entityManager->remove($persistedToken);
             $entityManager->flush();
         }
+    }
+
+    public function testRegistrationForExistingAccountDoesNotCreateToken(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $config->set('user.registration.mode', 'auto_approval');
+        $admin = self::getContainer()->get(EntityManagerInterface::class)
+            ->getRepository(UserAccount::class)
+            ->findOneBy(['username' => 'admin']);
+
+        self::assertInstanceOf(UserAccount::class, $admin);
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
+        try {
+            $crawler = $client->request('GET', '/user/register');
+            $client->submit($crawler->selectButton('Request account')->form([
+                'email' => $admin->email(),
+            ]));
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-auth-notice', 'Your account setup link was created.');
+
+            $token = self::getContainer()->get(EntityManagerInterface::class)
+                ->getRepository(AccountToken::class)
+                ->findOneBy(['email' => $admin->email(), 'type' => AccountTokenType::Registration]);
+
+            self::assertNull($token);
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            self::assertStringContainsString('account.registration.existing_account', $messageLog);
+            self::assertStringContainsString('"username":"admin"', $messageLog);
+        } finally {
+            $config->set('user.registration.mode', 'disabled');
+        }
+    }
+
+    public function testPasswordResetRevokesPreviousPendingTokens(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'resetdedupe', 'current-password');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+
+        $crawler = $client->request('GET', '/user/reset-password');
+        $client->submit($crawler->selectButton('Request reset link')->form([
+            'email' => $user->email(),
+        ]));
+
+        self::assertResponseIsSuccessful();
+
+        $crawler = $client->request('GET', '/user/reset-password');
+        $client->submit($crawler->selectButton('Request reset link')->form([
+            'email' => $user->email(),
+        ]));
+
+        self::assertResponseIsSuccessful();
+
+        $tokens = $entityManager->getRepository(AccountToken::class)->findBy([
+            'email' => $user->email(),
+            'type' => AccountTokenType::PasswordReset,
+        ]);
+        $statuses = array_map(static fn (AccountToken $token): AccountTokenStatus => $token->status(), $tokens);
+
+        self::assertCount(2, $tokens);
+        self::assertCount(1, array_filter($statuses, static fn (AccountTokenStatus $status): bool => AccountTokenStatus::Pending === $status));
+        self::assertCount(1, array_filter($statuses, static fn (AccountTokenStatus $status): bool => AccountTokenStatus::Revoked === $status));
+
+        foreach ($tokens as $token) {
+            $entityManager->remove($token);
+        }
+
+        $entityManager->flush();
     }
 
     public function testApiKeysRouteListsPersistedKeysForTheCurrentUser(): void

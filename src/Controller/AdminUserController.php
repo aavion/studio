@@ -21,7 +21,6 @@ use App\Security\AccountTokenType;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\View\Http\HttpErrorRenderer;
-use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -78,6 +77,13 @@ final class AdminUserController extends AbstractController
         $groups = $this->groupIdentifiers($request->request->all('groups'));
 
         try {
+            if ($this->emailBelongsToUser($email)) {
+                $this->addFlash('error', 'admin.users.form.errors.email_in_use');
+
+                return $this->redirectToRoute('backend_admin_users');
+            }
+
+            $this->revokePendingTokensForEmail($email, [AccountTokenType::Invitation, AccountTokenType::Registration]);
             [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::Invitation, $email, $groups, ttl: $this->userFlowConfig->accountLinkTtl());
             $this->entityManager->persist($token);
             $this->entityManager->flush();
@@ -112,14 +118,43 @@ final class AdminUserController extends AbstractController
             return $this->redirectToRoute('backend_admin_users');
         }
 
-        $plainToken = bin2hex(random_bytes(32));
-        $token->rotateTokenHash($this->tokenIssuer->hash($plainToken), (new DateTimeImmutable())->modify($this->userFlowConfig->accountLinkTtl()));
+        $plainToken = $this->tokenIssuer->reissue($token, $this->userFlowConfig->accountLinkTtl());
         $token->approve();
         $this->entityManager->flush();
         $this->linkDelivery->notify($token, AccountMailFlow::RegistrationApproved);
         $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0));
         $this->audit('user.registration_approved', ['email' => $token->email(), 'token_uid' => $token->uid()]);
         $this->addFlash('success', 'admin.users.invitation.approved');
+
+        return $this->redirectToRoute('backend_admin_users');
+    }
+
+    #[Route('/admin/users/invitations/{uid}/reissue', name: 'backend_admin_user_invitation_reissue', priority: 10, methods: ['POST'])]
+    public function reissueInvitation(Request $request, string $uid): Response
+    {
+        if ($response = $this->adminAccessResponse($request)) {
+            return $response;
+        }
+
+        if (!$this->isCsrfTokenValid('admin_user_token_'.$uid, $this->field($request, '_csrf_token'))) {
+            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+
+            return $this->redirectToRoute('backend_admin_users');
+        }
+
+        $token = $this->entityManager->find(AccountToken::class, $uid);
+
+        if (!$token instanceof AccountToken || AccountTokenStatus::Pending !== $token->status()) {
+            $this->addFlash('error', 'admin.users.invitation.unavailable');
+
+            return $this->redirectToRoute('backend_admin_users');
+        }
+
+        $plainToken = $this->tokenIssuer->reissue($token, $this->ttlForToken($token));
+        $this->entityManager->flush();
+        $this->linkDelivery->deliver($token, $this->flowForToken($token), $plainToken, $this->urlForToken($token, $plainToken));
+        $this->audit('user.account_token_reissued', ['email' => $token->email(), 'token_uid' => $token->uid(), 'token_type' => $token->type()->value]);
+        $this->addFlash('success', 'admin.users.invitation.reissued');
 
         return $this->redirectToRoute('backend_admin_users');
     }
@@ -200,6 +235,7 @@ final class AdminUserController extends AbstractController
             return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
         }
 
+        $this->revokePendingTokensForUser($user, [AccountTokenType::PasswordReset]);
         [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::PasswordReset, $user->email(), [], $user, ttl: UserFlowConfig::PASSWORD_RESET_TTL);
         $this->entityManager->persist($token);
         $this->entityManager->flush();
@@ -398,6 +434,70 @@ final class AdminUserController extends AbstractController
             'SELECT COUNT(*) FROM user_acl_group WHERE group_uid = ?',
             [$group->uid()],
         );
+    }
+
+    /**
+     * @param list<AccountTokenType> $types
+     */
+    private function revokePendingTokensForEmail(string $email, array $types): void
+    {
+        $tokens = $this->entityManager->getRepository(AccountToken::class)->findBy([
+            'email' => strtolower($email),
+            'type' => $types,
+            'status' => [AccountTokenStatus::Pending, AccountTokenStatus::PendingApproval],
+        ]);
+
+        foreach ($tokens as $token) {
+            if ($token instanceof AccountToken) {
+                $token->revoke();
+            }
+        }
+    }
+
+    /**
+     * @param list<AccountTokenType> $types
+     */
+    private function revokePendingTokensForUser(UserAccount $user, array $types): void
+    {
+        $tokens = $this->entityManager->getRepository(AccountToken::class)->findBy([
+            'user' => $user,
+            'type' => $types,
+            'status' => AccountTokenStatus::Pending,
+        ]);
+
+        foreach ($tokens as $token) {
+            if ($token instanceof AccountToken) {
+                $token->revoke();
+            }
+        }
+    }
+
+    private function emailBelongsToUser(string $email): bool
+    {
+        return $this->entityManager->getRepository(UserAccount::class)->findOneBy(['email' => strtolower($email)]) instanceof UserAccount;
+    }
+
+    private function ttlForToken(AccountToken $token): string
+    {
+        return AccountTokenType::PasswordReset === $token->type()
+            ? UserFlowConfig::PASSWORD_RESET_TTL
+            : $this->userFlowConfig->accountLinkTtl();
+    }
+
+    private function flowForToken(AccountToken $token): AccountMailFlow
+    {
+        return match ($token->type()) {
+            AccountTokenType::Invitation => AccountMailFlow::InvitationLink,
+            AccountTokenType::Registration => AccountMailFlow::RegistrationLink,
+            AccountTokenType::PasswordReset => AccountMailFlow::PasswordResetLink,
+        };
+    }
+
+    private function urlForToken(AccountToken $token, string $plainToken): string
+    {
+        return AccountTokenType::PasswordReset === $token->type()
+            ? $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0)
+            : $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0);
     }
 
     /**

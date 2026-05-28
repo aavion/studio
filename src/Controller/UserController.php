@@ -269,6 +269,24 @@ final class UserController extends AbstractController
             }
 
             if ([] === $errors) {
+                $existingUser = $this->userByEmail($email);
+
+                if ($existingUser instanceof UserAccount) {
+                    $this->linkDelivery->notifyAddress(
+                        $existingUser->email(),
+                        AccountMailFlow::RegistrationExistingAccount,
+                        ['username' => $existingUser->username()],
+                    );
+                    $success = true;
+
+                    return $this->render('@frontend/user/register.html.twig', [
+                        'success' => $success,
+                        'requires_approval' => $requiresApproval,
+                        'errors' => $errors,
+                    ]);
+                }
+
+                $this->revokePendingTokensForEmail($email, [AccountTokenType::Invitation, AccountTokenType::Registration]);
                 [$token, $plainToken] = $this->tokenIssuer->issue(
                     AccountTokenType::Registration,
                     $email,
@@ -316,6 +334,7 @@ final class UserController extends AbstractController
                 $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['email' => $email]);
 
                 if ($user instanceof UserAccount) {
+                    $this->revokePendingTokensForUser($user, [AccountTokenType::PasswordReset]);
                     [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::PasswordReset, $user->email(), [], $user, ttl: UserFlowConfig::PASSWORD_RESET_TTL);
                     $this->entityManager->persist($token);
                     $this->entityManager->flush();
@@ -463,6 +482,49 @@ final class UserController extends AbstractController
         $token = $this->entityManager->getRepository(AccountToken::class)->findOneBy($criteria);
 
         return $token instanceof AccountToken && !$token->isExpired() ? $token : null;
+    }
+
+    /**
+     * @param list<AccountTokenType> $types
+     */
+    private function revokePendingTokensForEmail(string $email, array $types): void
+    {
+        $tokens = $this->entityManager->getRepository(AccountToken::class)->findBy([
+            'email' => strtolower($email),
+            'type' => $types,
+            'status' => [AccountTokenStatus::Pending, AccountTokenStatus::PendingApproval],
+        ]);
+
+        foreach ($tokens as $token) {
+            if ($token instanceof AccountToken) {
+                $token->revoke();
+            }
+        }
+    }
+
+    /**
+     * @param list<AccountTokenType> $types
+     */
+    private function revokePendingTokensForUser(UserAccount $user, array $types): void
+    {
+        $tokens = $this->entityManager->getRepository(AccountToken::class)->findBy([
+            'user' => $user,
+            'type' => $types,
+            'status' => AccountTokenStatus::Pending,
+        ]);
+
+        foreach ($tokens as $token) {
+            if ($token instanceof AccountToken) {
+                $token->revoke();
+            }
+        }
+    }
+
+    private function userByEmail(string $email): ?UserAccount
+    {
+        $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['email' => strtolower($email)]);
+
+        return $user instanceof UserAccount ? $user : null;
     }
 
     /**

@@ -14,4 +14,9 @@ interface AccountLinkDeliveryInterface
      * @param array<string, mixed> $context
      */
     public function notify(AccountToken $token, AccountMailFlow $flow, ?string $recipientEmail = null, array $context = []): void;
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    public function notifyAddress(string $recipientEmail, AccountMailFlow $flow, array $context = []): void;
 }

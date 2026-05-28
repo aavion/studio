@@ -105,6 +105,11 @@
                                         <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
                                         <button class="studio-button" type="submit">{{ 'admin.users.actions.approve'|trans }}</button>
                                     </form>
+                                {% elseif token.status.value == 'pending' %}
+                                    <form method="post" action="{{ path('backend_admin_user_invitation_reissue', {uid: token.uid}) }}" class="studio-inline-form">
+                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
+                                        <button class="studio-button" type="submit">{{ 'admin.users.actions.reissue'|trans }}</button>
+                                    </form>
                                 {% endif %}
                                 <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="studio-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">

@@ -93,6 +93,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-28
+- Added account-link reissue handling: admins can reissue pending invitation, registration, and password-reset links; reissues rotate the token hash and stored expiry while keeping already used/revoked/pending-approval tokens unavailable.
+- Hardened account-link duplication behavior: new invitation/registration/reset requests revoke older pending tokens for the same email or user, admin invitations reject existing account emails, and public registration for existing account emails keeps the same UI success response while emitting `account.registration.existing_account` with the username for the future mailer.
 - Hardened the user/access-management token lifecycle: invitation and registration links now use a configurable account-link TTL defaulting to 24 hours, password-reset links use a fixed one-hour TTL, and user/admin token views show stored expiry without mutating already-issued links when settings change.
 - Added stable account mail-flow keys for message-log delivery, including invitation links, registration links, password-reset links, registration approval requests, approval notifications, and rejection notifications; added an admin approval notification recipient setting for the future mailer.
 - Added `studio:account-tokens:cleanup` for expired account-token cleanup, updated setup/test seed defaults for the new user-flow settings, regenerated runtime translations, and covered the lifecycle hardening with targeted config, security, controller, setup, and command tests.

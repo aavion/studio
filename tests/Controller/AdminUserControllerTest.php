@@ -7,7 +7,9 @@ namespace App\Tests\Controller;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
+use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
+use App\Security\AccountTokenType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -47,6 +49,59 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSame(AccountTokenStatus::Pending, $token->status());
         self::assertSame(['registered'], $token->groupIdentifiers());
         $entityManager->remove($token);
+        $entityManager->flush();
+    }
+
+    public function testAdminCannotInviteExistingAccountEmail(): void
+    {
+        $client = self::createClient();
+        $admin = $this->adminUser();
+        $client->loginUser($admin);
+        $crawler = $client->request('GET', '/admin/users');
+        $form = $crawler->selectButton('Create invitation')->form([
+            'email' => $admin->email(),
+        ]);
+        $form['groups'][0]->tick();
+        $client->submit($form);
+
+        self::assertResponseRedirects('/admin/users');
+
+        $token = self::getContainer()->get(EntityManagerInterface::class)
+            ->getRepository(AccountToken::class)
+            ->findOneBy(['email' => $admin->email(), 'type' => AccountTokenType::Invitation]);
+
+        self::assertNull($token);
+    }
+
+    public function testAdminCanReissuePendingAccountToken(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'reissue-admin-flow@example.test',
+            ['registered'],
+            ttl: '-1 hour',
+        );
+        $originalHash = $token->tokenHash();
+        $originalExpiry = $token->expiresAt();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/admin/users');
+        $client->submit($crawler->filter('form[action="/admin/users/invitations/'.$token->uid().'/reissue"]')->form());
+
+        self::assertResponseRedirects('/admin/users');
+
+        $entityManager->clear();
+        $reissuedToken = $entityManager->find(AccountToken::class, $token->uid());
+
+        self::assertInstanceOf(AccountToken::class, $reissuedToken);
+        self::assertSame(AccountTokenStatus::Pending, $reissuedToken->status());
+        self::assertNotSame($originalHash, $reissuedToken->tokenHash());
+        self::assertGreaterThan($originalExpiry, $reissuedToken->expiresAt());
+        $entityManager->remove($reissuedToken);
         $entityManager->flush();
     }
 

@@ -56,6 +56,22 @@ final class MessageLogAccountLinkDeliveryTest extends TestCase
         self::assertSame('admin@example.test', $logger->records[0]['context']['recipient_email']);
         self::assertSame('user@example.test', $logger->records[0]['context']['account_email']);
     }
+
+    public function testItLogsStableMailFlowContextForAddressNotifications(): void
+    {
+        $logger = new RecordingAccountLinkMessageLogger();
+        $delivery = new MessageLogAccountLinkDelivery($logger);
+
+        $delivery->notifyAddress('User@Example.Test', AccountMailFlow::RegistrationExistingAccount, [
+            'username' => 'existing_user',
+        ]);
+
+        self::assertCount(1, $logger->records);
+        self::assertSame(MessageCode::ACCOUNT_NOTIFICATION_DELIVERED, $logger->records[0]['message']->code());
+        self::assertSame(AccountMailFlow::RegistrationExistingAccount->value, $logger->records[0]['context']['mail_flow_key']);
+        self::assertSame('user@example.test', $logger->records[0]['context']['recipient_email']);
+        self::assertSame(['username' => 'existing_user'], $logger->records[0]['context']['context']);
+    }
 }
 
 final class RecordingAccountLinkMessageLogger implements MessageLoggerInterface

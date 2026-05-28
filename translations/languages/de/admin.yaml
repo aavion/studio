@@ -157,6 +157,7 @@ admin:
       submit: 'Einladung erstellen'
       created: 'Einladung erstellt. Der Account-Link wurde ins Message-Log geschrieben.'
       approved: 'Registrierung freigegeben. Der Account-Link wurde ins Message-Log geschrieben.'
+      reissued: 'Account-Link neu ausgestellt. Der neue Link wurde ins Message-Log geschrieben.'
       revoked: 'Account-Token widerrufen.'
       unavailable: 'Die Einladung ist nicht mehr verfügbar.'
     accounts:
@@ -184,6 +185,7 @@ admin:
       expires_at: 'Läuft ab'
     actions:
       approve: 'Freigeben'
+      reissue: 'Link neu ausstellen'
       revoke: 'Widerrufen'
       details: 'Details'
       save: 'Speichern'
@@ -204,6 +206,7 @@ admin:
       errors:
         invalid_csrf: 'Das Formular ist abgelaufen. Bitte versuche es erneut.'
         invalid_invitation: 'Die Einladung konnte nicht erstellt werden.'
+        email_in_use: 'Für diese E-Mail-Adresse existiert bereits ein Benutzerkonto.'
         invalid_status: 'Wähle einen gültigen Account-Status.'
     saved: 'Benutzer gespeichert.'
   groups:

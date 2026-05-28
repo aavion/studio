@@ -50,6 +50,14 @@ final readonly class AccountTokenIssuer
         return hash('sha256', $plainToken);
     }
 
+    public function reissue(AccountToken $token, string $ttl): string
+    {
+        $plainToken = bin2hex(random_bytes(32));
+        $token->rotateTokenHash($this->hash($plainToken), (new DateTimeImmutable())->modify($ttl));
+
+        return $plainToken;
+    }
+
     private static function uuid(): string
     {
         $bytes = random_bytes(16);
