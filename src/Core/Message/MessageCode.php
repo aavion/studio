@@ -125,6 +125,7 @@ final class MessageCode
     public const CONFIG_VALUE_INVALID = 'config.value_invalid';
     public const ACCOUNT_LINK_DELIVERED = 'account.link_delivered';
     public const ACCOUNT_NOTIFICATION_DELIVERED = 'account.notification_delivered';
+    public const ACCOUNT_MAIL_STUB_QUEUED = 'account.mail_stub_queued';
     public const CONTENT_LANGUAGE_FALLBACK = 'content.language_fallback';
     public const CONTENT_VARIANT_FALLBACK = 'content.variant_fallback';
     public const PACKAGE_IDENTIFIER_INVALID = 'package.identifier.invalid';

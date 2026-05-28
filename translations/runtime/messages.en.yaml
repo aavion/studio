@@ -443,6 +443,20 @@ admin:
             reactivated: 'Account reactivated. The user was notified to use password reset.'
             deleted: 'Account marked as deleted.'
             delete_confirmation_required: 'Confirm deletion before deleting the account.'
+    mail_templates:
+        groups:
+            users: Users
+        flows:
+            account_invitation_link: 'Invitation link'
+            account_registration_link: 'Registration setup link'
+            account_password_reset_link: 'Password reset link'
+            account_registration_approval_requested: 'Registration approval request'
+            account_registration_approved: 'Registration approved'
+            account_registration_rejected: 'Registration rejected'
+            account_registration_existing_account: 'Existing account notice'
+            account_password_changed: 'Password changed'
+            account_password_change_disputed: 'Password change disputed'
+            account_password_change_reactivated: 'Password dispute reactivated'
     groups:
         title: 'ACL groups'
         create:
@@ -980,6 +994,8 @@ message:
         read_failed: 'Configuration key "%key%" could not be read.'
         write_failed: 'Configuration key "%key%" could not be written.'
         value_invalid: 'Configuration key "%key%" contains an invalid stored value.'
+    account_mail:
+        stub_queued: 'Account mail flow %flow% for %email% was queued through the message-log stub.'
     state:
         subject_type:
             invalid: 'State subject type "%subject_type%" must be lowercase snake_case.'

@@ -213,6 +213,8 @@ message:
     read_failed: 'Configuration key "%key%" could not be read.'
     write_failed: 'Configuration key "%key%" could not be written.'
     value_invalid: 'Configuration key "%key%" contains an invalid stored value.'
+  account_mail:
+    stub_queued: 'Account mail flow %flow% for %email% was queued through the message-log stub.'
   state:
     subject_type:
       invalid: 'State subject type "%subject_type%" must be lowercase snake_case.'

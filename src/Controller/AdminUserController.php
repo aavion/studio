@@ -15,6 +15,7 @@ use App\Entity\UserAccount;
 use App\Navigation\NavigationBuilder;
 use App\Security\AccountLinkDeliveryInterface;
 use App\Security\AccountMailFlow;
+use App\Security\AccountMailLocaleResolver;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
@@ -38,6 +39,7 @@ final class AdminUserController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly AccountTokenIssuer $tokenIssuer,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
+        private readonly AccountMailLocaleResolver $mailLocaleResolver,
         private readonly UserFlowConfig $userFlowConfig,
         private readonly AuditLoggerInterface $auditLogger,
         private readonly UserPasswordHasherInterface $passwordHasher,
@@ -114,7 +116,7 @@ final class AdminUserController extends AbstractController
             [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::Invitation, $email, $groups, ttl: $this->userFlowConfig->accountLinkTtl());
             $this->entityManager->persist($token);
             $this->entityManager->flush();
-            $this->linkDelivery->deliver($token, AccountMailFlow::InvitationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0));
+            $this->linkDelivery->deliver($token, AccountMailFlow::InvitationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0), $this->mailLocaleResolver->forAdminAction());
             $this->audit('user.invitation_created', ['email' => $email, 'groups' => $groups, 'token_uid' => $token->uid()]);
             $this->addFlash('success', 'admin.users.invitation.created');
         } catch (Throwable) {
@@ -148,8 +150,8 @@ final class AdminUserController extends AbstractController
         $plainToken = $this->tokenIssuer->reissue($token, $this->userFlowConfig->accountLinkTtl());
         $token->approve();
         $this->entityManager->flush();
-        $this->linkDelivery->notify($token, AccountMailFlow::RegistrationApproved);
-        $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0));
+        $this->linkDelivery->notify($token, AccountMailFlow::RegistrationApproved, locale: $this->mailLocaleResolver->forAdminAction($token->user()));
+        $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0), $this->mailLocaleResolver->forAdminAction($token->user()));
         $this->audit('user.registration_approved', ['email' => $token->email(), 'token_uid' => $token->uid()]);
         $this->addFlash('success', 'admin.users.invitation.approved');
 
@@ -179,7 +181,7 @@ final class AdminUserController extends AbstractController
 
         $plainToken = $this->tokenIssuer->reissue($token, $this->ttlForToken($token));
         $this->entityManager->flush();
-        $this->linkDelivery->deliver($token, $this->flowForToken($token), $plainToken, $this->urlForToken($token, $plainToken));
+        $this->linkDelivery->deliver($token, $this->flowForToken($token), $plainToken, $this->urlForToken($token, $plainToken), $this->mailLocaleResolver->forAdminAction($token->user()));
         $this->audit('user.account_token_reissued', ['email' => $token->email(), 'token_uid' => $token->uid(), 'token_type' => $token->type()->value]);
         $this->addFlash('success', 'admin.users.invitation.reissued');
 
@@ -207,7 +209,7 @@ final class AdminUserController extends AbstractController
             $this->entityManager->flush();
 
             if ($wasPendingApproval) {
-                $this->linkDelivery->notify($token, AccountMailFlow::RegistrationRejected);
+                $this->linkDelivery->notify($token, AccountMailFlow::RegistrationRejected, locale: $this->mailLocaleResolver->forAdminAction($token->user()));
             }
 
             $this->audit('user.account_token_revoked', ['email' => $token->email(), 'token_uid' => $token->uid()]);
@@ -239,7 +241,7 @@ final class AdminUserController extends AbstractController
         $user->changePassword($this->passwordHasher->hashPassword($user, bin2hex(random_bytes(32))));
         $user->changeStatus(UserAccountStatus::Active);
         $this->entityManager->flush();
-        $this->linkDelivery->notifyAddress($user->email(), AccountMailFlow::PasswordChangeReactivated, [
+        $this->linkDelivery->notifyAddress($user->email(), AccountMailFlow::PasswordChangeReactivated, $this->mailLocaleResolver->forAdminAction($user), [
             'username' => $user->username(),
             'user_uid' => $user->uid(),
         ]);
@@ -331,7 +333,7 @@ final class AdminUserController extends AbstractController
         [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::PasswordReset, $user->email(), [], $user, ttl: UserFlowConfig::PASSWORD_RESET_TTL);
         $this->entityManager->persist($token);
         $this->entityManager->flush();
-        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0));
+        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0), $this->mailLocaleResolver->forAdminAction($user));
         $this->audit('user.password_reset_created', ['target_user' => $user->uid(), 'token_uid' => $token->uid()]);
         $this->addFlash('success', 'admin.users.password_reset.created');
 

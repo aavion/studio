@@ -213,6 +213,8 @@ message:
     read_failed: 'Konfigurations-Key "%key%" konnte nicht gelesen werden.'
     write_failed: 'Konfigurations-Key "%key%" konnte nicht geschrieben werden.'
     value_invalid: 'Konfigurations-Key "%key%" enthält einen ungültigen gespeicherten Wert.'
+  account_mail:
+    stub_queued: 'Account-Mail-Flow %flow% für %email% wurde über den Message-Log-Stub eingereiht.'
   state:
     subject_type:
       invalid: 'State-Subject-Type "%subject_type%" muss lowercase snake_case sein.'

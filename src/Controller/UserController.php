@@ -12,6 +12,7 @@ use App\Entity\ApiKey;
 use App\Entity\UserAccount;
 use App\Security\AccountLinkDeliveryInterface;
 use App\Security\AccountMailFlow;
+use App\Security\AccountMailLocaleResolver;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
@@ -38,6 +39,7 @@ final class UserController extends AbstractController
         private readonly UserFlowConfig $userFlowConfig,
         private readonly AccountTokenIssuer $tokenIssuer,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
+        private readonly AccountMailLocaleResolver $mailLocaleResolver,
         private readonly ApiKeyVault $apiKeyVault,
     ) {
     }
@@ -127,7 +129,7 @@ final class UserController extends AbstractController
                 $user->changePassword($this->passwordHasher->hashPassword($user, $newPassword));
                 [$token, $plainToken] = $this->issuePasswordChangeReviewToken($user);
                 $this->entityManager->flush();
-                $this->deliverPasswordChangeNotification($token, $plainToken);
+                $this->deliverPasswordChangeNotification($request, $token, $plainToken);
                 $this->audit($user, 'auth.password_change_success', ['result_status' => 'success']);
                 $success = true;
             } else {
@@ -277,6 +279,7 @@ final class UserController extends AbstractController
                     $this->linkDelivery->notifyAddress(
                         $existingUser->email(),
                         AccountMailFlow::RegistrationExistingAccount,
+                        $this->mailLocaleResolver->forPublicRequest($request, $existingUser),
                         ['username' => $existingUser->username()],
                     );
                     $success = true;
@@ -300,12 +303,13 @@ final class UserController extends AbstractController
                 $this->entityManager->flush();
 
                 if (!$requiresApproval) {
-                    $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0));
+                    $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0), $this->mailLocaleResolver->forPublicRequest($request));
                 } else {
                     $this->linkDelivery->notify(
                         $token,
                         AccountMailFlow::RegistrationApprovalRequested,
                         $this->userFlowConfig->registrationAdminNotificationEmail(),
+                        $this->mailLocaleResolver->defaultLocale(),
                     );
                 }
 
@@ -340,7 +344,7 @@ final class UserController extends AbstractController
                     [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::PasswordReset, $user->email(), [], $user, ttl: UserFlowConfig::PASSWORD_RESET_TTL);
                     $this->entityManager->persist($token);
                     $this->entityManager->flush();
-                    $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0));
+                    $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0), $this->mailLocaleResolver->forPublicRequest($request, $user));
                 }
 
                 $success = true;
@@ -376,7 +380,7 @@ final class UserController extends AbstractController
             $user->changeStatus(UserAccountStatus::Inactive);
             $accountToken->consume($user);
             $this->entityManager->flush();
-            $this->linkDelivery->notify($accountToken, AccountMailFlow::PasswordChangeDisputed, $this->userFlowConfig->securityNotificationEmail(), [
+            $this->linkDelivery->notify($accountToken, AccountMailFlow::PasswordChangeDisputed, $this->userFlowConfig->securityNotificationEmail(), $this->mailLocaleResolver->defaultLocale(), [
                 'username' => $user->username(),
                 'user_uid' => $user->uid(),
             ]);
@@ -469,7 +473,7 @@ final class UserController extends AbstractController
                 [$reviewToken, $plainReviewToken] = $this->issuePasswordChangeReviewToken($user);
                 $token->consume($user);
                 $this->entityManager->flush();
-                $this->deliverPasswordChangeNotification($reviewToken, $plainReviewToken);
+                $this->deliverPasswordChangeNotification($request, $reviewToken, $plainReviewToken);
                 $this->audit($user, 'auth.password_reset_completed', ['result_status' => 'success']);
                 $success = true;
             }
@@ -530,13 +534,14 @@ final class UserController extends AbstractController
         return [$token, $plainToken];
     }
 
-    private function deliverPasswordChangeNotification(AccountToken $token, string $plainToken): void
+    private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $plainToken): void
     {
         $this->linkDelivery->deliver(
             $token,
             AccountMailFlow::PasswordChanged,
             $plainToken,
             $this->generateUrl('user_security_review', ['token' => $plainToken], 0),
+            $this->mailLocaleResolver->forPublicRequest($request, $token->user()),
         );
     }
 

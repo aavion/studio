@@ -12,31 +12,34 @@ use App\Entity\AccountToken;
 
 final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliveryInterface
 {
-    public function __construct(private MessageLoggerInterface $messageLogger)
-    {
+    public function __construct(
+        private MessageLoggerInterface $messageLogger,
+        private AccountMailFlowRegistry $flowRegistry,
+    ) {
     }
 
-    public function deliver(AccountToken $token, AccountMailFlow $flow, string $plainToken, string $url): void
+    public function deliver(AccountToken $token, AccountMailFlow $flow, string $plainToken, string $url, string $locale, array $parameters = []): void
     {
-        $this->messageLogger->log(
-            Message::info(MessageCode::ACCOUNT_LINK_DELIVERED, MessageKey::ACCOUNT_LINK_DELIVERED, [
-                '%email%' => $token->email(),
-                '%type%' => $token->type()->value,
-                '%flow%' => $flow->value,
-            ]),
-            [
-                'component' => self::class,
-                'mail_flow_key' => $flow->value,
-                'account_link' => $url,
-                'plain_account_token' => $plainToken,
-                'token_uid' => $token->uid(),
-                'token_type' => $token->type()->value,
-                'recipient_email' => $token->email(),
-            ],
+        $this->logMailMessage(
+            new AccountMailMessage(
+                $flow,
+                $token->email(),
+                $locale,
+                [
+                    ...$this->tokenParameters($token),
+                    ...$parameters,
+                    'action_url' => $url,
+                ],
+                actionUrl: $url,
+                debugPlainToken: $plainToken,
+                tokenUid: $token->uid(),
+                tokenType: $token->type()->value,
+            ),
+            true,
         );
     }
 
-    public function notify(AccountToken $token, AccountMailFlow $flow, ?string $recipientEmail = null, array $context = []): void
+    public function notify(AccountToken $token, AccountMailFlow $flow, ?string $recipientEmail = null, string $locale = 'en', array $parameters = []): void
     {
         $adminFacing = in_array($flow, [
             AccountMailFlow::RegistrationApprovalRequested,
@@ -44,39 +47,71 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
         ], true);
         $recipientEmail ??= $adminFacing ? null : $token->email();
 
-        $this->messageLogger->log(
-            Message::info(MessageCode::ACCOUNT_NOTIFICATION_DELIVERED, MessageKey::ACCOUNT_NOTIFICATION_DELIVERED, [
-                '%email%' => $recipientEmail ?? 'configured administrator',
-                '%type%' => $token->type()->value,
-                '%flow%' => $flow->value,
-            ]),
-            [
-                'component' => self::class,
-                'mail_flow_key' => $flow->value,
-                'token_uid' => $token->uid(),
-                'token_type' => $token->type()->value,
-                'recipient_email' => $recipientEmail,
-                'recipient_configured' => null !== $recipientEmail,
-                'account_email' => $token->email(),
-                'context' => $context,
-            ],
+        $this->logMailMessage(
+            new AccountMailMessage(
+                $flow,
+                $recipientEmail,
+                $locale,
+                [
+                    ...$this->tokenParameters($token),
+                    ...$parameters,
+                ],
+                tokenUid: $token->uid(),
+                tokenType: $token->type()->value,
+            ),
+            null !== $recipientEmail,
         );
     }
 
-    public function notifyAddress(string $recipientEmail, AccountMailFlow $flow, array $context = []): void
+    public function notifyAddress(string $recipientEmail, AccountMailFlow $flow, string $locale, array $parameters = []): void
     {
+        $parameters = [
+            'email' => strtolower($recipientEmail),
+            ...$parameters,
+        ];
+
+        $this->logMailMessage(new AccountMailMessage($flow, $recipientEmail, $locale, $parameters), true);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function tokenParameters(AccountToken $token): array
+    {
+        $user = $token->user();
+
+        return [
+            'email' => $token->email(),
+            'username' => $user?->username(),
+            'expires_at' => $token->expiresAt()->format(DATE_ATOM),
+        ];
+    }
+
+    private function logMailMessage(AccountMailMessage $mailMessage, bool $recipientConfigured): void
+    {
+        $definition = $this->flowRegistry->definition($mailMessage->flow());
+        $recipient = $mailMessage->recipientEmail();
+
         $this->messageLogger->log(
-            Message::info(MessageCode::ACCOUNT_NOTIFICATION_DELIVERED, MessageKey::ACCOUNT_NOTIFICATION_DELIVERED, [
-                '%email%' => $recipientEmail,
-                '%type%' => 'account',
-                '%flow%' => $flow->value,
+            Message::debug(MessageCode::ACCOUNT_MAIL_STUB_QUEUED, MessageKey::ACCOUNT_MAIL_STUB_QUEUED, [
+                '%email%' => $recipient ?? 'configured administrator',
+                '%flow%' => $mailMessage->flow()->value,
             ]),
             [
                 'component' => self::class,
-                'mail_flow_key' => $flow->value,
-                'recipient_email' => strtolower($recipientEmail),
-                'recipient_configured' => true,
-                'context' => $context,
+                'mail_flow_key' => $mailMessage->flow()->value,
+                'mail_template_key' => $definition->templateKey(),
+                'mail_group_key' => $definition->groupKey(),
+                'mail_label_key' => $definition->labelKey(),
+                'recipient_email' => $recipient,
+                'recipient_configured' => $recipientConfigured,
+                'locale' => $mailMessage->locale(),
+                'parameters' => $mailMessage->parameters(),
+                'available_parameters' => $definition->parameterKeys(),
+                'action_url' => $mailMessage->actionUrl(),
+                'debug_plain_token' => $mailMessage->debugPlainToken(),
+                'token_uid' => $mailMessage->tokenUid(),
+                'token_type' => $mailMessage->tokenType(),
             ],
         );
     }

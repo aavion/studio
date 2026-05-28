@@ -245,6 +245,20 @@ admin:
       reactivated: 'Account reactivated. The user was notified to use password reset.'
       deleted: 'Account marked as deleted.'
       delete_confirmation_required: 'Confirm deletion before deleting the account.'
+  mail_templates:
+    groups:
+      users: 'Users'
+    flows:
+      account_invitation_link: 'Invitation link'
+      account_registration_link: 'Registration setup link'
+      account_password_reset_link: 'Password reset link'
+      account_registration_approval_requested: 'Registration approval request'
+      account_registration_approved: 'Registration approved'
+      account_registration_rejected: 'Registration rejected'
+      account_registration_existing_account: 'Existing account notice'
+      account_password_changed: 'Password changed'
+      account_password_change_disputed: 'Password change disputed'
+      account_password_change_reactivated: 'Password dispute reactivated'
   groups:
     title: 'ACL groups'
     create:

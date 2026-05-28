@@ -443,6 +443,20 @@ admin:
             reactivated: 'Account reaktiviert. Der Nutzer wurde informiert, Passwort vergessen zu verwenden.'
             deleted: 'Account als gelöscht markiert.'
             delete_confirmation_required: 'Bestätige die Löschung, bevor der Account gelöscht wird.'
+    mail_templates:
+        groups:
+            users: Benutzer
+        flows:
+            account_invitation_link: Einladungslink
+            account_registration_link: Registrierungs-Setup-Link
+            account_password_reset_link: Passwort-Reset-Link
+            account_registration_approval_requested: Registrierungsfreigabe-Anfrage
+            account_registration_approved: 'Registrierung freigegeben'
+            account_registration_rejected: 'Registrierung abgelehnt'
+            account_registration_existing_account: 'Hinweis auf bestehenden Account'
+            account_password_changed: 'Passwort geändert'
+            account_password_change_disputed: 'Passwortänderung bestritten'
+            account_password_change_reactivated: 'Passwort-Dispute reaktiviert'
     groups:
         title: ACL-Gruppen
         create:
@@ -980,6 +994,8 @@ message:
         read_failed: 'Konfigurations-Key "%key%" konnte nicht gelesen werden.'
         write_failed: 'Konfigurations-Key "%key%" konnte nicht geschrieben werden.'
         value_invalid: 'Konfigurations-Key "%key%" enthält einen ungültigen gespeicherten Wert.'
+    account_mail:
+        stub_queued: 'Account-Mail-Flow %flow% für %email% wurde über den Message-Log-Stub eingereiht.'
     state:
         subject_type:
             invalid: 'State-Subject-Type "%subject_type%" muss lowercase snake_case sein.'

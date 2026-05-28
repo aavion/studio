@@ -192,6 +192,7 @@ final class MessageKey
     public const ACCOUNT_TOKEN_HASH_INVALID = 'message.account_token.hash.invalid';
     public const ACCOUNT_LINK_DELIVERED = 'message.account_link.delivered';
     public const ACCOUNT_NOTIFICATION_DELIVERED = 'message.account_link.notification_delivered';
+    public const ACCOUNT_MAIL_STUB_QUEUED = 'message.account_mail.stub_queued';
     public const API_KEY_PREFIX_INVALID = 'message.api_key.prefix.invalid';
     public const API_KEY_HMAC_HASH_INVALID = 'message.api_key.hmac_hash.invalid';
     public const API_KEY_ENCRYPTED_KEY_EMPTY = 'message.api_key.encrypted_key.empty';
