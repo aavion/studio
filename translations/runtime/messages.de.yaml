@@ -420,8 +420,8 @@ admin:
                 invalid_invitation: 'Die Einladung konnte nicht erstellt werden.'
                 email_in_use: 'Für diese E-Mail-Adresse existiert bereits ein Benutzerkonto.'
                 invalid_status: 'Wähle einen gültigen Account-Status.'
-                target_higher_access: 'Du kannst keinen Benutzer mit höherem Access-Level bearbeiten.'
-                group_level_too_high: 'Du kannst keine ACL-Gruppen über deinem eigenen Access-Level zuweisen.'
+                target_higher_access: 'Nur Administratoren auf Level 9 können Benutzer auf dem eigenen oder einem höheren Access-Level bearbeiten.'
+                group_level_too_high: 'Nur Administratoren auf Level 9 können ACL-Gruppen auf dem eigenen oder einem höheren Access-Level zuweisen.'
                 self_lockout: 'Diese Änderung würde deinen eigenen Admin-Zugriff entfernen.'
                 last_admin: 'Es muss mindestens ein aktiver Benutzer mit Admin-Zugriff verbleiben.'
         saved: 'Benutzer gespeichert.'
@@ -530,7 +530,7 @@ admin:
         delete_blocked: 'Diese Gruppe kann nicht gelöscht werden.'
         form:
             invalid: 'Die Gruppe konnte nicht gespeichert werden.'
-            higher_access: 'Du kannst keine ACL-Gruppe über deinem eigenen Access-Level verwalten.'
+            higher_access: 'Nur Administratoren auf Level 9 können ACL-Gruppen auf dem eigenen oder einem höheren Access-Level verwalten.'
             self_lockout: 'Diese Gruppenänderung würde deinen eigenen Admin-Zugriff entfernen.'
             last_admin: 'Es muss mindestens ein aktiver Benutzer mit Admin-Zugriff verbleiben.'
     scheduler:
@@ -979,8 +979,8 @@ message:
         failed: 'Operation "%operation%" ist fehlgeschlagen.'
         finished_unknown: 'Operation "%operation%" wurde mit unbekanntem Status abgeschlossen.'
     process:
-        command_failed: 'Befehl "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
-        command_completed: 'Befehl "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'
+        command_failed: 'Schritt "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
+        command_completed: 'Schritt "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'
     access:
         granted: 'Zugriff für "%capability%" erlaubt.'
         denied: 'Zugriff für "%capability%" verweigert: erforderlich ist Level %required_level%; Actor hat Level %actor_level%.'
@@ -1041,6 +1041,10 @@ message:
         read_failed: 'Konfigurations-Key "%key%" konnte nicht gelesen werden.'
         write_failed: 'Konfigurations-Key "%key%" konnte nicht geschrieben werden.'
         value_invalid: 'Konfigurations-Key "%key%" enthält einen ungültigen gespeicherten Wert.'
+    acl:
+        group_updated: 'ACL-Gruppe "%group%" wurde aktualisiert. Betroffene Nutzer: %users%, Account-Links: %account_tokens%, Inhalte: %content_items%, Schema-Versionen: %content_schema_versions%, Menüeinträge: %site_menu_items%.'
+        group_deleted: 'ACL-Gruppe "%group%" wurde gelöscht und Referenzen wurden bereinigt. Betroffene Nutzer: %users%, Account-Links: %account_tokens%, Inhalte: %content_items%, Schema-Versionen: %content_schema_versions%, Menüeinträge: %site_menu_items%.'
+        group_apply_blocked: 'ACL-Gruppe "%group%" konnte nicht angewendet werden.'
     account_mail:
         stub_queued: 'Account-Mail-Flow %flow% für %email% wurde über den Message-Log-Stub eingereiht.'
     state:

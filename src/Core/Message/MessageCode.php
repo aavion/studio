@@ -123,6 +123,9 @@ final class MessageCode
     public const CONFIG_READ_FAILED = 'config.read_failed';
     public const CONFIG_WRITE_FAILED = 'config.write_failed';
     public const CONFIG_VALUE_INVALID = 'config.value_invalid';
+    public const ACL_GROUP_UPDATED = 'acl.group_updated';
+    public const ACL_GROUP_DELETED = 'acl.group_deleted';
+    public const ACL_GROUP_APPLY_BLOCKED = 'acl.group_apply_blocked';
     public const ACCOUNT_LINK_DELIVERED = 'account.link_delivered';
     public const ACCOUNT_NOTIFICATION_DELIVERED = 'account.notification_delivered';
     public const ACCOUNT_MAIL_STUB_QUEUED = 'account.mail_stub_queued';

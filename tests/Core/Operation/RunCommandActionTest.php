@@ -19,11 +19,13 @@ final class RunCommandActionTest extends TestCase
     {
         $action = new RunCommandAction([PHP_BINARY, '-v'], __DIR__, [
             'SECRET_TOKEN' => 'hidden',
-        ]);
+        ], label: 'Inspect PHP runtime');
 
         $dryRun = $action->dryRun();
 
         self::assertSame('run_command', $dryRun->type());
+        self::assertSame('Inspect PHP runtime', $dryRun->label());
+        self::assertSame('Inspect PHP runtime', $dryRun->context()['label']);
         self::assertSame([PHP_BINARY, '-v'], $dryRun->context()['command']);
         self::assertSame(__DIR__, $dryRun->context()['cwd']);
         self::assertSame(['SECRET_TOKEN'], $dryRun->context()['env_keys']);
@@ -38,7 +40,18 @@ final class RunCommandActionTest extends TestCase
         self::assertTrue($execution->result()->isSuccess());
         self::assertSame('hello', $execution->actionLog()->entries()[0]->context()['output_excerpt']);
         self::assertSame(0, $execution->actionLog()->entries()[0]->context()['exit_code']);
+        self::assertSame('Run command '.implode(' ', array_map('escapeshellarg', [PHP_BINARY, '-r', 'echo "hello";'])), $execution->actionLog()->entries()[0]->context()['label']);
         self::assertSame(MessageLevel::Success, $execution->actionLog()->entries()[0]->messages()[0]->level());
+    }
+
+    public function testItUsesCustomLabelsForUserFacingProcessMessages(): void
+    {
+        $action = new RunCommandAction([PHP_BINARY, '-r', 'echo "hello";'], label: 'Apply reviewed ACL group change');
+        $result = $action->execute();
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('Apply reviewed ACL group change', $result->context()['label']);
+        self::assertSame('Apply reviewed ACL group change', $result->messages()[0]->parameters()['%command%']);
     }
 
     public function testItMapsNonZeroExitCodesToFailedResults(): void

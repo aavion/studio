@@ -6,6 +6,7 @@ namespace App\Security;
 
 use App\Backend\BackendArea;
 use App\Core\Access\AccessActor;
+use App\Core\Access\AccessLevel;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,13 +22,13 @@ final readonly class AdminUserAccessPolicy
      */
     public function validateUserUpdate(AccessActor $actor, UserAccount $target, UserAccountStatus $newStatus, array $newGroupIdentifiers): ?string
     {
-        if ($this->isHigherAccessTarget($actor, $target)) {
+        if ($this->isRestrictedAccessTarget($actor, $target)) {
             return 'admin.users.form.errors.target_higher_access';
         }
 
         $newAccessLevel = $this->accessLevelForGroupIdentifiers($newGroupIdentifiers);
 
-        if ($newAccessLevel > $actor->accessLevel()) {
+        if ($this->isRestrictedAccessLevel($actor, $newAccessLevel)) {
             return 'admin.users.form.errors.group_level_too_high';
         }
 
@@ -44,7 +45,7 @@ final readonly class AdminUserAccessPolicy
 
     public function validateUserAction(AccessActor $actor, UserAccount $target): ?string
     {
-        return $this->isHigherAccessTarget($actor, $target)
+        return $this->isRestrictedAccessTarget($actor, $target)
             ? 'admin.users.form.errors.target_higher_access'
             : null;
     }
@@ -54,26 +55,41 @@ final readonly class AdminUserAccessPolicy
      */
     public function validateGroupAssignment(AccessActor $actor, array $groupIdentifiers): ?string
     {
-        return $this->accessLevelForGroupIdentifiers($groupIdentifiers) > $actor->accessLevel()
+        return $this->isRestrictedAccessLevel($actor, $this->accessLevelForGroupIdentifiers($groupIdentifiers))
             ? 'admin.users.form.errors.group_level_too_high'
             : null;
     }
 
     public function validateGroupCreate(AccessActor $actor, int $accessLevel): ?string
     {
-        return $accessLevel > $actor->accessLevel()
+        return $this->isRestrictedAccessLevel($actor, $accessLevel)
             ? 'admin.groups.form.higher_access'
             : null;
     }
 
     public function validateGroupUpdate(AccessActor $actor, AclGroup $group, int $newAccessLevel): ?string
     {
-        if ($group->accessLevel() > $actor->accessLevel() || $newAccessLevel > $actor->accessLevel()) {
+        if ($this->isRestrictedAccessLevel($actor, $group->accessLevel()) || $this->isRestrictedAccessLevel($actor, $newAccessLevel)) {
             return 'admin.groups.form.higher_access';
+        }
+
+        if (null !== $this->validateGroupUpdateSystem($group, $newAccessLevel)) {
+            return 'admin.groups.form.last_admin';
         }
 
         if ($this->actorWouldLoseAdminAreaAccess($actor, $group, $newAccessLevel)) {
             return 'admin.groups.form.self_lockout';
+        }
+
+        return null;
+    }
+
+    public function validateGroupUpdateSystem(AclGroup $group, int $newAccessLevel): ?string
+    {
+        try {
+            AccessLevel::assert($newAccessLevel);
+        } catch (\Throwable) {
+            return 'admin.groups.form.invalid';
         }
 
         if (!$this->hasActiveAdminAfterGroupLevelChange($group, $newAccessLevel)) {
@@ -85,14 +101,23 @@ final readonly class AdminUserAccessPolicy
 
     public function validateGroupDelete(AccessActor $actor, AclGroup $group): ?string
     {
-        if ($group->accessLevel() > $actor->accessLevel()) {
+        if ($this->isRestrictedAccessLevel($actor, $group->accessLevel())) {
             return 'admin.groups.form.higher_access';
+        }
+
+        if (null !== $this->validateGroupDeleteSystem($group)) {
+            return 'admin.groups.form.last_admin';
         }
 
         if ($this->actorWouldLoseAdminAreaAccess($actor, $group, null)) {
             return 'admin.groups.form.self_lockout';
         }
 
+        return null;
+    }
+
+    public function validateGroupDeleteSystem(AclGroup $group): ?string
+    {
         if (!$this->hasActiveAdminAfterGroupDeletion($group)) {
             return 'admin.groups.form.last_admin';
         }
@@ -100,9 +125,18 @@ final readonly class AdminUserAccessPolicy
         return null;
     }
 
-    private function isHigherAccessTarget(AccessActor $actor, UserAccount $target): bool
+    private function isRestrictedAccessTarget(AccessActor $actor, UserAccount $target): bool
     {
-        return !$this->isActor($actor, $target) && $target->maxAccessLevel() > $actor->accessLevel();
+        return $this->isRestrictedAccessLevel($actor, $target->maxAccessLevel());
+    }
+
+    private function isRestrictedAccessLevel(AccessActor $actor, int $accessLevel): bool
+    {
+        if ($actor->accessLevel() >= AccessLevel::ADMIN) {
+            return false;
+        }
+
+        return $accessLevel >= $actor->accessLevel();
     }
 
     private function isActor(AccessActor $actor, UserAccount $target): bool

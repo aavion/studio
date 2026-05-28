@@ -1,0 +1,176 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Security;
+
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageLevel;
+use App\Core\Workflow\WorkflowResult;
+use App\Entity\AclGroup;
+use Doctrine\ORM\EntityManagerInterface;
+use Throwable;
+
+final readonly class AclGroupApplyService
+{
+    public const ACTION_UPDATE = 'update';
+    public const ACTION_DELETE = 'delete';
+
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private AclGroupImpactService $impactService,
+        private AdminUserAccessPolicy $policy,
+    ) {
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     *
+     * @return WorkflowResult<array<string, mixed>|null>
+     */
+    public function apply(string $groupUid, string $action, array $payload = []): WorkflowResult
+    {
+        $group = $this->entityManager->find(AclGroup::class, $groupUid);
+
+        if (!$group instanceof AclGroup) {
+            return WorkflowResult::invalid([$this->message('acl.group.not_found', ['group_uid' => $groupUid])]);
+        }
+
+        if ($group->isLocked()) {
+            return WorkflowResult::blocked([$this->message('acl.group.locked', ['group_uid' => $groupUid])]);
+        }
+
+        try {
+            return match ($action) {
+                self::ACTION_UPDATE => $this->update($group, $payload),
+                self::ACTION_DELETE => $this->delete($group),
+                default => WorkflowResult::invalid([$this->message('acl.group.action_invalid', ['group_uid' => $groupUid, 'action' => $action])]),
+            };
+        } catch (Throwable $error) {
+            return WorkflowResult::failed([
+                Message::exception(
+                    MessageCode::E_OPERATION_FAILED,
+                    MessageKey::OPERATION_EXCEPTION,
+                    context: [
+                        'group_uid' => $groupUid,
+                        'action' => $action,
+                        'exception' => $error::class,
+                        'message' => $error->getMessage(),
+                    ],
+                ),
+            ]);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     *
+     * @return WorkflowResult<array<string, mixed>>
+     */
+    private function update(AclGroup $group, array $payload): WorkflowResult
+    {
+        $nameEn = $this->string($payload['name_en'] ?? null);
+        $nameDe = $this->string($payload['name_de'] ?? null) ?: $nameEn;
+        $accessLevel = (int) ($payload['access_level'] ?? -1);
+        $allowEmpty = true === ($payload['allow_empty'] ?? null) || '1' === ($payload['allow_empty'] ?? null);
+
+        if ('' === $nameEn || null !== $this->policy->validateGroupUpdateSystem($group, $accessLevel)) {
+            return WorkflowResult::blocked([$this->message('acl.group.update_blocked', ['group' => $group->identifier()])]);
+        }
+
+        $impact = $this->impactService->impact($group);
+        $group->rename(['en' => $nameEn, 'de' => $nameDe]);
+        $group->changeAccessLevel($accessLevel);
+        $group->changeEmptyMembershipPolicy($allowEmpty);
+        $this->entityManager->flush();
+
+        return WorkflowResult::success([
+            'group' => $group->identifier(),
+            'action' => self::ACTION_UPDATE,
+            'impact' => $impact['summary'],
+        ], [
+            'group_uid' => $group->uid(),
+            'group' => $group->identifier(),
+            'impact' => $impact['summary'],
+        ], [
+            Message::create(
+                MessageCode::ACL_GROUP_UPDATED,
+                MessageKey::ACL_GROUP_UPDATED,
+                $this->summaryParameters($group->identifier(), $impact['summary']),
+                ['group_uid' => $group->uid(), 'impact' => $impact['summary']],
+                MessageLevel::Success,
+            ),
+        ]);
+    }
+
+    /**
+     * @return WorkflowResult<array<string, mixed>>
+     */
+    private function delete(AclGroup $group): WorkflowResult
+    {
+        if (null !== $this->policy->validateGroupDeleteSystem($group)) {
+            return WorkflowResult::blocked([$this->message('acl.group.delete_blocked', ['group' => $group->identifier()])]);
+        }
+
+        $impact = $this->impactService->removeReferences($group);
+        $identifier = $group->identifier();
+        $groupUid = $group->uid();
+        $this->entityManager->remove($group);
+        $this->entityManager->flush();
+
+        return WorkflowResult::success([
+            'group' => $identifier,
+            'action' => self::ACTION_DELETE,
+            'impact' => $impact['summary'],
+        ], [
+            'group_uid' => $groupUid,
+            'group' => $identifier,
+            'impact' => $impact['summary'],
+        ], [
+            Message::create(
+                MessageCode::ACL_GROUP_DELETED,
+                MessageKey::ACL_GROUP_DELETED,
+                $this->summaryParameters($identifier, $impact['summary']),
+                ['group_uid' => $groupUid, 'impact' => $impact['summary']],
+                MessageLevel::Success,
+            ),
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function message(string $code, array $context): Message
+    {
+        return Message::warning(
+            MessageCode::ACL_GROUP_APPLY_BLOCKED,
+            MessageKey::ACL_GROUP_APPLY_BLOCKED,
+            ['%group%' => (string) ($context['group'] ?? $context['group_uid'] ?? 'unknown')],
+            ['reason' => $code, ...$context],
+        );
+    }
+
+    /**
+     * @param array<string, int> $summary
+     *
+     * @return array<string, string>
+     */
+    private function summaryParameters(string $group, array $summary): array
+    {
+        return [
+            '%group%' => $group,
+            '%users%' => (string) ($summary['users'] ?? 0),
+            '%account_tokens%' => (string) ($summary['account_tokens'] ?? 0),
+            '%content_items%' => (string) ($summary['content_items'] ?? 0),
+            '%content_schema_versions%' => (string) ($summary['content_schema_versions'] ?? 0),
+            '%site_menu_items%' => (string) ($summary['site_menu_items'] ?? 0),
+        ];
+    }
+
+    private function string(mixed $value): string
+    {
+        return is_scalar($value) ? trim((string) $value) : '';
+    }
+}

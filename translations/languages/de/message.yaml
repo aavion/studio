@@ -151,8 +151,8 @@ message:
     failed: 'Operation "%operation%" ist fehlgeschlagen.'
     finished_unknown: 'Operation "%operation%" wurde mit unbekanntem Status abgeschlossen.'
   process:
-    command_failed: 'Befehl "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
-    command_completed: 'Befehl "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'
+    command_failed: 'Schritt "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
+    command_completed: 'Schritt "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'
   access:
     granted: 'Zugriff für "%capability%" erlaubt.'
     denied: 'Zugriff für "%capability%" verweigert: erforderlich ist Level %required_level%; Actor hat Level %actor_level%.'
@@ -213,6 +213,10 @@ message:
     read_failed: 'Konfigurations-Key "%key%" konnte nicht gelesen werden.'
     write_failed: 'Konfigurations-Key "%key%" konnte nicht geschrieben werden.'
     value_invalid: 'Konfigurations-Key "%key%" enthält einen ungültigen gespeicherten Wert.'
+  acl:
+    group_updated: 'ACL-Gruppe "%group%" wurde aktualisiert. Betroffene Nutzer: %users%, Account-Links: %account_tokens%, Inhalte: %content_items%, Schema-Versionen: %content_schema_versions%, Menüeinträge: %site_menu_items%.'
+    group_deleted: 'ACL-Gruppe "%group%" wurde gelöscht und Referenzen wurden bereinigt. Betroffene Nutzer: %users%, Account-Links: %account_tokens%, Inhalte: %content_items%, Schema-Versionen: %content_schema_versions%, Menüeinträge: %site_menu_items%.'
+    group_apply_blocked: 'ACL-Gruppe "%group%" konnte nicht angewendet werden.'
   account_mail:
     stub_queued: 'Account-Mail-Flow %flow% für %email% wurde über den Message-Log-Stub eingereiht.'
   state:

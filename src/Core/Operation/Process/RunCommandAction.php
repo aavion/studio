@@ -27,6 +27,7 @@ final readonly class RunCommandAction implements OperationActionInterface
         private array $env = [],
         private ?float $timeout = 60.0,
         private int $excerptLength = 2000,
+        private ?string $label = null,
     ) {
         if ([] === $command) {
             throw new InvalidArgumentException('Command action command must not be empty.');
@@ -51,6 +52,10 @@ final readonly class RunCommandAction implements OperationActionInterface
         if ($excerptLength < 0) {
             throw new InvalidArgumentException('Command action excerpt length must not be negative.');
         }
+
+        if (null !== $label && '' === trim($label)) {
+            throw new InvalidArgumentException('Command action label must not be empty.');
+        }
     }
 
     public function type(): string
@@ -60,7 +65,7 @@ final readonly class RunCommandAction implements OperationActionInterface
 
     public function label(): string
     {
-        return sprintf('Run command %s', $this->formatCommand());
+        return $this->label ?? sprintf('Run command %s', $this->formatCommand());
     }
 
     public function dryRun(): DryRunAction
@@ -68,6 +73,7 @@ final readonly class RunCommandAction implements OperationActionInterface
         return DryRunAction::create($this->type(), $this->label(), DryRunRisk::Medium, context: [
             'command' => $this->command,
             'command_line' => $this->formatCommand(),
+            'label' => $this->label(),
             'cwd' => $this->cwd,
             'env_keys' => array_keys($this->env),
             'timeout' => $this->timeout,
@@ -85,6 +91,7 @@ final readonly class RunCommandAction implements OperationActionInterface
         $context = [
             'command' => $this->command,
             'command_line' => $this->formatCommand(),
+            'label' => $this->label(),
             'cwd' => $this->cwd,
             'exit_code' => $process->getExitCode(),
             'output_excerpt' => $this->excerpt($process->getOutput()),
@@ -94,7 +101,7 @@ final readonly class RunCommandAction implements OperationActionInterface
         if (!$process->isSuccessful()) {
             return WorkflowResult::failed([
                 Message::create(MessageCode::PROCESS_COMMAND_FAILED, MessageKey::PROCESS_COMMAND_FAILED, [
-                    '%command%' => $this->formatCommand(),
+                    '%command%' => $this->messageSubject(),
                     '%exit_code%' => $process->getExitCode() ?? 'unknown',
                 ], $context, MessageLevel::Error),
             ], $context);
@@ -106,7 +113,7 @@ final readonly class RunCommandAction implements OperationActionInterface
             'error_excerpt' => $context['error_excerpt'],
         ], $context, [
             Message::create(MessageCode::PROCESS_COMMAND_COMPLETED, MessageKey::PROCESS_COMMAND_COMPLETED, [
-                '%command%' => $this->formatCommand(),
+                '%command%' => $this->messageSubject(),
                 '%exit_code%' => $process->getExitCode() ?? 'unknown',
             ], $context, MessageLevel::Success),
         ]);
@@ -115,6 +122,11 @@ final readonly class RunCommandAction implements OperationActionInterface
     private function formatCommand(): string
     {
         return implode(' ', array_map('escapeshellarg', $this->command));
+    }
+
+    private function messageSubject(): string
+    {
+        return $this->label ?? $this->formatCommand();
     }
 
     private function excerpt(string $output): string

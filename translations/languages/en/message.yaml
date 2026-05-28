@@ -151,8 +151,8 @@ message:
     failed: 'Operation "%operation%" failed.'
     finished_unknown: 'Operation "%operation%" finished with an unknown status.'
   process:
-    command_failed: 'Command "%command%" failed with exit code %exit_code%.'
-    command_completed: 'Command "%command%" completed with exit code %exit_code%.'
+    command_failed: 'Step "%command%" failed with exit code %exit_code%.'
+    command_completed: 'Step "%command%" completed with exit code %exit_code%.'
   access:
     granted: 'Access granted for "%capability%".'
     denied: 'Access denied for "%capability%": requires level %required_level%; actor has level %actor_level%.'
@@ -213,6 +213,10 @@ message:
     read_failed: 'Configuration key "%key%" could not be read.'
     write_failed: 'Configuration key "%key%" could not be written.'
     value_invalid: 'Configuration key "%key%" contains an invalid stored value.'
+  acl:
+    group_updated: 'ACL group "%group%" was updated. Affected users: %users%, account links: %account_tokens%, content items: %content_items%, schema versions: %content_schema_versions%, menu items: %site_menu_items%.'
+    group_deleted: 'ACL group "%group%" was deleted and references were cleaned. Affected users: %users%, account links: %account_tokens%, content items: %content_items%, schema versions: %content_schema_versions%, menu items: %site_menu_items%.'
+    group_apply_blocked: 'ACL group "%group%" could not be applied.'
   account_mail:
     stub_queued: 'Account mail flow %flow% for %email% was queued through the message-log stub.'
   state:

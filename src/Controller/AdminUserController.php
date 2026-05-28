@@ -9,6 +9,10 @@ use App\Backend\BackendArea;
 use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
 use App\Core\Log\AuditLoggerInterface;
+use App\Core\Operation\Live\LiveOperationQueueFactory;
+use App\Core\Operation\Live\LiveOperationStarter;
+use App\Core\Output\JsonOutputRenderer;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
@@ -49,6 +53,8 @@ final class AdminUserController extends AbstractController
         private readonly AclGroupImpactService $aclGroupImpact,
         private readonly AuditLoggerInterface $auditLogger,
         private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly LiveOperationStarter $liveOperationStarter,
+        private readonly JsonOutputRenderer $json,
     ) {
     }
 
@@ -462,6 +468,10 @@ final class AdminUserController extends AbstractController
             ]);
         }
 
+        if ('1' === $this->field($request, '_operation_live')) {
+            return $this->startAclGroupLiveOperation($group, 'delete');
+        }
+
         $cleanupImpact = $this->aclGroupImpact->removeReferences($group);
         $this->entityManager->remove($group);
         $this->entityManager->flush();
@@ -601,6 +611,10 @@ final class AdminUserController extends AbstractController
             ]);
         }
 
+        if ('1' === $this->field($request, '_operation_live')) {
+            return $this->startAclGroupLiveOperation($group, 'update', $pending);
+        }
+
         try {
             $oldName = $group->name();
             $oldAccessLevel = $group->accessLevel();
@@ -628,6 +642,54 @@ final class AdminUserController extends AbstractController
         }
 
         return null;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function startAclGroupLiveOperation(AclGroup $group, string $action, array $payload = []): Response
+    {
+        $result = $this->liveOperationStarter->start(
+            LiveOperationQueueFactory::ACL_GROUP_APPLY,
+            [
+                'group_uid' => $group->uid(),
+                'action' => $action,
+                'payload' => $payload,
+                'trigger' => 'admin_ui',
+            ],
+            sprintf('ACL group %s %s', $group->identifier(), $action),
+        );
+        $this->audit('acl.group_'.$action.'_started', [
+            'group' => $group->identifier(),
+            'group_uid' => $group->uid(),
+            'mode' => 'live',
+            'result_status' => $result->status()->value,
+        ]);
+
+        return $this->liveOperationResponse($result);
+    }
+
+    /**
+     * @param WorkflowResult<mixed> $result
+     */
+    private function liveOperationResponse(WorkflowResult $result): Response
+    {
+        $payload = $result->toArray();
+
+        if ($result->isSuccess() && is_array($result->value())) {
+            $value = $result->value();
+            $operationId = (string) ($value['operation_id'] ?? '');
+            $token = (string) ($value['token'] ?? '');
+
+            if ('' !== $operationId && '' !== $token) {
+                $payload['value']['status_url'] = $this->generateUrl('api_live_operation_status', [
+                    'operationId' => $operationId,
+                    'token' => $token,
+                ]);
+            }
+        }
+
+        return $this->json->render($payload, $result->isSuccess() ? Response::HTTP_ACCEPTED : Response::HTTP_BAD_REQUEST);
     }
 
     /**

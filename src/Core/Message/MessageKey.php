@@ -187,6 +187,9 @@ final class MessageKey
     public const CONFIG_READ_FAILED = 'message.config.read_failed';
     public const CONFIG_WRITE_FAILED = 'message.config.write_failed';
     public const CONFIG_VALUE_INVALID = 'message.config.value_invalid';
+    public const ACL_GROUP_UPDATED = 'message.acl.group_updated';
+    public const ACL_GROUP_DELETED = 'message.acl.group_deleted';
+    public const ACL_GROUP_APPLY_BLOCKED = 'message.acl.group_apply_blocked';
     public const USERNAME_INVALID = 'message.user.username.invalid';
     public const USER_EMAIL_INVALID = 'message.user.email.invalid';
     public const ACCOUNT_TOKEN_HASH_INVALID = 'message.account_token.hash.invalid';

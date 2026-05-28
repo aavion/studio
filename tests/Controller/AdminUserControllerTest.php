@@ -287,6 +287,68 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testLowerAccessAdminCannotEditPeerAccessUser(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $peerGroup = $this->createGroup('peer_admin', 8);
+        $actor = $this->createUser('peeractor', UserAccountStatus::Active);
+        $target = $this->createUser('peertarget', UserAccountStatus::Active);
+        $actor->addGroup($peerGroup);
+        $target->addGroup($peerGroup);
+        $entityManager->flush();
+
+        $client->loginUser($actor);
+        $crawler = $client->request('GET', '/admin/users/'.$target->uid());
+        $client->submit($crawler->selectButton('Save')->form([
+            'status' => UserAccountStatus::Inactive->value,
+        ]));
+
+        self::assertResponseRedirects('/admin/users/'.$target->uid());
+
+        $entityManager->clear();
+        $unchangedTarget = $entityManager->find(UserAccount::class, $target->uid());
+
+        self::assertInstanceOf(UserAccount::class, $unchangedTarget);
+        self::assertSame(UserAccountStatus::Active, $unchangedTarget->status());
+
+        $entityManager->remove($entityManager->find(UserAccount::class, $actor->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $target->uid()));
+        $entityManager->remove($entityManager->find(AclGroup::class, $peerGroup->uid()));
+        $entityManager->flush();
+    }
+
+    public function testLowerAccessAdminCannotCreatePeerAccessGroup(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $limitedGroup = $this->createGroup('limited_admin_create', 8);
+        $limitedAdmin = $this->createUser('limitedcreate', UserAccountStatus::Active);
+        $limitedAdmin->addGroup($limitedGroup);
+        $entityManager->flush();
+
+        $client->loginUser($limitedAdmin);
+        $crawler = $client->request('GET', '/admin/users/groups');
+        $client->submit($crawler->selectButton('Create group')->form([
+            'identifier' => 'peer_created_group',
+            'name_en' => 'Peer created group',
+            'name_de' => 'Peer created group',
+            'access_level' => '8',
+        ]));
+
+        self::assertResponseRedirects('/admin/users/groups');
+
+        $createdGroup = $entityManager->getRepository(AclGroup::class)->findOneBy([
+            'identifier' => 'peer_created_group',
+        ]);
+
+        self::assertNull($createdGroup);
+
+        $entityManager->remove($entityManager->find(UserAccount::class, $limitedAdmin->uid()));
+        $entityManager->remove($entityManager->find(AclGroup::class, $limitedGroup->uid()));
+        $entityManager->flush();
+    }
+
     public function testAdminCannotRemoveOwnLastAdminAccess(): void
     {
         $client = self::createClient();
@@ -368,6 +430,7 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSelectorTextContains('main', 'acl-cleanup-content');
         self::assertSelectorTextContains('main', 'acl_cleanup_schema v1');
         self::assertSelectorTextContains('main', 'cleanup-invite@example.test');
+        self::assertSelectorExists('form[data-controller="operation-overlay"]');
 
         $crawler = $client->getCrawler();
         $client->submit($crawler->selectButton('Delete group and remove references')->form());
@@ -426,6 +489,7 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Review ACL group change');
         self::assertSelectorTextContains('main', '3 -> 6');
+        self::assertSelectorExists('form[data-controller="operation-overlay"]');
 
         $crawler = $client->getCrawler();
         $client->submit($crawler->selectButton('Apply group update')->form());

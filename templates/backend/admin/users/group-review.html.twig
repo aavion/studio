@@ -70,22 +70,45 @@
     <section class="studio-panel">
         <h2>{{ 'admin.groups.review.confirm_title'|trans }}</h2>
         {% if operation == 'delete' %}
-            <form method="post" action="{{ path('backend_admin_user_group_delete', {uid: group.uid}) }}" class="studio-backend-form">
+            <form
+                method="post"
+                action="{{ path('backend_admin_user_group_delete', {uid: group.uid}) }}"
+                class="studio-backend-form"
+                data-controller="operation-overlay"
+                data-action="submit->operation-overlay#submit"
+                data-operation-overlay-enabled-value="true"
+                data-operation-overlay-redirect-on-success-value="{{ path('backend_admin_user_groups') }}"
+            >
+                <input type="hidden" name="_form_id" value="acl-group-delete-{{ group.uid }}">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_delete_' ~ group.uid) }}">
                 <input type="hidden" name="confirm_delete" value="1">
-                <button class="studio-button studio-button-danger" type="submit">{{ 'admin.groups.review.confirm_delete'|trans }}</button>
+                <button class="studio-backend-button studio-button-danger" type="submit">{{ 'admin.groups.review.confirm_delete'|trans }}</button>
+                <a class="studio-backend-button studio-button-secondary" href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">
+                    {{ 'admin.groups.review.cancel'|trans }}
+                </a>
             </form>
         {% else %}
-            <form method="post" action="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}" class="studio-backend-form">
+            <form
+                method="post"
+                action="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}"
+                class="studio-backend-form"
+                data-controller="operation-overlay"
+                data-action="submit->operation-overlay#submit"
+                data-operation-overlay-enabled-value="true"
+                data-operation-overlay-redirect-on-success-value="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}"
+            >
+                <input type="hidden" name="_form_id" value="acl-group-update-{{ group.uid }}">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_' ~ group.uid) }}">
                 <input type="hidden" name="confirm_update" value="1">
                 <input type="hidden" name="name_en" value="{{ pending.name_en }}">
                 <input type="hidden" name="name_de" value="{{ pending.name_de }}">
                 <input type="hidden" name="access_level" value="{{ pending.access_level }}">
                 <input type="hidden" name="allow_empty" value="{{ pending.allow_empty ? '1' : '0' }}">
-                <button class="studio-button studio-button-primary" type="submit">{{ 'admin.groups.review.confirm_update'|trans }}</button>
+                <button class="studio-backend-button studio-button-primary" type="submit">{{ 'admin.groups.review.confirm_update'|trans }}</button>
+                <a class="studio-backend-button studio-button-secondary" href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">
+                    {{ 'admin.groups.review.cancel'|trans }}
+                </a>
             </form>
         {% endif %}
-        <p><a href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">{{ 'admin.groups.review.cancel'|trans }}</a></p>
     </section>
 {% endblock %}
