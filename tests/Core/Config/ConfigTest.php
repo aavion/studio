@@ -40,6 +40,11 @@ final class ConfigTest extends TestCase
         self::assertSame('+36 hours', $config->accountLinkTtl());
         self::assertSame('admin@example.test', $config->registrationAdminNotificationEmail());
         self::assertSame('security@example.test', $config->securityNotificationEmail());
+        self::assertFalse($config->usernameChangeEnabled());
+
+        $connection->insert('config_entry', ['config_key' => UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, 'value' => 'true', 'value_type' => 'boolean']);
+
+        self::assertTrue($config->usernameChangeEnabled());
     }
 
     public function testItFallsBackWhenConfigurationCannotBeRead(): void

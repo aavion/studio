@@ -62,6 +62,8 @@ ui:
     empty_state:
         title: 'Nothing to show'
     user:
+        identity:
+            deleted: 'Deleted user'
         navigation:
             account: Account
             admin: Admin
@@ -122,6 +124,8 @@ ui:
                     password: 'The password is not correct.'
             errors:
                 invalid_csrf: 'The profile form expired. Please try again.'
+                username_invalid: 'Choose a username that starts with a letter and contains 5 to 30 letters, digits, hyphens, or underscores.'
+                username_in_use: 'This username is already used.'
         password:
             title: 'Change password'
             placeholder: 'Update the password for your account.'
@@ -754,6 +758,8 @@ admin:
                 label: 'Registration mode'
             default_acl_group:
                 label: 'Default ACL group'
+            username_change_enabled:
+                label: 'Users may change their username'
             account_link_ttl_hours:
                 label: 'Account-link lifetime'
                 help: 'Applies only to newly created invitation and registration links. Existing tokens keep their stored expiry time.'
@@ -1057,7 +1063,7 @@ message:
             invalid: 'State marker key "%marker_key%" must be lowercase snake_case.'
     user:
         username:
-            invalid: 'Username "%username%" is invalid.'
+            invalid: 'Username "%username%" must start with a letter and contain 5 to 30 letters, digits, hyphens, or underscores.'
         email:
             invalid: 'Email address "%email%" is invalid.'
     account_token:

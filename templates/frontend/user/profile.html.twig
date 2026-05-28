@@ -11,6 +11,13 @@
         {% if success|default(false) %}
             <p class="studio-auth-notice">{{ 'ui.user.profile.success'|trans }}</p>
         {% endif %}
+        {% if errors|default([]) is not empty %}
+            <ul class="studio-form-errors">
+                {% for error in errors %}
+                    <li>{{ error|trans }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
         <dl class="studio-user-summary">
             <div>
                 <dt>{{ 'ui.user.profile.username'|trans }}</dt>
@@ -27,6 +34,15 @@
         </dl>
         <form method="post" class="studio-auth-form">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_profile') }}">
+            {% if username_change_enabled|default(false) %}
+                {% include '@frontend/partials/forms/fields/input.html.twig' with {
+                    name: 'username',
+                    label: 'ui.user.profile.username'|trans,
+                    value: user_account.username,
+                    required: true,
+                    autocomplete: 'username',
+                } only %}
+            {% endif %}
             {% include '@frontend/partials/forms/fields/input.html.twig' with {
                 name: 'display_name',
                 label: 'ui.user.profile.display_name'|trans,

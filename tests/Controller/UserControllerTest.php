@@ -58,6 +58,97 @@ final class UserControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Profile');
         self::assertSelectorTextContains('.studio-user-summary', 'profileuser');
         self::assertSelectorTextContains('.studio-user-summary', 'profileuser@example.test');
+        self::assertSelectorNotExists('input[name="username"]');
+    }
+
+    public function testProfileUsernameChangeRequiresSetting(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $user = $this->createUserWithLevel(1, 'stableprofile', 'profile-password');
+        $config->set('user.username_change.enabled', false);
+
+        $client->loginUser($user);
+        $crawler = $client->request('GET', '/user/profile');
+        $client->request('POST', '/user/profile', [
+            '_csrf_token' => (string) $crawler->filter('input[name="_csrf_token"]')->attr('value'),
+            'username' => 'ChangedProfile',
+            'display_name' => 'Stable Profile',
+            'language' => 'default',
+        ]);
+
+        self::assertResponseIsSuccessful();
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $unchangedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+        self::assertInstanceOf(UserAccount::class, $unchangedUser);
+        self::assertSame('stableprofile', $unchangedUser->username());
+    }
+
+    public function testProfileUsernameCanBeChangedWhenSettingIsEnabled(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $user = $this->createUserWithLevel(1, 'renameprofile', 'profile-password');
+        $config->set('user.username_change.enabled', true);
+
+        try {
+            $client->loginUser($user);
+            $crawler = $client->request('GET', '/user/profile');
+
+            self::assertSelectorExists('input[name="username"]');
+
+            $client->submit($crawler->selectButton('Save profile')->form([
+                'username' => 'Renamed_Profile',
+                'display_name' => 'Renamed Profile',
+                'language' => 'default',
+            ]));
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-auth-notice', 'Profile saved.');
+
+            $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+            $entityManager->clear();
+            $renamedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+            self::assertInstanceOf(UserAccount::class, $renamedUser);
+            self::assertSame('Renamed_Profile', $renamedUser->username());
+        } finally {
+            $config->set('user.username_change.enabled', false);
+        }
+    }
+
+    public function testProfileUsernameChangeRejectsDuplicateUsername(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $user = $this->createUserWithLevel(1, 'duplicateprofile', 'profile-password');
+        $this->createUserWithLevel(1, 'takenprofile', 'profile-password');
+        $config->set('user.username_change.enabled', true);
+
+        try {
+            $client->loginUser($user);
+            $crawler = $client->request('GET', '/user/profile');
+            $client->submit($crawler->selectButton('Save profile')->form([
+                'username' => 'takenprofile',
+                'display_name' => 'Duplicate Profile',
+                'language' => 'default',
+            ]));
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-form-errors', 'This username is already used.');
+
+            $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+            $entityManager->clear();
+            $unchangedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+            self::assertInstanceOf(UserAccount::class, $unchangedUser);
+            self::assertSame('duplicateprofile', $unchangedUser->username());
+        } finally {
+            $config->set('user.username_change.enabled', false);
+        }
     }
 
     public function testPasswordRouteChangesPassword(): void

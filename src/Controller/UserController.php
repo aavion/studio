@@ -70,10 +70,28 @@ final class UserController extends AbstractController
 
         $success = false;
         $errors = [];
+        $usernameChangeEnabled = $this->userFlowConfig->usernameChangeEnabled();
 
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('user_profile', $this->stringField($request, '_csrf_token'))) {
                 $errors[] = 'ui.user.profile.errors.invalid_csrf';
+            }
+
+            if ([] === $errors) {
+                if ($usernameChangeEnabled) {
+                    $newUsername = $this->stringField($request, 'username');
+                    $existingUsernameUser = $this->userByUsername($newUsername);
+
+                    if ($existingUsernameUser instanceof UserAccount && $existingUsernameUser !== $user) {
+                        $errors[] = 'ui.user.profile.errors.username_in_use';
+                    } else {
+                        try {
+                            $user->changeUsername($newUsername);
+                        } catch (Throwable) {
+                            $errors[] = 'ui.user.profile.errors.username_invalid';
+                        }
+                    }
+                }
             }
 
             if ([] === $errors) {
@@ -92,6 +110,7 @@ final class UserController extends AbstractController
 
         return $this->render('@frontend/user/profile.html.twig', [
             'user_account' => $user,
+            'username_change_enabled' => $usernameChangeEnabled,
             'success' => $success,
             'errors' => $errors,
         ]);

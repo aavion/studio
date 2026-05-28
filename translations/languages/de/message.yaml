@@ -226,7 +226,7 @@ message:
       invalid: 'State-Marker-Key "%marker_key%" muss lowercase snake_case sein.'
   user:
     username:
-      invalid: 'Username "%username%" ist ungültig.'
+      invalid: 'Username "%username%" muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
     email:
       invalid: 'E-Mail-Adresse "%email%" ist ungültig.'
   account_token:

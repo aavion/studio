@@ -38,6 +38,7 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertSame([
             UserFlowConfig::REGISTRATION_MODE_KEY,
             'user.default_acl_group',
+            UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY,
             UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY,
             UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY,
             UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY,

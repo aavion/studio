@@ -108,6 +108,29 @@ final class CoreDatabaseModelTest extends TestCase
         self::assertSame(UserAccountStatus::Inactive, $user->status());
     }
 
+    public function testItEnforcesUsernamePolicy(): void
+    {
+        $user = new UserAccount(
+            '33333333-3333-3333-3333-333333333334',
+            'alpha_123',
+            'alpha@example.com',
+            'hash',
+        );
+
+        $user->changeUsername('Alpha-123');
+
+        self::assertSame('Alpha-123', $user->username());
+
+        foreach (['abcd', '1abcd', 'alpha.name', 'alpha name', 'alpha@name', str_repeat('a', 31)] as $username) {
+            try {
+                $user->changeUsername($username);
+                self::fail(sprintf('Username "%s" should have been rejected.', $username));
+            } catch (InvalidArgumentException $exception) {
+                self::assertStringContainsString(MessageKey::USERNAME_INVALID, $exception->getMessage());
+            }
+        }
+    }
+
     public function testItModelsReusableStateMarkers(): void
     {
         $markedAt = new DateTimeImmutable('2026-05-24 12:00:00');

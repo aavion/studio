@@ -14,6 +14,7 @@ final readonly class UserFlowConfig
     public const REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY = 'user.registration.admin_notification_email';
     public const SECURITY_NOTIFICATION_EMAIL_KEY = 'user.security_notification_email';
     public const ACCOUNT_LINK_TTL_HOURS_KEY = 'user.account_link_ttl_hours';
+    public const USERNAME_CHANGE_ENABLED_KEY = 'user.username_change.enabled';
     public const REGISTRATION_DISABLED = 'disabled';
     public const REGISTRATION_ADMIN_APPROVAL = 'admin_approval';
     public const REGISTRATION_AUTO_APPROVAL = 'auto_approval';
@@ -39,6 +40,11 @@ final readonly class UserFlowConfig
     public function registrationEnabled(): bool
     {
         return self::REGISTRATION_DISABLED !== $this->registrationMode();
+    }
+
+    public function usernameChangeEnabled(): bool
+    {
+        return true === $this->config->get(self::USERNAME_CHANGE_ENABLED_KEY, false);
     }
 
     public function registrationMode(): string

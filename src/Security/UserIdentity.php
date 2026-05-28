@@ -37,13 +37,13 @@ final readonly class UserIdentity
         );
     }
 
-    public static function deleted(?string $uid = null): self
+    public static function deleted(?string $uid = null, string $label = 'deleted user'): self
     {
         return new self(
             $uid,
-            'deleted user',
+            $label,
             null,
-            'deleted user',
+            $label,
             UserAccountStatus::Deleted,
             false,
         );

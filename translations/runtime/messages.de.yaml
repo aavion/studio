@@ -62,6 +62,8 @@ ui:
     empty_state:
         title: 'Nichts anzuzeigen'
     user:
+        identity:
+            deleted: 'Gelöschter Benutzer'
         navigation:
             account: Account
             admin: Admin
@@ -122,6 +124,8 @@ ui:
                     password: 'Das Passwort ist nicht korrekt.'
             errors:
                 invalid_csrf: 'Das Profilformular ist abgelaufen. Bitte versuche es erneut.'
+                username_invalid: 'Wähle einen Username, der mit einem Buchstaben beginnt und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthält.'
+                username_in_use: 'Dieser Username wird bereits verwendet.'
         password:
             title: 'Passwort ändern'
             placeholder: 'Aktualisiere das Passwort für deinen Account.'
@@ -754,6 +758,8 @@ admin:
                 label: Registrierungsmodus
             default_acl_group:
                 label: Standard-ACL-Gruppe
+            username_change_enabled:
+                label: 'Nutzer dürfen ihren Username ändern'
             account_link_ttl_hours:
                 label: Account-Link-Laufzeit
                 help: 'Gilt nur für neu erzeugte Einladungs- und Registrierungslinks. Bestehende Tokens behalten ihre gespeicherte Ablaufzeit.'
@@ -1057,7 +1063,7 @@ message:
             invalid: 'State-Marker-Key "%marker_key%" muss lowercase snake_case sein.'
     user:
         username:
-            invalid: 'Username "%username%" ist ungültig.'
+            invalid: 'Username "%username%" muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
         email:
             invalid: 'E-Mail-Adresse "%email%" ist ungültig.'
     account_token:

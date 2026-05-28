@@ -9,6 +9,7 @@ use App\Security\UserAccountStatus;
 use App\Security\UserIdentityResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class UserIdentityResolverTest extends KernelTestCase
 {
@@ -26,7 +27,7 @@ final class UserIdentityResolverTest extends KernelTestCase
         $entityManager->persist($user);
         $entityManager->flush();
 
-        $identity = new UserIdentityResolver($entityManager)->resolve($user->uid());
+        $identity = $this->resolver($entityManager)->resolve($user->uid());
 
         self::assertTrue($identity->exists());
         self::assertSame($user->uid(), $identity->uid());
@@ -40,14 +41,32 @@ final class UserIdentityResolverTest extends KernelTestCase
     {
         self::bootKernel();
 
-        $identity = new UserIdentityResolver(self::getContainer()->get(EntityManagerInterface::class))
-            ->resolve('67000000-0000-0000-0000-000000000999');
+        $identity = $this->resolver()->resolve('67000000-0000-0000-0000-000000000999');
 
         self::assertFalse($identity->exists());
         self::assertSame('67000000-0000-0000-0000-000000000999', $identity->uid());
-        self::assertSame('deleted user', $identity->username());
+        self::assertSame('Deleted user', $identity->username());
         self::assertNull($identity->email());
-        self::assertSame('deleted user', $identity->displayName());
+        self::assertSame('Deleted user', $identity->displayName());
         self::assertSame(UserAccountStatus::Deleted, $identity->status());
+    }
+
+    public function testItLocalizesDeletedIdentity(): void
+    {
+        self::bootKernel();
+
+        $identity = $this->resolver()->resolve('67000000-0000-0000-0000-000000000998', 'de');
+
+        self::assertFalse($identity->exists());
+        self::assertSame('Gelöschter Benutzer', $identity->username());
+        self::assertSame('Gelöschter Benutzer', $identity->displayName());
+    }
+
+    private function resolver(?EntityManagerInterface $entityManager = null): UserIdentityResolver
+    {
+        return new UserIdentityResolver(
+            $entityManager ?? self::getContainer()->get(EntityManagerInterface::class),
+            self::getContainer()->get(TranslatorInterface::class),
+        );
     }
 }

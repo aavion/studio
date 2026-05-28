@@ -545,6 +545,8 @@ admin:
         label: 'Registration mode'
       default_acl_group:
         label: 'Default ACL group'
+      username_change_enabled:
+        label: 'Users may change their username'
       account_link_ttl_hours:
         label: 'Account-link lifetime'
         help: 'Applies only to newly created invitation and registration links. Existing tokens keep their stored expiry time.'

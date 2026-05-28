@@ -19,6 +19,8 @@ ui:
   empty_state:
     title: 'Nichts anzuzeigen'
   user:
+    identity:
+      deleted: 'Gelöschter Benutzer'
     navigation:
       account: 'Account'
       admin: 'Admin'
@@ -79,6 +81,8 @@ ui:
           password: 'Das Passwort ist nicht korrekt.'
       errors:
         invalid_csrf: 'Das Profilformular ist abgelaufen. Bitte versuche es erneut.'
+        username_invalid: 'Wähle einen Username, der mit einem Buchstaben beginnt und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthält.'
+        username_in_use: 'Dieser Username wird bereits verwendet.'
     password:
       title: 'Passwort ändern'
       placeholder: 'Aktualisiere das Passwort für deinen Account.'
