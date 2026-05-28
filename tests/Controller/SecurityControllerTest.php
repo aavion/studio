@@ -203,7 +203,7 @@ final class SecurityControllerTest extends WebTestCase
 
     private function setRegistrationEnabled(bool $enabled): void
     {
-        self::getContainer()->get(Config::class)->set('user.registration.enabled', $enabled);
+        self::getContainer()->get(Config::class)->set('user.registration.mode', $enabled ? 'auto_approval' : 'disabled');
     }
 
     private function createUserWithLevel(

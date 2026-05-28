@@ -1,0 +1,52 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ user_account.username }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.users.title'|trans,
+        title: user_account.username,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.users.detail.title'|trans }}</h2>
+        <form method="post" class="studio-backend-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_' ~ user_account.uid) }}">
+            {% include '@backend/partials/forms/fields/select.html.twig' with {
+                id: 'user_status',
+                name: 'status',
+                label: 'admin.users.fields.status'|trans,
+                value: user_account.status.value,
+                options: {
+                    active: 'admin.users.status.active'|trans,
+                    inactive: 'admin.users.status.inactive'|trans,
+                    deleted: 'admin.users.status.deleted'|trans,
+                },
+                required: true,
+            } only %}
+            {% include '@backend/partials/forms/fields/checkbox-group.html.twig' with {
+                id: 'user_groups',
+                name: 'groups',
+                label: 'admin.users.fields.groups'|trans,
+                values: user_account.groups|map(group => group.identifier),
+                options: groups|reduce((carry, group) => carry|merge({(group.identifier): group.name.en|default(group.identifier)}), {}),
+            } only %}
+            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.actions.save'|trans} only %}
+        </form>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.users.password_reset.title'|trans }}</h2>
+        <p class="studio-muted">{{ 'admin.users.password_reset.text'|trans }}</p>
+        <form method="post" action="{{ path('backend_admin_user_password_reset', {uid: user_account.uid}) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_password_reset_' ~ user_account.uid) }}">
+            <button class="studio-button" type="submit">{{ 'admin.users.password_reset.submit'|trans }}</button>
+        </form>
+    </section>
+{% endblock %}

@@ -6,8 +6,11 @@
     <section class="studio-auth-panel">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             title: 'ui.user.profile.title'|trans,
-            subtitle: 'ui.user.profile.placeholder'|trans,
+            subtitle: 'ui.user.profile.subtitle'|trans,
         } only %}
+        {% if success|default(false) %}
+            <p class="studio-auth-notice">{{ 'ui.user.profile.success'|trans }}</p>
+        {% endif %}
         <dl class="studio-user-summary">
             <div>
                 <dt>{{ 'ui.user.profile.username'|trans }}</dt>
@@ -22,6 +25,25 @@
                 <dd>{{ user_account.maxAccessLevel }}</dd>
             </div>
         </dl>
+        <form method="post" class="studio-auth-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_profile') }}">
+            {% include '@frontend/partials/forms/fields/input.html.twig' with {
+                name: 'display_name',
+                label: 'ui.user.profile.display_name'|trans,
+                value: user_account.profile.display_name|default(''),
+            } only %}
+            {% include '@frontend/partials/forms/fields/select.html.twig' with {
+                name: 'language',
+                label: 'ui.user.profile.language'|trans,
+                value: user_account.settings.language|default('default'),
+                options: {
+                    default: 'ui.user.profile.language_default'|trans,
+                    en: 'English',
+                    de: 'Deutsch',
+                },
+            } only %}
+            {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.profile.submit'|trans} only %}
+        </form>
         {% include '@frontend/partials/actions/_button-group.html.twig' with {
             actions: [
                 {label: 'ui.user.password.title'|trans, href: path('user_password'), variant: 'secondary'},

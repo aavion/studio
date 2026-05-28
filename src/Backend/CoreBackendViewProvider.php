@@ -46,7 +46,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 BackendArea::Admin,
                 'users',
                 'admin.navigation.users',
-                '@backend/admin/section.html.twig',
+                '@backend/admin/users/index.html.twig',
                 40,
                 minimumAccessLevel: 8,
                 context: [
@@ -54,6 +54,16 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                     'foundation_title_key' => 'admin.users.foundation_title',
                     'foundation_text_key' => 'admin.users.foundation_text',
                 ],
+            ),
+            new BackendViewDefinition(
+                'backend-admin-user-groups',
+                BackendArea::Admin,
+                'users/groups',
+                'admin.navigation.user_groups',
+                '@backend/admin/users/groups.html.twig',
+                10,
+                parentUid: 'backend-admin-users',
+                minimumAccessLevel: 8,
             ),
             new BackendViewDefinition(
                 'backend-admin-scheduler',

@@ -14,6 +14,8 @@ ui:
   form:
     required: 'Erforderlich'
     submit: 'Absenden'
+    yes: 'Ja'
+    no: 'Nein'
   empty_state:
     title: 'Nichts anzuzeigen'
   user:
@@ -31,16 +33,40 @@ ui:
     register:
       title: 'Account erstellen'
       link: 'Account erstellen'
-      placeholder: 'Registrierung wird verfügbar, sobald Nutzer-Flows aktiviert sind.'
+      subtitle: 'Gib deine E-Mail-Adresse ein. Der Account-Setup-Link wird über den konfigurierten Account-Link-Kanal zugestellt.'
+      email: 'E-Mail'
+      submit: 'Account anfragen'
+      success: 'Dein Account-Setup-Link wurde erstellt.'
+      success_approval: 'Deine Registrierungsanfrage wartet auf administrative Freigabe.'
+      errors:
+        invalid_csrf: 'Das Registrierungsformular ist abgelaufen. Bitte versuche es erneut.'
+        email: 'Gib eine gültige E-Mail-Adresse ein.'
     password_reset:
       title: 'Passwort zurücksetzen'
-      placeholder: 'Passwort-Reset wird verfügbar, sobald Mail-Flows aktiviert sind.'
+      subtitle: 'Gib deine E-Mail-Adresse ein. Falls ein Account existiert, wird ein Reset-Link zugestellt.'
+      email: 'E-Mail'
+      submit: 'Reset-Link anfragen'
+      success: 'Falls für diese E-Mail-Adresse ein Account existiert, wurde ein Reset-Link erstellt.'
+      complete_title: 'Neues Passwort wählen'
+      complete_subtitle: 'Setze ein neues Passwort für deinen Account.'
+      complete_submit: 'Passwort aktualisieren'
+      complete_success: 'Dein Passwort wurde aktualisiert.'
+      errors:
+        invalid_csrf: 'Das Passwort-Reset-Formular ist abgelaufen. Bitte versuche es erneut.'
     profile:
       title: 'Profil'
       placeholder: 'Profileinstellungen werden verfügbar, sobald Account-Flows aktiviert sind.'
+      subtitle: 'Prüfe und aktualisiere deine Account-Einstellungen.'
       username: 'Username'
       email: 'E-Mail'
       access_level: 'Access-Level'
+      display_name: 'Anzeigename'
+      language: 'Sprache'
+      language_default: 'Standard'
+      submit: 'Profil speichern'
+      success: 'Profil gespeichert.'
+      errors:
+        invalid_csrf: 'Das Profilformular ist abgelaufen. Bitte versuche es erneut.'
     password:
       title: 'Passwort ändern'
       placeholder: 'Aktualisiere das Passwort für deinen Account.'
@@ -65,9 +91,35 @@ ui:
       status: 'Status'
       created_at: 'Erstellt'
       revoked_at: 'Widerrufen'
+      actions: 'Aktionen'
+      generated_title: 'Generierter API-Key'
+      generated_message: 'Bewahre diesen Key sicher auf. Du kannst ihn später nach Passwortbestätigung erneut anzeigen.'
+      revoke: 'Widerrufen'
+      create:
+        prefix: 'Prefix'
+        prefix_help: 'Nutze 4 bis 16 Buchstaben, Zahlen, Unterstriche oder Bindestriche.'
+        read_only: 'Read-only-Key'
+        submit: 'Key generieren'
+      reveal:
+        title: 'API-Key anzeigen'
+        subtitle: 'Bestätige dein Account-Passwort, bevor der Key angezeigt wird.'
+        link: 'Anzeigen'
+        password: 'Passwort'
+        submit: 'Key anzeigen'
+      errors:
+        invalid_csrf: 'Das API-Key-Formular ist abgelaufen. Bitte versuche es erneut.'
+        create_failed: 'Der API-Key konnte nicht erstellt werden.'
+        password: 'Das Passwort ist nicht korrekt.'
+        decrypt_failed: 'Der gespeicherte API-Key konnte nicht entschlüsselt werden.'
     invitation:
       title: 'Einladung annehmen'
-      placeholder: 'Der Einladungs-Flow lässt eingeladene Nutzer später über ihren E-Mail-Link Username und Passwort wählen.'
+      subtitle: 'Vervollständige den Account für %email%, indem du Username und Passwort wählst.'
+      username: 'Username'
+      submit: 'Account erstellen'
+      success: 'Dein Account ist bereit. Du kannst dich jetzt anmelden.'
+      errors:
+        invalid_csrf: 'Das Einladungsformular ist abgelaufen. Bitte versuche es erneut.'
+        create_failed: 'Der Account konnte nicht erstellt werden. Username oder E-Mail werden möglicherweise bereits verwendet.'
     logout:
       title: 'Abmelden'
       placeholder: 'Bestätige, dass du deine Sitzung beenden möchtest.'

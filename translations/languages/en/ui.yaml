@@ -14,6 +14,8 @@ ui:
   form:
     required: 'Required'
     submit: 'Submit'
+    yes: 'Yes'
+    no: 'No'
   empty_state:
     title: 'Nothing to show'
   user:
@@ -31,16 +33,40 @@ ui:
     register:
       title: 'Create account'
       link: 'Create an account'
-      placeholder: 'Registration will be available once user flows are enabled.'
+      subtitle: 'Enter your email address. The account setup link is delivered through the configured account-link channel.'
+      email: 'Email'
+      submit: 'Request account'
+      success: 'Your account setup link was created.'
+      success_approval: 'Your registration request is waiting for administrator approval.'
+      errors:
+        invalid_csrf: 'The registration form expired. Please try again.'
+        email: 'Enter a valid email address.'
     password_reset:
       title: 'Reset password'
-      placeholder: 'Password reset will be available once mail flows are enabled.'
+      subtitle: 'Enter your email address. If an account exists, a reset link is delivered.'
+      email: 'Email'
+      submit: 'Request reset link'
+      success: 'If an account exists for this email address, a reset link was created.'
+      complete_title: 'Choose new password'
+      complete_subtitle: 'Set a new password for your account.'
+      complete_submit: 'Update password'
+      complete_success: 'Your password was updated.'
+      errors:
+        invalid_csrf: 'The password-reset form expired. Please try again.'
     profile:
       title: 'Profile'
       placeholder: 'Profile settings will be available once account flows are enabled.'
+      subtitle: 'Review and update your account preferences.'
       username: 'Username'
       email: 'Email'
       access_level: 'Access level'
+      display_name: 'Display name'
+      language: 'Language'
+      language_default: 'Default'
+      submit: 'Save profile'
+      success: 'Profile saved.'
+      errors:
+        invalid_csrf: 'The profile form expired. Please try again.'
     password:
       title: 'Change password'
       placeholder: 'Update the password for your account.'
@@ -65,9 +91,35 @@ ui:
       status: 'Status'
       created_at: 'Created'
       revoked_at: 'Revoked'
+      actions: 'Actions'
+      generated_title: 'Generated API key'
+      generated_message: 'Store this key securely. You can reveal it again later after password confirmation.'
+      revoke: 'Revoke'
+      create:
+        prefix: 'Prefix'
+        prefix_help: 'Use 4 to 16 letters, numbers, underscores, or hyphens.'
+        read_only: 'Read-only key'
+        submit: 'Generate key'
+      reveal:
+        title: 'Reveal API key'
+        subtitle: 'Confirm your account password before the key is shown.'
+        link: 'Reveal'
+        password: 'Password'
+        submit: 'Reveal key'
+      errors:
+        invalid_csrf: 'The API-key form expired. Please try again.'
+        create_failed: 'The API key could not be created.'
+        password: 'The password is not correct.'
+        decrypt_failed: 'The stored API key could not be decrypted.'
     invitation:
       title: 'Accept invitation'
-      placeholder: 'Invitation acceptance will let invited users choose a username and password from their email link.'
+      subtitle: 'Complete the account for %email% by choosing a username and password.'
+      username: 'Username'
+      submit: 'Create account'
+      success: 'Your account is ready. You can sign in now.'
+      errors:
+        invalid_csrf: 'The invitation form expired. Please try again.'
+        create_failed: 'The account could not be created. The username or email may already be used.'
     logout:
       title: 'Sign out'
       placeholder: 'Confirm that you want to end your session.'

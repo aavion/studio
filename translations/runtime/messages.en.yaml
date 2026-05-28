@@ -57,6 +57,8 @@ ui:
     form:
         required: Required
         submit: Submit
+        'yes': 'Yes'
+        'no': 'No'
     empty_state:
         title: 'Nothing to show'
     user:
@@ -74,16 +76,40 @@ ui:
         register:
             title: 'Create account'
             link: 'Create an account'
-            placeholder: 'Registration will be available once user flows are enabled.'
+            subtitle: 'Enter your email address. The account setup link is delivered through the configured account-link channel.'
+            email: Email
+            submit: 'Request account'
+            success: 'Your account setup link was created.'
+            success_approval: 'Your registration request is waiting for administrator approval.'
+            errors:
+                invalid_csrf: 'The registration form expired. Please try again.'
+                email: 'Enter a valid email address.'
         password_reset:
             title: 'Reset password'
-            placeholder: 'Password reset will be available once mail flows are enabled.'
+            subtitle: 'Enter your email address. If an account exists, a reset link is delivered.'
+            email: Email
+            submit: 'Request reset link'
+            success: 'If an account exists for this email address, a reset link was created.'
+            complete_title: 'Choose new password'
+            complete_subtitle: 'Set a new password for your account.'
+            complete_submit: 'Update password'
+            complete_success: 'Your password was updated.'
+            errors:
+                invalid_csrf: 'The password-reset form expired. Please try again.'
         profile:
             title: Profile
             placeholder: 'Profile settings will be available once account flows are enabled.'
+            subtitle: 'Review and update your account preferences.'
             username: Username
             email: Email
             access_level: 'Access level'
+            display_name: 'Display name'
+            language: Language
+            language_default: Default
+            submit: 'Save profile'
+            success: 'Profile saved.'
+            errors:
+                invalid_csrf: 'The profile form expired. Please try again.'
         password:
             title: 'Change password'
             placeholder: 'Update the password for your account.'
@@ -108,9 +134,35 @@ ui:
             status: Status
             created_at: Created
             revoked_at: Revoked
+            actions: Actions
+            generated_title: 'Generated API key'
+            generated_message: 'Store this key securely. You can reveal it again later after password confirmation.'
+            revoke: Revoke
+            create:
+                prefix: Prefix
+                prefix_help: 'Use 4 to 16 letters, numbers, underscores, or hyphens.'
+                read_only: 'Read-only key'
+                submit: 'Generate key'
+            reveal:
+                title: 'Reveal API key'
+                subtitle: 'Confirm your account password before the key is shown.'
+                link: Reveal
+                password: Password
+                submit: 'Reveal key'
+            errors:
+                invalid_csrf: 'The API-key form expired. Please try again.'
+                create_failed: 'The API key could not be created.'
+                password: 'The password is not correct.'
+                decrypt_failed: 'The stored API key could not be decrypted.'
         invitation:
             title: 'Accept invitation'
-            placeholder: 'Invitation acceptance will let invited users choose a username and password from their email link.'
+            subtitle: 'Complete the account for %email% by choosing a username and password.'
+            username: Username
+            submit: 'Create account'
+            success: 'Your account is ready. You can sign in now.'
+            errors:
+                invalid_csrf: 'The invitation form expired. Please try again.'
+                create_failed: 'The account could not be created. The username or email may already be used.'
         logout:
             title: 'Sign out'
             placeholder: 'Confirm that you want to end your session.'
@@ -147,6 +199,7 @@ admin:
     navigation:
         dashboard: Dashboard
         users: Users
+        user_groups: 'ACL groups'
         packages: Packages
         themes: Themes
         scheduler: Scheduler
@@ -289,6 +342,89 @@ admin:
         title: 'User management'
         foundation_title: 'User and ACL foundation'
         foundation_text: 'User accounts, ACL groups, invitations, and administrative access recovery will attach here.'
+        invitation:
+            title: 'Invite user'
+            submit: 'Create invitation'
+            created: 'Invitation created. The account link was written to the message log.'
+            approved: 'Registration approved. The account link was written to the message log.'
+            revoked: 'Account token revoked.'
+            unavailable: 'The invitation is no longer available.'
+        accounts:
+            title: Accounts
+            empty_title: 'No users'
+            empty_message: 'No user accounts exist yet.'
+        pending:
+            title: 'Pending account links'
+            empty: 'No invitation, registration, or password reset link is pending.'
+        detail:
+            title: 'Account settings'
+        password_reset:
+            title: 'Password reset'
+            text: 'Create a password-reset link for this user. Until mail delivery exists, the link is written to the message log.'
+            submit: 'Create reset link'
+            created: 'Password-reset link created.'
+        fields:
+            username: Username
+            email: Email
+            status: Status
+            access_level: 'Access level'
+            groups: Groups
+            actions: Actions
+            type: Type
+            expires_at: Expires
+        actions:
+            approve: Approve
+            revoke: Revoke
+            details: Details
+            save: Save
+        status:
+            active: Active
+            inactive: Inactive
+            deleted: Deleted
+        token_type:
+            invitation: Invitation
+            registration: Registration
+            password_reset: 'Password reset'
+        token_status:
+            pending: Pending
+            pending_approval: 'Waiting for approval'
+            used: Used
+            revoked: Revoked
+        form:
+            errors:
+                invalid_csrf: 'The form expired. Please try again.'
+                invalid_invitation: 'The invitation could not be created.'
+                invalid_status: 'Choose a valid account status.'
+        saved: 'User saved.'
+    groups:
+        title: 'ACL groups'
+        create:
+            title: 'Create ACL group'
+        list:
+            title: Groups
+        detail:
+            title: 'Group settings'
+        delete:
+            title: 'Delete group'
+        fields:
+            identifier: Identifier
+            name: Name
+            name_en: 'English name'
+            name_de: 'German name'
+            access_level: 'Access level'
+            locked: Locked
+            allow_empty: 'Allow empty membership'
+        actions:
+            create: 'Create group'
+            delete: 'Delete group'
+        member_count: '%count% member(s)'
+        created: 'Group created.'
+        saved: 'Group saved.'
+        deleted: 'Group deleted.'
+        locked: 'Locked preset groups cannot be edited.'
+        delete_blocked: 'This group cannot be deleted.'
+        form:
+            invalid: 'The group could not be saved.'
     scheduler:
         title: Scheduler
         foundation_title: 'Scheduler operations foundation'
@@ -503,8 +639,8 @@ admin:
                 label: 'Home path'
             dashboard_widgets:
                 label: 'Dashboard widgets'
-            registration_enabled:
-                label: 'Allow registration'
+            registration_mode:
+                label: 'Registration mode'
             default_acl_group:
                 label: 'Default ACL group'
             user_menu_enabled:
@@ -554,6 +690,10 @@ admin:
                 packages: 'Package lifecycle actions'
                 settings: 'Settings changes'
                 other: 'Other future audit events'
+            registration:
+                disabled: Disabled
+                admin_approval: 'Admin approval'
+                auto_approval: 'Auto approval'
             interval:
                 manual: Manual
                 hourly: Hourly
@@ -796,6 +936,11 @@ message:
             invalid: 'Username "%username%" is invalid.'
         email:
             invalid: 'Email address "%email%" is invalid.'
+    account_token:
+        hash:
+            invalid: 'Account token hash must be a lowercase SHA-256 hex digest.'
+    account_link:
+        delivered: 'Account link for %email% (%type%) was delivered through the message log.'
     api_key:
         prefix:
             invalid: 'API key prefix "%prefix%" is invalid.'

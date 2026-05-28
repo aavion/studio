@@ -223,6 +223,11 @@ message:
       invalid: 'Username "%username%" ist ungültig.'
     email:
       invalid: 'E-Mail-Adresse "%email%" ist ungültig.'
+  account_token:
+    hash:
+      invalid: 'Der Account-Token-Hash muss ein kleingeschriebener SHA-256-Hex-Digest sein.'
+  account_link:
+    delivered: 'Account-Link für %email% (%type%) wurde über das Message-Log zugestellt.'
   api_key:
     prefix:
       invalid: 'API-Key-Präfix "%prefix%" ist ungültig.'

@@ -9,6 +9,7 @@ admin:
   navigation:
     dashboard: 'Dashboard'
     users: 'Users'
+    user_groups: 'ACL groups'
     packages: 'Packages'
     themes: 'Themes'
     scheduler: 'Scheduler'
@@ -151,6 +152,89 @@ admin:
     title: 'User management'
     foundation_title: 'User and ACL foundation'
     foundation_text: 'User accounts, ACL groups, invitations, and administrative access recovery will attach here.'
+    invitation:
+      title: 'Invite user'
+      submit: 'Create invitation'
+      created: 'Invitation created. The account link was written to the message log.'
+      approved: 'Registration approved. The account link was written to the message log.'
+      revoked: 'Account token revoked.'
+      unavailable: 'The invitation is no longer available.'
+    accounts:
+      title: 'Accounts'
+      empty_title: 'No users'
+      empty_message: 'No user accounts exist yet.'
+    pending:
+      title: 'Pending account links'
+      empty: 'No invitation, registration, or password reset link is pending.'
+    detail:
+      title: 'Account settings'
+    password_reset:
+      title: 'Password reset'
+      text: 'Create a password-reset link for this user. Until mail delivery exists, the link is written to the message log.'
+      submit: 'Create reset link'
+      created: 'Password-reset link created.'
+    fields:
+      username: 'Username'
+      email: 'Email'
+      status: 'Status'
+      access_level: 'Access level'
+      groups: 'Groups'
+      actions: 'Actions'
+      type: 'Type'
+      expires_at: 'Expires'
+    actions:
+      approve: 'Approve'
+      revoke: 'Revoke'
+      details: 'Details'
+      save: 'Save'
+    status:
+      active: 'Active'
+      inactive: 'Inactive'
+      deleted: 'Deleted'
+    token_type:
+      invitation: 'Invitation'
+      registration: 'Registration'
+      password_reset: 'Password reset'
+    token_status:
+      pending: 'Pending'
+      pending_approval: 'Waiting for approval'
+      used: 'Used'
+      revoked: 'Revoked'
+    form:
+      errors:
+        invalid_csrf: 'The form expired. Please try again.'
+        invalid_invitation: 'The invitation could not be created.'
+        invalid_status: 'Choose a valid account status.'
+    saved: 'User saved.'
+  groups:
+    title: 'ACL groups'
+    create:
+      title: 'Create ACL group'
+    list:
+      title: 'Groups'
+    detail:
+      title: 'Group settings'
+    delete:
+      title: 'Delete group'
+    fields:
+      identifier: 'Identifier'
+      name: 'Name'
+      name_en: 'English name'
+      name_de: 'German name'
+      access_level: 'Access level'
+      locked: 'Locked'
+      allow_empty: 'Allow empty membership'
+    actions:
+      create: 'Create group'
+      delete: 'Delete group'
+    member_count: '%count% member(s)'
+    created: 'Group created.'
+    saved: 'Group saved.'
+    deleted: 'Group deleted.'
+    locked: 'Locked preset groups cannot be edited.'
+    delete_blocked: 'This group cannot be deleted.'
+    form:
+      invalid: 'The group could not be saved.'
   scheduler:
     title: 'Scheduler'
     foundation_title: 'Scheduler operations foundation'
@@ -365,8 +449,8 @@ admin:
         label: 'Home path'
       dashboard_widgets:
         label: 'Dashboard widgets'
-      registration_enabled:
-        label: 'Allow registration'
+      registration_mode:
+        label: 'Registration mode'
       default_acl_group:
         label: 'Default ACL group'
       user_menu_enabled:
@@ -416,6 +500,10 @@ admin:
         packages: 'Package lifecycle actions'
         settings: 'Settings changes'
         other: 'Other future audit events'
+      registration:
+        disabled: 'Disabled'
+        admin_approval: 'Admin approval'
+        auto_approval: 'Auto approval'
       interval:
         manual: 'Manual'
         hourly: 'Hourly'

@@ -1,0 +1,120 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.users.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'ui.admin.area'|trans,
+        title: 'admin.users.title'|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.users.invitation.title'|trans }}</h2>
+        <form method="post" action="{{ path('backend_admin_user_invite') }}" class="studio-backend-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_invite') }}">
+            {% include '@backend/partials/forms/fields/input.html.twig' with {
+                id: 'invite_email',
+                name: 'email',
+                label: 'admin.users.fields.email'|trans,
+                type: 'email',
+                required: true,
+            } only %}
+            {% include '@backend/partials/forms/fields/checkbox-group.html.twig' with {
+                id: 'invite_groups',
+                name: 'groups',
+                label: 'admin.users.fields.groups'|trans,
+                values: [],
+                options: groups|reduce((carry, group) => carry|merge({(group.identifier): group.name.en|default(group.identifier)}), {}),
+            } only %}
+            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.invitation.submit'|trans} only %}
+        </form>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.users.accounts.title'|trans }}</h2>
+        {% if users is empty %}
+            {% include '@backend/partials/feedback/_empty-state.html.twig' with {
+                title: 'admin.users.accounts.empty_title'|trans,
+                message: 'admin.users.accounts.empty_message'|trans,
+            } only %}
+        {% else %}
+            <table class="studio-field-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.users.fields.username'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.email'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.status'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.access_level'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.groups'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.actions'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ ('admin.users.status.' ~ user.status.value)|trans }}</td>
+                            <td>{{ user.maxAccessLevel }}</td>
+                            <td>
+                                {% for group in user.groups %}
+                                    {{ group.identifier }}{% if not loop.last %}, {% endif %}
+                                {% else %}
+                                    {{ 'ui.content.empty_value'|trans }}
+                                {% endfor %}
+                            </td>
+                            <td><a href="{{ path('backend_admin_user_detail', {uid: user.uid}) }}">{{ 'admin.users.actions.details'|trans }}</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.users.pending.title'|trans }}</h2>
+        {% if pending_tokens is empty %}
+            <p class="studio-muted">{{ 'admin.users.pending.empty'|trans }}</p>
+        {% else %}
+            <table class="studio-field-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.users.fields.email'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.type'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.status'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.expires_at'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.actions'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for token in pending_tokens %}
+                        <tr>
+                            <td>{{ token.email }}</td>
+                            <td>{{ ('admin.users.token_type.' ~ token.type.value)|trans }}</td>
+                            <td>{{ ('admin.users.token_status.' ~ token.status.value)|trans }}</td>
+                            <td>{{ token.expiresAt|date('Y-m-d H:i') }}</td>
+                            <td>
+                                {% if token.status.value == 'pending_approval' %}
+                                    <form method="post" action="{{ path('backend_admin_user_invitation_approve', {uid: token.uid}) }}" class="studio-inline-form">
+                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
+                                        <button class="studio-button" type="submit">{{ 'admin.users.actions.approve'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                                <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="studio-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
+                                    <button class="studio-button studio-button-secondary" type="submit">{{ 'admin.users.actions.revoke'|trans }}</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
+{% endblock %}

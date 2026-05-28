@@ -9,6 +9,7 @@ admin:
   navigation:
     dashboard: 'Dashboard'
     users: 'Benutzer'
+    user_groups: 'ACL-Gruppen'
     packages: 'Packages'
     themes: 'Themes'
     scheduler: 'Scheduler'
@@ -151,6 +152,89 @@ admin:
     title: 'Benutzerverwaltung'
     foundation_title: 'Benutzer- und ACL-Fundament'
     foundation_text: 'Benutzerkonten, ACL-Gruppen, Einladungen und administrative Zugriffswiederherstellung docken hier an.'
+    invitation:
+      title: 'Benutzer einladen'
+      submit: 'Einladung erstellen'
+      created: 'Einladung erstellt. Der Account-Link wurde ins Message-Log geschrieben.'
+      approved: 'Registrierung freigegeben. Der Account-Link wurde ins Message-Log geschrieben.'
+      revoked: 'Account-Token widerrufen.'
+      unavailable: 'Die Einladung ist nicht mehr verfügbar.'
+    accounts:
+      title: 'Accounts'
+      empty_title: 'Keine Benutzer'
+      empty_message: 'Es existieren noch keine Benutzerkonten.'
+    pending:
+      title: 'Ausstehende Account-Links'
+      empty: 'Es steht kein Einladungs-, Registrierungs- oder Passwort-Reset-Link aus.'
+    detail:
+      title: 'Account-Einstellungen'
+    password_reset:
+      title: 'Passwort-Reset'
+      text: 'Erstelle einen Passwort-Reset-Link für diesen Benutzer. Bis Mailversand existiert, wird der Link ins Message-Log geschrieben.'
+      submit: 'Reset-Link erstellen'
+      created: 'Passwort-Reset-Link erstellt.'
+    fields:
+      username: 'Username'
+      email: 'E-Mail'
+      status: 'Status'
+      access_level: 'Access-Level'
+      groups: 'Gruppen'
+      actions: 'Aktionen'
+      type: 'Typ'
+      expires_at: 'Läuft ab'
+    actions:
+      approve: 'Freigeben'
+      revoke: 'Widerrufen'
+      details: 'Details'
+      save: 'Speichern'
+    status:
+      active: 'Aktiv'
+      inactive: 'Inaktiv'
+      deleted: 'Gelöscht'
+    token_type:
+      invitation: 'Einladung'
+      registration: 'Registrierung'
+      password_reset: 'Passwort-Reset'
+    token_status:
+      pending: 'Ausstehend'
+      pending_approval: 'Wartet auf Freigabe'
+      used: 'Verwendet'
+      revoked: 'Widerrufen'
+    form:
+      errors:
+        invalid_csrf: 'Das Formular ist abgelaufen. Bitte versuche es erneut.'
+        invalid_invitation: 'Die Einladung konnte nicht erstellt werden.'
+        invalid_status: 'Wähle einen gültigen Account-Status.'
+    saved: 'Benutzer gespeichert.'
+  groups:
+    title: 'ACL-Gruppen'
+    create:
+      title: 'ACL-Gruppe erstellen'
+    list:
+      title: 'Gruppen'
+    detail:
+      title: 'Gruppen-Einstellungen'
+    delete:
+      title: 'Gruppe löschen'
+    fields:
+      identifier: 'Identifier'
+      name: 'Name'
+      name_en: 'Englischer Name'
+      name_de: 'Deutscher Name'
+      access_level: 'Access-Level'
+      locked: 'Gesperrt'
+      allow_empty: 'Leere Mitgliedschaft erlauben'
+    actions:
+      create: 'Gruppe erstellen'
+      delete: 'Gruppe löschen'
+    member_count: '%count% Mitglied(er)'
+    created: 'Gruppe erstellt.'
+    saved: 'Gruppe gespeichert.'
+    deleted: 'Gruppe gelöscht.'
+    locked: 'Gesperrte Preset-Gruppen können nicht bearbeitet werden.'
+    delete_blocked: 'Diese Gruppe kann nicht gelöscht werden.'
+    form:
+      invalid: 'Die Gruppe konnte nicht gespeichert werden.'
   scheduler:
     title: 'Scheduler'
     foundation_title: 'Scheduler-Operations-Fundament'
@@ -365,8 +449,8 @@ admin:
         label: 'Startseiten-Pfad'
       dashboard_widgets:
         label: 'Dashboard-Widgets'
-      registration_enabled:
-        label: 'Registrierung erlauben'
+      registration_mode:
+        label: 'Registrierungsmodus'
       default_acl_group:
         label: 'Standard-ACL-Gruppe'
       user_menu_enabled:
@@ -416,6 +500,10 @@ admin:
         packages: 'Paket-Lifecycle-Aktionen'
         settings: 'Einstellungsänderungen'
         other: 'Weitere zukünftige Audit-Ereignisse'
+      registration:
+        disabled: 'Deaktiviert'
+        admin_approval: 'Admin-Freigabe'
+        auto_approval: 'Automatische Freigabe'
       interval:
         manual: 'Manuell'
         hourly: 'Stündlich'

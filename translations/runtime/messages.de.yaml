@@ -57,6 +57,8 @@ ui:
     form:
         required: Erforderlich
         submit: Absenden
+        'yes': Ja
+        'no': Nein
     empty_state:
         title: 'Nichts anzuzeigen'
     user:
@@ -74,16 +76,40 @@ ui:
         register:
             title: 'Account erstellen'
             link: 'Account erstellen'
-            placeholder: 'Registrierung wird verfügbar, sobald Nutzer-Flows aktiviert sind.'
+            subtitle: 'Gib deine E-Mail-Adresse ein. Der Account-Setup-Link wird über den konfigurierten Account-Link-Kanal zugestellt.'
+            email: E-Mail
+            submit: 'Account anfragen'
+            success: 'Dein Account-Setup-Link wurde erstellt.'
+            success_approval: 'Deine Registrierungsanfrage wartet auf administrative Freigabe.'
+            errors:
+                invalid_csrf: 'Das Registrierungsformular ist abgelaufen. Bitte versuche es erneut.'
+                email: 'Gib eine gültige E-Mail-Adresse ein.'
         password_reset:
             title: 'Passwort zurücksetzen'
-            placeholder: 'Passwort-Reset wird verfügbar, sobald Mail-Flows aktiviert sind.'
+            subtitle: 'Gib deine E-Mail-Adresse ein. Falls ein Account existiert, wird ein Reset-Link zugestellt.'
+            email: E-Mail
+            submit: 'Reset-Link anfragen'
+            success: 'Falls für diese E-Mail-Adresse ein Account existiert, wurde ein Reset-Link erstellt.'
+            complete_title: 'Neues Passwort wählen'
+            complete_subtitle: 'Setze ein neues Passwort für deinen Account.'
+            complete_submit: 'Passwort aktualisieren'
+            complete_success: 'Dein Passwort wurde aktualisiert.'
+            errors:
+                invalid_csrf: 'Das Passwort-Reset-Formular ist abgelaufen. Bitte versuche es erneut.'
         profile:
             title: Profil
             placeholder: 'Profileinstellungen werden verfügbar, sobald Account-Flows aktiviert sind.'
+            subtitle: 'Prüfe und aktualisiere deine Account-Einstellungen.'
             username: Username
             email: E-Mail
             access_level: Access-Level
+            display_name: Anzeigename
+            language: Sprache
+            language_default: Standard
+            submit: 'Profil speichern'
+            success: 'Profil gespeichert.'
+            errors:
+                invalid_csrf: 'Das Profilformular ist abgelaufen. Bitte versuche es erneut.'
         password:
             title: 'Passwort ändern'
             placeholder: 'Aktualisiere das Passwort für deinen Account.'
@@ -108,9 +134,35 @@ ui:
             status: Status
             created_at: Erstellt
             revoked_at: Widerrufen
+            actions: Aktionen
+            generated_title: 'Generierter API-Key'
+            generated_message: 'Bewahre diesen Key sicher auf. Du kannst ihn später nach Passwortbestätigung erneut anzeigen.'
+            revoke: Widerrufen
+            create:
+                prefix: Prefix
+                prefix_help: 'Nutze 4 bis 16 Buchstaben, Zahlen, Unterstriche oder Bindestriche.'
+                read_only: Read-only-Key
+                submit: 'Key generieren'
+            reveal:
+                title: 'API-Key anzeigen'
+                subtitle: 'Bestätige dein Account-Passwort, bevor der Key angezeigt wird.'
+                link: Anzeigen
+                password: Passwort
+                submit: 'Key anzeigen'
+            errors:
+                invalid_csrf: 'Das API-Key-Formular ist abgelaufen. Bitte versuche es erneut.'
+                create_failed: 'Der API-Key konnte nicht erstellt werden.'
+                password: 'Das Passwort ist nicht korrekt.'
+                decrypt_failed: 'Der gespeicherte API-Key konnte nicht entschlüsselt werden.'
         invitation:
             title: 'Einladung annehmen'
-            placeholder: 'Der Einladungs-Flow lässt eingeladene Nutzer später über ihren E-Mail-Link Username und Passwort wählen.'
+            subtitle: 'Vervollständige den Account für %email%, indem du Username und Passwort wählst.'
+            username: Username
+            submit: 'Account erstellen'
+            success: 'Dein Account ist bereit. Du kannst dich jetzt anmelden.'
+            errors:
+                invalid_csrf: 'Das Einladungsformular ist abgelaufen. Bitte versuche es erneut.'
+                create_failed: 'Der Account konnte nicht erstellt werden. Username oder E-Mail werden möglicherweise bereits verwendet.'
         logout:
             title: Abmelden
             placeholder: 'Bestätige, dass du deine Sitzung beenden möchtest.'
@@ -147,6 +199,7 @@ admin:
     navigation:
         dashboard: Dashboard
         users: Benutzer
+        user_groups: ACL-Gruppen
         packages: Packages
         themes: Themes
         scheduler: Scheduler
@@ -289,6 +342,89 @@ admin:
         title: Benutzerverwaltung
         foundation_title: 'Benutzer- und ACL-Fundament'
         foundation_text: 'Benutzerkonten, ACL-Gruppen, Einladungen und administrative Zugriffswiederherstellung docken hier an.'
+        invitation:
+            title: 'Benutzer einladen'
+            submit: 'Einladung erstellen'
+            created: 'Einladung erstellt. Der Account-Link wurde ins Message-Log geschrieben.'
+            approved: 'Registrierung freigegeben. Der Account-Link wurde ins Message-Log geschrieben.'
+            revoked: 'Account-Token widerrufen.'
+            unavailable: 'Die Einladung ist nicht mehr verfügbar.'
+        accounts:
+            title: Accounts
+            empty_title: 'Keine Benutzer'
+            empty_message: 'Es existieren noch keine Benutzerkonten.'
+        pending:
+            title: 'Ausstehende Account-Links'
+            empty: 'Es steht kein Einladungs-, Registrierungs- oder Passwort-Reset-Link aus.'
+        detail:
+            title: Account-Einstellungen
+        password_reset:
+            title: Passwort-Reset
+            text: 'Erstelle einen Passwort-Reset-Link für diesen Benutzer. Bis Mailversand existiert, wird der Link ins Message-Log geschrieben.'
+            submit: 'Reset-Link erstellen'
+            created: 'Passwort-Reset-Link erstellt.'
+        fields:
+            username: Username
+            email: E-Mail
+            status: Status
+            access_level: Access-Level
+            groups: Gruppen
+            actions: Aktionen
+            type: Typ
+            expires_at: 'Läuft ab'
+        actions:
+            approve: Freigeben
+            revoke: Widerrufen
+            details: Details
+            save: Speichern
+        status:
+            active: Aktiv
+            inactive: Inaktiv
+            deleted: Gelöscht
+        token_type:
+            invitation: Einladung
+            registration: Registrierung
+            password_reset: Passwort-Reset
+        token_status:
+            pending: Ausstehend
+            pending_approval: 'Wartet auf Freigabe'
+            used: Verwendet
+            revoked: Widerrufen
+        form:
+            errors:
+                invalid_csrf: 'Das Formular ist abgelaufen. Bitte versuche es erneut.'
+                invalid_invitation: 'Die Einladung konnte nicht erstellt werden.'
+                invalid_status: 'Wähle einen gültigen Account-Status.'
+        saved: 'Benutzer gespeichert.'
+    groups:
+        title: ACL-Gruppen
+        create:
+            title: 'ACL-Gruppe erstellen'
+        list:
+            title: Gruppen
+        detail:
+            title: Gruppen-Einstellungen
+        delete:
+            title: 'Gruppe löschen'
+        fields:
+            identifier: Identifier
+            name: Name
+            name_en: 'Englischer Name'
+            name_de: 'Deutscher Name'
+            access_level: Access-Level
+            locked: Gesperrt
+            allow_empty: 'Leere Mitgliedschaft erlauben'
+        actions:
+            create: 'Gruppe erstellen'
+            delete: 'Gruppe löschen'
+        member_count: '%count% Mitglied(er)'
+        created: 'Gruppe erstellt.'
+        saved: 'Gruppe gespeichert.'
+        deleted: 'Gruppe gelöscht.'
+        locked: 'Gesperrte Preset-Gruppen können nicht bearbeitet werden.'
+        delete_blocked: 'Diese Gruppe kann nicht gelöscht werden.'
+        form:
+            invalid: 'Die Gruppe konnte nicht gespeichert werden.'
     scheduler:
         title: Scheduler
         foundation_title: Scheduler-Operations-Fundament
@@ -503,8 +639,8 @@ admin:
                 label: Startseiten-Pfad
             dashboard_widgets:
                 label: Dashboard-Widgets
-            registration_enabled:
-                label: 'Registrierung erlauben'
+            registration_mode:
+                label: Registrierungsmodus
             default_acl_group:
                 label: Standard-ACL-Gruppe
             user_menu_enabled:
@@ -554,6 +690,10 @@ admin:
                 packages: Paket-Lifecycle-Aktionen
                 settings: Einstellungsänderungen
                 other: 'Weitere zukünftige Audit-Ereignisse'
+            registration:
+                disabled: Deaktiviert
+                admin_approval: Admin-Freigabe
+                auto_approval: 'Automatische Freigabe'
             interval:
                 manual: Manuell
                 hourly: Stündlich
@@ -796,6 +936,11 @@ message:
             invalid: 'Username "%username%" ist ungültig.'
         email:
             invalid: 'E-Mail-Adresse "%email%" ist ungültig.'
+    account_token:
+        hash:
+            invalid: 'Der Account-Token-Hash muss ein kleingeschriebener SHA-256-Hex-Digest sein.'
+    account_link:
+        delivered: 'Account-Link für %email% (%type%) wurde über das Message-Log zugestellt.'
     api_key:
         prefix:
             invalid: 'API-Key-Präfix "%prefix%" ist ungültig.'

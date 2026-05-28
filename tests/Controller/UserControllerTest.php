@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Entity\AclGroup;
+use App\Entity\ApiKey;
 use App\Entity\UserAccount;
+use App\Security\AccountTokenIssuer;
+use App\Security\AccountTokenType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -123,13 +126,23 @@ final class UserControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'API keys');
     }
 
-    public function testInvitationAcceptanceSkeletonRendersFromMailToken(): void
+    public function testInvitationAcceptanceRendersFromValidAccountToken(): void
     {
         $client = self::createClient();
-        $client->request('GET', '/user/invitation/test-token');
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'invitee@example.test',
+            ['registered'],
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->request('GET', '/user/invitation/'.$plainToken);
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Accept invitation');
+        self::assertSelectorExists('input[name="username"]');
     }
 
     public function testApiKeysRouteListsPersistedKeysForTheCurrentUser(): void
@@ -154,6 +167,43 @@ final class UserControllerTest extends WebTestCase
         self::assertSelectorTextContains('.studio-field-table', 'Revoked');
         self::assertSelectorExists('#studio-show-revoked-api-keys');
         self::assertSelectorExists('.studio-api-key-row-revoked');
+    }
+
+    public function testApiKeysCanBeCreatedRevealedAndRevoked(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'apikeyflow', 'current-password');
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/user/api-keys');
+        $form = $crawler->selectButton('Generate key')->form([
+            'prefix' => 'flowkey',
+            'read_only' => '1',
+        ]);
+        $client->submit($form);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-panel', 'Generated API key');
+        self::assertSelectorTextContains('.studio-code', 'flowkey.');
+
+        $apiKey = self::getContainer()->get(EntityManagerInterface::class)->getRepository(ApiKey::class)->findOneBy([
+            'prefix' => 'flowkey',
+            'user' => $user,
+        ]);
+
+        self::assertInstanceOf(ApiKey::class, $apiKey);
+
+        $crawler = $client->request('GET', '/user/api-keys/'.$apiKey->uid().'/reveal');
+        $client->submit($crawler->selectButton('Reveal key')->form([
+            'password' => 'current-password',
+        ]));
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-code', 'flowkey.');
+
+        $crawler = $client->request('GET', '/user/api-keys');
+        $client->submit($crawler->selectButton('Revoke')->form());
+        self::assertResponseRedirects('/user/api-keys');
     }
 
     private function createUserWithLevel(int $level, string $username, string $password): UserAccount

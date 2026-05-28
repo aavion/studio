@@ -1,0 +1,46 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ group.identifier }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.groups.title'|trans,
+        title: group.identifier,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.groups.detail.title'|trans }}</h2>
+        <p class="studio-muted">{{ 'admin.groups.member_count'|trans({'%count%': member_count}) }}</p>
+        <form method="post" class="studio-backend-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_' ~ group.uid) }}">
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name_en', name: 'name_en', label: 'admin.groups.fields.name_en'|trans, value: group.name.en|default(''), required: true, disabled: group.locked} only %}
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name_de', name: 'name_de', label: 'admin.groups.fields.name_de'|trans, value: group.name.de|default(''), disabled: group.locked} only %}
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_access_level', name: 'access_level', label: 'admin.groups.fields.access_level'|trans, type: 'number', value: group.accessLevel, required: true, disabled: group.locked, attributes: {min: 1, max: 9}} only %}
+            {% include '@backend/partials/forms/fields/select.html.twig' with {
+                id: 'group_allow_empty',
+                name: 'allow_empty',
+                label: 'admin.groups.fields.allow_empty'|trans,
+                value: group.allowsEmptyMembership ? '1' : '0',
+                options: {'1': 'ui.form.yes'|trans, '0': 'ui.form.no'|trans},
+                disabled: group.locked,
+            } only %}
+            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.actions.save'|trans} only %}
+        </form>
+    </section>
+
+    {% if not group.locked %}
+        <section class="studio-panel">
+            <h2>{{ 'admin.groups.delete.title'|trans }}</h2>
+            <form method="post" action="{{ path('backend_admin_user_group_delete', {uid: group.uid}) }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_delete_' ~ group.uid) }}">
+                <button class="studio-button studio-button-danger" type="submit">{{ 'admin.groups.actions.delete'|trans }}</button>
+            </form>
+        </section>
+    {% endif %}
+{% endblock %}
