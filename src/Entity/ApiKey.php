@@ -87,6 +87,11 @@ class ApiKey
         return $this->status;
     }
 
+    public function user(): UserAccount
+    {
+        return $this->user;
+    }
+
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;

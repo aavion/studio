@@ -184,6 +184,13 @@ services:
         arguments:
             $secret: '%kernel.secret%'
 
+    App\Security\ApiKeyVault:
+        arguments:
+            $secret: '%kernel.secret%'
+
+    App\Security\AccountLinkDeliveryInterface:
+        alias: App\Security\MessageLogAccountLinkDelivery
+
     App\Core\Log\LogFileBrowser:
         arguments:
             $logDir: '%kernel.logs_dir%'

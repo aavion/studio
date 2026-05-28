@@ -14,8 +14,9 @@ use App\Setup\SetupCommandResult;
 use App\Setup\SetupInput;
 use App\Setup\SetupLanguageCatalog;
 use App\Setup\SetupRunner;
-use PDO;
+use App\Security\UserFlowConfig;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
+use PDO;
 use PHPUnit\Framework\TestCase;
 
 final class SetupRunnerTest extends TestCase
@@ -81,7 +82,7 @@ final class SetupRunnerTest extends TestCase
         $defaultAclGroup = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.default_acl_group'")->fetchColumn();
         $userMenuEnabled = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.menu.enabled'")->fetchColumn();
         $userMenuSortOrder = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.menu.sort_order'")->fetchColumn();
-        $registrationEnabled = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.registration.enabled'")->fetchColumn();
+        $registrationMode = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.registration.mode'")->fetchColumn();
         $auditEnabled = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'security.audit.enabled'")->fetchColumn();
         $auditEvents = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'security.audit.events'")->fetchColumn();
         $statisticsEnabled = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'statistics.enabled'")->fetchColumn();
@@ -100,7 +101,7 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('registered', json_decode((string) $defaultAclGroup, true, flags: JSON_THROW_ON_ERROR));
         self::assertTrue(json_decode((string) $userMenuEnabled, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame(900, json_decode((string) $userMenuSortOrder, true, flags: JSON_THROW_ON_ERROR));
-        self::assertFalse(json_decode((string) $registrationEnabled, true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame(UserFlowConfig::REGISTRATION_DISABLED, json_decode((string) $registrationMode, true, flags: JSON_THROW_ON_ERROR));
         self::assertTrue(json_decode((string) $auditEnabled, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, json_decode((string) $auditEvents, true, flags: JSON_THROW_ON_ERROR));
         self::assertTrue(json_decode((string) $statisticsEnabled, true, flags: JSON_THROW_ON_ERROR));
@@ -395,7 +396,7 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('registered', $entries[4]['context']['settings']['user.default_acl_group']);
         self::assertTrue($entries[4]['context']['settings']['user.menu.enabled']);
         self::assertSame(900, $entries[4]['context']['settings']['user.menu.sort_order']);
-        self::assertFalse($entries[4]['context']['settings']['user.registration.enabled']);
+        self::assertSame(UserFlowConfig::REGISTRATION_DISABLED, $entries[4]['context']['settings'][UserFlowConfig::REGISTRATION_MODE_KEY]);
         self::assertTrue($entries[4]['context']['settings'][ConfigAuditLogPolicy::ENABLED_KEY]);
         self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $entries[4]['context']['settings'][ConfigAuditLogPolicy::EVENTS_KEY]);
         self::assertTrue($entries[4]['context']['settings'][AccessStatisticsPolicy::ENABLED_KEY]);

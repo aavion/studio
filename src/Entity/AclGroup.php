@@ -98,4 +98,22 @@ class AclGroup
     {
         return $this->allowEmpty;
     }
+
+    /**
+     * @param array<string, string> $name
+     */
+    public function rename(array $name): void
+    {
+        $this->name = $name;
+    }
+
+    public function changeAccessLevel(int $accessLevel): void
+    {
+        $this->accessLevel = AccessLevel::assert($accessLevel);
+    }
+
+    public function changeEmptyMembershipPolicy(bool $allowEmpty): void
+    {
+        $this->allowEmpty = $allowEmpty;
+    }
 }

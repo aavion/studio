@@ -10,6 +10,7 @@ use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
+use App\Security\UserFlowConfig;
 use PHPUnit\Framework\TestCase;
 
 final class CoreSettingsRegistryTest extends TestCase
@@ -35,7 +36,7 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertSame(['required' => true, 'pattern' => '^/.*$'], $general[4]->formField()->validation());
 
         self::assertSame([
-            'user.registration.enabled',
+            UserFlowConfig::REGISTRATION_MODE_KEY,
             'user.default_acl_group',
             'user.menu.enabled',
             'user.menu.sort_order',

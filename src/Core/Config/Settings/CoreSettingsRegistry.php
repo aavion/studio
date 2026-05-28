@@ -9,6 +9,7 @@ use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
+use App\Security\UserFlowConfig;
 
 final readonly class CoreSettingsRegistry
 {
@@ -46,7 +47,11 @@ final readonly class CoreSettingsRegistry
                 'setup_warnings' => 'admin.settings.options.dashboard.setup_warnings',
             ], sortOrder: 10),
 
-            new CoreSettingDefinition('users', 'user.registration.enabled', 'admin.settings.fields.registration_enabled.label', false, ConfigValueType::Boolean, sortOrder: 10),
+            new CoreSettingDefinition('users', UserFlowConfig::REGISTRATION_MODE_KEY, 'admin.settings.fields.registration_mode.label', UserFlowConfig::REGISTRATION_DISABLED, ConfigValueType::String, FormInputType::Select, options: [
+                UserFlowConfig::REGISTRATION_DISABLED => 'admin.settings.options.registration.disabled',
+                UserFlowConfig::REGISTRATION_ADMIN_APPROVAL => 'admin.settings.options.registration.admin_approval',
+                UserFlowConfig::REGISTRATION_AUTO_APPROVAL => 'admin.settings.options.registration.auto_approval',
+            ], validation: ['required' => true], sortOrder: 10),
             new CoreSettingDefinition('users', 'user.default_acl_group', 'admin.settings.fields.default_acl_group.label', 'registered', ConfigValueType::String, validation: ['required' => true], sortOrder: 20),
             new CoreSettingDefinition('users', 'user.menu.enabled', 'admin.settings.fields.user_menu_enabled.label', true, ConfigValueType::Boolean, sortOrder: 30),
             new CoreSettingDefinition('users', 'user.menu.sort_order', 'admin.settings.fields.user_menu_sort_order.label', 900, ConfigValueType::Integer, FormInputType::Number, validation: ['min' => 0, 'max' => 9999], sortOrder: 40),

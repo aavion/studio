@@ -10,7 +10,10 @@ final readonly class UserFlowConfig
 {
     public const MENU_ENABLED_KEY = 'user.menu.enabled';
     public const MENU_SORT_ORDER_KEY = 'user.menu.sort_order';
-    public const REGISTRATION_ENABLED_KEY = 'user.registration.enabled';
+    public const REGISTRATION_MODE_KEY = 'user.registration.mode';
+    public const REGISTRATION_DISABLED = 'disabled';
+    public const REGISTRATION_ADMIN_APPROVAL = 'admin_approval';
+    public const REGISTRATION_AUTO_APPROVAL = 'auto_approval';
 
     public function __construct(private Config $config)
     {
@@ -30,6 +33,17 @@ final readonly class UserFlowConfig
 
     public function registrationEnabled(): bool
     {
-        return true === $this->config->get(self::REGISTRATION_ENABLED_KEY, false);
+        return self::REGISTRATION_DISABLED !== $this->registrationMode();
+    }
+
+    public function registrationMode(): string
+    {
+        $mode = $this->config->get(self::REGISTRATION_MODE_KEY, self::REGISTRATION_DISABLED);
+
+        return in_array($mode, [
+            self::REGISTRATION_DISABLED,
+            self::REGISTRATION_ADMIN_APPROVAL,
+            self::REGISTRATION_AUTO_APPROVAL,
+        ], true) ? $mode : self::REGISTRATION_DISABLED;
     }
 }

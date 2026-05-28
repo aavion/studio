@@ -189,6 +189,8 @@ final class MessageKey
     public const CONFIG_VALUE_INVALID = 'message.config.value_invalid';
     public const USERNAME_INVALID = 'message.user.username.invalid';
     public const USER_EMAIL_INVALID = 'message.user.email.invalid';
+    public const ACCOUNT_TOKEN_HASH_INVALID = 'message.account_token.hash.invalid';
+    public const ACCOUNT_LINK_DELIVERED = 'message.account_link.delivered';
     public const API_KEY_PREFIX_INVALID = 'message.api_key.prefix.invalid';
     public const API_KEY_HMAC_HASH_INVALID = 'message.api_key.hmac_hash.invalid';
     public const API_KEY_ENCRYPTED_KEY_EMPTY = 'message.api_key.encrypted_key.empty';

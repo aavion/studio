@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Support\DatabaseSeed;
 
 use App\Core\Log\ConfigAuditLogPolicy;
+use App\Security\UserFlowConfig;
 
 final class TestDatabaseConfigSeeder
 {
@@ -21,7 +22,7 @@ final class TestDatabaseConfigSeeder
             ['content.revision_retention_count', 10, 'integer'],
             ['user.menu.enabled', true, 'boolean'],
             ['user.menu.sort_order', 900, 'integer'],
-            ['user.registration.enabled', false, 'boolean'],
+            [UserFlowConfig::REGISTRATION_MODE_KEY, UserFlowConfig::REGISTRATION_DISABLED, 'string'],
             [ConfigAuditLogPolicy::ENABLED_KEY, true, 'boolean'],
             [ConfigAuditLogPolicy::EVENTS_KEY, ConfigAuditLogPolicy::DEFAULT_CATEGORIES, 'json'],
         ];

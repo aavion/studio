@@ -32,7 +32,7 @@ final class ConfigTest extends TestCase
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $config = new Config($connection);
 
-        self::assertFalse($config->get('user.registration.enabled', false));
+        self::assertSame('disabled', $config->get('user.registration.mode', 'disabled'));
         self::assertSame(900, $config->get('user.menu.sort_order', 900));
     }
 

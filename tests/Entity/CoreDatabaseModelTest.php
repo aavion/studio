@@ -10,6 +10,7 @@ use App\Core\Message\MessageKey;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
 use App\Entity\AclGroup;
+use App\Entity\AccountToken;
 use App\Entity\ApiKey;
 use App\Entity\ConfigEntry;
 use App\Entity\ExtensionPackage;
@@ -18,6 +19,8 @@ use App\Entity\SiteMenu;
 use App\Entity\SiteMenuItem;
 use App\Entity\StateMarker;
 use App\Entity\UserAccount;
+use App\Security\AccountTokenStatus;
+use App\Security\AccountTokenType;
 use App\Security\ApiKeyStatus;
 use App\Security\UserAccountStatus;
 use DateTimeImmutable;
@@ -60,6 +63,13 @@ final class CoreDatabaseModelTest extends TestCase
             $user,
             ApiKeyStatus::ReadWrite,
         );
+        $accountToken = new AccountToken(
+            '55555555-5555-4555-8555-555555555555',
+            hash('sha256', 'plain-account-token'),
+            AccountTokenType::Invitation,
+            'invitee@example.com',
+            ['registered'],
+        );
 
         self::assertSame(AccessLevel::MANAGER, $user->maxAccessLevel());
         self::assertSame('dominique', $user->getUserIdentifier());
@@ -73,6 +83,10 @@ final class CoreDatabaseModelTest extends TestCase
         self::assertSame($hmacHash, $apiKey->hmacHash());
         self::assertSame('v1.test.encrypted-key', $apiKey->encryptedKey());
         self::assertSame(ApiKeyStatus::ReadWrite, $apiKey->status());
+        self::assertSame(AccountTokenType::Invitation, $accountToken->type());
+        self::assertSame(AccountTokenStatus::Pending, $accountToken->status());
+        self::assertSame(['registered'], $accountToken->groupIdentifiers());
+        self::assertTrue($accountToken->status()->isUsable());
         self::assertSame(MessageKey::API_KEY_STATUS_READ_WRITE, ApiKeyStatus::ReadWrite->messageKey());
         self::assertSame(MessageKey::API_KEY_STATUS_READ_ONLY, ApiKeyStatus::ReadOnly->messageKey());
         self::assertSame(MessageKey::API_KEY_STATUS_REVOKED, ApiKeyStatus::Revoked->messageKey());

@@ -10,6 +10,7 @@ use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Security\UserFlowConfig;
 
 final readonly class SetupDryRunPlanner
 {
@@ -58,7 +59,7 @@ final readonly class SetupDryRunPlanner
                     'user.default_acl_group' => 'registered',
                     'user.menu.enabled' => true,
                     'user.menu.sort_order' => 900,
-                    'user.registration.enabled' => false,
+                    UserFlowConfig::REGISTRATION_MODE_KEY => UserFlowConfig::REGISTRATION_DISABLED,
                     ConfigAuditLogPolicy::ENABLED_KEY => true,
                     ConfigAuditLogPolicy::EVENTS_KEY => ConfigAuditLogPolicy::DEFAULT_CATEGORIES,
                     AccessStatisticsPolicy::ENABLED_KEY => true,

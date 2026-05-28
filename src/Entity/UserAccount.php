@@ -95,6 +95,11 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         return $this->email;
     }
 
+    public function changeEmail(string $email): void
+    {
+        $this->email = self::assertEmail($email);
+    }
+
     public function passwordHash(): string
     {
         return $this->passwordHash;
@@ -127,11 +132,27 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
     }
 
     /**
+     * @param array<string, mixed> $profile
+     */
+    public function updateProfile(array $profile): void
+    {
+        $this->profile = $profile;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function settings(): array
     {
         return $this->settings;
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     */
+    public function updateSettings(array $settings): void
+    {
+        $this->settings = $settings;
     }
 
     public function status(): UserAccountStatus
@@ -162,6 +183,11 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         if (!$this->groups->contains($group)) {
             $this->groups->add($group);
         }
+    }
+
+    public function removeGroup(AclGroup $group): void
+    {
+        $this->groups->removeElement($group);
     }
 
     public function maxAccessLevel(): int
