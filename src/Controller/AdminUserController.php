@@ -132,7 +132,7 @@ final class AdminUserController extends AbstractController
 
         $user = $this->entityManager->find(UserAccount::class, $uid);
 
-        if (!$user instanceof UserAccount) {
+        if (!$user instanceof UserAccount || DeletedUserCleanup::DELETED_USER_UID === $user->uid()) {
             return $this->httpError->notFound($request);
         }
 
@@ -167,7 +167,7 @@ final class AdminUserController extends AbstractController
 
         $user = $this->entityManager->find(UserAccount::class, $uid);
 
-        if (!$user instanceof UserAccount) {
+        if (!$user instanceof UserAccount || DeletedUserCleanup::DELETED_USER_UID === $user->uid()) {
             return $this->httpError->notFound($request);
         }
 
@@ -249,7 +249,7 @@ final class AdminUserController extends AbstractController
 
         $user = $this->entityManager->find(UserAccount::class, $uid);
 
-        if (!$user instanceof UserAccount) {
+        if (!$user instanceof UserAccount || DeletedUserCleanup::DELETED_USER_UID === $user->uid()) {
             return $this->httpError->notFound($request);
         }
 

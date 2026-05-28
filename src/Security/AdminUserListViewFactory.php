@@ -32,7 +32,9 @@ final readonly class AdminUserListViewFactory
         $page = $this->listViews->page($request->query->get('page'));
         $users = array_values(array_filter(
             $this->entityManager->getRepository(UserAccount::class)->findAll(),
-            static fn (mixed $user): bool => $user instanceof UserAccount && UserAccountStatus::Deleted !== $user->status(),
+            static fn (mixed $user): bool => $user instanceof UserAccount
+                && DeletedUserCleanup::DELETED_USER_UID !== $user->uid()
+                && UserAccountStatus::Deleted !== $user->status(),
         ));
 
         if ('' !== $search) {

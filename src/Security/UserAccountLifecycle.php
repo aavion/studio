@@ -47,21 +47,22 @@ final readonly class UserAccountLifecycle
         }
 
         return [
-            'api_keys_revoked' => $this->revokeActiveApiKeys($user),
+            'api_keys_revoked' => $this->revokeUserApiKeys($user),
             'account_tokens_revoked' => $this->revokePendingRecoveryTokens($user),
         ];
     }
 
-    private function revokeActiveApiKeys(UserAccount $user): int
+    private function revokeUserApiKeys(UserAccount $user): int
     {
         $count = 0;
-        $apiKeys = $this->entityManager->getRepository(ApiKey::class)->findBy([
-            'user' => $user,
-            'status' => [ApiKeyStatus::ReadOnly, ApiKeyStatus::ReadWrite],
-        ]);
+        $apiKeys = $this->entityManager->getRepository(ApiKey::class)->findBy(['user' => $user]);
 
         foreach ($apiKeys as $apiKey) {
             if (!$apiKey instanceof ApiKey) {
+                continue;
+            }
+
+            if (ApiKeyStatus::Revoked === $apiKey->status()) {
                 continue;
             }
 

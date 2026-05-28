@@ -25,6 +25,7 @@ use App\Security\AccountTokenType;
 use App\Security\AppSecretRotationGuard;
 use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
+use App\Security\DeletedUserCleanup;
 use App\Security\UserAccountStatus;
 use App\Security\UserAccountLifecycle;
 use Doctrine\ORM\EntityManagerInterface;
@@ -58,6 +59,7 @@ final class AdminUserControllerTest extends WebTestCase
         $oldUser->addGroup($this->registeredGroup());
         $recentUser->addGroup($this->registeredGroup());
         $activeUser->addGroup($this->registeredGroup());
+        $staleApiKey = $this->createApiKey($oldUser, 'oldgone');
         $entityManager->flush();
         $this->markDeletedAt($oldUser, 'cleanup-admin', '2026-05-01 10:00:00');
         $this->markDeletedAt($recentUser, 'cleanup-admin', (new \DateTimeImmutable('-1 day'))->format('Y-m-d H:i:s'));
@@ -91,8 +93,34 @@ final class AdminUserControllerTest extends WebTestCase
             self::assertNull($entityManager->find(UserAccount::class, $oldUser->uid()));
             self::assertInstanceOf(UserAccount::class, $entityManager->find(UserAccount::class, $recentUser->uid()));
             self::assertInstanceOf(UserAccount::class, $entityManager->find(UserAccount::class, $activeUser->uid()));
+            $retainedApiKey = $entityManager->find(ApiKey::class, $staleApiKey->uid());
+
+            self::assertInstanceOf(ApiKey::class, $retainedApiKey);
+            self::assertSame(ApiKeyStatus::Revoked, $retainedApiKey->status());
+            self::assertSame(DeletedUserCleanup::DELETED_USER_UID, $retainedApiKey->user()->uid());
+
+            $client->request('GET', '/admin/users');
+            self::assertStringNotContainsString('deleted-user@localhost.local', (string) $client->getResponse()->getContent());
+
+            $client->request('GET', '/admin/users/deleted');
+            self::assertStringNotContainsString('deleted-user@localhost.local', (string) $client->getResponse()->getContent());
+
+            $client->request('GET', '/admin/users/'.DeletedUserCleanup::DELETED_USER_UID);
+            self::assertResponseStatusCodeSame(404);
         } finally {
             $config->set('user.deleted_user_retention_days', (int) $originalRetention, ConfigValueType::Integer, modifiedBy: 'test');
+
+            $managedApiKey = $entityManager->find(ApiKey::class, $staleApiKey->uid());
+
+            if ($managedApiKey instanceof ApiKey) {
+                $entityManager->remove($managedApiKey);
+            }
+
+            $deletedUserAccount = $entityManager->find(UserAccount::class, DeletedUserCleanup::DELETED_USER_UID);
+
+            if ($deletedUserAccount instanceof UserAccount) {
+                $entityManager->remove($deletedUserAccount);
+            }
 
             foreach ([$oldUser, $recentUser, $activeUser] as $user) {
                 $managedUser = $entityManager->find(UserAccount::class, $user->uid());
