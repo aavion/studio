@@ -845,6 +845,77 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testDefaultRegistrationGroupCannotBeDeleted(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $config = self::getContainer()->get(Config::class);
+        $originalDefaultGroup = $config->get('user.default_acl_group', 'registered');
+        $group = $this->createGroup('default_delete_guard', AccessLevel::REGISTERED);
+        $entityManager->flush();
+        $config->set('user.default_acl_group', 'default_delete_guard', ConfigValueType::String, modifiedBy: 'test');
+
+        try {
+            $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
+            $client->submit($crawler->filter('form[action="/admin/users/groups/'.$group->uid().'/delete"]')->form());
+
+            self::assertResponseRedirects('/admin/users/groups/'.$group->uid());
+
+            $entityManager->clear();
+            $unchangedGroup = $entityManager->find(AclGroup::class, $group->uid());
+
+            self::assertInstanceOf(AclGroup::class, $unchangedGroup);
+            self::assertSame(AccessLevel::REGISTERED, $unchangedGroup->accessLevel());
+        } finally {
+            $config->set('user.default_acl_group', (string) $originalDefaultGroup, ConfigValueType::String, modifiedBy: 'test');
+            $managedGroup = $entityManager->find(AclGroup::class, $group->uid());
+
+            if ($managedGroup instanceof AclGroup) {
+                $entityManager->remove($managedGroup);
+                $entityManager->flush();
+            }
+        }
+    }
+
+    public function testDefaultRegistrationGroupCannotFallBelowAccessLevelOne(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $config = self::getContainer()->get(Config::class);
+        $originalDefaultGroup = $config->get('user.default_acl_group', 'registered');
+        $group = $this->createGroup('default_level_guard', AccessLevel::REGISTERED);
+        $entityManager->flush();
+        $config->set('user.default_acl_group', 'default_level_guard', ConfigValueType::String, modifiedBy: 'test');
+
+        try {
+            $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
+            $client->submit($crawler->selectButton('Save')->form([
+                'name_en' => 'Default level guard',
+                'name_de' => 'Default level guard',
+                'access_level' => (string) AccessLevel::PUBLIC,
+                'allow_empty' => '1',
+            ]));
+
+            self::assertResponseRedirects('/admin/users/groups/'.$group->uid());
+
+            $entityManager->clear();
+            $unchangedGroup = $entityManager->find(AclGroup::class, $group->uid());
+
+            self::assertInstanceOf(AclGroup::class, $unchangedGroup);
+            self::assertSame(AccessLevel::REGISTERED, $unchangedGroup->accessLevel());
+        } finally {
+            $config->set('user.default_acl_group', (string) $originalDefaultGroup, ConfigValueType::String, modifiedBy: 'test');
+            $managedGroup = $entityManager->find(AclGroup::class, $group->uid());
+
+            if ($managedGroup instanceof AclGroup) {
+                $entityManager->remove($managedGroup);
+                $entityManager->flush();
+            }
+        }
+    }
+
     public function testGroupUpdateRequiresReviewConfirmation(): void
     {
         $client = self::createClient();

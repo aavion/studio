@@ -731,6 +731,8 @@ final class UserControllerTest extends WebTestCase
             $client->submit($form);
 
             self::assertResponseRedirects('/user/profile');
+            $client->followRedirect();
+            self::assertSelectorTextContains('.studio-alert-error', 'The last active admin account cannot be closed.');
 
             $entityManager->clear();
             $persistedAdmin = $entityManager->find(UserAccount::class, $admin->uid());

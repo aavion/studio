@@ -623,6 +623,7 @@ admin:
             self_lockout: 'Diese Gruppenänderung würde deinen eigenen Admin-Zugriff entfernen.'
             last_admin: 'Es muss mindestens ein aktiver Benutzer mit Admin-Zugriff verbleiben.'
             registered_user_floor: 'Diese Gruppenänderung würde mindestens einen Benutzer ohne Gruppe oder unter Access-Level 1 zurücklassen.'
+            default_registration_group: 'Die Standard-Registrierungsgruppe muss mit mindestens Access-Level 1 verfügbar bleiben.'
     scheduler:
         title: Scheduler
         foundation_title: Scheduler-Operations-Fundament
@@ -824,6 +825,7 @@ admin:
                 pattern: 'Der gesendete Wert entspricht nicht dem erwarteten Format.'
                 required: 'Dieses Feld ist erforderlich.'
                 save_failed: 'Die Einstellungen konnten nicht gespeichert werden.'
+                default_acl_group: 'Wähle eine bestehende ACL-Gruppe mit mindestens Access-Level 1.'
         fields:
             site_title:
                 label: Seitentitel

@@ -845,6 +845,30 @@ final class BackendControllerTest extends WebTestCase
         self::assertStringContainsString('The submitted value does not match the expected format.', $html);
     }
 
+    public function testAdminUserSettingsRejectInvalidDefaultAclGroup(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $config = self::getContainer()->get(Config::class);
+        $originalDefaultGroup = $config->get('user.default_acl_group', 'registered');
+
+        $crawler = $client->request('GET', '/admin/settings/users');
+        $form = $crawler->selectButton('Save settings')->form([
+            'user.registration.mode' => 'auto_approval',
+            'user.default_acl_group' => 'missing_default_acl_group',
+            'user.account_link_ttl_hours' => '24',
+            'user.registration.admin_notification_email' => '',
+            'user.security_notification_email' => '',
+            'user.menu.sort_order' => '900',
+        ]);
+
+        $client->submit($form);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-backend-form-errors', 'Choose an existing ACL group with at least access level 1.');
+        self::assertSame($originalDefaultGroup, $config->get('user.default_acl_group', 'registered'));
+    }
+
     public function testAdminStaticViewInjectionsRenderThroughBackendRegistry(): void
     {
         $client = self::createClient();

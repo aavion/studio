@@ -13,8 +13,10 @@ use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class AdminUserAccessPolicy
 {
-    public function __construct(private EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private UserFlowConfig $userFlowConfig,
+    ) {
     }
 
     /**
@@ -110,6 +112,10 @@ final readonly class AdminUserAccessPolicy
             return 'admin.groups.form.invalid';
         }
 
+        if ($this->isDefaultRegistrationGroup($group) && $newAccessLevel < AccessLevel::REGISTERED) {
+            return 'admin.groups.form.default_registration_group';
+        }
+
         if (!$this->hasActiveAdminAfterGroupLevelChange($group, $newAccessLevel)) {
             return 'admin.groups.form.last_admin';
         }
@@ -140,6 +146,10 @@ final readonly class AdminUserAccessPolicy
 
     public function validateGroupDeleteSystem(AclGroup $group): ?string
     {
+        if ($this->isDefaultRegistrationGroup($group)) {
+            return 'admin.groups.form.default_registration_group';
+        }
+
         if (!$this->hasActiveAdminAfterGroupDeletion($group)) {
             return 'admin.groups.form.last_admin';
         }
@@ -168,6 +178,11 @@ final readonly class AdminUserAccessPolicy
     private function isActor(AccessActor $actor, UserAccount $target): bool
     {
         return $actor->userUid() === $target->uid();
+    }
+
+    private function isDefaultRegistrationGroup(AclGroup $group): bool
+    {
+        return $group->identifier() === $this->userFlowConfig->defaultAclGroupIdentifier();
     }
 
     /**

@@ -403,6 +403,7 @@ admin:
       self_lockout: 'This group change would remove your own Admin access.'
       last_admin: 'At least one active user with Admin access must remain.'
       registered_user_floor: 'This group change would leave at least one user without a group or below access level 1.'
+      default_registration_group: 'The default registration group must stay available with at least access level 1.'
   scheduler:
     title: 'Scheduler'
     foundation_title: 'Scheduler operations foundation'
@@ -604,6 +605,7 @@ admin:
         pattern: 'The submitted value does not match the expected format.'
         required: 'This field is required.'
         save_failed: 'The settings could not be saved.'
+        default_acl_group: 'Choose an existing ACL group with at least access level 1.'
     fields:
       site_title:
         label: 'Site title'
