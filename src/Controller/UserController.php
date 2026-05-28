@@ -118,13 +118,19 @@ final class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/user/profile/close', name: 'user_profile_close', methods: ['POST'])]
+    #[Route('/user/profile/close', name: 'user_profile_close', methods: ['GET', 'POST'])]
     public function closeProfile(Request $request): Response
     {
         $user = $this->currentUser();
 
         if (!$user instanceof UserAccount) {
             return $this->httpError->unauthorized($request);
+        }
+
+        if (!$request->isMethod('POST')) {
+            return $this->render('@frontend/user/profile-close.html.twig', [
+                'deleted_user_retention_days' => $this->userFlowConfig->deletedUserRetentionDays(),
+            ]);
         }
 
         $errors = [];
@@ -155,9 +161,10 @@ final class UserController extends AbstractController
                 'error_keys' => $errors,
             ]);
 
-            return $this->redirectToRoute('user_profile');
+            return $this->redirectToRoute('user_profile_close');
         }
 
+        $retentionDays = $this->userFlowConfig->deletedUserRetentionDays();
         $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Deleted, $user->username());
         $this->entityManager->flush();
         $this->linkDelivery->notifyAddress(
@@ -167,13 +174,14 @@ final class UserController extends AbstractController
             [
                 'username' => $user->username(),
                 'user_uid' => $user->uid(),
+                'retention_days' => $retentionDays,
             ],
         );
         $this->audit($user, 'user.account_closed', ['result_status' => 'success', ...$effects]);
         $this->tokenStorage->setToken(null);
         $request->getSession()->invalidate();
 
-        return $this->redirectToRoute('user_login', ['account_closed' => '1']);
+        return $this->redirectToRoute('content_home');
     }
 
     #[Route('/user/password', name: 'user_password', methods: ['GET', 'POST'])]

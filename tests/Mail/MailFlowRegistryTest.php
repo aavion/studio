@@ -47,7 +47,7 @@ final class MailFlowRegistryTest extends TestCase
             $registry->definition(AccountMailFlow::PasswordChangeDisputed)->parameterKeys(),
         );
         self::assertSame(
-            ['email', 'username', 'user_uid'],
+            ['email', 'username', 'user_uid', 'retention_days'],
             $registry->definition(AccountMailFlow::AccountClosed)->parameterKeys(),
         );
         self::assertSame(

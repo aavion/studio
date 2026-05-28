@@ -662,42 +662,66 @@ final class UserControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->persist($resetToken);
         $entityManager->flush();
+        $config = self::getContainer()->get(Config::class);
+        $originalRetention = $config->get('user.deleted_user_retention_days', 7);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
         foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
-        $client->loginUser($user);
-        $crawler = $client->request('GET', '/user/profile');
-        $form = $crawler->filter('form[action="/user/profile/close"]')->form([
-            'password' => 'current-password',
-        ]);
-        $form['confirm_close']->tick();
-        $client->submit($form);
+        try {
+            $config->set('user.deleted_user_retention_days', 21);
 
-        self::assertResponseRedirects('/user/login?account_closed=1');
-        $client->followRedirect();
-        self::assertSelectorTextContains('.studio-auth-notice', 'Your account was closed.');
+            $client->loginUser($user);
+            $crawler = $client->request('GET', '/user/profile');
+            self::assertSelectorTextContains('main', 'Start account closure from a separate confirmation page.');
+            self::assertStringNotContainsString('you have 21 day(s) to restore the account', (string) $client->getResponse()->getContent());
 
-        $entityManager->clear();
-        $closedUser = $entityManager->find(UserAccount::class, $user->uid());
-        $revokedApiKey = $entityManager->find(ApiKey::class, $apiKey->uid());
-        $revokedToken = $entityManager->find(AccountToken::class, $resetToken->uid());
+            $crawler = $client->click($crawler->selectLink('Close account')->link());
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('main', 'you have 21 day(s) to restore the account');
 
-        self::assertInstanceOf(UserAccount::class, $closedUser);
-        self::assertSame(UserAccountStatus::Deleted, $closedUser->status());
-        self::assertInstanceOf(ApiKey::class, $revokedApiKey);
-        self::assertSame(ApiKeyStatus::Revoked, $revokedApiKey->status());
-        self::assertInstanceOf(AccountToken::class, $revokedToken);
-        self::assertSame(AccountTokenStatus::Revoked, $revokedToken->status());
-        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
-        self::assertStringContainsString('account.closed', $messageLog);
+            $form = $crawler->filter('form[action="/user/profile/close"]')->form([
+                'password' => 'current-password',
+            ]);
+            $form['confirm_close']->tick();
+            $client->submit($form);
 
-        $entityManager->remove($revokedToken);
-        $entityManager->remove($revokedApiKey);
-        $entityManager->remove($closedUser);
-        $entityManager->flush();
+            self::assertResponseRedirects('/');
+
+            $client->request('GET', '/user/profile');
+            self::assertResponseStatusCodeSame(401);
+
+            $entityManager->clear();
+            $closedUser = $entityManager->find(UserAccount::class, $user->uid());
+            $revokedApiKey = $entityManager->find(ApiKey::class, $apiKey->uid());
+            $revokedToken = $entityManager->find(AccountToken::class, $resetToken->uid());
+
+            self::assertInstanceOf(UserAccount::class, $closedUser);
+            self::assertSame(UserAccountStatus::Deleted, $closedUser->status());
+            self::assertInstanceOf(ApiKey::class, $revokedApiKey);
+            self::assertSame(ApiKeyStatus::Revoked, $revokedApiKey->status());
+            self::assertInstanceOf(AccountToken::class, $revokedToken);
+            self::assertSame(AccountTokenStatus::Revoked, $revokedToken->status());
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            self::assertStringContainsString('account.closed', $messageLog);
+            self::assertStringContainsString('retention_days', $messageLog);
+            self::assertStringContainsString('21', $messageLog);
+        } finally {
+            $config->set('user.deleted_user_retention_days', (int) $originalRetention);
+            $entityManager->clear();
+
+            foreach ([$resetToken->uid() => AccountToken::class, $apiKey->uid() => ApiKey::class, $user->uid() => UserAccount::class] as $uid => $class) {
+                $entity = $entityManager->find($class, $uid);
+
+                if (null !== $entity) {
+                    $entityManager->remove($entity);
+                }
+            }
+
+            $entityManager->flush();
+        }
     }
 
     public function testLastAdminCannotCloseOwnAccount(): void
@@ -724,13 +748,14 @@ final class UserControllerTest extends WebTestCase
         try {
             $client->loginUser($admin);
             $crawler = $client->request('GET', '/user/profile');
+            $crawler = $client->click($crawler->selectLink('Close account')->link());
             $form = $crawler->filter('form[action="/user/profile/close"]')->form([
                 'password' => 'current-password',
             ]);
             $form['confirm_close']->tick();
             $client->submit($form);
 
-            self::assertResponseRedirects('/user/profile');
+            self::assertResponseRedirects('/user/profile/close');
             $client->followRedirect();
             self::assertSelectorTextContains('.studio-alert-error', 'The last active admin account cannot be closed.');
 

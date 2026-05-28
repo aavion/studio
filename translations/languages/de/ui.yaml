@@ -72,10 +72,14 @@ ui:
       success: 'Profil gespeichert.'
       close:
         title: 'Account schließen'
-        message: 'Das Schließen des Accounts meldet dich ab und widerruft aktive API-Keys und Wiederherstellungslinks.'
+        message: 'Starte die Account-Schließung auf einer separaten Bestätigungsseite.'
+        open: 'Account schließen'
+        subtitle: 'Bitte bestätige, dass du deinen Account wirklich schließen möchtest.'
+        confirmation_message: 'Das Schließen des Accounts meldet dich ab und widerruft aktive API-Keys und Wiederherstellungslinks. Wenn du deine Meinung änderst, hast du %days% Tag(e) Zeit, den Account durch eine neue Registrierung mit derselben E-Mail-Adresse wiederherzustellen, bevor die Daten dauerhaft gelöscht werden.'
         password: 'Aktuelles Passwort'
         confirm: 'Ich verstehe, dass mein Account geschlossen wird.'
         submit: 'Account schließen'
+        cancel: 'Account behalten'
         errors:
           invalid_csrf: 'Das Formular zum Schließen des Accounts ist abgelaufen. Bitte versuche es erneut.'
           confirmation: 'Bestätige, dass du den Account schließen möchtest.'

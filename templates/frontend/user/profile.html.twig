@@ -69,23 +69,11 @@
         <section class="studio-panel">
             <h2>{{ 'ui.user.profile.close.title'|trans }}</h2>
             <p class="studio-muted">{{ 'ui.user.profile.close.message'|trans }}</p>
-            <form method="post" action="{{ path('user_profile_close') }}" class="studio-auth-form">
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_profile_close') }}">
-                {% include '@frontend/partials/forms/fields/input.html.twig' with {
-                    name: 'password',
-                    type: 'password',
-                    label: 'ui.user.profile.close.password'|trans,
-                    autocomplete: 'current-password',
-                    required: true,
-                } only %}
-                {% include '@frontend/partials/forms/fields/checkbox.html.twig' with {
-                    id: 'confirm_close',
-                    name: 'confirm_close',
-                    label: 'ui.user.profile.close.confirm'|trans,
-                    required: true,
-                } only %}
-                {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.profile.close.submit'|trans} only %}
-            </form>
+            {% include '@frontend/partials/actions/_button-group.html.twig' with {
+                actions: [
+                    {label: 'ui.user.profile.close.open'|trans, href: path('user_profile_close'), variant: 'secondary'},
+                ],
+            } only %}
         </section>
     </section>
 {% endblock %}
