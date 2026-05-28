@@ -37,6 +37,7 @@ final readonly class SetupDatabaseSeeder
             ['localization.route_prefixes_enabled', false, ConfigValueType::Boolean],
             ['content.home_path', '/home', ConfigValueType::String],
             ['user.default_acl_group', 'registered', ConfigValueType::String],
+            [UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, false, ConfigValueType::Boolean],
             [UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, ConfigValueType::Integer],
             [UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '', ConfigValueType::String],
             [UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, '', ConfigValueType::String],

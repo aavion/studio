@@ -57,6 +57,7 @@ final readonly class SetupDryRunPlanner
                     'localization.route_prefixes_enabled' => false,
                     'content.home_path' => '/home',
                     'user.default_acl_group' => 'registered',
+                    UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY => false,
                     UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY => UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS,
                     UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY => '',
                     UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY => '',
