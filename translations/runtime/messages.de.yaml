@@ -393,6 +393,7 @@ admin:
             actions: Aktionen
             type: Typ
             expires_at: 'Läuft ab'
+            login_possible: 'Login möglich'
         actions:
             approve: Freigeben
             reissue: 'Link neu ausstellen'
@@ -419,6 +420,10 @@ admin:
                 invalid_invitation: 'Die Einladung konnte nicht erstellt werden.'
                 email_in_use: 'Für diese E-Mail-Adresse existiert bereits ein Benutzerkonto.'
                 invalid_status: 'Wähle einen gültigen Account-Status.'
+                target_higher_access: 'Du kannst keinen Benutzer mit höherem Access-Level bearbeiten.'
+                group_level_too_high: 'Du kannst keine ACL-Gruppen über deinem eigenen Access-Level zuweisen.'
+                self_lockout: 'Diese Änderung würde deinen eigenen Admin-Zugriff entfernen.'
+                last_admin: 'Es muss mindestens ein aktiver Benutzer mit Admin-Zugriff verbleiben.'
         saved: 'Benutzer gespeichert.'
     user_reviews:
         title: Benutzer-Reviews
@@ -479,6 +484,33 @@ admin:
             title: Gruppen-Einstellungen
         delete:
             title: 'Gruppe löschen'
+        members:
+            title: Mitglieder
+            empty: 'Dieser Gruppe sind keine Benutzer zugewiesen.'
+        review:
+            title: 'ACL-Gruppenänderung prüfen'
+            subtitle: 'Prüfe die Auswirkungen für %group%, bevor diese Änderung angewendet wird.'
+            summary_title: Auswirkungsübersicht
+            update_title: 'Ausstehende Gruppenwerte'
+            confirm_title: 'Änderung bestätigen'
+            confirm_update: 'Gruppenänderung anwenden'
+            confirm_delete: 'Gruppe löschen und Referenzen entfernen'
+            cancel: Abbrechen
+            empty: 'In diesem Bereich sind keine Einträge betroffen.'
+            users_title: 'Betroffene Benutzer'
+            account_tokens_title: 'Betroffene Account-Links'
+            content_items_title: 'Betroffene Content-Items'
+            content_schema_versions_title: 'Betroffene Content-Schema-Versionen'
+            site_menu_items_title: 'Betroffene Menüpunkte'
+            summary:
+                users: Benutzer
+                account_tokens: Account-Links
+                content_items: Content-Items
+                content_schema_versions: Schema-Versionen
+                site_menu_items: Menüpunkte
+            fields:
+                item: Eintrag
+                fields: Felder
         fields:
             identifier: Identifier
             name: Name
@@ -498,6 +530,9 @@ admin:
         delete_blocked: 'Diese Gruppe kann nicht gelöscht werden.'
         form:
             invalid: 'Die Gruppe konnte nicht gespeichert werden.'
+            higher_access: 'Du kannst keine ACL-Gruppe über deinem eigenen Access-Level verwalten.'
+            self_lockout: 'Diese Gruppenänderung würde deinen eigenen Admin-Zugriff entfernen.'
+            last_admin: 'Es muss mindestens ein aktiver Benutzer mit Admin-Zugriff verbleiben.'
     scheduler:
         title: Scheduler
         foundation_title: Scheduler-Operations-Fundament

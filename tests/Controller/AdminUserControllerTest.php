@@ -4,9 +4,16 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Content\Schema\ContentSchemaSource;
+use App\Core\Access\AccessLevel;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\ApiKey;
+use App\Entity\ContentItem;
+use App\Entity\ContentSchema;
+use App\Entity\ContentSchemaVersion;
+use App\Entity\SiteMenu;
+use App\Entity\SiteMenuItem;
 use App\Entity\UserAccount;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
@@ -251,6 +258,191 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testLowerAccessAdminCannotEditHigherAccessUser(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $limitedGroup = $this->createGroup('limited_admin', 8);
+        $limitedAdmin = $this->createUser('limitedadmin', UserAccountStatus::Active);
+        $limitedAdmin->addGroup($limitedGroup);
+        $target = $this->adminUser();
+        $entityManager->flush();
+
+        $client->loginUser($limitedAdmin);
+        $crawler = $client->request('GET', '/admin/users/'.$target->uid());
+        $client->submit($crawler->selectButton('Save')->form([
+            'status' => UserAccountStatus::Inactive->value,
+        ]));
+
+        self::assertResponseRedirects('/admin/users/'.$target->uid());
+
+        $entityManager->clear();
+        $unchangedTarget = $entityManager->find(UserAccount::class, $target->uid());
+
+        self::assertInstanceOf(UserAccount::class, $unchangedTarget);
+        self::assertSame(UserAccountStatus::Active, $unchangedTarget->status());
+
+        $entityManager->remove($entityManager->find(UserAccount::class, $limitedAdmin->uid()));
+        $entityManager->remove($entityManager->find(AclGroup::class, $limitedGroup->uid()));
+        $entityManager->flush();
+    }
+
+    public function testAdminCannotRemoveOwnLastAdminAccess(): void
+    {
+        $client = self::createClient();
+        $admin = $this->adminUser();
+        $client->loginUser($admin);
+
+        $crawler = $client->request('GET', '/admin/users/'.$admin->uid());
+        $form = $crawler->selectButton('Save')->form([
+            'status' => UserAccountStatus::Active->value,
+        ]);
+        foreach ($form['groups'] as $groupField) {
+            $groupField->untick();
+        }
+        $client->submit($form);
+
+        self::assertResponseRedirects('/admin/users/'.$admin->uid());
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $unchangedAdmin = $entityManager->find(UserAccount::class, $admin->uid());
+
+        self::assertInstanceOf(UserAccount::class, $unchangedAdmin);
+        self::assertSame(AccessLevel::ADMIN, $unchangedAdmin->maxAccessLevel());
+    }
+
+    public function testGroupDeleteRequiresReviewAndCleansAclReferences(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $group = $this->createGroup('review_cleanup', AccessLevel::MANAGER);
+        $user = $this->createUser('groupcleanup', UserAccountStatus::Active);
+        $user->addGroup($group);
+        [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'cleanup-invite@example.test',
+            [$group->identifier()],
+        );
+        $content = new ContentItem('64000000-0000-0000-0000-000000000001', 'acl-cleanup-content');
+        $content->setAclRestrictions([$group->identifier()]);
+        $content->setViewRule(null, [$group->identifier()]);
+        $content->setEditRule(AccessLevel::EDITOR, [$group->identifier()]);
+        $content->setManageRule(AccessLevel::MANAGER, [$group->identifier()]);
+        $schema = new ContentSchema('64000000-0000-0000-0000-000000000002', 'acl_cleanup_schema', ContentSchemaSource::Custom, ['en' => 'ACL cleanup']);
+        $version = new ContentSchemaVersion(
+            '64000000-0000-0000-0000-000000000003',
+            $schema,
+            1,
+            ['en' => 'ACL cleanup schema'],
+            [
+                'fields' => [
+                    ['identifier' => 'title', 'type' => 'text', 'required' => true],
+                    ['identifier' => 'subtitle', 'type' => 'text', 'required' => true],
+                ],
+            ],
+            useGroupIdentifiers: [$group->identifier()],
+            editGroupIdentifiers: [$group->identifier()],
+            manageGroupIdentifiers: [$group->identifier()],
+        );
+        $menu = new SiteMenu('64000000-0000-0000-0000-000000000004', 'acl_cleanup_menu', ['en' => 'ACL cleanup']);
+        $menuItem = new SiteMenuItem('64000000-0000-0000-0000-000000000005', $menu, ['en' => 'ACL cleanup'], 'route', 'content_home', viewGroupIdentifiers: [$group->identifier()]);
+
+        $schema->addVersion($version);
+        $menu->addItem($menuItem);
+        $entityManager->persist($token);
+        $entityManager->persist($content);
+        $entityManager->persist($schema);
+        $entityManager->persist($version);
+        $entityManager->persist($menu);
+        $entityManager->persist($menuItem);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
+        $client->submit($crawler->filter('form[action="/admin/users/groups/'.$group->uid().'/delete"]')->form());
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Review ACL group change');
+        self::assertSelectorTextContains('main', 'groupcleanup@example.test');
+        self::assertSelectorTextContains('main', 'acl-cleanup-content');
+        self::assertSelectorTextContains('main', 'acl_cleanup_schema v1');
+        self::assertSelectorTextContains('main', 'cleanup-invite@example.test');
+
+        $crawler = $client->getCrawler();
+        $client->submit($crawler->selectButton('Delete group and remove references')->form());
+
+        self::assertResponseRedirects('/admin/users/groups');
+
+        $entityManager->clear();
+        $deletedGroup = $entityManager->find(AclGroup::class, $group->uid());
+        $updatedUser = $entityManager->find(UserAccount::class, $user->uid());
+        $updatedToken = $entityManager->find(AccountToken::class, $token->uid());
+        $updatedContent = $entityManager->find(ContentItem::class, $content->uid());
+        $updatedVersion = $entityManager->find(ContentSchemaVersion::class, $version->uid());
+        $updatedMenuItem = $entityManager->find(SiteMenuItem::class, $menuItem->uid());
+
+        self::assertNull($deletedGroup);
+        self::assertInstanceOf(UserAccount::class, $updatedUser);
+        self::assertSame(0, $updatedUser->maxAccessLevel());
+        self::assertInstanceOf(AccountToken::class, $updatedToken);
+        self::assertSame([], $updatedToken->groupIdentifiers());
+        self::assertInstanceOf(ContentItem::class, $updatedContent);
+        self::assertSame([], $updatedContent->aclRestrictions());
+        self::assertSame([], $updatedContent->viewGroupIdentifiers());
+        self::assertSame([], $updatedContent->editGroupIdentifiers());
+        self::assertSame([], $updatedContent->manageGroupIdentifiers());
+        self::assertInstanceOf(ContentSchemaVersion::class, $updatedVersion);
+        self::assertSame([], $updatedVersion->useGroupIdentifiers());
+        self::assertSame([], $updatedVersion->editGroupIdentifiers());
+        self::assertSame([], $updatedVersion->manageGroupIdentifiers());
+        self::assertInstanceOf(SiteMenuItem::class, $updatedMenuItem);
+        self::assertSame([], $updatedMenuItem->viewGroupIdentifiers());
+
+        $entityManager->remove($updatedToken);
+        $entityManager->remove($updatedContent);
+        $entityManager->remove($entityManager->find(ContentSchema::class, $schema->uid()));
+        $entityManager->remove($entityManager->find(SiteMenu::class, $menu->uid()));
+        $entityManager->remove($updatedUser);
+        $entityManager->flush();
+    }
+
+    public function testGroupUpdateRequiresReviewConfirmation(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $group = $this->createGroup('review_update', AccessLevel::EDITOR);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
+        $client->submit($crawler->selectButton('Save')->form([
+            'name_en' => 'Review update changed',
+            'name_de' => 'Review update changed',
+            'access_level' => (string) AccessLevel::MANAGER,
+            'allow_empty' => '1',
+        ]));
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Review ACL group change');
+        self::assertSelectorTextContains('main', '3 -> 6');
+
+        $crawler = $client->getCrawler();
+        $client->submit($crawler->selectButton('Apply group update')->form());
+
+        self::assertResponseRedirects('/admin/users/groups/'.$group->uid());
+
+        $entityManager->clear();
+        $updatedGroup = $entityManager->find(AclGroup::class, $group->uid());
+
+        self::assertInstanceOf(AclGroup::class, $updatedGroup);
+        self::assertSame(AccessLevel::MANAGER, $updatedGroup->accessLevel());
+        self::assertSame('Review update changed', $updatedGroup->name()['en']);
+
+        $entityManager->remove($updatedGroup);
+        $entityManager->flush();
+    }
+
     public function testAdminCanCreateAclGroup(): void
     {
         $client = self::createClient();
@@ -312,6 +504,29 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
 
         return $user;
+    }
+
+    private function createGroup(string $identifier, int $accessLevel): AclGroup
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $existingGroup = $entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => $identifier]);
+
+        if ($existingGroup instanceof AclGroup) {
+            $existingGroup->changeAccessLevel($accessLevel);
+            $entityManager->flush();
+
+            return $existingGroup;
+        }
+
+        $group = new AclGroup(
+            '62000000-0000-0000-0000-'.substr(md5($identifier), 0, 12),
+            $identifier,
+            ['en' => ucfirst(str_replace('_', ' ', $identifier))],
+            $accessLevel,
+        );
+        $entityManager->persist($group);
+
+        return $group;
     }
 
     private function createApiKey(UserAccount $user, string $prefix): ApiKey

@@ -111,6 +111,15 @@ class SiteMenuItem
     }
 
     /**
+     * @param list<string>|null $groupIdentifiers
+     */
+    public function setViewRule(?int $minLevel, ?array $groupIdentifiers = null): void
+    {
+        $this->viewMinLevel = AccessLevel::assert($minLevel);
+        $this->viewGroupIdentifiers = self::assertOptionalGroupIdentifierList($groupIdentifiers);
+    }
+
+    /**
      * @param list<string>|null $values
      *
      * @return list<string>|null

@@ -393,6 +393,7 @@ admin:
             actions: Actions
             type: Type
             expires_at: Expires
+            login_possible: 'Login possible'
         actions:
             approve: Approve
             reissue: 'Reissue link'
@@ -419,6 +420,10 @@ admin:
                 invalid_invitation: 'The invitation could not be created.'
                 email_in_use: 'A user account already exists for this email address.'
                 invalid_status: 'Choose a valid account status.'
+                target_higher_access: 'You cannot edit a user with a higher access level.'
+                group_level_too_high: 'You cannot assign access groups above your own access level.'
+                self_lockout: 'This change would remove your own Admin access.'
+                last_admin: 'At least one active user with Admin access must remain.'
         saved: 'User saved.'
     user_reviews:
         title: 'User reviews'
@@ -479,6 +484,33 @@ admin:
             title: 'Group settings'
         delete:
             title: 'Delete group'
+        members:
+            title: Members
+            empty: 'No users are assigned to this group.'
+        review:
+            title: 'Review ACL group change'
+            subtitle: 'Review the impact for %group% before applying this change.'
+            summary_title: 'Impact summary'
+            update_title: 'Pending group values'
+            confirm_title: 'Confirm change'
+            confirm_update: 'Apply group update'
+            confirm_delete: 'Delete group and remove references'
+            cancel: Cancel
+            empty: 'No records in this area are affected.'
+            users_title: 'Affected users'
+            account_tokens_title: 'Affected account links'
+            content_items_title: 'Affected content items'
+            content_schema_versions_title: 'Affected content schema versions'
+            site_menu_items_title: 'Affected site menu items'
+            summary:
+                users: Users
+                account_tokens: 'Account links'
+                content_items: 'Content items'
+                content_schema_versions: 'Schema versions'
+                site_menu_items: 'Site menu items'
+            fields:
+                item: Item
+                fields: Fields
         fields:
             identifier: Identifier
             name: Name
@@ -498,6 +530,9 @@ admin:
         delete_blocked: 'This group cannot be deleted.'
         form:
             invalid: 'The group could not be saved.'
+            higher_access: 'You cannot manage an ACL group above your own access level.'
+            self_lockout: 'This group change would remove your own Admin access.'
+            last_admin: 'At least one active user with Admin access must remain.'
     scheduler:
         title: Scheduler
         foundation_title: 'Scheduler operations foundation'

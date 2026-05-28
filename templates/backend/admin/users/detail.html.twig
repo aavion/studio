@@ -16,6 +16,20 @@
 
     <section class="studio-panel">
         <h2>{{ 'admin.users.detail.title'|trans }}</h2>
+        <dl class="studio-backend-summary">
+            <div>
+                <dt>{{ 'admin.users.fields.email'|trans }}</dt>
+                <dd>{{ user_account.email }}</dd>
+            </div>
+            <div>
+                <dt>{{ 'admin.users.fields.access_level'|trans }}</dt>
+                <dd>{{ user_account.maxAccessLevel }}</dd>
+            </div>
+            <div>
+                <dt>{{ 'admin.users.fields.login_possible'|trans }}</dt>
+                <dd>{{ login_possible ? 'ui.form.yes'|trans : 'ui.form.no'|trans }}</dd>
+            </div>
+        </dl>
         <form method="post" class="studio-backend-form">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_' ~ user_account.uid) }}">
             {% include '@backend/partials/forms/fields/select.html.twig' with {

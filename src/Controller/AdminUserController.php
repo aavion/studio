@@ -19,6 +19,8 @@ use App\Security\AccountLinkDeliveryInterface;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\AclGroupImpactService;
+use App\Security\AdminUserAccessPolicy;
 use App\Security\UserAccountLifecycle;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
@@ -43,6 +45,8 @@ final class AdminUserController extends AbstractController
         private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly UserFlowConfig $userFlowConfig,
         private readonly UserAccountLifecycle $userLifecycle,
+        private readonly AdminUserAccessPolicy $adminUserPolicy,
+        private readonly AclGroupImpactService $aclGroupImpact,
         private readonly AuditLoggerInterface $auditLogger,
         private readonly UserPasswordHasherInterface $passwordHasher,
     ) {
@@ -108,6 +112,12 @@ final class AdminUserController extends AbstractController
         $groups = $this->groupIdentifiers($request->request->all('groups'));
 
         try {
+            if ($error = $this->adminUserPolicy->validateGroupAssignment($this->actor(), $groups)) {
+                $this->addFlash('error', $error);
+
+                return $this->redirectToRoute('backend_admin_users');
+            }
+
             if ($this->emailBelongsToUser($email)) {
                 $this->addFlash('error', 'admin.users.form.errors.email_in_use');
 
@@ -240,6 +250,12 @@ final class AdminUserController extends AbstractController
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
 
+        if ($error = $this->adminUserPolicy->validateUserAction($this->actor(), $user)) {
+            $this->addFlash('error', $error);
+
+            return $this->redirectToRoute('backend_admin_user_reviews');
+        }
+
         $user->changePassword($this->passwordHasher->hashPassword($user, bin2hex(random_bytes(32))));
         $this->userLifecycle->changeStatus($user, UserAccountStatus::Active);
         $this->entityManager->flush();
@@ -278,6 +294,12 @@ final class AdminUserController extends AbstractController
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
 
+        if ($error = $this->adminUserPolicy->validateUserAction($this->actor(), $user)) {
+            $this->addFlash('error', $error);
+
+            return $this->redirectToRoute('backend_admin_user_reviews');
+        }
+
         $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Deleted);
         $this->entityManager->flush();
         $this->audit('user.security_review_deleted', ['target_user' => $user->uid(), ...$effects]);
@@ -309,6 +331,7 @@ final class AdminUserController extends AbstractController
             'navigation' => $this->navigation($request),
             'user_account' => $user,
             'groups' => $this->entityManager->getRepository(AclGroup::class)->findBy([], ['accessLevel' => 'ASC', 'identifier' => 'ASC']),
+            'login_possible' => $user->status()->isUsable(),
         ]);
     }
 
@@ -327,6 +350,12 @@ final class AdminUserController extends AbstractController
 
         if (!$this->isCsrfTokenValid('admin_user_password_reset_'.$uid, $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+
+            return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
+        }
+
+        if ($error = $this->adminUserPolicy->validateUserAction($this->actor(), $user)) {
+            $this->addFlash('error', $error);
 
             return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
         }
@@ -375,7 +404,9 @@ final class AdminUserController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
-            $this->updateGroup($request, $group);
+            if ($response = $this->updateGroup($request, $group)) {
+                return $response;
+            }
 
             return $this->redirectToRoute('backend_admin_user_group_detail', ['uid' => $uid]);
         }
@@ -384,6 +415,7 @@ final class AdminUserController extends AbstractController
             'navigation' => $this->navigation($request),
             'group' => $group,
             'member_count' => $this->memberCount($group),
+            'members' => $this->membersForGroup($group),
         ]);
     }
 
@@ -406,15 +438,37 @@ final class AdminUserController extends AbstractController
             return $this->redirectToRoute('backend_admin_user_group_detail', ['uid' => $uid]);
         }
 
-        if ($group->isLocked() || (!$group->allowsEmptyMembership() && 0 < $this->memberCount($group))) {
+        if ($group->isLocked()) {
             $this->addFlash('error', 'admin.groups.delete_blocked');
 
             return $this->redirectToRoute('backend_admin_user_group_detail', ['uid' => $uid]);
         }
 
+        if ($error = $this->adminUserPolicy->validateGroupDelete($this->actor(), $group)) {
+            $this->addFlash('error', $error);
+
+            return $this->redirectToRoute('backend_admin_user_group_detail', ['uid' => $uid]);
+        }
+
+        $impact = $this->aclGroupImpact->impact($group);
+
+        if ('1' !== $this->field($request, 'confirm_delete')) {
+            return $this->render('@backend/admin/users/group-review.html.twig', [
+                'navigation' => $this->navigation($request),
+                'group' => $group,
+                'operation' => 'delete',
+                'impact' => $impact,
+                'pending' => [],
+            ]);
+        }
+
+        $cleanupImpact = $this->aclGroupImpact->removeReferences($group);
         $this->entityManager->remove($group);
         $this->entityManager->flush();
-        $this->audit('acl.group_deleted', ['group' => $group->identifier()]);
+        $this->audit('acl.group_deleted', [
+            'group' => $group->identifier(),
+            'impact' => $cleanupImpact['summary'],
+        ]);
         $this->addFlash('success', 'admin.groups.deleted');
 
         return $this->redirectToRoute('backend_admin_user_groups');
@@ -436,10 +490,30 @@ final class AdminUserController extends AbstractController
             return;
         }
 
+        $newGroupIdentifiers = $this->groupIdentifiers($request->request->all('groups'));
+
+        if ($error = $this->adminUserPolicy->validateUserUpdate($this->actor(), $user, $status, $newGroupIdentifiers)) {
+            $this->addFlash('error', $error);
+
+            return;
+        }
+
+        $oldStatus = $user->status()->value;
+        $oldGroups = $this->userGroupIdentifiers($user);
+        $oldAccessLevel = $user->maxAccessLevel();
         $effects = $this->userLifecycle->changeStatus($user, $status);
-        $this->syncGroups($user, $this->groupIdentifiers($request->request->all('groups')));
+        $this->syncGroups($user, $newGroupIdentifiers);
         $this->entityManager->flush();
-        $this->audit('user.account_updated', ['target_user' => $user->uid(), 'status' => $status->value, ...$effects]);
+        $this->audit('user.account_updated', [
+            'target_user' => $user->uid(),
+            'old_status' => $oldStatus,
+            'new_status' => $status->value,
+            'old_groups' => $oldGroups,
+            'new_groups' => $this->userGroupIdentifiers($user),
+            'old_access_level' => $oldAccessLevel,
+            'new_access_level' => $user->maxAccessLevel(),
+            ...$effects,
+        ]);
         $this->addFlash('success', 'admin.users.saved');
     }
 
@@ -452,6 +526,14 @@ final class AdminUserController extends AbstractController
         }
 
         try {
+            $accessLevel = AccessLevel::assert((int) $this->field($request, 'access_level'));
+
+            if ($error = $this->adminUserPolicy->validateGroupCreate($this->actor(), $accessLevel)) {
+                $this->addFlash('error', $error);
+
+                return;
+            }
+
             $group = new AclGroup(
                 self::uuid(),
                 $this->field($request, 'identifier'),
@@ -459,7 +541,7 @@ final class AdminUserController extends AbstractController
                     'en' => $this->field($request, 'name_en'),
                     'de' => $this->field($request, 'name_de') ?: $this->field($request, 'name_en'),
                 ],
-                (int) $this->field($request, 'access_level'),
+                $accessLevel,
                 false,
                 true,
             );
@@ -472,33 +554,80 @@ final class AdminUserController extends AbstractController
         }
     }
 
-    private function updateGroup(Request $request, AclGroup $group): void
+    private function updateGroup(Request $request, AclGroup $group): ?Response
     {
         if (!$this->isCsrfTokenValid('admin_group_'.$group->uid(), $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
-            return;
+            return null;
         }
 
         if ($group->isLocked()) {
             $this->addFlash('error', 'admin.groups.locked');
 
-            return;
+            return null;
+        }
+
+        $pending = [
+            'name_en' => $this->field($request, 'name_en'),
+            'name_de' => $this->field($request, 'name_de') ?: $this->field($request, 'name_en'),
+            'access_level' => (int) $this->field($request, 'access_level'),
+            'allow_empty' => '1' === $this->field($request, 'allow_empty'),
+        ];
+
+        try {
+            AccessLevel::assert($pending['access_level']);
+        } catch (Throwable) {
+            $this->addFlash('error', 'admin.groups.form.invalid');
+
+            return null;
+        }
+
+        if ($error = $this->adminUserPolicy->validateGroupUpdate($this->actor(), $group, $pending['access_level'])) {
+            $this->addFlash('error', $error);
+
+            return null;
+        }
+
+        $impact = $this->aclGroupImpact->impact($group);
+
+        if ('1' !== $this->field($request, 'confirm_update')) {
+            return $this->render('@backend/admin/users/group-review.html.twig', [
+                'navigation' => $this->navigation($request),
+                'group' => $group,
+                'operation' => 'update',
+                'impact' => $impact,
+                'pending' => $pending,
+            ]);
         }
 
         try {
+            $oldName = $group->name();
+            $oldAccessLevel = $group->accessLevel();
+            $oldAllowEmpty = $group->allowsEmptyMembership();
             $group->rename([
-                'en' => $this->field($request, 'name_en'),
-                'de' => $this->field($request, 'name_de') ?: $this->field($request, 'name_en'),
+                'en' => $pending['name_en'],
+                'de' => $pending['name_de'],
             ]);
-            $group->changeAccessLevel((int) $this->field($request, 'access_level'));
-            $group->changeEmptyMembershipPolicy('1' === $this->field($request, 'allow_empty'));
+            $group->changeAccessLevel($pending['access_level']);
+            $group->changeEmptyMembershipPolicy($pending['allow_empty']);
             $this->entityManager->flush();
-            $this->audit('acl.group_updated', ['group' => $group->identifier()]);
+            $this->audit('acl.group_updated', [
+                'group' => $group->identifier(),
+                'old_name' => $oldName,
+                'new_name' => $group->name(),
+                'old_access_level' => $oldAccessLevel,
+                'new_access_level' => $group->accessLevel(),
+                'old_allow_empty' => $oldAllowEmpty,
+                'new_allow_empty' => $group->allowsEmptyMembership(),
+                'impact' => $impact['summary'],
+            ]);
             $this->addFlash('success', 'admin.groups.saved');
         } catch (Throwable) {
             $this->addFlash('error', 'admin.groups.form.invalid');
         }
+
+        return null;
     }
 
     /**
@@ -530,6 +659,40 @@ final class AdminUserController extends AbstractController
             'SELECT COUNT(*) FROM user_acl_group WHERE group_uid = ?',
             [$group->uid()],
         );
+    }
+
+    /**
+     * @return list<UserAccount>
+     */
+    private function membersForGroup(AclGroup $group): array
+    {
+        $members = [];
+
+        foreach ($this->entityManager->getRepository(UserAccount::class)->findBy([], ['username' => 'ASC']) as $user) {
+            if ($user instanceof UserAccount && $user->groups()->contains($group)) {
+                $members[] = $user;
+            }
+        }
+
+        return $members;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function userGroupIdentifiers(UserAccount $user): array
+    {
+        $identifiers = [];
+
+        foreach ($user->groups() as $group) {
+            if ($group instanceof AclGroup) {
+                $identifiers[] = $group->identifier();
+            }
+        }
+
+        sort($identifiers);
+
+        return $identifiers;
     }
 
     /**

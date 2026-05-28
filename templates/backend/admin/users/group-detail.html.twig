@@ -43,4 +43,32 @@
             </form>
         </section>
     {% endif %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.groups.members.title'|trans }}</h2>
+        {% if members is empty %}
+            <p class="studio-muted">{{ 'admin.groups.members.empty'|trans }}</p>
+        {% else %}
+            <table class="studio-field-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.users.fields.username'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.email'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.status'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.access_level'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in members %}
+                        <tr>
+                            <td><a href="{{ path('backend_admin_user_detail', {uid: member.uid}) }}">{{ member.username }}</a></td>
+                            <td>{{ member.email }}</td>
+                            <td>{{ ('admin.users.status.' ~ member.status.value)|trans }}</td>
+                            <td>{{ member.maxAccessLevel }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
 {% endblock %}
