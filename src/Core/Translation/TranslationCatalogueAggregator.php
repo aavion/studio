@@ -51,6 +51,26 @@ final readonly class TranslationCatalogueAggregator
 
     /**
      * @param iterable<PackageAssetSyncPackage> $packages
+     */
+    public function sourceHash(iterable $packages): string
+    {
+        $packages = $this->sortedPackages($packages);
+        $sources = array_merge($this->coreSources(), $this->packageSources($packages));
+        $fingerprints = [];
+
+        foreach ($sources as $source) {
+            $fingerprints[] = implode("\0", [
+                $source['locale'],
+                $this->relativeSourcePath($source['path']),
+                (string) hash_file('sha256', $source['path']),
+            ]);
+        }
+
+        return hash('sha256', implode("\n", $fingerprints));
+    }
+
+    /**
+     * @param iterable<PackageAssetSyncPackage> $packages
      *
      * @return WorkflowResult<array{packages: int, locales: int, files: int, targets: list<string>}>
      */
@@ -243,5 +263,12 @@ final readonly class TranslationCatalogueAggregator
     private function absolutePath(string $path): string
     {
         return $this->projectDir.'/'.$this->pathGuard->relativePath($path);
+    }
+
+    private function relativeSourcePath(string $path): string
+    {
+        $prefix = rtrim($this->projectDir, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+
+        return str_starts_with($path, $prefix) ? substr($path, strlen($prefix)) : $path;
     }
 }
