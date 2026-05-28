@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace App\Tests\Setup;
 
 use App\Core\ActionLog\ActionLog;
-use App\Core\Log\ConfigAuditLogPolicy;
-use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Setup\DatabaseDriver;
 use App\Setup\DatabaseUrlFactory;
 use App\Setup\SetupCommandExecutorInterface;
 use App\Setup\SetupCommandResult;
+use App\Setup\SetupDefaultSeed;
 use App\Setup\SetupInput;
 use App\Setup\SetupLanguageCatalog;
 use App\Setup\SetupRunner;
-use App\Security\UserFlowConfig;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
 use PDO;
 use PHPUnit\Framework\TestCase;
@@ -45,8 +43,7 @@ final class SetupRunnerTest extends TestCase
         $this->createSchema($databasePath);
         $executor = new RecordingSetupCommandExecutor();
         $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
-
-        $result = $runner->run(new SetupInput(
+        $input = new SetupInput(
             appEnv: 'test',
             language: 'de',
             siteTitle: 'Example Studio',
@@ -57,7 +54,10 @@ final class SetupRunnerTest extends TestCase
             adminPassword: 'secret-password',
             adminEmail: 'admin@example.test',
             appSecret: 'test-secret',
-        ));
+        );
+        $seed = new SetupDefaultSeed();
+
+        $result = $runner->run($input);
 
         self::assertTrue($result->isSuccess());
         self::assertInstanceOf(ActionLog::class, $result->value());
@@ -75,51 +75,21 @@ final class SetupRunnerTest extends TestCase
         ], $executor->commands);
 
         $pdo = new PDO('sqlite:'.$databasePath);
-        $title = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'site.title'")->fetchColumn();
-        $url = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'site.url'")->fetchColumn();
-        $language = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'localization.default_language'")->fetchColumn();
-        $homePath = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'content.home_path'")->fetchColumn();
-        $defaultAclGroup = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.default_acl_group'")->fetchColumn();
-        $usernameChangeEnabled = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.username_change.enabled'")->fetchColumn();
-        $accountLinkTtlHours = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.account_link_ttl_hours'")->fetchColumn();
-        $registrationAdminNotificationEmail = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.registration.admin_notification_email'")->fetchColumn();
-        $securityNotificationEmail = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.security_notification_email'")->fetchColumn();
-        $userMenuEnabled = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.menu.enabled'")->fetchColumn();
-        $userMenuSortOrder = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.menu.sort_order'")->fetchColumn();
-        $registrationMode = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.registration.mode'")->fetchColumn();
-        $auditEnabled = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'security.audit.enabled'")->fetchColumn();
-        $auditEvents = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'security.audit.events'")->fetchColumn();
-        $statisticsEnabled = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'statistics.enabled'")->fetchColumn();
-        $statisticsDnt = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'statistics.respect_do_not_track'")->fetchColumn();
+        $configRows = $pdo->query('SELECT config_key, value FROM config_entry')->fetchAll(PDO::FETCH_KEY_PAIR);
         $aclGroups = $pdo->query('SELECT identifier, access_level, locked, allow_empty FROM acl_group ORDER BY access_level')->fetchAll(PDO::FETCH_ASSOC);
         $passwordHash = $pdo->query("SELECT password_hash FROM user_account WHERE username = 'admin'")->fetchColumn();
         $stateMarkers = $pdo->query("SELECT marker_key, marker_value FROM state_marker WHERE subject_type = 'user_account' ORDER BY marker_key")->fetchAll(PDO::FETCH_KEY_PAIR);
         $groups = $pdo->query("SELECT g.identifier FROM acl_group g INNER JOIN user_acl_group ug ON ug.group_uid = g.uid INNER JOIN user_account u ON u.uid = ug.user_uid WHERE u.username = 'admin' ORDER BY g.access_level")->fetchAll(PDO::FETCH_COLUMN);
-        $home = $pdo->query("SELECT ci.slug, ci.status, ci.visibility, ci.active_revision_uid, cs.identifier AS schema_identifier FROM content_item ci INNER JOIN content_schema cs ON cs.uid = ci.schema_uid WHERE ci.slug = 'home'")->fetch(PDO::FETCH_ASSOC);
-        $homeTitle = $pdo->query("SELECT field_content FROM content_field_value WHERE revision_uid = '20000000-0000-0000-0000-000000000101' AND field_identifier = 'title' AND language = 'en'")->fetchColumn();
+        $home = $pdo->query(sprintf("SELECT ci.slug, ci.status, ci.visibility, ci.active_revision_uid, cs.identifier AS schema_identifier FROM content_item ci INNER JOIN content_schema cs ON cs.uid = ci.schema_uid WHERE ci.slug = '%s'", $seed->homeContentItem()['slug']))->fetch(PDO::FETCH_ASSOC);
+        $homeTitle = $pdo->query(sprintf("SELECT field_content FROM content_field_value WHERE revision_uid = '%s' AND field_identifier = 'title' AND language = 'en'", $seed->homeContentRevision()['uid']))->fetchColumn();
 
-        self::assertSame('Example Studio', json_decode((string) $title, true, flags: JSON_THROW_ON_ERROR));
-        self::assertSame('https://example.test', json_decode((string) $url, true, flags: JSON_THROW_ON_ERROR));
-        self::assertSame('de', json_decode((string) $language, true, flags: JSON_THROW_ON_ERROR));
-        self::assertSame('/home', json_decode((string) $homePath, true, flags: JSON_THROW_ON_ERROR));
-        self::assertSame('registered', json_decode((string) $defaultAclGroup, true, flags: JSON_THROW_ON_ERROR));
-        self::assertFalse(json_decode((string) $usernameChangeEnabled, true, flags: JSON_THROW_ON_ERROR));
-        self::assertSame(UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, json_decode((string) $accountLinkTtlHours, true, flags: JSON_THROW_ON_ERROR));
-        self::assertSame('', json_decode((string) $registrationAdminNotificationEmail, true, flags: JSON_THROW_ON_ERROR));
-        self::assertSame('', json_decode((string) $securityNotificationEmail, true, flags: JSON_THROW_ON_ERROR));
-        self::assertTrue(json_decode((string) $userMenuEnabled, true, flags: JSON_THROW_ON_ERROR));
-        self::assertSame(900, json_decode((string) $userMenuSortOrder, true, flags: JSON_THROW_ON_ERROR));
-        self::assertSame(UserFlowConfig::REGISTRATION_DISABLED, json_decode((string) $registrationMode, true, flags: JSON_THROW_ON_ERROR));
-        self::assertTrue(json_decode((string) $auditEnabled, true, flags: JSON_THROW_ON_ERROR));
-        self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, json_decode((string) $auditEvents, true, flags: JSON_THROW_ON_ERROR));
-        self::assertTrue(json_decode((string) $statisticsEnabled, true, flags: JSON_THROW_ON_ERROR));
-        self::assertTrue(json_decode((string) $statisticsDnt, true, flags: JSON_THROW_ON_ERROR));
-        self::assertSame([
-            ['identifier' => 'registered', 'access_level' => 1, 'locked' => 1, 'allow_empty' => 1],
-            ['identifier' => 'editor', 'access_level' => 3, 'locked' => 0, 'allow_empty' => 1],
-            ['identifier' => 'manager', 'access_level' => 6, 'locked' => 0, 'allow_empty' => 1],
-            ['identifier' => 'admin', 'access_level' => 9, 'locked' => 1, 'allow_empty' => 0],
-        ], array_map(static fn (array $row): array => [
+        self::assertSame($seed->configMap($input), $this->decodedConfigRows($configRows, array_keys($seed->configMap($input))));
+        self::assertSame(array_map(static fn (array $group): array => [
+            'identifier' => $group['identifier'],
+            'access_level' => $group['access_level'],
+            'locked' => $group['locked'] ? 1 : 0,
+            'allow_empty' => $group['allow_empty'] ? 1 : 0,
+        ], $seed->aclGroups()), array_map(static fn (array $row): array => [
             'identifier' => $row['identifier'],
             'access_level' => (int) $row['access_level'],
             'locked' => (int) $row['locked'],
@@ -132,15 +102,18 @@ final class SetupRunnerTest extends TestCase
             'password_changed' => null,
             'status_changed' => 'active',
         ], $stateMarkers);
-        self::assertSame(['admin'], $groups);
+        self::assertSame([$seed->adminGroupIdentifier()], $groups);
+        $homeContent = $seed->homeContentItem();
+        $homeRevision = $seed->homeContentRevision();
+        $schema = $seed->contentSchema();
         self::assertSame([
-            'slug' => 'home',
-            'status' => 'published',
-            'visibility' => 'public',
-            'active_revision_uid' => '20000000-0000-0000-0000-000000000101',
-            'schema_identifier' => 'static_page',
+            'slug' => $homeContent['slug'],
+            'status' => $homeContent['status'],
+            'visibility' => $homeContent['visibility'],
+            'active_revision_uid' => $homeRevision['uid'],
+            'schema_identifier' => $schema['identifier'],
         ], $home);
-        self::assertSame('Example Studio', json_decode((string) $homeTitle, true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame($seed->homeContentFields($input)['title']['en'], json_decode((string) $homeTitle, true, flags: JSON_THROW_ON_ERROR));
     }
 
     public function testItRejectsShortAdminPasswordBeforeSetupSteps(): void
@@ -195,7 +168,8 @@ final class SetupRunnerTest extends TestCase
             'Placeholder Studio',
             json_decode((string) $pdo->query("SELECT value FROM config_entry WHERE config_key = 'site.title'")->fetchColumn(), true, flags: JSON_THROW_ON_ERROR),
         );
-        self::assertSame(1, (int) $pdo->query("SELECT COUNT(*) FROM acl_group WHERE identifier = 'admin'")->fetchColumn());
+        $seed = new SetupDefaultSeed();
+        self::assertSame(1, (int) $pdo->query(sprintf("SELECT COUNT(*) FROM acl_group WHERE identifier = '%s'", $seed->adminGroupIdentifier()))->fetchColumn());
     }
 
     public function testItStopsWhenDefaultSettingsCannotBeWritten(): void
@@ -230,10 +204,12 @@ final class SetupRunnerTest extends TestCase
         $this->createSchema($databasePath);
         $pdo = new PDO('sqlite:'.$databasePath);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $seed = new SetupDefaultSeed();
+        $adminGroup = $this->seedAclGroup($seed->adminGroupIdentifier());
         $existingAdminGroupUid = '99999999-0000-0000-0000-000000000105';
         $existingAdminUserUid = '99999999-0000-0000-0000-000000000201';
         $pdo->prepare('INSERT INTO acl_group (uid, identifier, name, access_level, locked, allow_empty, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)')
-            ->execute([$existingAdminGroupUid, 'admin', '{"en":"Legacy Admin"}', 8, 0, 1, '{}']);
+            ->execute([$existingAdminGroupUid, $adminGroup['identifier'], '{"en":"Legacy Admin"}', 8, 0, 1, '{}']);
         $pdo->prepare('INSERT INTO user_account (uid, username, email, password_hash, profile, settings, status) VALUES (?, ?, ?, ?, ?, ?, ?)')
             ->execute([$existingAdminUserUid, 'legacy-admin', 'legacy-admin@example.test', password_hash('legacy-secret', PASSWORD_DEFAULT), '{}', '{}', 'active']);
         $pdo->prepare('INSERT INTO user_acl_group (user_uid, group_uid) VALUES (?, ?)')
@@ -255,10 +231,10 @@ final class SetupRunnerTest extends TestCase
         ));
 
         self::assertTrue($result->isSuccess());
-        self::assertSame($existingAdminGroupUid, $pdo->query("SELECT uid FROM acl_group WHERE identifier = 'admin'")->fetchColumn());
-        self::assertSame(9, (int) $pdo->query("SELECT access_level FROM acl_group WHERE identifier = 'admin'")->fetchColumn());
-        self::assertSame(1, (int) $pdo->query("SELECT locked FROM acl_group WHERE identifier = 'admin'")->fetchColumn());
-        self::assertSame(0, (int) $pdo->query("SELECT allow_empty FROM acl_group WHERE identifier = 'admin'")->fetchColumn());
+        self::assertSame($existingAdminGroupUid, $pdo->query(sprintf("SELECT uid FROM acl_group WHERE identifier = '%s'", $adminGroup['identifier']))->fetchColumn());
+        self::assertSame($adminGroup['access_level'], (int) $pdo->query(sprintf("SELECT access_level FROM acl_group WHERE identifier = '%s'", $adminGroup['identifier']))->fetchColumn());
+        self::assertSame($adminGroup['locked'] ? 1 : 0, (int) $pdo->query(sprintf("SELECT locked FROM acl_group WHERE identifier = '%s'", $adminGroup['identifier']))->fetchColumn());
+        self::assertSame($adminGroup['allow_empty'] ? 1 : 0, (int) $pdo->query(sprintf("SELECT allow_empty FROM acl_group WHERE identifier = '%s'", $adminGroup['identifier']))->fetchColumn());
         self::assertSame(1, (int) $pdo->query("SELECT COUNT(*) FROM user_acl_group WHERE user_uid = '$existingAdminUserUid' AND group_uid = '$existingAdminGroupUid'")->fetchColumn());
         self::assertSame(1, (int) $pdo->query("SELECT COUNT(*) FROM state_marker WHERE subject_type = 'acl_group' AND subject_uid = '$existingAdminGroupUid'")->fetchColumn());
     }
@@ -371,8 +347,7 @@ final class SetupRunnerTest extends TestCase
         $this->createSchema($databasePath);
         $executor = new RecordingSetupCommandExecutor();
         $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
-
-        $result = $runner->run(new SetupInput(
+        $input = new SetupInput(
             appEnv: 'test',
             language: 'de',
             siteTitle: 'Dry Studio',
@@ -383,7 +358,10 @@ final class SetupRunnerTest extends TestCase
             adminPassword: 'secret-password',
             adminEmail: 'admin@example.test',
             dryRun: true,
-        ));
+        );
+        $seed = new SetupDefaultSeed();
+
+        $result = $runner->run($input);
 
         self::assertTrue($result->isSuccess());
         self::assertTrue($result->context()['dry_run']);
@@ -399,22 +377,10 @@ final class SetupRunnerTest extends TestCase
         $entries = $log->toArray()['entries'];
         self::assertSame('success', $entries[0]['status']);
         self::assertSame('skipped', $entries[1]['status']);
-        self::assertSame('de', $entries[4]['context']['settings']['localization.default_language']);
-        self::assertSame('/home', $entries[4]['context']['settings']['content.home_path']);
-        self::assertSame('registered', $entries[4]['context']['settings']['user.default_acl_group']);
-        self::assertFalse($entries[4]['context']['settings'][UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY]);
-        self::assertSame(UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, $entries[4]['context']['settings'][UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY]);
-        self::assertSame('', $entries[4]['context']['settings'][UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY]);
-        self::assertSame('', $entries[4]['context']['settings'][UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY]);
-        self::assertTrue($entries[4]['context']['settings']['user.menu.enabled']);
-        self::assertSame(900, $entries[4]['context']['settings']['user.menu.sort_order']);
-        self::assertSame(UserFlowConfig::REGISTRATION_DISABLED, $entries[4]['context']['settings'][UserFlowConfig::REGISTRATION_MODE_KEY]);
-        self::assertTrue($entries[4]['context']['settings'][ConfigAuditLogPolicy::ENABLED_KEY]);
-        self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $entries[4]['context']['settings'][ConfigAuditLogPolicy::EVENTS_KEY]);
-        self::assertTrue($entries[4]['context']['settings'][AccessStatisticsPolicy::ENABLED_KEY]);
-        self::assertTrue($entries[4]['context']['settings'][AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY]);
+        self::assertSame($seed->configMap($input), $entries[4]['context']['settings']);
         self::assertSame('seed_initial_content', $entries[6]['name']);
-        self::assertSame('/home', $entries[6]['context']['path']);
+        self::assertSame($seed->homePath(), $entries[6]['context']['path']);
+        self::assertSame($seed->contentSchema()['identifier'], $entries[6]['context']['schema']);
         self::assertSame('clear_cache', $entries[7]['name']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'], $entries[7]['context']['command']);
         self::assertSame('mark_setup_completed', $entries[8]['name']);
@@ -523,6 +489,38 @@ final class SetupRunnerTest extends TestCase
         ), $this->root);
 
         self::assertSame('mysql://studio%20user:secret%2Fpass@db.example.test:3307/studio%20db', $url);
+    }
+
+    /**
+     * @return array{uid: string, identifier: string, name: array<string, string>, access_level: int, locked: bool, allow_empty: bool}
+     */
+    private function seedAclGroup(string $identifier): array
+    {
+        foreach ((new SetupDefaultSeed())->aclGroups() as $group) {
+            if ($identifier === $group['identifier']) {
+                return $group;
+            }
+        }
+
+        self::fail(sprintf('Default ACL group "%s" is not defined.', $identifier));
+    }
+
+    /**
+     * @param array<string, string> $rows
+     * @param list<string> $keys
+     *
+     * @return array<string, mixed>
+     */
+    private function decodedConfigRows(array $rows, array $keys): array
+    {
+        $decoded = [];
+
+        foreach ($keys as $key) {
+            self::assertArrayHasKey($key, $rows);
+            $decoded[$key] = json_decode($rows[$key], true, flags: JSON_THROW_ON_ERROR);
+        }
+
+        return $decoded;
     }
 
     private function createSchema(string $databasePath): void

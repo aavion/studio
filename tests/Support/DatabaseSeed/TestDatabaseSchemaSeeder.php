@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Support\DatabaseSeed;
 
+use App\Setup\SetupDefaultSeed;
+
 final class TestDatabaseSchemaSeeder
 {
     public static function seed(TestDatabaseSeedWriter $writer): void
@@ -58,15 +60,19 @@ final class TestDatabaseSchemaSeeder
      */
     private static function schemas(): array
     {
+        $setupSeed = new SetupDefaultSeed();
+        $setupSchema = $setupSeed->contentSchema();
+        $setupVersion = $setupSeed->contentSchemaVersion();
+
         return [
             [
-                'schema_uid' => '10000000-0000-0000-0000-000000000001',
-                'version_uid' => '10000000-0000-0000-0000-000000000101',
-                'identifier' => 'static_page',
-                'labels' => ['en' => 'Static page', 'de' => 'Statische Seite'],
-                'title' => ['en' => 'Static page schema', 'de' => 'Schema fuer statische Seiten'],
-                'description' => ['en' => 'General pages with a rich text body.', 'de' => 'Allgemeine Seiten mit Rich-Text-Inhalt.'],
-                'definition' => self::staticPageDefinition(),
+                'schema_uid' => $setupSchema['uid'],
+                'version_uid' => $setupVersion['uid'],
+                'identifier' => $setupSchema['identifier'],
+                'labels' => $setupSchema['labels'],
+                'title' => $setupVersion['title'],
+                'description' => $setupSchema['descriptions'],
+                'definition' => $setupVersion['definition'],
             ],
             [
                 'schema_uid' => '10000000-0000-0000-0000-000000000002',
@@ -77,22 +83,6 @@ final class TestDatabaseSchemaSeeder
                 'description' => ['en' => 'Editorial articles with teaser and tags.', 'de' => 'Redaktionelle Artikel mit Teaser und Tags.'],
                 'definition' => self::articleDefinition(),
             ],
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private static function staticPageDefinition(): array
-    {
-        return [
-            'fields' => [
-                ['identifier' => 'title', 'type' => 'text', 'required' => true, 'localized' => true],
-                ['identifier' => 'subtitle', 'type' => 'text', 'required' => true, 'localized' => true],
-                ['identifier' => 'body', 'type' => 'rich_text', 'required' => true, 'localized' => true],
-                ['identifier' => 'seo_title', 'type' => 'text', 'required' => false, 'localized' => true],
-            ],
-            'order' => ['title', 'subtitle', 'body', 'seo_title'],
         ];
     }
 

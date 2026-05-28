@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Support\DatabaseSeed;
 
-use App\Core\Access\AccessLevel;
+use App\Setup\SetupDefaultSeed;
 
 final class TestDatabaseSecuritySeeder
 {
@@ -17,24 +17,19 @@ final class TestDatabaseSecuritySeeder
 
     private static function seedAclGroups(TestDatabaseSeedWriter $writer): void
     {
-        $groups = [
-            ['00000000-0000-0000-0000-000000000101', 'registered', ['en' => 'Registered', 'de' => 'Registriert'], AccessLevel::REGISTERED, true, true],
-            ['00000000-0000-0000-0000-000000000103', 'editor', ['en' => 'Editor', 'de' => 'Redaktion'], AccessLevel::EDITOR, false, true],
-            ['00000000-0000-0000-0000-000000000106', 'manager', ['en' => 'Manager', 'de' => 'Management'], AccessLevel::MANAGER, false, true],
-            ['00000000-0000-0000-0000-000000000109', 'admin', ['en' => 'Admin', 'de' => 'Administration'], AccessLevel::ADMIN, true, false],
-        ];
+        $groups = (new SetupDefaultSeed())->aclGroups();
 
-        foreach ($groups as $index => [$uid, $identifier, $name, $accessLevel, $locked, $allowEmpty]) {
+        foreach ($groups as $index => $group) {
             $writer->insert('acl_group', [
-                'uid' => $uid,
-                'identifier' => $identifier,
-                'name' => $writer->json($name),
-                'access_level' => $accessLevel,
-                'locked' => $locked ? 1 : 0,
-                'allow_empty' => $allowEmpty ? 1 : 0,
+                'uid' => $group['uid'],
+                'identifier' => $group['identifier'],
+                'name' => $writer->json($group['name']),
+                'access_level' => $group['access_level'],
+                'locked' => $group['locked'] ? 1 : 0,
+                'allow_empty' => $group['allow_empty'] ? 1 : 0,
                 'metadata' => $writer->json(['preset' => true]),
             ]);
-            $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000091%d', $index), 'acl_group', $uid, 'created', 'test_seed', null, ['identifier' => $identifier]);
+            $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000091%d', $index), 'acl_group', $group['uid'], 'created', 'test_seed', null, ['identifier' => $group['identifier']]);
         }
     }
 
@@ -59,8 +54,19 @@ final class TestDatabaseSecuritySeeder
 
         $writer->insert('user_acl_group', [
             'user_uid' => '00000000-0000-0000-0000-000000000201',
-            'group_uid' => '00000000-0000-0000-0000-000000000109',
+            'group_uid' => self::defaultSeedGroupUid((new SetupDefaultSeed())->adminGroupIdentifier()),
         ]);
+    }
+
+    private static function defaultSeedGroupUid(string $identifier): string
+    {
+        foreach ((new SetupDefaultSeed())->aclGroups() as $group) {
+            if ($identifier === $group['identifier']) {
+                return $group['uid'];
+            }
+        }
+
+        throw new \LogicException(sprintf('Default ACL group "%s" is not defined.', $identifier));
     }
 
     private static function seedApiKeys(TestDatabaseSeedWriter $writer): void

@@ -4,31 +4,35 @@ declare(strict_types=1);
 
 namespace App\Tests\Support\DatabaseSeed;
 
-use App\Core\Log\ConfigAuditLogPolicy;
-use App\Security\UserFlowConfig;
+use App\Setup\DatabaseDriver;
+use App\Setup\SetupDefaultSeed;
+use App\Setup\SetupInput;
 
 final class TestDatabaseConfigSeeder
 {
     public static function seed(TestDatabaseSeedWriter $writer): void
     {
+        $setupSeed = new SetupDefaultSeed();
+        $setupEntries = array_map(
+            static fn (array $entry): array => [$entry['key'], $entry['value'], $entry['type']->value],
+            $setupSeed->configEntries(new SetupInput(
+                appEnv: 'test',
+                language: 'en',
+                siteTitle: 'Test Studio',
+                defaultUri: 'https://example.test',
+                databaseDriver: DatabaseDriver::SQLite,
+                databaseUrl: 'sqlite:///%kernel.project_dir%/var/test/test.db',
+                adminUsername: 'admin',
+                adminPassword: (string) ($_SERVER['APP_SECRET'] ?? 'test-secret'),
+                adminEmail: 'admin@example.test',
+            )),
+        );
         $entries = [
-            ['user.default_acl_group', 'registered', 'string'],
+            ...$setupEntries,
             ['content.default_locale', 'en', 'string'],
-            ['localization.default_language', 'en', 'string'],
-            ['localization.route_prefixes_enabled', false, 'boolean'],
-            ['content.home_path', '/home', 'string'],
             ['content.enabled_locales', ['en', 'de'], 'json'],
             ['content.default_variant', 'default', 'string'],
             ['content.revision_retention_count', 10, 'integer'],
-            [UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, false, 'boolean'],
-            [UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, 'integer'],
-            [UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '', 'string'],
-            [UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, '', 'string'],
-            ['user.menu.enabled', true, 'boolean'],
-            ['user.menu.sort_order', 900, 'integer'],
-            [UserFlowConfig::REGISTRATION_MODE_KEY, UserFlowConfig::REGISTRATION_DISABLED, 'string'],
-            [ConfigAuditLogPolicy::ENABLED_KEY, true, 'boolean'],
-            [ConfigAuditLogPolicy::EVENTS_KEY, ConfigAuditLogPolicy::DEFAULT_CATEGORIES, 'json'],
         ];
 
         foreach ($entries as [$key, $value, $type]) {

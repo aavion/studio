@@ -93,6 +93,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-28
+- Centralized the full setup default database seed in `SetupDefaultSeed`, covering input-aware settings, ACL groups, the initial static-page schema/version, and the setup home content/revision/fields; setup execution, dry-run output, and shared test database fixtures now consume that seed so installer-provided site title, URL, language, and admin data override defaults cleanly.
 - Tightened usernames to 5-30 ASCII letters, digits, hyphens, or underscores starting with a letter, added the default-off `user.username_change.enabled` setting for self-service profile username changes in Admin Settings/Setup defaults, updated validation text, and localized the deleted-user identity fallback.
 - Added deleted-account reactivation for registration and invitation flows: deleted account emails can receive account setup links again, token acceptance reuses the existing user UUID, resets ACL groups from the token instead of restoring old permissions, and exposes a central missing-user identity fallback for future user-reference rendering.
 - Added assignable ACL-group filtering for Admin User invitation/edit forms and enforced the registered-user floor that non-deleted accounts must keep at least one ACL group and effective access level 1 after user edits or ACL group level/delete operations.

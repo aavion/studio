@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Operations;
 
-use App\Core\Access\AccessLevel;
+use App\Setup\DatabaseDriver;
+use App\Setup\SetupDefaultSeed;
+use App\Setup\SetupInput;
 use App\Tests\Support\FilesystemTestHelper;
 use PDO;
 use PHPUnit\Framework\TestCase;
@@ -27,16 +29,17 @@ final class TestDatabaseSeedTest extends TestCase
 
     public function testItSeedsAclGroupsAndAdminUser(): void
     {
+        $seed = new SetupDefaultSeed();
         $groups = $this->pdo
             ->query('SELECT identifier, access_level, locked, allow_empty FROM acl_group ORDER BY access_level')
             ->fetchAll(PDO::FETCH_ASSOC);
 
-        self::assertSame([
-            ['identifier' => 'registered', 'access_level' => AccessLevel::REGISTERED, 'locked' => 1, 'allow_empty' => 1],
-            ['identifier' => 'editor', 'access_level' => AccessLevel::EDITOR, 'locked' => 0, 'allow_empty' => 1],
-            ['identifier' => 'manager', 'access_level' => AccessLevel::MANAGER, 'locked' => 0, 'allow_empty' => 1],
-            ['identifier' => 'admin', 'access_level' => AccessLevel::ADMIN, 'locked' => 1, 'allow_empty' => 0],
-        ], array_map(static fn (array $row): array => [
+        self::assertSame(array_map(static fn (array $group): array => [
+            'identifier' => $group['identifier'],
+            'access_level' => $group['access_level'],
+            'locked' => $group['locked'] ? 1 : 0,
+            'allow_empty' => $group['allow_empty'] ? 1 : 0,
+        ], $seed->aclGroups()), array_map(static fn (array $row): array => [
             'identifier' => $row['identifier'],
             'access_level' => (int) $row['access_level'],
             'locked' => (int) $row['locked'],
@@ -47,13 +50,13 @@ final class TestDatabaseSeedTest extends TestCase
             ->query("SELECT g.identifier FROM acl_group g INNER JOIN user_acl_group ug ON ug.group_uid = g.uid INNER JOIN user_account u ON u.uid = ug.user_uid WHERE u.username = 'admin' ORDER BY g.access_level")
             ->fetchAll(PDO::FETCH_COLUMN);
 
-        self::assertSame(['admin'], $adminGroups);
+        self::assertSame([$seed->adminGroupIdentifier()], $adminGroups);
 
         $defaultAclGroup = $this->pdo
             ->query("SELECT value FROM config_entry WHERE config_key = 'user.default_acl_group'")
             ->fetchColumn();
 
-        self::assertSame('registered', json_decode((string) $defaultAclGroup, true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame($seed->configMap($this->setupSeedInput())['user.default_acl_group'], json_decode((string) $defaultAclGroup, true, flags: JSON_THROW_ON_ERROR));
     }
 
     public function testItUsesAppSecretAsSeededAdminPassword(): void
@@ -104,30 +107,33 @@ final class TestDatabaseSeedTest extends TestCase
 
     public function testItSeedsActivePresetSchemas(): void
     {
+        $seed = new SetupDefaultSeed();
         $schemas = $this->pdo
             ->query('SELECT identifier, active_version_uid FROM content_schema ORDER BY identifier')
             ->fetchAll(PDO::FETCH_KEY_PAIR);
 
         self::assertArrayHasKey('article', $schemas);
-        self::assertArrayHasKey('static_page', $schemas);
+        self::assertArrayHasKey($seed->contentSchema()['identifier'], $schemas);
         self::assertNotNull($schemas['article']);
-        self::assertNotNull($schemas['static_page']);
+        self::assertNotNull($schemas[$seed->contentSchema()['identifier']]);
 
         $definitionJson = $this->pdo
-            ->query("SELECT definition FROM content_schema_version WHERE uid = '10000000-0000-0000-0000-000000000101'")
+            ->query(sprintf("SELECT definition FROM content_schema_version WHERE uid = '%s'", $seed->contentSchemaVersion()['uid']))
             ->fetchColumn();
         $definition = json_decode((string) $definitionJson, true, flags: JSON_THROW_ON_ERROR);
         $fieldIdentifiers = array_column($definition['fields'], 'identifier');
 
-        self::assertContains('title', $fieldIdentifiers);
-        self::assertContains('subtitle', $fieldIdentifiers);
-        self::assertContains('body', $fieldIdentifiers);
+        self::assertSame(
+            array_column($seed->contentSchemaVersion()['definition']['fields'], 'identifier'),
+            $fieldIdentifiers,
+        );
     }
 
     public function testItSeedsPublishedContentWithActiveRevisionsAndFields(): void
     {
+        $seed = new SetupDefaultSeed();
         $content = $this->pdo
-            ->query("SELECT slug, custom_url, active_revision_uid FROM content_item WHERE slug = 'home'")
+            ->query(sprintf("SELECT slug, custom_url, active_revision_uid FROM content_item WHERE slug = '%s'", $seed->homeContentItem()['slug']))
             ->fetch(PDO::FETCH_ASSOC);
 
         self::assertIsArray($content);
@@ -138,10 +144,10 @@ final class TestDatabaseSeedTest extends TestCase
             ->query("SELECT value FROM config_entry WHERE config_key = 'content.home_path'")
             ->fetchColumn();
 
-        self::assertSame('/home', json_decode((string) $homePath, true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame($seed->homePath(), json_decode((string) $homePath, true, flags: JSON_THROW_ON_ERROR));
 
         $titleJson = $this->pdo
-            ->query("SELECT fv.field_content FROM content_field_value fv INNER JOIN content_item ci ON ci.active_revision_uid = fv.revision_uid WHERE ci.slug = 'home' AND fv.language = 'en' AND fv.variant = 'default' AND fv.field_identifier = 'title'")
+            ->query(sprintf("SELECT fv.field_content FROM content_field_value fv INNER JOIN content_item ci ON ci.active_revision_uid = fv.revision_uid WHERE ci.slug = '%s' AND fv.language = 'en' AND fv.variant = 'default' AND fv.field_identifier = 'title'", $seed->homeContentItem()['slug']))
             ->fetchColumn();
 
         self::assertSame('Welcome to Studio', json_decode((string) $titleJson, true, flags: JSON_THROW_ON_ERROR));
@@ -190,5 +196,20 @@ final class TestDatabaseSeedTest extends TestCase
         self::assertIsString($decoded);
 
         return $decoded;
+    }
+
+    private function setupSeedInput(): SetupInput
+    {
+        return new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Test Studio',
+            defaultUri: 'https://example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///%kernel.project_dir%/var/test/test.db',
+            adminUsername: 'admin',
+            adminPassword: (string) ($_SERVER['APP_SECRET'] ?? 'test-secret'),
+            adminEmail: 'admin@example.test',
+        );
     }
 }
