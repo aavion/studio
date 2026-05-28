@@ -175,7 +175,7 @@ final class SecurityControllerTest extends WebTestCase
     public function testRegistrationRouteAndLoginLinkRenderWhenRegistrationIsEnabled(): void
     {
         $client = self::createClient();
-        $this->setRegistrationEnabled(true);
+        $this->setRegistrationMode('auto_approval');
 
         try {
             $client->request('GET', '/user/login');
@@ -188,7 +188,7 @@ final class SecurityControllerTest extends WebTestCase
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Create account');
         } finally {
-            $this->setRegistrationEnabled(false);
+            $this->setRegistrationMode('disabled');
         }
     }
 
@@ -201,9 +201,9 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Reset password');
     }
 
-    private function setRegistrationEnabled(bool $enabled): void
+    private function setRegistrationMode(string $mode): void
     {
-        self::getContainer()->get(Config::class)->set('user.registration.mode', $enabled ? 'auto_approval' : 'disabled');
+        self::getContainer()->get(Config::class)->set('user.registration.mode', $mode);
     }
 
     private function createUserWithLevel(
