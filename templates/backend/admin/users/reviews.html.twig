@@ -17,11 +17,49 @@
 
     <nav class="studio-tabs" aria-label="{{ 'admin.user_reviews.filters.label'|trans }}">
         {% for filter in review_filters %}
-            <a class="studio-tab{% if review_filter == filter %} studio-tab-active{% endif %}" href="{{ path('backend_admin_user_reviews', filter == 'all' ? {} : {filter: filter}) }}">
+            <a class="studio-tab{% if review_filter == filter %} studio-tab-active{% endif %}" href="{{ path('backend_admin_user_reviews', app.request.query.all|merge({filter: filter, page: 1})) }}">
                 {{ ('admin.user_reviews.filters.' ~ filter)|trans }}
             </a>
         {% endfor %}
     </nav>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.user_reviews.filters.title'|trans }}</h2>
+        <form method="get" class="studio-form studio-log-filter-form">
+            <input type="hidden" name="filter" value="{{ review_filter == 'all' ? '' : review_filter }}">
+            <div class="studio-form-grid">
+                <label>
+                    <span>{{ 'admin.user_reviews.filters.search'|trans }}</span>
+                    <input type="search" name="q" value="{{ review_view.filters.search }}" maxlength="120">
+                </label>
+                <label>
+                    <span>{{ 'admin.user_reviews.filters.sort'|trans }}</span>
+                    <select name="sort">
+                        {% for option in review_view.sort_options %}
+                            <option value="{{ option.key }}" {% if option.key == review_view.filters.sort %}selected{% endif %}>{{ option.label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.user_reviews.filters.direction'|trans }}</span>
+                    <select name="direction">
+                        <option value="asc" {% if review_view.filters.direction == 'asc' %}selected{% endif %}>{{ 'admin.user_reviews.filters.asc'|trans }}</option>
+                        <option value="desc" {% if review_view.filters.direction == 'desc' %}selected{% endif %}>{{ 'admin.user_reviews.filters.desc'|trans }}</option>
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.user_reviews.filters.per_page'|trans }}</span>
+                    <select name="per_page">
+                        {% for option in review_view.per_page_options %}
+                            <option value="{{ option.key }}" {% if option.key == review_view.filters.per_page %}selected{% endif %}>{{ option.label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <input type="hidden" name="page" value="1">
+            <button type="submit" class="studio-button">{{ 'admin.user_reviews.filters.apply'|trans }}</button>
+        </form>
+    </section>
 
     <section class="studio-panel">
         {% if review_items is empty %}
@@ -96,6 +134,15 @@
                         </div>
                     </article>
                 {% endfor %}
+            </div>
+            <div class="studio-toolbar">
+                <span class="studio-muted">{{ 'admin.user_reviews.pagination.page_summary'|trans({'%page%': review_view.pagination.page, '%pages%': review_view.pagination.total_pages, '%total%': review_view.pagination.total}) }}</span>
+                {% if review_view.pagination.has_previous %}
+                    <a class="studio-button" href="?{{ app.request.query.all|merge({page: review_view.pagination.previous_page})|url_encode }}">{{ 'admin.user_reviews.pagination.previous'|trans }}</a>
+                {% endif %}
+                {% if review_view.pagination.has_next %}
+                    <a class="studio-button" href="?{{ app.request.query.all|merge({page: review_view.pagination.next_page})|url_encode }}">{{ 'admin.user_reviews.pagination.next'|trans }}</a>
+                {% endif %}
             </div>
         {% endif %}
     </section>

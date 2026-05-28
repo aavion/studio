@@ -7,6 +7,9 @@ namespace App\Controller;
 use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
 use App\Core\Log\AuditLoggerInterface;
+use App\Core\State\StateMarkerKey;
+use App\Core\State\StateMarkerRecorder;
+use App\Core\State\StateSubjectType;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\ApiKey;
@@ -46,6 +49,7 @@ final class UserController extends AbstractController
         private readonly UserAccountLifecycle $userLifecycle,
         private readonly ApiKeyVault $apiKeyVault,
         private readonly TokenStorageInterface $tokenStorage,
+        private readonly StateMarkerRecorder $stateMarkers,
     ) {
     }
 
@@ -102,6 +106,7 @@ final class UserController extends AbstractController
                     ...$user->settings(),
                     'language' => $this->stringField($request, 'language') ?: 'default',
                 ]);
+                $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::MODIFIED, $user->username(), 'profile');
                 $this->entityManager->flush();
                 $this->audit($user, 'user.profile_updated', ['result_status' => 'success']);
                 $success = true;
@@ -152,7 +157,7 @@ final class UserController extends AbstractController
             return $this->redirectToRoute('user_profile');
         }
 
-        $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Deleted);
+        $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Deleted, $user->username());
         $this->entityManager->flush();
         $this->linkDelivery->notifyAddress(
             $user->email(),
@@ -206,6 +211,7 @@ final class UserController extends AbstractController
             if ([] === $errors) {
                 $user->changePassword($this->passwordHasher->hashPassword($user, $newPassword));
                 [$token, $plainToken] = $this->issuePasswordChangeReviewToken($user);
+                $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::PASSWORD_CHANGED, $user->username(), 'profile');
                 $this->entityManager->flush();
                 $this->deliverPasswordChangeNotification($request, $token, $plainToken);
                 $this->audit($user, 'auth.password_change_success', ['result_status' => 'success']);
@@ -457,7 +463,7 @@ final class UserController extends AbstractController
         if ($accountToken instanceof AccountToken && $accountToken->user() instanceof UserAccount) {
             $user = $accountToken->user();
             $accountToken->consume($user);
-            $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Inactive);
+            $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Inactive, $user->username());
             $this->entityManager->flush();
             $this->linkDelivery->notify($accountToken, AccountMailFlow::PasswordChangeDisputed, $this->userFlowConfig->securityNotificationEmail(), $this->mailLocaleResolver->defaultLocale(), [
                 'username' => $user->username(),
@@ -503,12 +509,18 @@ final class UserController extends AbstractController
 
             if ([] === $errors) {
                 try {
+                    $isNewUser = !$accountToken->user() instanceof UserAccount;
                     $user = $this->userForAccountToken($accountToken, $username);
                     $user->changePassword($this->passwordHasher->hashPassword($user, $password));
                     $user->changeStatus(UserAccountStatus::Active);
                     $this->replaceGroups($user, $accountToken->groupIdentifiers());
                     $accountToken->consume($user);
                     $this->entityManager->persist($user);
+                    if ($isNewUser) {
+                        $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::CREATED, 'account_link', $accountToken->type()->value);
+                    }
+                    $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::PASSWORD_CHANGED, 'account_link', $accountToken->type()->value);
+                    $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::STATUS_CHANGED, 'account_link', UserAccountStatus::Active->value);
                     $this->entityManager->flush();
                     $this->audit($user, 'user.invitation_accepted', ['token_type' => $accountToken->type()->value]);
                     $success = true;
@@ -551,6 +563,7 @@ final class UserController extends AbstractController
                 $user->changePassword($this->passwordHasher->hashPassword($user, $password));
                 [$reviewToken, $plainReviewToken] = $this->issuePasswordChangeReviewToken($user);
                 $token->consume($user);
+                $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::PASSWORD_CHANGED, $user->username(), 'password_reset');
                 $this->entityManager->flush();
                 $this->deliverPasswordChangeNotification($request, $reviewToken, $plainReviewToken);
                 $this->audit($user, 'auth.password_reset_completed', ['result_status' => 'success']);

@@ -193,6 +193,11 @@ services:
         arguments:
             $secret: '%kernel.secret%'
 
+    App\Security\AppSecretRotationGuard:
+        arguments:
+            $secret: '%kernel.secret%'
+            $environment: '%kernel.environment%'
+
     App\Security\AccountLinkDeliveryInterface:
         alias: App\Security\MessageLogAccountLinkDelivery
 

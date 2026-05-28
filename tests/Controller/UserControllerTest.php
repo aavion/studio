@@ -197,6 +197,14 @@ final class UserControllerTest extends WebTestCase
         ]);
 
         self::assertInstanceOf(AccountToken::class, $reviewToken);
+        $passwordMarker = self::getContainer()->get(EntityManagerInterface::class)->getConnection()->fetchAssociative(
+            "SELECT marker_by, marker_value FROM state_marker WHERE subject_type = 'user_account' AND subject_uid = ? AND marker_key = 'password_changed'",
+            [$updatedUser->uid()],
+        );
+
+        self::assertIsArray($passwordMarker);
+        self::assertSame($updatedUser->username(), $passwordMarker['marker_by']);
+        self::assertSame('profile', $passwordMarker['marker_value']);
     }
 
     public function testSecurityReviewLinkLocksAccountAndNotifiesAdmin(): void

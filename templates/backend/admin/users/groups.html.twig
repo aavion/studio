@@ -28,6 +28,39 @@
 
     <section class="studio-panel">
         <h2>{{ 'admin.groups.list.title'|trans }}</h2>
+        <form method="get" class="studio-form studio-log-filter-form">
+            <div class="studio-form-grid">
+                <label>
+                    <span>{{ 'admin.groups.filters.search'|trans }}</span>
+                    <input type="search" name="q" value="{{ groups_view.filters.search }}" maxlength="120">
+                </label>
+                <label>
+                    <span>{{ 'admin.groups.filters.sort'|trans }}</span>
+                    <select name="sort">
+                        {% for option in groups_view.sort_options %}
+                            <option value="{{ option.key }}" {% if option.key == groups_view.filters.sort %}selected{% endif %}>{{ option.label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.groups.filters.direction'|trans }}</span>
+                    <select name="direction">
+                        <option value="asc" {% if groups_view.filters.direction == 'asc' %}selected{% endif %}>{{ 'admin.groups.filters.asc'|trans }}</option>
+                        <option value="desc" {% if groups_view.filters.direction == 'desc' %}selected{% endif %}>{{ 'admin.groups.filters.desc'|trans }}</option>
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.groups.filters.per_page'|trans }}</span>
+                    <select name="per_page">
+                        {% for option in groups_view.per_page_options %}
+                            <option value="{{ option.key }}" {% if option.key == groups_view.filters.per_page %}selected{% endif %}>{{ option.label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <input type="hidden" name="page" value="1">
+            <button type="submit" class="studio-button">{{ 'admin.groups.filters.apply'|trans }}</button>
+        </form>
         <table class="studio-field-table">
             <thead>
                 <tr>
@@ -50,5 +83,14 @@
                 {% endfor %}
             </tbody>
         </table>
+        <div class="studio-toolbar">
+            <span class="studio-muted">{{ 'admin.groups.pagination.page_summary'|trans({'%page%': groups_view.pagination.page, '%pages%': groups_view.pagination.total_pages, '%total%': groups_view.pagination.total}) }}</span>
+            {% if groups_view.pagination.has_previous %}
+                <a class="studio-button" href="?{{ app.request.query.all|merge({page: groups_view.pagination.previous_page})|url_encode }}">{{ 'admin.groups.pagination.previous'|trans }}</a>
+            {% endif %}
+            {% if groups_view.pagination.has_next %}
+                <a class="studio-button" href="?{{ app.request.query.all|merge({page: groups_view.pagination.next_page})|url_encode }}">{{ 'admin.groups.pagination.next'|trans }}</a>
+            {% endif %}
+        </div>
     </section>
 {% endblock %}

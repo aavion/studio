@@ -38,6 +38,56 @@
 
     <section class="studio-panel">
         <h2>{{ 'admin.users.accounts.title'|trans }}</h2>
+        <form method="get" class="studio-form studio-log-filter-form">
+            <div class="studio-form-grid">
+                <label>
+                    <span>{{ 'admin.users.filters.search'|trans }}</span>
+                    <input type="search" name="q" value="{{ users_view.filters.search }}" maxlength="120">
+                </label>
+                <label>
+                    <span>{{ 'admin.users.filters.status'|trans }}</span>
+                    <select name="status">
+                        {% for status in users_view.status_options %}
+                            <option value="{{ status }}" {% if status == users_view.filters.status %}selected{% endif %}>{{ ('admin.users.filters.status_' ~ status)|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.users.filters.group'|trans }}</span>
+                    <select name="group">
+                        <option value="">{{ 'admin.users.filters.any_group'|trans }}</option>
+                        {% for group in users_view.group_options %}
+                            <option value="{{ group.identifier }}" {% if group.identifier == users_view.filters.group %}selected{% endif %}>{{ group.name.en|default(group.identifier) }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.users.filters.sort'|trans }}</span>
+                    <select name="sort">
+                        {% for option in users_view.sort_options %}
+                            <option value="{{ option.key }}" {% if option.key == users_view.filters.sort %}selected{% endif %}>{{ option.label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.users.filters.direction'|trans }}</span>
+                    <select name="direction">
+                        <option value="asc" {% if users_view.filters.direction == 'asc' %}selected{% endif %}>{{ 'admin.users.filters.asc'|trans }}</option>
+                        <option value="desc" {% if users_view.filters.direction == 'desc' %}selected{% endif %}>{{ 'admin.users.filters.desc'|trans }}</option>
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.users.filters.per_page'|trans }}</span>
+                    <select name="per_page">
+                        {% for option in users_view.per_page_options %}
+                            <option value="{{ option.key }}" {% if option.key == users_view.filters.per_page %}selected{% endif %}>{{ option.label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <input type="hidden" name="page" value="1">
+            <button type="submit" class="studio-button">{{ 'admin.users.filters.apply'|trans }}</button>
+        </form>
         {% if users is empty %}
             {% include '@backend/partials/feedback/_empty-state.html.twig' with {
                 title: 'admin.users.accounts.empty_title'|trans,
@@ -74,6 +124,15 @@
                     {% endfor %}
                 </tbody>
             </table>
+            <div class="studio-toolbar">
+                <span class="studio-muted">{{ 'admin.users.pagination.page_summary'|trans({'%page%': users_view.pagination.page, '%pages%': users_view.pagination.total_pages, '%total%': users_view.pagination.total}) }}</span>
+                {% if users_view.pagination.has_previous %}
+                    <a class="studio-button" href="?{{ app.request.query.all|merge({page: users_view.pagination.previous_page})|url_encode }}">{{ 'admin.users.pagination.previous'|trans }}</a>
+                {% endif %}
+                {% if users_view.pagination.has_next %}
+                    <a class="studio-button" href="?{{ app.request.query.all|merge({page: users_view.pagination.next_page})|url_encode }}">{{ 'admin.users.pagination.next'|trans }}</a>
+                {% endif %}
+            </div>
         {% endif %}
     </section>
 

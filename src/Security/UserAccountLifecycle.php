@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Security;
 
+use App\Core\State\StateMarkerKey;
+use App\Core\State\StateMarkerRecorder;
+use App\Core\State\StateSubjectType;
 use App\Entity\AccountToken;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
@@ -11,16 +14,30 @@ use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class UserAccountLifecycle
 {
-    public function __construct(private EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private StateMarkerRecorder $stateMarkers,
+    ) {
     }
 
     /**
      * @return array{api_keys_revoked: int, account_tokens_revoked: int}
      */
-    public function changeStatus(UserAccount $user, UserAccountStatus $status): array
+    public function changeStatus(UserAccount $user, UserAccountStatus $status, ?string $changedBy = null): array
     {
+        $oldStatus = $user->status();
         $user->changeStatus($status);
+
+        if ($oldStatus !== $status) {
+            $this->stateMarkers->record(
+                StateSubjectType::USER_ACCOUNT,
+                $user->uid(),
+                StateMarkerKey::STATUS_CHANGED,
+                $changedBy,
+                $status->value,
+                ['old_status' => $oldStatus->value, 'new_status' => $status->value],
+            );
+        }
 
         if ($status->isUsable()) {
             return [

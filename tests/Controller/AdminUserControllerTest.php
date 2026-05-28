@@ -6,6 +6,8 @@ namespace App\Tests\Controller;
 
 use App\Content\Schema\ContentSchemaSource;
 use App\Core\Access\AccessLevel;
+use App\Core\Config\Config;
+use App\Core\Config\ConfigValueType;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\ApiKey;
@@ -18,6 +20,7 @@ use App\Entity\UserAccount;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\AppSecretRotationGuard;
 use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
 use App\Security\UserAccountStatus;
@@ -37,6 +40,52 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'User management');
         self::assertSelectorExists('form[action="/admin/users/invitations"]');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/users/groups"]');
+    }
+
+    public function testAdminUsersRouteSupportsSearchFiltersSortingAndPagination(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $visibleUser = $this->createUser('filtervisible', UserAccountStatus::Inactive);
+        $hiddenUser = $this->createUser('filterhidden', UserAccountStatus::Active);
+        $visibleUser->addGroup($this->registeredGroup());
+        $hiddenUser->addGroup($this->registeredGroup());
+        $entityManager->flush();
+
+        $client->request('GET', '/admin/users?q=filtervisible&status=inactive&group=registered&sort=email&direction=desc&per_page=25');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('input[name="q"][value="filtervisible"]');
+        self::assertSelectorTextContains('.studio-field-table', 'filtervisible');
+        self::assertStringNotContainsString('filterhidden', (string) $client->getResponse()->getContent());
+        self::assertSelectorTextContains('.studio-toolbar', 'Page 1 of 1');
+
+        $entityManager->remove($entityManager->find(UserAccount::class, $visibleUser->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $hiddenUser->uid()));
+        $entityManager->flush();
+    }
+
+    public function testAdminGroupsRouteSupportsSearchSortingAndPagination(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $visibleGroup = $this->createGroup('filter_group_visible', 2);
+        $hiddenGroup = $this->createGroup('filter_group_hidden', 2);
+        $entityManager->flush();
+
+        $client->request('GET', '/admin/users/groups?q=filter_group_visible&sort=identifier&direction=asc&per_page=25');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('input[name="q"][value="filter_group_visible"]');
+        self::assertSelectorTextContains('.studio-field-table', 'filter_group_visible');
+        self::assertStringNotContainsString('filter_group_hidden', (string) $client->getResponse()->getContent());
+        self::assertSelectorTextContains('.studio-toolbar', 'Page 1 of 1');
+
+        $entityManager->remove($entityManager->find(AclGroup::class, $visibleGroup->uid()));
+        $entityManager->remove($entityManager->find(AclGroup::class, $hiddenGroup->uid()));
+        $entityManager->flush();
     }
 
     public function testAdminCanCreateInvitationToken(): void
@@ -203,6 +252,31 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testAdminReviewQueueSupportsSearchSortingAndPagination(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $issuer = self::getContainer()->get(AccountTokenIssuer::class);
+        [$visible] = $issuer->issue(AccountTokenType::Registration, 'visible-review-filter@example.test', ['registered'], status: AccountTokenStatus::PendingApproval);
+        [$hidden] = $issuer->issue(AccountTokenType::Invitation, 'hidden-review-filter@example.test', ['registered']);
+        $entityManager->persist($visible);
+        $entityManager->persist($hidden);
+        $entityManager->flush();
+
+        $client->request('GET', '/admin/users/reviews?q=visible-review-filter&sort=email&direction=asc&per_page=25');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('input[name="q"][value="visible-review-filter"]');
+        self::assertSelectorTextContains('.studio-review-list', 'visible-review-filter@example.test');
+        self::assertStringNotContainsString('hidden-review-filter@example.test', (string) $client->getResponse()->getContent());
+        self::assertSelectorTextContains('.studio-toolbar', 'Page 1 of 1');
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $visible->uid()));
+        $entityManager->remove($entityManager->find(AccountToken::class, $hidden->uid()));
+        $entityManager->flush();
+    }
+
     public function testAdminCanReactivateDisputedAccountFromReviewQueue(): void
     {
         $client = self::createClient();
@@ -307,10 +381,65 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertInstanceOf(AccountToken::class, $updatedToken);
         self::assertSame(AccountTokenStatus::Revoked, $updatedToken->status());
 
+        $client->request('GET', '/admin/users/'.$updatedUser->uid());
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Account history');
+        self::assertSelectorTextContains('.studio-field-table', 'Status changed');
+        self::assertSelectorExists('a[href*="/admin/logs"][href*="source=audit"][href*="'.$updatedUser->uid().'"]');
+
         $entityManager->remove($updatedToken);
         $entityManager->remove($updatedApiKey);
         $entityManager->remove($updatedUser);
         $entityManager->flush();
+    }
+
+    public function testAppSecretRotationRevokesApiKeysAndIssuesOwnerPasswordReset(): void
+    {
+        $client = self::createClient();
+        $admin = $this->adminUser();
+        $client->loginUser($admin);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $connection = $entityManager->getConnection();
+        $config = self::getContainer()->get(Config::class);
+        $activeKeyRows = $connection->fetchAllAssociative("SELECT uid, status FROM api_key WHERE status IN ('read_only', 'read_write')");
+        $existingResetTokenUids = $connection->fetchFirstColumn(
+            "SELECT uid FROM account_token WHERE user_uid = ? AND type = 'password_reset'",
+            [$admin->uid()],
+        );
+        $apiKey = $this->createApiKey($admin, 'rotkey');
+        $entityManager->flush();
+        $config->set(AppSecretRotationGuard::FINGERPRINTS_KEY, ['test' => 'previous-secret-fingerprint'], ConfigValueType::Json, sensitive: true);
+
+        $client->request('GET', '/admin/users');
+
+        self::assertResponseIsSuccessful();
+        $updatedApiKey = $entityManager->find(ApiKey::class, $apiKey->uid());
+        self::assertInstanceOf(ApiKey::class, $updatedApiKey);
+        self::assertSame(ApiKeyStatus::Revoked, $updatedApiKey->status());
+        $fingerprints = $config->get(AppSecretRotationGuard::FINGERPRINTS_KEY, []);
+        self::assertIsArray($fingerprints);
+        self::assertArrayHasKey('test', $fingerprints);
+        self::assertNotSame('previous-secret-fingerprint', $fingerprints['test']);
+        $newResetTokenUids = array_values(array_diff(
+            array_map('strval', $connection->fetchFirstColumn("SELECT uid FROM account_token WHERE user_uid = ? AND type = 'password_reset'", [$admin->uid()])),
+            array_map('strval', $existingResetTokenUids),
+        ));
+        self::assertNotEmpty($newResetTokenUids);
+
+        foreach ($newResetTokenUids as $tokenUid) {
+            $token = $entityManager->find(AccountToken::class, $tokenUid);
+
+            if ($token instanceof AccountToken) {
+                $entityManager->remove($token);
+            }
+        }
+
+        $entityManager->remove($updatedApiKey);
+        $entityManager->flush();
+
+        foreach ($activeKeyRows as $row) {
+            $connection->update('api_key', ['status' => (string) $row['status'], 'revoked_at' => null], ['uid' => (string) $row['uid']]);
+        }
     }
 
     public function testLowerAccessAdminCannotEditHigherAccessUser(): void

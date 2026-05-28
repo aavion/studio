@@ -378,11 +378,51 @@ admin:
             title: Accounts
             empty_title: 'No users'
             empty_message: 'No user accounts exist yet.'
+        filters:
+            search: Search
+            status: Status
+            status_all: 'Any status'
+            status_active: Active
+            status_inactive: Inactive
+            status_deleted: Deleted
+            group: Group
+            any_group: 'Any group'
+            sort: 'Sort by'
+            direction: Direction
+            asc: Ascending
+            desc: Descending
+            per_page: Rows
+            all_entries: All
+            apply: 'Apply filters'
+        sort:
+            username: Username
+            email: Email
+            status: Status
+            access_level: 'Access level'
+        pagination:
+            page_summary: 'Page %page% of %pages% · %total% users'
+            previous: Previous
+            next: Next
         pending:
             title: 'Pending account links'
             empty: 'No invitation, registration, or password reset link is pending.'
         detail:
             title: 'Account settings'
+        history:
+            title: 'Account history'
+            empty: 'No state markers have been recorded for this user yet.'
+            audit_link: 'Open matching audit log'
+            fields:
+                event: Event
+                at: At
+                by: By
+                value: Value
+            marker:
+                created: Created
+                modified: Modified
+                last_login: 'Last login'
+                password_changed: 'Password changed'
+                status_changed: 'Status changed'
         password_reset:
             title: 'Password reset'
             text: 'Create a password-reset link for this user. Until mail delivery exists, the link is written to the message log.'
@@ -439,12 +479,30 @@ admin:
         requested_at: 'Requested %datetime%'
         groups: 'Groups: %groups%'
         filters:
+            title: Filters
             label: 'Review filters'
+            search: Search
+            sort: 'Sort by'
+            direction: Direction
+            asc: Ascending
+            desc: Descending
+            per_page: Rows
+            all_entries: All
+            apply: 'Apply filters'
             all: All
             registrations: Registrations
             invitations: Invitations
             disputes: Disputes
             expired: Expired
+        sort:
+            requested_at: 'Request date'
+            email: Email
+            kind: Type
+            status: Status
+        pagination:
+            page_summary: 'Page %page% of %pages% · %total% reviews'
+            previous: Previous
+            next: Next
         kind:
             registration_approval: 'Registration approval'
             registration: 'Registration link'
@@ -486,6 +544,24 @@ admin:
             title: 'Create ACL group'
         list:
             title: Groups
+        filters:
+            search: Search
+            sort: 'Sort by'
+            direction: Direction
+            asc: Ascending
+            desc: Descending
+            per_page: Rows
+            all_entries: All
+            apply: 'Apply filters'
+        sort:
+            identifier: Identifier
+            name: Name
+            access_level: 'Access level'
+            locked: Locked
+        pagination:
+            page_summary: 'Page %page% of %pages% · %total% groups'
+            previous: Previous
+            next: Next
         detail:
             title: 'Group settings'
         delete:

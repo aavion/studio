@@ -165,11 +165,51 @@ admin:
       title: 'Accounts'
       empty_title: 'Keine Benutzer'
       empty_message: 'Es existieren noch keine Benutzerkonten.'
+    filters:
+      search: 'Suche'
+      status: 'Status'
+      status_all: 'Alle Status'
+      status_active: 'Aktiv'
+      status_inactive: 'Inaktiv'
+      status_deleted: 'Gelöscht'
+      group: 'Gruppe'
+      any_group: 'Alle Gruppen'
+      sort: 'Sortieren nach'
+      direction: 'Richtung'
+      asc: 'Aufsteigend'
+      desc: 'Absteigend'
+      per_page: 'Zeilen'
+      all_entries: 'Alle'
+      apply: 'Filter anwenden'
+    sort:
+      username: 'Username'
+      email: 'E-Mail'
+      status: 'Status'
+      access_level: 'Access-Level'
+    pagination:
+      page_summary: 'Seite %page% von %pages% · %total% Benutzer'
+      previous: 'Zurück'
+      next: 'Weiter'
     pending:
       title: 'Ausstehende Account-Links'
       empty: 'Es steht kein Einladungs-, Registrierungs- oder Passwort-Reset-Link aus.'
     detail:
       title: 'Account-Einstellungen'
+    history:
+      title: 'Account-Historie'
+      empty: 'Für diesen Benutzer wurden noch keine State-Marker aufgezeichnet.'
+      audit_link: 'Passendes Audit-Log öffnen'
+      fields:
+        event: 'Ereignis'
+        at: 'Zeitpunkt'
+        by: 'Durch'
+        value: 'Wert'
+      marker:
+        created: 'Erstellt'
+        modified: 'Geändert'
+        last_login: 'Letzter Login'
+        password_changed: 'Passwort geändert'
+        status_changed: 'Status geändert'
     password_reset:
       title: 'Passwort-Reset'
       text: 'Erstelle einen Passwort-Reset-Link für diesen Benutzer. Bis Mailversand existiert, wird der Link ins Message-Log geschrieben.'
@@ -226,12 +266,30 @@ admin:
     requested_at: 'Angefragt %datetime%'
     groups: 'Gruppen: %groups%'
     filters:
+      title: 'Filter'
       label: 'Review-Filter'
+      search: 'Suche'
+      sort: 'Sortieren nach'
+      direction: 'Richtung'
+      asc: 'Aufsteigend'
+      desc: 'Absteigend'
+      per_page: 'Zeilen'
+      all_entries: 'Alle'
+      apply: 'Filter anwenden'
       all: 'Alle'
       registrations: 'Registrierungen'
       invitations: 'Einladungen'
       disputes: 'Disputes'
       expired: 'Abgelaufen'
+    sort:
+      requested_at: 'Anfragedatum'
+      email: 'E-Mail'
+      kind: 'Typ'
+      status: 'Status'
+    pagination:
+      page_summary: 'Seite %page% von %pages% · %total% Reviews'
+      previous: 'Zurück'
+      next: 'Weiter'
     kind:
       registration_approval: 'Registrierungsfreigabe'
       registration: 'Registrierungslink'
@@ -273,6 +331,24 @@ admin:
       title: 'ACL-Gruppe erstellen'
     list:
       title: 'Gruppen'
+    filters:
+      search: 'Suche'
+      sort: 'Sortieren nach'
+      direction: 'Richtung'
+      asc: 'Aufsteigend'
+      desc: 'Absteigend'
+      per_page: 'Zeilen'
+      all_entries: 'Alle'
+      apply: 'Filter anwenden'
+    sort:
+      identifier: 'Identifier'
+      name: 'Name'
+      access_level: 'Access-Level'
+      locked: 'Gesperrt'
+    pagination:
+      page_summary: 'Seite %page% von %pages% · %total% Gruppen'
+      previous: 'Zurück'
+      next: 'Weiter'
     detail:
       title: 'Gruppen-Einstellungen'
     delete:

@@ -63,4 +63,33 @@
             <button class="studio-button" type="submit">{{ 'admin.users.password_reset.submit'|trans }}</button>
         </form>
     </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.users.history.title'|trans }}</h2>
+        <p><a href="{{ audit_log_url }}">{{ 'admin.users.history.audit_link'|trans }}</a></p>
+        {% if state_history is empty %}
+            <p class="studio-muted">{{ 'admin.users.history.empty'|trans }}</p>
+        {% else %}
+            <table class="studio-field-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.users.history.fields.event'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.history.fields.at'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.history.fields.by'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.history.fields.value'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for marker in state_history %}
+                        <tr>
+                            <td>{{ ('admin.users.history.marker.' ~ marker.marker_key)|trans }}</td>
+                            <td>{{ marker.marker_at|date('Y-m-d H:i') }}</td>
+                            <td>{{ marker.marker_by|default('admin.logs.empty_value'|trans) }}</td>
+                            <td>{{ marker.marker_value|default('admin.logs.empty_value'|trans) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
 {% endblock %}

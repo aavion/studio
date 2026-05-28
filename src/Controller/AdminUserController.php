@@ -12,6 +12,9 @@ use App\Core\Log\AuditLoggerInterface;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationStarter;
 use App\Core\Output\JsonOutputRenderer;
+use App\Core\State\StateMarkerKey;
+use App\Core\State\StateMarkerRecorder;
+use App\Core\State\StateSubjectType;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
@@ -55,6 +58,7 @@ final class AdminUserController extends AbstractController
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly LiveOperationStarter $liveOperationStarter,
         private readonly JsonOutputRenderer $json,
+        private readonly StateMarkerRecorder $stateMarkers,
     ) {
     }
 
@@ -65,9 +69,12 @@ final class AdminUserController extends AbstractController
             return $response;
         }
 
+        $usersView = $this->usersView($request);
+
         return $this->render('@backend/admin/users/index.html.twig', [
             'navigation' => $this->navigation($request),
-            'users' => $this->entityManager->getRepository(UserAccount::class)->findBy([], ['username' => 'ASC']),
+            'users' => $usersView['items'],
+            'users_view' => $usersView,
             'groups' => $this->assignableGroups(),
             'pending_tokens' => $this->entityManager->getRepository(AccountToken::class)->findBy(
                 ['status' => [AccountTokenStatus::Pending, AccountTokenStatus::PendingApproval]],
@@ -84,6 +91,11 @@ final class AdminUserController extends AbstractController
         }
 
         $filter = $this->reviewFilter($request);
+        $search = $this->queryString($request, 'q');
+        $sort = $this->queryChoice($request, 'sort', ['requested_at', 'email', 'kind', 'status'], 'requested_at');
+        $direction = $this->queryChoice($request, 'direction', ['asc', 'desc'], 'desc');
+        $perPage = $this->perPage($request->query->get('per_page'));
+        $page = $this->page($request->query->get('page'));
         $items = $this->reviewItems();
 
         if ('all' !== $filter) {
@@ -93,10 +105,35 @@ final class AdminUserController extends AbstractController
             ));
         }
 
+        if ('' !== $search) {
+            $needle = mb_strtolower($search);
+            $items = array_values(array_filter(
+                $items,
+                static fn (array $item): bool => str_contains(mb_strtolower((string) $item['email']), $needle)
+                    || str_contains(mb_strtolower((string) ($item['username'] ?? '')), $needle),
+            ));
+        }
+
+        $this->sortReviewItems($items, $sort, $direction);
+        $pagination = $this->pagination($items, $page, $perPage);
+
         return $this->render('@backend/admin/users/reviews.html.twig', [
             'navigation' => $this->navigation($request),
-            'review_items' => $items,
+            'review_items' => $pagination['items'],
             'review_filter' => $filter,
+            'review_view' => [
+                'filters' => [
+                    'filter' => $filter,
+                    'search' => $search,
+                    'sort' => $sort,
+                    'direction' => $direction,
+                    'per_page' => $perPage,
+                    'page' => $pagination['page'],
+                ],
+                'pagination' => $pagination,
+                'per_page_options' => $this->perPageOptions('admin.user_reviews.filters.all_entries'),
+                'sort_options' => $this->reviewSortOptions(),
+            ],
             'review_filters' => ['all', 'registrations', 'invitations', 'disputes', 'expired'],
         ]);
     }
@@ -271,7 +308,8 @@ final class AdminUserController extends AbstractController
         }
 
         $user->changePassword($this->passwordHasher->hashPassword($user, bin2hex(random_bytes(32))));
-        $this->userLifecycle->changeStatus($user, UserAccountStatus::Active);
+        $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::PASSWORD_CHANGED, $this->actorName(), 'reactivated');
+        $this->userLifecycle->changeStatus($user, UserAccountStatus::Active, $this->actorName());
         $this->entityManager->flush();
         $this->linkDelivery->notifyAddress($user->email(), AccountMailFlow::PasswordChangeReactivated, $this->mailLocaleResolver->forAdminAction($user), [
             'username' => $user->username(),
@@ -314,7 +352,7 @@ final class AdminUserController extends AbstractController
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
 
-        $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Deleted);
+        $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Deleted, $this->actorName());
         $this->entityManager->flush();
         $this->audit('user.security_review_deleted', ['target_user' => $user->uid(), ...$effects]);
         $this->addFlash('success', 'admin.user_reviews.actions.deleted');
@@ -346,6 +384,14 @@ final class AdminUserController extends AbstractController
             'user_account' => $user,
             'groups' => $this->assignableGroups(),
             'login_possible' => $user->status()->isUsable(),
+            'state_history' => $this->stateMarkers->history(StateSubjectType::USER_ACCOUNT, $user->uid()),
+            'audit_log_url' => $this->generateUrl('backend_admin_route', [
+                'path' => 'logs',
+                'source' => 'audit',
+                'q' => $user->uid(),
+                'match' => 'contains',
+                'time_window' => '30d',
+            ]),
         ]);
     }
 
@@ -398,9 +444,12 @@ final class AdminUserController extends AbstractController
             return $this->redirectToRoute('backend_admin_user_groups');
         }
 
+        $groupsView = $this->groupsView($request);
+
         return $this->render('@backend/admin/users/groups.html.twig', [
             'navigation' => $this->navigation($request),
-            'groups' => $this->entityManager->getRepository(AclGroup::class)->findBy([], ['accessLevel' => 'ASC', 'identifier' => 'ASC']),
+            'groups' => $groupsView['items'],
+            'groups_view' => $groupsView,
         ]);
     }
 
@@ -519,8 +568,12 @@ final class AdminUserController extends AbstractController
         $oldStatus = $user->status()->value;
         $oldGroups = $this->userGroupIdentifiers($user);
         $oldAccessLevel = $user->maxAccessLevel();
-        $effects = $this->userLifecycle->changeStatus($user, $status);
+        $effects = $this->userLifecycle->changeStatus($user, $status, $this->actorName());
         $this->syncGroups($user, $newGroupIdentifiers);
+        $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::MODIFIED, $this->actorName(), 'admin_update', [
+            'old_groups' => $oldGroups,
+            'new_groups' => $newGroupIdentifiers,
+        ]);
         $this->entityManager->flush();
         $this->audit('user.account_updated', [
             'target_user' => $user->uid(),
@@ -759,6 +812,111 @@ final class AdminUserController extends AbstractController
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    private function usersView(Request $request): array
+    {
+        $search = $this->queryString($request, 'q');
+        $status = $this->queryChoice($request, 'status', ['all', 'active', 'inactive', 'deleted'], 'all');
+        $group = $this->queryString($request, 'group');
+        $sort = $this->queryChoice($request, 'sort', ['username', 'email', 'status', 'access_level'], 'username');
+        $direction = $this->queryChoice($request, 'direction', ['asc', 'desc'], 'asc');
+        $perPage = $this->perPage($request->query->get('per_page'));
+        $page = $this->page($request->query->get('page'));
+        $users = array_values(array_filter(
+            $this->entityManager->getRepository(UserAccount::class)->findAll(),
+            static fn (mixed $user): bool => $user instanceof UserAccount,
+        ));
+
+        if ('' !== $search) {
+            $needle = mb_strtolower($search);
+            $users = array_values(array_filter(
+                $users,
+                static fn (UserAccount $user): bool => str_contains(mb_strtolower($user->username()), $needle)
+                    || str_contains(mb_strtolower($user->email()), $needle),
+            ));
+        }
+
+        if ('all' !== $status) {
+            $users = array_values(array_filter(
+                $users,
+                static fn (UserAccount $user): bool => $status === $user->status()->value,
+            ));
+        }
+
+        if ('' !== $group) {
+            $users = array_values(array_filter(
+                $users,
+                static fn (UserAccount $user): bool => in_array($group, array_map(static fn (AclGroup $aclGroup): string => $aclGroup->identifier(), $user->groups()->toArray()), true),
+            ));
+        }
+
+        $this->sortUsers($users, $sort, $direction);
+        $pagination = $this->pagination($users, $page, $perPage);
+
+        return [
+            'items' => $pagination['items'],
+            'filters' => [
+                'search' => $search,
+                'status' => $status,
+                'group' => $group,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
+                'page' => $pagination['page'],
+            ],
+            'pagination' => $pagination,
+            'per_page_options' => $this->perPageOptions('admin.users.filters.all_entries'),
+            'sort_options' => $this->userSortOptions(),
+            'status_options' => ['all', 'active', 'inactive', 'deleted'],
+            'group_options' => $this->entityManager->getRepository(AclGroup::class)->findBy([], ['identifier' => 'ASC']),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function groupsView(Request $request): array
+    {
+        $search = $this->queryString($request, 'q');
+        $sort = $this->queryChoice($request, 'sort', ['identifier', 'name', 'access_level', 'locked'], 'access_level');
+        $direction = $this->queryChoice($request, 'direction', ['asc', 'desc'], 'asc');
+        $perPage = $this->perPage($request->query->get('per_page'));
+        $page = $this->page($request->query->get('page'));
+        $groups = array_values(array_filter(
+            $this->entityManager->getRepository(AclGroup::class)->findAll(),
+            static fn (mixed $group): bool => $group instanceof AclGroup,
+        ));
+
+        if ('' !== $search) {
+            $needle = mb_strtolower($search);
+            $groups = array_values(array_filter(
+                $groups,
+                static fn (AclGroup $group): bool => str_contains(mb_strtolower($group->identifier()), $needle)
+                    || str_contains(mb_strtolower((string) ($group->name()['en'] ?? '')), $needle)
+                    || str_contains(mb_strtolower((string) ($group->name()['de'] ?? '')), $needle),
+            ));
+        }
+
+        $this->sortGroups($groups, $sort, $direction);
+        $pagination = $this->pagination($groups, $page, $perPage);
+
+        return [
+            'items' => $pagination['items'],
+            'filters' => [
+                'search' => $search,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
+                'page' => $pagination['page'],
+            ],
+            'pagination' => $pagination,
+            'per_page_options' => $this->perPageOptions('admin.groups.filters.all_entries'),
+            'sort_options' => $this->groupSortOptions(),
+        ];
+    }
+
+    /**
      * @return list<string>
      */
     private function userGroupIdentifiers(UserAccount $user): array
@@ -870,6 +1028,184 @@ final class AdminUserController extends AbstractController
         return is_string($filter) && in_array($filter, ['all', 'registrations', 'invitations', 'disputes', 'expired'], true)
             ? $filter
             : 'all';
+    }
+
+    /**
+     * @param list<UserAccount> $users
+     */
+    private function sortUsers(array &$users, string $sort, string $direction): void
+    {
+        usort($users, static function (UserAccount $left, UserAccount $right) use ($sort, $direction): int {
+            $result = match ($sort) {
+                'email' => strcasecmp($left->email(), $right->email()),
+                'status' => $left->status()->value <=> $right->status()->value,
+                'access_level' => $left->maxAccessLevel() <=> $right->maxAccessLevel(),
+                default => strcasecmp($left->username(), $right->username()),
+            };
+
+            return 'desc' === $direction ? -$result : $result;
+        });
+    }
+
+    /**
+     * @param list<AclGroup> $groups
+     */
+    private function sortGroups(array &$groups, string $sort, string $direction): void
+    {
+        usort($groups, static function (AclGroup $left, AclGroup $right) use ($sort, $direction): int {
+            $result = match ($sort) {
+                'name' => strcasecmp((string) ($left->name()['en'] ?? $left->identifier()), (string) ($right->name()['en'] ?? $right->identifier())),
+                'locked' => ((int) $left->isLocked()) <=> ((int) $right->isLocked()),
+                'identifier' => strcasecmp($left->identifier(), $right->identifier()),
+                default => [$left->accessLevel(), $left->identifier()] <=> [$right->accessLevel(), $right->identifier()],
+            };
+
+            return 'desc' === $direction ? -$result : $result;
+        });
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     */
+    private function sortReviewItems(array &$items, string $sort, string $direction): void
+    {
+        usort($items, static function (array $left, array $right) use ($sort, $direction): int {
+            $result = match ($sort) {
+                'email' => strcasecmp((string) $left['email'], (string) $right['email']),
+                'kind' => strcasecmp((string) $left['kind'], (string) $right['kind']),
+                'status' => strcasecmp((string) $left['status'], (string) $right['status']),
+                default => $left['requested_at']->getTimestamp() <=> $right['requested_at']->getTimestamp(),
+            };
+
+            return 'desc' === $direction ? -$result : $result;
+        });
+    }
+
+    /**
+     * @return list<array{key: string, label: string}>
+     */
+    private function userSortOptions(): array
+    {
+        return [
+            ['key' => 'username', 'label' => 'admin.users.sort.username'],
+            ['key' => 'email', 'label' => 'admin.users.sort.email'],
+            ['key' => 'status', 'label' => 'admin.users.sort.status'],
+            ['key' => 'access_level', 'label' => 'admin.users.sort.access_level'],
+        ];
+    }
+
+    /**
+     * @return list<array{key: string, label: string}>
+     */
+    private function groupSortOptions(): array
+    {
+        return [
+            ['key' => 'access_level', 'label' => 'admin.groups.sort.access_level'],
+            ['key' => 'identifier', 'label' => 'admin.groups.sort.identifier'],
+            ['key' => 'name', 'label' => 'admin.groups.sort.name'],
+            ['key' => 'locked', 'label' => 'admin.groups.sort.locked'],
+        ];
+    }
+
+    /**
+     * @return list<array{key: string, label: string}>
+     */
+    private function reviewSortOptions(): array
+    {
+        return [
+            ['key' => 'requested_at', 'label' => 'admin.user_reviews.sort.requested_at'],
+            ['key' => 'email', 'label' => 'admin.user_reviews.sort.email'],
+            ['key' => 'kind', 'label' => 'admin.user_reviews.sort.kind'],
+            ['key' => 'status', 'label' => 'admin.user_reviews.sort.status'],
+        ];
+    }
+
+    /**
+     * @param list<mixed> $items
+     *
+     * @return array{items: list<mixed>, page: int, per_page: int|string, total: int, total_pages: int, has_previous: bool, has_next: bool, previous_page: int, next_page: int}
+     */
+    private function pagination(array $items, int $page, int|string $perPage): array
+    {
+        $total = count($items);
+
+        if ('all' === $perPage) {
+            return [
+                'items' => $items,
+                'page' => 1,
+                'per_page' => 'all',
+                'total' => $total,
+                'total_pages' => 1,
+                'has_previous' => false,
+                'has_next' => false,
+                'previous_page' => 1,
+                'next_page' => 1,
+            ];
+        }
+
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $totalPages);
+        $offset = ($page - 1) * $perPage;
+
+        return [
+            'items' => array_slice($items, $offset, $perPage),
+            'page' => $page,
+            'per_page' => $perPage,
+            'total' => $total,
+            'total_pages' => $totalPages,
+            'has_previous' => $page > 1,
+            'has_next' => $page < $totalPages,
+            'previous_page' => max(1, $page - 1),
+            'next_page' => min($totalPages, $page + 1),
+        ];
+    }
+
+    /**
+     * @return list<array{key: int|string, label: string}>
+     */
+    private function perPageOptions(string $allLabel): array
+    {
+        return [
+            ['key' => 25, 'label' => '25'],
+            ['key' => 50, 'label' => '50'],
+            ['key' => 100, 'label' => '100'],
+            ['key' => 'all', 'label' => $allLabel],
+        ];
+    }
+
+    private function queryString(Request $request, string $key): string
+    {
+        $value = $request->query->get($key);
+
+        return is_string($value) ? mb_substr(trim($value), 0, 120) : '';
+    }
+
+    /**
+     * @param list<string> $choices
+     */
+    private function queryChoice(Request $request, string $key, array $choices, string $default): string
+    {
+        $value = $request->query->get($key);
+
+        return is_string($value) && in_array($value, $choices, true) ? $value : $default;
+    }
+
+    private function perPage(mixed $perPage): int|string
+    {
+        if ('all' === $perPage) {
+            return 'all';
+        }
+
+        $perPage = is_numeric($perPage) ? (int) $perPage : 25;
+
+        return in_array($perPage, [25, 50, 100], true) ? $perPage : 25;
+    }
+
+    private function page(mixed $page): int
+    {
+        $page = is_numeric($page) ? (int) $page : 1;
+
+        return max(1, $page);
     }
 
     private function redirectAfterTokenAction(Request $request): Response
@@ -998,6 +1334,11 @@ final class AdminUserController extends AbstractController
         $user = $this->getUser();
 
         return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
+    }
+
+    private function actorName(): ?string
+    {
+        return $this->actor()->username();
     }
 
     private function field(Request $request, string $name): string
