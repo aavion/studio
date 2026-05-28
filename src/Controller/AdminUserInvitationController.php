@@ -129,6 +129,12 @@ final class AdminUserInvitationController extends AbstractController
             return $this->redirectAfterTokenAction($request);
         }
 
+        if (!$this->repairTokenGroupsForReissue($token)) {
+            $this->addFlash('error', 'admin.users.form.errors.group_access_too_low');
+
+            return $this->redirectAfterTokenAction($request);
+        }
+
         $plainToken = $this->tokenIssuer->reissue($token, $this->userFlowConfig->accountLinkTtl());
         $url = $this->absoluteUris->generateUri(__METHOD__, 'user_invitation_accept', ['token' => $plainToken]);
 

@@ -65,6 +65,19 @@
         </section>
     {% endif %}
 
+    {% set opens_published_access = impact.content_items|filter(item => item.opens_published_access|default(false)) %}
+    {% if operation == 'delete' and opens_published_access is not empty %}
+        <section class="studio-panel">
+            <h2>{{ 'admin.groups.review.access_warning_title'|trans }}</h2>
+            <p class="studio-muted">{{ 'admin.groups.review.access_warning_text'|trans }}</p>
+            <ul>
+                {% for item in opens_published_access %}
+                    <li>{{ item.label }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+
     {% include '@backend/admin/users/partials/_group-impact.html.twig' with {impact: impact} only %}
 
     <section class="studio-panel">

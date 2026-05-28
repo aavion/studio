@@ -492,6 +492,35 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testAdminApprovalRepairsInvalidTokenGroupsWithDefaultGroup(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Registration,
+            'approval-repair@example.test',
+            [],
+            status: AccountTokenStatus::PendingApproval,
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/admin/users/reviews');
+        $client->submit($crawler->filter('form[action="/admin/users/invitations/'.$token->uid().'/approve"]')->form());
+
+        self::assertResponseRedirects('/admin/users/reviews');
+
+        $entityManager->clear();
+        $approvedToken = $entityManager->find(AccountToken::class, $token->uid());
+
+        self::assertInstanceOf(AccountToken::class, $approvedToken);
+        self::assertSame(AccountTokenStatus::Pending, $approvedToken->status());
+        self::assertSame(['registered'], $approvedToken->groupIdentifiers());
+        $entityManager->remove($approvedToken);
+        $entityManager->flush();
+    }
+
     public function testAdminReviewQueueRendersContextualRowsWithoutPasswordResetTokens(): void
     {
         $client = self::createClient();
@@ -974,6 +1003,7 @@ final class AdminUserControllerTest extends WebTestCase
         $content->setViewRule(null, [$group->identifier()]);
         $content->setEditRule(AccessLevel::EDITOR, [$group->identifier()]);
         $content->setManageRule(AccessLevel::MANAGER, [$group->identifier()]);
+        $content->publish();
         $schema = new ContentSchema('64000000-0000-0000-0000-000000000002', 'acl_cleanup_schema', ContentSchemaSource::Custom, ['en' => 'ACL cleanup']);
         $version = new ContentSchemaVersion(
             '64000000-0000-0000-0000-000000000003',
@@ -1010,6 +1040,7 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Review ACL group change');
         self::assertSelectorTextContains('main', 'groupcleanup@example.test');
         self::assertSelectorTextContains('main', 'acl-cleanup-content');
+        self::assertSelectorTextContains('main', 'Published content may become public');
         self::assertSelectorTextContains('main', 'acl_cleanup_schema v1');
         self::assertSelectorTextContains('main', 'cleanup-invite@example.test');
         self::assertSelectorExists('form[data-controller="operation-overlay"]');

@@ -387,6 +387,8 @@ admin:
       confirm_title: 'Confirm change'
       confirm_update: 'Apply group update'
       confirm_delete: 'Delete group and remove references'
+      access_warning_title: 'Published content may become public'
+      access_warning_text: 'Deleting this group removes the last group-only access rule from the listed published content items. If you continue, these items may become visible to visitors who could not access them before.'
       cancel: 'Cancel'
       empty: 'No records in this area are affected.'
       users_title: 'Affected users'

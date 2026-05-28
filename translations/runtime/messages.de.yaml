@@ -614,6 +614,8 @@ admin:
             confirm_title: 'Änderung bestätigen'
             confirm_update: 'Gruppenänderung anwenden'
             confirm_delete: 'Gruppe löschen und Referenzen entfernen'
+            access_warning_title: 'Veröffentlichte Inhalte können öffentlich werden'
+            access_warning_text: 'Das Löschen dieser Gruppe entfernt die letzte gruppenbasierte Zugriffsbeschränkung von den aufgelisteten veröffentlichten Inhalten. Wenn du fortfährst, können diese Inhalte für Besucher sichtbar werden, die vorher keinen Zugriff hatten.'
             cancel: Abbrechen
             empty: 'In diesem Bereich sind keine Einträge betroffen.'
             users_title: 'Betroffene Benutzer'

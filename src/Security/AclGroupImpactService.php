@@ -159,11 +159,26 @@ final readonly class AclGroupImpactService
             ];
 
             if ([] !== $fields) {
-                $rows[] = ['uid' => $content->uid(), 'label' => $content->slug(), 'fields' => $fields];
+                $rows[] = [
+                    'uid' => $content->uid(),
+                    'label' => $content->slug(),
+                    'fields' => $fields,
+                    'opens_published_access' => $this->opensPublishedAccess($content, $identifier),
+                ];
             }
         }
 
         return $rows;
+    }
+
+    private function opensPublishedAccess(ContentItem $content, string $identifier): bool
+    {
+        return $content->status()->isPubliclyRenderable()
+            && $content->aclRestrictions() === [$identifier]
+            && (
+                $content->viewGroupIdentifiers() === [$identifier]
+                || (null === $content->viewMinLevel() && null === $content->viewGroupIdentifiers())
+            );
     }
 
     /**
