@@ -17,6 +17,7 @@ use App\Security\AccountLinkDeliveryInterface;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenType;
+use App\Security\AdminUserAccessPolicy;
 use App\Security\UserAccountLifecycle;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
@@ -43,6 +44,7 @@ final class UserController extends AbstractController
         private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly UserAccountLifecycle $userLifecycle,
         private readonly AccountTokenMaintenance $tokenMaintenance,
+        private readonly AdminUserAccessPolicy $adminUserPolicy,
         private readonly TokenStorageInterface $tokenStorage,
         private readonly StateMarkerRecorder $stateMarkers,
     ) {
@@ -137,6 +139,10 @@ final class UserController extends AbstractController
 
         if (!$this->passwordHasher->isPasswordValid($user, $this->stringField($request, 'password'))) {
             $errors[] = 'ui.user.profile.close.errors.password';
+        }
+
+        if (!$this->adminUserPolicy->allowsAccountClosure($user)) {
+            $errors[] = 'ui.user.profile.close.errors.last_admin';
         }
 
         if ([] !== $errors) {

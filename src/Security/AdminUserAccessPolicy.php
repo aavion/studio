@@ -54,6 +54,11 @@ final readonly class AdminUserAccessPolicy
             : null;
     }
 
+    public function allowsAccountClosure(UserAccount $target): bool
+    {
+        return $this->hasActiveAdminAfterUserUpdate($target, UserAccountStatus::Deleted, 0);
+    }
+
     /**
      * @param list<string> $groupIdentifiers
      */

@@ -80,6 +80,7 @@ ui:
           invalid_csrf: 'Das Formular zum Schließen des Accounts ist abgelaufen. Bitte versuche es erneut.'
           confirmation: 'Bestätige, dass du den Account schließen möchtest.'
           password: 'Das Passwort ist nicht korrekt.'
+          last_admin: 'Der letzte aktive Admin-Account kann nicht geschlossen werden.'
       errors:
         invalid_csrf: 'Das Profilformular ist abgelaufen. Bitte versuche es erneut.'
         username_invalid: 'Wähle einen Username, der mit einem Buchstaben beginnt und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthält.'

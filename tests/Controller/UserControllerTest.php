@@ -700,6 +700,62 @@ final class UserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testLastAdminCannotCloseOwnAccount(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $passwordHasher = self::getContainer()->get(UserPasswordHasherInterface::class);
+        $admin = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'admin']);
+
+        self::assertInstanceOf(UserAccount::class, $admin);
+
+        $changedUsers = [];
+        $admin->changePassword($passwordHasher->hashPassword($admin, 'current-password'));
+
+        foreach ($entityManager->getRepository(UserAccount::class)->findAll() as $user) {
+            if ($user instanceof UserAccount && $user !== $admin && UserAccountStatus::Active === $user->status() && $user->maxAccessLevel() >= 8) {
+                $user->changeStatus(UserAccountStatus::Inactive);
+                $changedUsers[] = $user;
+            }
+        }
+
+        $entityManager->flush();
+
+        try {
+            $client->loginUser($admin);
+            $crawler = $client->request('GET', '/user/profile');
+            $form = $crawler->filter('form[action="/user/profile/close"]')->form([
+                'password' => 'current-password',
+            ]);
+            $form['confirm_close']->tick();
+            $client->submit($form);
+
+            self::assertResponseRedirects('/user/profile');
+
+            $entityManager->clear();
+            $persistedAdmin = $entityManager->find(UserAccount::class, $admin->uid());
+
+            self::assertInstanceOf(UserAccount::class, $persistedAdmin);
+            self::assertSame(UserAccountStatus::Active, $persistedAdmin->status());
+        } finally {
+            $restoredAdmin = $entityManager->find(UserAccount::class, $admin->uid());
+
+            if ($restoredAdmin instanceof UserAccount) {
+                $restoredAdmin->changePassword($passwordHasher->hashPassword($restoredAdmin, (string) $_SERVER['APP_SECRET']));
+            }
+
+            foreach ($changedUsers as $changedUser) {
+                $restoredUser = $entityManager->find(UserAccount::class, $changedUser->uid());
+
+                if ($restoredUser instanceof UserAccount) {
+                    $restoredUser->changeStatus(UserAccountStatus::Active);
+                }
+            }
+
+            $entityManager->flush();
+        }
+    }
+
     private function createUserWithLevel(int $level, string $username, string $password): UserAccount
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);

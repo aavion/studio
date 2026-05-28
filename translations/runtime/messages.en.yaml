@@ -123,6 +123,7 @@ ui:
                     invalid_csrf: 'The account closure form expired. Please try again.'
                     confirmation: 'Confirm that you want to close the account.'
                     password: 'The password is not correct.'
+                    last_admin: 'The last active admin account cannot be closed.'
             errors:
                 invalid_csrf: 'The profile form expired. Please try again.'
                 username_invalid: 'Choose a username that starts with a letter and contains 5 to 30 letters, digits, hyphens, or underscores.'
