@@ -270,6 +270,7 @@ admin:
       errors:
         invalid_csrf: 'Das Formular ist abgelaufen. Bitte versuche es erneut.'
         invalid_invitation: 'Die Einladung konnte nicht erstellt werden.'
+        mail_delivery_failed: 'Die Account-E-Mail konnte nicht erstellt werden. Prüfe die konfigurierte Website-URL und versuche es erneut.'
         email_in_use: 'Für diese E-Mail-Adresse existiert bereits ein Benutzerkonto.'
         invalid_status: 'Wähle einen gültigen Account-Status.'
         target_higher_access: 'Nur Administratoren auf Level 9 können Benutzer auf dem eigenen oder einem höheren Access-Level bearbeiten.'

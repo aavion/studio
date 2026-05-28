@@ -309,7 +309,7 @@ class ContentSchemaVersion
                 ]);
             }
 
-            Identifier::assertSnakeCase($identifier, MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
+            Identifier::assertAclGroupIdentifier($identifier);
         }
 
         return array_values(array_unique($values));

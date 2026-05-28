@@ -88,6 +88,7 @@ ui:
                 invalid_csrf: 'The registration form expired. Please try again.'
                 email: 'Enter a valid email address.'
                 default_group: 'Registration is temporarily unavailable because the default access group is not configured correctly.'
+                delivery_failed: 'The account email could not be created. Please try again later.'
         password_reset:
             title: 'Reset password'
             subtitle: 'Enter your email address. If an account exists, a reset link is delivered.'
@@ -101,6 +102,7 @@ ui:
             expires_at: 'This reset link expires at %expires_at%.'
             errors:
                 invalid_csrf: 'The password-reset form expired. Please try again.'
+                delivery_failed: 'The reset email could not be created. Please try again later.'
         profile:
             title: Profile
             placeholder: 'Profile settings will be available once account flows are enabled.'
@@ -494,6 +496,7 @@ admin:
             errors:
                 invalid_csrf: 'The form expired. Please try again.'
                 invalid_invitation: 'The invitation could not be created.'
+                mail_delivery_failed: 'The account email could not be created. Check the configured site URL and try again.'
                 email_in_use: 'A user account already exists for this email address.'
                 invalid_status: 'Choose a valid account status.'
                 target_higher_access: 'Only level 9 administrators can edit users at or above their own access level.'
@@ -1111,7 +1114,7 @@ message:
         level:
             invalid: 'Access level %level% must be between 0 and 9.'
         group_identifier:
-            invalid: 'ACL group identifier "%identifier%" must be lowercase snake_case.'
+            invalid: 'ACL group identifier "%identifier%" must be lowercase snake_case with at least 3 characters.'
     backend:
         route_not_found: 'Backend route "%path%" is not registered.'
         setup_locked: 'Setup is already completed and is no longer available.'
@@ -1186,6 +1189,8 @@ message:
     account_link:
         delivered: 'Account link for %email% (%type%, %flow%) was delivered through the message log.'
         notification_delivered: 'Account notification for %email% (%type%, %flow%) was delivered through the message log.'
+    routing:
+        absolute_uri_generation_failed: 'Absolute URI generation failed for %caller%.'
     api_key:
         prefix:
             invalid: 'API key prefix "%prefix%" is invalid.'

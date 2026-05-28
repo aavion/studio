@@ -294,6 +294,15 @@ final class AdminUserControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $client->loginUser($this->adminUser());
+        $config = self::getContainer()->get(Config::class);
+        $originalSiteUrl = $config->get('site.url', 'http://localhost');
+        $config->set('site.url', 'https://example.test');
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
         $crawler = $client->request('GET', '/admin/users');
         $form = $crawler->selectButton('Create invitation')->form([
             'email' => 'invited-admin-flow@example.test',
@@ -311,8 +320,41 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertInstanceOf(AccountToken::class, $token);
         self::assertSame(AccountTokenStatus::Pending, $token->status());
         self::assertSame(['registered'], $token->groupIdentifiers());
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        self::assertStringContainsString('https://example.test/user/invitation/', $messageLog);
         $entityManager->remove($token);
         $entityManager->flush();
+        $config->set('site.url', (string) $originalSiteUrl);
+    }
+
+    public function testAdminInvitationShowsDeliveryErrorWhenSiteUrlIsInvalid(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $config = self::getContainer()->get(Config::class);
+        $originalSiteUrl = $config->get('site.url', 'http://localhost');
+        $config->set('site.url', 'not-a-url');
+
+        try {
+            $crawler = $client->request('GET', '/admin/users');
+            $form = $crawler->selectButton('Create invitation')->form([
+                'email' => 'invalid-delivery-invite@example.test',
+            ]);
+            $form['groups'][0]->tick();
+            $client->submit($form);
+
+            self::assertResponseRedirects('/admin/users');
+            $client->followRedirect();
+            self::assertSelectorTextContains('.studio-alert-error', 'The account email could not be created. Check the configured site URL and try again.');
+
+            $token = self::getContainer()->get(EntityManagerInterface::class)
+                ->getRepository(AccountToken::class)
+                ->findOneBy(['email' => 'invalid-delivery-invite@example.test']);
+
+            self::assertNull($token);
+        } finally {
+            $config->set('site.url', (string) $originalSiteUrl);
+        }
     }
 
     public function testAdminCannotInviteExistingAccountEmail(): void

@@ -9,6 +9,8 @@ use App\Core\Log\AuditLoggerInterface;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
+use App\Core\Routing\AbsoluteUriGenerator;
+use App\Core\Validation\EmailAddress;
 use App\Entity\AccountToken;
 use App\Entity\UserAccount;
 use App\Mail\AccountMailFlow;
@@ -41,6 +43,7 @@ final class UserPasswordRecoveryController extends AbstractController
         private readonly AccountTokenIssuer $tokenIssuer,
         private readonly AccountTokenMaintenance $tokenMaintenance,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
+        private readonly AbsoluteUriGenerator $absoluteUris,
         private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly UserAccountLifecycle $userLifecycle,
         private readonly StateMarkerRecorder $stateMarkers,
@@ -59,18 +62,32 @@ final class UserPasswordRecoveryController extends AbstractController
             }
 
             if ([] === $errors) {
-                $email = strtolower($this->stringField($request, 'email'));
-                $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['email' => $email]);
+                $canCreateResetUrl = null !== $this->absoluteUris->generateUri(__METHOD__.'.preflight', 'user_password_reset_token', ['token' => str_repeat('0', 64)]);
+
+                if (!$canCreateResetUrl) {
+                    $errors[] = 'ui.user.password_reset.errors.delivery_failed';
+                }
+            }
+
+            if ([] === $errors) {
+                $email = EmailAddress::normalize($this->stringField($request, 'email'));
+                $user = $this->entityManager->getRepository(UserAccount::class)->findOneByEmail($email);
 
                 if ($user instanceof UserAccount) {
                     $this->tokenMaintenance->revokePendingForUser($user, [AccountTokenType::PasswordReset]);
                     [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::PasswordReset, $user->email(), [], $user, ttl: UserFlowConfig::PASSWORD_RESET_TTL);
-                    $this->entityManager->persist($token);
-                    $this->entityManager->flush();
-                    $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0), $this->mailLocaleResolver->forPublicRequest($request, $user));
+                    $url = $this->absoluteUris->generateUri(__METHOD__, 'user_password_reset_token', ['token' => $plainToken]);
+
+                    if (null === $url) {
+                        $errors[] = 'ui.user.password_reset.errors.delivery_failed';
+                    } else {
+                        $this->entityManager->persist($token);
+                        $this->entityManager->flush();
+                        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $url, $this->mailLocaleResolver->forPublicRequest($request, $user));
+                    }
                 }
 
-                $success = true;
+                $success = [] === $errors;
             }
         }
 
@@ -215,11 +232,17 @@ final class UserPasswordRecoveryController extends AbstractController
 
     private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $plainToken): void
     {
+        $url = $this->absoluteUris->generateUri(__METHOD__, 'user_security_review', ['token' => $plainToken]);
+
+        if (null === $url) {
+            return;
+        }
+
         $this->linkDelivery->deliver(
             $token,
             AccountMailFlow::PasswordChanged,
             $plainToken,
-            $this->generateUrl('user_security_review', ['token' => $plainToken], 0),
+            $url,
             $this->mailLocaleResolver->forPublicRequest($request, $token->user()),
         );
     }

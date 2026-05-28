@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Validation\EmailAddress;
 use InvalidArgumentException;
 
 final readonly class SetupInput
@@ -129,7 +130,7 @@ final readonly class SetupInput
 
     public function adminEmail(): string
     {
-        return $this->adminEmail ?? self::adminEmailFromDefaultUri($this->defaultUri);
+        return EmailAddress::normalize($this->adminEmail ?? self::adminEmailFromDefaultUri($this->defaultUri));
     }
 
     public function appSecret(): ?string
@@ -165,6 +166,6 @@ final readonly class SetupInput
             $host = 'localhost';
         }
 
-        return 'admin@'.$host;
+        return EmailAddress::normalize('admin@'.$host);
     }
 }

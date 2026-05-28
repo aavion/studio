@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mail;
 
+use App\Core\Validation\EmailAddress;
 use BackedEnum;
 use DateTimeInterface;
 use InvalidArgumentException;
@@ -12,12 +13,14 @@ use UnitEnum;
 
 final readonly class MailDeliveryMessage
 {
+    private ?string $recipientEmail;
+
     /**
      * @param array<string, mixed> $parameters
      */
     public function __construct(
         private BackedEnum $flow,
-        private ?string $recipientEmail,
+        ?string $recipientEmail,
         private string $locale,
         private array $parameters,
         private ?string $actionUrl = null,
@@ -26,8 +29,9 @@ final readonly class MailDeliveryMessage
         private ?string $tokenType = null,
     ) {
         $this->assertLocale($locale);
+        $this->recipientEmail = null === $recipientEmail ? null : EmailAddress::normalize($recipientEmail);
 
-        if (null !== $recipientEmail && false === filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+        if (null !== $this->recipientEmail && !EmailAddress::isValid($this->recipientEmail)) {
             throw new InvalidArgumentException(sprintf('Invalid mail recipient "%s".', $recipientEmail));
         }
 
@@ -48,7 +52,7 @@ final readonly class MailDeliveryMessage
 
     public function recipientEmail(): ?string
     {
-        return null === $this->recipientEmail ? null : strtolower($this->recipientEmail);
+        return $this->recipientEmail;
     }
 
     public function locale(): string
@@ -68,7 +72,9 @@ final readonly class MailDeliveryMessage
                 continue;
             }
 
-            $parameters[$key] = $this->stringValue($value);
+            $parameters[$key] = 'email' === $key && is_scalar($value)
+                ? EmailAddress::normalize((string) $value)
+                : $this->stringValue($value);
         }
 
         if (null !== $this->actionUrl && !isset($parameters['action_url'])) {
@@ -76,7 +82,7 @@ final readonly class MailDeliveryMessage
         }
 
         if (null !== $this->recipientEmail && !isset($parameters['email'])) {
-            $parameters['email'] = strtolower($this->recipientEmail);
+            $parameters['email'] = $this->recipientEmail;
         }
 
         ksort($parameters);

@@ -270,6 +270,7 @@ admin:
       errors:
         invalid_csrf: 'The form expired. Please try again.'
         invalid_invitation: 'The invitation could not be created.'
+        mail_delivery_failed: 'The account email could not be created. Check the configured site URL and try again.'
         email_in_use: 'A user account already exists for this email address.'
         invalid_status: 'Choose a valid account status.'
         target_higher_access: 'Only level 9 administrators can edit users at or above their own access level.'

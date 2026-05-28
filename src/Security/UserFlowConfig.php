@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Core\Config\Config;
+use App\Core\Validation\EmailAddress;
 
 final readonly class UserFlowConfig
 {
@@ -113,8 +114,6 @@ final readonly class UserFlowConfig
             return null;
         }
 
-        $email = trim($email);
-
-        return false !== filter_var($email, FILTER_VALIDATE_EMAIL) ? strtolower($email) : null;
+        return EmailAddress::isValid($email) ? EmailAddress::normalize($email) : null;
     }
 }

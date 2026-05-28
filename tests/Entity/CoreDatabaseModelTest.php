@@ -48,7 +48,7 @@ final class CoreDatabaseModelTest extends TestCase
         $user = new UserAccount(
             '33333333-3333-3333-3333-333333333333',
             'dominique',
-            'dom@example.com',
+            'Dom@Example.COM',
             'hash',
             ['display_name' => 'Dominique'],
         );
@@ -67,12 +67,13 @@ final class CoreDatabaseModelTest extends TestCase
             '55555555-5555-4555-8555-555555555555',
             hash('sha256', 'plain-account-token'),
             AccountTokenType::Invitation,
-            'invitee@example.com',
+            'Invitee@Example.COM',
             ['registered'],
         );
 
         self::assertSame(AccessLevel::MANAGER, $user->maxAccessLevel());
         self::assertSame('dominique', $user->getUserIdentifier());
+        self::assertSame('dom@example.com', $user->email());
         self::assertSame('hash', $user->getPassword());
         self::assertSame([], $user->getRoles());
         self::assertSame(UserAccountStatus::Active, $user->status());
@@ -84,6 +85,7 @@ final class CoreDatabaseModelTest extends TestCase
         self::assertSame('v1.test.encrypted-key', $apiKey->encryptedKey());
         self::assertSame(ApiKeyStatus::ReadWrite, $apiKey->status());
         self::assertSame(AccountTokenType::Invitation, $accountToken->type());
+        self::assertSame('invitee@example.com', $accountToken->email());
         self::assertSame(AccountTokenStatus::Pending, $accountToken->status());
         self::assertSame(['registered'], $accountToken->groupIdentifiers());
         self::assertTrue($accountToken->status()->isUsable());
@@ -106,6 +108,19 @@ final class CoreDatabaseModelTest extends TestCase
 
         self::assertSame('new-hash', $user->passwordHash());
         self::assertSame(UserAccountStatus::Inactive, $user->status());
+    }
+
+    public function testItRejectsShortAclGroupIdentifiers(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
+
+        new AclGroup(
+            '11111111-1111-1111-1111-111111111111',
+            'ab',
+            ['en' => 'Short'],
+            AccessLevel::REGISTERED,
+        );
     }
 
     public function testItEnforcesUsernamePolicy(): void

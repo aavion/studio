@@ -8,6 +8,8 @@ use App\Backend\BackendAccessGuard;
 use App\Backend\BackendArea;
 use App\Core\Access\AccessActor;
 use App\Core\Log\AuditLoggerInterface;
+use App\Core\Routing\AbsoluteUriGenerator;
+use App\Core\Validation\EmailAddress;
 use App\Entity\AccountToken;
 use App\Entity\UserAccount;
 use App\Mail\AccountMailFlow;
@@ -37,6 +39,7 @@ final class AdminUserInvitationController extends AbstractController
         private readonly AccountTokenIssuer $tokenIssuer,
         private readonly AccountTokenMaintenance $tokenMaintenance,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
+        private readonly AbsoluteUriGenerator $absoluteUris,
         private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly UserFlowConfig $userFlowConfig,
         private readonly AdminUserAccessPolicy $adminUserPolicy,
@@ -57,7 +60,7 @@ final class AdminUserInvitationController extends AbstractController
             return $this->redirectAfterTokenAction($request);
         }
 
-        $email = $this->field($request, 'email');
+        $email = EmailAddress::normalize($this->field($request, 'email'));
         $groups = $this->groupIdentifiers($request->request->all('groups'));
 
         try {
@@ -83,9 +86,17 @@ final class AdminUserInvitationController extends AbstractController
                 UserAccountStatus::Deleted === $existingUser?->status() ? $existingUser : null,
                 ttl: $this->userFlowConfig->accountLinkTtl(),
             );
+            $url = $this->absoluteUris->generateUri(__METHOD__, 'user_invitation_accept', ['token' => $plainToken]);
+
+            if (null === $url) {
+                $this->addFlash('error', 'admin.users.form.errors.mail_delivery_failed');
+
+                return $this->redirectToRoute('backend_admin_users');
+            }
+
             $this->entityManager->persist($token);
             $this->entityManager->flush();
-            $this->linkDelivery->deliver($token, AccountMailFlow::InvitationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0), $this->mailLocaleResolver->forAdminAction());
+            $this->linkDelivery->deliver($token, AccountMailFlow::InvitationLink, $plainToken, $url, $this->mailLocaleResolver->forAdminAction());
             $this->audit('user.invitation_created', ['email' => $email, 'groups' => $groups, 'token_uid' => $token->uid()]);
             $this->addFlash('success', 'admin.users.invitation.created');
         } catch (Throwable) {
@@ -117,10 +128,18 @@ final class AdminUserInvitationController extends AbstractController
         }
 
         $plainToken = $this->tokenIssuer->reissue($token, $this->userFlowConfig->accountLinkTtl());
+        $url = $this->absoluteUris->generateUri(__METHOD__, 'user_invitation_accept', ['token' => $plainToken]);
+
+        if (null === $url) {
+            $this->addFlash('error', 'admin.users.form.errors.mail_delivery_failed');
+
+            return $this->redirectAfterTokenAction($request);
+        }
+
         $token->approve();
         $this->entityManager->flush();
         $this->linkDelivery->notify($token, AccountMailFlow::RegistrationApproved, locale: $this->mailLocaleResolver->forAdminAction($token->user()));
-        $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0), $this->mailLocaleResolver->forAdminAction($token->user()));
+        $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $url, $this->mailLocaleResolver->forAdminAction($token->user()));
         $this->audit('user.registration_approved', ['email' => $token->email(), 'token_uid' => $token->uid()]);
         $this->addFlash('success', 'admin.users.invitation.approved');
 
@@ -149,8 +168,16 @@ final class AdminUserInvitationController extends AbstractController
         }
 
         $plainToken = $this->tokenIssuer->reissue($token, $this->ttlForToken($token));
+        $url = $this->urlForToken($token, $plainToken);
+
+        if (null === $url) {
+            $this->addFlash('error', 'admin.users.form.errors.mail_delivery_failed');
+
+            return $this->redirectAfterTokenAction($request);
+        }
+
         $this->entityManager->flush();
-        $this->linkDelivery->deliver($token, $this->flowForToken($token), $plainToken, $this->urlForToken($token, $plainToken), $this->mailLocaleResolver->forAdminAction($token->user()));
+        $this->linkDelivery->deliver($token, $this->flowForToken($token), $plainToken, $url, $this->mailLocaleResolver->forAdminAction($token->user()));
         $this->audit('user.account_token_reissued', ['email' => $token->email(), 'token_uid' => $token->uid(), 'token_type' => $token->type()->value]);
         $this->addFlash('success', 'admin.users.invitation.reissued');
 
@@ -197,7 +224,7 @@ final class AdminUserInvitationController extends AbstractController
 
     private function userByEmail(string $email): ?UserAccount
     {
-        $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['email' => strtolower($email)]);
+        $user = $this->entityManager->getRepository(UserAccount::class)->findOneByEmail($email);
 
         return $user instanceof UserAccount ? $user : null;
     }
@@ -219,12 +246,12 @@ final class AdminUserInvitationController extends AbstractController
         };
     }
 
-    private function urlForToken(AccountToken $token, string $plainToken): string
+    private function urlForToken(AccountToken $token, string $plainToken): ?string
     {
         return match ($token->type()) {
-            AccountTokenType::PasswordReset => $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0),
-            AccountTokenType::SecurityReview => $this->generateUrl('user_security_review', ['token' => $plainToken], 0),
-            default => $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0),
+            AccountTokenType::PasswordReset => $this->absoluteUris->generateUri(__METHOD__, 'user_password_reset_token', ['token' => $plainToken]),
+            AccountTokenType::SecurityReview => $this->absoluteUris->generateUri(__METHOD__, 'user_security_review', ['token' => $plainToken]),
+            default => $this->absoluteUris->generateUri(__METHOD__, 'user_invitation_accept', ['token' => $plainToken]),
         };
     }
 

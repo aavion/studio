@@ -8,6 +8,7 @@ use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Validation\EmailAddress;
 use App\Entity\AccountToken;
 use App\Mail\AccountMailFlow;
 use App\Mail\MailDeliveryMessage;
@@ -69,7 +70,7 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
     public function notifyAddress(string $recipientEmail, AccountMailFlow $flow, string $locale, array $parameters = []): void
     {
         $parameters = [
-            'email' => strtolower($recipientEmail),
+            'email' => EmailAddress::normalize($recipientEmail),
             ...$parameters,
         ];
 

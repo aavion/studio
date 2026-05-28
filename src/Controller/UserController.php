@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Core\Access\AccessActor;
 use App\Core\Log\AuditLoggerInterface;
+use App\Core\Routing\AbsoluteUriGenerator;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
@@ -41,6 +42,7 @@ final class UserController extends AbstractController
         private readonly UserFlowConfig $userFlowConfig,
         private readonly AccountTokenIssuer $tokenIssuer,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
+        private readonly AbsoluteUriGenerator $absoluteUris,
         private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly UserAccountLifecycle $userLifecycle,
         private readonly AccountTokenMaintenance $tokenMaintenance,
@@ -273,11 +275,17 @@ final class UserController extends AbstractController
 
     private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $plainToken): void
     {
+        $url = $this->absoluteUris->generateUri(__METHOD__, 'user_security_review', ['token' => $plainToken]);
+
+        if (null === $url) {
+            return;
+        }
+
         $this->linkDelivery->deliver(
             $token,
             AccountMailFlow::PasswordChanged,
             $plainToken,
-            $this->generateUrl('user_security_review', ['token' => $plainToken], 0),
+            $url,
             $this->mailLocaleResolver->forPublicRequest($request, $token->user()),
         );
     }

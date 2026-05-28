@@ -567,7 +567,7 @@ class ContentItem
         $identifiers = self::assertStringList($values, 'ACL group identifiers');
 
         foreach ($identifiers as $identifier) {
-            Identifier::assertSnakeCase($identifier, MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
+            Identifier::assertAclGroupIdentifier($identifier);
         }
 
         return $identifiers;

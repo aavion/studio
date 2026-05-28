@@ -6,7 +6,9 @@ namespace App\Entity;
 
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
+use App\Core\Validation\EmailAddress;
 use App\Core\Validation\Uid;
+use App\Repository\UserAccountRepository;
 use App\Security\AccessLevelAwareUserInterface;
 use App\Security\UserAccountStatus;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -14,7 +16,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: UserAccountRepository::class)]
 #[ORM\Table(name: 'user_account')]
 #[ORM\UniqueConstraint(name: 'uniq_user_account_username', columns: ['username'])]
 #[ORM\UniqueConstraint(name: 'uniq_user_account_email', columns: ['email'])]
@@ -224,12 +226,6 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
 
     private static function assertEmail(string $email): string
     {
-        if (false === filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw MessageException::invalidArgument(MessageKey::USER_EMAIL_INVALID, [
-                '%email%' => $email,
-            ]);
-        }
-
-        return $email;
+        return EmailAddress::assert($email);
     }
 }

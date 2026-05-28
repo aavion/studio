@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Core\Access\AccessLevel;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
 use Doctrine\ORM\Mapping as ORM;
@@ -58,7 +57,7 @@ class AclGroup
         array $metadata = [],
     ) {
         $this->uid = Uid::assert($uid, 'ACL group UID');
-        $this->identifier = Identifier::assertSnakeCase($identifier, MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, '%identifier%');
+        $this->identifier = Identifier::assertAclGroupIdentifier($identifier);
         $this->name = $name;
         $this->accessLevel = AccessLevel::assert($accessLevel);
         $this->locked = $locked;

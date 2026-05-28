@@ -8,6 +8,7 @@ use App\Core\Access\AccessActor;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Log\AuditLoggerInterface;
+use App\Core\Routing\AbsoluteUriGenerator;
 use App\Entity\AccountToken;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
@@ -17,7 +18,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Throwable;
 
 final readonly class AppSecretRotationGuard implements EventSubscriberInterface
@@ -30,7 +30,7 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
         private AccountTokenIssuer $tokenIssuer,
         private AccountLinkDeliveryInterface $linkDelivery,
         private MailLocaleResolver $mailLocaleResolver,
-        private UrlGeneratorInterface $urlGenerator,
+        private AbsoluteUriGenerator $absoluteUris,
         private AuditLoggerInterface $auditLogger,
         private string $secret,
         private string $environment,
@@ -165,12 +165,18 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
                 ttl: UserFlowConfig::PASSWORD_RESET_TTL,
                 metadata: ['reason' => 'app_secret_rotation', 'environment' => $this->environment],
             );
+            $url = $this->absoluteUris->generateUri(__METHOD__, 'user_password_reset_token', ['token' => $plainToken]);
+
+            if (null === $url) {
+                continue;
+            }
+
             $this->entityManager->persist($token);
             $this->linkDelivery->deliver(
                 $token,
                 AccountMailFlow::PasswordResetLink,
                 $plainToken,
-                $this->urlGenerator->generate('user_password_reset_token', ['token' => $plainToken], UrlGeneratorInterface::ABSOLUTE_URL),
+                $url,
                 $this->mailLocaleResolver->forAdminAction($user),
             );
             ++$count;

@@ -88,6 +88,7 @@ ui:
                 invalid_csrf: 'Das Registrierungsformular ist abgelaufen. Bitte versuche es erneut.'
                 email: 'Gib eine gültige E-Mail-Adresse ein.'
                 default_group: 'Die Registrierung ist vorübergehend nicht verfügbar, weil die Standard-Zugriffsgruppe nicht korrekt konfiguriert ist.'
+                delivery_failed: 'Die Account-E-Mail konnte nicht erstellt werden. Bitte versuche es später erneut.'
         password_reset:
             title: 'Passwort zurücksetzen'
             subtitle: 'Gib deine E-Mail-Adresse ein. Falls ein Account existiert, wird ein Reset-Link zugestellt.'
@@ -101,6 +102,7 @@ ui:
             expires_at: 'Dieser Reset-Link läuft am %expires_at% ab.'
             errors:
                 invalid_csrf: 'Das Passwort-Reset-Formular ist abgelaufen. Bitte versuche es erneut.'
+                delivery_failed: 'Die Reset-E-Mail konnte nicht erstellt werden. Bitte versuche es später erneut.'
         profile:
             title: Profil
             placeholder: 'Profileinstellungen werden verfügbar, sobald Account-Flows aktiviert sind.'
@@ -494,6 +496,7 @@ admin:
             errors:
                 invalid_csrf: 'Das Formular ist abgelaufen. Bitte versuche es erneut.'
                 invalid_invitation: 'Die Einladung konnte nicht erstellt werden.'
+                mail_delivery_failed: 'Die Account-E-Mail konnte nicht erstellt werden. Prüfe die konfigurierte Website-URL und versuche es erneut.'
                 email_in_use: 'Für diese E-Mail-Adresse existiert bereits ein Benutzerkonto.'
                 invalid_status: 'Wähle einen gültigen Account-Status.'
                 target_higher_access: 'Nur Administratoren auf Level 9 können Benutzer auf dem eigenen oder einem höheren Access-Level bearbeiten.'
@@ -1111,7 +1114,7 @@ message:
         level:
             invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
         group_identifier:
-            invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein.'
+            invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein und mindestens 3 Zeichen enthalten.'
     backend:
         route_not_found: 'Backend-Route "%path%" ist nicht registriert.'
         setup_locked: 'Setup ist bereits abgeschlossen und nicht mehr verfügbar.'
@@ -1186,6 +1189,8 @@ message:
     account_link:
         delivered: 'Account-Link für %email% (%type%, %flow%) wurde über das Message-Log zugestellt.'
         notification_delivered: 'Account-Benachrichtigung für %email% (%type%, %flow%) wurde über das Message-Log zugestellt.'
+    routing:
+        absolute_uri_generation_failed: 'Absolute-URI-Erzeugung für %caller% ist fehlgeschlagen.'
     api_key:
         prefix:
             invalid: 'API-Key-Präfix "%prefix%" ist ungültig.'

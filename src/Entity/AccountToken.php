@@ -6,6 +6,8 @@ namespace App\Entity;
 
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
+use App\Core\Validation\EmailAddress;
+use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
@@ -202,13 +204,7 @@ class AccountToken
 
     private static function assertEmail(string $email): string
     {
-        if (false === filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw MessageException::invalidArgument(MessageKey::USER_EMAIL_INVALID, [
-                '%email%' => $email,
-            ]);
-        }
-
-        return strtolower($email);
+        return EmailAddress::assert($email);
     }
 
     /**
@@ -221,12 +217,13 @@ class AccountToken
         $normalized = [];
 
         foreach ($groupIdentifiers as $identifier) {
-            if (!is_string($identifier) || 1 !== preg_match('/^[a-z][a-z0-9_]{1,79}$/', $identifier)) {
+            if (!is_string($identifier)) {
                 throw MessageException::invalidArgument(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
                     '%identifier%' => (string) $identifier,
                 ]);
             }
 
+            $identifier = Identifier::assertAclGroupIdentifier($identifier);
             $normalized[$identifier] = $identifier;
         }
 

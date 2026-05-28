@@ -403,6 +403,8 @@ final class UserControllerTest extends WebTestCase
         $deletedUser->changeStatus(UserAccountStatus::Deleted);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->flush();
+        $originalSiteUrl = $config->get('site.url', 'http://localhost');
+        $config->set('site.url', 'https://example.test');
         $config->set('user.registration.mode', 'auto_approval');
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
@@ -429,8 +431,10 @@ final class UserControllerTest extends WebTestCase
             self::assertSame(['registered'], $token->groupIdentifiers());
             $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
             self::assertStringContainsString('account.registration.link', $messageLog);
+            self::assertStringContainsString('https://example.test/user/invitation/', $messageLog);
             self::assertStringNotContainsString('account.registration.existing_account', $messageLog);
         } finally {
+            $config->set('site.url', (string) $originalSiteUrl);
             $config->set('user.registration.mode', 'disabled');
         }
     }
@@ -479,6 +483,55 @@ final class UserControllerTest extends WebTestCase
             }
 
             $entityManager->flush();
+        }
+    }
+
+    public function testRegistrationShowsDeliveryErrorWhenSiteUrlIsInvalid(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $email = 'registration-delivery-error@example.test';
+        $admin = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'admin']);
+        $originalSiteUrl = $config->get('site.url', 'http://localhost');
+
+        self::assertInstanceOf(UserAccount::class, $admin);
+
+        try {
+            $config->set('site.url', 'not-a-url');
+            $config->set('user.registration.mode', 'auto_approval');
+            $crawler = $client->request('GET', '/user/register');
+            $client->submit($crawler->selectButton('Request account')->form([
+                'email' => $email,
+            ]));
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-form-errors', 'The account email could not be created. Please try again later.');
+
+            $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
+                'email' => $email,
+                'type' => AccountTokenType::Registration,
+            ]);
+
+            self::assertNull($token);
+
+            $crawler = $client->request('GET', '/user/register');
+            $client->submit($crawler->selectButton('Request account')->form([
+                'email' => $admin->email(),
+            ]));
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-form-errors', 'The account email could not be created. Please try again later.');
+
+            $existingAccountToken = $entityManager->getRepository(AccountToken::class)->findOneBy([
+                'email' => $admin->email(),
+                'type' => AccountTokenType::Registration,
+            ]);
+
+            self::assertNull($existingAccountToken);
+        } finally {
+            $config->set('site.url', (string) $originalSiteUrl);
+            $config->set('user.registration.mode', 'disabled');
         }
     }
 
@@ -555,36 +608,88 @@ final class UserControllerTest extends WebTestCase
         $client = self::createClient();
         $user = $this->createUserWithLevel(1, 'resetdedupe', 'current-password');
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $config = self::getContainer()->get(Config::class);
+        $originalSiteUrl = $config->get('site.url', 'http://localhost');
+        $config->set('site.url', 'https://example.test');
+        $entityManager->getConnection()->update('user_account', ['email' => 'ResetDedupe@Example.TEST'], ['uid' => $user->uid()]);
+        $entityManager->clear();
+        $user = $entityManager->getRepository(UserAccount::class)->find($user->uid());
+        self::assertInstanceOf(UserAccount::class, $user);
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
 
         $crawler = $client->request('GET', '/user/reset-password');
         $client->submit($crawler->selectButton('Request reset link')->form([
-            'email' => $user->email(),
+            'email' => 'resetdedupe@example.test',
         ]));
 
         self::assertResponseIsSuccessful();
 
         $crawler = $client->request('GET', '/user/reset-password');
         $client->submit($crawler->selectButton('Request reset link')->form([
-            'email' => $user->email(),
+            'email' => 'RESETDEDUPE@EXAMPLE.TEST',
         ]));
 
         self::assertResponseIsSuccessful();
 
         $tokens = $entityManager->getRepository(AccountToken::class)->findBy([
-            'email' => $user->email(),
+            'email' => 'resetdedupe@example.test',
             'type' => AccountTokenType::PasswordReset,
         ]);
         $statuses = array_map(static fn (AccountToken $token): AccountTokenStatus => $token->status(), $tokens);
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
 
         self::assertCount(2, $tokens);
         self::assertCount(1, array_filter($statuses, static fn (AccountTokenStatus $status): bool => AccountTokenStatus::Pending === $status));
         self::assertCount(1, array_filter($statuses, static fn (AccountTokenStatus $status): bool => AccountTokenStatus::Revoked === $status));
+        self::assertStringContainsString('https://example.test/user/reset-password/', $messageLog);
 
         foreach ($tokens as $token) {
             $entityManager->remove($token);
         }
 
         $entityManager->flush();
+        $config->set('site.url', (string) $originalSiteUrl);
+    }
+
+    public function testPasswordResetShowsDeliveryErrorWhenSiteUrlIsInvalid(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'resetdeliveryerror', 'current-password');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $config = self::getContainer()->get(Config::class);
+        $originalSiteUrl = $config->get('site.url', 'http://localhost');
+        $config->set('site.url', 'not-a-url');
+
+        try {
+            $crawler = $client->request('GET', '/user/reset-password');
+            $client->submit($crawler->selectButton('Request reset link')->form([
+                'email' => $user->email(),
+            ]));
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-form-errors', 'The reset email could not be created. Please try again later.');
+
+            $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
+                'email' => $user->email(),
+                'type' => AccountTokenType::PasswordReset,
+            ]);
+
+            self::assertNull($token);
+
+            $crawler = $client->request('GET', '/user/reset-password');
+            $client->submit($crawler->selectButton('Request reset link')->form([
+                'email' => 'missing-reset-delivery@example.test',
+            ]));
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-form-errors', 'The reset email could not be created. Please try again later.');
+        } finally {
+            $config->set('site.url', (string) $originalSiteUrl);
+        }
     }
 
     public function testApiKeysRouteListsPersistedKeysForTheCurrentUser(): void

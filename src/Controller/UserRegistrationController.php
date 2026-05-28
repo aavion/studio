@@ -11,6 +11,8 @@ use App\Core\Log\AuditLoggerInterface;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
+use App\Core\Routing\AbsoluteUriGenerator;
+use App\Core\Validation\EmailAddress;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
@@ -43,6 +45,7 @@ final class UserRegistrationController extends AbstractController
         private readonly AccountTokenIssuer $tokenIssuer,
         private readonly AccountTokenMaintenance $tokenMaintenance,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
+        private readonly AbsoluteUriGenerator $absoluteUris,
         private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly StateMarkerRecorder $stateMarkers,
         private readonly UuidFactory $uuidFactory,
@@ -65,10 +68,18 @@ final class UserRegistrationController extends AbstractController
                 $errors[] = 'ui.user.register.errors.invalid_csrf';
             }
 
-            $email = $this->stringField($request, 'email');
+            $email = EmailAddress::normalize($this->stringField($request, 'email'));
 
-            if ('' === $email || false === filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            if (!EmailAddress::isValid($email)) {
                 $errors[] = 'ui.user.register.errors.email';
+            }
+
+            if ([] === $errors && !$requiresApproval) {
+                $canCreateRegistrationUrl = null !== $this->absoluteUris->generateUri(__METHOD__.'.preflight', 'user_invitation_accept', ['token' => str_repeat('0', 64)]);
+
+                if (!$canCreateRegistrationUrl) {
+                    $errors[] = 'ui.user.register.errors.delivery_failed';
+                }
             }
 
             if ([] === $errors) {
@@ -107,21 +118,29 @@ final class UserRegistrationController extends AbstractController
                     status: $requiresApproval ? AccountTokenStatus::PendingApproval : AccountTokenStatus::Pending,
                     ttl: $this->userFlowConfig->accountLinkTtl(),
                 );
-                $this->entityManager->persist($token);
-                $this->entityManager->flush();
 
                 if (!$requiresApproval) {
-                    $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0), $this->mailLocaleResolver->forPublicRequest($request));
+                    $url = $this->absoluteUris->generateUri(__METHOD__, 'user_invitation_accept', ['token' => $plainToken]);
+
+                    if (null === $url) {
+                        $errors[] = 'ui.user.register.errors.delivery_failed';
+                    } else {
+                        $this->entityManager->persist($token);
+                        $this->entityManager->flush();
+                        $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $url, $this->mailLocaleResolver->forPublicRequest($request));
+                        $success = true;
+                    }
                 } else {
+                    $this->entityManager->persist($token);
+                    $this->entityManager->flush();
                     $this->linkDelivery->notify(
                         $token,
                         AccountMailFlow::RegistrationApprovalRequested,
                         $this->userFlowConfig->registrationAdminNotificationEmail(),
                         $this->mailLocaleResolver->defaultLocale(),
                     );
+                    $success = true;
                 }
-
-                $success = true;
             }
         }
 
@@ -209,7 +228,7 @@ final class UserRegistrationController extends AbstractController
 
     private function userByEmail(string $email): ?UserAccount
     {
-        $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['email' => strtolower($email)]);
+        $user = $this->entityManager->getRepository(UserAccount::class)->findOneByEmail($email);
 
         return $user instanceof UserAccount ? $user : null;
     }

@@ -129,6 +129,7 @@ final class MessageCode
     public const ACCOUNT_LINK_DELIVERED = 'account.link_delivered';
     public const ACCOUNT_NOTIFICATION_DELIVERED = 'account.notification_delivered';
     public const ACCOUNT_MAIL_STUB_QUEUED = 'account.mail_stub_queued';
+    public const ABSOLUTE_URI_GENERATION_FAILED = 'routing.absolute_uri_generation_failed';
     public const CONTENT_LANGUAGE_FALLBACK = 'content.language_fallback';
     public const CONTENT_VARIANT_FALLBACK = 'content.variant_fallback';
     public const PACKAGE_IDENTIFIER_INVALID = 'package.identifier.invalid';

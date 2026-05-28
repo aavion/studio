@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Security;
 
+use App\Core\Message\MessageKey;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenType;
 use App\Security\UserFlowConfig;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 final class AccountTokenIssuerTest extends TestCase
@@ -56,5 +58,17 @@ final class AccountTokenIssuerTest extends TestCase
         self::assertNotSame($originalHash, $token->tokenHash());
         self::assertGreaterThan($originalExpiry, $token->expiresAt());
         self::assertSame($issuer->hash($plainToken), $token->tokenHash());
+    }
+
+    public function testItRejectsShortAclGroupIdentifiers(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
+
+        (new AccountTokenIssuer())->issue(
+            AccountTokenType::Invitation,
+            'invitee@example.test',
+            ['ab'],
+        );
     }
 }

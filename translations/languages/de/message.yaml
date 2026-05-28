@@ -160,7 +160,7 @@ message:
     level:
       invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
     group_identifier:
-      invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein.'
+      invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein und mindestens 3 Zeichen enthalten.'
   backend:
     route_not_found: 'Backend-Route "%path%" ist nicht registriert.'
     setup_locked: 'Setup ist bereits abgeschlossen und nicht mehr verfügbar.'
@@ -235,6 +235,8 @@ message:
   account_link:
     delivered: 'Account-Link für %email% (%type%, %flow%) wurde über das Message-Log zugestellt.'
     notification_delivered: 'Account-Benachrichtigung für %email% (%type%, %flow%) wurde über das Message-Log zugestellt.'
+  routing:
+    absolute_uri_generation_failed: 'Absolute-URI-Erzeugung für %caller% ist fehlgeschlagen.'
   api_key:
     prefix:
       invalid: 'API-Key-Präfix "%prefix%" ist ungültig.'

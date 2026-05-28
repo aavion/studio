@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Core\Access;
 
-use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 
 final readonly class AccessRule
@@ -100,7 +99,7 @@ final readonly class AccessRule
     private static function normalizeGroupIdentifiers(array $groupIdentifiers): array
     {
         foreach ($groupIdentifiers as $identifier) {
-            Identifier::assertSnakeCase($identifier, MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, '%identifier%');
+            Identifier::assertAclGroupIdentifier($identifier);
         }
 
         sort($groupIdentifiers);

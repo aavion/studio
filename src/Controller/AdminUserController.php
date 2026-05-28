@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Backend\AdminControllerContext;
+use App\Core\Routing\AbsoluteUriGenerator;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
@@ -40,6 +41,7 @@ final class AdminUserController extends AbstractController
         private readonly AccountTokenIssuer $tokenIssuer,
         private readonly AccountTokenMaintenance $tokenMaintenance,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
+        private readonly AbsoluteUriGenerator $absoluteUris,
         private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly UserAccountLifecycle $userLifecycle,
         private readonly AdminUserAccessPolicy $adminUserPolicy,
@@ -185,9 +187,17 @@ final class AdminUserController extends AbstractController
 
         $this->tokenMaintenance->revokePendingForUser($user, [AccountTokenType::PasswordReset]);
         [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::PasswordReset, $user->email(), [], $user, ttl: UserFlowConfig::PASSWORD_RESET_TTL);
+        $url = $this->absoluteUris->generateUri(__METHOD__, 'user_password_reset_token', ['token' => $plainToken]);
+
+        if (null === $url) {
+            $this->addFlash('error', 'admin.users.form.errors.mail_delivery_failed');
+
+            return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
+        }
+
         $this->entityManager->persist($token);
         $this->entityManager->flush();
-        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0), $this->mailLocaleResolver->forAdminAction($user));
+        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $url, $this->mailLocaleResolver->forAdminAction($user));
         $this->adminContext->audit($this->getUser(), 'user.password_reset_created', ['target_user' => $user->uid(), 'token_uid' => $token->uid()]);
         $this->addFlash('success', 'admin.users.password_reset.created');
 
