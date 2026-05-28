@@ -11,6 +11,7 @@ use App\Entity\AclGroup;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
 use App\Security\AccountLinkDeliveryInterface;
+use App\Security\AccountMailFlow;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
@@ -273,12 +274,19 @@ final class UserController extends AbstractController
                     $email,
                     ['registered'],
                     status: $requiresApproval ? AccountTokenStatus::PendingApproval : AccountTokenStatus::Pending,
+                    ttl: $this->userFlowConfig->accountLinkTtl(),
                 );
                 $this->entityManager->persist($token);
                 $this->entityManager->flush();
 
                 if (!$requiresApproval) {
-                    $this->linkDelivery->deliver($token, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0));
+                    $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0));
+                } else {
+                    $this->linkDelivery->notify(
+                        $token,
+                        AccountMailFlow::RegistrationApprovalRequested,
+                        $this->userFlowConfig->registrationAdminNotificationEmail(),
+                    );
                 }
 
                 $success = true;
@@ -308,10 +316,10 @@ final class UserController extends AbstractController
                 $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['email' => $email]);
 
                 if ($user instanceof UserAccount) {
-                    [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::PasswordReset, $user->email(), [], $user, ttl: '+2 days');
+                    [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::PasswordReset, $user->email(), [], $user, ttl: UserFlowConfig::PASSWORD_RESET_TTL);
                     $this->entityManager->persist($token);
                     $this->entityManager->flush();
-                    $this->linkDelivery->deliver($token, $plainToken, $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0));
+                    $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0));
                 }
 
                 $success = true;

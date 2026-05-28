@@ -10,6 +10,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
+use App\Security\UserFlowConfig;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 
@@ -25,6 +26,18 @@ final class ConfigTest extends TestCase
 
         self::assertTrue($config->get('user.menu.enabled', false));
         self::assertSame(950, $config->get('user.menu.sort_order', 900));
+    }
+
+    public function testUserFlowConfigNormalizesTokenLifecycleSettings(): void
+    {
+        $connection = $this->connection();
+        $connection->insert('config_entry', ['config_key' => UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'value' => '36', 'value_type' => 'integer']);
+        $connection->insert('config_entry', ['config_key' => UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, 'value' => '"Admin@Example.Test"', 'value_type' => 'string']);
+        $config = new UserFlowConfig(new Config($connection));
+
+        self::assertSame(36, $config->accountLinkTtlHours());
+        self::assertSame('+36 hours', $config->accountLinkTtl());
+        self::assertSame('admin@example.test', $config->registrationAdminNotificationEmail());
     }
 
     public function testItFallsBackWhenConfigurationCannotBeRead(): void

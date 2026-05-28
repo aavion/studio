@@ -51,6 +51,7 @@ ui:
       complete_subtitle: 'Setze ein neues Passwort für deinen Account.'
       complete_submit: 'Passwort aktualisieren'
       complete_success: 'Dein Passwort wurde aktualisiert.'
+      expires_at: 'Dieser Reset-Link läuft am %expires_at% ab.'
       errors:
         invalid_csrf: 'Das Passwort-Reset-Formular ist abgelaufen. Bitte versuche es erneut.'
     profile:
@@ -114,6 +115,7 @@ ui:
     invitation:
       title: 'Einladung annehmen'
       subtitle: 'Vervollständige den Account für %email%, indem du Username und Passwort wählst.'
+      expires_at: 'Dieser Account-Setup-Link läuft am %expires_at% ab.'
       username: 'Username'
       submit: 'Account erstellen'
       success: 'Dein Account ist bereit. Du kannst dich jetzt anmelden.'

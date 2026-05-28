@@ -38,6 +38,8 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertSame([
             UserFlowConfig::REGISTRATION_MODE_KEY,
             'user.default_acl_group',
+            UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY,
+            UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY,
             'user.menu.enabled',
             'user.menu.sort_order',
         ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $users));

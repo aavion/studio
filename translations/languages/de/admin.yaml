@@ -453,6 +453,11 @@ admin:
         label: 'Registrierungsmodus'
       default_acl_group:
         label: 'Standard-ACL-Gruppe'
+      account_link_ttl_hours:
+        label: 'Account-Link-Laufzeit'
+        help: 'Gilt nur für neu erzeugte Einladungs- und Registrierungslinks. Bestehende Tokens behalten ihre gespeicherte Ablaufzeit.'
+      registration_admin_notification_email:
+        label: 'E-Mail für Registrierungsfreigaben'
       user_menu_enabled:
         label: 'System-Benutzermenü anzeigen'
       user_menu_sort_order:

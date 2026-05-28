@@ -86,7 +86,7 @@ class AccountToken
         $this->user = $user;
         $this->status = $status;
         $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->expiresAt = $expiresAt ?? $this->createdAt->modify('+7 days');
+        $this->expiresAt = $expiresAt ?? $this->createdAt->modify('+24 hours');
         $this->metadata = $metadata;
     }
 
@@ -169,7 +169,7 @@ class AccountToken
     public function rotateTokenHash(string $tokenHash, ?DateTimeImmutable $expiresAt = null): void
     {
         $this->tokenHash = self::assertTokenHash($tokenHash);
-        $this->expiresAt = $expiresAt ?? (new DateTimeImmutable())->modify('+7 days');
+        $this->expiresAt = $expiresAt ?? (new DateTimeImmutable())->modify('+24 hours');
     }
 
     public function revoke(): void

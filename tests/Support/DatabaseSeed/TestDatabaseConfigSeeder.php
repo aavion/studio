@@ -20,6 +20,8 @@ final class TestDatabaseConfigSeeder
             ['content.enabled_locales', ['en', 'de'], 'json'],
             ['content.default_variant', 'default', 'string'],
             ['content.revision_retention_count', 10, 'integer'],
+            [UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, 'integer'],
+            [UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '', 'string'],
             ['user.menu.enabled', true, 'boolean'],
             ['user.menu.sort_order', 900, 'integer'],
             [UserFlowConfig::REGISTRATION_MODE_KEY, UserFlowConfig::REGISTRATION_DISABLED, 'string'],

@@ -8,6 +8,9 @@
             title: 'ui.user.invitation.title'|trans,
             subtitle: 'ui.user.invitation.subtitle'|trans({'%email%': account_token.email}),
         } only %}
+        {% if not success|default(false) %}
+            <p class="studio-muted">{{ 'ui.user.invitation.expires_at'|trans({'%expires_at%': account_token.expiresAt|date('Y-m-d H:i')}) }}</p>
+        {% endif %}
         {% if success|default(false) %}
             <p class="studio-auth-notice">{{ 'ui.user.invitation.success'|trans }}</p>
             {% include '@frontend/partials/actions/_button-group.html.twig' with {

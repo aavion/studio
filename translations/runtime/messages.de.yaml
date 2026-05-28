@@ -94,6 +94,7 @@ ui:
             complete_subtitle: 'Setze ein neues Passwort für deinen Account.'
             complete_submit: 'Passwort aktualisieren'
             complete_success: 'Dein Passwort wurde aktualisiert.'
+            expires_at: 'Dieser Reset-Link läuft am %expires_at% ab.'
             errors:
                 invalid_csrf: 'Das Passwort-Reset-Formular ist abgelaufen. Bitte versuche es erneut.'
         profile:
@@ -157,6 +158,7 @@ ui:
         invitation:
             title: 'Einladung annehmen'
             subtitle: 'Vervollständige den Account für %email%, indem du Username und Passwort wählst.'
+            expires_at: 'Dieser Account-Setup-Link läuft am %expires_at% ab.'
             username: Username
             submit: 'Account erstellen'
             success: 'Dein Account ist bereit. Du kannst dich jetzt anmelden.'
@@ -643,6 +645,11 @@ admin:
                 label: Registrierungsmodus
             default_acl_group:
                 label: Standard-ACL-Gruppe
+            account_link_ttl_hours:
+                label: Account-Link-Laufzeit
+                help: 'Gilt nur für neu erzeugte Einladungs- und Registrierungslinks. Bestehende Tokens behalten ihre gespeicherte Ablaufzeit.'
+            registration_admin_notification_email:
+                label: 'E-Mail für Registrierungsfreigaben'
             user_menu_enabled:
                 label: 'System-Benutzermenü anzeigen'
             user_menu_sort_order:
@@ -940,7 +947,8 @@ message:
         hash:
             invalid: 'Der Account-Token-Hash muss ein kleingeschriebener SHA-256-Hex-Digest sein.'
     account_link:
-        delivered: 'Account-Link für %email% (%type%) wurde über das Message-Log zugestellt.'
+        delivered: 'Account-Link für %email% (%type%, %flow%) wurde über das Message-Log zugestellt.'
+        notification_delivered: 'Account-Benachrichtigung für %email% (%type%, %flow%) wurde über das Message-Log zugestellt.'
     api_key:
         prefix:
             invalid: 'API-Key-Präfix "%prefix%" ist ungültig.'

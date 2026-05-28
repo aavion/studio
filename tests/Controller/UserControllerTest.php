@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
@@ -143,6 +144,31 @@ final class UserControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Accept invitation');
         self::assertSelectorExists('input[name="username"]');
+    }
+
+    public function testExpiredInvitationTokenCannotBeAccepted(): void
+    {
+        $client = self::createClient();
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'expired-invitee@example.test',
+            ['registered'],
+            ttl: '-1 hour',
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->request('GET', '/user/invitation/'.$plainToken);
+
+        self::assertResponseStatusCodeSame(404);
+
+        $persistedToken = $entityManager->getRepository(AccountToken::class)->find($token->uid());
+
+        if ($persistedToken instanceof AccountToken) {
+            $entityManager->remove($persistedToken);
+            $entityManager->flush();
+        }
     }
 
     public function testApiKeysRouteListsPersistedKeysForTheCurrentUser(): void

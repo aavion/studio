@@ -51,6 +51,7 @@ ui:
       complete_subtitle: 'Set a new password for your account.'
       complete_submit: 'Update password'
       complete_success: 'Your password was updated.'
+      expires_at: 'This reset link expires at %expires_at%.'
       errors:
         invalid_csrf: 'The password-reset form expired. Please try again.'
     profile:
@@ -114,6 +115,7 @@ ui:
     invitation:
       title: 'Accept invitation'
       subtitle: 'Complete the account for %email% by choosing a username and password.'
+      expires_at: 'This account setup link expires at %expires_at%.'
       username: 'Username'
       submit: 'Create account'
       success: 'Your account is ready. You can sign in now.'

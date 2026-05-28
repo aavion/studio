@@ -14,10 +14,12 @@ use App\Entity\AclGroup;
 use App\Entity\UserAccount;
 use App\Navigation\NavigationBuilder;
 use App\Security\AccountLinkDeliveryInterface;
+use App\Security\AccountMailFlow;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
 use App\Security\UserAccountStatus;
+use App\Security\UserFlowConfig;
 use App\View\Http\HttpErrorRenderer;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -36,6 +38,7 @@ final class AdminUserController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly AccountTokenIssuer $tokenIssuer,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
+        private readonly UserFlowConfig $userFlowConfig,
         private readonly AuditLoggerInterface $auditLogger,
     ) {
     }
@@ -75,10 +78,10 @@ final class AdminUserController extends AbstractController
         $groups = $this->groupIdentifiers($request->request->all('groups'));
 
         try {
-            [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::Invitation, $email, $groups);
+            [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::Invitation, $email, $groups, ttl: $this->userFlowConfig->accountLinkTtl());
             $this->entityManager->persist($token);
             $this->entityManager->flush();
-            $this->linkDelivery->deliver($token, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0));
+            $this->linkDelivery->deliver($token, AccountMailFlow::InvitationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0));
             $this->audit('user.invitation_created', ['email' => $email, 'groups' => $groups, 'token_uid' => $token->uid()]);
             $this->addFlash('success', 'admin.users.invitation.created');
         } catch (Throwable) {
@@ -110,10 +113,11 @@ final class AdminUserController extends AbstractController
         }
 
         $plainToken = bin2hex(random_bytes(32));
-        $token->rotateTokenHash($this->tokenIssuer->hash($plainToken));
+        $token->rotateTokenHash($this->tokenIssuer->hash($plainToken), (new DateTimeImmutable())->modify($this->userFlowConfig->accountLinkTtl()));
         $token->approve();
         $this->entityManager->flush();
-        $this->linkDelivery->deliver($token, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0));
+        $this->linkDelivery->notify($token, AccountMailFlow::RegistrationApproved);
+        $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0));
         $this->audit('user.registration_approved', ['email' => $token->email(), 'token_uid' => $token->uid()]);
         $this->addFlash('success', 'admin.users.invitation.approved');
 
@@ -136,8 +140,14 @@ final class AdminUserController extends AbstractController
         $token = $this->entityManager->find(AccountToken::class, $uid);
 
         if ($token instanceof AccountToken) {
+            $wasPendingApproval = AccountTokenStatus::PendingApproval === $token->status();
             $token->revoke();
             $this->entityManager->flush();
+
+            if ($wasPendingApproval) {
+                $this->linkDelivery->notify($token, AccountMailFlow::RegistrationRejected);
+            }
+
             $this->audit('user.account_token_revoked', ['email' => $token->email(), 'token_uid' => $token->uid()]);
             $this->addFlash('success', 'admin.users.invitation.revoked');
         }
@@ -190,10 +200,10 @@ final class AdminUserController extends AbstractController
             return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
         }
 
-        [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::PasswordReset, $user->email(), [], $user, ttl: '+2 days');
+        [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::PasswordReset, $user->email(), [], $user, ttl: UserFlowConfig::PASSWORD_RESET_TTL);
         $this->entityManager->persist($token);
         $this->entityManager->flush();
-        $this->linkDelivery->deliver($token, $plainToken, $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0));
+        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0));
         $this->audit('user.password_reset_created', ['target_user' => $user->uid(), 'token_uid' => $token->uid()]);
         $this->addFlash('success', 'admin.users.password_reset.created');
 

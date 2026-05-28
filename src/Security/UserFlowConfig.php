@@ -11,9 +11,13 @@ final readonly class UserFlowConfig
     public const MENU_ENABLED_KEY = 'user.menu.enabled';
     public const MENU_SORT_ORDER_KEY = 'user.menu.sort_order';
     public const REGISTRATION_MODE_KEY = 'user.registration.mode';
+    public const REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY = 'user.registration.admin_notification_email';
+    public const ACCOUNT_LINK_TTL_HOURS_KEY = 'user.account_link_ttl_hours';
     public const REGISTRATION_DISABLED = 'disabled';
     public const REGISTRATION_ADMIN_APPROVAL = 'admin_approval';
     public const REGISTRATION_AUTO_APPROVAL = 'auto_approval';
+    public const DEFAULT_ACCOUNT_LINK_TTL_HOURS = 24;
+    public const PASSWORD_RESET_TTL = '+1 hour';
 
     public function __construct(private Config $config)
     {
@@ -45,5 +49,34 @@ final readonly class UserFlowConfig
             self::REGISTRATION_ADMIN_APPROVAL,
             self::REGISTRATION_AUTO_APPROVAL,
         ], true) ? $mode : self::REGISTRATION_DISABLED;
+    }
+
+    public function accountLinkTtl(): string
+    {
+        return sprintf('+%d hours', $this->accountLinkTtlHours());
+    }
+
+    public function accountLinkTtlHours(): int
+    {
+        $hours = $this->config->get(self::ACCOUNT_LINK_TTL_HOURS_KEY, self::DEFAULT_ACCOUNT_LINK_TTL_HOURS);
+
+        if (!is_int($hours)) {
+            return self::DEFAULT_ACCOUNT_LINK_TTL_HOURS;
+        }
+
+        return max(1, min(168, $hours));
+    }
+
+    public function registrationAdminNotificationEmail(): ?string
+    {
+        $email = $this->config->get(self::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '');
+
+        if (!is_string($email)) {
+            return null;
+        }
+
+        $email = trim($email);
+
+        return false !== filter_var($email, FILTER_VALIDATE_EMAIL) ? strtolower($email) : null;
     }
 }

@@ -80,6 +80,8 @@ final class SetupRunnerTest extends TestCase
         $language = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'localization.default_language'")->fetchColumn();
         $homePath = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'content.home_path'")->fetchColumn();
         $defaultAclGroup = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.default_acl_group'")->fetchColumn();
+        $accountLinkTtlHours = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.account_link_ttl_hours'")->fetchColumn();
+        $registrationAdminNotificationEmail = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.registration.admin_notification_email'")->fetchColumn();
         $userMenuEnabled = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.menu.enabled'")->fetchColumn();
         $userMenuSortOrder = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.menu.sort_order'")->fetchColumn();
         $registrationMode = $pdo->query("SELECT value FROM config_entry WHERE config_key = 'user.registration.mode'")->fetchColumn();
@@ -99,6 +101,8 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('de', json_decode((string) $language, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame('/home', json_decode((string) $homePath, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame('registered', json_decode((string) $defaultAclGroup, true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame(UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, json_decode((string) $accountLinkTtlHours, true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame('', json_decode((string) $registrationAdminNotificationEmail, true, flags: JSON_THROW_ON_ERROR));
         self::assertTrue(json_decode((string) $userMenuEnabled, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame(900, json_decode((string) $userMenuSortOrder, true, flags: JSON_THROW_ON_ERROR));
         self::assertSame(UserFlowConfig::REGISTRATION_DISABLED, json_decode((string) $registrationMode, true, flags: JSON_THROW_ON_ERROR));
@@ -394,6 +398,8 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('de', $entries[4]['context']['settings']['localization.default_language']);
         self::assertSame('/home', $entries[4]['context']['settings']['content.home_path']);
         self::assertSame('registered', $entries[4]['context']['settings']['user.default_acl_group']);
+        self::assertSame(UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, $entries[4]['context']['settings'][UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY]);
+        self::assertSame('', $entries[4]['context']['settings'][UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY]);
         self::assertTrue($entries[4]['context']['settings']['user.menu.enabled']);
         self::assertSame(900, $entries[4]['context']['settings']['user.menu.sort_order']);
         self::assertSame(UserFlowConfig::REGISTRATION_DISABLED, $entries[4]['context']['settings'][UserFlowConfig::REGISTRATION_MODE_KEY]);

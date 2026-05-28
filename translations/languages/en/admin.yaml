@@ -453,6 +453,11 @@ admin:
         label: 'Registration mode'
       default_acl_group:
         label: 'Default ACL group'
+      account_link_ttl_hours:
+        label: 'Account-link lifetime'
+        help: 'Applies only to newly created invitation and registration links. Existing tokens keep their stored expiry time.'
+      registration_admin_notification_email:
+        label: 'Registration approval email'
       user_menu_enabled:
         label: 'Show system user menu'
       user_menu_sort_order:

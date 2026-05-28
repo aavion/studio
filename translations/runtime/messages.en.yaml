@@ -94,6 +94,7 @@ ui:
             complete_subtitle: 'Set a new password for your account.'
             complete_submit: 'Update password'
             complete_success: 'Your password was updated.'
+            expires_at: 'This reset link expires at %expires_at%.'
             errors:
                 invalid_csrf: 'The password-reset form expired. Please try again.'
         profile:
@@ -157,6 +158,7 @@ ui:
         invitation:
             title: 'Accept invitation'
             subtitle: 'Complete the account for %email% by choosing a username and password.'
+            expires_at: 'This account setup link expires at %expires_at%.'
             username: Username
             submit: 'Create account'
             success: 'Your account is ready. You can sign in now.'
@@ -643,6 +645,11 @@ admin:
                 label: 'Registration mode'
             default_acl_group:
                 label: 'Default ACL group'
+            account_link_ttl_hours:
+                label: 'Account-link lifetime'
+                help: 'Applies only to newly created invitation and registration links. Existing tokens keep their stored expiry time.'
+            registration_admin_notification_email:
+                label: 'Registration approval email'
             user_menu_enabled:
                 label: 'Show system user menu'
             user_menu_sort_order:
@@ -940,7 +947,8 @@ message:
         hash:
             invalid: 'Account token hash must be a lowercase SHA-256 hex digest.'
     account_link:
-        delivered: 'Account link for %email% (%type%) was delivered through the message log.'
+        delivered: 'Account link for %email% (%type%, %flow%) was delivered through the message log.'
+        notification_delivered: 'Account notification for %email% (%type%, %flow%) was delivered through the message log.'
     api_key:
         prefix:
             invalid: 'API key prefix "%prefix%" is invalid.'

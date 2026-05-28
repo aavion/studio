@@ -8,5 +8,10 @@ use App\Entity\AccountToken;
 
 interface AccountLinkDeliveryInterface
 {
-    public function deliver(AccountToken $token, string $plainToken, string $url): void;
+    public function deliver(AccountToken $token, AccountMailFlow $flow, string $plainToken, string $url): void;
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    public function notify(AccountToken $token, AccountMailFlow $flow, ?string $recipientEmail = null, array $context = []): void;
 }

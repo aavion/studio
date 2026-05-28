@@ -93,6 +93,9 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-28
+- Hardened the user/access-management token lifecycle: invitation and registration links now use a configurable account-link TTL defaulting to 24 hours, password-reset links use a fixed one-hour TTL, and user/admin token views show stored expiry without mutating already-issued links when settings change.
+- Added stable account mail-flow keys for message-log delivery, including invitation links, registration links, password-reset links, registration approval requests, approval notifications, and rejection notifications; added an admin approval notification recipient setting for the future mailer.
+- Added `studio:account-tokens:cleanup` for expired account-token cleanup, updated setup/test seed defaults for the new user-flow settings, regenerated runtime translations, and covered the lifecycle hardening with targeted config, security, controller, setup, and command tests.
 - Built the user/access-management slice: added durable account tokens for invitations, registration confirmations, and password resets; added a message-log account-link delivery boundary for pre-mailer flows; and extended the baseline migration with the `account_token` table.
 - Completed Admin User Management basics with invitation creation instead of direct account creation, registration approval/revocation, account status and ACL-group assignment, password-reset link creation, editable ACL-group create/edit/delete guardrails, and a nested ACL Groups admin navigation entry.
 - Completed user-facing account flows: profile editing, disabled/admin-approval/auto-approval registration, invitation/registration token acceptance where users choose username and password, password-reset request/completion, API-key generation with default read-only mode, revocation, and password-confirmed reveal from reversible encrypted storage.
