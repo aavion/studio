@@ -102,6 +102,8 @@ Statistics recording, display, and aggregation can be disabled independently fro
 
 Aggregation, recording, and snapshot-store failures should be reported through the message layer so they are visible in `studio_message` without blocking the user request.
 
+Until the mailer slice exists, account setup and recovery links are delivered through `MessageLogAccountLinkDelivery`. This intentionally writes the generated account link to the message log so invitation, registration, and password-reset flows are locally testable. Replace that delivery implementation with real mail delivery before production use, or keep it only behind an explicit development/debug gate.
+
 ## References
 
 - [Operation issue catalog](operation-issue-catalog.md)

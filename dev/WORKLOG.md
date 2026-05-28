@@ -92,6 +92,13 @@
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
+### 2026-05-28
+- Built the user/access-management slice: added durable account tokens for invitations, registration confirmations, and password resets; added a message-log account-link delivery boundary for pre-mailer flows; and extended the baseline migration with the `account_token` table.
+- Completed Admin User Management basics with invitation creation instead of direct account creation, registration approval/revocation, account status and ACL-group assignment, password-reset link creation, editable ACL-group create/edit/delete guardrails, and a nested ACL Groups admin navigation entry.
+- Completed user-facing account flows: profile editing, disabled/admin-approval/auto-approval registration, invitation/registration token acceptance where users choose username and password, password-reset request/completion, API-key generation with default read-only mode, revocation, and password-confirmed reveal from reversible encrypted storage.
+- Updated registration settings from a boolean to `user.registration.mode`, regenerated runtime translation catalogues, documented the pre-mailer message-log delivery caveat, updated class map and security draft references, and removed the local dev SQLite database after changing the baseline migration so UI smoke data can be recreated.
+- Verified with focused controller/settings/setup/entity PHPUnit coverage, backend route coverage, PHP syntax checks, Twig/YAML linting, Symfony container linting, and translation catalogue comparison.
+
 ### 2026-05-27
 - Completed the package/design PR hardening pass: setup lock enforcement, protected-content/static-injection ordering, persisted menu ACL loading, inactive-account login rejection, safe URL rendering, setup password policy, runtime package fault cascades, atomic `package.php` contributions, dependency parse/cycle validation, package removal cascades, installed-version sync, active rediscovery rebuilds, and ZIP namespace validation were all tightened with focused coverage.
 - Completed the Operations/ActionLog foundation: token-protected live-operation starts, detached runners, cursor polling below `/api/live/operations/{id}`, retained Admin Operations inspection/detail views, stale cleanup and emergency stale-runner handling, global/atomic runner locks, overlay resume behavior, review-required continuation handoff, and contextual completion actions.
