@@ -385,6 +385,27 @@ admin:
             title: Accounts
             empty_title: 'No users'
             empty_message: 'No user accounts exist yet.'
+        deleted:
+            title: 'Deleted users'
+            show: 'Show deleted users'
+            back: 'Back to users'
+            cleanup: 'Clean up retained deleted users'
+            cleanup_done: 'Deleted-user cleanup completed.'
+            activate: Activate
+            deactivate: Deactivate
+            activated: 'Deleted account activated.'
+            deactivated: 'Deleted account deactivated.'
+            not_deleted: 'Only deleted accounts can be changed from this view.'
+            heal_title: 'Repair account groups'
+            heal_text: 'The account "%username%" cannot be restored with its current groups. Assign "%group%" and continue.'
+            heal_confirm: 'Assign group and continue'
+            retention: 'Retention: %days% day(s). Accounts deleted on or before %cutoff% are eligible for cleanup.'
+            deleted_at: 'Deleted at'
+            deleted_by: 'Deleted by'
+            eligible: 'Eligible for cleanup'
+            retained: 'Within retention'
+            empty_title: 'No deleted users'
+            empty_message: 'No deleted user accounts are currently retained.'
         filters:
             search: Search
             status: Status
@@ -545,6 +566,7 @@ admin:
             account_password_change_disputed: 'Password change disputed'
             account_password_change_reactivated: 'Password dispute reactivated'
             account_closed: 'Account closed'
+            account_restored: 'Account restored'
     groups:
         title: 'ACL groups'
         create:
@@ -852,6 +874,9 @@ admin:
                 label: 'Registration approval email'
             security_notification_email:
                 label: 'Security notification email'
+            deleted_user_retention_days:
+                label: 'Deleted-user retention'
+                help: 'Deleted accounts are retained for this many days before the cleanup action can remove them permanently.'
             user_menu_enabled:
                 label: 'Show system user menu'
             user_menu_sort_order:

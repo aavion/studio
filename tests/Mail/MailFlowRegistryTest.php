@@ -50,5 +50,9 @@ final class MailFlowRegistryTest extends TestCase
             ['email', 'username', 'user_uid'],
             $registry->definition(AccountMailFlow::AccountClosed)->parameterKeys(),
         );
+        self::assertSame(
+            ['email', 'username', 'user_uid'],
+            $registry->definition(AccountMailFlow::AccountRestored)->parameterKeys(),
+        );
     }
 }

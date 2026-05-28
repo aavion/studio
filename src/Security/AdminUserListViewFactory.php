@@ -24,7 +24,7 @@ final readonly class AdminUserListViewFactory
     public function usersView(Request $request): array
     {
         $search = $this->listViews->queryString($request, 'q');
-        $status = $this->listViews->queryChoice($request, 'status', ['all', 'active', 'inactive', 'deleted'], 'all');
+        $status = $this->listViews->queryChoice($request, 'status', ['all', 'active', 'inactive'], 'all');
         $group = $this->listViews->queryString($request, 'group');
         $sort = $this->listViews->queryChoice($request, 'sort', ['username', 'email', 'status', 'access_level'], 'username');
         $direction = $this->listViews->queryChoice($request, 'direction', ['asc', 'desc'], 'asc');
@@ -32,7 +32,7 @@ final readonly class AdminUserListViewFactory
         $page = $this->listViews->page($request->query->get('page'));
         $users = array_values(array_filter(
             $this->entityManager->getRepository(UserAccount::class)->findAll(),
-            static fn (mixed $user): bool => $user instanceof UserAccount,
+            static fn (mixed $user): bool => $user instanceof UserAccount && UserAccountStatus::Deleted !== $user->status(),
         ));
 
         if ('' !== $search) {
@@ -75,7 +75,7 @@ final readonly class AdminUserListViewFactory
             'pagination' => $pagination,
             'per_page_options' => $this->listViews->perPageOptions('admin.users.filters.all_entries'),
             'sort_options' => $this->userSortOptions(),
-            'status_options' => ['all', 'active', 'inactive', 'deleted'],
+            'status_options' => ['all', 'active', 'inactive'],
             'group_options' => $this->entityManager->getRepository(AclGroup::class)->findBy([], ['identifier' => 'ASC']),
         ];
     }

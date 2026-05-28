@@ -8,6 +8,8 @@ use App\Content\Schema\ContentSchemaSource;
 use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\State\StateMarkerKey;
+use App\Core\State\StateSubjectType;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\ApiKey;
@@ -24,6 +26,7 @@ use App\Security\AppSecretRotationGuard;
 use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
 use App\Security\UserAccountStatus;
+use App\Security\UserAccountLifecycle;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -40,6 +43,177 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'User management');
         self::assertSelectorExists('form[action="/admin/users/invitations"]');
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/users/groups"]');
+    }
+
+    public function testDeletedUsersViewListsRetentionAndCleansExpiredAccounts(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $config = self::getContainer()->get(Config::class);
+        $originalRetention = $config->get('user.deleted_user_retention_days', 7);
+        $oldUser = $this->createUser('olddeleteduser', UserAccountStatus::Active);
+        $recentUser = $this->createUser('recentdeleteduser', UserAccountStatus::Active);
+        $activeUser = $this->createUser('stillactiveuser', UserAccountStatus::Active);
+        $oldUser->addGroup($this->registeredGroup());
+        $recentUser->addGroup($this->registeredGroup());
+        $activeUser->addGroup($this->registeredGroup());
+        $entityManager->flush();
+        $this->markDeletedAt($oldUser, 'cleanup-admin', '2026-05-01 10:00:00');
+        $this->markDeletedAt($recentUser, 'cleanup-admin', (new \DateTimeImmutable('-1 day'))->format('Y-m-d H:i:s'));
+        $config->set('user.deleted_user_retention_days', 7, ConfigValueType::Integer, modifiedBy: 'test');
+
+        try {
+            $client->request('GET', '/admin/users');
+
+            self::assertResponseIsSuccessful();
+            self::assertStringNotContainsString('olddeleteduser@example.test', (string) $client->getResponse()->getContent());
+            self::assertStringNotContainsString('recentdeleteduser@example.test', (string) $client->getResponse()->getContent());
+            self::assertSelectorExists('a[href="/admin/users/deleted"]');
+            self::assertSelectorNotExists('select[name="status"] option[value="deleted"]');
+
+            $crawler = $client->request('GET', '/admin/users/deleted');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Deleted users');
+            self::assertSelectorTextContains('main', 'Retention: 7 day(s).');
+            self::assertSelectorTextContains('main', 'olddeleteduser@example.test');
+            self::assertSelectorTextContains('main', 'recentdeleteduser@example.test');
+            self::assertSelectorTextContains('main', 'cleanup-admin');
+            self::assertSelectorTextContains('main', 'Eligible for cleanup');
+            self::assertSelectorTextContains('main', 'Within retention');
+
+            $client->submit($crawler->selectButton('Clean up retained deleted users')->form());
+
+            self::assertResponseRedirects('/admin/users/deleted');
+
+            $entityManager->clear();
+            self::assertNull($entityManager->find(UserAccount::class, $oldUser->uid()));
+            self::assertInstanceOf(UserAccount::class, $entityManager->find(UserAccount::class, $recentUser->uid()));
+            self::assertInstanceOf(UserAccount::class, $entityManager->find(UserAccount::class, $activeUser->uid()));
+        } finally {
+            $config->set('user.deleted_user_retention_days', (int) $originalRetention, ConfigValueType::Integer, modifiedBy: 'test');
+
+            foreach ([$oldUser, $recentUser, $activeUser] as $user) {
+                $managedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+                if ($managedUser instanceof UserAccount) {
+                    $entityManager->remove($managedUser);
+                }
+
+                $entityManager->getConnection()->delete('state_marker', [
+                    'subject_type' => StateSubjectType::USER_ACCOUNT,
+                    'subject_uid' => $user->uid(),
+                ]);
+            }
+
+            $entityManager->flush();
+        }
+    }
+
+    public function testDeletedUsersCanBeActivatedAndDeactivatedFromDeletedView(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $activatedUser = $this->createUser('deletedactivate', UserAccountStatus::Active);
+        $deactivatedUser = $this->createUser('deleteddeactivate', UserAccountStatus::Active);
+        $activatedUser->addGroup($this->registeredGroup());
+        $deactivatedUser->addGroup($this->registeredGroup());
+        $entityManager->flush();
+        $this->markDeletedAt($activatedUser, 'status-admin', '2026-05-10 10:00:00');
+        $this->markDeletedAt($deactivatedUser, 'status-admin', '2026-05-10 10:00:00');
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
+        try {
+            $crawler = $client->request('GET', '/admin/users/deleted');
+            $client->submit($crawler->filter('form[action="/admin/users/deleted/'.$activatedUser->uid().'/activate"]')->form());
+
+            self::assertResponseRedirects('/admin/users/deleted');
+
+            $entityManager->clear();
+            $restoredUser = $entityManager->find(UserAccount::class, $activatedUser->uid());
+
+            self::assertInstanceOf(UserAccount::class, $restoredUser);
+            self::assertSame(UserAccountStatus::Active, $restoredUser->status());
+            self::assertSame(['registered'], $this->userGroupIdentifiers($restoredUser));
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            self::assertStringContainsString('account.restored', $messageLog);
+            self::assertStringContainsString('"username":"deletedactivate"', $messageLog);
+
+            $crawler = $client->request('GET', '/admin/users/deleted');
+            $client->submit($crawler->filter('form[action="/admin/users/deleted/'.$deactivatedUser->uid().'/deactivate"]')->form());
+
+            self::assertResponseRedirects('/admin/users/deleted');
+
+            $entityManager->clear();
+            $inactiveUser = $entityManager->find(UserAccount::class, $deactivatedUser->uid());
+
+            self::assertInstanceOf(UserAccount::class, $inactiveUser);
+            self::assertSame(UserAccountStatus::Inactive, $inactiveUser->status());
+            self::assertSame(['registered'], $this->userGroupIdentifiers($inactiveUser));
+        } finally {
+            foreach ([$activatedUser, $deactivatedUser] as $user) {
+                $managedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+                if ($managedUser instanceof UserAccount) {
+                    $entityManager->remove($managedUser);
+                }
+
+                $entityManager->getConnection()->delete('state_marker', [
+                    'subject_type' => StateSubjectType::USER_ACCOUNT,
+                    'subject_uid' => $user->uid(),
+                ]);
+            }
+
+            $entityManager->flush();
+        }
+    }
+
+    public function testDeletedUserActivationCanHealMissingGroups(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $user = $this->createUser('deletedheal', UserAccountStatus::Active);
+        $this->markDeletedAt($user, 'status-admin', '2026-05-10 10:00:00');
+
+        try {
+            $crawler = $client->request('GET', '/admin/users/deleted');
+            $client->submit($crawler->filter('form[action="/admin/users/deleted/'.$user->uid().'/activate"]')->form());
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Repair account groups');
+            self::assertSelectorTextContains('main', 'Assign "registered" and continue.');
+
+            $client->submit($client->getCrawler()->selectButton('Assign group and continue')->form());
+
+            self::assertResponseRedirects('/admin/users/deleted');
+
+            $entityManager->clear();
+            $healedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+            self::assertInstanceOf(UserAccount::class, $healedUser);
+            self::assertSame(UserAccountStatus::Active, $healedUser->status());
+            self::assertSame(['registered'], $this->userGroupIdentifiers($healedUser));
+            self::assertSame(AccessLevel::REGISTERED, $healedUser->maxAccessLevel());
+        } finally {
+            $managedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+            if ($managedUser instanceof UserAccount) {
+                $entityManager->remove($managedUser);
+            }
+
+            $entityManager->getConnection()->delete('state_marker', [
+                'subject_type' => StateSubjectType::USER_ACCOUNT,
+                'subject_uid' => $user->uid(),
+            ]);
+            $entityManager->flush();
+        }
     }
 
     public function testAdminUsersRouteSupportsSearchFiltersSortingAndPagination(): void
@@ -1014,6 +1188,20 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
 
         return $user;
+    }
+
+    private function markDeletedAt(UserAccount $user, string $deletedBy, string $deletedAt): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        self::getContainer()->get(UserAccountLifecycle::class)->changeStatus($user, UserAccountStatus::Deleted, $deletedBy);
+        $entityManager->flush();
+        $entityManager->getConnection()->update('state_marker', [
+            'marker_at' => $deletedAt,
+        ], [
+            'subject_type' => StateSubjectType::USER_ACCOUNT,
+            'subject_uid' => $user->uid(),
+            'marker_key' => StateMarkerKey::STATUS_CHANGED,
+        ]);
     }
 
     private function createGroup(string $identifier, int $accessLevel): AclGroup

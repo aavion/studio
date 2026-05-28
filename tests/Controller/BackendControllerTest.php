@@ -19,6 +19,7 @@ use App\Core\Workflow\WorkflowResult;
 use App\Entity\AclGroup;
 use App\Entity\ExtensionPackage;
 use App\Entity\UserAccount;
+use App\Security\UserFlowConfig;
 use App\Setup\SetupCompletionMarker;
 use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
 use App\View\Injection\StaticViewInjection;
@@ -767,6 +768,13 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/packages"][aria-current="page"]');
         self::assertSelectorExists('form#admin-settings-packages');
         self::assertSelectorExists('select[name="packages.update_check_interval"]');
+
+        $client->request('GET', '/admin/settings/users');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'User settings');
+        self::assertSelectorExists('form#admin-settings-users');
+        self::assertSelectorExists(sprintf('input[name="%s"][min="1"][max="3650"]', UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY));
 
         $client->request('GET', '/admin/settings/security');
 

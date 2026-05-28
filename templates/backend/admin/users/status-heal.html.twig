@@ -1,0 +1,27 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.users.deleted.heal_title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.users.deleted.title'|trans,
+        title: 'admin.users.deleted.heal_title'|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <p class="studio-muted">{{ error|trans }}</p>
+        <p>{{ 'admin.users.deleted.heal_text'|trans({'%username%': user_account.username, '%group%': default_group_identifier}) }}</p>
+        <form method="post" action="{{ path(target_status.value == 'active' ? 'backend_admin_deleted_user_activate' : 'backend_admin_deleted_user_deactivate', {uid: user_account.uid}) }}" class="studio-backend-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_deleted_user_status_' ~ user_account.uid) }}">
+            <input type="hidden" name="heal_groups" value="1">
+            <button type="submit" class="studio-button studio-button-primary">{{ 'admin.users.deleted.heal_confirm'|trans }}</button>
+            <a class="studio-button" href="{{ path('backend_admin_deleted_users') }}">{{ 'admin.users.deleted.back'|trans }}</a>
+        </form>
+    </section>
+{% endblock %}

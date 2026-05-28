@@ -28,6 +28,7 @@ final readonly class SetupDefaultSeed
             ['key' => UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'value' => UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, 'type' => ConfigValueType::Integer],
             ['key' => UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, 'value' => '', 'type' => ConfigValueType::String],
             ['key' => UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, 'value' => '', 'type' => ConfigValueType::String],
+            ['key' => UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY, 'value' => UserFlowConfig::DEFAULT_DELETED_USER_RETENTION_DAYS, 'type' => ConfigValueType::Integer],
             ['key' => 'user.menu.enabled', 'value' => true, 'type' => ConfigValueType::Boolean],
             ['key' => 'user.menu.sort_order', 'value' => 900, 'type' => ConfigValueType::Integer],
             ['key' => UserFlowConfig::REGISTRATION_MODE_KEY, 'value' => UserFlowConfig::REGISTRATION_DISABLED, 'type' => ConfigValueType::String],

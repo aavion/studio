@@ -20,6 +20,7 @@ use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
 use App\Security\AdminUserAccessPolicy;
 use App\Security\AdminUserListViewFactory;
+use App\Security\DeletedUserCleanup;
 use App\Security\UserAccountLifecycle;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
@@ -44,6 +45,8 @@ final class AdminUserController extends AbstractController
         private readonly AdminUserAccessPolicy $adminUserPolicy,
         private readonly AdminUserListViewFactory $adminUserLists,
         private readonly StateMarkerRecorder $stateMarkers,
+        private readonly DeletedUserCleanup $deletedUserCleanup,
+        private readonly UserFlowConfig $userFlowConfig,
     ) {
     }
 
@@ -66,6 +69,58 @@ final class AdminUserController extends AbstractController
                 ['createdAt' => 'DESC'],
             ),
         ]);
+    }
+
+    #[Route('/admin/users/deleted', name: 'backend_admin_deleted_users', priority: 10, methods: ['GET'])]
+    public function deletedUsers(Request $request): Response
+    {
+        if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
+            return $response;
+        }
+
+        return $this->render('@backend/admin/users/deleted.html.twig', [
+            'navigation' => $this->adminContext->navigation($request, $this->getUser()),
+            'deleted_users' => $this->deletedUserCleanup->deletedUsers(),
+            'retention_days' => $this->deletedUserCleanup->retentionDays(),
+            'cleanup_cutoff' => $this->deletedUserCleanup->cutoff(),
+        ]);
+    }
+
+    #[Route('/admin/users/deleted/cleanup', name: 'backend_admin_deleted_users_cleanup', priority: 10, methods: ['POST'])]
+    public function cleanupDeletedUsers(Request $request): Response
+    {
+        if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
+            return $response;
+        }
+
+        if (!$this->isCsrfTokenValid('admin_deleted_users_cleanup', $this->field($request, '_csrf_token'))) {
+            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+
+            return $this->redirectToRoute('backend_admin_deleted_users');
+        }
+
+        $result = $this->deletedUserCleanup->cleanupExpired();
+        $this->adminContext->audit($this->getUser(), 'user.deleted_cleanup', [
+            'removed' => $result['removed'],
+            'retention_days' => $result['retention_days'],
+            'cutoff' => $result['cutoff']->format(DATE_ATOM),
+            'user_uids' => $result['user_uids'],
+        ]);
+        $this->addFlash('success', 'admin.users.deleted.cleanup_done');
+
+        return $this->redirectToRoute('backend_admin_deleted_users');
+    }
+
+    #[Route('/admin/users/deleted/{uid}/activate', name: 'backend_admin_deleted_user_activate', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['POST'])]
+    public function activateDeletedUser(Request $request, string $uid): Response
+    {
+        return $this->changeDeletedUserStatus($request, $uid, UserAccountStatus::Active);
+    }
+
+    #[Route('/admin/users/deleted/{uid}/deactivate', name: 'backend_admin_deleted_user_deactivate', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['POST'])]
+    public function deactivateDeletedUser(Request $request, string $uid): Response
+    {
+        return $this->changeDeletedUserStatus($request, $uid, UserAccountStatus::Inactive);
     }
 
     #[Route('/admin/users/{uid}', name: 'backend_admin_user_detail', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['GET', 'POST'])]
@@ -184,6 +239,87 @@ final class AdminUserController extends AbstractController
             ...$effects,
         ]);
         $this->addFlash('success', 'admin.users.saved');
+    }
+
+    private function changeDeletedUserStatus(Request $request, string $uid, UserAccountStatus $status): Response
+    {
+        if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
+            return $response;
+        }
+
+        $user = $this->entityManager->find(UserAccount::class, $uid);
+
+        if (!$user instanceof UserAccount) {
+            return $this->httpError->notFound($request);
+        }
+
+        if (!$this->isCsrfTokenValid('admin_deleted_user_status_'.$uid, $this->field($request, '_csrf_token'))) {
+            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+
+            return $this->redirectToRoute('backend_admin_deleted_users');
+        }
+
+        if (UserAccountStatus::Deleted !== $user->status()) {
+            $this->addFlash('error', 'admin.users.deleted.not_deleted');
+
+            return $this->redirectToRoute('backend_admin_deleted_users');
+        }
+
+        $groups = $this->userGroupIdentifiers($user);
+        $heal = '1' === $this->field($request, 'heal_groups');
+        $defaultGroupIdentifier = $this->userFlowConfig->defaultAclGroupIdentifier();
+
+        if ($heal) {
+            $groups = [$defaultGroupIdentifier];
+        }
+
+        $error = $this->adminUserPolicy->validateUserUpdate($this->adminContext->actor($this->getUser()), $user, $status, $groups);
+
+        if (in_array($error, ['admin.users.form.errors.group_required', 'admin.users.form.errors.group_access_too_low'], true) && !$heal) {
+            return $this->render('@backend/admin/users/status-heal.html.twig', [
+                'navigation' => $this->adminContext->navigation($request, $this->getUser()),
+                'user_account' => $user,
+                'target_status' => $status,
+                'error' => $error,
+                'default_group_identifier' => $defaultGroupIdentifier,
+            ]);
+        }
+
+        if (null !== $error) {
+            $this->addFlash('error', $error);
+
+            return $this->redirectToRoute('backend_admin_deleted_users');
+        }
+
+        $oldStatus = $user->status()->value;
+        $oldGroups = $this->userGroupIdentifiers($user);
+        $effects = $this->userLifecycle->changeStatus($user, $status, $this->adminContext->actorName($this->getUser()));
+
+        if ($heal) {
+            $this->syncGroups($user, $groups);
+        }
+
+        $this->entityManager->flush();
+
+        if (UserAccountStatus::Active === $status) {
+            $this->linkDelivery->notifyAddress($user->email(), AccountMailFlow::AccountRestored, $this->mailLocaleResolver->forAdminAction($user), [
+                'username' => $user->username(),
+                'user_uid' => $user->uid(),
+            ]);
+        }
+
+        $this->adminContext->audit($this->getUser(), UserAccountStatus::Active === $status ? 'user.deleted_account_activated' : 'user.deleted_account_deactivated', [
+            'target_user' => $user->uid(),
+            'old_status' => $oldStatus,
+            'new_status' => $status->value,
+            'old_groups' => $oldGroups,
+            'new_groups' => $this->userGroupIdentifiers($user),
+            'groups_healed' => $heal,
+            ...$effects,
+        ]);
+        $this->addFlash('success', UserAccountStatus::Active === $status ? 'admin.users.deleted.activated' : 'admin.users.deleted.deactivated');
+
+        return $this->redirectToRoute('backend_admin_deleted_users');
     }
 
     /**

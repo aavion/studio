@@ -165,6 +165,27 @@ admin:
       title: 'Accounts'
       empty_title: 'Keine Benutzer'
       empty_message: 'Es existieren noch keine Benutzerkonten.'
+    deleted:
+      title: 'Gelöschte Benutzer'
+      show: 'Gelöschte Benutzer anzeigen'
+      back: 'Zurück zu Benutzern'
+      cleanup: 'Aufbewahrte gelöschte Benutzer aufräumen'
+      cleanup_done: 'Cleanup gelöschter Benutzer abgeschlossen.'
+      activate: 'Aktivieren'
+      deactivate: 'Deaktivieren'
+      activated: 'Gelöschter Account aktiviert.'
+      deactivated: 'Gelöschter Account deaktiviert.'
+      not_deleted: 'Nur gelöschte Accounts können aus dieser Ansicht geändert werden.'
+      heal_title: 'Account-Gruppen reparieren'
+      heal_text: 'Der Account "%username%" kann mit seinen aktuellen Gruppen nicht wiederhergestellt werden. Weise "%group%" zu und fahre fort.'
+      heal_confirm: 'Gruppe zuweisen und fortfahren'
+      retention: 'Retention: %days% Tag(e). Accounts, die am oder vor dem %cutoff% gelöscht wurden, können aufgeräumt werden.'
+      deleted_at: 'Gelöscht am'
+      deleted_by: 'Gelöscht von'
+      eligible: 'Bereit zum Aufräumen'
+      retained: 'Innerhalb der Retention'
+      empty_title: 'Keine gelöschten Benutzer'
+      empty_message: 'Aktuell werden keine gelöschten Benutzerkonten aufbewahrt.'
     filters:
       search: 'Suche'
       status: 'Status'
@@ -325,6 +346,7 @@ admin:
       account_password_change_disputed: 'Passwortänderung bestritten'
       account_password_change_reactivated: 'Passwort-Dispute reaktiviert'
       account_closed: 'Account geschlossen'
+      account_restored: 'Account wiederhergestellt'
   groups:
     title: 'ACL-Gruppen'
     create:
@@ -632,6 +654,9 @@ admin:
         label: 'E-Mail für Registrierungsfreigaben'
       security_notification_email:
         label: 'E-Mail für Sicherheitsmeldungen'
+      deleted_user_retention_days:
+        label: 'Retention für gelöschte Benutzer'
+        help: 'Gelöschte Accounts werden für diese Anzahl Tage aufbewahrt, bevor die Cleanup-Aktion sie endgültig entfernen kann.'
       user_menu_enabled:
         label: 'System-Benutzermenü anzeigen'
       user_menu_sort_order:

@@ -22,6 +22,7 @@ final class SetupDefaultSeedTest extends TestCase
         self::assertSame('de', $settings['localization.default_language']);
         self::assertFalse($settings[UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY]);
         self::assertSame(UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, $settings[UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY]);
+        self::assertSame(UserFlowConfig::DEFAULT_DELETED_USER_RETENTION_DAYS, $settings[UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY]);
     }
 
     public function testItDefinesSetupAclAndContentDefaults(): void

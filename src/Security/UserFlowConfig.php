@@ -16,10 +16,12 @@ final readonly class UserFlowConfig
     public const SECURITY_NOTIFICATION_EMAIL_KEY = 'user.security_notification_email';
     public const ACCOUNT_LINK_TTL_HOURS_KEY = 'user.account_link_ttl_hours';
     public const USERNAME_CHANGE_ENABLED_KEY = 'user.username_change.enabled';
+    public const DELETED_USER_RETENTION_DAYS_KEY = 'user.deleted_user_retention_days';
     public const REGISTRATION_DISABLED = 'disabled';
     public const REGISTRATION_ADMIN_APPROVAL = 'admin_approval';
     public const REGISTRATION_AUTO_APPROVAL = 'auto_approval';
     public const DEFAULT_ACCOUNT_LINK_TTL_HOURS = 24;
+    public const DEFAULT_DELETED_USER_RETENTION_DAYS = 7;
     public const PASSWORD_RESET_TTL = '+1 hour';
 
     public function __construct(private Config $config)
@@ -80,6 +82,17 @@ final readonly class UserFlowConfig
         }
 
         return max(1, min(168, $hours));
+    }
+
+    public function deletedUserRetentionDays(): int
+    {
+        $days = $this->config->get(self::DELETED_USER_RETENTION_DAYS_KEY, self::DEFAULT_DELETED_USER_RETENTION_DAYS);
+
+        if (!is_int($days)) {
+            return self::DEFAULT_DELETED_USER_RETENTION_DAYS;
+        }
+
+        return max(1, min(3650, $days));
     }
 
     public function registrationAdminNotificationEmail(): ?string

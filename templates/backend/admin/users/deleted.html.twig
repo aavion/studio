@@ -1,0 +1,74 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.users.deleted.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.users.title'|trans,
+        title: 'admin.users.deleted.title'|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <div class="studio-toolbar">
+            <a class="studio-button" href="{{ path('backend_admin_users') }}">{{ 'admin.users.deleted.back'|trans }}</a>
+            <span class="studio-muted">{{ 'admin.users.deleted.retention'|trans({'%days%': retention_days, '%cutoff%': cleanup_cutoff|date('Y-m-d H:i')}) }}</span>
+            <form method="post" action="{{ path('backend_admin_deleted_users_cleanup') }}" class="studio-inline-form">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_deleted_users_cleanup') }}">
+                <button type="submit" class="studio-button studio-button-secondary">{{ 'admin.users.deleted.cleanup'|trans }}</button>
+            </form>
+        </div>
+
+        {% if deleted_users is empty %}
+            {% include '@backend/partials/feedback/_empty-state.html.twig' with {
+                title: 'admin.users.deleted.empty_title'|trans,
+                message: 'admin.users.deleted.empty_message'|trans,
+            } only %}
+        {% else %}
+            <table class="studio-field-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.users.fields.username'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.email'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.deleted.deleted_at'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.deleted.deleted_by'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.status'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.actions'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in deleted_users %}
+                        <tr>
+                            <td>{{ row.user.username }}</td>
+                            <td>{{ row.user.email }}</td>
+                            <td>{{ row.deleted_at ? row.deleted_at|date('Y-m-d H:i') : 'ui.content.empty_value'|trans }}</td>
+                            <td>{{ row.deleted_by|default('') ?: 'ui.content.empty_value'|trans }}</td>
+                            <td>
+                                {% if row.cleanup_eligible %}
+                                    {{ 'admin.users.deleted.eligible'|trans }}
+                                {% else %}
+                                    {{ 'admin.users.deleted.retained'|trans }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="post" action="{{ path('backend_admin_deleted_user_activate', {uid: row.user.uid}) }}" class="studio-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_deleted_user_status_' ~ row.user.uid) }}">
+                                    <button type="submit" class="studio-link-button">{{ 'admin.users.deleted.activate'|trans }}</button>
+                                </form>
+                                <form method="post" action="{{ path('backend_admin_deleted_user_deactivate', {uid: row.user.uid}) }}" class="studio-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_deleted_user_status_' ~ row.user.uid) }}">
+                                    <button type="submit" class="studio-link-button">{{ 'admin.users.deleted.deactivate'|trans }}</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
+{% endblock %}
