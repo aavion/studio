@@ -280,6 +280,86 @@ final class UserControllerTest extends WebTestCase
         }
     }
 
+    public function testRegistrationForDeletedAccountCreatesReactivationToken(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $deletedUser = $this->createUserWithLevel(8, 'deletedregister', 'old-password');
+        $deletedUser->changeStatus(UserAccountStatus::Deleted);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->flush();
+        $config->set('user.registration.mode', 'auto_approval');
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
+        try {
+            $crawler = $client->request('GET', '/user/register');
+            $client->submit($crawler->selectButton('Request account')->form([
+                'email' => $deletedUser->email(),
+            ]));
+
+            self::assertResponseIsSuccessful();
+
+            $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
+                'email' => $deletedUser->email(),
+                'type' => AccountTokenType::Registration,
+                'status' => AccountTokenStatus::Pending,
+            ]);
+
+            self::assertInstanceOf(AccountToken::class, $token);
+            self::assertSame($deletedUser->uid(), $token->user()?->uid());
+            self::assertSame(['registered'], $token->groupIdentifiers());
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            self::assertStringContainsString('account.registration.link', $messageLog);
+            self::assertStringNotContainsString('account.registration.existing_account', $messageLog);
+        } finally {
+            $config->set('user.registration.mode', 'disabled');
+        }
+    }
+
+    public function testDeletedAccountTokenAcceptanceReactivatesSameUserAndResetsGroups(): void
+    {
+        $client = self::createClient();
+        $deletedUser = $this->createUserWithLevel(8, 'deletedaccept', 'old-password');
+        $deletedUid = $deletedUser->uid();
+        $deletedUser->changeStatus(UserAccountStatus::Deleted);
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Registration,
+            $deletedUser->email(),
+            ['registered'],
+            $deletedUser,
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/user/invitation/'.$plainToken);
+        $client->submit($crawler->selectButton('Create account')->form([
+            'username' => 'reactivatedaccept',
+            'password' => 'new-password-value',
+            'confirm_password' => 'new-password-value',
+        ]));
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-auth-notice', 'Your account is ready.');
+
+        $entityManager->clear();
+        $reactivatedUser = $entityManager->find(UserAccount::class, $deletedUid);
+        $usedToken = $entityManager->find(AccountToken::class, $token->uid());
+
+        self::assertInstanceOf(UserAccount::class, $reactivatedUser);
+        self::assertSame('reactivatedaccept', $reactivatedUser->username());
+        self::assertSame(UserAccountStatus::Active, $reactivatedUser->status());
+        self::assertSame(['registered'], $this->userGroupIdentifiers($reactivatedUser));
+        self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($reactivatedUser, 'new-password-value'));
+        self::assertInstanceOf(AccountToken::class, $usedToken);
+        self::assertSame(AccountTokenStatus::Used, $usedToken->status());
+        self::assertSame($deletedUid, $usedToken->user()?->uid());
+    }
+
     public function testAdminApprovalRegistrationExplainsDelayedMail(): void
     {
         $client = self::createClient();
@@ -514,5 +594,23 @@ final class UserControllerTest extends WebTestCase
             $level >= 3 => 'editor',
             default => 'registered',
         };
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function userGroupIdentifiers(UserAccount $user): array
+    {
+        $identifiers = [];
+
+        foreach ($user->groups() as $group) {
+            if ($group instanceof AclGroup) {
+                $identifiers[] = $group->identifier();
+            }
+        }
+
+        sort($identifiers);
+
+        return $identifiers;
     }
 }

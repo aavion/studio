@@ -59,9 +59,13 @@ final readonly class AdminUserAccessPolicy
      */
     public function validateGroupAssignment(AccessActor $actor, array $groupIdentifiers): ?string
     {
-        return $this->isRestrictedAccessLevel($actor, $this->accessLevelForGroupIdentifiers($groupIdentifiers))
-            ? 'admin.users.form.errors.group_level_too_high'
-            : null;
+        $accessLevel = $this->accessLevelForGroupIdentifiers($groupIdentifiers);
+
+        if ($this->isRestrictedAccessLevel($actor, $accessLevel)) {
+            return 'admin.users.form.errors.group_level_too_high';
+        }
+
+        return $this->validateUserGroupFloor(UserAccountStatus::Active, $groupIdentifiers, $accessLevel);
     }
 
     public function canAssignGroup(AccessActor $actor, AclGroup $group): bool

@@ -85,6 +85,30 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertNull($token);
     }
 
+    public function testAdminCanInviteDeletedAccountForReactivation(): void
+    {
+        $client = self::createClient();
+        $deletedUser = $this->createUser('deletedinvitee', UserAccountStatus::Deleted);
+        $client->loginUser($this->adminUser());
+        $crawler = $client->request('GET', '/admin/users');
+        $form = $crawler->selectButton('Create invitation')->form([
+            'email' => $deletedUser->email(),
+        ]);
+        $form['groups'][0]->tick();
+        $client->submit($form);
+
+        self::assertResponseRedirects('/admin/users');
+
+        $token = self::getContainer()->get(EntityManagerInterface::class)
+            ->getRepository(AccountToken::class)
+            ->findOneBy(['email' => $deletedUser->email(), 'type' => AccountTokenType::Invitation]);
+
+        self::assertInstanceOf(AccountToken::class, $token);
+        self::assertSame(AccountTokenStatus::Pending, $token->status());
+        self::assertSame($deletedUser->uid(), $token->user()?->uid());
+        self::assertSame(['registered'], $token->groupIdentifiers());
+    }
+
     public function testLowerAccessAdminCannotInvitePeerAccessAccount(): void
     {
         $client = self::createClient();

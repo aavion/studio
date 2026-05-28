@@ -124,14 +124,22 @@ final class AdminUserController extends AbstractController
                 return $this->redirectToRoute('backend_admin_users');
             }
 
-            if ($this->emailBelongsToUser($email)) {
+            $existingUser = $this->userByEmail($email);
+
+            if ($existingUser instanceof UserAccount && UserAccountStatus::Deleted !== $existingUser->status()) {
                 $this->addFlash('error', 'admin.users.form.errors.email_in_use');
 
                 return $this->redirectToRoute('backend_admin_users');
             }
 
             $this->revokePendingTokensForEmail($email, [AccountTokenType::Invitation, AccountTokenType::Registration]);
-            [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::Invitation, $email, $groups, ttl: $this->userFlowConfig->accountLinkTtl());
+            [$token, $plainToken] = $this->tokenIssuer->issue(
+                AccountTokenType::Invitation,
+                $email,
+                $groups,
+                UserAccountStatus::Deleted === $existingUser?->status() ? $existingUser : null,
+                ttl: $this->userFlowConfig->accountLinkTtl(),
+            );
             $this->entityManager->persist($token);
             $this->entityManager->flush();
             $this->linkDelivery->deliver($token, AccountMailFlow::InvitationLink, $plainToken, $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0), $this->mailLocaleResolver->forAdminAction());
@@ -907,9 +915,11 @@ final class AdminUserController extends AbstractController
         }
     }
 
-    private function emailBelongsToUser(string $email): bool
+    private function userByEmail(string $email): ?UserAccount
     {
-        return $this->entityManager->getRepository(UserAccount::class)->findOneBy(['email' => strtolower($email)]) instanceof UserAccount;
+        $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['email' => strtolower($email)]);
+
+        return $user instanceof UserAccount ? $user : null;
     }
 
     private function ttlForToken(AccountToken $token): string

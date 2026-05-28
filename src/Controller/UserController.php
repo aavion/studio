@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Core\Access\AccessActor;
+use App\Core\Access\AccessLevel;
 use App\Core\Log\AuditLoggerInterface;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
@@ -333,7 +334,7 @@ final class UserController extends AbstractController
             if ([] === $errors) {
                 $existingUser = $this->userByEmail($email);
 
-                if ($existingUser instanceof UserAccount) {
+                if ($existingUser instanceof UserAccount && UserAccountStatus::Deleted !== $existingUser->status()) {
                     $this->linkDelivery->notifyAddress(
                         $existingUser->email(),
                         AccountMailFlow::RegistrationExistingAccount,
@@ -354,6 +355,7 @@ final class UserController extends AbstractController
                     AccountTokenType::Registration,
                     $email,
                     ['registered'],
+                    UserAccountStatus::Deleted === $existingUser?->status() ? $existingUser : null,
                     status: $requiresApproval ? AccountTokenStatus::PendingApproval : AccountTokenStatus::Pending,
                     ttl: $this->userFlowConfig->accountLinkTtl(),
                 );
@@ -482,10 +484,10 @@ final class UserController extends AbstractController
 
             if ([] === $errors) {
                 try {
-                    $user = new UserAccount(self::uuid(), $username, $accountToken->email(), '');
+                    $user = $this->userForAccountToken($accountToken, $username);
                     $user->changePassword($this->passwordHasher->hashPassword($user, $password));
                     $user->changeStatus(UserAccountStatus::Active);
-                    $this->assignGroups($user, $accountToken->groupIdentifiers());
+                    $this->replaceGroups($user, $accountToken->groupIdentifiers());
                     $accountToken->consume($user);
                     $this->entityManager->persist($user);
                     $this->entityManager->flush();
@@ -646,12 +648,59 @@ final class UserController extends AbstractController
         return $user instanceof UserAccount ? $user : null;
     }
 
+    private function userByUsername(string $username): ?UserAccount
+    {
+        $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
+
+        return $user instanceof UserAccount ? $user : null;
+    }
+
+    private function userForAccountToken(AccountToken $token, string $username): UserAccount
+    {
+        $existingTokenUser = $token->user();
+        $existingUsernameUser = $this->userByUsername($username);
+
+        if ($existingTokenUser instanceof UserAccount) {
+            if (UserAccountStatus::Deleted !== $existingTokenUser->status()) {
+                throw new \RuntimeException('Account token user is not deleted.');
+            }
+
+            if ($existingUsernameUser instanceof UserAccount && $existingUsernameUser !== $existingTokenUser) {
+                throw new \RuntimeException('Username is already assigned.');
+            }
+
+            $existingTokenUser->changeUsername($username);
+            $existingTokenUser->changeEmail($token->email());
+
+            return $existingTokenUser;
+        }
+
+        if ($existingUsernameUser instanceof UserAccount) {
+            throw new \RuntimeException('Username is already assigned.');
+        }
+
+        return new UserAccount(self::uuid(), $username, $token->email(), '');
+    }
+
     /**
      * @param list<string> $groupIdentifiers
      */
-    private function assignGroups(UserAccount $user, array $groupIdentifiers): void
+    private function replaceGroups(UserAccount $user, array $groupIdentifiers): void
     {
         $groups = $this->entityManager->getRepository(AclGroup::class)->findBy(['identifier' => $groupIdentifiers]);
+        $maxAccessLevel = 0;
+
+        foreach ($groups as $group) {
+            if ($group instanceof AclGroup) {
+                $maxAccessLevel = max($maxAccessLevel, $group->accessLevel());
+            }
+        }
+
+        if ([] === $groups || $maxAccessLevel < AccessLevel::REGISTERED) {
+            throw new \RuntimeException('Account token does not assign registered access.');
+        }
+
+        $user->clearGroups();
 
         foreach ($groups as $group) {
             if ($group instanceof AclGroup) {

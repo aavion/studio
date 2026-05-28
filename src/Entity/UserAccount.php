@@ -90,6 +90,11 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         return $this->username;
     }
 
+    public function changeUsername(string $username): void
+    {
+        $this->username = self::assertUsername($username);
+    }
+
     public function email(): string
     {
         return $this->email;
@@ -188,6 +193,11 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
     public function removeGroup(AclGroup $group): void
     {
         $this->groups->removeElement($group);
+    }
+
+    public function clearGroups(): void
+    {
+        $this->groups->clear();
     }
 
     public function maxAccessLevel(): int
