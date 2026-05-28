@@ -139,10 +139,15 @@ ui:
         create_failed: 'The account could not be created. The username or email may already be used.'
     security_review:
       title: 'Account security review'
+      confirm_subtitle: 'Confirm that this password change was not requested by you.'
       locked_subtitle: 'The account was temporarily locked.'
       unavailable_subtitle: 'This security review link is no longer available.'
+      confirm_message: 'Only continue if you did not request the password change. Your account will be temporarily locked and an administrator notification will be created.'
       locked_message: 'An administrator notification was created for review.'
       unavailable_message: 'The link may have expired or already been used.'
+      confirm_submit: 'Lock account'
+      errors:
+        invalid_csrf: 'The security review form expired. Please try again.'
     logout:
       title: 'Sign out'
       placeholder: 'Confirm that you want to end your session.'

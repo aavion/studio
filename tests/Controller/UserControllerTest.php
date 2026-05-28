@@ -234,10 +234,26 @@ final class UserControllerTest extends WebTestCase
             @unlink($logFile);
         }
 
-        $client->request('GET', '/user/security-review/'.$plainToken);
+        $crawler = $client->request('GET', '/user/security-review/'.$plainToken);
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Account security review');
+        self::assertSelectorTextContains('.studio-auth-notice', 'Only continue if you did not request the password change.');
+        self::assertSelectorExists('form button');
+
+        $entityManager->clear();
+        $activeUser = $entityManager->find(UserAccount::class, $user->uid());
+        $pendingToken = $entityManager->find(AccountToken::class, $token->uid());
+        self::assertInstanceOf(UserAccount::class, $activeUser);
+        self::assertSame(UserAccountStatus::Active, $activeUser->status());
+        self::assertInstanceOf(AccountToken::class, $pendingToken);
+        self::assertSame(AccountTokenStatus::Pending, $pendingToken->status());
+
+        $form = $crawler->selectButton('Lock account')->form();
+        $client->submit($form);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-auth-notice', 'An administrator notification was created for review.');
 
         $entityManager->clear();
         $lockedUser = $entityManager->find(UserAccount::class, $user->uid());

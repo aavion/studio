@@ -92,13 +92,32 @@ final class UserPasswordRecoveryController extends AbstractController
         return $this->completePasswordToken($request, $accountToken);
     }
 
-    #[Route('/user/security-review/{token}', name: 'user_security_review', requirements: ['token' => '[a-f0-9]{64}'], methods: ['GET'])]
+    #[Route('/user/security-review/{token}', name: 'user_security_review', requirements: ['token' => '[a-f0-9]{64}'], methods: ['GET', 'POST'])]
     public function securityReview(Request $request, string $token): Response
     {
         $accountToken = $this->usableToken($token, AccountTokenType::SecurityReview);
         $locked = false;
+        $errors = [];
 
         if ($accountToken instanceof AccountToken && $accountToken->user() instanceof UserAccount) {
+            if (!$request->isMethod('POST')) {
+                return $this->render('@frontend/user/security-review.html.twig', [
+                    'account_token' => $accountToken,
+                    'confirm' => true,
+                    'locked' => false,
+                    'errors' => [],
+                ]);
+            }
+
+            if (!$this->isCsrfTokenValid('user_security_review_'.$accountToken->uid(), $this->stringField($request, '_csrf_token'))) {
+                return $this->render('@frontend/user/security-review.html.twig', [
+                    'account_token' => $accountToken,
+                    'confirm' => true,
+                    'locked' => false,
+                    'errors' => ['ui.user.security_review.errors.invalid_csrf'],
+                ]);
+            }
+
             $user = $accountToken->user();
             $accountToken->consume($user);
             $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Inactive, $user->username());
@@ -112,7 +131,10 @@ final class UserPasswordRecoveryController extends AbstractController
         }
 
         return $this->render('@frontend/user/security-review.html.twig', [
+            'account_token' => $accountToken,
+            'confirm' => false,
             'locked' => $locked,
+            'errors' => $errors,
         ]);
     }
 

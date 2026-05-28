@@ -139,10 +139,15 @@ ui:
         create_failed: 'Der Account konnte nicht erstellt werden. Username oder E-Mail werden möglicherweise bereits verwendet.'
     security_review:
       title: 'Account-Sicherheitsprüfung'
+      confirm_subtitle: 'Bestätige, dass diese Passwortänderung nicht von dir veranlasst wurde.'
       locked_subtitle: 'Der Account wurde vorläufig gesperrt.'
       unavailable_subtitle: 'Dieser Sicherheitsprüfungs-Link ist nicht mehr verfügbar.'
+      confirm_message: 'Fahre nur fort, wenn du die Passwortänderung nicht veranlasst hast. Dein Account wird vorläufig gesperrt und eine Administratorbenachrichtigung wird erzeugt.'
       locked_message: 'Eine Administratorbenachrichtigung zur Prüfung wurde erzeugt.'
       unavailable_message: 'Der Link ist möglicherweise abgelaufen oder wurde bereits verwendet.'
+      confirm_submit: 'Account sperren'
+      errors:
+        invalid_csrf: 'Das Sicherheitsprüfungsformular ist abgelaufen. Bitte versuche es erneut.'
     logout:
       title: 'Abmelden'
       placeholder: 'Bestätige, dass du deine Sitzung beenden möchtest.'
