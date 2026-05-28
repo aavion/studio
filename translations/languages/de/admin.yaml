@@ -213,6 +213,8 @@ admin:
         invalid_status: 'Wähle einen gültigen Account-Status.'
         target_higher_access: 'Nur Administratoren auf Level 9 können Benutzer auf dem eigenen oder einem höheren Access-Level bearbeiten.'
         group_level_too_high: 'Nur Administratoren auf Level 9 können ACL-Gruppen auf dem eigenen oder einem höheren Access-Level zuweisen.'
+        group_required: 'Benutzerkonten müssen mindestens eine ACL-Gruppe behalten.'
+        group_access_too_low: 'Benutzerkonten müssen mindestens Access-Level 1 behalten.'
         self_lockout: 'Diese Änderung würde deinen eigenen Admin-Zugriff entfernen.'
         last_admin: 'Es muss mindestens ein aktiver Benutzer mit Admin-Zugriff verbleiben.'
     saved: 'Benutzer gespeichert.'
@@ -324,6 +326,7 @@ admin:
       higher_access: 'Nur Administratoren auf Level 9 können ACL-Gruppen auf dem eigenen oder einem höheren Access-Level verwalten.'
       self_lockout: 'Diese Gruppenänderung würde deinen eigenen Admin-Zugriff entfernen.'
       last_admin: 'Es muss mindestens ein aktiver Benutzer mit Admin-Zugriff verbleiben.'
+      registered_user_floor: 'Diese Gruppenänderung würde mindestens einen Benutzer ohne Gruppe oder unter Access-Level 1 zurücklassen.'
   scheduler:
     title: 'Scheduler'
     foundation_title: 'Scheduler-Operations-Fundament'

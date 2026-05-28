@@ -422,6 +422,8 @@ admin:
                 invalid_status: 'Choose a valid account status.'
                 target_higher_access: 'Only level 9 administrators can edit users at or above their own access level.'
                 group_level_too_high: 'Only level 9 administrators can assign access groups at or above their own access level.'
+                group_required: 'User accounts must keep at least one ACL group.'
+                group_access_too_low: 'User accounts must keep at least access level 1.'
                 self_lockout: 'This change would remove your own Admin access.'
                 last_admin: 'At least one active user with Admin access must remain.'
         saved: 'User saved.'
@@ -533,6 +535,7 @@ admin:
             higher_access: 'Only level 9 administrators can manage ACL groups at or above their own access level.'
             self_lockout: 'This group change would remove your own Admin access.'
             last_admin: 'At least one active user with Admin access must remain.'
+            registered_user_floor: 'This group change would leave at least one user without a group or below access level 1.'
     scheduler:
         title: Scheduler
         foundation_title: 'Scheduler operations foundation'

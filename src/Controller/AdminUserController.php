@@ -68,7 +68,7 @@ final class AdminUserController extends AbstractController
         return $this->render('@backend/admin/users/index.html.twig', [
             'navigation' => $this->navigation($request),
             'users' => $this->entityManager->getRepository(UserAccount::class)->findBy([], ['username' => 'ASC']),
-            'groups' => $this->entityManager->getRepository(AclGroup::class)->findBy([], ['accessLevel' => 'ASC', 'identifier' => 'ASC']),
+            'groups' => $this->assignableGroups(),
             'pending_tokens' => $this->entityManager->getRepository(AccountToken::class)->findBy(
                 ['status' => [AccountTokenStatus::Pending, AccountTokenStatus::PendingApproval]],
                 ['createdAt' => 'DESC'],
@@ -336,7 +336,7 @@ final class AdminUserController extends AbstractController
         return $this->render('@backend/admin/users/detail.html.twig', [
             'navigation' => $this->navigation($request),
             'user_account' => $user,
-            'groups' => $this->entityManager->getRepository(AclGroup::class)->findBy([], ['accessLevel' => 'ASC', 'identifier' => 'ASC']),
+            'groups' => $this->assignableGroups(),
             'login_possible' => $user->status()->isUsable(),
         ]);
     }
@@ -721,6 +721,17 @@ final class AdminUserController extends AbstractController
             'SELECT COUNT(*) FROM user_acl_group WHERE group_uid = ?',
             [$group->uid()],
         );
+    }
+
+    /**
+     * @return list<AclGroup>
+     */
+    private function assignableGroups(): array
+    {
+        return array_values(array_filter(
+            $this->entityManager->getRepository(AclGroup::class)->findBy([], ['accessLevel' => 'ASC', 'identifier' => 'ASC']),
+            fn (mixed $group): bool => $group instanceof AclGroup && $this->adminUserPolicy->canAssignGroup($this->actor(), $group),
+        ));
     }
 
     /**
