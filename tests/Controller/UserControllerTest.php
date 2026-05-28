@@ -207,6 +207,41 @@ final class UserControllerTest extends WebTestCase
         self::assertSame('profile', $passwordMarker['marker_value']);
     }
 
+    public function testPasswordRouteFailsWhenSecurityReviewLinkCannotBeBuilt(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'passworddelivery', 'current-password');
+        $config = self::getContainer()->get(Config::class);
+        $originalSiteUrl = $config->get('site.url', 'http://localhost');
+        $config->set('site.url', 'not-a-url');
+        $client->loginUser($user);
+
+        try {
+            $crawler = $client->request('GET', '/user/password');
+            $client->submit($crawler->selectButton('Update password')->form([
+                'current_password' => 'current-password',
+                'new_password' => 'new-password-value',
+                'confirm_password' => 'new-password-value',
+            ]));
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-form-errors', 'The password-change security email could not be created. Please try again later.');
+
+            $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+            $updatedUser = $entityManager->getRepository(UserAccount::class)->find($user->uid());
+            $reviewToken = $entityManager->getRepository(AccountToken::class)->findOneBy([
+                'user' => $updatedUser,
+                'type' => AccountTokenType::SecurityReview,
+            ]);
+
+            self::assertInstanceOf(UserAccount::class, $updatedUser);
+            self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($updatedUser, 'current-password'));
+            self::assertNull($reviewToken);
+        } finally {
+            $config->set('site.url', (string) $originalSiteUrl);
+        }
+    }
+
     public function testSecurityReviewLinkLocksAccountAndNotifiesAdmin(): void
     {
         $client = self::createClient();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Entity\UserAccount;
 use Throwable;
 
 final readonly class SetupWebInputFactory
@@ -141,6 +142,10 @@ final readonly class SetupWebInputFactory
 
         if ((string) $values['admin_password'] !== (string) $values['admin_password_confirm']) {
             $errors['admin_password_confirm'][] = 'setup.form.errors.password_mismatch';
+        }
+
+        if (!UserAccount::isValidUsername((string) $values['admin_username'])) {
+            $errors['admin_username'][] = 'setup.form.errors.username';
         }
 
         $adminPassword = (string) $values['admin_password'];

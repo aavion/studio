@@ -834,6 +834,41 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testLowerAccessAdminCannotReissuePeerAccessAccountLink(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $peerGroup = $this->createGroup('peer_link_admin', 8);
+        $actor = $this->createUser('peerlinkactor', UserAccountStatus::Active);
+        $actor->addGroup($peerGroup);
+        [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'peer-link@example.test',
+            ['peer_link_admin'],
+            ttl: '-1 hour',
+        );
+        $originalHash = $token->tokenHash();
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->loginUser($actor);
+        $crawler = $client->request('GET', '/admin/users');
+        $client->submit($crawler->filter('form[action="/admin/users/invitations/'.$token->uid().'/reissue"]')->form());
+
+        self::assertResponseRedirects('/admin/users');
+
+        $entityManager->clear();
+        $unchangedToken = $entityManager->find(AccountToken::class, $token->uid());
+
+        self::assertInstanceOf(AccountToken::class, $unchangedToken);
+        self::assertSame($originalHash, $unchangedToken->tokenHash());
+
+        $entityManager->remove($unchangedToken);
+        $entityManager->remove($entityManager->find(UserAccount::class, $actor->uid()));
+        $entityManager->remove($entityManager->find(AclGroup::class, $peerGroup->uid()));
+        $entityManager->flush();
+    }
+
     public function testLowerAccessAdminOnlySeesAssignableGroupsInUserForms(): void
     {
         $client = self::createClient();

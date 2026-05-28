@@ -220,14 +220,22 @@ final class UserController extends AbstractController
             }
 
             if ([] === $errors) {
-                $user->changePassword($this->passwordHasher->hashPassword($user, $newPassword));
                 [$token, $plainToken] = $this->issuePasswordChangeReviewToken($user);
-                $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::PASSWORD_CHANGED, $user->username(), 'profile');
-                $this->entityManager->flush();
-                $this->deliverPasswordChangeNotification($request, $token, $plainToken);
-                $this->audit($user, 'auth.password_change_success', ['result_status' => 'success']);
-                $success = true;
-            } else {
+                $reviewUrl = $this->passwordChangeReviewUrl($plainToken);
+
+                if (null === $reviewUrl) {
+                    $errors[] = 'ui.user.password.errors.delivery_failed';
+                } else {
+                    $user->changePassword($this->passwordHasher->hashPassword($user, $newPassword));
+                    $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::PASSWORD_CHANGED, $user->username(), 'profile');
+                    $this->entityManager->flush();
+                    $this->deliverPasswordChangeNotification($request, $token, $plainToken, $reviewUrl);
+                    $this->audit($user, 'auth.password_change_success', ['result_status' => 'success']);
+                    $success = true;
+                }
+            }
+
+            if ([] !== $errors) {
                 $this->audit($user, 'auth.password_change_failed', [
                     'result_status' => 'failed',
                     'error_keys' => $errors,
@@ -273,14 +281,13 @@ final class UserController extends AbstractController
         return [$token, $plainToken];
     }
 
-    private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $plainToken): void
+    private function passwordChangeReviewUrl(string $plainToken): ?string
     {
-        $url = $this->absoluteUris->generateUri(__METHOD__, 'user_security_review', ['token' => $plainToken]);
+        return $this->absoluteUris->generateUri(__METHOD__, 'user_security_review', ['token' => $plainToken]);
+    }
 
-        if (null === $url) {
-            return;
-        }
-
+    private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $plainToken, string $url): void
+    {
         $this->linkDelivery->deliver(
             $token,
             AccountMailFlow::PasswordChanged,

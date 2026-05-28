@@ -49,6 +49,7 @@ setup:
       invalid_csrf: 'Das Setup-Formular ist abgelaufen. Bitte versuche es erneut.'
       password_mismatch: 'Die Passwortbestätigung stimmt nicht überein.'
       password_length: 'Das Admin-Passwort muss mindestens 12 Zeichen enthalten.'
+      username: 'Der Admin-Username muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
       required: 'Dieses Feld ist erforderlich.'
   result:
     success_title: 'Setup-Ergebnis'

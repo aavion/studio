@@ -106,6 +106,7 @@ ui:
         current_password: 'Das aktuelle Passwort ist nicht korrekt.'
         new_password_length: 'Das neue Passwort muss mindestens 12 Zeichen enthalten.'
         password_mismatch: 'Die neuen Passwörter stimmen nicht überein.'
+        delivery_failed: 'Die Sicherheits-E-Mail zur Passwortänderung konnte nicht erstellt werden. Bitte versuche es später erneut.'
     api_keys:
       title: 'API-Keys'
       subtitle: 'Hier werden nur API-Keys angezeigt, die deinem Account zugeordnet sind.'

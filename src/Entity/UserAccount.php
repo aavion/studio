@@ -215,13 +215,18 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
 
     private static function assertUsername(string $username): string
     {
-        if (1 !== preg_match('/^[A-Za-z][A-Za-z0-9_-]{4,29}$/', $username)) {
+        if (!self::isValidUsername($username)) {
             throw MessageException::invalidArgument(MessageKey::USERNAME_INVALID, [
                 '%username%' => $username,
             ]);
         }
 
         return $username;
+    }
+
+    public static function isValidUsername(string $username): bool
+    {
+        return 1 === preg_match('/^[A-Za-z][A-Za-z0-9_-]{4,29}$/', $username);
     }
 
     private static function assertEmail(string $email): string

@@ -149,6 +149,7 @@ ui:
                 current_password: 'Das aktuelle Passwort ist nicht korrekt.'
                 new_password_length: 'Das neue Passwort muss mindestens 12 Zeichen enthalten.'
                 password_mismatch: 'Die neuen Passwörter stimmen nicht überein.'
+                delivery_failed: 'Die Sicherheits-E-Mail zur Passwortänderung konnte nicht erstellt werden. Bitte versuche es später erneut.'
         api_keys:
             title: API-Keys
             subtitle: 'Hier werden nur API-Keys angezeigt, die deinem Account zugeordnet sind.'
@@ -1299,6 +1300,7 @@ setup:
             invalid_csrf: 'Das Setup-Formular ist abgelaufen. Bitte versuche es erneut.'
             password_mismatch: 'Die Passwortbestätigung stimmt nicht überein.'
             password_length: 'Das Admin-Passwort muss mindestens 12 Zeichen enthalten.'
+            username: 'Der Admin-Username muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
             required: 'Dieses Feld ist erforderlich.'
     result:
         success_title: Setup-Ergebnis
