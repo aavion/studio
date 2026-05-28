@@ -309,6 +309,76 @@ final class UserControllerTest extends WebTestCase
         self::assertStringContainsString('"username":"securityreview"', $messageLog);
     }
 
+    public function testSecurityReviewLinkCannotLockLastActiveAdmin(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $admin = $entityManager
+            ->getRepository(UserAccount::class)
+            ->findOneBy(['username' => 'admin']);
+
+        self::assertInstanceOf(UserAccount::class, $admin);
+
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::SecurityReview,
+            $admin->email(),
+            [],
+            $admin,
+        );
+        $restoredStatuses = [];
+
+        foreach ($entityManager->getRepository(UserAccount::class)->findBy(['status' => UserAccountStatus::Active]) as $user) {
+            if (!$user instanceof UserAccount || $user->uid() === $admin->uid() || 8 > $user->maxAccessLevel()) {
+                continue;
+            }
+
+            $restoredStatuses[$user->uid()] = $user->status();
+            $user->changeStatus(UserAccountStatus::Inactive);
+        }
+
+        try {
+            $entityManager->persist($token);
+            $entityManager->flush();
+
+            $crawler = $client->request('GET', '/user/security-review/'.$plainToken);
+            $client->submit($crawler->selectButton('Lock account')->form());
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-auth-error', 'The last active admin account cannot be locked from this review link.');
+
+            $entityManager->clear();
+            $unchangedAdmin = $entityManager->find(UserAccount::class, $admin->uid());
+            $unchangedToken = $entityManager->find(AccountToken::class, $token->uid());
+
+            self::assertInstanceOf(UserAccount::class, $unchangedAdmin);
+            self::assertSame(UserAccountStatus::Active, $unchangedAdmin->status());
+            self::assertInstanceOf(AccountToken::class, $unchangedToken);
+            self::assertSame(AccountTokenStatus::Pending, $unchangedToken->status());
+        } finally {
+            $managedToken = $entityManager->find(AccountToken::class, $token->uid());
+
+            if ($managedToken instanceof AccountToken) {
+                $entityManager->remove($managedToken);
+            }
+
+            foreach ($restoredStatuses as $uid => $status) {
+                $managedUser = $entityManager->find(UserAccount::class, $uid);
+
+                if ($managedUser instanceof UserAccount) {
+                    $managedUser->changeStatus($status);
+                }
+            }
+
+            $managedAdmin = $entityManager->find(UserAccount::class, $admin->uid());
+
+            if ($managedAdmin instanceof UserAccount) {
+                $managedAdmin->changeStatus(UserAccountStatus::Active);
+            }
+
+            $entityManager->flush();
+        }
+    }
+
     public function testPasswordRouteReportsValidationErrors(): void
     {
         $client = self::createClient();

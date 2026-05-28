@@ -61,6 +61,11 @@ final readonly class AdminUserAccessPolicy
         return $this->hasActiveAdminAfterUserUpdate($target, UserAccountStatus::Deleted, 0);
     }
 
+    public function allowsSecurityReviewLock(UserAccount $target): bool
+    {
+        return $this->hasActiveAdminAfterUserUpdate($target, UserAccountStatus::Inactive, 0);
+    }
+
     /**
      * @param list<string> $groupIdentifiers
      */

@@ -135,7 +135,7 @@ final class AdminUserInvitationController extends AbstractController
             return $this->redirectAfterTokenAction($request);
         }
 
-        if ($error = $this->adminUserPolicy->validateGroupAssignment($this->actor(), $token->groupIdentifiers())) {
+        if ($error = $this->validateTokenDelivery($token)) {
             $this->addFlash('error', $error);
 
             return $this->redirectAfterTokenAction($request);
@@ -187,7 +187,7 @@ final class AdminUserInvitationController extends AbstractController
             return $this->redirectAfterTokenAction($request);
         }
 
-        if ($error = $this->adminUserPolicy->validateGroupAssignment($this->actor(), $token->groupIdentifiers())) {
+        if ($error = $this->validateTokenDelivery($token)) {
             $this->addFlash('error', $error);
 
             return $this->redirectAfterTokenAction($request);
@@ -226,6 +226,12 @@ final class AdminUserInvitationController extends AbstractController
         $token = $this->entityManager->find(AccountToken::class, $uid);
 
         if ($token instanceof AccountToken) {
+            if ($error = $this->validateTokenRevocation($token)) {
+                $this->addFlash('error', $error);
+
+                return $this->redirectAfterTokenAction($request);
+            }
+
             $wasPendingApproval = AccountTokenStatus::PendingApproval === $token->status();
             $token->revoke();
             $this->entityManager->flush();
@@ -239,6 +245,24 @@ final class AdminUserInvitationController extends AbstractController
         }
 
         return $this->redirectAfterTokenAction($request);
+    }
+
+    private function validateTokenRevocation(AccountToken $token): ?string
+    {
+        return match ($token->type()) {
+            AccountTokenType::Invitation, AccountTokenType::Registration => $this->adminUserPolicy->validateGroupAssignment($this->actor(), $token->groupIdentifiers()),
+            AccountTokenType::PasswordReset, AccountTokenType::SecurityReview => $token->user() instanceof UserAccount
+                ? $this->adminUserPolicy->validateUserAction($this->actor(), $token->user())
+                : null,
+        };
+    }
+
+    private function validateTokenDelivery(AccountToken $token): ?string
+    {
+        return match ($token->type()) {
+            AccountTokenType::Invitation, AccountTokenType::Registration => $this->adminUserPolicy->validateGroupAssignment($this->actor(), $token->groupIdentifiers()),
+            AccountTokenType::PasswordReset, AccountTokenType::SecurityReview => null,
+        };
     }
 
     private function redirectAfterTokenAction(Request $request): Response

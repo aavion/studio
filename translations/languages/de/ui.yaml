@@ -158,6 +158,7 @@ ui:
       confirm_submit: 'Account sperren'
       errors:
         invalid_csrf: 'Das Sicherheitsprüfungsformular ist abgelaufen. Bitte versuche es erneut.'
+        last_admin: 'Der letzte aktive Admin-Account kann über diesen Sicherheitsprüfungs-Link nicht gesperrt werden.'
     logout:
       title: 'Abmelden'
       placeholder: 'Bestätige, dass du deine Sitzung beenden möchtest.'

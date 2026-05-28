@@ -201,6 +201,7 @@ ui:
             confirm_submit: 'Lock account'
             errors:
                 invalid_csrf: 'The security review form expired. Please try again.'
+                last_admin: 'The last active admin account cannot be locked from this review link.'
         logout:
             title: 'Sign out'
             placeholder: 'Confirm that you want to end your session.'

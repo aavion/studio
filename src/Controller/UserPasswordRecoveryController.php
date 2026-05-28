@@ -20,6 +20,7 @@ use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\AdminUserAccessPolicy;
 use App\Security\UserAccountLifecycle;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
@@ -46,6 +47,7 @@ final class UserPasswordRecoveryController extends AbstractController
         private readonly AbsoluteUriGenerator $absoluteUris,
         private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly UserAccountLifecycle $userLifecycle,
+        private readonly AdminUserAccessPolicy $adminUserPolicy,
         private readonly StateMarkerRecorder $stateMarkers,
     ) {
     }
@@ -136,6 +138,15 @@ final class UserPasswordRecoveryController extends AbstractController
             }
 
             $user = $accountToken->user();
+            if (!$this->adminUserPolicy->allowsSecurityReviewLock($user)) {
+                return $this->render('@frontend/user/security-review.html.twig', [
+                    'account_token' => $accountToken,
+                    'confirm' => true,
+                    'locked' => false,
+                    'errors' => ['ui.user.security_review.errors.last_admin'],
+                ]);
+            }
+
             $accountToken->consume($user);
             $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Inactive, $user->username());
             $this->entityManager->flush();

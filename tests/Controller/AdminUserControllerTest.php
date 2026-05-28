@@ -492,6 +492,41 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testAdminCanReissueRecoveryTokenWithoutGroups(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $user = $this->createUser('reissuerecovery', UserAccountStatus::Active);
+        [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::PasswordReset,
+            $user->email(),
+            [],
+            $user,
+            ttl: '-1 hour',
+        );
+        $originalHash = $token->tokenHash();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/admin/users');
+        $client->submit($crawler->filter('form[action="/admin/users/invitations/'.$token->uid().'/reissue"]')->form());
+
+        self::assertResponseRedirects('/admin/users');
+
+        $entityManager->clear();
+        $reissuedToken = $entityManager->find(AccountToken::class, $token->uid());
+        $managedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+        self::assertInstanceOf(AccountToken::class, $reissuedToken);
+        self::assertInstanceOf(UserAccount::class, $managedUser);
+        self::assertNotSame($originalHash, $reissuedToken->tokenHash());
+        self::assertSame([], $reissuedToken->groupIdentifiers());
+        $entityManager->remove($reissuedToken);
+        $entityManager->remove($managedUser);
+        $entityManager->flush();
+    }
+
     public function testAdminApprovalRepairsInvalidTokenGroupsWithDefaultGroup(): void
     {
         $client = self::createClient();
@@ -866,6 +901,41 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->remove($unchangedToken);
         $entityManager->remove($entityManager->find(UserAccount::class, $actor->uid()));
         $entityManager->remove($entityManager->find(AclGroup::class, $peerGroup->uid()));
+        $entityManager->flush();
+    }
+
+    public function testLowerAccessAdminCannotRevokeOwnerRecoveryToken(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $actorGroup = $this->createGroup('revoke_limited_admin', 8);
+        $actor = $this->createUser('revokelimited', UserAccountStatus::Active);
+        $owner = $this->adminUser();
+        $actor->addGroup($actorGroup);
+        [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::PasswordReset,
+            $owner->email(),
+            [],
+            $owner,
+        );
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->loginUser($actor);
+        $crawler = $client->request('GET', '/admin/users');
+        $client->submit($crawler->filter('form[action="/admin/users/invitations/'.$token->uid().'/revoke"]')->form());
+
+        self::assertResponseRedirects('/admin/users');
+
+        $entityManager->clear();
+        $unchangedToken = $entityManager->find(AccountToken::class, $token->uid());
+
+        self::assertInstanceOf(AccountToken::class, $unchangedToken);
+        self::assertSame(AccountTokenStatus::Pending, $unchangedToken->status());
+
+        $entityManager->remove($unchangedToken);
+        $entityManager->remove($entityManager->find(UserAccount::class, $actor->uid()));
+        $entityManager->remove($entityManager->find(AclGroup::class, $actorGroup->uid()));
         $entityManager->flush();
     }
 
