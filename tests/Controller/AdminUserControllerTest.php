@@ -85,6 +85,36 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertNull($token);
     }
 
+    public function testLowerAccessAdminCannotInvitePeerAccessAccount(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $limitedGroup = $this->createGroup('limited_inviter', 8);
+        $limitedAdmin = $this->createUser('limitedinviter', UserAccountStatus::Active);
+        $limitedAdmin->addGroup($limitedGroup);
+        $entityManager->flush();
+
+        $client->loginUser($limitedAdmin);
+        $crawler = $client->request('GET', '/admin/users');
+        $client->request('POST', '/admin/users/invitations', [
+            '_csrf_token' => (string) $crawler->filter('form[action="/admin/users/invitations"] input[name="_csrf_token"]')->attr('value'),
+            'email' => 'peer-invite@example.test',
+            'groups' => ['limited_inviter'],
+        ]);
+
+        self::assertResponseRedirects('/admin/users');
+
+        $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
+            'email' => 'peer-invite@example.test',
+        ]);
+
+        self::assertNull($token);
+
+        $entityManager->remove($entityManager->find(UserAccount::class, $limitedAdmin->uid()));
+        $entityManager->remove($entityManager->find(AclGroup::class, $limitedGroup->uid()));
+        $entityManager->flush();
+    }
+
     public function testAdminCanReissuePendingAccountToken(): void
     {
         $client = self::createClient();
