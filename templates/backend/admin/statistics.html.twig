@@ -1,0 +1,94 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.statistics.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'ui.admin.area'|trans,
+        title: 'admin.statistics.title'|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.statistics.access_title'|trans }}</h2>
+        {% if access_statistics.enabled|default(true) == false %}
+            <p class="studio-muted">{{ 'admin.statistics.disabled'|trans }}</p>
+        {% endif %}
+        <p class="studio-muted">{{ 'admin.statistics.summary'|trans({'%count%': access_statistics.total_requests}) }}</p>
+        <form method="get" class="studio-form studio-log-filter-form">
+            <label>
+                <span>{{ 'admin.statistics.window'|trans }}</span>
+                <select name="statistics_window">
+                    {% for window in access_statistics_windows|default([]) %}
+                        <option value="{{ window.key }}" {% if window.key == access_statistics.window %}selected{% endif %}>{{ window.label_key|trans }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <button type="submit" class="studio-button">{{ 'admin.logs.filters.apply'|trans }}</button>
+        </form>
+        <div class="studio-grid studio-grid-3">
+            <div>
+                <h3>{{ 'admin.statistics.unique_visitors'|trans }}</h3>
+                <p class="studio-stat-number">{{ access_statistics.unique_visitors|default(0) }}</p>
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.status_families'|trans }}</h3>
+                <dl>
+                    {% for family, count in access_statistics.status_families %}
+                        <dt>{{ family }}</dt>
+                        <dd>{{ count }}</dd>
+                    {% endfor %}
+                </dl>
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.bot_requests'|trans }}</h3>
+                <p class="studio-stat-number">{{ access_statistics.bot_requests|default(0) }}</p>
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.do_not_track_requests'|trans }}</h3>
+                <p class="studio-stat-number">{{ access_statistics.do_not_track_requests|default(0) }}</p>
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.average_duration'|trans }}</h3>
+                <p class="studio-stat-number">{{ access_statistics.average_duration_ms is same as(null) ? 'admin.statistics.empty'|trans : access_statistics.average_duration_ms ~ ' ms' }}</p>
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.top_routes'|trans }}</h3>
+                {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_routes} only %}
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.top_not_found'|trans }}</h3>
+                {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_not_found} only %}
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.top_browsers'|trans }}</h3>
+                {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_browsers} only %}
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.device_types'|trans }}</h3>
+                {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.device_types} only %}
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.surfaces'|trans }}</h3>
+                {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.surfaces} only %}
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.languages'|trans }}</h3>
+                {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.languages} only %}
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.top_referrers'|trans }}</h3>
+                {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_referrers} only %}
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.top_countries'|trans }}</h3>
+                {% include '@backend/admin/partials/_stat-list.html.twig' with {rows: access_statistics.top_countries} only %}
+            </div>
+        </div>
+    </section>
+{% endblock %}

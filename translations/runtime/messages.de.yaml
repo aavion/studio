@@ -137,6 +137,12 @@ ui:
         503:
             title: Wartungsmodus
             message: 'Die Seite ist vorübergehend nicht verfügbar, solange die Wartung aktiv ist.'
+        reference:
+            label: Anfragereferenz
+            request_id: Request-ID
+            visitor_id: Visitor-ID
+            requested_path: 'Angefragter Pfad'
+            resolved_route: 'Aufgelöste Route'
 admin:
     navigation:
         dashboard: Dashboard
@@ -147,6 +153,7 @@ admin:
         backups: Backups
         operations: Operationen
         logs: Logs
+        statistics: Statistiken
         settings: Einstellungen
         general_settings: Allgemein
         dashboard_settings: Dashboard
@@ -154,6 +161,7 @@ admin:
         mail_settings: Mail
         security_settings: Sicherheit
         package_settings: Pakete
+        statistics_settings: Statistiken
         scheduler_settings: Scheduler
     actions:
         package_discovery:
@@ -343,6 +351,86 @@ admin:
         title: Logs
         foundation_title: 'Log- und Audit-Fundament'
         foundation_text: 'Operations-Logs, Audit-Ansichten, Paketdiagnostik und sicherheitsrelevante Ereignisse docken hier an.'
+        empty_value: n/a
+        sources:
+            application: Anwendung
+            message: Meldungen
+            audit: Audit
+            access: Zugriffe
+        filters:
+            title: Filter
+            source: Log
+            level: Level
+            any_level: 'Alle Level'
+            search: Suche
+            window: Zeitraum
+            match: Treffer
+            audit_action: Audit-Aktion
+            per_page: Zeilen
+            limit: Limit
+            contains: Enthält
+            equals: 'Ist gleich'
+            all_entries: Alle
+            apply: 'Filter anwenden'
+            windows:
+                1h: 'Letzte Stunde'
+                24h: 'Letzte 24 Stunden'
+                7d: 'Letzte 7 Tage'
+                30d: 'Letzte 30 Tage'
+        entries:
+            title: Einträge
+            empty: 'Keine Log-Einträge entsprechen den aktuellen Filtern.'
+            no_files: 'Für diese Auswahl existiert noch keine Log-Datei.'
+            files: 'Gelesen wird: %files%'
+            open: Details
+            page_summary: 'Seite %page% von %pages% · %total% Einträge'
+            previous: Zurück
+            next: Weiter
+        columns:
+            timestamp: Zeitpunkt
+            level: Level
+            source: Quelle
+            file: Datei
+            message: Meldung
+            request: Request
+            http_status: HTTP
+            location: Ort
+            user: Nutzer
+            action: Aktion
+            channel: Channel
+            context: Kontext
+            details: Details
+        detail:
+            title: Log-Ereignis
+            context: Kontext
+            no_context: 'Es ist kein strukturierter Kontext verfügbar.'
+            raw: Rohzeile
+    statistics:
+        title: Statistiken
+        access_title: Zugriffsstatistiken
+        summary: '%count% Access-Log-Einträge sind in diesem anonymisierten Snapshot enthalten.'
+        window: Zeitraum
+        unique_visitors: 'Eindeutige Besucher'
+        status_families: Statusfamilien
+        top_routes: Top-Routen
+        top_not_found: 'Häufige 404-Routen'
+        top_countries: Top-Länder
+        top_browsers: Top-Browser
+        device_types: Gerätetypen
+        bot_requests: Bot-Aufrufe
+        do_not_track_requests: Do-Not-Track-Aufrufe
+        average_duration: Durchschnittsdauer
+        surfaces: Bereiche
+        languages: Sprachen
+        top_referrers: Top-Referrer
+        empty: 'Noch keine Daten verfügbar.'
+        disabled: 'Statistik-Aufzeichnung und Anzeige sind aktuell deaktiviert.'
+        windows:
+            1h: 'Letzte Stunde'
+            24h: 'Letzte 24 Stunden'
+            7d: 'Letzte 7 Tage'
+            30d: 'Letzte 30 Tage'
+            all: 'Alle gespeicherten Events'
     settings:
         title: Einstellungen
         redirect_title: Einstellungsbereiche
@@ -367,6 +455,10 @@ admin:
             title: Sicherheits-Einstellungen
             foundation_title: Sicherheits-Konfigurationsfundament
             foundation_text: 'Sicherheits-, Captcha-, Logging- und Missbrauchsschutz-Einstellungen docken hier an.'
+        statistics:
+            title: Statistik-Einstellungen
+            foundation_title: Statistik-Konfiguration
+            foundation_text: 'Aufzeichnung und Anzeige von Zugriffsstatistiken können unabhängig vom Raw-Access-Logging deaktiviert werden. Raw-Access-Logs bleiben für operative Sicherheit verfügbar und werden 30 Tage aufbewahrt.'
         packages:
             title: Paket-Einstellungen
             foundation_title: 'Pakete mit Einstellungen'
@@ -431,6 +523,14 @@ admin:
                 label: Captcha-Provider
             captcha_preview:
                 label: Captcha-Vorschau
+            audit_enabled:
+                label: 'Audit-Logging aktivieren'
+            audit_events:
+                label: Audit-Ereigniskategorien
+            statistics_enabled:
+                label: 'Zugriffsstatistiken aktivieren'
+            statistics_respect_dnt:
+                label: 'Do Not Track respektieren'
             package_update_interval:
                 label: Update-Check-Intervall
             package_auto_updates:
@@ -447,6 +547,13 @@ admin:
                 setup_warnings: Setup-Warnungen
             captcha:
                 none: 'Kein Captcha-Provider'
+            audit:
+                authentication: Authentifizierungsereignisse
+                backend_actions: Backend-Wartungsaktionen
+                operations: Operations-Wartungsaktionen
+                packages: Paket-Lifecycle-Aktionen
+                settings: Einstellungsänderungen
+                other: 'Weitere zukünftige Audit-Ereignisse'
             interval:
                 manual: Manuell
                 hourly: Stündlich
@@ -545,6 +652,11 @@ message:
     translation:
         aggregate_completed: 'Translation-Aggregation hat %files% Datei(en) für %locales% Locale(s) aus Core und %packages% aktiven Paket(en) zusammengeführt.'
         aggregate_failed: 'Translation-Aggregation konnte "%path%" nicht schreiben.'
+    statistics:
+        record_failed: 'Zugriffsstatistiken konnten den aktuellen Request nicht aufzeichnen.'
+        aggregate_failed: 'Zugriffsstatistik-Aggregation ist fehlgeschlagen.'
+        snapshot_store_failed: 'Speicherung des Zugriffsstatistik-Snapshots ist fehlgeschlagen.'
+        cleanup_failed: 'Aufbewahrungs-Cleanup der Zugriffsstatistiken ist fehlgeschlagen.'
     event:
         hook:
             invalid: 'Event-Hook "%event%" ist keine gültige öffentliche Hook-Definition.'
@@ -607,12 +719,17 @@ message:
         stale: 'Operation "%operation%" hat nicht rechtzeitig Fortschritt gemeldet und wurde als fehlgeschlagen markiert.'
         locked: 'Operation "%operation%" konnte nicht ausgeführt werden, weil bereits eine andere Live-Operation läuft.'
         action_required: 'Operation "%operation%" benötigt eine Bestätigung, bevor sie fortgesetzt werden kann.'
+        finished: 'Operation "%operation%" wurde abgeschlossen.'
+        requires_review: 'Operation "%operation%" benötigt eine Prüfung, bevor sie fortgesetzt werden kann.'
+        failed: 'Operation "%operation%" ist fehlgeschlagen.'
+        finished_unknown: 'Operation "%operation%" wurde mit unbekanntem Status abgeschlossen.'
     process:
         command_failed: 'Befehl "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
         command_completed: 'Befehl "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'
     access:
         granted: 'Zugriff für "%capability%" erlaubt.'
         denied: 'Zugriff für "%capability%" verweigert: erforderlich ist Level %required_level%; Actor hat Level %actor_level%.'
+        log_failed: 'Zugriffslogging für die aktuelle Response ist fehlgeschlagen.'
         level:
             invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
         group_identifier:

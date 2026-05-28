@@ -145,7 +145,22 @@ services:
             $environment: '%kernel.environment%'
 
     App\Core\Log\MessageLoggerInterface:
-        alias: App\Core\Log\FileMessageLogger
+        alias: App\Core\Log\MonologMessageLogger
+
+    App\Core\Log\AuditLoggerInterface:
+        alias: App\Core\Log\AuditLogger
+
+    App\Core\Log\AuditLogPolicyInterface:
+        alias: App\Core\Log\ConfigAuditLogPolicy
+
+    App\Core\Log\AccessLoggerInterface:
+        alias: App\Core\Log\AccessLogger
+
+    App\Core\Geo\GeoIpResolverInterface:
+        alias: App\Core\Geo\NullGeoIpResolver
+
+    App\Core\Log\OperationLoggerInterface:
+        alias: App\Core\Log\OperationLogger
 
     App\Core\Message\MessageReporterInterface:
         alias: App\Core\Message\MessageReporter
@@ -153,9 +168,36 @@ services:
     App\Core\Message\WorkflowResultMessageReporterInterface:
         alias: App\Core\Message\WorkflowResultMessageReporter
 
-    App\Core\Log\FileMessageLogger:
+    App\Core\Log\MonologMessageLogger:
         arguments:
-            $projectDir: '%kernel.project_dir%'
+            $logger: '@monolog.logger.studio_message'
+
+    App\Core\Log\AuditLogger:
+        arguments:
+            $logger: '@monolog.logger.studio_audit'
+
+    App\Core\Log\AccessLogger:
+        arguments:
+            $logger: '@monolog.logger.studio_access'
+
+    App\Core\Statistics\VisitorIdGenerator:
+        arguments:
+            $secret: '%kernel.secret%'
+
+    App\Core\Log\LogFileBrowser:
+        arguments:
+            $logDir: '%kernel.logs_dir%'
+            $environment: '%kernel.environment%'
+
+    App\Core\Statistics\AccessStatisticsRecorderInterface:
+        alias: App\Core\Statistics\DatabaseAccessStatisticsRecorder
+
+    App\Core\Statistics\AccessStatisticsStoreInterface:
+        alias: App\Core\Statistics\FileAccessStatisticsStore
+
+    App\Core\Statistics\FileAccessStatisticsStore:
+        arguments:
+            $statisticsDir: '%kernel.project_dir%/var/statistics'
             $environment: '%kernel.environment%'
 
     App\Core\Asset\AssetRebuildQueueFactory:
@@ -166,6 +208,7 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
+            $operationLogger: '@App\Core\Log\OperationLoggerInterface'
 
     App\Core\Operation\Live\LiveOperationQueueFactory:
         arguments:

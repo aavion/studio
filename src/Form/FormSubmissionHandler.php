@@ -43,6 +43,10 @@ final readonly class FormSubmissionHandler
             return [$this->booleanValue($raw), []];
         }
 
+        if (ConfigValueType::Json === $field->valueType() && FormInputType::MultiSelect === $field->inputType() && $this->isEmpty($raw)) {
+            return [[], []];
+        }
+
         if ($this->isEmpty($raw)) {
             if (true === ($validation['required'] ?? false)) {
                 return [$field->defaultValue(), ['admin.settings.form.errors.required']];

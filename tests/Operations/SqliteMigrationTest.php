@@ -32,6 +32,7 @@ final class SqliteMigrationTest extends TestCase
         self::assertContains('messenger_messages', $tables);
         self::assertContains('config_entry', $tables);
         self::assertContains('state_marker', $tables);
+        self::assertContains('access_statistic_event', $tables);
         self::assertContains('content_schema', $tables);
         self::assertContains('content_revision', $tables);
         self::assertContains('content_field_value', $tables);

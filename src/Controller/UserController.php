@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Core\Access\AccessActor;
+use App\Core\Log\AuditLoggerInterface;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
 use App\View\Http\HttpErrorRenderer;
@@ -13,6 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Throwable;
 
 final class UserController extends AbstractController
 {
@@ -20,6 +23,7 @@ final class UserController extends AbstractController
         private readonly HttpErrorRenderer $httpError,
         private readonly EntityManagerInterface $entityManager,
         private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly AuditLoggerInterface $auditLogger,
     ) {
     }
 
@@ -83,7 +87,13 @@ final class UserController extends AbstractController
             if ([] === $errors) {
                 $user->changePassword($this->passwordHasher->hashPassword($user, $newPassword));
                 $this->entityManager->flush();
+                $this->audit($user, 'auth.password_change_success', ['result_status' => 'success']);
                 $success = true;
+            } else {
+                $this->audit($user, 'auth.password_change_failed', [
+                    'result_status' => 'failed',
+                    'error_keys' => $errors,
+                ]);
             }
         }
 
@@ -130,5 +140,17 @@ final class UserController extends AbstractController
         $value = $request->request->get($name);
 
         return is_string($value) ? $value : '';
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function audit(UserAccount $user, string $action, array $context): void
+    {
+        try {
+            $this->auditLogger->log(AccessActor::fromUserAccount($user), $action, $context);
+        } catch (Throwable) {
+            return;
+        }
     }
 }

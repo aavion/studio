@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Core\Config\Settings;
 
 use App\Core\Config\ConfigValueType;
+use App\Core\Log\ConfigAuditLogPolicy;
+use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
 
@@ -56,6 +58,18 @@ final readonly class CoreSettingsRegistry
             new CoreSettingDefinition('security', 'security.captcha.enabled', 'admin.settings.fields.captcha_enabled.label', false, ConfigValueType::Boolean, sortOrder: 10),
             new CoreSettingDefinition('security', 'security.captcha.provider', 'admin.settings.fields.captcha_provider.label', 'none', ConfigValueType::String, FormInputType::Select, options: ['none' => 'admin.settings.options.captcha.none'], validation: ['required' => true], sortOrder: 20),
             new CoreSettingDefinition('security', 'security.captcha.preview', 'admin.settings.fields.captcha_preview.label', null, ConfigValueType::String, FormInputType::Captcha, metadata: ['persist' => false], sortOrder: 30),
+            new CoreSettingDefinition('security', ConfigAuditLogPolicy::ENABLED_KEY, 'admin.settings.fields.audit_enabled.label', true, ConfigValueType::Boolean, sortOrder: 40),
+            new CoreSettingDefinition('security', ConfigAuditLogPolicy::EVENTS_KEY, 'admin.settings.fields.audit_events.label', ConfigAuditLogPolicy::DEFAULT_CATEGORIES, ConfigValueType::Json, FormInputType::MultiSelect, options: [
+                ConfigAuditLogPolicy::CATEGORY_AUTHENTICATION => 'admin.settings.options.audit.authentication',
+                ConfigAuditLogPolicy::CATEGORY_BACKEND_ACTIONS => 'admin.settings.options.audit.backend_actions',
+                ConfigAuditLogPolicy::CATEGORY_OPERATIONS => 'admin.settings.options.audit.operations',
+                ConfigAuditLogPolicy::CATEGORY_PACKAGES => 'admin.settings.options.audit.packages',
+                ConfigAuditLogPolicy::CATEGORY_SETTINGS => 'admin.settings.options.audit.settings',
+                ConfigAuditLogPolicy::CATEGORY_OTHER => 'admin.settings.options.audit.other',
+            ], sortOrder: 50),
+
+            new CoreSettingDefinition('statistics', AccessStatisticsPolicy::ENABLED_KEY, 'admin.settings.fields.statistics_enabled.label', true, ConfigValueType::Boolean, sortOrder: 10),
+            new CoreSettingDefinition('statistics', AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'admin.settings.fields.statistics_respect_dnt.label', true, ConfigValueType::Boolean, sortOrder: 20),
 
             new CoreSettingDefinition('packages', 'packages.update_check_interval', 'admin.settings.fields.package_update_interval.label', 'daily', ConfigValueType::String, FormInputType::Select, options: [
                 'manual' => 'admin.settings.options.interval.manual',

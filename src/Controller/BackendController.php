@@ -12,6 +12,8 @@ use App\Backend\BackendViewDefinition;
 use App\Backend\PackageLifecycleAdmin;
 use App\Core\Access\AccessActor;
 use App\Core\Config\Settings\CoreSettingsFormHandler;
+use App\Core\Log\AuditLoggerInterface;
+use App\Core\Log\LogFileBrowser;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
@@ -21,6 +23,7 @@ use App\Core\Operation\Live\LiveOperationStarter;
 use App\Core\Package\Install\PackageZipInstaller;
 use App\Core\Output\JsonOutputRenderer;
 use App\Core\Package\Settings\PackageSettingsFormHandler;
+use App\Core\Statistics\AccessStatisticsSnapshotProvider;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\UserAccount;
 use App\Form\FormSubmissionResult;
@@ -35,6 +38,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Throwable;
 
 final class BackendController extends AbstractController
 {
@@ -48,6 +52,9 @@ final class BackendController extends AbstractController
         private readonly BackendActions $backendActions,
         private readonly PackageLifecycleAdmin $packageLifecycleAdmin,
         private readonly PackageZipInstaller $packageZipInstaller,
+        private readonly LogFileBrowser $logFileBrowser,
+        private readonly AccessStatisticsSnapshotProvider $accessStatisticsSnapshotProvider,
+        private readonly AuditLoggerInterface $auditLogger,
         private readonly LiveOperationRunStore $liveOperationRunStore,
         private readonly LiveOperationStarter $liveOperationStarter,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
@@ -125,6 +132,9 @@ final class BackendController extends AbstractController
             ],
             'Verify package ZIP',
         );
+        $this->auditResult('package.install_verify_started', $result, [
+            'operation' => LiveOperationQueueFactory::PACKAGE_INSTALL_VERIFY,
+        ]);
 
         if ('1' === $this->stringField($request, '_operation_live')) {
             return $this->liveOperationResponse($result);
@@ -211,6 +221,11 @@ final class BackendController extends AbstractController
             }
 
             $result = $this->packageLifecycleAdmin->apply($packageName, $action);
+            $this->auditResult('package.lifecycle.'.$action, $result, [
+                'package' => $packageName,
+                'action' => $action,
+                'mode' => 'sync',
+            ]);
             $this->flashResult($result);
 
             if ($result->isSuccess()) {
@@ -294,6 +309,29 @@ final class BackendController extends AbstractController
         return $this->redirectToRoute('backend_admin_operation_detail', ['operationId' => $operationId]);
     }
 
+    #[Route('/admin/logs/{entryId}', name: 'backend_admin_log_detail', requirements: ['entryId' => '[a-f0-9]{24}'], methods: ['GET'])]
+    public function logDetail(Request $request, string $entryId): Response
+    {
+        $access = $this->adminAccessResponse($request);
+
+        if (null !== $access) {
+            return $access;
+        }
+
+        $source = $request->query->get('source', 'message');
+        $entry = $this->logFileBrowser->entry(is_string($source) ? $source : 'message', $entryId);
+
+        if (null === $entry) {
+            return $this->httpError->notFound($request);
+        }
+
+        return $this->render('@backend/admin/log-detail.html.twig', [
+            'area' => BackendArea::Admin,
+            'navigation' => $this->navigation($request, BackendArea::Admin),
+            'log_entry' => $entry,
+        ]);
+    }
+
     #[Route('/admin/{path}', name: 'backend_admin_route', requirements: ['path' => '.+'], methods: ['GET', 'POST'])]
     public function adminRoute(Request $request, string $path): Response
     {
@@ -365,6 +403,15 @@ final class BackendController extends AbstractController
             $templateVariables += $this->operationVariables();
         }
 
+        if (BackendArea::Admin === $area && 'backend-admin-logs' === $view?->uid()) {
+            $templateVariables['log_view'] = $this->logFileBrowser->browse($request->query->all());
+        }
+
+        if (BackendArea::Admin === $area && 'backend-admin-statistics' === $view?->uid()) {
+            $templateVariables['access_statistics'] = $this->accessStatisticsSnapshotProvider->snapshot($request->query->get('statistics_window'));
+            $templateVariables['access_statistics_windows'] = $this->accessStatisticsSnapshotProvider->windows();
+        }
+
         return $this->render($result->template(), $templateVariables, new Response(status: $result->statusCode()));
     }
 
@@ -429,6 +476,8 @@ final class BackendController extends AbstractController
         $token = $this->stringField($request, '_csrf_token');
         $result = null;
         $expectedFormId = null;
+        $auditAction = null;
+        $auditContext = [];
 
         if ($this->isBackendActionRequest($request)) {
             return $this->handleBackendAction($request);
@@ -436,16 +485,22 @@ final class BackendController extends AbstractController
 
         if (isset($context['settings_section']) && is_string($context['settings_section'])) {
             $expectedFormId = 'admin-settings-'.$context['settings_section'];
+            $auditAction = 'settings.core.save';
+            $auditContext = ['section' => $context['settings_section']];
             $result = $this->validFormToken($expectedFormId, $formId, $token)
                 ? $this->coreSettingsFormHandler->submit($context['settings_section'], $request->request->all(), $this->actor()->userUid())
                 : $this->invalidCsrfResult($request);
         } elseif ('backend-admin-settings-packages' === $view->uid()) {
             $expectedFormId = 'admin-settings-packages';
+            $auditAction = 'settings.core.save';
+            $auditContext = ['section' => 'packages'];
             $result = $this->validFormToken($expectedFormId, $formId, $token)
                 ? $this->coreSettingsFormHandler->submit('packages', $request->request->all(), $this->actor()->userUid())
                 : $this->invalidCsrfResult($request);
         } elseif (isset($context['package_name']) && is_string($context['package_name'])) {
             $expectedFormId = 'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($context['package_name']));
+            $auditAction = 'settings.package.save';
+            $auditContext = ['package' => $context['package_name']];
             $result = $this->validFormToken($expectedFormId, $formId, $token)
                 ? $this->packageSettingsFormHandler->submit($context['package_name'], $request->request->all(), $this->actor()->userUid())
                 : $this->invalidCsrfResult($request);
@@ -461,6 +516,13 @@ final class BackendController extends AbstractController
         }
 
         if ($result->isValid()) {
+            if (is_string($auditAction)) {
+                $this->auditFormSubmission($auditAction, $result, [
+                    ...$auditContext,
+                    'route' => $request->getPathInfo(),
+                ]);
+            }
+
             $this->addFlash('success', 'admin.settings.form.saved');
 
             return $this->redirect($request->getPathInfo());
@@ -494,6 +556,10 @@ final class BackendController extends AbstractController
             ], ['action' => $action]);
 
         $this->flashResult($result);
+        $this->auditResult('backend.action.'.$action, $result, [
+            'action' => $action,
+            'mode' => 'sync',
+        ]);
 
         return $this->redirect($request->getPathInfo());
     }
@@ -509,6 +575,10 @@ final class BackendController extends AbstractController
                     context: ['action' => $action],
                 ),
             ], ['action' => $action]);
+        $this->auditResult('backend.action.'.$action, $result, [
+            'action' => $action,
+            'mode' => 'live',
+        ]);
 
         return $this->liveOperationResponse($result);
     }
@@ -521,8 +591,63 @@ final class BackendController extends AbstractController
             ['package' => $packageName, 'action' => $action, 'trigger' => 'admin_ui'],
             $label,
         );
+        $this->auditResult('package.lifecycle.'.$action, $result, [
+            'package' => $packageName,
+            'action' => $action,
+            'mode' => 'live',
+        ]);
 
         return $this->liveOperationResponse($result);
+    }
+
+    /**
+     * @param WorkflowResult<mixed> $result
+     * @param array<string, mixed> $context
+     */
+    private function auditResult(string $action, WorkflowResult $result, array $context = []): void
+    {
+        try {
+            $this->auditLogger->log($this->actor(), $action, [
+                ...$context,
+                'result_status' => $result->status()->value,
+            ]);
+        } catch (Throwable) {
+            return;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function auditFormSubmission(string $action, FormSubmissionResult $result, array $context = []): void
+    {
+        $settingKeys = array_keys($result->values());
+        sort($settingKeys);
+
+        try {
+            $this->auditLogger->log($this->actor(), $action, [
+                ...$context,
+                'result_status' => 'success',
+                'setting_keys' => $settingKeys,
+            ]);
+        } catch (Throwable) {
+            return;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function auditOperationMaintenance(string $action, array $context = []): void
+    {
+        try {
+            $this->auditLogger->log($this->actor(), $action, [
+                ...$context,
+                'result_status' => 'success',
+            ]);
+        } catch (Throwable) {
+            return;
+        }
     }
 
     /**
@@ -560,6 +685,10 @@ final class BackendController extends AbstractController
 
         if ('cleanup' === $action) {
             $result = $this->liveOperationRunStore->cleanup(3600);
+            $this->auditOperationMaintenance('operations.cleanup', [
+                'removed' => $result['removed'],
+                'ttl_seconds' => 3600,
+            ]);
             $this->addFlash('success', [
                 'translation_key' => 'admin.operations.actions.cleanup_completed',
                 'parameters' => ['%removed%' => $result['removed']],
@@ -569,6 +698,9 @@ final class BackendController extends AbstractController
         }
 
         if ('clear_stale_lock' === $action && $this->liveOperationRunStore->clearRunnerLock(staleOnly: true, ttlSeconds: 3600)) {
+            $this->auditOperationMaintenance('operations.clear_stale_lock', [
+                'ttl_seconds' => 3600,
+            ]);
             $this->addFlash('success', 'admin.operations.actions.stale_lock_cleared');
 
             return $this->redirect($request->getPathInfo());
@@ -576,6 +708,13 @@ final class BackendController extends AbstractController
 
         if ('kill_stale_runner' === $action) {
             $result = $this->liveOperationRunStore->killStaleRunner(3600);
+            $this->auditOperationMaintenance('operations.kill_stale_runner', [
+                'killed' => $result['killed'],
+                'lock_cleared' => $result['lock_cleared'],
+                'reason' => $result['reason'],
+                'pid' => $result['pid'] ?? null,
+                'ttl_seconds' => 3600,
+            ]);
             $this->addFlash($result['killed'] || $result['lock_cleared'] ? 'success' : 'warning', [
                 'translation_key' => 'admin.operations.actions.kill_'.$result['reason'],
                 'parameters' => ['%pid%' => (string) ($result['pid'] ?? '')],
@@ -584,6 +723,9 @@ final class BackendController extends AbstractController
             return $this->redirect($request->getPathInfo());
         }
 
+        $this->auditOperationMaintenance('operations.noop', [
+            'requested_action' => $action,
+        ]);
         $this->addFlash('warning', 'admin.operations.actions.noop');
 
         return $this->redirect($request->getPathInfo());

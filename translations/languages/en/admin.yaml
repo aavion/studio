@@ -15,6 +15,7 @@ admin:
     backups: 'Backups'
     operations: 'Operations'
     logs: 'Logs'
+    statistics: 'Statistics'
     settings: 'Settings'
     general_settings: 'General'
     dashboard_settings: 'Dashboard'
@@ -22,6 +23,7 @@ admin:
     mail_settings: 'Mail'
     security_settings: 'Security'
     package_settings: 'Packages'
+    statistics_settings: 'Statistics'
     scheduler_settings: 'Scheduler'
   actions:
     package_discovery:
@@ -211,6 +213,86 @@ admin:
     title: 'Logs'
     foundation_title: 'Log and audit foundation'
     foundation_text: 'Operational logs, audit views, package diagnostics, and security-relevant events will attach here.'
+    empty_value: 'n/a'
+    sources:
+      application: 'Application'
+      message: 'Messages'
+      audit: 'Audit'
+      access: 'Access'
+    filters:
+      title: 'Filters'
+      source: 'Log'
+      level: 'Level'
+      any_level: 'Any level'
+      search: 'Search'
+      window: 'Time window'
+      match: 'Match'
+      audit_action: 'Audit action'
+      per_page: 'Rows'
+      limit: 'Limit'
+      contains: 'Contains'
+      equals: 'Equals'
+      all_entries: 'All'
+      apply: 'Apply filters'
+      windows:
+        1h: 'Last hour'
+        24h: 'Last 24 hours'
+        7d: 'Last 7 days'
+        30d: 'Last 30 days'
+    entries:
+      title: 'Entries'
+      empty: 'No log entries match the current filters.'
+      no_files: 'No log file exists for this selection yet.'
+      files: 'Reading: %files%'
+      open: 'Details'
+      page_summary: 'Page %page% of %pages% · %total% entries'
+      previous: 'Previous'
+      next: 'Next'
+    columns:
+      timestamp: 'Timestamp'
+      level: 'Level'
+      source: 'Source'
+      file: 'File'
+      message: 'Message'
+      request: 'Request'
+      http_status: 'HTTP'
+      location: 'Location'
+      user: 'User'
+      action: 'Action'
+      channel: 'Channel'
+      context: 'Context'
+      details: 'Details'
+    detail:
+      title: 'Log event'
+      context: 'Context'
+      no_context: 'No structured context is available.'
+      raw: 'Raw line'
+  statistics:
+    title: 'Statistics'
+    access_title: 'Access statistics'
+    summary: '%count% access-log entries are included in this anonymized snapshot.'
+    window: 'Time window'
+    unique_visitors: 'Unique visitors'
+    status_families: 'Status families'
+    top_routes: 'Top routes'
+    top_not_found: 'Frequent 404 routes'
+    top_countries: 'Top countries'
+    top_browsers: 'Top browsers'
+    device_types: 'Device types'
+    bot_requests: 'Bot requests'
+    do_not_track_requests: 'Do Not Track requests'
+    average_duration: 'Average duration'
+    surfaces: 'Surfaces'
+    languages: 'Languages'
+    top_referrers: 'Top referrers'
+    empty: 'No data available yet.'
+    disabled: 'Statistics recording and display are currently disabled.'
+    windows:
+      1h: 'Last hour'
+      24h: 'Last 24 hours'
+      7d: 'Last 7 days'
+      30d: 'Last 30 days'
+      all: 'All stored events'
   settings:
     title: 'Settings'
     redirect_title: 'Settings sections'
@@ -235,6 +317,10 @@ admin:
       title: 'Security settings'
       foundation_title: 'Security configuration foundation'
       foundation_text: 'Security, captcha, logging, and abuse-control settings will attach here.'
+    statistics:
+      title: 'Statistics settings'
+      foundation_title: 'Statistics configuration'
+      foundation_text: 'Access statistics recording and display can be disabled independently from raw access logging. Raw access logs remain available for operational security and are retained for 30 days.'
     packages:
       title: 'Package settings'
       foundation_title: 'Packages with settings'
@@ -299,6 +385,14 @@ admin:
         label: 'Captcha provider'
       captcha_preview:
         label: 'Captcha preview'
+      audit_enabled:
+        label: 'Enable audit logging'
+      audit_events:
+        label: 'Audit event categories'
+      statistics_enabled:
+        label: 'Enable access statistics'
+      statistics_respect_dnt:
+        label: 'Respect Do Not Track'
       package_update_interval:
         label: 'Update check interval'
       package_auto_updates:
@@ -315,6 +409,13 @@ admin:
         setup_warnings: 'Setup warnings'
       captcha:
         none: 'No captcha provider'
+      audit:
+        authentication: 'Authentication events'
+        backend_actions: 'Backend maintenance actions'
+        operations: 'Operations maintenance actions'
+        packages: 'Package lifecycle actions'
+        settings: 'Settings changes'
+        other: 'Other future audit events'
       interval:
         manual: 'Manual'
         hourly: 'Hourly'

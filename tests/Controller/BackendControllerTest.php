@@ -8,6 +8,7 @@ use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
@@ -191,6 +192,7 @@ final class BackendControllerTest extends WebTestCase
 
     public function testAdminRegisteredBackendViewRouteRendersThroughRegistry(): void
     {
+        $manifest = $this->rootManifest();
         $client = self::createClient();
         $client->loginUser($this->createUserWithLevel(8));
         $client->request('GET', '/admin/packages');
@@ -206,8 +208,8 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorNotExists('.studio-page-actions form input[name="_backend_action"][value="cache_clear"]');
         self::assertSelectorExists('.studio-backend-nav .is-collapsed a[href="/admin/settings"][aria-expanded="false"]');
         self::assertSelectorNotExists('.studio-backend-nav a[href="/admin/settings/general"]');
-        self::assertSelectorTextContains('.studio-table', 'aavion Studio');
-        self::assertSelectorTextContains('.studio-table', '0.1.0');
+        self::assertSelectorTextContains('.studio-table', $manifest['APP_NAME']);
+        self::assertSelectorTextContains('.studio-table', $manifest['APP_VERSION']);
         self::assertSelectorTextContains('.studio-table', 'Active');
         self::assertSelectorTextContains('.studio-table', 'System template');
         self::assertSelectorExists('.studio-table tr.is-immutable[data-package-name="system"][data-immutable="true"]');
@@ -222,15 +224,15 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="asset_rebuild"]');
         self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="cache_clear"]');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'Frontend themes');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'aavion Studio');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', '0.1.0');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', $manifest['APP_NAME']);
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', $manifest['APP_VERSION']);
         self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] a[href="/admin/packages/system"]');
         self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card.is-immutable[data-package-name="system"][data-theme-status="active"]');
         self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-preview');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card[data-package-name="system"]', 'Active');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', 'Backend themes');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', 'aavion Studio');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', '0.1.0');
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', $manifest['APP_NAME']);
+        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', $manifest['APP_VERSION']);
         self::assertSelectorExists('.studio-theme-overview[data-theme-section="backend"] a[href="/admin/packages/system"]');
         self::assertSelectorExists('.studio-theme-overview[data-theme-section="backend"] .studio-theme-card.is-immutable[data-package-name="system"][data-theme-status="active"]');
 
@@ -276,6 +278,7 @@ final class BackendControllerTest extends WebTestCase
             '/admin/backups' => 'Backup and restore',
             '/admin/operations' => 'Operations',
             '/admin/logs' => 'Logs',
+            '/admin/statistics' => 'Statistics',
         ] as $path => $title) {
             $client->request('GET', $path);
 
@@ -312,6 +315,29 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
+    public function testAdminOperationsCleanupWritesAuditEntry(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
+        $crawler = $client->request('GET', '/admin/operations');
+        $form = $crawler->selectButton('Clean up expired operations')->form();
+
+        $client->submit($form);
+
+        self::assertResponseRedirects('/admin/operations');
+
+        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+        self::assertStringContainsString('operations.cleanup', $auditLog);
+        self::assertStringContainsString('"ttl_seconds":3600', $auditLog);
+        self::assertStringContainsString('"result_status":"success"', $auditLog);
+    }
+
     public function testAdminOperationDetailShowsRetainedActionLogEntries(): void
     {
         $client = self::createClient();
@@ -339,6 +365,80 @@ final class BackendControllerTest extends WebTestCase
             @unlink(dirname($store->outputPath($run['operation_id'])).'/'.$run['operation_id'].'.json');
             @unlink($store->outputPath($run['operation_id']));
             @unlink($store->pidPath($run['operation_id']));
+        }
+    }
+
+    public function testAdminLogsViewReadsSelectedLogSource(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+        $logFile = $logDir.'/test.studio-access-2099-01-01.log';
+
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0775, true);
+        }
+        foreach (glob($logDir.'/test.studio-access-*.log') ?: [] as $existingLogFile) {
+            @unlink($existingLogFile);
+        }
+        file_put_contents($logFile, '[2099-01-01T10:00:00.000000+00:00] studio_access.INFO: access.request {"method":"GET","path":"/admin/logs","route":"backend_admin_route","http_status":200,"ip":"127.0.0.1","city":"n/a","state":"n/a","country":"n/a","continent":"n/a"} []'.PHP_EOL);
+        $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
+        $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);
+        $connection->insert('access_statistic_event', [
+            'uid' => '99999999-0000-0000-0000-000000000901',
+            'occurred_at' => '2099-01-01 10:00:00',
+            'request_id' => 'request-admin-logs',
+            'visitor_id' => hash('sha256', 'test-visitor'),
+            'method' => 'GET',
+            'path' => '/admin/logs',
+            'requested_path' => '/admin/logs',
+            'route' => 'backend_admin_route',
+            'resolved_route' => 'backend_admin_route',
+            'surface' => 'admin',
+            'http_status' => 200,
+            'duration_ms' => 12,
+            'browser_family' => 'firefox',
+            'device_type' => 'desktop',
+            'is_bot' => false,
+            'do_not_track' => false,
+            'referrer_host' => 'n/a',
+            'preferred_language' => 'en-us',
+            'request_content_type' => 'n/a',
+            'response_content_type' => 'text/html',
+            'response_size' => 100,
+            'city' => 'n/a',
+            'state' => 'n/a',
+            'country' => 'n/a',
+            'continent' => 'n/a',
+            'metadata' => '{}',
+        ]);
+
+        try {
+            $client->request('GET', '/admin/logs?source=access&q=/admin/logs');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Logs');
+            self::assertSelectorTextContains('.studio-log-table', 'GET /admin/logs');
+            self::assertSelectorTextContains('.studio-log-table', 'Details');
+
+            $client->clickLink('Details');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Log event');
+            self::assertSelectorTextContains('body', '127.0.0.1');
+            self::assertSelectorTextContains('.studio-code-block', 'access.request');
+
+            $client->request('GET', '/admin/statistics?statistics_window=all');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Statistics');
+            self::assertSelectorTextContains('body', 'Access statistics');
+            self::assertSelectorTextContains('body', 'access-log entries are included');
+            self::assertSelectorTextContains('body', 'Unique visitors');
+            self::assertSelectorTextContains('body', 'Top browsers');
+        } finally {
+            @unlink($logFile);
+            $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);
         }
     }
 
@@ -381,9 +481,13 @@ final class BackendControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $demoPackages = ['demo-module', 'demo-frontend-theme', 'demo-captcha-provider'];
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
         foreach ($demoPackages as $packageName) {
             $this->removePackageByName($packageName);
+        }
+        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
         }
 
         try {
@@ -409,6 +513,9 @@ final class BackendControllerTest extends WebTestCase
                 ExtensionPackage::class,
                 $entityManager->getRepository(ExtensionPackage::class)->findOneBy(['packageName' => 'demo-module']),
             );
+            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+            self::assertStringContainsString('backend.action.package_discovery', $auditLog);
+            self::assertStringContainsString('"result_status":"success"', $auditLog);
         } finally {
             foreach ($demoPackages as $packageName) {
                 $this->removePackageByName($packageName);
@@ -667,6 +774,8 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Security settings');
         self::assertSelectorExists('form#admin-settings-security');
         self::assertSelectorExists('select[name="security.captcha.provider"]');
+        self::assertSelectorExists(sprintf('input[name="%s"]', ConfigAuditLogPolicy::ENABLED_KEY));
+        self::assertSelectorExists(sprintf('input[name="%s[]"]', ConfigAuditLogPolicy::EVENTS_KEY));
     }
 
     public function testAdminSettingsFormsPersistCoreSettings(): void
@@ -674,6 +783,11 @@ final class BackendControllerTest extends WebTestCase
         $client = self::createClient();
         $client->loginUser($this->createUserWithLevel(8));
         $config = self::getContainer()->get(Config::class);
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
 
         try {
             $crawler = $client->request('GET', '/admin/settings/general');
@@ -690,6 +804,13 @@ final class BackendControllerTest extends WebTestCase
             self::assertSame('Saved Admin Title', $config->get('site.title'));
             self::assertSame('https://example.test', $config->get('site.url'));
             self::assertSame('/saved-home', $config->get('content.home_path'));
+
+            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+            self::assertStringContainsString('settings.core.save', $auditLog);
+            self::assertStringContainsString('"section":"general"', $auditLog);
+            self::assertStringContainsString('"setting_keys":["content.home_path","localization.default_language","localization.route_prefixes_enabled","site.title","site.url"]', $auditLog);
+            self::assertStringNotContainsString('Saved Admin Title', $auditLog);
+            self::assertStringNotContainsString('https://example.test', $auditLog);
 
             $client->followRedirect();
 
@@ -812,6 +933,26 @@ final class BackendControllerTest extends WebTestCase
 
         $entityManager->remove($package);
         $entityManager->flush();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function rootManifest(): array
+    {
+        $manifest = [];
+        $lines = file(dirname(__DIR__, 2).'/.manifest', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+
+        foreach ($lines as $line) {
+            if (str_starts_with(trim($line), '#') || !str_contains($line, '=')) {
+                continue;
+            }
+
+            [$key, $value] = explode('=', $line, 2);
+            $manifest[trim($key)] = trim($value);
+        }
+
+        return $manifest;
     }
 
     private function restoreSetupMarker(mixed $serverValue, mixed $envValue, mixed $putenvValue): void

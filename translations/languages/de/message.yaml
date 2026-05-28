@@ -79,6 +79,11 @@ message:
   translation:
     aggregate_completed: 'Translation-Aggregation hat %files% Datei(en) für %locales% Locale(s) aus Core und %packages% aktiven Paket(en) zusammengeführt.'
     aggregate_failed: 'Translation-Aggregation konnte "%path%" nicht schreiben.'
+  statistics:
+    record_failed: 'Zugriffsstatistiken konnten den aktuellen Request nicht aufzeichnen.'
+    aggregate_failed: 'Zugriffsstatistik-Aggregation ist fehlgeschlagen.'
+    snapshot_store_failed: 'Speicherung des Zugriffsstatistik-Snapshots ist fehlgeschlagen.'
+    cleanup_failed: 'Aufbewahrungs-Cleanup der Zugriffsstatistiken ist fehlgeschlagen.'
   event:
     hook:
       invalid: 'Event-Hook "%event%" ist keine gültige öffentliche Hook-Definition.'
@@ -141,12 +146,17 @@ message:
     stale: 'Operation "%operation%" hat nicht rechtzeitig Fortschritt gemeldet und wurde als fehlgeschlagen markiert.'
     locked: 'Operation "%operation%" konnte nicht ausgeführt werden, weil bereits eine andere Live-Operation läuft.'
     action_required: 'Operation "%operation%" benötigt eine Bestätigung, bevor sie fortgesetzt werden kann.'
+    finished: 'Operation "%operation%" wurde abgeschlossen.'
+    requires_review: 'Operation "%operation%" benötigt eine Prüfung, bevor sie fortgesetzt werden kann.'
+    failed: 'Operation "%operation%" ist fehlgeschlagen.'
+    finished_unknown: 'Operation "%operation%" wurde mit unbekanntem Status abgeschlossen.'
   process:
     command_failed: 'Befehl "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
     command_completed: 'Befehl "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'
   access:
     granted: 'Zugriff für "%capability%" erlaubt.'
     denied: 'Zugriff für "%capability%" verweigert: erforderlich ist Level %required_level%; Actor hat Level %actor_level%.'
+    log_failed: 'Zugriffslogging für die aktuelle Response ist fehlgeschlagen.'
     level:
       invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
     group_identifier:

@@ -1,7 +1,7 @@
 # Action log and audit snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-25  
+> **Updated**: 2026-05-27  
 > **Owner**: Core  
 > **Purpose:** Capture action-log, audit, and operational event notes before persistence and UI are implemented.  
 
@@ -13,20 +13,19 @@ The ActionLog model is a live operation overlay first. It should be able to disp
 
 The future logger should start with an explicit recorder/service boundary. A generic operation-message event can be reconsidered after the logger exists, but it should not be the first logging design.
 
-Current debugging baseline: callers that want to emit a single feedback item should use `MessageReporterInterface`: create a `Message`, report it, and receive the same structured message back for UI/API output. Operation boundaries should use `WorkflowResultMessageReporterInterface` before returning a `WorkflowResult`. That bridge lives in the message layer, extracts messages from workflow results and action-log payloads, logs through `MessageReporterInterface`, and returns the same result unchanged. `OperationExecutor` uses the bridge for action results; direct package lifecycle, setup, discovery, asset rebuild dispatch, PHP-loader, and public-hook failure boundaries use the same bridge instead of being forced through an `ActionQueue`.
+Current logging baseline: callers that want to emit a single feedback item should use `MessageReporterInterface`: create a `Message`, report it, and receive the same structured message back for UI/API output. Operation boundaries should use `WorkflowResultMessageReporterInterface` before returning a `WorkflowResult`. That bridge lives in the message layer, extracts messages from workflow results and action-log payloads, logs through `MessageReporterInterface`, and returns the same result unchanged. `OperationExecutor` uses the bridge for action results; direct package lifecycle, setup, discovery, asset rebuild dispatch, PHP-loader, and public-hook failure boundaries use the same bridge instead of being forced through an `ActionQueue`.
 
-The default service implementation, `FileMessageLogger`, appends messages to `var/log/{APP_ENV}/operations.log`. It writes translation keys only, not localized copy, and stores one compact JSON context line after each message line. The file logger is intentionally a minimal stub for development diagnostics; the later logging feature may replace the service behind the same interface.
+`MessageLoggerInterface` is backed by Monolog through the `studio_message` channel. It writes translation keys as the log message, keeps structured message metadata in Monolog context, maps message levels to PSR log levels, and redacts sensitive context values before logging. Log-write failures are swallowed so reporting an issue cannot break the original recovery path. The channel uses a 30-day rotating file handler.
 
 Log entry shape:
 
 ```text
-[timestamp] [LEVEL] message.translation.key
-{"kind":"message","code":"package.discovery_completed","parameters":{},"message_context":{},"result_status":"success","result_context":{},"operation_context":{}}
+[timestamp] studio_message.LEVEL: message.translation.key {"kind":"message","code":"package.discovery_completed","parameters":{},"message_context":{},"result_status":"success","result_context":{},"operation_context":{}} []
 ```
 
 Sensitive context values such as passwords, secrets, tokens, cookies, authorization headers, HMAC values, encrypted keys, API keys, and private keys must be redacted before writing the file log.
 
-Duplicate suppression has two narrow guards. The reporter records a given `WorkflowResult` object only once, so an inner action and an outer executor cannot write the exact same result twice. The file logger also suppresses identical message signatures for the current process lifetime while keeping different contexts distinct. Repeated messages with different operation context are preserved because they may represent separate attempts or retries.
+Duplicate suppression has two narrow guards. The reporter records a given `WorkflowResult` object only once, so an inner action and an outer executor cannot write the exact same result twice. The message logger also suppresses identical message signatures for the current process lifetime while keeping different contexts distinct. Repeated messages with different operation context are preserved because they may represent separate attempts or retries.
 
 ## Action log candidates
 
@@ -79,10 +78,29 @@ Keep audit records for:
 - role/ACL updates;
 - destructive operations;
 - package activation or removal;
+- package ZIP verification or installation starts;
+- admin maintenance actions such as discovery, rebuild, and cache clearing;
+- Operations maintenance actions such as cleanup, stale-lock clearing, and stale-runner emergency handling;
 - backup and restore actions;
 - configuration changes.
 
-Access logs, audit logs, security logs, and operational action logs may share message levels or rendering helpers, but they should remain separate storage and retention concerns.
+Built-in settings audit entries record only the actor, route, settings section or package name, result status, and changed setting keys. Submitted values are intentionally omitted.
+
+Audit logging can be controlled from Security settings. The production default keeps the master switch enabled and records authentication, backend maintenance, Operations maintenance, package lifecycle, settings, and unknown future audit categories. Unknown categories stay enabled by default so newly introduced audit calls do not silently disappear before administrators review them.
+
+Access logs, audit logs, security logs, and operational action logs may share message levels or rendering helpers, but they should remain separate storage and retention concerns. The first built-in file channels are `studio_message`, `studio_audit`, and `studio_access`, each configured as file-based Monolog channels with 30-day retention.
+
+Live-operation terminal summaries are written into the message channel with `message.operation.*` keys. These entries keep operation id, operation name, result status, timing, step/message/issue counts, and whether a continuation is available. They intentionally omit live-operation payloads, polling tokens, and raw runner output; those stay transient transport/debug artifacts. The Admin Logs view can filter them from the Messages source by operation context or message key, so a separate operations log channel is not needed for now.
+
+## Access logs and statistics
+
+Raw access logging and access statistics are separate product surfaces. `studio_access` keeps operational request traces for security and diagnostics, including IP address, proxy hints, user-agent, request id, visitor id, requested path, resolved route, status, duration, content metadata, and GeoIP placeholders. Known token-bearing query values, request path segments, and referrer path segments are redacted before logs, trace data, or statistics rows are written. The Monolog rotating handler keeps at most 30 daily files and should remain enabled because future rate-limit and suspicious-traffic features depend on this short-lived operational trail.
+
+Access statistics write a parallel database row per request with anonymized or coarse fields only. The statistics model keeps request id, visitor id, route/status/timing facts, browser family, device type, bot flag, referrer host, preferred language, response metadata, and normalized GeoIP fields, but does not store raw IP addresses or raw user-agents. Current statistics are aggregated on demand when the Admin Statistics page is opened; scheduled caching can be added later if needed.
+
+Statistics recording, display, and aggregation can be disabled independently from raw access logging through Statistics settings. When disabled, the database recorder skips new rows and Admin Statistics reports the disabled state; raw `studio_access` logging continues for operational security. The first policy setting also respects `DNT: 1` by default for statistics recording only; when DNT is not respected, the request flag is stored and shown in aggregate output. Granular statistic events older than three months are deleted during recording. Long-term compaction beyond that cutoff is intentionally deferred until the final statistic dimensions are known; premature per-field compaction would add complexity before the reporting surface is stable.
+
+Aggregation, recording, and snapshot-store failures should be reported through the message layer so they are visible in `studio_message` without blocking the user request.
 
 ## References
 

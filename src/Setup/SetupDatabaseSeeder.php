@@ -7,9 +7,11 @@ namespace App\Setup;
 use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateSubjectType;
 use Doctrine\DBAL\Connection;
@@ -37,6 +39,10 @@ final readonly class SetupDatabaseSeeder
             ['user.menu.enabled', true, ConfigValueType::Boolean],
             ['user.menu.sort_order', 900, ConfigValueType::Integer],
             ['user.registration.enabled', false, ConfigValueType::Boolean],
+            [ConfigAuditLogPolicy::ENABLED_KEY, true, ConfigValueType::Boolean],
+            [ConfigAuditLogPolicy::EVENTS_KEY, ConfigAuditLogPolicy::DEFAULT_CATEGORIES, ConfigValueType::Json],
+            [AccessStatisticsPolicy::ENABLED_KEY, true, ConfigValueType::Boolean],
+            [AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, true, ConfigValueType::Boolean],
         ];
 
         foreach ($settings as [$key, $value, $type]) {

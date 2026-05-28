@@ -9,7 +9,7 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\Migrations\AbstractMigration;
 
-final class Version20260523210000 extends AbstractMigration
+final class Version20260527120000 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -64,6 +64,51 @@ final class Version20260523210000 extends AbstractMigration
         $stateMarker->addIndex(['subject_type', 'marker_key', 'marker_at'], 'idx_state_marker_lookup');
         $stateMarker->addIndex(['marker_key', 'marker_at'], 'idx_state_marker_key_at');
         $stateMarker->addIndex(['subject_type', 'marker_by'], 'idx_state_marker_by');
+
+        $accessStatistic = $schema->createTable('access_statistic_event');
+        $accessStatistic->addColumn('uid', 'string', ['length' => 36]);
+        $accessStatistic->addColumn('occurred_at', 'datetime_immutable');
+        $accessStatistic->addColumn('request_id', 'string', ['length' => 64]);
+        $accessStatistic->addColumn('visitor_id', 'string', ['length' => 64]);
+        $accessStatistic->addColumn('method', 'string', ['length' => 16]);
+        $accessStatistic->addColumn('path', 'string', ['length' => 1024]);
+        $accessStatistic->addColumn('requested_path', 'string', ['length' => 1024]);
+        $accessStatistic->addColumn('route', 'string', ['length' => 190]);
+        $accessStatistic->addColumn('resolved_route', 'string', ['length' => 190]);
+        $accessStatistic->addColumn('surface', 'string', ['length' => 40]);
+        $accessStatistic->addColumn('http_status', 'integer');
+        $accessStatistic->addColumn('duration_ms', 'integer', ['notnull' => false]);
+        $accessStatistic->addColumn('browser_family', 'string', ['length' => 40]);
+        $accessStatistic->addColumn('device_type', 'string', ['length' => 40]);
+        $accessStatistic->addColumn('is_bot', 'boolean');
+        $accessStatistic->addColumn('do_not_track', 'boolean');
+        $accessStatistic->addColumn('referrer_host', 'string', ['length' => 255]);
+        $accessStatistic->addColumn('preferred_language', 'string', ['length' => 20]);
+        $accessStatistic->addColumn('request_content_type', 'string', ['length' => 120]);
+        $accessStatistic->addColumn('response_content_type', 'string', ['length' => 120]);
+        $accessStatistic->addColumn('response_size', 'integer', ['notnull' => false]);
+        $accessStatistic->addColumn('city', 'string', ['length' => 80]);
+        $accessStatistic->addColumn('state', 'string', ['length' => 80]);
+        $accessStatistic->addColumn('country', 'string', ['length' => 80]);
+        $accessStatistic->addColumn('continent', 'string', ['length' => 80]);
+        $accessStatistic->addColumn('metadata', 'json');
+        $this->addPrimaryKey($accessStatistic, 'uid');
+        $accessStatistic->addIndex(['request_id'], 'idx_access_statistic_request_id');
+        $accessStatistic->addIndex(['occurred_at'], 'idx_access_statistic_occurred_at');
+        $accessStatistic->addIndex(['visitor_id', 'occurred_at'], 'idx_access_statistic_visitor_at');
+        $accessStatistic->addIndex(['route', 'occurred_at'], 'idx_access_statistic_route_at');
+        $accessStatistic->addIndex(['resolved_route', 'occurred_at'], 'idx_access_statistic_resolved_at');
+        $accessStatistic->addIndex(['surface', 'occurred_at'], 'idx_access_statistic_surface_at');
+        $accessStatistic->addIndex(['http_status', 'occurred_at'], 'idx_access_statistic_status_at');
+        $accessStatistic->addIndex(['method', 'occurred_at'], 'idx_access_statistic_method_at');
+        $accessStatistic->addIndex(['browser_family', 'occurred_at'], 'idx_access_statistic_browser_at');
+        $accessStatistic->addIndex(['device_type', 'occurred_at'], 'idx_access_statistic_device_at');
+        $accessStatistic->addIndex(['is_bot', 'occurred_at'], 'idx_access_statistic_bot_at');
+        $accessStatistic->addIndex(['do_not_track', 'occurred_at'], 'idx_access_statistic_dnt_at');
+        $accessStatistic->addIndex(['referrer_host', 'occurred_at'], 'idx_access_statistic_referrer_at');
+        $accessStatistic->addIndex(['preferred_language', 'occurred_at'], 'idx_access_statistic_language_at');
+        $accessStatistic->addIndex(['country', 'occurred_at'], 'idx_access_statistic_country_at');
+        $accessStatistic->addIndex(['continent', 'occurred_at'], 'idx_access_statistic_continent_at');
 
         $aclGroup = $schema->createTable('acl_group');
         $aclGroup->addColumn('uid', 'string', ['length' => 36]);
@@ -280,6 +325,7 @@ final class Version20260523210000 extends AbstractMigration
         $schema->dropTable('acl_group');
         $schema->dropTable('package_setting_entry');
         $schema->dropTable('config_entry');
+        $schema->dropTable('access_statistic_event');
         $schema->dropTable('state_marker');
         $schema->dropTable('messenger_messages');
     }

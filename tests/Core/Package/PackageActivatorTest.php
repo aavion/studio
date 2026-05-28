@@ -144,7 +144,10 @@ final class PackageActivatorTest extends KernelTestCase
 
     public function testItTreatsSystemAsSatisfiedVirtualDependency(): void
     {
-        $this->insertPackage('demo-module', ['module'], 'inactive', '[["system", "0.1.0"]]');
+        $systemVersion = (new SystemPackageMetadataProvider(dirname(__DIR__, 3)))->metadata()['version'];
+        self::assertIsString($systemVersion);
+
+        $this->insertPackage('demo-module', ['module'], 'inactive', sprintf('[["system", "%s"]]', $systemVersion));
 
         $result = $this->activatorWithSystemDependencySupport()->planActivation('demo-module');
 
@@ -152,8 +155,8 @@ final class PackageActivatorTest extends KernelTestCase
         self::assertSame(['demo-module'], $result->value()['activate']);
         self::assertSame([[
             'package' => 'system',
-            'required_min_version' => '0.1.0',
-            'installed_version' => '0.1.0',
+            'required_min_version' => $systemVersion,
+            'installed_version' => $systemVersion,
             'status' => 'active',
             'required_by' => 'demo-module',
         ]], $result->value()['dependencies']);

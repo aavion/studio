@@ -1,8 +1,8 @@
 # aavion.studio
 
-> **Version**: 0.0.0-dev  
+> **Version**: 0.2.0-dev  
 > **Status**: Active development  
-> **Updated**: 2026-05-24  
+> **Updated**: 2026-05-27  
 > **Owner**: Dominik Letica  
 > **Purpose:** Symfony 8 based content-management system for structured project websites.  
 

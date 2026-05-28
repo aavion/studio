@@ -18,6 +18,10 @@ final class PublicContentErrorPageTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(404);
         self::assertSelectorTextContains('h1', 'Page not found');
+        self::assertSelectorTextContains('.studio-error-reference', 'Request ID');
+        self::assertSelectorTextContains('.studio-error-reference', 'Visitor ID');
+        self::assertSelectorTextContains('.studio-error-reference', 'Requested path');
+        self::assertSelectorTextContains('.studio-error-reference', 'Resolved route');
     }
 
     public function testItRendersSystemErrorContentBeforeTemplateFallback(): void

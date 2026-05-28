@@ -1,0 +1,52 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.logs.detail.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.logs.title'|trans,
+        title: 'admin.logs.detail.title'|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ log_entry.summary|default(log_entry.message|default('admin.logs.detail.title'|trans)) }}</h2>
+        <table class="studio-field-table">
+            <tbody>
+                <tr><th>{{ 'admin.logs.columns.timestamp'|trans }}</th><td>{{ log_entry.timestamp|default('admin.logs.empty_value'|trans) }}</td></tr>
+                <tr><th>{{ 'admin.logs.columns.level'|trans }}</th><td>{{ log_entry.level|default('admin.logs.empty_value'|trans) }}</td></tr>
+                <tr><th>{{ 'admin.logs.columns.source'|trans }}</th><td>{{ log_entry.source|default('admin.logs.empty_value'|trans) }}</td></tr>
+                <tr><th>{{ 'admin.logs.columns.file'|trans }}</th><td>{{ log_entry.file|default('admin.logs.empty_value'|trans) }}</td></tr>
+                <tr><th>{{ 'admin.logs.columns.message'|trans }}</th><td>{{ log_entry.message|default('admin.logs.empty_value'|trans) }}</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.logs.detail.context'|trans }}</h2>
+        {% if log_entry.context|default({}) is empty %}
+            <p class="studio-muted">{{ 'admin.logs.detail.no_context'|trans }}</p>
+        {% else %}
+            <table class="studio-field-table">
+                <tbody>
+                    {% for key, value in log_entry.context %}
+                        <tr>
+                            <th>{{ key }}</th>
+                            <td><code>{{ value is iterable ? value|json_encode : value }}</code></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.logs.detail.raw'|trans }}</h2>
+        <pre class="studio-code-block">{{ log_entry.raw|default('') }}</pre>
+    </section>
+{% endblock %}

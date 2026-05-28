@@ -10,9 +10,11 @@ use App\Core\Config\Config;
 use App\Core\Config\Settings\CoreSettingsRegistry;
 use App\Core\Event\EventHookDescriptor;
 use App\Core\Event\PublicEventHookRegistry;
+use App\Core\Log\AccessRequestMetadata;
 use App\Core\Package\PackageAdminOverview;
 use App\Core\Package\Settings\PackageSettingRegistry;
 use App\Core\Package\Settings\PackageSettings;
+use App\Core\Statistics\VisitorIdGenerator;
 use App\Core\Package\ThemeAdminOverview;
 use App\Debug\StudioDebugCollector;
 use App\Entity\UserAccount;
@@ -48,6 +50,8 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         private readonly StudioDebugCollector $debugCollector,
         private readonly Security $security,
         private readonly RequestStack $requestStack,
+        private readonly AccessRequestMetadata $accessRequestMetadata,
+        private readonly VisitorIdGenerator $visitorIdGenerator,
     ) {
     }
 
@@ -82,6 +86,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             new TwigFunction('studio_package_settings_form', $this->packageSettingsForm(...)),
             new TwigFunction('studio_package_setting_packages', $this->packageSettingPackages(...)),
             new TwigFunction('studio_debug_info', $this->debugInfo(...)),
+            new TwigFunction('studio_request_trace', $this->requestTrace(...)),
         ];
     }
 
@@ -138,6 +143,25 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
     public function debugInfo(): array
     {
         return $this->debugCollector->summary();
+    }
+
+    /**
+     * @return array{request_id: string|null, visitor_id: string|null, requested_path: string|null, resolved_route: string|null}
+     */
+    public function requestTrace(): array
+    {
+        $request = $this->requestStack->getCurrentRequest();
+
+        if (null === $request) {
+            return [
+                'request_id' => null,
+                'visitor_id' => null,
+                'requested_path' => null,
+                'resolved_route' => null,
+            ];
+        }
+
+        return $this->accessRequestMetadata->trace($request, $this->visitorIdGenerator->generate($request));
     }
 
     /**
