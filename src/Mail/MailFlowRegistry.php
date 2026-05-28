@@ -42,6 +42,7 @@ final readonly class MailFlowRegistry
             AccountMailFlow::PasswordChanged->value => new MailFlowDefinition(AccountMailFlow::PasswordChanged, AccountMailFlow::PasswordChanged->value, $group, 'admin.mail_templates.flows.account_password_changed', ['email', 'username', 'action_url', 'expires_at']),
             AccountMailFlow::PasswordChangeDisputed->value => new MailFlowDefinition(AccountMailFlow::PasswordChangeDisputed, AccountMailFlow::PasswordChangeDisputed->value, $group, 'admin.mail_templates.flows.account_password_change_disputed', ['email', 'username', 'user_uid']),
             AccountMailFlow::PasswordChangeReactivated->value => new MailFlowDefinition(AccountMailFlow::PasswordChangeReactivated, AccountMailFlow::PasswordChangeReactivated->value, $group, 'admin.mail_templates.flows.account_password_change_reactivated', ['email', 'username', 'user_uid']),
+            AccountMailFlow::AccountClosed->value => new MailFlowDefinition(AccountMailFlow::AccountClosed, AccountMailFlow::AccountClosed->value, $group, 'admin.mail_templates.flows.account_closed', ['email', 'username', 'user_uid']),
         ];
     }
 }

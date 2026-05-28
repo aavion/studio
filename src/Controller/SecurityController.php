@@ -26,6 +26,7 @@ final class SecurityController extends AbstractController
             'authentication_error' => null !== $authenticationUtils->getLastAuthenticationError(),
             'return_to' => $this->returnTo($request),
             'registration_enabled' => $this->config->registrationEnabled(),
+            'account_closed' => '1' === $request->query->get('account_closed'),
         ]);
     }
 

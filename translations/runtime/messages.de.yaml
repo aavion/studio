@@ -73,6 +73,7 @@ ui:
             password: Passwort
             submit: Anmelden
             invalid_credentials: 'Username oder Passwort ist nicht gültig.'
+            account_closed: 'Dein Account wurde geschlossen.'
         register:
             title: 'Account erstellen'
             link: 'Account erstellen'
@@ -109,6 +110,16 @@ ui:
             language_default: Standard
             submit: 'Profil speichern'
             success: 'Profil gespeichert.'
+            close:
+                title: 'Account schließen'
+                message: 'Das Schließen des Accounts meldet dich ab und widerruft aktive API-Keys und Wiederherstellungslinks.'
+                password: 'Aktuelles Passwort'
+                confirm: 'Ich verstehe, dass mein Account geschlossen wird.'
+                submit: 'Account schließen'
+                errors:
+                    invalid_csrf: 'Das Formular zum Schließen des Accounts ist abgelaufen. Bitte versuche es erneut.'
+                    confirmation: 'Bestätige, dass du den Account schließen möchtest.'
+                    password: 'Das Passwort ist nicht korrekt.'
             errors:
                 invalid_csrf: 'Das Profilformular ist abgelaufen. Bitte versuche es erneut.'
         password:
@@ -457,6 +468,7 @@ admin:
             account_password_changed: 'Passwort geändert'
             account_password_change_disputed: 'Passwortänderung bestritten'
             account_password_change_reactivated: 'Passwort-Dispute reaktiviert'
+            account_closed: 'Account geschlossen'
     groups:
         title: ACL-Gruppen
         create:

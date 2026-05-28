@@ -19,6 +19,7 @@ use App\Security\AccountLinkDeliveryInterface;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\UserAccountLifecycle;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\View\Http\HttpErrorRenderer;
@@ -41,6 +42,7 @@ final class AdminUserController extends AbstractController
         private readonly AccountLinkDeliveryInterface $linkDelivery,
         private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly UserFlowConfig $userFlowConfig,
+        private readonly UserAccountLifecycle $userLifecycle,
         private readonly AuditLoggerInterface $auditLogger,
         private readonly UserPasswordHasherInterface $passwordHasher,
     ) {
@@ -239,7 +241,7 @@ final class AdminUserController extends AbstractController
         }
 
         $user->changePassword($this->passwordHasher->hashPassword($user, bin2hex(random_bytes(32))));
-        $user->changeStatus(UserAccountStatus::Active);
+        $this->userLifecycle->changeStatus($user, UserAccountStatus::Active);
         $this->entityManager->flush();
         $this->linkDelivery->notifyAddress($user->email(), AccountMailFlow::PasswordChangeReactivated, $this->mailLocaleResolver->forAdminAction($user), [
             'username' => $user->username(),
@@ -276,9 +278,9 @@ final class AdminUserController extends AbstractController
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
 
-        $user->changeStatus(UserAccountStatus::Deleted);
+        $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Deleted);
         $this->entityManager->flush();
-        $this->audit('user.security_review_deleted', ['target_user' => $user->uid()]);
+        $this->audit('user.security_review_deleted', ['target_user' => $user->uid(), ...$effects]);
         $this->addFlash('success', 'admin.user_reviews.actions.deleted');
 
         return $this->redirectToRoute('backend_admin_user_reviews');
@@ -434,10 +436,10 @@ final class AdminUserController extends AbstractController
             return;
         }
 
-        $user->changeStatus($status);
+        $effects = $this->userLifecycle->changeStatus($user, $status);
         $this->syncGroups($user, $this->groupIdentifiers($request->request->all('groups')));
         $this->entityManager->flush();
-        $this->audit('user.account_updated', ['target_user' => $user->uid(), 'status' => $status->value]);
+        $this->audit('user.account_updated', ['target_user' => $user->uid(), 'status' => $status->value, ...$effects]);
         $this->addFlash('success', 'admin.users.saved');
     }
 

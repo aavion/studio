@@ -12,6 +12,8 @@ use App\Core\Config\Config;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\ApiKeyStatus;
+use App\Security\ApiKeyVault;
 use App\Security\UserAccountStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -110,14 +112,22 @@ final class UserControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $user = $this->createUserWithLevel(1, 'securityreview', 'current-password');
+        $apiKey = $this->createApiKey($user, 'lockrev');
         [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
             AccountTokenType::SecurityReview,
             $user->email(),
             [],
             $user,
         );
+        [$resetToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::PasswordReset,
+            $user->email(),
+            [],
+            $user,
+        );
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->persist($token);
+        $entityManager->persist($resetToken);
         $entityManager->flush();
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
@@ -133,11 +143,17 @@ final class UserControllerTest extends WebTestCase
         $entityManager->clear();
         $lockedUser = $entityManager->find(UserAccount::class, $user->uid());
         $usedToken = $entityManager->find(AccountToken::class, $token->uid());
+        $revokedResetToken = $entityManager->find(AccountToken::class, $resetToken->uid());
+        $revokedApiKey = $entityManager->find(ApiKey::class, $apiKey->uid());
 
         self::assertInstanceOf(UserAccount::class, $lockedUser);
         self::assertSame(UserAccountStatus::Inactive, $lockedUser->status());
         self::assertInstanceOf(AccountToken::class, $usedToken);
         self::assertSame(AccountTokenStatus::Used, $usedToken->status());
+        self::assertInstanceOf(AccountToken::class, $revokedResetToken);
+        self::assertSame(AccountTokenStatus::Revoked, $revokedResetToken->status());
+        self::assertInstanceOf(ApiKey::class, $revokedApiKey);
+        self::assertSame(ApiKeyStatus::Revoked, $revokedApiKey->status());
         $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
         self::assertStringContainsString('account.password_change.disputed', $messageLog);
         self::assertStringContainsString('"username":"securityreview"', $messageLog);
@@ -390,6 +406,58 @@ final class UserControllerTest extends WebTestCase
         self::assertResponseRedirects('/user/api-keys');
     }
 
+    public function testUserCanCloseOwnAccountAndRevokeCredentials(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'closeaccount', 'current-password');
+        $apiKey = $this->createApiKey($user, 'closekey');
+        [$resetToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::PasswordReset,
+            $user->email(),
+            [],
+            $user,
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($resetToken);
+        $entityManager->flush();
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
+        $client->loginUser($user);
+        $crawler = $client->request('GET', '/user/profile');
+        $form = $crawler->filter('form[action="/user/profile/close"]')->form([
+            'password' => 'current-password',
+        ]);
+        $form['confirm_close']->tick();
+        $client->submit($form);
+
+        self::assertResponseRedirects('/user/login?account_closed=1');
+        $client->followRedirect();
+        self::assertSelectorTextContains('.studio-auth-notice', 'Your account was closed.');
+
+        $entityManager->clear();
+        $closedUser = $entityManager->find(UserAccount::class, $user->uid());
+        $revokedApiKey = $entityManager->find(ApiKey::class, $apiKey->uid());
+        $revokedToken = $entityManager->find(AccountToken::class, $resetToken->uid());
+
+        self::assertInstanceOf(UserAccount::class, $closedUser);
+        self::assertSame(UserAccountStatus::Deleted, $closedUser->status());
+        self::assertInstanceOf(ApiKey::class, $revokedApiKey);
+        self::assertSame(ApiKeyStatus::Revoked, $revokedApiKey->status());
+        self::assertInstanceOf(AccountToken::class, $revokedToken);
+        self::assertSame(AccountTokenStatus::Revoked, $revokedToken->status());
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        self::assertStringContainsString('account.closed', $messageLog);
+
+        $entityManager->remove($revokedToken);
+        $entityManager->remove($revokedApiKey);
+        $entityManager->remove($closedUser);
+        $entityManager->flush();
+    }
+
     private function createUserWithLevel(int $level, string $username, string $password): UserAccount
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -417,6 +485,25 @@ final class UserControllerTest extends WebTestCase
         $entityManager->flush();
 
         return $user;
+    }
+
+    private function createApiKey(UserAccount $user, string $prefix): ApiKey
+    {
+        $vault = self::getContainer()->get(ApiKeyVault::class);
+        $plainKey = $vault->generatePlainKey($prefix);
+        $apiKey = new ApiKey(
+            '63000000-0000-0000-0000-'.substr(md5($prefix.$user->uid()), 0, 12),
+            $prefix,
+            $vault->hmac($plainKey),
+            $vault->encrypt($plainKey),
+            $user,
+            ApiKeyStatus::ReadWrite,
+        );
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($apiKey);
+
+        return $apiKey;
     }
 
     private function seededGroupIdentifier(int $level): string

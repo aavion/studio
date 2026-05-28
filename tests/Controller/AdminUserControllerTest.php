@@ -6,10 +6,13 @@ namespace App\Tests\Controller;
 
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
+use App\Entity\ApiKey;
 use App\Entity\UserAccount;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\ApiKeyStatus;
+use App\Security\ApiKeyVault;
 use App\Security\UserAccountStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -207,6 +210,47 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testAdminStatusLockRevokesApiKeysAndRecoveryTokens(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $user = $this->createUser('statuslock', UserAccountStatus::Active);
+        $apiKey = $this->createApiKey($user, 'lockkey');
+        [$resetToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::PasswordReset,
+            $user->email(),
+            [],
+            $user,
+        );
+        $entityManager->persist($resetToken);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/admin/users/'.$user->uid());
+        $client->submit($crawler->selectButton('Save')->form([
+            'status' => UserAccountStatus::Inactive->value,
+        ]));
+
+        self::assertResponseRedirects('/admin/users/'.$user->uid());
+
+        $entityManager->clear();
+        $updatedUser = $entityManager->find(UserAccount::class, $user->uid());
+        $updatedApiKey = $entityManager->find(ApiKey::class, $apiKey->uid());
+        $updatedToken = $entityManager->find(AccountToken::class, $resetToken->uid());
+
+        self::assertInstanceOf(UserAccount::class, $updatedUser);
+        self::assertSame(UserAccountStatus::Inactive, $updatedUser->status());
+        self::assertInstanceOf(ApiKey::class, $updatedApiKey);
+        self::assertSame(ApiKeyStatus::Revoked, $updatedApiKey->status());
+        self::assertInstanceOf(AccountToken::class, $updatedToken);
+        self::assertSame(AccountTokenStatus::Revoked, $updatedToken->status());
+
+        $entityManager->remove($updatedToken);
+        $entityManager->remove($updatedApiKey);
+        $entityManager->remove($updatedUser);
+        $entityManager->flush();
+    }
+
     public function testAdminCanCreateAclGroup(): void
     {
         $client = self::createClient();
@@ -270,4 +314,22 @@ final class AdminUserControllerTest extends WebTestCase
         return $user;
     }
 
+    private function createApiKey(UserAccount $user, string $prefix): ApiKey
+    {
+        $vault = self::getContainer()->get(ApiKeyVault::class);
+        $plainKey = $vault->generatePlainKey($prefix);
+        $apiKey = new ApiKey(
+            '62000000-0000-0000-0000-'.substr(md5($prefix.$user->uid()), 0, 12),
+            $prefix,
+            $vault->hmac($plainKey),
+            $vault->encrypt($plainKey),
+            $user,
+            ApiKeyStatus::ReadWrite,
+        );
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($apiKey);
+
+        return $apiKey;
+    }
 }

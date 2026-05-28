@@ -93,6 +93,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-28
+- Added account lifecycle hardening: account status changes now go through a dedicated service that revokes active API keys and pending password-reset/security-review tokens when users become inactive or deleted, users can close their own account with password plus explicit confirmation, `account.closed` is emitted for the future mailer, and audit contexts record the side-effect counts.
 - Added the mailer-ready delivery contract under the mail context: built-in account mail flows now have deterministic template metadata and short replacement parameter keys, account deliveries resolve a target locale from user preference/request/default language rules, and the temporary delivery implementation writes DEBUG message-log payloads shaped like future mailer queue messages.
 - Added the Admin User Reviews queue with filters and compact review rows for registration approvals, invitation/registration links, expired links, and password-change disputes; password-reset tokens stay out of the queue.
 - Added review actions for approving/rejecting registrations, resending/deleting account links, and reactivating disputed accounts by setting a random password plus `account.password_change.reactivated` notification, with confirmed delete marking disputed users as deleted.

@@ -14,6 +14,9 @@
         {% if authentication_error|default(false) %}
             <p class="studio-auth-notice">{{ 'ui.user.login.invalid_credentials'|trans }}</p>
         {% endif %}
+        {% if account_closed|default(false) %}
+            <p class="studio-auth-notice">{{ 'ui.user.login.account_closed'|trans }}</p>
+        {% endif %}
         <form action="{{ path('user_login') }}" method="post" class="studio-auth-form">
             {% include '@frontend/partials/forms/fields/input.html.twig' with {
                 name: 'username',

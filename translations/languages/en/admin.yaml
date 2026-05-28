@@ -259,6 +259,7 @@ admin:
       account_password_changed: 'Password changed'
       account_password_change_disputed: 'Password change disputed'
       account_password_change_reactivated: 'Password dispute reactivated'
+      account_closed: 'Account closed'
   groups:
     title: 'ACL groups'
     create:

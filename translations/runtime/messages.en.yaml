@@ -73,6 +73,7 @@ ui:
             password: Password
             submit: 'Sign in'
             invalid_credentials: 'The username or password is not valid.'
+            account_closed: 'Your account was closed.'
         register:
             title: 'Create account'
             link: 'Create an account'
@@ -109,6 +110,16 @@ ui:
             language_default: Default
             submit: 'Save profile'
             success: 'Profile saved.'
+            close:
+                title: 'Close account'
+                message: 'Closing the account signs you out and revokes active API keys and recovery links.'
+                password: 'Current password'
+                confirm: 'I understand that my account will be closed.'
+                submit: 'Close account'
+                errors:
+                    invalid_csrf: 'The account closure form expired. Please try again.'
+                    confirmation: 'Confirm that you want to close the account.'
+                    password: 'The password is not correct.'
             errors:
                 invalid_csrf: 'The profile form expired. Please try again.'
         password:
@@ -457,6 +468,7 @@ admin:
             account_password_changed: 'Password changed'
             account_password_change_disputed: 'Password change disputed'
             account_password_change_reactivated: 'Password dispute reactivated'
+            account_closed: 'Account closed'
     groups:
         title: 'ACL groups'
         create:

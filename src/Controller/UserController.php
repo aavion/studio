@@ -18,6 +18,7 @@ use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
 use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
+use App\Security\UserAccountLifecycle;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\View\Http\HttpErrorRenderer;
@@ -27,6 +28,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Throwable;
 
 final class UserController extends AbstractController
@@ -40,7 +42,9 @@ final class UserController extends AbstractController
         private readonly AccountTokenIssuer $tokenIssuer,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
         private readonly MailLocaleResolver $mailLocaleResolver,
+        private readonly UserAccountLifecycle $userLifecycle,
         private readonly ApiKeyVault $apiKeyVault,
+        private readonly TokenStorageInterface $tokenStorage,
     ) {
     }
 
@@ -90,6 +94,60 @@ final class UserController extends AbstractController
             'success' => $success,
             'errors' => $errors,
         ]);
+    }
+
+    #[Route('/user/profile/close', name: 'user_profile_close', methods: ['POST'])]
+    public function closeProfile(Request $request): Response
+    {
+        $user = $this->currentUser();
+
+        if (!$user instanceof UserAccount) {
+            return $this->httpError->unauthorized($request);
+        }
+
+        $errors = [];
+
+        if (!$this->isCsrfTokenValid('user_profile_close', $this->stringField($request, '_csrf_token'))) {
+            $errors[] = 'ui.user.profile.close.errors.invalid_csrf';
+        }
+
+        if ('1' !== $this->stringField($request, 'confirm_close')) {
+            $errors[] = 'ui.user.profile.close.errors.confirmation';
+        }
+
+        if (!$this->passwordHasher->isPasswordValid($user, $this->stringField($request, 'password'))) {
+            $errors[] = 'ui.user.profile.close.errors.password';
+        }
+
+        if ([] !== $errors) {
+            foreach ($errors as $error) {
+                $this->addFlash('error', $error);
+            }
+
+            $this->audit($user, 'user.account_close_failed', [
+                'result_status' => 'failed',
+                'error_keys' => $errors,
+            ]);
+
+            return $this->redirectToRoute('user_profile');
+        }
+
+        $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Deleted);
+        $this->entityManager->flush();
+        $this->linkDelivery->notifyAddress(
+            $user->email(),
+            AccountMailFlow::AccountClosed,
+            $this->mailLocaleResolver->forPublicRequest($request, $user),
+            [
+                'username' => $user->username(),
+                'user_uid' => $user->uid(),
+            ],
+        );
+        $this->audit($user, 'user.account_closed', ['result_status' => 'success', ...$effects]);
+        $this->tokenStorage->setToken(null);
+        $request->getSession()->invalidate();
+
+        return $this->redirectToRoute('user_login', ['account_closed' => '1']);
     }
 
     #[Route('/user/password', name: 'user_password', methods: ['GET', 'POST'])]
@@ -377,14 +435,14 @@ final class UserController extends AbstractController
 
         if ($accountToken instanceof AccountToken && $accountToken->user() instanceof UserAccount) {
             $user = $accountToken->user();
-            $user->changeStatus(UserAccountStatus::Inactive);
             $accountToken->consume($user);
+            $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Inactive);
             $this->entityManager->flush();
             $this->linkDelivery->notify($accountToken, AccountMailFlow::PasswordChangeDisputed, $this->userFlowConfig->securityNotificationEmail(), $this->mailLocaleResolver->defaultLocale(), [
                 'username' => $user->username(),
                 'user_uid' => $user->uid(),
             ]);
-            $this->audit($user, 'auth.password_change_disputed', ['result_status' => 'locked']);
+            $this->audit($user, 'auth.password_change_disputed', ['result_status' => 'locked', ...$effects]);
             $locked = true;
         }
 
