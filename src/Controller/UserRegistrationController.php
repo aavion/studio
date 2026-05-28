@@ -90,11 +90,19 @@ final class UserRegistrationController extends AbstractController
                     ]);
                 }
 
+                $defaultGroup = $this->defaultRegistrationGroup();
+
+                if (!$defaultGroup instanceof AclGroup) {
+                    $errors[] = 'ui.user.register.errors.default_group';
+                }
+            }
+
+            if ([] === $errors) {
                 $this->tokenMaintenance->revokePendingForEmail($email, [AccountTokenType::Invitation, AccountTokenType::Registration]);
                 [$token, $plainToken] = $this->tokenIssuer->issue(
                     AccountTokenType::Registration,
                     $email,
-                    ['registered'],
+                    [$defaultGroup->identifier()],
                     UserAccountStatus::Deleted === $existingUser?->status() ? $existingUser : null,
                     status: $requiresApproval ? AccountTokenStatus::PendingApproval : AccountTokenStatus::Pending,
                     ttl: $this->userFlowConfig->accountLinkTtl(),
@@ -211,6 +219,15 @@ final class UserRegistrationController extends AbstractController
         $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
 
         return $user instanceof UserAccount ? $user : null;
+    }
+
+    private function defaultRegistrationGroup(): ?AclGroup
+    {
+        $group = $this->entityManager->getRepository(AclGroup::class)->findOneBy([
+            'identifier' => $this->userFlowConfig->defaultAclGroupIdentifier(),
+        ]);
+
+        return $group instanceof AclGroup && $group->accessLevel() >= AccessLevel::REGISTERED ? $group : null;
     }
 
     private function userForAccountToken(AccountToken $token, string $username): UserAccount

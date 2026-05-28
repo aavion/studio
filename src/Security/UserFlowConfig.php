@@ -10,6 +10,7 @@ final readonly class UserFlowConfig
 {
     public const MENU_ENABLED_KEY = 'user.menu.enabled';
     public const MENU_SORT_ORDER_KEY = 'user.menu.sort_order';
+    public const DEFAULT_ACL_GROUP_KEY = 'user.default_acl_group';
     public const REGISTRATION_MODE_KEY = 'user.registration.mode';
     public const REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY = 'user.registration.admin_notification_email';
     public const SECURITY_NOTIFICATION_EMAIL_KEY = 'user.security_notification_email';
@@ -56,6 +57,13 @@ final readonly class UserFlowConfig
             self::REGISTRATION_ADMIN_APPROVAL,
             self::REGISTRATION_AUTO_APPROVAL,
         ], true) ? $mode : self::REGISTRATION_DISABLED;
+    }
+
+    public function defaultAclGroupIdentifier(): string
+    {
+        $identifier = $this->config->get(self::DEFAULT_ACL_GROUP_KEY, 'registered');
+
+        return is_string($identifier) && '' !== trim($identifier) ? trim($identifier) : 'registered';
     }
 
     public function accountLinkTtl(): string

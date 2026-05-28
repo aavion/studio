@@ -52,7 +52,7 @@ final readonly class CoreSettingsRegistry
                 UserFlowConfig::REGISTRATION_ADMIN_APPROVAL => 'admin.settings.options.registration.admin_approval',
                 UserFlowConfig::REGISTRATION_AUTO_APPROVAL => 'admin.settings.options.registration.auto_approval',
             ], validation: ['required' => true], sortOrder: 10),
-            new CoreSettingDefinition('users', 'user.default_acl_group', 'admin.settings.fields.default_acl_group.label', 'registered', ConfigValueType::String, validation: ['required' => true], sortOrder: 20),
+            new CoreSettingDefinition('users', UserFlowConfig::DEFAULT_ACL_GROUP_KEY, 'admin.settings.fields.default_acl_group.label', 'registered', ConfigValueType::String, validation: ['required' => true], sortOrder: 20),
             new CoreSettingDefinition('users', UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, 'admin.settings.fields.username_change_enabled.label', false, ConfigValueType::Boolean, sortOrder: 30),
             new CoreSettingDefinition('users', UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'admin.settings.fields.account_link_ttl_hours.label', UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.account_link_ttl_hours.help', validation: ['min' => 1, 'max' => 168], sortOrder: 40),
             new CoreSettingDefinition('users', UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, 'admin.settings.fields.registration_admin_notification_email.label', '', ConfigValueType::String, validation: ['max_length' => 180], sortOrder: 50),

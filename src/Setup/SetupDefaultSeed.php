@@ -23,7 +23,7 @@ final readonly class SetupDefaultSeed
             ['key' => 'localization.default_language', 'value' => $input->language(), 'type' => ConfigValueType::String],
             ['key' => 'localization.route_prefixes_enabled', 'value' => false, 'type' => ConfigValueType::Boolean],
             ['key' => 'content.home_path', 'value' => '/home', 'type' => ConfigValueType::String],
-            ['key' => 'user.default_acl_group', 'value' => 'registered', 'type' => ConfigValueType::String],
+            ['key' => UserFlowConfig::DEFAULT_ACL_GROUP_KEY, 'value' => 'registered', 'type' => ConfigValueType::String],
             ['key' => UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, 'value' => false, 'type' => ConfigValueType::Boolean],
             ['key' => UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'value' => UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, 'type' => ConfigValueType::Integer],
             ['key' => UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, 'value' => '', 'type' => ConfigValueType::String],

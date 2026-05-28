@@ -435,6 +435,53 @@ final class UserControllerTest extends WebTestCase
         }
     }
 
+    public function testRegistrationUsesConfiguredDefaultAclGroup(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $group = new AclGroup(
+            '00000000-0000-4000-8000-000000009901',
+            'signup_default',
+            ['en' => 'Signup Default'],
+            2,
+            false,
+            true,
+        );
+        $entityManager->persist($group);
+        $entityManager->flush();
+
+        try {
+            $config->set('user.registration.mode', 'auto_approval');
+            $config->set('user.default_acl_group', 'signup_default');
+            $crawler = $client->request('GET', '/user/register');
+            $client->submit($crawler->selectButton('Request account')->form([
+                'email' => 'configured-default@example.test',
+            ]));
+
+            self::assertResponseIsSuccessful();
+
+            $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
+                'email' => 'configured-default@example.test',
+                'type' => AccountTokenType::Registration,
+            ]);
+
+            self::assertInstanceOf(AccountToken::class, $token);
+            self::assertSame(['signup_default'], $token->groupIdentifiers());
+            $entityManager->remove($token);
+        } finally {
+            $config->set('user.registration.mode', 'disabled');
+            $config->set('user.default_acl_group', 'registered');
+            $managedGroup = $entityManager->find(AclGroup::class, $group->uid());
+
+            if ($managedGroup instanceof AclGroup) {
+                $entityManager->remove($managedGroup);
+            }
+
+            $entityManager->flush();
+        }
+    }
+
     public function testDeletedAccountTokenAcceptanceReactivatesSameUserAndResetsGroups(): void
     {
         $client = self::createClient();

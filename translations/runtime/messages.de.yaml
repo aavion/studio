@@ -87,6 +87,7 @@ ui:
             errors:
                 invalid_csrf: 'Das Registrierungsformular ist abgelaufen. Bitte versuche es erneut.'
                 email: 'Gib eine gültige E-Mail-Adresse ein.'
+                default_group: 'Die Registrierung ist vorübergehend nicht verfügbar, weil die Standard-Zugriffsgruppe nicht korrekt konfiguriert ist.'
         password_reset:
             title: 'Passwort zurücksetzen'
             subtitle: 'Gib deine E-Mail-Adresse ein. Falls ein Account existiert, wird ein Reset-Link zugestellt.'
