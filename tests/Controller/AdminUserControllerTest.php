@@ -1105,7 +1105,7 @@ final class AdminUserControllerTest extends WebTestCase
         );
         $content = new ContentItem('64000000-0000-0000-0000-000000000001', 'acl-cleanup-content');
         $content->setAclRestrictions([$group->identifier()]);
-        $content->setViewRule(null, [$group->identifier()]);
+        $content->setViewRule(AccessLevel::PUBLIC);
         $content->setEditRule(AccessLevel::EDITOR, [$group->identifier()]);
         $content->setManageRule(AccessLevel::MANAGER, [$group->identifier()]);
         $content->publish();
@@ -1171,7 +1171,7 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSame([], $updatedToken->groupIdentifiers());
         self::assertInstanceOf(ContentItem::class, $updatedContent);
         self::assertSame([], $updatedContent->aclRestrictions());
-        self::assertSame([], $updatedContent->viewGroupIdentifiers());
+        self::assertNull($updatedContent->viewGroupIdentifiers());
         self::assertSame([], $updatedContent->editGroupIdentifiers());
         self::assertSame([], $updatedContent->manageGroupIdentifiers());
         self::assertInstanceOf(ContentSchemaVersion::class, $updatedVersion);

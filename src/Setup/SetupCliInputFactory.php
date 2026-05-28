@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Message\MessageKey;
+use App\Core\Validation\EmailAddress;
 
 final class SetupCliInputFactory
 {
@@ -246,6 +247,10 @@ final class SetupCliInputFactory
     {
         $host = parse_url($defaultUri, PHP_URL_HOST);
 
-        return 'admin@'.(is_string($host) && '' !== $host ? $host : 'localhost');
+        if (!is_string($host) || '' === $host || !EmailAddress::isValid('admin@'.$host)) {
+            $host = 'localhost.local';
+        }
+
+        return EmailAddress::normalize('admin@'.$host);
     }
 }

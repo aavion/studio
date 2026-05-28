@@ -47,6 +47,10 @@ final readonly class SetupInput
         if (!UserAccount::isValidUsername($this->adminUsername)) {
             throw new InvalidArgumentException('Setup admin username must start with a letter and contain 5 to 30 letters, digits, hyphens, or underscores.');
         }
+
+        if (null !== $this->adminEmail && !EmailAddress::isValid($this->adminEmail)) {
+            throw new InvalidArgumentException('Setup admin email must be valid.');
+        }
     }
 
     public static function withDefaults(
@@ -135,7 +139,7 @@ final readonly class SetupInput
 
     public function adminEmail(): string
     {
-        return EmailAddress::normalize($this->adminEmail ?? self::adminEmailFromDefaultUri($this->defaultUri));
+        return EmailAddress::assert($this->adminEmail ?? self::adminEmailFromDefaultUri($this->defaultUri));
     }
 
     public function appSecret(): ?string
@@ -167,8 +171,8 @@ final readonly class SetupInput
     {
         $host = parse_url($defaultUri, PHP_URL_HOST);
 
-        if (!is_string($host) || '' === $host) {
-            $host = 'localhost';
+        if (!is_string($host) || '' === $host || !EmailAddress::isValid('admin@'.$host)) {
+            $host = 'localhost.local';
         }
 
         return EmailAddress::normalize('admin@'.$host);

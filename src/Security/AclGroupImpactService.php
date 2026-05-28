@@ -174,11 +174,7 @@ final readonly class AclGroupImpactService
     private function opensPublishedAccess(ContentItem $content, string $identifier): bool
     {
         return $content->status()->isPubliclyRenderable()
-            && $content->aclRestrictions() === [$identifier]
-            && (
-                $content->viewGroupIdentifiers() === [$identifier]
-                || (null === $content->viewMinLevel() && null === $content->viewGroupIdentifiers())
-            );
+            && $content->aclRestrictions() === [$identifier];
     }
 
     /**

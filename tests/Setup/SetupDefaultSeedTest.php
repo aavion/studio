@@ -25,6 +25,11 @@ final class SetupDefaultSeedTest extends TestCase
         self::assertSame(UserFlowConfig::DEFAULT_DELETED_USER_RETENTION_DAYS, $settings[UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY]);
     }
 
+    public function testItUsesValidLocalhostAdminEmailDefault(): void
+    {
+        self::assertSame('admin@localhost.local', SetupInput::withDefaults(defaultUri: 'http://localhost')->adminEmail());
+    }
+
     public function testItDefinesSetupAclAndContentDefaults(): void
     {
         $seed = new SetupDefaultSeed();

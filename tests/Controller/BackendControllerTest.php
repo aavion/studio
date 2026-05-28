@@ -75,7 +75,7 @@ final class BackendControllerTest extends WebTestCase
                 'admin_username' => 'admin',
                 'admin_password' => 'admin-password',
                 'admin_password_confirm' => 'admin-password',
-                'admin_email' => 'admin@localhost',
+                'admin_email' => 'admin@localhost.local',
                 'dry_run' => '1',
             ]);
 
@@ -112,7 +112,7 @@ final class BackendControllerTest extends WebTestCase
                 'admin_username' => 'admin',
                 'admin_password' => 'short',
                 'admin_password_confirm' => 'short',
-                'admin_email' => 'admin@localhost',
+                'admin_email' => 'admin@localhost.local',
                 'dry_run' => '1',
             ]);
 
@@ -148,7 +148,7 @@ final class BackendControllerTest extends WebTestCase
                 'admin_username' => 'admin',
                 'admin_password' => 'admin-password',
                 'admin_password_confirm' => 'admin-password',
-                'admin_email' => 'admin@localhost',
+                'admin_email' => 'admin@localhost.local',
                 'dry_run' => '1',
             ]);
 
