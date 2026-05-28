@@ -197,6 +197,7 @@ admin:
       invitation: 'Einladung'
       registration: 'Registrierung'
       password_reset: 'Passwort-Reset'
+      security_review: 'Security-Review'
     token_status:
       pending: 'Ausstehend'
       pending_approval: 'Wartet auf Freigabe'
@@ -461,6 +462,8 @@ admin:
         help: 'Gilt nur für neu erzeugte Einladungs- und Registrierungslinks. Bestehende Tokens behalten ihre gespeicherte Ablaufzeit.'
       registration_admin_notification_email:
         label: 'E-Mail für Registrierungsfreigaben'
+      security_notification_email:
+        label: 'E-Mail für Sicherheitsmeldungen'
       user_menu_enabled:
         label: 'System-Benutzermenü anzeigen'
       user_menu_sort_order:

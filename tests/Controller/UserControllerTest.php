@@ -12,6 +12,7 @@ use App\Core\Config\Config;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\UserAccountStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -68,6 +69,10 @@ final class UserControllerTest extends WebTestCase
             @unlink($logFile);
         }
 
+        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
         $crawler = $client->request('GET', '/user/password');
         $form = $crawler->selectButton('Update password')->form([
             'current_password' => 'current-password',
@@ -88,6 +93,54 @@ final class UserControllerTest extends WebTestCase
         self::assertStringContainsString('auth.password_change_success', $auditLog);
         self::assertStringContainsString('"result_status":"success"', $auditLog);
         self::assertStringNotContainsString('new-password-value', $auditLog);
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        self::assertStringContainsString('account.password.changed', $messageLog);
+        self::assertStringContainsString('/user/security-review/', $messageLog);
+
+        $reviewToken = self::getContainer()->get(EntityManagerInterface::class)->getRepository(AccountToken::class)->findOneBy([
+            'user' => $updatedUser,
+            'type' => AccountTokenType::SecurityReview,
+            'status' => AccountTokenStatus::Pending,
+        ]);
+
+        self::assertInstanceOf(AccountToken::class, $reviewToken);
+    }
+
+    public function testSecurityReviewLinkLocksAccountAndNotifiesAdmin(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'securityreview', 'current-password');
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::SecurityReview,
+            $user->email(),
+            [],
+            $user,
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
+        $client->request('GET', '/user/security-review/'.$plainToken);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Account security review');
+
+        $entityManager->clear();
+        $lockedUser = $entityManager->find(UserAccount::class, $user->uid());
+        $usedToken = $entityManager->find(AccountToken::class, $token->uid());
+
+        self::assertInstanceOf(UserAccount::class, $lockedUser);
+        self::assertSame(UserAccountStatus::Inactive, $lockedUser->status());
+        self::assertInstanceOf(AccountToken::class, $usedToken);
+        self::assertSame(AccountTokenStatus::Used, $usedToken->status());
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        self::assertStringContainsString('account.password_change.disputed', $messageLog);
+        self::assertStringContainsString('"username":"securityreview"', $messageLog);
     }
 
     public function testPasswordRouteReportsValidationErrors(): void

@@ -165,6 +165,12 @@ ui:
             errors:
                 invalid_csrf: 'The invitation form expired. Please try again.'
                 create_failed: 'The account could not be created. The username or email may already be used.'
+        security_review:
+            title: 'Account security review'
+            locked_subtitle: 'The account was temporarily locked.'
+            unavailable_subtitle: 'This security review link is no longer available.'
+            locked_message: 'An administrator notification was created for review.'
+            unavailable_message: 'The link may have expired or already been used.'
         logout:
             title: 'Sign out'
             placeholder: 'Confirm that you want to end your session.'
@@ -389,6 +395,7 @@ admin:
             invitation: Invitation
             registration: Registration
             password_reset: 'Password reset'
+            security_review: 'Security review'
         token_status:
             pending: Pending
             pending_approval: 'Waiting for approval'
@@ -653,6 +660,8 @@ admin:
                 help: 'Applies only to newly created invitation and registration links. Existing tokens keep their stored expiry time.'
             registration_admin_notification_email:
                 label: 'Registration approval email'
+            security_notification_email:
+                label: 'Security notification email'
             user_menu_enabled:
                 label: 'Show system user menu'
             user_menu_sort_order:

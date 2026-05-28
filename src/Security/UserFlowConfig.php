@@ -12,6 +12,7 @@ final readonly class UserFlowConfig
     public const MENU_SORT_ORDER_KEY = 'user.menu.sort_order';
     public const REGISTRATION_MODE_KEY = 'user.registration.mode';
     public const REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY = 'user.registration.admin_notification_email';
+    public const SECURITY_NOTIFICATION_EMAIL_KEY = 'user.security_notification_email';
     public const ACCOUNT_LINK_TTL_HOURS_KEY = 'user.account_link_ttl_hours';
     public const REGISTRATION_DISABLED = 'disabled';
     public const REGISTRATION_ADMIN_APPROVAL = 'admin_approval';
@@ -69,7 +70,17 @@ final readonly class UserFlowConfig
 
     public function registrationAdminNotificationEmail(): ?string
     {
-        $email = $this->config->get(self::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '');
+        return $this->normalizedEmailSetting(self::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY);
+    }
+
+    public function securityNotificationEmail(): ?string
+    {
+        return $this->normalizedEmailSetting(self::SECURITY_NOTIFICATION_EMAIL_KEY);
+    }
+
+    private function normalizedEmailSetting(string $key): ?string
+    {
+        $email = $this->config->get($key, '');
 
         if (!is_string($email)) {
             return null;

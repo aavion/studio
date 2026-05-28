@@ -122,6 +122,12 @@ ui:
       errors:
         invalid_csrf: 'The invitation form expired. Please try again.'
         create_failed: 'The account could not be created. The username or email may already be used.'
+    security_review:
+      title: 'Account security review'
+      locked_subtitle: 'The account was temporarily locked.'
+      unavailable_subtitle: 'This security review link is no longer available.'
+      locked_message: 'An administrator notification was created for review.'
+      unavailable_message: 'The link may have expired or already been used.'
     logout:
       title: 'Sign out'
       placeholder: 'Confirm that you want to end your session.'

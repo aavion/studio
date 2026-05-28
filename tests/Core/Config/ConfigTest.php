@@ -33,11 +33,13 @@ final class ConfigTest extends TestCase
         $connection = $this->connection();
         $connection->insert('config_entry', ['config_key' => UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'value' => '36', 'value_type' => 'integer']);
         $connection->insert('config_entry', ['config_key' => UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, 'value' => '"Admin@Example.Test"', 'value_type' => 'string']);
+        $connection->insert('config_entry', ['config_key' => UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, 'value' => '"Security@Example.Test"', 'value_type' => 'string']);
         $config = new UserFlowConfig(new Config($connection));
 
         self::assertSame(36, $config->accountLinkTtlHours());
         self::assertSame('+36 hours', $config->accountLinkTtl());
         self::assertSame('admin@example.test', $config->registrationAdminNotificationEmail());
+        self::assertSame('security@example.test', $config->securityNotificationEmail());
     }
 
     public function testItFallsBackWhenConfigurationCannotBeRead(): void

@@ -59,6 +59,7 @@ final readonly class SetupDryRunPlanner
                     'user.default_acl_group' => 'registered',
                     UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY => UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS,
                     UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY => '',
+                    UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY => '',
                     'user.menu.enabled' => true,
                     'user.menu.sort_order' => 900,
                     UserFlowConfig::REGISTRATION_MODE_KEY => UserFlowConfig::REGISTRATION_DISABLED,

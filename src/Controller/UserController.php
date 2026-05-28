@@ -125,7 +125,9 @@ final class UserController extends AbstractController
 
             if ([] === $errors) {
                 $user->changePassword($this->passwordHasher->hashPassword($user, $newPassword));
+                [$token, $plainToken] = $this->issuePasswordChangeReviewToken($user);
                 $this->entityManager->flush();
+                $this->deliverPasswordChangeNotification($token, $plainToken);
                 $this->audit($user, 'auth.password_change_success', ['result_status' => 'success']);
                 $success = true;
             } else {
@@ -363,6 +365,30 @@ final class UserController extends AbstractController
         return $this->completePasswordToken($request, $accountToken);
     }
 
+    #[Route('/user/security-review/{token}', name: 'user_security_review', requirements: ['token' => '[a-f0-9]{64}'], methods: ['GET'])]
+    public function securityReview(Request $request, string $token): Response
+    {
+        $accountToken = $this->usableToken($token, AccountTokenType::SecurityReview);
+        $locked = false;
+
+        if ($accountToken instanceof AccountToken && $accountToken->user() instanceof UserAccount) {
+            $user = $accountToken->user();
+            $user->changeStatus(UserAccountStatus::Inactive);
+            $accountToken->consume($user);
+            $this->entityManager->flush();
+            $this->linkDelivery->notify($accountToken, AccountMailFlow::PasswordChangeDisputed, $this->userFlowConfig->securityNotificationEmail(), [
+                'username' => $user->username(),
+                'user_uid' => $user->uid(),
+            ]);
+            $this->audit($user, 'auth.password_change_disputed', ['result_status' => 'locked']);
+            $locked = true;
+        }
+
+        return $this->render('@frontend/user/security-review.html.twig', [
+            'locked' => $locked,
+        ]);
+    }
+
     #[Route('/user/invitation/{token}', name: 'user_invitation_accept', requirements: ['token' => '[a-f0-9]{64}'], methods: ['GET', 'POST'])]
     public function invitation(Request $request, string $token): Response
     {
@@ -440,8 +466,10 @@ final class UserController extends AbstractController
 
             if ([] === $errors) {
                 $user->changePassword($this->passwordHasher->hashPassword($user, $password));
+                [$reviewToken, $plainReviewToken] = $this->issuePasswordChangeReviewToken($user);
                 $token->consume($user);
                 $this->entityManager->flush();
+                $this->deliverPasswordChangeNotification($reviewToken, $plainReviewToken);
                 $this->audit($user, 'auth.password_reset_completed', ['result_status' => 'success']);
                 $success = true;
             }
@@ -482,6 +510,34 @@ final class UserController extends AbstractController
         $token = $this->entityManager->getRepository(AccountToken::class)->findOneBy($criteria);
 
         return $token instanceof AccountToken && !$token->isExpired() ? $token : null;
+    }
+
+    /**
+     * @return array{0: AccountToken, 1: string}
+     */
+    private function issuePasswordChangeReviewToken(UserAccount $user): array
+    {
+        $this->revokePendingTokensForUser($user, [AccountTokenType::SecurityReview]);
+        [$token, $plainToken] = $this->tokenIssuer->issue(
+            AccountTokenType::SecurityReview,
+            $user->email(),
+            [],
+            $user,
+            ttl: $this->userFlowConfig->accountLinkTtl(),
+        );
+        $this->entityManager->persist($token);
+
+        return [$token, $plainToken];
+    }
+
+    private function deliverPasswordChangeNotification(AccountToken $token, string $plainToken): void
+    {
+        $this->linkDelivery->deliver(
+            $token,
+            AccountMailFlow::PasswordChanged,
+            $plainToken,
+            $this->generateUrl('user_security_review', ['token' => $plainToken], 0),
+        );
     }
 
     /**

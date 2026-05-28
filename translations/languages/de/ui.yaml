@@ -122,6 +122,12 @@ ui:
       errors:
         invalid_csrf: 'Das Einladungsformular ist abgelaufen. Bitte versuche es erneut.'
         create_failed: 'Der Account konnte nicht erstellt werden. Username oder E-Mail werden möglicherweise bereits verwendet.'
+    security_review:
+      title: 'Account-Sicherheitsprüfung'
+      locked_subtitle: 'Der Account wurde vorläufig gesperrt.'
+      unavailable_subtitle: 'Dieser Sicherheitsprüfungs-Link ist nicht mehr verfügbar.'
+      locked_message: 'Eine Administratorbenachrichtigung zur Prüfung wurde erzeugt.'
+      unavailable_message: 'Der Link ist möglicherweise abgelaufen oder wurde bereits verwendet.'
     logout:
       title: 'Abmelden'
       placeholder: 'Bestätige, dass du deine Sitzung beenden möchtest.'

@@ -38,7 +38,11 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
 
     public function notify(AccountToken $token, AccountMailFlow $flow, ?string $recipientEmail = null, array $context = []): void
     {
-        $recipientEmail ??= AccountMailFlow::RegistrationApprovalRequested === $flow ? null : $token->email();
+        $adminFacing = in_array($flow, [
+            AccountMailFlow::RegistrationApprovalRequested,
+            AccountMailFlow::PasswordChangeDisputed,
+        ], true);
+        $recipientEmail ??= $adminFacing ? null : $token->email();
 
         $this->messageLogger->log(
             Message::info(MessageCode::ACCOUNT_NOTIFICATION_DELIVERED, MessageKey::ACCOUNT_NOTIFICATION_DELIVERED, [

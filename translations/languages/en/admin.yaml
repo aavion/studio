@@ -197,6 +197,7 @@ admin:
       invitation: 'Invitation'
       registration: 'Registration'
       password_reset: 'Password reset'
+      security_review: 'Security review'
     token_status:
       pending: 'Pending'
       pending_approval: 'Waiting for approval'
@@ -461,6 +462,8 @@ admin:
         help: 'Applies only to newly created invitation and registration links. Existing tokens keep their stored expiry time.'
       registration_admin_notification_email:
         label: 'Registration approval email'
+      security_notification_email:
+        label: 'Security notification email'
       user_menu_enabled:
         label: 'Show system user menu'
       user_menu_sort_order:

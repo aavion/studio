@@ -1,0 +1,15 @@
+{% extends '@frontend/frontend.html.twig' %}
+
+{% block title %}{{ 'ui.user.security_review.title'|trans }}{% endblock %}
+
+{% block frontend_body %}
+    <section class="studio-auth-panel">
+        {% include '@frontend/partials/typography/_page-header.html.twig' with {
+            title: 'ui.user.security_review.title'|trans,
+            subtitle: locked ? 'ui.user.security_review.locked_subtitle'|trans : 'ui.user.security_review.unavailable_subtitle'|trans,
+        } only %}
+        <p class="studio-auth-notice">
+            {{ locked ? 'ui.user.security_review.locked_message'|trans : 'ui.user.security_review.unavailable_message'|trans }}
+        </p>
+    </section>
+{% endblock %}

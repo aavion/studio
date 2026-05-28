@@ -165,6 +165,12 @@ ui:
             errors:
                 invalid_csrf: 'Das Einladungsformular ist abgelaufen. Bitte versuche es erneut.'
                 create_failed: 'Der Account konnte nicht erstellt werden. Username oder E-Mail werden möglicherweise bereits verwendet.'
+        security_review:
+            title: Account-Sicherheitsprüfung
+            locked_subtitle: 'Der Account wurde vorläufig gesperrt.'
+            unavailable_subtitle: 'Dieser Sicherheitsprüfungs-Link ist nicht mehr verfügbar.'
+            locked_message: 'Eine Administratorbenachrichtigung zur Prüfung wurde erzeugt.'
+            unavailable_message: 'Der Link ist möglicherweise abgelaufen oder wurde bereits verwendet.'
         logout:
             title: Abmelden
             placeholder: 'Bestätige, dass du deine Sitzung beenden möchtest.'
@@ -389,6 +395,7 @@ admin:
             invitation: Einladung
             registration: Registrierung
             password_reset: Passwort-Reset
+            security_review: Security-Review
         token_status:
             pending: Ausstehend
             pending_approval: 'Wartet auf Freigabe'
@@ -653,6 +660,8 @@ admin:
                 help: 'Gilt nur für neu erzeugte Einladungs- und Registrierungslinks. Bestehende Tokens behalten ihre gespeicherte Ablaufzeit.'
             registration_admin_notification_email:
                 label: 'E-Mail für Registrierungsfreigaben'
+            security_notification_email:
+                label: 'E-Mail für Sicherheitsmeldungen'
             user_menu_enabled:
                 label: 'System-Benutzermenü anzeigen'
             user_menu_sort_order:

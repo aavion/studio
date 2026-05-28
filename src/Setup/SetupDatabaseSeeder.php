@@ -39,6 +39,7 @@ final readonly class SetupDatabaseSeeder
             ['user.default_acl_group', 'registered', ConfigValueType::String],
             [UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, ConfigValueType::Integer],
             [UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '', ConfigValueType::String],
+            [UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, '', ConfigValueType::String],
             ['user.menu.enabled', true, ConfigValueType::Boolean],
             ['user.menu.sort_order', 900, ConfigValueType::Integer],
             [UserFlowConfig::REGISTRATION_MODE_KEY, UserFlowConfig::REGISTRATION_DISABLED, ConfigValueType::String],

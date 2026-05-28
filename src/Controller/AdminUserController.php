@@ -490,14 +490,17 @@ final class AdminUserController extends AbstractController
             AccountTokenType::Invitation => AccountMailFlow::InvitationLink,
             AccountTokenType::Registration => AccountMailFlow::RegistrationLink,
             AccountTokenType::PasswordReset => AccountMailFlow::PasswordResetLink,
+            AccountTokenType::SecurityReview => AccountMailFlow::PasswordChanged,
         };
     }
 
     private function urlForToken(AccountToken $token, string $plainToken): string
     {
-        return AccountTokenType::PasswordReset === $token->type()
-            ? $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0)
-            : $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0);
+        return match ($token->type()) {
+            AccountTokenType::PasswordReset => $this->generateUrl('user_password_reset_token', ['token' => $plainToken], 0),
+            AccountTokenType::SecurityReview => $this->generateUrl('user_security_review', ['token' => $plainToken], 0),
+            default => $this->generateUrl('user_invitation_accept', ['token' => $plainToken], 0),
+        };
     }
 
     /**

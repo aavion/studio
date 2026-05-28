@@ -13,4 +13,6 @@ enum AccountMailFlow: string
     case RegistrationApproved = 'account.registration.approved';
     case RegistrationRejected = 'account.registration.rejected';
     case RegistrationExistingAccount = 'account.registration.existing_account';
+    case PasswordChanged = 'account.password.changed';
+    case PasswordChangeDisputed = 'account.password_change.disputed';
 }
