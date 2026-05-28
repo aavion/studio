@@ -74,6 +74,7 @@ ui:
             username: Username
             password: Password
             submit: 'Sign in'
+            forgot_password: 'Forgot password?'
             invalid_credentials: 'The username or password is not valid.'
             account_closed: 'Your account was closed.'
         register:

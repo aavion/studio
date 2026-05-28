@@ -464,6 +464,34 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testAdminReissueRepairsInvalidTokenGroupsWithDefaultGroup(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'reissue-repair@example.test',
+            [],
+            ttl: '-1 hour',
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/admin/users');
+        $client->submit($crawler->filter('form[action="/admin/users/invitations/'.$token->uid().'/reissue"]')->form());
+
+        self::assertResponseRedirects('/admin/users');
+
+        $entityManager->clear();
+        $reissuedToken = $entityManager->find(AccountToken::class, $token->uid());
+
+        self::assertInstanceOf(AccountToken::class, $reissuedToken);
+        self::assertSame(['registered'], $reissuedToken->groupIdentifiers());
+        $entityManager->remove($reissuedToken);
+        $entityManager->flush();
+    }
+
     public function testAdminReviewQueueRendersContextualRowsWithoutPasswordResetTokens(): void
     {
         $client = self::createClient();
@@ -548,8 +576,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         self::assertInstanceOf(UserAccount::class, $updatedUser);
         self::assertSame(UserAccountStatus::Active, $updatedUser->status());
-        self::assertInstanceOf(AccountToken::class, $updatedToken);
-        $entityManager->remove($updatedToken);
+        self::assertNull($updatedToken);
         $entityManager->remove($updatedUser);
         $entityManager->flush();
     }
@@ -583,8 +610,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         self::assertInstanceOf(UserAccount::class, $updatedUser);
         self::assertSame(UserAccountStatus::Deleted, $updatedUser->status());
-        self::assertInstanceOf(AccountToken::class, $updatedToken);
-        $entityManager->remove($updatedToken);
+        self::assertNull($updatedToken);
         $entityManager->remove($updatedUser);
         $entityManager->flush();
     }

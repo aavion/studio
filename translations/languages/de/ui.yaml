@@ -31,6 +31,7 @@ ui:
       username: 'Username'
       password: 'Passwort'
       submit: 'Anmelden'
+      forgot_password: 'Passwort vergessen?'
       invalid_credentials: 'Username oder Passwort ist nicht gültig.'
       account_closed: 'Dein Account wurde geschlossen.'
     register:

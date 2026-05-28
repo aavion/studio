@@ -11,11 +11,14 @@ use App\Core\Log\AuditLoggerInterface;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
+use App\Entity\AccountToken;
 use App\Entity\UserAccount;
 use App\Mail\AccountMailFlow;
 use App\Mail\MailLocaleResolver;
 use App\Navigation\NavigationBuilder;
 use App\Security\AccountLinkDeliveryInterface;
+use App\Security\AccountTokenStatus;
+use App\Security\AccountTokenType;
 use App\Security\AdminUserAccessPolicy;
 use App\Security\AdminUserReviewViewFactory;
 use App\Security\UserAccountLifecycle;
@@ -93,6 +96,7 @@ final class AdminUserReviewController extends AbstractController
         $user->changePassword($this->passwordHasher->hashPassword($user, bin2hex(random_bytes(32))));
         $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::PASSWORD_CHANGED, $this->actorName(), 'reactivated');
         $this->userLifecycle->changeStatus($user, UserAccountStatus::Active, $this->actorName());
+        $this->deleteUsedSecurityReviewTokens($user);
         $this->entityManager->flush();
         $this->linkDelivery->notifyAddress($user->email(), AccountMailFlow::PasswordChangeReactivated, $this->mailLocaleResolver->forAdminAction($user), [
             'username' => $user->username(),
@@ -136,6 +140,7 @@ final class AdminUserReviewController extends AbstractController
         }
 
         $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Deleted, $this->actorName());
+        $this->deleteUsedSecurityReviewTokens($user);
         $this->entityManager->flush();
         $this->audit('user.security_review_deleted', ['target_user' => $user->uid(), ...$effects]);
         $this->addFlash('success', 'admin.user_reviews.actions.deleted');
@@ -199,6 +204,21 @@ final class AdminUserReviewController extends AbstractController
             $this->auditLogger->log($this->actor(), $action, $context);
         } catch (Throwable) {
             return;
+        }
+    }
+
+    private function deleteUsedSecurityReviewTokens(UserAccount $user): void
+    {
+        $tokens = $this->entityManager->getRepository(AccountToken::class)->findBy([
+            'user' => $user,
+            'type' => AccountTokenType::SecurityReview,
+            'status' => AccountTokenStatus::Used,
+        ]);
+
+        foreach ($tokens as $token) {
+            if ($token instanceof AccountToken) {
+                $this->entityManager->remove($token);
+            }
         }
     }
 }

@@ -7,10 +7,12 @@ namespace App\Controller;
 use App\Backend\BackendAccessGuard;
 use App\Backend\BackendArea;
 use App\Core\Access\AccessActor;
+use App\Core\Access\AccessLevel;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Routing\AbsoluteUriGenerator;
 use App\Core\Validation\EmailAddress;
 use App\Entity\AccountToken;
+use App\Entity\AclGroup;
 use App\Entity\UserAccount;
 use App\Mail\AccountMailFlow;
 use App\Mail\MailLocaleResolver;
@@ -167,6 +169,12 @@ final class AdminUserInvitationController extends AbstractController
             return $this->redirectAfterTokenAction($request);
         }
 
+        if (!$this->repairTokenGroupsForReissue($token)) {
+            $this->addFlash('error', 'admin.users.form.errors.group_access_too_low');
+
+            return $this->redirectAfterTokenAction($request);
+        }
+
         $plainToken = $this->tokenIssuer->reissue($token, $this->ttlForToken($token));
         $url = $this->urlForToken($token, $plainToken);
 
@@ -253,6 +261,65 @@ final class AdminUserInvitationController extends AbstractController
             AccountTokenType::SecurityReview => $this->absoluteUris->generateUri(__METHOD__, 'user_security_review', ['token' => $plainToken]),
             default => $this->absoluteUris->generateUri(__METHOD__, 'user_invitation_accept', ['token' => $plainToken]),
         };
+    }
+
+    private function repairTokenGroupsForReissue(AccountToken $token): bool
+    {
+        if (!in_array($token->type(), [AccountTokenType::Invitation, AccountTokenType::Registration], true)) {
+            return true;
+        }
+
+        $validGroups = $this->validRegisteredGroupIdentifiers($token->groupIdentifiers());
+
+        if ([] === $validGroups) {
+            $defaultGroup = $this->defaultRegistrationGroup();
+
+            if (!$defaultGroup instanceof AclGroup) {
+                return false;
+            }
+
+            $validGroups = [$defaultGroup->identifier()];
+        }
+
+        if ($validGroups !== $token->groupIdentifiers()) {
+            $token->updateGroups($validGroups);
+        }
+
+        return true;
+    }
+
+    /**
+     * @param list<string> $identifiers
+     *
+     * @return list<string>
+     */
+    private function validRegisteredGroupIdentifiers(array $identifiers): array
+    {
+        if ([] === $identifiers) {
+            return [];
+        }
+
+        $groups = $this->entityManager->getRepository(AclGroup::class)->findBy(['identifier' => $identifiers]);
+        $valid = [];
+
+        foreach ($groups as $group) {
+            if ($group instanceof AclGroup && $group->accessLevel() >= AccessLevel::REGISTERED) {
+                $valid[] = $group->identifier();
+            }
+        }
+
+        sort($valid);
+
+        return array_values(array_unique($valid));
+    }
+
+    private function defaultRegistrationGroup(): ?AclGroup
+    {
+        $group = $this->entityManager->getRepository(AclGroup::class)->findOneBy([
+            'identifier' => $this->userFlowConfig->defaultAclGroupIdentifier(),
+        ]);
+
+        return $group instanceof AclGroup && $group->accessLevel() >= AccessLevel::REGISTERED ? $group : null;
     }
 
     /**
