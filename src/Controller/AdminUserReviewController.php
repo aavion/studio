@@ -133,6 +133,12 @@ final class AdminUserReviewController extends AbstractController
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
 
+        if (!$this->hasUnresolvedSecurityReview($user)) {
+            $this->addFlash('error', 'admin.users.invitation.unavailable');
+
+            return $this->redirectToRoute('backend_admin_user_reviews');
+        }
+
         if ($error = $this->adminUserPolicy->validateUserAction($this->actor(), $user)) {
             $this->addFlash('error', $error);
 
@@ -220,5 +226,18 @@ final class AdminUserReviewController extends AbstractController
                 $this->entityManager->remove($token);
             }
         }
+    }
+
+    private function hasUnresolvedSecurityReview(UserAccount $user): bool
+    {
+        if (UserAccountStatus::Inactive !== $user->status()) {
+            return false;
+        }
+
+        return $this->entityManager->getRepository(AccountToken::class)->findOneBy([
+            'user' => $user,
+            'type' => AccountTokenType::SecurityReview,
+            'status' => AccountTokenStatus::Used,
+        ]) instanceof AccountToken;
     }
 }

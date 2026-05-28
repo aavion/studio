@@ -80,6 +80,12 @@ final class AdminUserInvitationController extends AbstractController
                 return $this->redirectToRoute('backend_admin_users');
             }
 
+            if ($existingUser instanceof UserAccount && ($error = $this->adminUserPolicy->validateUserAction($this->actor(), $existingUser))) {
+                $this->addFlash('error', $error);
+
+                return $this->redirectToRoute('backend_admin_users');
+            }
+
             $this->tokenMaintenance->revokePendingForEmail($email, [AccountTokenType::Invitation, AccountTokenType::Registration]);
             [$token, $plainToken] = $this->tokenIssuer->issue(
                 AccountTokenType::Invitation,
@@ -250,7 +256,7 @@ final class AdminUserInvitationController extends AbstractController
     private function validateTokenRevocation(AccountToken $token): ?string
     {
         return match ($token->type()) {
-            AccountTokenType::Invitation, AccountTokenType::Registration => $this->adminUserPolicy->validateGroupAssignment($this->actor(), $token->groupIdentifiers()),
+            AccountTokenType::Invitation, AccountTokenType::Registration => $this->validateRevocableTokenGroups($token),
             AccountTokenType::PasswordReset, AccountTokenType::SecurityReview => $token->user() instanceof UserAccount
                 ? $this->adminUserPolicy->validateUserAction($this->actor(), $token->user())
                 : null,
@@ -261,8 +267,21 @@ final class AdminUserInvitationController extends AbstractController
     {
         return match ($token->type()) {
             AccountTokenType::Invitation, AccountTokenType::Registration => $this->adminUserPolicy->validateGroupAssignment($this->actor(), $token->groupIdentifiers()),
-            AccountTokenType::PasswordReset, AccountTokenType::SecurityReview => null,
+            AccountTokenType::PasswordReset, AccountTokenType::SecurityReview => $token->user() instanceof UserAccount
+                ? $this->adminUserPolicy->validateUserAction($this->actor(), $token->user())
+                : null,
         };
+    }
+
+    private function validateRevocableTokenGroups(AccountToken $token): ?string
+    {
+        $validGroups = $this->validRegisteredGroupIdentifiers($token->groupIdentifiers());
+
+        if ([] === $validGroups) {
+            return null;
+        }
+
+        return $this->adminUserPolicy->validateGroupAssignment($this->actor(), $validGroups);
     }
 
     private function redirectAfterTokenAction(Request $request): Response

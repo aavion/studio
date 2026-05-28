@@ -858,6 +858,25 @@ final class UserControllerTest extends WebTestCase
         self::assertResponseRedirects('/user/api-keys');
     }
 
+    public function testRevokedApiKeyCannotBeRevealedFromDirectUrl(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'revokedreveal', 'current-password');
+        $apiKey = $this->createApiKey($user, 'revokedreveal');
+        $apiKey->revoke();
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
+        $client->loginUser($user);
+
+        $client->request('GET', '/user/api-keys/'.$apiKey->uid().'/reveal');
+
+        self::assertResponseStatusCodeSame(404);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->remove($entityManager->find(ApiKey::class, $apiKey->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $user->uid()));
+        $entityManager->flush();
+    }
+
     public function testUserCanCloseOwnAccountAndRevokeCredentials(): void
     {
         $client = self::createClient();

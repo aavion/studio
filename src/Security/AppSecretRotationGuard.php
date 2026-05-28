@@ -75,12 +75,16 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
         }
 
         $apiKeysRevoked = $this->revokeActiveApiKeys();
-        $resetLinksIssued = $this->issueOwnerPasswordResetLinks();
-        $this->storeFingerprint($fingerprints, $environmentKey, $currentFingerprint);
+        $resetLinks = $this->issueOwnerPasswordResetLinks();
+
+        if (0 === $resetLinks['owners'] || $resetLinks['issued'] > 0) {
+            $this->storeFingerprint($fingerprints, $environmentKey, $currentFingerprint);
+        }
+
         $this->auditLogger->log(AccessActor::fromAccess(9, [], username: 'system'), 'security.app_secret_rotated', [
             'environment' => $this->environment,
             'api_keys_revoked' => $apiKeysRevoked,
-            'password_reset_links_issued' => $resetLinksIssued,
+            'password_reset_links_issued' => $resetLinks['issued'],
         ]);
     }
 
@@ -147,16 +151,20 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
         return $count;
     }
 
-    private function issueOwnerPasswordResetLinks(): int
+    /**
+     * @return array{owners: int, issued: int}
+     */
+    private function issueOwnerPasswordResetLinks(): array
     {
-        $count = 0;
+        $owners = 0;
+        $issued = 0;
 
         foreach ($this->entityManager->getRepository(UserAccount::class)->findBy(['status' => UserAccountStatus::Active]) as $user) {
             if (!$user instanceof UserAccount || 9 !== $user->maxAccessLevel()) {
                 continue;
             }
 
-            $this->revokePendingPasswordResetTokens($user);
+            ++$owners;
             [$token, $plainToken] = $this->tokenIssuer->issue(
                 AccountTokenType::PasswordReset,
                 $user->email(),
@@ -171,6 +179,7 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
                 continue;
             }
 
+            $this->revokePendingPasswordResetTokens($user);
             $this->entityManager->persist($token);
             $this->linkDelivery->deliver(
                 $token,
@@ -179,12 +188,12 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
                 $url,
                 $this->mailLocaleResolver->forAdminAction($user),
             );
-            ++$count;
+            ++$issued;
         }
 
         $this->entityManager->flush();
 
-        return $count;
+        return ['owners' => $owners, 'issued' => $issued];
     }
 
     private function revokePendingPasswordResetTokens(UserAccount $user): void

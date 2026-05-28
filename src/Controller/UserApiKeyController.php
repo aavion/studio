@@ -83,7 +83,7 @@ final class UserApiKeyController extends AbstractController
 
         $apiKey = $this->entityManager->find(ApiKey::class, $uid);
 
-        if (!$apiKey instanceof ApiKey || $apiKey->user() !== $user) {
+        if (!$apiKey instanceof ApiKey || $apiKey->user() !== $user || ApiKeyStatus::Revoked === $apiKey->status()) {
             return $this->httpError->notFound($request);
         }
 
