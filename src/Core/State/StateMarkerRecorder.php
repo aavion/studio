@@ -34,7 +34,7 @@ final readonly class StateMarkerRecorder
             'marker_at' => $now,
             'marker_by' => $markerBy,
             'marker_value' => $markerValue,
-            'metadata' => json_encode($metadata, JSON_THROW_ON_ERROR),
+            'metadata' => $this->encodeMetadata($metadata),
         ];
         $existingUid = $connection->fetchOne(
             'SELECT uid FROM state_marker WHERE subject_type = ? AND subject_uid = ? AND marker_key = ?',
@@ -84,5 +84,17 @@ final readonly class StateMarkerRecorder
         $hex = bin2hex($bytes);
 
         return sprintf('%s-%s-%s-%s-%s', substr($hex, 0, 8), substr($hex, 8, 4), substr($hex, 12, 4), substr($hex, 16, 4), substr($hex, 20));
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    private function encodeMetadata(array $metadata): string
+    {
+        try {
+            return json_encode($metadata, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return '{"encoding_error":true}';
+        }
     }
 }
