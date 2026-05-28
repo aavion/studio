@@ -93,6 +93,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-28
+- Added regression coverage for the manual user-edit path that prevents Level-8 administrators from assigning peer-level ACL groups to lower-level users.
 - Added a translation catalogue cache warmer that refreshes generated runtime catalogues during cache warmup when source or generated hashes drift, ignores its runtime manifest in Git, and covered the warmup skip/regeneration behavior plus the Level-8 invitation peer-access guard with focused tests.
 - Hardened Admin User and ACL-group management: added access hierarchy/self-lockout/last-admin guardrails, limited non-level-9 administrators from managing users or ACL groups at their own effective access level or higher, required ACL group impact review before updates or deletes, moved confirmed ACL group applies onto the shared LiveLog operation overlay with step-level summary messages, cleaned deleted group identifiers from users, account tokens, content items, schema versions, and site menu items, and expanded audit contexts with before/after values.
 - Added account lifecycle hardening: account status changes now go through a dedicated service that revokes active API keys and pending password-reset/security-review tokens when users become inactive or deleted, users can close their own account with password plus explicit confirmation, `account.closed` is emitted for the future mailer, and audit contexts record the side-effect counts.

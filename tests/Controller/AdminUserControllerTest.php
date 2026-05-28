@@ -348,6 +348,39 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testLowerAccessAdminCannotAssignPeerAccessGroupToUser(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $peerGroup = $this->createGroup('peer_assignment_admin', 8);
+        $actor = $this->createUser('peerassigner', UserAccountStatus::Active);
+        $target = $this->createUser('peerassigned', UserAccountStatus::Active);
+        $actor->addGroup($peerGroup);
+        $entityManager->flush();
+
+        $client->loginUser($actor);
+        $crawler = $client->request('GET', '/admin/users/'.$target->uid());
+        $client->request('POST', '/admin/users/'.$target->uid(), [
+            '_csrf_token' => (string) $crawler->filter('form input[name="_csrf_token"]')->attr('value'),
+            'status' => UserAccountStatus::Active->value,
+            'groups' => ['peer_assignment_admin'],
+        ]);
+
+        self::assertResponseRedirects('/admin/users/'.$target->uid());
+
+        $entityManager->clear();
+        $unchangedTarget = $entityManager->find(UserAccount::class, $target->uid());
+
+        self::assertInstanceOf(UserAccount::class, $unchangedTarget);
+        self::assertSame(0, $unchangedTarget->maxAccessLevel());
+        self::assertSame([], $this->userGroupIdentifiers($unchangedTarget));
+
+        $entityManager->remove($entityManager->find(UserAccount::class, $actor->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $target->uid()));
+        $entityManager->remove($entityManager->find(AclGroup::class, $peerGroup->uid()));
+        $entityManager->flush();
+    }
+
     public function testLowerAccessAdminCannotCreatePeerAccessGroup(): void
     {
         $client = self::createClient();
@@ -621,6 +654,24 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->persist($group);
 
         return $group;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function userGroupIdentifiers(UserAccount $user): array
+    {
+        $identifiers = [];
+
+        foreach ($user->groups() as $group) {
+            if ($group instanceof AclGroup) {
+                $identifiers[] = $group->identifier();
+            }
+        }
+
+        sort($identifiers);
+
+        return $identifiers;
     }
 
     private function createApiKey(UserAccount $user, string $prefix): ApiKey
