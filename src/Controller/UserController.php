@@ -10,9 +10,9 @@ use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
+use App\Mail\AccountMailFlow;
+use App\Mail\MailLocaleResolver;
 use App\Security\AccountLinkDeliveryInterface;
-use App\Security\AccountMailFlow;
-use App\Security\AccountMailLocaleResolver;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
@@ -39,7 +39,7 @@ final class UserController extends AbstractController
         private readonly UserFlowConfig $userFlowConfig,
         private readonly AccountTokenIssuer $tokenIssuer,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
-        private readonly AccountMailLocaleResolver $mailLocaleResolver,
+        private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly ApiKeyVault $apiKeyVault,
     ) {
     }

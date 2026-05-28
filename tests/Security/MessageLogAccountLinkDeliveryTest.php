@@ -9,8 +9,8 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageLevel;
 use App\Entity\AccountToken;
-use App\Security\AccountMailFlow;
-use App\Security\AccountMailFlowRegistry;
+use App\Mail\AccountMailFlow;
+use App\Mail\MailFlowRegistry;
 use App\Security\AccountTokenType;
 use App\Security\MessageLogAccountLinkDelivery;
 use PHPUnit\Framework\TestCase;
@@ -20,7 +20,7 @@ final class MessageLogAccountLinkDeliveryTest extends TestCase
     public function testItLogsStableMailFlowContextForLinks(): void
     {
         $logger = new RecordingAccountLinkMessageLogger();
-        $delivery = new MessageLogAccountLinkDelivery($logger, new AccountMailFlowRegistry());
+        $delivery = new MessageLogAccountLinkDelivery($logger, new MailFlowRegistry());
         $token = new AccountToken(
             '55555555-5555-4555-8555-555555555555',
             hash('sha256', 'plain-account-token'),
@@ -48,7 +48,7 @@ final class MessageLogAccountLinkDeliveryTest extends TestCase
     public function testItLogsStableMailFlowContextForNotifications(): void
     {
         $logger = new RecordingAccountLinkMessageLogger();
-        $delivery = new MessageLogAccountLinkDelivery($logger, new AccountMailFlowRegistry());
+        $delivery = new MessageLogAccountLinkDelivery($logger, new MailFlowRegistry());
         $token = new AccountToken(
             '55555555-5555-4555-8555-555555555555',
             hash('sha256', 'plain-account-token'),
@@ -71,7 +71,7 @@ final class MessageLogAccountLinkDeliveryTest extends TestCase
     public function testItLogsStableMailFlowContextForAddressNotifications(): void
     {
         $logger = new RecordingAccountLinkMessageLogger();
-        $delivery = new MessageLogAccountLinkDelivery($logger, new AccountMailFlowRegistry());
+        $delivery = new MessageLogAccountLinkDelivery($logger, new MailFlowRegistry());
 
         $delivery->notifyAddress('User@Example.Test', AccountMailFlow::RegistrationExistingAccount, 'en', [
             'username' => 'existing_user',

@@ -9,19 +9,22 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Entity\AccountToken;
+use App\Mail\AccountMailFlow;
+use App\Mail\MailDeliveryMessage;
+use App\Mail\MailFlowRegistry;
 
 final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliveryInterface
 {
     public function __construct(
         private MessageLoggerInterface $messageLogger,
-        private AccountMailFlowRegistry $flowRegistry,
+        private MailFlowRegistry $flowRegistry,
     ) {
     }
 
     public function deliver(AccountToken $token, AccountMailFlow $flow, string $plainToken, string $url, string $locale, array $parameters = []): void
     {
         $this->logMailMessage(
-            new AccountMailMessage(
+            new MailDeliveryMessage(
                 $flow,
                 $token->email(),
                 $locale,
@@ -48,7 +51,7 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
         $recipientEmail ??= $adminFacing ? null : $token->email();
 
         $this->logMailMessage(
-            new AccountMailMessage(
+            new MailDeliveryMessage(
                 $flow,
                 $recipientEmail,
                 $locale,
@@ -70,7 +73,7 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
             ...$parameters,
         ];
 
-        $this->logMailMessage(new AccountMailMessage($flow, $recipientEmail, $locale, $parameters), true);
+        $this->logMailMessage(new MailDeliveryMessage($flow, $recipientEmail, $locale, $parameters), true);
     }
 
     /**
@@ -87,7 +90,7 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
         ];
     }
 
-    private function logMailMessage(AccountMailMessage $mailMessage, bool $recipientConfigured): void
+    private function logMailMessage(MailDeliveryMessage $mailMessage, bool $recipientConfigured): void
     {
         $definition = $this->flowRegistry->definition($mailMessage->flow());
         $recipient = $mailMessage->recipientEmail();
@@ -95,11 +98,11 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
         $this->messageLogger->log(
             Message::debug(MessageCode::ACCOUNT_MAIL_STUB_QUEUED, MessageKey::ACCOUNT_MAIL_STUB_QUEUED, [
                 '%email%' => $recipient ?? 'configured administrator',
-                '%flow%' => $mailMessage->flow()->value,
+                '%flow%' => $mailMessage->flowKey(),
             ]),
             [
                 'component' => self::class,
-                'mail_flow_key' => $mailMessage->flow()->value,
+                'mail_flow_key' => $mailMessage->flowKey(),
                 'mail_template_key' => $definition->templateKey(),
                 'mail_group_key' => $definition->groupKey(),
                 'mail_label_key' => $definition->labelKey(),

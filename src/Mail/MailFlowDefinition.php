@@ -2,18 +2,19 @@
 
 declare(strict_types=1);
 
-namespace App\Security;
+namespace App\Mail;
 
+use BackedEnum;
 use InvalidArgumentException;
 
-final readonly class AccountMailFlowDefinition
+final readonly class MailFlowDefinition
 {
     /**
      * @param list<string> $requiredParameters
      * @param list<string> $optionalParameters
      */
     public function __construct(
-        private AccountMailFlow $flow,
+        private BackedEnum $flow,
         private string $templateKey,
         private string $groupKey,
         private string $labelKey,
@@ -29,9 +30,14 @@ final readonly class AccountMailFlowDefinition
         }
     }
 
-    public function flow(): AccountMailFlow
+    public function flow(): BackedEnum
     {
         return $this->flow;
+    }
+
+    public function flowKey(): string
+    {
+        return (string) $this->flow->value;
     }
 
     public function templateKey(): string

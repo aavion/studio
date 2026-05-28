@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Security;
+namespace App\Tests\Mail;
 
-use App\Security\AccountMailFlow;
-use App\Security\AccountMailFlowRegistry;
+use App\Mail\AccountMailFlow;
+use App\Mail\MailFlowRegistry;
 use PHPUnit\Framework\TestCase;
 
-final class AccountMailFlowRegistryTest extends TestCase
+final class MailFlowRegistryTest extends TestCase
 {
     public function testItDefinesEveryAccountMailFlow(): void
     {
-        $registry = new AccountMailFlowRegistry();
+        $registry = new MailFlowRegistry();
         $definitions = $registry->definitions();
 
         self::assertCount(count(AccountMailFlow::cases()), $definitions);
@@ -32,7 +32,7 @@ final class AccountMailFlowRegistryTest extends TestCase
 
     public function testItExposesExpectedTemplateParameters(): void
     {
-        $registry = new AccountMailFlowRegistry();
+        $registry = new MailFlowRegistry();
 
         self::assertSame(
             ['email', 'username'],

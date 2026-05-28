@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Security;
+namespace App\Mail;
 
 use BackedEnum;
 use DateTimeInterface;
@@ -10,13 +10,13 @@ use InvalidArgumentException;
 use Stringable;
 use UnitEnum;
 
-final readonly class AccountMailMessage
+final readonly class MailDeliveryMessage
 {
     /**
      * @param array<string, mixed> $parameters
      */
     public function __construct(
-        private AccountMailFlow $flow,
+        private BackedEnum $flow,
         private ?string $recipientEmail,
         private string $locale,
         private array $parameters,
@@ -36,9 +36,14 @@ final readonly class AccountMailMessage
         }
     }
 
-    public function flow(): AccountMailFlow
+    public function flow(): BackedEnum
     {
         return $this->flow;
+    }
+
+    public function flowKey(): string
+    {
+        return (string) $this->flow->value;
     }
 
     public function recipientEmail(): ?string

@@ -12,10 +12,10 @@ use App\Core\Log\AuditLoggerInterface;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
+use App\Mail\AccountMailFlow;
+use App\Mail\MailLocaleResolver;
 use App\Navigation\NavigationBuilder;
 use App\Security\AccountLinkDeliveryInterface;
-use App\Security\AccountMailFlow;
-use App\Security\AccountMailLocaleResolver;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
@@ -39,7 +39,7 @@ final class AdminUserController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly AccountTokenIssuer $tokenIssuer,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
-        private readonly AccountMailLocaleResolver $mailLocaleResolver,
+        private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly UserFlowConfig $userFlowConfig,
         private readonly AuditLoggerInterface $auditLogger,
         private readonly UserPasswordHasherInterface $passwordHasher,

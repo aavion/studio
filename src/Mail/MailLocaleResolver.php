@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Security;
+namespace App\Mail;
 
 use App\Content\Routing\ContentRouteLocalization;
 use App\Entity\UserAccount;
 use Symfony\Component\HttpFoundation\Request;
 
-final readonly class AccountMailLocaleResolver
+final readonly class MailLocaleResolver
 {
     public function __construct(private ContentRouteLocalization $localization)
     {
