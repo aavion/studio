@@ -7,7 +7,9 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
-
+    # Parameters for container behavior
+    .container.dumper.inline_factories: true # Inline factories to optimize performance by reducing the number of service definitions.
+    debug.container.dump: false # Disable dumping the container for debugging to improve performance.
 services:
     # default configuration for services in *this* file
     _defaults:
