@@ -840,6 +840,7 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $connection = $entityManager->getConnection();
         $config = self::getContainer()->get(Config::class);
+        $originalFingerprints = $config->get(AppSecretRotationGuard::FINGERPRINTS_KEY, []);
         $activeKeyRows = $connection->fetchAllAssociative("SELECT uid, status FROM api_key WHERE status IN ('read_only', 'read_write')");
         $existingResetTokenUids = $connection->fetchFirstColumn(
             "SELECT uid FROM account_token WHERE user_uid = ? AND type = 'password_reset'",
@@ -847,37 +848,57 @@ final class AdminUserControllerTest extends WebTestCase
         );
         $apiKey = $this->createApiKey($admin, 'rotkey');
         $entityManager->flush();
-        $config->set(AppSecretRotationGuard::FINGERPRINTS_KEY, ['test' => 'previous-secret-fingerprint'], ConfigValueType::Json, sensitive: true);
 
-        $client->request('GET', '/admin/users');
+        try {
+            $config->set(AppSecretRotationGuard::FINGERPRINTS_KEY, ['test' => 'previous-secret-fingerprint'], ConfigValueType::Json, sensitive: true);
 
-        self::assertResponseIsSuccessful();
-        $updatedApiKey = $entityManager->find(ApiKey::class, $apiKey->uid());
-        self::assertInstanceOf(ApiKey::class, $updatedApiKey);
-        self::assertSame(ApiKeyStatus::Revoked, $updatedApiKey->status());
-        $fingerprints = $config->get(AppSecretRotationGuard::FINGERPRINTS_KEY, []);
-        self::assertIsArray($fingerprints);
-        self::assertArrayHasKey('test', $fingerprints);
-        self::assertNotSame('previous-secret-fingerprint', $fingerprints['test']);
-        $newResetTokenUids = array_values(array_diff(
-            array_map('strval', $connection->fetchFirstColumn("SELECT uid FROM account_token WHERE user_uid = ? AND type = 'password_reset'", [$admin->uid()])),
-            array_map('strval', $existingResetTokenUids),
-        ));
-        self::assertNotEmpty($newResetTokenUids);
+            $client->request('GET', '/admin/users');
 
-        foreach ($newResetTokenUids as $tokenUid) {
-            $token = $entityManager->find(AccountToken::class, $tokenUid);
+            self::assertResponseIsSuccessful();
+            $updatedApiKey = $entityManager->find(ApiKey::class, $apiKey->uid());
+            self::assertInstanceOf(ApiKey::class, $updatedApiKey);
+            self::assertSame(ApiKeyStatus::Revoked, $updatedApiKey->status());
+            $fingerprints = $config->get(AppSecretRotationGuard::FINGERPRINTS_KEY, []);
+            self::assertIsArray($fingerprints);
+            self::assertArrayHasKey('test', $fingerprints);
+            self::assertNotSame('previous-secret-fingerprint', $fingerprints['test']);
+            $newResetTokenUids = array_values(array_diff(
+                array_map('strval', $connection->fetchFirstColumn("SELECT uid FROM account_token WHERE user_uid = ? AND type = 'password_reset'", [$admin->uid()])),
+                array_map('strval', $existingResetTokenUids),
+            ));
+            self::assertNotEmpty($newResetTokenUids);
+        } finally {
+            $config->set(
+                AppSecretRotationGuard::FINGERPRINTS_KEY,
+                is_array($originalFingerprints) ? $originalFingerprints : [],
+                ConfigValueType::Json,
+                sensitive: true,
+            );
 
-            if ($token instanceof AccountToken) {
-                $entityManager->remove($token);
+            $currentResetTokenUids = array_values(array_diff(
+                array_map('strval', $connection->fetchFirstColumn("SELECT uid FROM account_token WHERE user_uid = ? AND type = 'password_reset'", [$admin->uid()])),
+                array_map('strval', $existingResetTokenUids),
+            ));
+
+            foreach ($currentResetTokenUids as $tokenUid) {
+                $token = $entityManager->find(AccountToken::class, $tokenUid);
+
+                if ($token instanceof AccountToken) {
+                    $entityManager->remove($token);
+                }
             }
-        }
 
-        $entityManager->remove($updatedApiKey);
-        $entityManager->flush();
+            $storedApiKey = $entityManager->find(ApiKey::class, $apiKey->uid());
 
-        foreach ($activeKeyRows as $row) {
-            $connection->update('api_key', ['status' => (string) $row['status'], 'revoked_at' => null], ['uid' => (string) $row['uid']]);
+            if ($storedApiKey instanceof ApiKey) {
+                $entityManager->remove($storedApiKey);
+            }
+
+            $entityManager->flush();
+
+            foreach ($activeKeyRows as $row) {
+                $connection->update('api_key', ['status' => (string) $row['status'], 'revoked_at' => null], ['uid' => (string) $row['uid']]);
+            }
         }
     }
 
@@ -887,9 +908,11 @@ final class AdminUserControllerTest extends WebTestCase
         $admin = $this->adminUser();
         $client->loginUser($admin);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $connection = $entityManager->getConnection();
         $config = self::getContainer()->get(Config::class);
         $originalSiteUrl = $config->get('site.url', 'http://localhost');
         $originalFingerprints = $config->get(AppSecretRotationGuard::FINGERPRINTS_KEY, []);
+        $activeKeyRows = $connection->fetchAllAssociative("SELECT uid, status FROM api_key WHERE status IN ('read_only', 'read_write')");
         $apiKey = $this->createApiKey($admin, 'retryrotkey');
         $entityManager->flush();
         $config->set('site.url', 'not-a-url');
@@ -907,13 +930,25 @@ final class AdminUserControllerTest extends WebTestCase
             self::assertSame(ApiKeyStatus::Revoked, $updatedApiKey->status());
         } finally {
             $config->set('site.url', (string) $originalSiteUrl);
-            $config->set(AppSecretRotationGuard::FINGERPRINTS_KEY, is_array($originalFingerprints) ? $originalFingerprints : [], ConfigValueType::Json, sensitive: true);
+            $config->set(
+                AppSecretRotationGuard::FINGERPRINTS_KEY,
+                is_array($originalFingerprints) ? $originalFingerprints : [],
+                ConfigValueType::Json,
+                sensitive: true,
+            );
+
             $storedApiKey = $entityManager->find(ApiKey::class, $apiKey->uid());
 
             if ($storedApiKey instanceof ApiKey) {
                 $entityManager->remove($storedApiKey);
                 $entityManager->flush();
             }
+
+            foreach ($activeKeyRows as $row) {
+                $connection->update('api_key', ['status' => (string) $row['status'], 'revoked_at' => null], ['uid' => (string) $row['uid']]);
+            }
+
+            $entityManager->clear();
         }
     }
 
