@@ -11,7 +11,7 @@
 - **php**: `/opt/homebrew/bin/php` - Version: 8.5.6 + Xdebug 3.5.1
 - **python**: `/usr/bin/python3` - Version: 3.14.5
 - **composer**: `/opt/homebrew/bin/composer` - Version: 2.9.8
-- **symfony**: `/opt/homebrew/opt/symfony-cli/bin/symfony` - Version (CLI): 5.17.1, Version (PHP): 8.0.12
+- **symfony**: `/opt/homebrew/opt/symfony-cli/bin/symfony` - Version (CLI): 5.17.1, Version (PHP): 8.1.0
 - **perl**: `/usr/bin/perl` - Version: 5.34.1
 
 ## Helpful CLI patterns
