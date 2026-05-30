@@ -1,14 +1,14 @@
 # aavion.studio
 
-> **Version**: 0.2.0-dev  
+> **Version**: 0.2.0  
 > **Status**: Active development  
-> **Updated**: 2026-05-29  
+> **Updated**: 2026-05-30  
 > **Owner**: Dominik Letica  
 > **Purpose:** Symfony 8.1 based content-management system for structured project websites.  
 
-**Note:** This repository is not ready for production use yet.
+**Note:** This repository is not ready for production use yet. Clone at your own risk!
 
-aavion.studio is an experimental CMS foundation for project websites that need structured content, modular extension points, theme support, and safe operational workflows. The project is currently in its planning and early development phase.
+aavion Studio is an experimental CMS foundation for project websites that need structured content, modular extension points for customizability and safe operational workflows. The project is currently in its planning and early development/implementation phase.
 
 The intended direction is a Symfony-native application with:
 
@@ -24,11 +24,11 @@ The project favors native Symfony components and bundles over custom framework c
 
 ## Current state
 
-The repository currently contains planning drafts and project scaffolding. Feature drafts live in [dev/draft](dev/draft/README.md), developer documentation starts in [dev/manual](dev/manual/README.md), and active work is tracked in [dev/WORKLOG.md](dev/WORKLOG.md).
+The repository currently contains planning drafts, project scaffolding and first implemented features. Feature drafts live in [dev/draft](dev/draft/README.md), developer documentation starts in [dev/manual](dev/manual/README.md), and active work is tracked in [dev/WORKLOG.md](dev/WORKLOG.md).
 
 ## Development
 
-This project targets Symfony 8 and uses Composer, Doctrine, Twig, AssetMapper, Tailwind, Stimulus, and PHPUnit. The expected workflow is still being finalized. Before making changes, read:
+This project targets Symfony 8.1 and uses Composer, Doctrine, Twig, AssetMapper, Tailwind, Stimulus, and PHPUnit. The expected workflow is still being finalized. Before making changes, read:
 
 - [Repository agent guide](AGENTS.md)
 - [Feature drafts](dev/draft/README.md)
@@ -36,7 +36,3 @@ This project targets Symfony 8 and uses Composer, Doctrine, Twig, AssetMapper, T
 - [Worklog](dev/WORKLOG.md)
 
 Common verification commands will be documented as implementation progresses.
-
-## License
-
-License information will be added before a public release.

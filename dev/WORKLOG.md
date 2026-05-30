@@ -11,28 +11,10 @@
 ## Roadmap
 **Usage:** Use as guidance on what major changes to implement next. Keep the list up-to-date while proceeding.
 
-- [ ] **0.1.x Foundation**
-  - [x] Core architecture
-  - [x] Setup and test automation
-  - [x] Error handling and validation
-  - [x] Static/dynamic content model
-  - [x] Package-scoped theme engine
-  - [ ] Native frontend/backend system package and design system
-  - Open: functional native template/system package scaffold exists; finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.
+- [x] **0.1.x Foundation**
 
 - [ ] **0.2.x Security and extension baseline**
-  - [x] Security/ACL baseline
   - [ ] Admin interface and setup UI
-  - [x] Event hooks and Messenger conventions
-  - [x] Package discovery and lifecycle
-  - Open: final Admin UI/UX pass, first dashboard widgets, setup UI refinement, production updater/marketplace, package-owned migration purge execution, final public extension API naming, and one manual package/theme smoke before PR review.
-  - Package/theme completion mini-roadmap before PR review:
-    - [x] Add the Operations/ActionLog foundation with token-protected action starts, detached runners, polling below `/api/live/operations/{id}`, review-required continuation handoff, an Admin Operations inspection view, and transient run cleanup.
-    - [x] Prepare staged ZIP install/update boundaries with enforced manifest slugs, cache-staged uploads, review-required apply, overwrite handling, post-install discovery, reactivation, and nullable registry storage for a future externally discovered available version.
-    - [x] Harden the package contribution contract without pretend manifest permission flags; document manifest keys, package settings, runtime `package.php` contributions, static/dynamic view injections, theme scopes, and template namespace precedence.
-    - [x] Make deferred Messenger work run soon after dispatch through a post-response `async` drain guarded by an environment-scoped cooldown lock.
-    - [x] Cover theme activation, dependency cascades, asset/translation lifecycle, delete/purge semantics, ZIP install, and backend action POST handling with focused tests.
-    - [ ] Run one final manual smoke before PR review: fresh setup, package/theme overviews, demo package lifecycle, dependency cascade, ZIP install confirmation, delete vs purge, and setup/public-home behavior.
 
 - [ ] **0.3.x Structured authoring and resolver foundation**
   - [ ] Schema-driven content fields
@@ -55,18 +37,7 @@
   - [ ] Contact, mail, logging, and statistics
   - [ ] IconCaptcha integration
   - Open: ActionLog live-operation foundation exists; finish durable audit retention, API write scope, public delivery snapshot vs cache-backed read model, backup/log/submission retention defaults, Scheduler execution implementation, IconCaptcha provider interface, broader secret-rotation policy, and asset policy details.
-  - Logging/statistics mini-roadmap:
-    - [x] Replace the development-only message file logger with a Monolog-backed message logger while preserving message translation keys and structured context.
-    - [x] Define dedicated file-based Monolog channels for message, audit, and access logs with 30-day retention; live-operation terminal summaries now flow through the message channel instead of a separate operation log.
-    - [x] Add small service boundaries for audit and access logging so later features can record actions without depending on UI code.
-    - [x] Keep raw access logs retraceable for at most 30 days; write unavailable GeoIP values as `n/a` until a GeoIP provider is implemented.
-    - [x] Add a database-backed access-statistics boundary that records anonymized request facts separately from raw access logs and emits aggregate snapshots for Admin Statistics.
-    - [x] Keep the statistics branch separate from raw access logs so future security and reporting features can evolve without exposing raw IP/user-agent data in statistic snapshots.
-    - [x] Add a functional Admin Logs view with log selection, basic filtering, bounded file reads, pagination, and a separate entry-detail view; visual refinement stays out of this feature slice.
-    - [x] Move access statistics into a separate top-level Admin Statistics view so raw logs and end-user statistics remain distinct UI concerns.
-    - [x] Keep raw access logs on deterministic 30-file Monolog rotation, add separate Statistics settings with enable/DNT policy, keep raw access logging always available for future security features, and report statistics recorder/aggregation/store failures through the message layer.
-    - [x] Confirm and extend statistic-event indexes for the current filter dimensions: time, request id, visitor, route, resolved route, surface, status, method, browser, device, bot flag, referrer, language, country, and continent.
-    - [x] Fold terminal live-operation summaries into the message log instead of keeping a separate operation file channel, default Admin Logs to a 24-hour window, track Do Not Track counts when DNT is not respected, and purge granular statistic events older than three months during recording.
+  - [ ] Logging and statistics
     - [ ] Decide long-term statistic-event compaction after the final reporting dimensions are known; granular anonymized events remain intentionally un-compacted for now.
 
 - [ ] **0.5.x Release lifecycle**
@@ -74,24 +45,32 @@
   - Open: package signature/checksum strategy; direct vs staged updates; rollback scope.
 
 - [ ] **Future**
-  - [ ] CommunityHub
-  - [ ] First-party modules and admin add-ons
-  - [ ] Inline frontpage editor
   - [ ] Neural-like index and semantic resolver
-  - [ ] REI3 tickets integration
+  - [ ] First-party modules and admin add-ons
+    - [ ] Referrer/promo system with reusable tokens
+    - [ ] CommunityHub
+    - [ ] Inline frontpage editor
+    - [ ] REI3 tickets integration
 
 ## To-Do
 **Usage:** Track deferred tasks and keep the list up-to-date.
 
-- [ ] Keep roadmap sub-items aligned with feature drafts when implementation changes scope, order, or dependencies. Last reviewed: 2026-05-27.
-- [ ] Before the first stable `1.0.0` release, keep Doctrine migrations consolidated into one current baseline migration.
+- ! Keep roadmap sub-items aligned with feature drafts when implementation changes scope, order, or dependencies. Last reviewed: 2026-05-30.
+- ! Before the first stable `1.0.0` release, keep Doctrine migrations consolidated into one current baseline migration.
+- [ ] Finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
-- [ ] Before `1.0.0`, decide whether package view injections stay `package.php` runtime contributions only or also get a manifest-level syntax; the current package/design PR documents and tests the runtime contribution contract.
 - [ ] Before production readiness, review public package/developer-facing class, interface, function, and Twig helper names for clarity and ergonomics; decide whether to rename directly or provide stable aliases so extension APIs read as intentional rather than provisional.
 
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
+### 2026-05-30
+- Updated bin/composer to the latest version (2.10.0) and did a small Update to the root README-file.
+### 2026-05-29
+- Requested a full audit because of the massive ammount of review findings. Instructions will follow.
+- Updated Symfony framework to version 8.1.0 and also some minor dependency updates, fixed an issue within the test suite that was made visible by these updates. No conflicts found.
+- Added a small patch to adress container performance by optimizing it's compilation. This won't fix discovered OOM-issues but helps keeping the environment bootable (at least). 
+- Found massive performance problems that need further investigation. Review for the `feat-user-management`-branch is on hold.
 ### 2026-05-28
 - Addressed PR review hardening for user management in focused follow-up commits: unified registration settings, explicit security-review POST confirmation, actor-checked/default ACL group handling in registration, reissue, approval, and revocation flows, last-admin/self-closure/security-dispute guards, shared absolute URL generation with generic delivery errors, lowercase email normalization plus valid setup email defaults, DB-free setup username validation, stricter ACL identifiers, login password-reset discovery, password-change delivery preflight, recovery-token reissue, stale dispute-token cleanup, ACL group deletion warnings for content that may become public, stale-token revocation, recovery/deleted-account authorization, revoked-key reveal blocking, stale dispute-delete rejection, retryable secret-rotation recovery links, and defensive state-marker metadata fallback encoding.
 - Polished self-service account closure with a dedicated confirmation page, retention-aware `account.closed` notification context, secure logout, and homepage redirect.
