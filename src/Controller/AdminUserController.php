@@ -173,6 +173,12 @@ final class AdminUserController extends AbstractController
             return $this->httpError->notFound($request);
         }
 
+        if (!$user->status()->isUsable()) {
+            $this->addFlash('error', 'admin.users.invitation.unavailable');
+
+            return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
+        }
+
         if (!$this->isCsrfTokenValid('admin_user_password_reset_'.$uid, $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 

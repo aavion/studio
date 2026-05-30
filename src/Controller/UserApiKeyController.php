@@ -83,7 +83,7 @@ final class UserApiKeyController extends AbstractController
 
         $apiKey = $this->entityManager->find(ApiKey::class, $uid);
 
-        if (!$apiKey instanceof ApiKey || $apiKey->user() !== $user || ApiKeyStatus::Revoked === $apiKey->status()) {
+        if (!$apiKey instanceof ApiKey || $apiKey->user() !== $user || !$this->isRevealable($apiKey)) {
             return $this->httpError->notFound($request);
         }
 
@@ -97,6 +97,10 @@ final class UserApiKeyController extends AbstractController
 
             if (!$this->passwordHasher->isPasswordValid($user, $this->stringField($request, 'password'))) {
                 $errors[] = 'ui.user.api_keys.errors.password';
+            }
+
+            if ([] === $errors && !$this->isRevealable($apiKey)) {
+                return $this->httpError->notFound($request);
             }
 
             if ([] === $errors) {
@@ -127,7 +131,7 @@ final class UserApiKeyController extends AbstractController
 
         $apiKey = $this->entityManager->find(ApiKey::class, $uid);
 
-        if ($apiKey instanceof ApiKey && $apiKey->user() === $user && $this->isCsrfTokenValid('user_api_key_revoke_'.$uid, $this->stringField($request, '_csrf_token'))) {
+        if ($apiKey instanceof ApiKey && $apiKey->user() === $user && $this->isRevealable($apiKey) && $this->isCsrfTokenValid('user_api_key_revoke_'.$uid, $this->stringField($request, '_csrf_token'))) {
             $apiKey->revoke();
             $this->entityManager->flush();
             $this->audit($user, 'api_key.revoked', ['api_key_uid' => $apiKey->uid(), 'prefix' => $apiKey->prefix()]);
@@ -148,6 +152,11 @@ final class UserApiKeyController extends AbstractController
         $value = $request->request->get($name);
 
         return is_string($value) ? $value : '';
+    }
+
+    private function isRevealable(ApiKey $apiKey): bool
+    {
+        return in_array($apiKey->status(), [ApiKeyStatus::ReadOnly, ApiKeyStatus::ReadWrite], true);
     }
 
     /**

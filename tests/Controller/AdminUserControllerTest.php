@@ -596,6 +596,46 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testLowerAccessAdminCannotApproveDeletedOwnerRegistrationToken(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $actorGroup = $this->createGroup('approve_deleted_owner_actor', 8);
+        $ownerGroup = $this->createGroup('approve_deleted_owner_group', 9);
+        $actor = $this->createUser('approvedeletedactor', UserAccountStatus::Active);
+        $deletedOwner = $this->createUser('approvedeletedowner', UserAccountStatus::Deleted);
+        $actor->addGroup($actorGroup);
+        $deletedOwner->addGroup($ownerGroup);
+        [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Registration,
+            $deletedOwner->email(),
+            ['registered'],
+            $deletedOwner,
+            status: AccountTokenStatus::PendingApproval,
+        );
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->loginUser($actor);
+        $crawler = $client->request('GET', '/admin/users');
+        $client->submit($crawler->filter('form[action="/admin/users/invitations/'.$token->uid().'/approve"]')->form());
+
+        self::assertResponseRedirects('/admin/users');
+
+        $entityManager->clear();
+        $unchangedToken = $entityManager->find(AccountToken::class, $token->uid());
+
+        self::assertInstanceOf(AccountToken::class, $unchangedToken);
+        self::assertSame(AccountTokenStatus::PendingApproval, $unchangedToken->status());
+
+        $entityManager->remove($unchangedToken);
+        $entityManager->remove($entityManager->find(UserAccount::class, $actor->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $deletedOwner->uid()));
+        $entityManager->remove($entityManager->find(AclGroup::class, $actorGroup->uid()));
+        $entityManager->remove($entityManager->find(AclGroup::class, $ownerGroup->uid()));
+        $entityManager->flush();
+    }
+
     public function testAdminApprovalRepairsInvalidTokenGroupsWithDefaultGroup(): void
     {
         $client = self::createClient();
@@ -784,6 +824,43 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testStaleDisputeReactivateFormDoesNotResetRecoveredAccount(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $user = $this->createUser('reviewstalereactivate', UserAccountStatus::Inactive);
+        $originalPassword = $user->getPassword();
+        [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::SecurityReview,
+            $user->email(),
+            [],
+            $user,
+        );
+        $token->consume($user);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/admin/users/reviews');
+        $form = $crawler->filter('form[action="/admin/users/reviews/'.$user->uid().'/reactivate"]')->form();
+        $user->changeStatus(UserAccountStatus::Active);
+        $entityManager->remove($token);
+        $entityManager->flush();
+        $client->submit($form);
+
+        self::assertResponseRedirects('/admin/users/reviews');
+
+        $entityManager->clear();
+        $unchangedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+        self::assertInstanceOf(UserAccount::class, $unchangedUser);
+        self::assertSame(UserAccountStatus::Active, $unchangedUser->status());
+        self::assertSame($originalPassword, $unchangedUser->getPassword());
+
+        $entityManager->remove($unchangedUser);
+        $entityManager->flush();
+    }
+
     public function testAdminStatusLockRevokesApiKeysAndRecoveryTokens(): void
     {
         $client = self::createClient();
@@ -829,6 +906,29 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->remove($updatedToken);
         $entityManager->remove($updatedApiKey);
         $entityManager->remove($updatedUser);
+        $entityManager->flush();
+    }
+
+    public function testAdminCannotIssuePasswordResetForInactiveUser(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $user = $this->createUser('inactiveadminreset', UserAccountStatus::Inactive);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/admin/users/'.$user->uid());
+        $client->request('POST', '/admin/users/'.$user->uid().'/password-reset', [
+            '_csrf_token' => (string) $crawler->filter('form[action="/admin/users/'.$user->uid().'/password-reset"] input[name="_csrf_token"]')->attr('value'),
+        ]);
+
+        self::assertResponseRedirects('/admin/users/'.$user->uid());
+        self::assertNull($entityManager->getRepository(AccountToken::class)->findOneBy([
+            'user' => $user,
+            'type' => AccountTokenType::PasswordReset,
+        ]));
+
+        $entityManager->remove($entityManager->find(UserAccount::class, $user->uid()));
         $entityManager->flush();
     }
 
@@ -899,6 +999,8 @@ final class AdminUserControllerTest extends WebTestCase
             foreach ($activeKeyRows as $row) {
                 $connection->update('api_key', ['status' => (string) $row['status'], 'revoked_at' => null], ['uid' => (string) $row['uid']]);
             }
+
+            $entityManager->clear();
         }
     }
 

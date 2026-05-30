@@ -156,7 +156,7 @@ final class UserRegistrationController extends AbstractController
     {
         $accountToken = $this->usableToken($token, null);
 
-        if (!$accountToken instanceof AccountToken || AccountTokenType::PasswordReset === $accountToken->type()) {
+        if (!$accountToken instanceof AccountToken || !in_array($accountToken->type(), [AccountTokenType::Invitation, AccountTokenType::Registration], true)) {
             return $this->httpError->notFound($request);
         }
 
@@ -182,6 +182,10 @@ final class UserRegistrationController extends AbstractController
 
             if ([] === $errors) {
                 try {
+                    if ($accountToken->isExpired() || AccountTokenStatus::Pending !== $accountToken->status()) {
+                        return $this->httpError->notFound($request);
+                    }
+
                     $isNewUser = !$accountToken->user() instanceof UserAccount;
                     $user = $this->userForAccountToken($accountToken, $username);
                     $user->changePassword($this->passwordHasher->hashPassword($user, $password));
@@ -282,15 +286,19 @@ final class UserRegistrationController extends AbstractController
     private function replaceGroups(UserAccount $user, array $groupIdentifiers): void
     {
         $groups = $this->entityManager->getRepository(AclGroup::class)->findBy(['identifier' => $groupIdentifiers]);
-        $maxAccessLevel = 0;
+        $foundIdentifiers = [];
 
         foreach ($groups as $group) {
             if ($group instanceof AclGroup) {
-                $maxAccessLevel = max($maxAccessLevel, $group->accessLevel());
+                if ($group->accessLevel() < AccessLevel::REGISTERED) {
+                    throw new \RuntimeException('Account token does not assign registered access.');
+                }
+
+                $foundIdentifiers[$group->identifier()] = true;
             }
         }
 
-        if ([] === $groups || $maxAccessLevel < AccessLevel::REGISTERED) {
+        if ([] === $groups || count($foundIdentifiers) !== count(array_unique($groupIdentifiers))) {
             throw new \RuntimeException('Account token does not assign registered access.');
         }
 

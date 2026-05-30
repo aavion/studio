@@ -75,7 +75,7 @@ final class UserPasswordRecoveryController extends AbstractController
                 $email = EmailAddress::normalize($this->stringField($request, 'email'));
                 $user = $this->entityManager->getRepository(UserAccount::class)->findOneByEmail($email);
 
-                if ($user instanceof UserAccount) {
+                if ($user instanceof UserAccount && $user->status()->isUsable()) {
                     $this->tokenMaintenance->revokePendingForUser($user, [AccountTokenType::PasswordReset]);
                     [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::PasswordReset, $user->email(), [], $user, ttl: UserFlowConfig::PASSWORD_RESET_TTL);
                     $url = $this->absoluteUris->generateUri(__METHOD__, 'user_password_reset_token', ['token' => $plainToken]);
@@ -104,7 +104,7 @@ final class UserPasswordRecoveryController extends AbstractController
     {
         $accountToken = $this->usableToken($token, AccountTokenType::PasswordReset);
 
-        if (!$accountToken instanceof AccountToken || !$accountToken->user() instanceof UserAccount) {
+        if (!$accountToken instanceof AccountToken || !$this->hasUsableTokenUser($accountToken)) {
             return $this->httpError->notFound($request);
         }
 
@@ -118,7 +118,7 @@ final class UserPasswordRecoveryController extends AbstractController
         $locked = false;
         $errors = [];
 
-        if ($accountToken instanceof AccountToken && $accountToken->user() instanceof UserAccount) {
+        if ($accountToken instanceof AccountToken && $this->hasUsableTokenUser($accountToken)) {
             if (!$request->isMethod('POST')) {
                 return $this->render('@frontend/user/security-review.html.twig', [
                     'account_token' => $accountToken,
@@ -138,6 +138,10 @@ final class UserPasswordRecoveryController extends AbstractController
             }
 
             $user = $accountToken->user();
+            if (!$user instanceof UserAccount || !$user->status()->isUsable() || $accountToken->isExpired() || AccountTokenStatus::Pending !== $accountToken->status()) {
+                return $this->httpError->notFound($request);
+            }
+
             if (!$this->adminUserPolicy->allowsSecurityReviewLock($user)) {
                 return $this->render('@frontend/user/security-review.html.twig', [
                     'account_token' => $accountToken,
@@ -158,6 +162,10 @@ final class UserPasswordRecoveryController extends AbstractController
             $locked = true;
         }
 
+        if ($accountToken instanceof AccountToken && !$locked) {
+            return $this->httpError->notFound($request);
+        }
+
         return $this->render('@frontend/user/security-review.html.twig', [
             'account_token' => $accountToken,
             'confirm' => false,
@@ -173,6 +181,10 @@ final class UserPasswordRecoveryController extends AbstractController
         $user = $token->user();
 
         if ($request->isMethod('POST') && $user instanceof UserAccount) {
+            if (!$user->status()->isUsable() || $token->isExpired() || AccountTokenStatus::Pending !== $token->status()) {
+                return $this->httpError->notFound($request);
+            }
+
             $password = $this->stringField($request, 'password');
             $confirmPassword = $this->stringField($request, 'confirm_password');
 
@@ -227,6 +239,13 @@ final class UserPasswordRecoveryController extends AbstractController
         $token = $this->entityManager->getRepository(AccountToken::class)->findOneBy($criteria);
 
         return $token instanceof AccountToken && !$token->isExpired() ? $token : null;
+    }
+
+    private function hasUsableTokenUser(AccountToken $token): bool
+    {
+        $user = $token->user();
+
+        return $user instanceof UserAccount && $user->status()->isUsable();
     }
 
     /**

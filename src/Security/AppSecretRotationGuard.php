@@ -77,7 +77,7 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
         $apiKeysRevoked = $this->revokeActiveApiKeys();
         $resetLinks = $this->issueOwnerPasswordResetLinks();
 
-        if (0 === $resetLinks['owners'] || $resetLinks['issued'] > 0) {
+        if (0 === $resetLinks['owners'] || $resetLinks['issued'] === $resetLinks['owners']) {
             $this->storeFingerprint($fingerprints, $environmentKey, $currentFingerprint);
         }
 

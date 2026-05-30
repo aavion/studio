@@ -129,7 +129,7 @@ final class AdminUserInvitationController extends AbstractController
 
         $token = $this->entityManager->find(AccountToken::class, $uid);
 
-        if (!$token instanceof AccountToken || AccountTokenStatus::PendingApproval !== $token->status()) {
+        if (!$token instanceof AccountToken || AccountTokenType::Registration !== $token->type() || AccountTokenStatus::PendingApproval !== $token->status()) {
             $this->addFlash('error', 'admin.users.invitation.unavailable');
 
             return $this->redirectAfterTokenAction($request);
@@ -231,6 +231,12 @@ final class AdminUserInvitationController extends AbstractController
 
         $token = $this->entityManager->find(AccountToken::class, $uid);
 
+        if (!$token instanceof AccountToken || !in_array($token->status(), [AccountTokenStatus::Pending, AccountTokenStatus::PendingApproval], true)) {
+            $this->addFlash('error', 'admin.users.invitation.unavailable');
+
+            return $this->redirectAfterTokenAction($request);
+        }
+
         if ($token instanceof AccountToken) {
             if ($error = $this->validateTokenRevocation($token)) {
                 $this->addFlash('error', $error);
@@ -265,11 +271,13 @@ final class AdminUserInvitationController extends AbstractController
 
     private function validateTokenDelivery(AccountToken $token): ?string
     {
+        if ($token->user() instanceof UserAccount && ($error = $this->adminUserPolicy->validateUserAction($this->actor(), $token->user()))) {
+            return $error;
+        }
+
         return match ($token->type()) {
             AccountTokenType::Invitation, AccountTokenType::Registration => $this->adminUserPolicy->validateGroupAssignment($this->actor(), $token->groupIdentifiers()),
-            AccountTokenType::PasswordReset, AccountTokenType::SecurityReview => $token->user() instanceof UserAccount
-                ? $this->adminUserPolicy->validateUserAction($this->actor(), $token->user())
-                : null,
+            AccountTokenType::PasswordReset, AccountTokenType::SecurityReview => null,
         };
     }
 

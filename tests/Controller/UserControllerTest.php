@@ -379,6 +379,30 @@ final class UserControllerTest extends WebTestCase
         }
     }
 
+    public function testSecurityReviewLinkRejectsInactiveAccount(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'inactiveforgotreview', 'current-password');
+        $user->changeStatus(UserAccountStatus::Inactive);
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::SecurityReview,
+            $user->email(),
+            [],
+            $user,
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->request('GET', '/user/security-review/'.$plainToken);
+
+        self::assertResponseStatusCodeSame(404);
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $user->uid()));
+        $entityManager->flush();
+    }
+
     public function testPasswordRouteReportsValidationErrors(): void
     {
         $client = self::createClient();
@@ -460,6 +484,56 @@ final class UserControllerTest extends WebTestCase
             $entityManager->remove($persistedToken);
             $entityManager->flush();
         }
+    }
+
+    public function testSecurityReviewTokenCannotEnterInvitationFlow(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'reviewnotinvite', 'current-password');
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::SecurityReview,
+            $user->email(),
+            [],
+            $user,
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->request('GET', '/user/invitation/'.$plainToken);
+
+        self::assertResponseStatusCodeSame(404);
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $user->uid()));
+        $entityManager->flush();
+    }
+
+    public function testInvitationAcceptanceRevalidatesGroupsOnPost(): void
+    {
+        $client = self::createClient();
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'missing-group-invitee@example.test',
+            ['deleted_between_get_and_post'],
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/user/invitation/'.$plainToken);
+        $client->submit($crawler->selectButton('Create account')->form([
+            'username' => 'missinggroupinvitee',
+            'password' => 'current-password',
+            'confirm_password' => 'current-password',
+        ]));
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-form-errors', 'The account could not be created. The username or email may already be used.');
+        self::assertNull($entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'missinggroupinvitee']));
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->flush();
     }
 
     public function testRegistrationForExistingAccountDoesNotCreateToken(): void
@@ -797,6 +871,53 @@ final class UserControllerTest extends WebTestCase
         }
     }
 
+    public function testPasswordResetRequestSkipsInactiveAccount(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'inactiveforgotreset', 'current-password');
+        $user->changeStatus(UserAccountStatus::Inactive);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/user/reset-password');
+        $client->submit($crawler->selectButton('Request reset link')->form([
+            'email' => $user->email(),
+        ]));
+
+        self::assertResponseIsSuccessful();
+        self::assertNull($entityManager->getRepository(AccountToken::class)->findOneBy([
+            'user' => $user,
+            'type' => AccountTokenType::PasswordReset,
+        ]));
+
+        $entityManager->remove($entityManager->find(UserAccount::class, $user->uid()));
+        $entityManager->flush();
+    }
+
+    public function testPasswordResetTokenRejectsInactiveAccount(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'inactivecompletereset', 'current-password');
+        $user->changeStatus(UserAccountStatus::Inactive);
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::PasswordReset,
+            $user->email(),
+            [],
+            $user,
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->request('GET', '/user/reset-password/'.$plainToken);
+
+        self::assertResponseStatusCodeSame(404);
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $user->uid()));
+        $entityManager->flush();
+    }
+
     public function testApiKeysRouteListsPersistedKeysForTheCurrentUser(): void
     {
         $client = self::createClient();
@@ -1024,6 +1145,10 @@ final class UserControllerTest extends WebTestCase
         $existingUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
 
         if ($existingUser instanceof UserAccount) {
+            $existingUser->changeStatus(UserAccountStatus::Active);
+            $existingUser->changePassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($existingUser, $password));
+            $entityManager->flush();
+
             return $existingUser;
         }
 
