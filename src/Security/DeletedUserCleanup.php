@@ -169,6 +169,7 @@ final readonly class DeletedUserCleanup
             self::DELETED_USER_EMAIL,
             'disabled',
             status: UserAccountStatus::Deleted,
+            role: UserRole::Public,
         );
         $this->entityManager->persist($user);
 

@@ -147,7 +147,7 @@ final class UserPasswordRecoveryController extends AbstractController
                     'account_token' => $accountToken,
                     'confirm' => true,
                     'locked' => false,
-                    'errors' => ['ui.user.security_review.errors.last_admin'],
+                    'errors' => ['ui.user.security_review.errors.last_owner'],
                 ]);
             }
 

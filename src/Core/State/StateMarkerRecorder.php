@@ -93,8 +93,8 @@ final readonly class StateMarkerRecorder
     {
         try {
             return json_encode($metadata, JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
-            return '{"encoding_error":true}';
+        } catch (\Throwable) {
+            return '{"encoding_error":true,"metadata":{}}';
         }
     }
 }

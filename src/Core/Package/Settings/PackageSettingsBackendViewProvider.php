@@ -7,6 +7,7 @@ namespace App\Core\Package\Settings;
 use App\Backend\BackendArea;
 use App\Backend\BackendViewDefinition;
 use App\Backend\BackendViewProviderInterface;
+use App\Core\Access\AccessLevel;
 
 final readonly class PackageSettingsBackendViewProvider implements BackendViewProviderInterface
 {
@@ -31,7 +32,7 @@ final readonly class PackageSettingsBackendViewProvider implements BackendViewPr
                 '@backend/admin/settings/package.html.twig',
                 $sortOrder,
                 parentUid: 'backend-admin-settings-packages',
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
                     'package_name' => $packageName,
                     'description' => $metadata['description'],

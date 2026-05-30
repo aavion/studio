@@ -135,11 +135,11 @@ final class ContentItemTest extends TestCase
     {
         $content = new ContentItem('11111111-1111-1111-1111-111111111111', 'private-project');
 
-        $content->setViewRule(AccessLevel::EDITOR, ['project_team']);
+        $content->setViewRule(AccessLevel::AUTHOR, ['project_team']);
         $content->setEditRule(AccessLevel::MANAGER);
         $content->setManageRule(null, ['admins']);
 
-        self::assertSame(AccessLevel::EDITOR, $content->viewMinLevel());
+        self::assertSame(AccessLevel::AUTHOR, $content->viewMinLevel());
         self::assertSame(['project_team'], $content->viewGroupIdentifiers());
         self::assertSame(AccessLevel::MANAGER, $content->editMinLevel());
         self::assertNull($content->editGroupIdentifiers());
@@ -154,7 +154,7 @@ final class ContentItemTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
 
-        $content->setViewRule(AccessLevel::EDITOR, ['Project Team']);
+        $content->setViewRule(AccessLevel::AUTHOR, ['Project Team']);
     }
 
     public function testItRejectsInvalidUids(): void

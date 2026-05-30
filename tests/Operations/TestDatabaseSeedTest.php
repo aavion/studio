@@ -31,23 +31,21 @@ final class TestDatabaseSeedTest extends TestCase
     {
         $seed = new SetupDefaultSeed();
         $groups = $this->pdo
-            ->query('SELECT identifier, access_level, locked, allow_empty FROM acl_group ORDER BY access_level')
+            ->query('SELECT identifier, min_role, locked FROM acl_group ORDER BY min_role')
             ->fetchAll(PDO::FETCH_ASSOC);
 
         self::assertSame(array_map(static fn (array $group): array => [
             'identifier' => $group['identifier'],
-            'access_level' => $group['access_level'],
+            'min_role' => $group['min_role'],
             'locked' => $group['locked'] ? 1 : 0,
-            'allow_empty' => $group['allow_empty'] ? 1 : 0,
         ], $seed->aclGroups()), array_map(static fn (array $row): array => [
             'identifier' => $row['identifier'],
-            'access_level' => (int) $row['access_level'],
+            'min_role' => (int) $row['min_role'],
             'locked' => (int) $row['locked'],
-            'allow_empty' => (int) $row['allow_empty'],
         ], $groups));
 
         $adminGroups = $this->pdo
-            ->query("SELECT g.identifier FROM acl_group g INNER JOIN user_acl_group ug ON ug.group_uid = g.uid INNER JOIN user_account u ON u.uid = ug.user_uid WHERE u.username = 'admin' ORDER BY g.access_level")
+            ->query("SELECT g.identifier FROM acl_group g INNER JOIN user_acl_group ug ON ug.group_uid = g.uid INNER JOIN user_account u ON u.uid = ug.user_uid WHERE u.username = 'admin' ORDER BY g.min_role")
             ->fetchAll(PDO::FETCH_COLUMN);
 
         self::assertSame([$seed->adminGroupIdentifier()], $adminGroups);

@@ -158,7 +158,7 @@ final class AdminAclGroupController extends AbstractController
         }
 
         try {
-            $accessLevel = AccessLevel::assert((int) $this->field($request, 'access_level'));
+            $accessLevel = AccessLevel::assert((int) $this->field($request, 'min_role'));
 
             if ($error = $this->adminUserPolicy->validateGroupCreate($this->adminContext->actor($this->getUser()), $accessLevel)) {
                 $this->addFlash('error', $error);
@@ -175,7 +175,6 @@ final class AdminAclGroupController extends AbstractController
                 ],
                 $accessLevel,
                 false,
-                true,
             );
             $this->entityManager->persist($group);
             $this->entityManager->flush();
@@ -203,19 +202,18 @@ final class AdminAclGroupController extends AbstractController
         $pending = [
             'name_en' => $this->field($request, 'name_en'),
             'name_de' => $this->field($request, 'name_de') ?: $this->field($request, 'name_en'),
-            'access_level' => (int) $this->field($request, 'access_level'),
-            'allow_empty' => '1' === $this->field($request, 'allow_empty'),
+            'min_role' => (int) $this->field($request, 'min_role'),
         ];
 
         try {
-            AccessLevel::assert($pending['access_level']);
+            AccessLevel::assert($pending['min_role']);
         } catch (Throwable) {
             $this->addFlash('error', 'admin.groups.form.invalid');
 
             return null;
         }
 
-        if ($error = $this->adminUserPolicy->validateGroupUpdate($this->adminContext->actor($this->getUser()), $group, $pending['access_level'])) {
+        if ($error = $this->adminUserPolicy->validateGroupUpdate($this->adminContext->actor($this->getUser()), $group, $pending['min_role'])) {
             $this->addFlash('error', $error);
 
             return null;
@@ -239,23 +237,19 @@ final class AdminAclGroupController extends AbstractController
 
         try {
             $oldName = $group->name();
-            $oldAccessLevel = $group->accessLevel();
-            $oldAllowEmpty = $group->allowsEmptyMembership();
+            $oldMinRole = $group->minRole();
             $group->rename([
                 'en' => $pending['name_en'],
                 'de' => $pending['name_de'],
             ]);
-            $group->changeAccessLevel($pending['access_level']);
-            $group->changeEmptyMembershipPolicy($pending['allow_empty']);
+            $group->changeMinRole($pending['min_role']);
             $this->entityManager->flush();
             $this->adminContext->audit($this->getUser(), 'acl.group_updated', [
                 'group' => $group->identifier(),
                 'old_name' => $oldName,
                 'new_name' => $group->name(),
-                'old_access_level' => $oldAccessLevel,
-                'new_access_level' => $group->accessLevel(),
-                'old_allow_empty' => $oldAllowEmpty,
-                'new_allow_empty' => $group->allowsEmptyMembership(),
+                'old_min_role' => $oldMinRole,
+                'new_min_role' => $group->minRole(),
                 'impact' => $impact['summary'],
             ]);
             $this->addFlash('success', 'admin.groups.saved');

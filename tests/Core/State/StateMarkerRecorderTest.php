@@ -34,8 +34,8 @@ final class StateMarkerRecorderTest extends KernelTestCase
                 [$subjectType, $subjectUid, 'metadata_encoded'],
             );
 
-            self::assertSame('{"encoding_error":true}', $metadata);
-            self::assertSame(['encoding_error' => true], $recorder->history($subjectType, $subjectUid)[0]['metadata']);
+            self::assertSame('{"encoding_error":true,"metadata":{}}', $metadata);
+            self::assertSame(['encoding_error' => true, 'metadata' => []], $recorder->history($subjectType, $subjectUid)[0]['metadata']);
         } finally {
             $connection->delete('state_marker', [
                 'subject_type' => $subjectType,

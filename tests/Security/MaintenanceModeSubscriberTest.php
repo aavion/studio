@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Security;
 
 use App\Core\Access\AccessLevel;
-use App\Entity\AclGroup;
 use App\Entity\UserAccount;
 use App\Localization\TranslationLanguageCatalog;
 use App\Security\MaintenanceModeSubscriber;
+use App\Security\UserRole;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -92,13 +92,8 @@ final class MaintenanceModeSubscriberTest extends TestCase
             'securitytest',
             'security@example.test',
             'hash',
+            role: UserRole::fromAccessLevel($accessLevel),
         );
-        $user->addGroup(new AclGroup(
-            '22222222-2222-2222-2222-222222222222',
-            'test_group',
-            ['en' => 'Test group'],
-            $accessLevel,
-        ));
 
         return $user;
     }

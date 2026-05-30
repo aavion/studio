@@ -125,6 +125,7 @@ final readonly class AdminUserReviewViewFactory
             'email' => $token->email(),
             'username' => null,
             'requested_at' => $token->createdAt(),
+            'role' => $token->role()->value,
             'groups' => $token->groupIdentifiers(),
         ];
     }
@@ -150,6 +151,7 @@ final readonly class AdminUserReviewViewFactory
             'email' => $user->email(),
             'username' => $user->username(),
             'requested_at' => $token->consumedAt() ?? $token->createdAt(),
+            'role' => $user->role()->value,
             'groups' => [],
         ];
     }

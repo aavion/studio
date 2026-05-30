@@ -21,7 +21,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 'admin.navigation.dashboard',
                 '@backend/admin/index.html.twig',
                 10,
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
             ),
             new BackendViewDefinition(
                 'backend-admin-packages',
@@ -30,7 +30,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 'admin.navigation.packages',
                 '@backend/admin/packages.html.twig',
                 20,
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
             ),
             new BackendViewDefinition(
                 'backend-admin-themes',
@@ -39,7 +39,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 'admin.navigation.themes',
                 '@backend/admin/themes.html.twig',
                 30,
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
             ),
             new BackendViewDefinition(
                 'backend-admin-users',
@@ -48,7 +48,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 'admin.navigation.users',
                 '@backend/admin/users/index.html.twig',
                 40,
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
                     'title_key' => 'admin.users.title',
                     'foundation_title_key' => 'admin.users.foundation_title',
@@ -63,7 +63,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 '@backend/admin/users/groups.html.twig',
                 10,
                 parentUid: 'backend-admin-users',
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
             ),
             new BackendViewDefinition(
                 'backend-admin-user-reviews',
@@ -73,7 +73,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 '@backend/admin/users/reviews.html.twig',
                 20,
                 parentUid: 'backend-admin-users',
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
             ),
             new BackendViewDefinition(
                 'backend-admin-scheduler',
@@ -82,7 +82,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 'admin.navigation.scheduler',
                 '@backend/admin/section.html.twig',
                 50,
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
                     'title_key' => 'admin.scheduler.title',
                     'foundation_title_key' => 'admin.scheduler.foundation_title',
@@ -96,7 +96,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 'admin.navigation.backups',
                 '@backend/admin/section.html.twig',
                 60,
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
                     'title_key' => 'admin.backups.title',
                     'foundation_title_key' => 'admin.backups.foundation_title',
@@ -110,7 +110,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 'admin.navigation.operations',
                 '@backend/admin/operations.html.twig',
                 70,
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
             ),
             new BackendViewDefinition(
                 'backend-admin-logs',
@@ -119,7 +119,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 'admin.navigation.logs',
                 '@backend/admin/logs.html.twig',
                 800,
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
             ),
             new BackendViewDefinition(
                 'backend-admin-statistics',
@@ -128,7 +128,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 'admin.navigation.statistics',
                 '@backend/admin/statistics.html.twig',
                 810,
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
             ),
             new BackendViewDefinition(
                 'backend-admin-settings',
@@ -137,7 +137,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 'admin.navigation.settings',
                 '@backend/admin/settings/index.html.twig',
                 900,
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
             ),
             new BackendViewDefinition(
                 'backend-admin-settings-general',
@@ -147,7 +147,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 '@backend/admin/settings/section.html.twig',
                 10,
                 parentUid: 'backend-admin-settings',
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
                     'title_key' => 'admin.settings.general.title',
                     'foundation_title_key' => 'admin.settings.general.foundation_title',
@@ -163,7 +163,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 '@backend/admin/settings/section.html.twig',
                 20,
                 parentUid: 'backend-admin-settings',
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
                     'title_key' => 'admin.settings.dashboard.title',
                     'foundation_title_key' => 'admin.settings.dashboard.foundation_title',
@@ -179,7 +179,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 '@backend/admin/settings/section.html.twig',
                 30,
                 parentUid: 'backend-admin-settings',
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
                     'title_key' => 'admin.settings.users.title',
                     'foundation_title_key' => 'admin.settings.users.foundation_title',
@@ -195,7 +195,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 '@backend/admin/settings/section.html.twig',
                 40,
                 parentUid: 'backend-admin-settings',
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
                     'title_key' => 'admin.settings.mail.title',
                     'foundation_title_key' => 'admin.settings.mail.foundation_title',
@@ -211,7 +211,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 '@backend/admin/settings/section.html.twig',
                 50,
                 parentUid: 'backend-admin-settings',
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
                     'title_key' => 'admin.settings.security.title',
                     'foundation_title_key' => 'admin.settings.security.foundation_title',
@@ -227,7 +227,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 '@backend/admin/settings/section.html.twig',
                 55,
                 parentUid: 'backend-admin-settings',
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
                     'title_key' => 'admin.settings.statistics.title',
                     'foundation_title_key' => 'admin.settings.statistics.foundation_title',
@@ -243,7 +243,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 '@backend/admin/settings/packages.html.twig',
                 60,
                 parentUid: 'backend-admin-settings',
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
             ),
             new BackendViewDefinition(
                 'backend-admin-settings-scheduler',
@@ -253,7 +253,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 '@backend/admin/settings/section.html.twig',
                 70,
                 parentUid: 'backend-admin-settings',
-                minimumAccessLevel: 8,
+                minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
                     'title_key' => 'admin.settings.scheduler.title',
                     'foundation_title_key' => 'admin.settings.scheduler.foundation_title',
@@ -268,7 +268,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 'editor.navigation.dashboard',
                 '@backend/editor/index.html.twig',
                 10,
-                minimumAccessLevel: AccessLevel::EDITOR,
+                minimumAccessLevel: AccessLevel::AUTHOR,
             ),
         ];
     }

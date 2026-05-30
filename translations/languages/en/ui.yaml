@@ -45,7 +45,6 @@ ui:
       errors:
         invalid_csrf: 'The registration form expired. Please try again.'
         email: 'Enter a valid email address.'
-        default_group: 'Registration is temporarily unavailable because the default access group is not configured correctly.'
         delivery_failed: 'The account email could not be created. Please try again later.'
     password_reset:
       title: 'Reset password'
@@ -67,7 +66,7 @@ ui:
       subtitle: 'Review and update your account preferences.'
       username: 'Username'
       email: 'Email'
-      access_level: 'Access level'
+      role: 'Role'
       display_name: 'Display name'
       language: 'Language'
       language_default: 'Default'
@@ -87,11 +86,21 @@ ui:
           invalid_csrf: 'The account closure form expired. Please try again.'
           confirmation: 'Confirm that you want to close the account.'
           password: 'The password is not correct.'
-          last_admin: 'The last active admin account cannot be closed.'
+          last_owner: 'The last active owner account cannot be closed.'
       errors:
         invalid_csrf: 'The profile form expired. Please try again.'
         username_invalid: 'Choose a username that starts with a letter and contains 5 to 30 letters, digits, hyphens, or underscores.'
         username_in_use: 'This username is already used.'
+    roles:
+      user: 'User'
+      moderator: 'Moderator'
+      author: 'Author'
+      publisher: 'Publisher'
+      curator: 'Curator'
+      manager: 'Manager'
+      director: 'Director'
+      admin: 'Admin'
+      owner: 'Owner'
     password:
       title: 'Change password'
       placeholder: 'Update the password for your account.'
@@ -158,7 +167,7 @@ ui:
       confirm_submit: 'Lock account'
       errors:
         invalid_csrf: 'The security review form expired. Please try again.'
-        last_admin: 'The last active admin account cannot be locked from this review link.'
+        last_owner: 'The last active owner account cannot be locked from this review link.'
     logout:
       title: 'Sign out'
       placeholder: 'Confirm that you want to end your session.'

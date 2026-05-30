@@ -147,7 +147,7 @@ final class PublishedContentResolverTest extends KernelTestCase
 
     public function testItAppliesViewAclRules(): void
     {
-        $this->connection->update('content_item', ['view_min_level' => AccessLevel::EDITOR], ['slug' => 'home']);
+        $this->connection->update('content_item', ['view_min_level' => AccessLevel::AUTHOR], ['slug' => 'home']);
         $this->entityManager->clear();
 
         self::assertNull($this->resolver->findBySlug('home', AccessActor::anonymous()));
@@ -156,10 +156,10 @@ final class PublishedContentResolverTest extends KernelTestCase
             $this->resolver->resolveBySlug('home', AccessActor::anonymous())->status(),
         );
 
-        $view = $this->resolver->findBySlug('home', AccessActor::fromAccess(AccessLevel::EDITOR, ['editor']));
+        $view = $this->resolver->findBySlug('home', AccessActor::fromAccess(AccessLevel::AUTHOR, ['editor']));
 
         self::assertNotNull($view);
-        self::assertSame(AccessLevel::EDITOR, $view->accessDecision()->rule()->minLevel());
+        self::assertSame(AccessLevel::AUTHOR, $view->accessDecision()->rule()->minLevel());
     }
 
     public function testItDoesNotResolvePrivateOrRevisionlessContentForPublicReads(): void

@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Core\Access\AccessActor;
 use App\Core\Log\AuditLoggerInterface;
+use App\Core\Message\MessageException;
 use App\Core\Routing\AbsoluteUriGenerator;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
@@ -105,10 +106,15 @@ final class UserController extends AbstractController
                     ...$user->settings(),
                     'language' => $this->stringField($request, 'language') ?: 'default',
                 ]);
-                $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::MODIFIED, $user->username(), 'profile');
-                $this->entityManager->flush();
-                $this->audit($user, 'user.profile_updated', ['result_status' => 'success']);
-                $success = true;
+                try {
+                    $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::MODIFIED, $user->username(), 'profile');
+                    $this->entityManager->flush();
+                    $this->audit($user, 'user.profile_updated', ['result_status' => 'success']);
+                    $success = true;
+                } catch (MessageException $exception) {
+                    $errors[] = $exception->messageKey();
+                    $this->audit($user, 'user.profile_update_failed', ['result_status' => 'failed', 'error_key' => $exception->messageKey()]);
+                }
             }
         }
 
@@ -150,7 +156,7 @@ final class UserController extends AbstractController
         }
 
         if (!$this->adminUserPolicy->allowsAccountClosure($user)) {
-            $errors[] = 'ui.user.profile.close.errors.last_admin';
+            $errors[] = 'ui.user.profile.close.errors.last_owner';
         }
 
         if ([] !== $errors) {

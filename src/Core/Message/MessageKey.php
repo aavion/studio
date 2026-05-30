@@ -192,6 +192,8 @@ final class MessageKey
     public const ACL_GROUP_APPLY_BLOCKED = 'message.acl.group_apply_blocked';
     public const USERNAME_INVALID = 'message.user.username.invalid';
     public const USER_EMAIL_INVALID = 'message.user.email.invalid';
+    public const USER_EMAIL_DUPLICATE = 'message.user.email.duplicate';
+    public const USER_USERNAME_DUPLICATE = 'message.user.username.duplicate';
     public const ACCOUNT_TOKEN_HASH_INVALID = 'message.account_token.hash.invalid';
     public const ACCOUNT_LINK_DELIVERED = 'message.account_link.delivered';
     public const ACCOUNT_NOTIFICATION_DELIVERED = 'message.account_link.notification_delivered';

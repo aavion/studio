@@ -54,15 +54,15 @@ final readonly class SetupDefaultSeed
     }
 
     /**
-     * @return list<array{uid: string, identifier: string, name: array<string, string>, access_level: int, locked: bool, allow_empty: bool}>
+     * @return list<array{uid: string, identifier: string, name: array<string, string>, min_role: int, locked: bool}>
      */
     public function aclGroups(): array
     {
         return [
-            ['uid' => '00000000-0000-0000-0000-000000000102', 'identifier' => 'registered', 'name' => ['en' => 'Registered', 'de' => 'Registriert'], 'access_level' => AccessLevel::REGISTERED, 'locked' => true, 'allow_empty' => true],
-            ['uid' => '00000000-0000-0000-0000-000000000103', 'identifier' => 'editor', 'name' => ['en' => 'Editor', 'de' => 'Editor'], 'access_level' => AccessLevel::EDITOR, 'locked' => false, 'allow_empty' => true],
-            ['uid' => '00000000-0000-0000-0000-000000000104', 'identifier' => 'manager', 'name' => ['en' => 'Manager', 'de' => 'Manager'], 'access_level' => AccessLevel::MANAGER, 'locked' => false, 'allow_empty' => true],
-            ['uid' => '00000000-0000-0000-0000-000000000105', 'identifier' => 'admin', 'name' => ['en' => 'Admin', 'de' => 'Admin'], 'access_level' => AccessLevel::ADMIN, 'locked' => true, 'allow_empty' => false],
+            ['uid' => '00000000-0000-0000-0000-000000000102', 'identifier' => 'registered', 'name' => ['en' => 'Registered', 'de' => 'Registriert'], 'min_role' => AccessLevel::USER, 'locked' => true],
+            ['uid' => '00000000-0000-0000-0000-000000000103', 'identifier' => 'editor', 'name' => ['en' => 'Editor', 'de' => 'Editor'], 'min_role' => AccessLevel::AUTHOR, 'locked' => false],
+            ['uid' => '00000000-0000-0000-0000-000000000104', 'identifier' => 'manager', 'name' => ['en' => 'Manager', 'de' => 'Manager'], 'min_role' => AccessLevel::MANAGER, 'locked' => false],
+            ['uid' => '00000000-0000-0000-0000-000000000105', 'identifier' => 'admin', 'name' => ['en' => 'Admin', 'de' => 'Admin'], 'min_role' => AccessLevel::ADMIN, 'locked' => true],
         ];
     }
 
@@ -132,7 +132,7 @@ final readonly class SetupDefaultSeed
             'available_variants' => ['default'],
             'visibility' => 'public',
             'view_min_level' => AccessLevel::PUBLIC,
-            'edit_min_level' => AccessLevel::EDITOR,
+            'edit_min_level' => AccessLevel::AUTHOR,
             'manage_min_level' => AccessLevel::MANAGER,
             'template_hint' => 'home',
         ];

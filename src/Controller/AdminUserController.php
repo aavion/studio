@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Backend\AdminControllerContext;
+use App\Core\Message\MessageException;
 use App\Core\Routing\AbsoluteUriGenerator;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
@@ -24,7 +25,7 @@ use App\Security\AdminUserListViewFactory;
 use App\Security\DeletedUserCleanup;
 use App\Security\UserAccountLifecycle;
 use App\Security\UserAccountStatus;
-use App\Security\UserFlowConfig;
+use App\Security\UserRole;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -48,7 +49,6 @@ final class AdminUserController extends AbstractController
         private readonly AdminUserListViewFactory $adminUserLists,
         private readonly StateMarkerRecorder $stateMarkers,
         private readonly DeletedUserCleanup $deletedUserCleanup,
-        private readonly UserFlowConfig $userFlowConfig,
     ) {
     }
 
@@ -65,7 +65,9 @@ final class AdminUserController extends AbstractController
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
             'users' => $usersView['items'],
             'users_view' => $usersView,
-            'groups' => $this->assignableGroups(),
+            'groups' => $this->assignableGroups(UserRole::User),
+            'invite_groups_by_role' => $this->assignableGroupOptionsByRole(),
+            'role_options' => $this->assignableRoles(),
             'pending_tokens' => $this->entityManager->getRepository(AccountToken::class)->findBy(
                 ['status' => [AccountTokenStatus::Pending, AccountTokenStatus::PendingApproval]],
                 ['createdAt' => 'DESC'],
@@ -147,7 +149,8 @@ final class AdminUserController extends AbstractController
         return $this->render('@backend/admin/users/detail.html.twig', [
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
             'user_account' => $user,
-            'groups' => $this->assignableGroups(),
+            'groups' => $this->assignableGroups($user->role()),
+            'role_options' => $this->assignableRoles(),
             'login_possible' => $user->status()->isUsable(),
             'state_history' => $this->stateMarkers->history(StateSubjectType::USER_ACCOUNT, $user->uid()),
             'audit_log_url' => $this->generateUrl('backend_admin_route', [
@@ -227,31 +230,55 @@ final class AdminUserController extends AbstractController
         }
 
         $newGroupIdentifiers = $this->groupIdentifiers($request->request->all('groups'));
+        $role = UserRole::tryFrom($this->field($request, 'role'));
 
-        if ($error = $this->adminUserPolicy->validateUserUpdate($this->adminContext->actor($this->getUser()), $user, $status, $newGroupIdentifiers)) {
+        if (!$role instanceof UserRole || UserRole::Public === $role) {
+            $this->addFlash('error', 'admin.users.form.errors.invalid_role');
+
+            return;
+        }
+
+        if ($error = $this->adminUserPolicy->validateUserUpdate($this->adminContext->actor($this->getUser()), $user, $status, $role, $newGroupIdentifiers)) {
             $this->addFlash('error', $error);
 
             return;
         }
 
         $oldStatus = $user->status()->value;
+        $oldRole = $user->role()->value;
         $oldGroups = $this->userGroupIdentifiers($user);
-        $oldAccessLevel = $user->maxAccessLevel();
+        $oldAccessLevel = $user->accessLevel();
         $effects = $this->userLifecycle->changeStatus($user, $status, $this->adminContext->actorName($this->getUser()));
+        $user->changeRole($role);
         $this->syncGroups($user, $newGroupIdentifiers);
         $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::MODIFIED, $this->adminContext->actorName($this->getUser()), 'admin_update', [
+            'old_role' => $oldRole,
+            'new_role' => $role->value,
             'old_groups' => $oldGroups,
             'new_groups' => $newGroupIdentifiers,
         ]);
-        $this->entityManager->flush();
+        try {
+            $this->entityManager->flush();
+        } catch (MessageException $exception) {
+            $this->addFlash('error', $exception->messageKey());
+            $this->adminContext->audit($this->getUser(), 'user.account_update_failed', [
+                'target_user' => $user->uid(),
+                'error_key' => $exception->messageKey(),
+            ]);
+
+            return;
+        }
+
         $this->adminContext->audit($this->getUser(), 'user.account_updated', [
             'target_user' => $user->uid(),
             'old_status' => $oldStatus,
             'new_status' => $status->value,
+            'old_role' => $oldRole,
+            'new_role' => $role->value,
             'old_groups' => $oldGroups,
             'new_groups' => $this->userGroupIdentifiers($user),
             'old_access_level' => $oldAccessLevel,
-            'new_access_level' => $user->maxAccessLevel(),
+            'new_access_level' => $user->accessLevel(),
             ...$effects,
         ]);
         $this->addFlash('success', 'admin.users.saved');
@@ -282,24 +309,10 @@ final class AdminUserController extends AbstractController
         }
 
         $groups = $this->userGroupIdentifiers($user);
-        $heal = '1' === $this->field($request, 'heal_groups');
-        $defaultGroupIdentifier = $this->userFlowConfig->defaultAclGroupIdentifier();
-
-        if ($heal) {
-            $groups = [$defaultGroupIdentifier];
-        }
-
-        $error = $this->adminUserPolicy->validateUserUpdate($this->adminContext->actor($this->getUser()), $user, $status, $groups);
-
-        if (in_array($error, ['admin.users.form.errors.group_required', 'admin.users.form.errors.group_access_too_low'], true) && !$heal) {
-            return $this->render('@backend/admin/users/status-heal.html.twig', [
-                'navigation' => $this->adminContext->navigation($request, $this->getUser()),
-                'user_account' => $user,
-                'target_status' => $status,
-                'error' => $error,
-                'default_group_identifier' => $defaultGroupIdentifier,
-            ]);
-        }
+        $role = UserAccountStatus::Active === $status && UserRole::Public === $user->role()
+            ? UserRole::User
+            : $user->role();
+        $error = $this->adminUserPolicy->validateUserUpdate($this->adminContext->actor($this->getUser()), $user, $status, $role, $groups);
 
         if (null !== $error) {
             $this->addFlash('error', $error);
@@ -308,12 +321,10 @@ final class AdminUserController extends AbstractController
         }
 
         $oldStatus = $user->status()->value;
+        $oldRole = $user->role()->value;
         $oldGroups = $this->userGroupIdentifiers($user);
         $effects = $this->userLifecycle->changeStatus($user, $status, $this->adminContext->actorName($this->getUser()));
-
-        if ($heal) {
-            $this->syncGroups($user, $groups);
-        }
+        $user->changeRole($role);
 
         $this->entityManager->flush();
 
@@ -328,9 +339,10 @@ final class AdminUserController extends AbstractController
             'target_user' => $user->uid(),
             'old_status' => $oldStatus,
             'new_status' => $status->value,
+            'old_role' => $oldRole,
+            'new_role' => $role->value,
             'old_groups' => $oldGroups,
             'new_groups' => $this->userGroupIdentifiers($user),
-            'groups_healed' => $heal,
             ...$effects,
         ]);
         $this->addFlash('success', UserAccountStatus::Active === $status ? 'admin.users.deleted.activated' : 'admin.users.deleted.deactivated');
@@ -364,12 +376,45 @@ final class AdminUserController extends AbstractController
     /**
      * @return list<AclGroup>
      */
-    private function assignableGroups(): array
+    private function assignableGroups(?UserRole $targetRole = null): array
     {
         return array_values(array_filter(
-            $this->entityManager->getRepository(AclGroup::class)->findBy([], ['accessLevel' => 'ASC', 'identifier' => 'ASC']),
-            fn (mixed $group): bool => $group instanceof AclGroup && $this->adminUserPolicy->canAssignGroup($this->adminContext->actor($this->getUser()), $group),
+            $this->entityManager->getRepository(AclGroup::class)->findBy([], ['minRole' => 'ASC', 'identifier' => 'ASC']),
+            fn (mixed $group): bool => $group instanceof AclGroup && $this->adminUserPolicy->canAssignGroup($this->adminContext->actor($this->getUser()), $group, $targetRole),
         ));
+    }
+
+    /**
+     * @return list<UserRole>
+     */
+    private function assignableRoles(): array
+    {
+        $actor = $this->adminContext->actor($this->getUser());
+
+        return array_values(array_filter(
+            UserRole::assignable(),
+            fn (UserRole $role): bool => null === $this->adminUserPolicy->validateRoleAssignment($actor, $role),
+        ));
+    }
+
+    /**
+     * @return array<string, list<array{identifier: string, label: string}>>
+     */
+    private function assignableGroupOptionsByRole(): array
+    {
+        $groupsByRole = [];
+
+        foreach ($this->assignableRoles() as $role) {
+            $groupsByRole[$role->value] = array_map(
+                fn (AclGroup $group): array => [
+                    'identifier' => $group->identifier(),
+                    'label' => $group->name()['en'] ?? $group->identifier(),
+                ],
+                $this->assignableGroups($role),
+            );
+        }
+
+        return $groupsByRole;
     }
 
     /**

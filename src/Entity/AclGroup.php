@@ -12,7 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'acl_group')]
 #[ORM\UniqueConstraint(name: 'uniq_acl_group_identifier', columns: ['identifier'])]
-#[ORM\Index(name: 'idx_acl_group_access_level', columns: ['access_level'])]
+#[ORM\Index(name: 'idx_acl_group_min_role', columns: ['min_role'])]
 class AclGroup
 {
     #[ORM\Id]
@@ -29,13 +29,10 @@ class AclGroup
     private array $name;
 
     #[ORM\Column]
-    private int $accessLevel;
+    private int $minRole;
 
     #[ORM\Column]
     private bool $locked;
-
-    #[ORM\Column]
-    private bool $allowEmpty;
 
     /**
      * @var array<string, mixed>
@@ -51,17 +48,15 @@ class AclGroup
         string $uid,
         string $identifier,
         array $name,
-        int $accessLevel,
+        int $minRole,
         bool $locked = false,
-        bool $allowEmpty = true,
         array $metadata = [],
     ) {
         $this->uid = Uid::assert($uid, 'ACL group UID');
         $this->identifier = Identifier::assertAclGroupIdentifier($identifier);
         $this->name = $name;
-        $this->accessLevel = AccessLevel::assert($accessLevel);
+        $this->minRole = AccessLevel::assert($minRole);
         $this->locked = $locked;
-        $this->allowEmpty = $allowEmpty;
         $this->metadata = $metadata;
     }
 
@@ -83,19 +78,14 @@ class AclGroup
         return $this->name;
     }
 
-    public function accessLevel(): int
+    public function minRole(): int
     {
-        return $this->accessLevel;
+        return $this->minRole;
     }
 
     public function isLocked(): bool
     {
         return $this->locked;
-    }
-
-    public function allowsEmptyMembership(): bool
-    {
-        return $this->allowEmpty;
     }
 
     /**
@@ -106,13 +96,8 @@ class AclGroup
         $this->name = $name;
     }
 
-    public function changeAccessLevel(int $accessLevel): void
+    public function changeMinRole(int $minRole): void
     {
-        $this->accessLevel = AccessLevel::assert($accessLevel);
-    }
-
-    public function changeEmptyMembershipPolicy(bool $allowEmpty): void
-    {
-        $this->allowEmpty = $allowEmpty;
+        $this->minRole = AccessLevel::assert($minRole);
     }
 }

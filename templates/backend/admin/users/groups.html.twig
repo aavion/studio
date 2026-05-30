@@ -21,7 +21,7 @@
             {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_identifier', name: 'identifier', label: 'admin.groups.fields.identifier'|trans, required: true} only %}
             {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name_en', name: 'name_en', label: 'admin.groups.fields.name_en'|trans, required: true} only %}
             {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name_de', name: 'name_de', label: 'admin.groups.fields.name_de'|trans} only %}
-            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_access_level', name: 'access_level', label: 'admin.groups.fields.access_level'|trans, type: 'number', required: true, attributes: {min: 1, max: 9}} only %}
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_min_role', name: 'min_role', label: 'admin.groups.fields.min_role'|trans, type: 'number', required: true, attributes: {min: 0, max: 9}} only %}
             {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.groups.actions.create'|trans} only %}
         </form>
     </section>
@@ -66,7 +66,7 @@
                 <tr>
                     <th scope="col">{{ 'admin.groups.fields.identifier'|trans }}</th>
                     <th scope="col">{{ 'admin.groups.fields.name'|trans }}</th>
-                    <th scope="col">{{ 'admin.groups.fields.access_level'|trans }}</th>
+                    <th scope="col">{{ 'admin.groups.fields.min_role'|trans }}</th>
                     <th scope="col">{{ 'admin.groups.fields.locked'|trans }}</th>
                     <th scope="col">{{ 'admin.users.fields.actions'|trans }}</th>
                 </tr>
@@ -76,7 +76,7 @@
                     <tr>
                         <td>{{ group.identifier }}</td>
                         <td>{{ group.name.en|default(group.identifier) }}</td>
-                        <td>{{ group.accessLevel }}</td>
+                        <td>{{ group.minRole }}</td>
                         <td>{{ group.locked ? 'ui.form.yes'|trans : 'ui.form.no'|trans }}</td>
                         <td><a href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">{{ 'admin.users.actions.details'|trans }}</a></td>
                     </tr>

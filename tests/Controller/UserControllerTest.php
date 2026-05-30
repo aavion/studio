@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Core\Access\AccessLevel;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\ApiKey;
@@ -15,6 +16,7 @@ use App\Security\AccountTokenType;
 use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
 use App\Security\UserAccountStatus;
+use App\Security\UserRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -309,7 +311,7 @@ final class UserControllerTest extends WebTestCase
         self::assertStringContainsString('"username":"securityreview"', $messageLog);
     }
 
-    public function testSecurityReviewLinkCannotLockLastActiveAdmin(): void
+    public function testSecurityReviewLinkCannotLockLastActiveOwner(): void
     {
         $client = self::createClient();
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -328,7 +330,7 @@ final class UserControllerTest extends WebTestCase
         $restoredStatuses = [];
 
         foreach ($entityManager->getRepository(UserAccount::class)->findBy(['status' => UserAccountStatus::Active]) as $user) {
-            if (!$user instanceof UserAccount || $user->uid() === $admin->uid() || 8 > $user->maxAccessLevel()) {
+            if (!$user instanceof UserAccount || $user->uid() === $admin->uid() || AccessLevel::OWNER > $user->accessLevel()) {
                 continue;
             }
 
@@ -344,7 +346,7 @@ final class UserControllerTest extends WebTestCase
             $client->submit($crawler->selectButton('Lock account')->form());
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-error', 'The last active admin account cannot be locked from this review link.');
+            self::assertSelectorTextContains('.studio-auth-error', 'The last active owner account cannot be locked from this review link.');
 
             $entityManager->clear();
             $unchangedAdmin = $entityManager->find(UserAccount::class, $admin->uid());
@@ -509,7 +511,7 @@ final class UserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
-    public function testInvitationAcceptanceRevalidatesGroupsOnPost(): void
+    public function testInvitationAcceptanceIgnoresMissingGroupsOnPost(): void
     {
         $client = self::createClient();
         [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
@@ -529,10 +531,85 @@ final class UserControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-form-errors', 'The account could not be created. The username or email may already be used.');
-        self::assertNull($entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'missinggroupinvitee']));
+        self::assertSelectorTextContains('.studio-auth-notice', 'Your account is ready.');
+
+        $user = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'missinggroupinvitee']);
+
+        self::assertInstanceOf(UserAccount::class, $user);
+        self::assertSame([], $this->userGroupIdentifiers($user));
 
         $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->remove($user);
+        $entityManager->flush();
+    }
+
+    public function testInvitationAcceptanceRejectsTokensWhenEmailWasClaimedMeanwhile(): void
+    {
+        $client = self::createClient();
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'claimed-invitee@example.test',
+            [],
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $claimedUser = new UserAccount(
+            '60000000-0000-0000-0000-'.substr(md5('claimedinvitee'), 0, 12),
+            'claimedinvitee',
+            'claimed-invitee@example.test',
+            'pending',
+        );
+        $claimedUser->changePassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($claimedUser, 'current-password'));
+        $entityManager->persist($token);
+        $entityManager->persist($claimedUser);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/user/invitation/'.$plainToken);
+        $client->submit($crawler->selectButton('Create account')->form([
+            'username' => 'claimednewuser',
+            'password' => 'current-password',
+            'confirm_password' => 'current-password',
+        ]));
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-form-errors', 'The account could not be created. The username or email may already be used.');
+        self::assertNull($entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'claimednewuser']));
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $claimedUser->uid()));
+        $entityManager->flush();
+    }
+
+    public function testInvitationAcceptanceAppliesTokenRoleAndRoleGroupFloor(): void
+    {
+        $client = self::createClient();
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'author-invitee@example.test',
+            ['editor'],
+            role: UserRole::Author,
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/user/invitation/'.$plainToken);
+        $client->submit($crawler->selectButton('Create account')->form([
+            'username' => 'authorinvitee',
+            'password' => 'current-password',
+            'confirm_password' => 'current-password',
+        ]));
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-auth-notice', 'Your account is ready.');
+
+        $user = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'authorinvitee']);
+
+        self::assertInstanceOf(UserAccount::class, $user);
+        self::assertSame(UserRole::Author, $user->role());
+        self::assertSame(['editor'], $this->userGroupIdentifiers($user));
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->remove($user);
         $entityManager->flush();
     }
 
@@ -627,9 +704,8 @@ final class UserControllerTest extends WebTestCase
             '00000000-0000-4000-8000-000000009901',
             'signup_default',
             ['en' => 'Signup Default'],
-            2,
+            AccessLevel::USER,
             false,
-            true,
         );
         $entityManager->persist($group);
         $entityManager->flush();
@@ -661,6 +737,41 @@ final class UserControllerTest extends WebTestCase
                 $entityManager->remove($managedGroup);
             }
 
+            $entityManager->flush();
+        }
+    }
+
+    public function testRegistrationDefaultAclGroupIsOptional(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $originalSiteUrl = $config->get('site.url', 'http://localhost');
+
+        try {
+            $config->set('site.url', 'https://example.test');
+            $config->set('user.registration.mode', 'auto_approval');
+            $config->set('user.default_acl_group', 'missing_optional_default');
+            $crawler = $client->request('GET', '/user/register');
+            $client->submit($crawler->selectButton('Request account')->form([
+                'email' => 'optional-default@example.test',
+            ]));
+
+            self::assertResponseIsSuccessful();
+
+            $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
+                'email' => 'optional-default@example.test',
+                'type' => AccountTokenType::Registration,
+            ]);
+
+            self::assertInstanceOf(AccountToken::class, $token);
+            self::assertSame(UserRole::User, $token->role());
+            self::assertSame([], $token->groupIdentifiers());
+            $entityManager->remove($token);
+        } finally {
+            $config->set('site.url', (string) $originalSiteUrl);
+            $config->set('user.registration.mode', 'disabled');
+            $config->set('user.default_acl_group', 'registered');
             $entityManager->flush();
         }
     }
@@ -1074,7 +1185,7 @@ final class UserControllerTest extends WebTestCase
         }
     }
 
-    public function testLastAdminCannotCloseOwnAccount(): void
+    public function testLastOwnerCannotCloseOwnAccount(): void
     {
         $client = self::createClient();
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -1087,7 +1198,7 @@ final class UserControllerTest extends WebTestCase
         $admin->changePassword($passwordHasher->hashPassword($admin, 'current-password'));
 
         foreach ($entityManager->getRepository(UserAccount::class)->findAll() as $user) {
-            if ($user instanceof UserAccount && $user !== $admin && UserAccountStatus::Active === $user->status() && $user->maxAccessLevel() >= 8) {
+            if ($user instanceof UserAccount && $user !== $admin && UserAccountStatus::Active === $user->status() && $user->accessLevel() >= AccessLevel::OWNER) {
                 $user->changeStatus(UserAccountStatus::Inactive);
                 $changedUsers[] = $user;
             }
@@ -1107,7 +1218,7 @@ final class UserControllerTest extends WebTestCase
 
             self::assertResponseRedirects('/user/profile/close');
             $client->followRedirect();
-            self::assertSelectorTextContains('.studio-alert-error', 'The last active admin account cannot be closed.');
+            self::assertSelectorTextContains('.studio-alert-error', 'The last active owner account cannot be closed.');
 
             $entityManager->clear();
             $persistedAdmin = $entityManager->find(UserAccount::class, $admin->uid());
@@ -1146,6 +1257,7 @@ final class UserControllerTest extends WebTestCase
 
         if ($existingUser instanceof UserAccount) {
             $existingUser->changeStatus(UserAccountStatus::Active);
+            $existingUser->changeRole(UserRole::fromAccessLevel($level));
             $existingUser->changePassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($existingUser, $password));
             $entityManager->flush();
 
@@ -1157,6 +1269,7 @@ final class UserControllerTest extends WebTestCase
             $username,
             $username.'@example.test',
             'pending',
+            role: UserRole::fromAccessLevel($level),
         );
         $user->changePassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, $password));
         $user->addGroup($group);

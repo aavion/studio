@@ -114,13 +114,12 @@ final class Version20260527120000 extends AbstractMigration
         $aclGroup->addColumn('uid', 'string', ['length' => 36]);
         $aclGroup->addColumn('identifier', 'string', ['length' => 80]);
         $aclGroup->addColumn('name', 'json');
-        $aclGroup->addColumn('access_level', 'integer');
+        $aclGroup->addColumn('min_role', 'integer');
         $aclGroup->addColumn('locked', 'boolean');
-        $aclGroup->addColumn('allow_empty', 'boolean');
         $aclGroup->addColumn('metadata', 'json');
         $this->addPrimaryKey($aclGroup, 'uid');
         $aclGroup->addUniqueIndex(['identifier'], 'uniq_acl_group_identifier');
-        $aclGroup->addIndex(['access_level'], 'idx_acl_group_access_level');
+        $aclGroup->addIndex(['min_role'], 'idx_acl_group_min_role');
 
         $user = $schema->createTable('user_account');
         $user->addColumn('uid', 'string', ['length' => 36]);
@@ -130,6 +129,7 @@ final class Version20260527120000 extends AbstractMigration
         $user->addColumn('profile', 'json');
         $user->addColumn('settings', 'json');
         $user->addColumn('status', 'string', ['length' => 255]);
+        $user->addColumn('role', 'string', ['length' => 40, 'default' => 'user']);
         $this->addPrimaryKey($user, 'uid');
         $user->addUniqueIndex(['username'], 'uniq_user_account_username');
         $user->addUniqueIndex(['email'], 'uniq_user_account_email');
@@ -152,6 +152,7 @@ final class Version20260527120000 extends AbstractMigration
         $accountToken->addColumn('email', 'string', ['length' => 180]);
         $accountToken->addColumn('user_uid', 'string', ['length' => 36, 'notnull' => false]);
         $accountToken->addColumn('group_identifiers', 'json');
+        $accountToken->addColumn('role', 'string', ['length' => 40, 'default' => 'user']);
         $accountToken->addColumn('metadata', 'json');
         $accountToken->addColumn('created_at', 'datetime_immutable');
         $accountToken->addColumn('expires_at', 'datetime_immutable');

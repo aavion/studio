@@ -16,7 +16,13 @@
 
     <section class="studio-panel">
         <h2>{{ 'admin.users.invitation.title'|trans }}</h2>
-        <form method="post" action="{{ path('backend_admin_user_invite') }}" class="studio-backend-form">
+        <form
+            method="post"
+            action="{{ path('backend_admin_user_invite') }}"
+            class="studio-backend-form"
+            data-controller="invite-groups"
+            data-invite-groups-options-value="{{ invite_groups_by_role|json_encode|e('html_attr') }}"
+        >
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_invite') }}">
             {% include '@backend/partials/forms/fields/input.html.twig' with {
                 id: 'invite_email',
@@ -25,13 +31,33 @@
                 type: 'email',
                 required: true,
             } only %}
-            {% include '@backend/partials/forms/fields/checkbox-group.html.twig' with {
-                id: 'invite_groups',
-                name: 'groups',
-                label: 'admin.users.fields.groups'|trans,
-                values: [],
-                options: groups|reduce((carry, group) => carry|merge({(group.identifier): group.name.en|default(group.identifier)}), {}),
+            {% include '@backend/partials/forms/fields/select.html.twig' with {
+                id: 'invite_role',
+                name: 'role',
+                label: 'admin.users.fields.role'|trans,
+                value: 'user',
+                attributes: {
+                    'data-invite-groups-target': 'role',
+                    'data-action': 'invite-groups#refresh',
+                },
+                options: role_options|reduce((carry, role) => carry|merge({(role.value): ('admin.users.roles.' ~ role.value)|trans}), {}),
             } only %}
+            <fieldset id="invite_groups" class="studio-backend-choice-group" data-invite-groups-target="groups">
+                <legend class="studio-backend-form-label">{{ 'admin.users.fields.groups'|trans }}</legend>
+                {% for group in groups %}
+                    {% set option_id = 'invite_groups-' ~ loop.index %}
+                    <label class="studio-backend-checkbox-label" for="{{ option_id }}">
+                        <input
+                            id="{{ option_id }}"
+                            class="studio-backend-checkbox"
+                            type="checkbox"
+                            name="groups[]"
+                            value="{{ group.identifier }}"
+                        >
+                        <span>{{ group.name.en|default(group.identifier) }}</span>
+                    </label>
+                {% endfor %}
+            </fieldset>
             {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.invitation.submit'|trans} only %}
         </form>
     </section>
@@ -49,6 +75,15 @@
                     <select name="status">
                         {% for status in users_view.status_options %}
                             <option value="{{ status }}" {% if status == users_view.filters.status %}selected{% endif %}>{{ ('admin.users.filters.status_' ~ status)|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.users.filters.role'|trans }}</span>
+                    <select name="role">
+                        <option value="all" {% if users_view.filters.role == 'all' %}selected{% endif %}>{{ 'admin.users.filters.any_role'|trans }}</option>
+                        {% for role in users_view.role_options %}
+                            <option value="{{ role.value }}" {% if role.value == users_view.filters.role %}selected{% endif %}>{{ ('admin.users.roles.' ~ role.value)|trans }}</option>
                         {% endfor %}
                     </select>
                 </label>
@@ -100,7 +135,7 @@
                         <th scope="col">{{ 'admin.users.fields.username'|trans }}</th>
                         <th scope="col">{{ 'admin.users.fields.email'|trans }}</th>
                         <th scope="col">{{ 'admin.users.fields.status'|trans }}</th>
-                        <th scope="col">{{ 'admin.users.fields.access_level'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.role'|trans }}</th>
                         <th scope="col">{{ 'admin.users.fields.groups'|trans }}</th>
                         <th scope="col">{{ 'admin.users.fields.actions'|trans }}</th>
                     </tr>
@@ -111,7 +146,7 @@
                             <td>{{ user.username }}</td>
                             <td>{{ user.email }}</td>
                             <td>{{ ('admin.users.status.' ~ user.status.value)|trans }}</td>
-                            <td>{{ user.maxAccessLevel }}</td>
+                            <td>{{ ('admin.users.roles.' ~ user.role.value)|trans }}</td>
                             <td>
                                 {% for group in user.groups %}
                                     {{ group.identifier }}{% if not loop.last %}, {% endif %}
@@ -147,6 +182,7 @@
                     <tr>
                         <th scope="col">{{ 'admin.users.fields.email'|trans }}</th>
                         <th scope="col">{{ 'admin.users.fields.type'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.role'|trans }}</th>
                         <th scope="col">{{ 'admin.users.fields.status'|trans }}</th>
                         <th scope="col">{{ 'admin.users.fields.expires_at'|trans }}</th>
                         <th scope="col">{{ 'admin.users.fields.actions'|trans }}</th>
@@ -157,6 +193,7 @@
                         <tr>
                             <td>{{ token.email }}</td>
                             <td>{{ ('admin.users.token_type.' ~ token.type.value)|trans }}</td>
+                            <td>{{ ('admin.users.roles.' ~ token.role.value)|trans }}</td>
                             <td>{{ ('admin.users.token_status.' ~ token.status.value)|trans }}</td>
                             <td>{{ token.expiresAt|date('Y-m-d H:i') }}</td>
                             <td>

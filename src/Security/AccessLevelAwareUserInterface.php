@@ -8,5 +8,5 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 interface AccessLevelAwareUserInterface extends UserInterface
 {
-    public function maxAccessLevel(): int;
+    public function accessLevel(): int;
 }

@@ -45,7 +45,6 @@ ui:
       errors:
         invalid_csrf: 'Das Registrierungsformular ist abgelaufen. Bitte versuche es erneut.'
         email: 'Gib eine gültige E-Mail-Adresse ein.'
-        default_group: 'Die Registrierung ist vorübergehend nicht verfügbar, weil die Standard-Zugriffsgruppe nicht korrekt konfiguriert ist.'
         delivery_failed: 'Die Account-E-Mail konnte nicht erstellt werden. Bitte versuche es später erneut.'
     password_reset:
       title: 'Passwort zurücksetzen'
@@ -67,7 +66,7 @@ ui:
       subtitle: 'Prüfe und aktualisiere deine Account-Einstellungen.'
       username: 'Username'
       email: 'E-Mail'
-      access_level: 'Access-Level'
+      role: 'Rolle'
       display_name: 'Anzeigename'
       language: 'Sprache'
       language_default: 'Standard'
@@ -87,11 +86,21 @@ ui:
           invalid_csrf: 'Das Formular zum Schließen des Accounts ist abgelaufen. Bitte versuche es erneut.'
           confirmation: 'Bestätige, dass du den Account schließen möchtest.'
           password: 'Das Passwort ist nicht korrekt.'
-          last_admin: 'Der letzte aktive Admin-Account kann nicht geschlossen werden.'
+          last_owner: 'Der letzte aktive Owner-Account kann nicht geschlossen werden.'
       errors:
         invalid_csrf: 'Das Profilformular ist abgelaufen. Bitte versuche es erneut.'
         username_invalid: 'Wähle einen Username, der mit einem Buchstaben beginnt und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthält.'
         username_in_use: 'Dieser Username wird bereits verwendet.'
+    roles:
+      user: 'Benutzer'
+      moderator: 'Moderator'
+      author: 'Autor'
+      publisher: 'Publisher'
+      curator: 'Kurator'
+      manager: 'Manager'
+      director: 'Director'
+      admin: 'Admin'
+      owner: 'Owner'
     password:
       title: 'Passwort ändern'
       placeholder: 'Aktualisiere das Passwort für deinen Account.'
@@ -158,7 +167,7 @@ ui:
       confirm_submit: 'Account sperren'
       errors:
         invalid_csrf: 'Das Sicherheitsprüfungsformular ist abgelaufen. Bitte versuche es erneut.'
-        last_admin: 'Der letzte aktive Admin-Account kann über diesen Sicherheitsprüfungs-Link nicht gesperrt werden.'
+        last_owner: 'Der letzte aktive Owner-Account kann über diesen Sicherheitsprüfungs-Link nicht gesperrt werden.'
     logout:
       title: 'Abmelden'
       placeholder: 'Bestätige, dass du deine Sitzung beenden möchtest.'

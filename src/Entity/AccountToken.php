@@ -11,6 +11,7 @@ use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\UserRole;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -49,6 +50,9 @@ class AccountToken
     #[ORM\Column(type: 'json')]
     private array $groupIdentifiers;
 
+    #[ORM\Column(length: 40, enumType: UserRole::class, options: ['default' => 'user'])]
+    private UserRole $role;
+
     /**
      * @var array<string, mixed>
      */
@@ -75,6 +79,7 @@ class AccountToken
         string $email,
         array $groupIdentifiers = [],
         ?UserAccount $user = null,
+        UserRole $role = UserRole::User,
         AccountTokenStatus $status = AccountTokenStatus::Pending,
         ?DateTimeImmutable $createdAt = null,
         ?DateTimeImmutable $expiresAt = null,
@@ -86,6 +91,7 @@ class AccountToken
         $this->email = self::assertEmail($email);
         $this->groupIdentifiers = self::assertGroupIdentifiers($groupIdentifiers);
         $this->user = $user;
+        $this->role = $role;
         $this->status = $status;
         $this->createdAt = $createdAt ?? new DateTimeImmutable();
         $this->expiresAt = $expiresAt ?? $this->createdAt->modify('+24 hours');
@@ -128,6 +134,16 @@ class AccountToken
     public function groupIdentifiers(): array
     {
         return $this->groupIdentifiers;
+    }
+
+    public function role(): UserRole
+    {
+        return $this->role;
+    }
+
+    public function changeRole(UserRole $role): void
+    {
+        $this->role = $role;
     }
 
     /**

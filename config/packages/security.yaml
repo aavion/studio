@@ -10,6 +10,17 @@ security:
                 class: App\Entity\UserAccount
                 property: username
 
+    role_hierarchy:
+        ROLE_USER: [ROLE_PUBLIC]
+        ROLE_MODERATOR: [ROLE_USER]
+        ROLE_AUTHOR: [ROLE_MODERATOR]
+        ROLE_PUBLISHER: [ROLE_AUTHOR]
+        ROLE_CURATOR: [ROLE_PUBLISHER]
+        ROLE_MANAGER: [ROLE_CURATOR]
+        ROLE_DIRECTOR: [ROLE_MANAGER]
+        ROLE_ADMIN: [ROLE_DIRECTOR]
+        ROLE_OWNER: [ROLE_ADMIN]
+
     firewalls:
         dev:
             # Ensure dev tools and static assets are always allowed

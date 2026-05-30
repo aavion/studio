@@ -10,13 +10,18 @@ use App\Core\Message\MessageKey;
 final class AccessLevel
 {
     public const PUBLIC = 0;
-    public const REGISTERED = 1;
-    public const EDITOR = 3;
+    public const USER = 1;
+    public const MODERATOR = 2;
+    public const AUTHOR = 3;
+    public const PUBLISHER = 4;
+    public const CURATOR = 5;
     public const MANAGER = 6;
-    public const ADMIN = 9;
+    public const DIRECTOR = 7;
+    public const ADMIN = 8;
+    public const OWNER = 9;
 
     public const DEFAULT_VIEW = self::PUBLIC;
-    public const DEFAULT_EDIT = self::EDITOR;
+    public const DEFAULT_EDIT = self::AUTHOR;
     public const DEFAULT_MANAGE = self::MANAGER;
 
     public static function assert(?int $level): ?int
@@ -25,7 +30,7 @@ final class AccessLevel
             return null;
         }
 
-        if ($level < self::PUBLIC || $level > self::ADMIN) {
+        if ($level < self::PUBLIC || $level > self::OWNER) {
             throw MessageException::invalidArgument(MessageKey::ACCESS_LEVEL_INVALID, [
                 '%level%' => $level,
             ]);

@@ -25,8 +25,9 @@ final readonly class AdminUserListViewFactory
     {
         $search = $this->listViews->queryString($request, 'q');
         $status = $this->listViews->queryChoice($request, 'status', ['all', 'active', 'inactive'], 'all');
+        $role = $this->listViews->queryChoice($request, 'role', ['all', ...array_map(static fn (UserRole $role): string => $role->value, UserRole::assignable())], 'all');
         $group = $this->listViews->queryString($request, 'group');
-        $sort = $this->listViews->queryChoice($request, 'sort', ['username', 'email', 'status', 'access_level'], 'username');
+        $sort = $this->listViews->queryChoice($request, 'sort', ['username', 'email', 'status', 'role'], 'username');
         $direction = $this->listViews->queryChoice($request, 'direction', ['asc', 'desc'], 'asc');
         $perPage = $this->listViews->perPage($request->query->get('per_page'));
         $page = $this->listViews->page($request->query->get('page'));
@@ -53,6 +54,13 @@ final readonly class AdminUserListViewFactory
             ));
         }
 
+        if ('all' !== $role) {
+            $users = array_values(array_filter(
+                $users,
+                static fn (UserAccount $user): bool => $role === $user->role()->value,
+            ));
+        }
+
         if ('' !== $group) {
             $users = array_values(array_filter(
                 $users,
@@ -68,6 +76,7 @@ final readonly class AdminUserListViewFactory
             'filters' => [
                 'search' => $search,
                 'status' => $status,
+                'role' => $role,
                 'group' => $group,
                 'sort' => $sort,
                 'direction' => $direction,
@@ -78,6 +87,7 @@ final readonly class AdminUserListViewFactory
             'per_page_options' => $this->listViews->perPageOptions('admin.users.filters.all_entries'),
             'sort_options' => $this->userSortOptions(),
             'status_options' => ['all', 'active', 'inactive'],
+            'role_options' => UserRole::assignable(),
             'group_options' => $this->entityManager->getRepository(AclGroup::class)->findBy([], ['identifier' => 'ASC']),
         ];
     }
@@ -88,7 +98,7 @@ final readonly class AdminUserListViewFactory
     public function groupsView(Request $request): array
     {
         $search = $this->listViews->queryString($request, 'q');
-        $sort = $this->listViews->queryChoice($request, 'sort', ['identifier', 'name', 'access_level', 'locked'], 'access_level');
+        $sort = $this->listViews->queryChoice($request, 'sort', ['identifier', 'name', 'min_role', 'locked'], 'min_role');
         $direction = $this->listViews->queryChoice($request, 'direction', ['asc', 'desc'], 'asc');
         $perPage = $this->listViews->perPage($request->query->get('per_page'));
         $page = $this->listViews->page($request->query->get('page'));
@@ -134,7 +144,7 @@ final readonly class AdminUserListViewFactory
             $result = match ($sort) {
                 'email' => strcasecmp($left->email(), $right->email()),
                 'status' => $left->status()->value <=> $right->status()->value,
-                'access_level' => $left->maxAccessLevel() <=> $right->maxAccessLevel(),
+                'role' => $left->accessLevel() <=> $right->accessLevel(),
                 default => strcasecmp($left->username(), $right->username()),
             };
 
@@ -152,7 +162,7 @@ final readonly class AdminUserListViewFactory
                 'name' => strcasecmp((string) ($left->name()['en'] ?? $left->identifier()), (string) ($right->name()['en'] ?? $right->identifier())),
                 'locked' => ((int) $left->isLocked()) <=> ((int) $right->isLocked()),
                 'identifier' => strcasecmp($left->identifier(), $right->identifier()),
-                default => [$left->accessLevel(), $left->identifier()] <=> [$right->accessLevel(), $right->identifier()],
+                default => [$left->minRole(), $left->identifier()] <=> [$right->minRole(), $right->identifier()],
             };
 
             return 'desc' === $direction ? -$result : $result;
@@ -168,7 +178,7 @@ final readonly class AdminUserListViewFactory
             ['key' => 'username', 'label' => 'admin.users.sort.username'],
             ['key' => 'email', 'label' => 'admin.users.sort.email'],
             ['key' => 'status', 'label' => 'admin.users.sort.status'],
-            ['key' => 'access_level', 'label' => 'admin.users.sort.access_level'],
+            ['key' => 'role', 'label' => 'admin.users.sort.role'],
         ];
     }
 
@@ -178,7 +188,7 @@ final readonly class AdminUserListViewFactory
     private function groupSortOptions(): array
     {
         return [
-            ['key' => 'access_level', 'label' => 'admin.groups.sort.access_level'],
+            ['key' => 'min_role', 'label' => 'admin.groups.sort.min_role'],
             ['key' => 'identifier', 'label' => 'admin.groups.sort.identifier'],
             ['key' => 'name', 'label' => 'admin.groups.sort.name'],
             ['key' => 'locked', 'label' => 'admin.groups.sort.locked'],

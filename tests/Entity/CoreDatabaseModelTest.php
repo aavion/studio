@@ -23,6 +23,7 @@ use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
 use App\Security\ApiKeyStatus;
 use App\Security\UserAccountStatus;
+use App\Security\UserRole;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -35,9 +36,8 @@ final class CoreDatabaseModelTest extends TestCase
             '11111111-1111-1111-1111-111111111111',
             'editor',
             ['en' => 'Editor'],
-            AccessLevel::EDITOR,
+            AccessLevel::AUTHOR,
             true,
-            false,
         );
         $manager = new AclGroup(
             '22222222-2222-2222-2222-222222222222',
@@ -51,6 +51,7 @@ final class CoreDatabaseModelTest extends TestCase
             'Dom@Example.COM',
             'hash',
             ['display_name' => 'Dominique'],
+            role: UserRole::Manager,
         );
         $user->addGroup($editor);
         $user->addGroup($manager);
@@ -71,15 +72,15 @@ final class CoreDatabaseModelTest extends TestCase
             ['registered'],
         );
 
-        self::assertSame(AccessLevel::MANAGER, $user->maxAccessLevel());
+        self::assertSame(AccessLevel::MANAGER, $user->accessLevel());
         self::assertSame('dominique', $user->getUserIdentifier());
         self::assertSame('dom@example.com', $user->email());
         self::assertSame('hash', $user->getPassword());
-        self::assertSame([], $user->getRoles());
+        self::assertSame(['ROLE_PUBLIC', 'ROLE_USER', 'ROLE_MODERATOR', 'ROLE_AUTHOR', 'ROLE_PUBLISHER', 'ROLE_CURATOR', 'ROLE_MANAGER'], $user->getRoles());
         self::assertSame(UserAccountStatus::Active, $user->status());
         self::assertSame(['language' => 'default'], $user->settings());
         self::assertTrue($editor->isLocked());
-        self::assertFalse($editor->allowsEmptyMembership());
+        self::assertSame(AccessLevel::AUTHOR, $editor->minRole());
         self::assertSame('abcd1234', $apiKey->prefix());
         self::assertSame($hmacHash, $apiKey->hmacHash());
         self::assertSame('v1.test.encrypted-key', $apiKey->encryptedKey());
@@ -87,6 +88,7 @@ final class CoreDatabaseModelTest extends TestCase
         self::assertSame(AccountTokenType::Invitation, $accountToken->type());
         self::assertSame('invitee@example.com', $accountToken->email());
         self::assertSame(AccountTokenStatus::Pending, $accountToken->status());
+        self::assertSame(UserRole::User, $accountToken->role());
         self::assertSame(['registered'], $accountToken->groupIdentifiers());
         self::assertTrue($accountToken->status()->isUsable());
         self::assertSame(MessageKey::API_KEY_STATUS_READ_WRITE, ApiKeyStatus::ReadWrite->messageKey());
@@ -119,7 +121,7 @@ final class CoreDatabaseModelTest extends TestCase
             '11111111-1111-1111-1111-111111111111',
             'ab',
             ['en' => 'Short'],
-            AccessLevel::REGISTERED,
+            AccessLevel::USER,
         );
     }
 

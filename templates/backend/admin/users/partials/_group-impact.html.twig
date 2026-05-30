@@ -9,7 +9,7 @@
                     <th scope="col">{{ 'admin.users.fields.username'|trans }}</th>
                     <th scope="col">{{ 'admin.users.fields.email'|trans }}</th>
                     <th scope="col">{{ 'admin.users.fields.status'|trans }}</th>
-                    <th scope="col">{{ 'admin.users.fields.access_level'|trans }}</th>
+                    <th scope="col">{{ 'admin.users.fields.role'|trans }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -18,7 +18,7 @@
                         <td>{{ user.username }}</td>
                         <td>{{ user.email }}</td>
                         <td>{{ ('admin.users.status.' ~ user.status)|trans }}</td>
-                        <td>{{ user.access_level }}</td>
+                        <td>{{ ('ui.user.roles.' ~ user.role)|trans }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

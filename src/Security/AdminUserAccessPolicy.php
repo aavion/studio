@@ -22,28 +22,30 @@ final readonly class AdminUserAccessPolicy
     /**
      * @param list<string> $newGroupIdentifiers
      */
-    public function validateUserUpdate(AccessActor $actor, UserAccount $target, UserAccountStatus $newStatus, array $newGroupIdentifiers): ?string
+    public function validateUserUpdate(AccessActor $actor, UserAccount $target, UserAccountStatus $newStatus, UserRole $newRole, array $newGroupIdentifiers): ?string
     {
         if ($this->isRestrictedAccessTarget($actor, $target)) {
             return 'admin.users.form.errors.target_higher_access';
         }
 
-        $newAccessLevel = $this->accessLevelForGroupIdentifiers($newGroupIdentifiers);
-
-        if ($this->isRestrictedAccessLevel($actor, $newAccessLevel)) {
-            return 'admin.users.form.errors.group_level_too_high';
+        if ($this->isRestrictedAccessLevel($actor, $newRole->accessLevel())) {
+            return 'admin.users.form.errors.role_too_high';
         }
 
-        if ($error = $this->validateUserGroupFloor($newStatus, $newGroupIdentifiers, $newAccessLevel)) {
+        if ($error = $this->validateUserGroups($actor, $newStatus, $newRole, $newGroupIdentifiers)) {
             return $error;
         }
 
-        if ($this->isActor($actor, $target) && (!$newStatus->isUsable() || $newAccessLevel < BackendArea::Admin->minimumAccessLevel())) {
+        if ($error = $this->validateUserRoleFloor($newStatus, $newRole)) {
+            return $error;
+        }
+
+        if ($this->isActor($actor, $target) && (!$newStatus->isUsable() || $newRole->accessLevel() < BackendArea::Admin->minimumAccessLevel())) {
             return 'admin.users.form.errors.self_lockout';
         }
 
-        if (!$this->hasActiveAdminAfterUserUpdate($target, $newStatus, $newAccessLevel)) {
-            return 'admin.users.form.errors.last_admin';
+        if (!$this->hasActiveOwnerAfterUserUpdate($target, $newStatus, $newRole)) {
+            return 'admin.users.form.errors.last_owner';
         }
 
         return null;
@@ -58,31 +60,36 @@ final readonly class AdminUserAccessPolicy
 
     public function allowsAccountClosure(UserAccount $target): bool
     {
-        return $this->hasActiveAdminAfterUserUpdate($target, UserAccountStatus::Deleted, 0);
+        return $this->hasActiveOwnerAfterUserUpdate($target, UserAccountStatus::Deleted, UserRole::Public);
     }
 
     public function allowsSecurityReviewLock(UserAccount $target): bool
     {
-        return $this->hasActiveAdminAfterUserUpdate($target, UserAccountStatus::Inactive, 0);
+        return $this->hasActiveOwnerAfterUserUpdate($target, UserAccountStatus::Inactive, $target->role());
     }
 
     /**
      * @param list<string> $groupIdentifiers
      */
-    public function validateGroupAssignment(AccessActor $actor, array $groupIdentifiers): ?string
+    public function validateGroupAssignment(AccessActor $actor, array $groupIdentifiers, UserRole $targetRole = UserRole::User): ?string
     {
-        $accessLevel = $this->accessLevelForGroupIdentifiers($groupIdentifiers);
-
-        if ($this->isRestrictedAccessLevel($actor, $accessLevel)) {
-            return 'admin.users.form.errors.group_level_too_high';
-        }
-
-        return $this->validateUserGroupFloor(UserAccountStatus::Active, $groupIdentifiers, $accessLevel);
+        return $this->validateUserGroups($actor, UserAccountStatus::Active, $targetRole, $groupIdentifiers);
     }
 
-    public function canAssignGroup(AccessActor $actor, AclGroup $group): bool
+    public function validateRoleAssignment(AccessActor $actor, UserRole $role): ?string
     {
-        return !$this->isRestrictedAccessLevel($actor, $group->accessLevel());
+        return $this->isRestrictedAccessLevel($actor, $role->accessLevel())
+            ? 'admin.users.form.errors.role_too_high'
+            : null;
+    }
+
+    public function canAssignGroup(AccessActor $actor, AclGroup $group, ?UserRole $targetRole = null): bool
+    {
+        if ($this->isRestrictedAccessLevel($actor, $group->minRole())) {
+            return false;
+        }
+
+        return null === $targetRole || $targetRole->accessLevel() >= $group->minRole();
     }
 
     public function validateGroupCreate(AccessActor $actor, int $accessLevel): ?string
@@ -94,19 +101,11 @@ final readonly class AdminUserAccessPolicy
 
     public function validateGroupUpdate(AccessActor $actor, AclGroup $group, int $newAccessLevel): ?string
     {
-        if ($this->isRestrictedAccessLevel($actor, $group->accessLevel()) || $this->isRestrictedAccessLevel($actor, $newAccessLevel)) {
+        if ($this->isRestrictedAccessLevel($actor, $group->minRole()) || $this->isRestrictedAccessLevel($actor, $newAccessLevel)) {
             return 'admin.groups.form.higher_access';
         }
 
-        if ($error = $this->validateGroupUpdateSystem($group, $newAccessLevel)) {
-            return $error;
-        }
-
-        if ($this->actorWouldLoseAdminAreaAccess($actor, $group, $newAccessLevel)) {
-            return 'admin.groups.form.self_lockout';
-        }
-
-        return null;
+        return $this->validateGroupUpdateSystem($group, $newAccessLevel);
     }
 
     public function validateGroupUpdateSystem(AclGroup $group, int $newAccessLevel): ?string
@@ -117,36 +116,16 @@ final readonly class AdminUserAccessPolicy
             return 'admin.groups.form.invalid';
         }
 
-        if ($this->isDefaultRegistrationGroup($group) && $newAccessLevel < AccessLevel::REGISTERED) {
-            return 'admin.groups.form.default_registration_group';
-        }
-
-        if (!$this->hasActiveAdminAfterGroupLevelChange($group, $newAccessLevel)) {
-            return 'admin.groups.form.last_admin';
-        }
-
-        if (!$this->preservesRegisteredUserGroupFloorAfterGroupChange($group, $newAccessLevel)) {
-            return 'admin.groups.form.registered_user_floor';
-        }
-
         return null;
     }
 
     public function validateGroupDelete(AccessActor $actor, AclGroup $group): ?string
     {
-        if ($this->isRestrictedAccessLevel($actor, $group->accessLevel())) {
+        if ($this->isRestrictedAccessLevel($actor, $group->minRole())) {
             return 'admin.groups.form.higher_access';
         }
 
-        if ($error = $this->validateGroupDeleteSystem($group)) {
-            return $error;
-        }
-
-        if ($this->actorWouldLoseAdminAreaAccess($actor, $group, null)) {
-            return 'admin.groups.form.self_lockout';
-        }
-
-        return null;
+        return $this->validateGroupDeleteSystem($group);
     }
 
     public function validateGroupDeleteSystem(AclGroup $group): ?string
@@ -155,25 +134,17 @@ final readonly class AdminUserAccessPolicy
             return 'admin.groups.form.default_registration_group';
         }
 
-        if (!$this->hasActiveAdminAfterGroupDeletion($group)) {
-            return 'admin.groups.form.last_admin';
-        }
-
-        if (!$this->preservesRegisteredUserGroupFloorAfterGroupChange($group, null)) {
-            return 'admin.groups.form.registered_user_floor';
-        }
-
         return null;
     }
 
     private function isRestrictedAccessTarget(AccessActor $actor, UserAccount $target): bool
     {
-        return $this->isRestrictedAccessLevel($actor, $target->maxAccessLevel());
+        return $this->isRestrictedAccessLevel($actor, $target->accessLevel());
     }
 
     private function isRestrictedAccessLevel(AccessActor $actor, int $accessLevel): bool
     {
-        if ($actor->accessLevel() >= AccessLevel::ADMIN) {
+        if ($actor->accessLevel() >= AccessLevel::OWNER) {
             return false;
         }
 
@@ -193,151 +164,89 @@ final readonly class AdminUserAccessPolicy
     /**
      * @param list<string> $groupIdentifiers
      */
-    private function validateUserGroupFloor(UserAccountStatus $status, array $groupIdentifiers, int $accessLevel): ?string
+    private function validateUserRoleFloor(UserAccountStatus $status, UserRole $role): ?string
     {
         if (UserAccountStatus::Deleted === $status) {
             return null;
         }
 
-        if ([] === $groupIdentifiers) {
-            return 'admin.users.form.errors.group_required';
-        }
-
-        return $accessLevel >= AccessLevel::REGISTERED
+        return $role->accessLevel() >= AccessLevel::USER
             ? null
-            : 'admin.users.form.errors.group_access_too_low';
+            : 'admin.users.form.errors.role_too_low';
     }
 
     /**
      * @param list<string> $groupIdentifiers
      */
-    private function accessLevelForGroupIdentifiers(array $groupIdentifiers): int
+    private function validateUserGroups(AccessActor $actor, UserAccountStatus $status, UserRole $role, array $groupIdentifiers): ?string
     {
-        if ([] === $groupIdentifiers) {
-            return 0;
+        if (UserAccountStatus::Deleted === $status) {
+            return null;
         }
 
-        $max = 0;
-        $groups = $this->entityManager->getRepository(AclGroup::class)->findBy(['identifier' => $groupIdentifiers]);
+        if (!$this->allGroupsExist($groupIdentifiers)) {
+            return 'admin.users.form.errors.group_invalid';
+        }
 
-        foreach ($groups as $group) {
-            if ($group instanceof AclGroup) {
-                $max = max($max, $group->accessLevel());
+        foreach ($this->groupsForIdentifiers($groupIdentifiers) as $group) {
+            if ($this->isRestrictedAccessLevel($actor, $group->minRole())) {
+                return 'admin.users.form.errors.group_level_too_high';
+            }
+
+            if ($role->accessLevel() < $group->minRole()) {
+                return 'admin.users.form.errors.group_role_too_low';
             }
         }
 
-        return $max;
+        return null;
     }
 
-    private function hasActiveAdminAfterUserUpdate(UserAccount $target, UserAccountStatus $newStatus, int $newAccessLevel): bool
+    /**
+     * @param list<string> $groupIdentifiers
+     */
+    private function allGroupsExist(array $groupIdentifiers): bool
+    {
+        $unique = array_values(array_unique($groupIdentifiers));
+
+        if ([] === $unique) {
+            return true;
+        }
+
+        return count($unique) === count($this->entityManager->getRepository(AclGroup::class)->findBy(['identifier' => $unique]));
+    }
+
+    /**
+     * @param list<string> $groupIdentifiers
+     */
+    private function groupsForIdentifiers(array $groupIdentifiers): array
+    {
+        if ([] === $groupIdentifiers) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $this->entityManager->getRepository(AclGroup::class)->findBy(['identifier' => array_values(array_unique($groupIdentifiers))]),
+            static fn (mixed $group): bool => $group instanceof AclGroup,
+        ));
+    }
+
+    private function hasActiveOwnerAfterUserUpdate(UserAccount $target, UserAccountStatus $newStatus, UserRole $newRole): bool
     {
         foreach ($this->activeUsers() as $user) {
             if ($user->uid() === $target->uid()) {
-                if ($newStatus->isUsable() && $newAccessLevel >= BackendArea::Admin->minimumAccessLevel()) {
+                if ($newStatus->isUsable() && UserRole::Owner === $newRole) {
                     return true;
                 }
 
                 continue;
             }
 
-            if ($user->maxAccessLevel() >= BackendArea::Admin->minimumAccessLevel()) {
+            if (UserRole::Owner === $user->role()) {
                 return true;
             }
         }
 
         return false;
-    }
-
-    private function hasActiveAdminAfterGroupLevelChange(AclGroup $changedGroup, int $newAccessLevel): bool
-    {
-        foreach ($this->activeUsers() as $user) {
-            if ($this->maxAccessLevelWithGroupChange($user, $changedGroup, $newAccessLevel) >= BackendArea::Admin->minimumAccessLevel()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function hasActiveAdminAfterGroupDeletion(AclGroup $deletedGroup): bool
-    {
-        foreach ($this->activeUsers() as $user) {
-            if ($this->maxAccessLevelWithGroupChange($user, $deletedGroup, null) >= BackendArea::Admin->minimumAccessLevel()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function actorWouldLoseAdminAreaAccess(AccessActor $actor, AclGroup $group, ?int $newAccessLevel): bool
-    {
-        $userUid = $actor->userUid();
-
-        if (null === $userUid) {
-            return true;
-        }
-
-        $user = $this->entityManager->find(UserAccount::class, $userUid);
-
-        return $user instanceof UserAccount
-            && $this->maxAccessLevelWithGroupChange($user, $group, $newAccessLevel) < BackendArea::Admin->minimumAccessLevel();
-    }
-
-    private function maxAccessLevelWithGroupChange(UserAccount $user, AclGroup $changedGroup, ?int $newAccessLevel): int
-    {
-        $max = 0;
-
-        foreach ($user->groups() as $group) {
-            if (!$group instanceof AclGroup) {
-                continue;
-            }
-
-            if ($group->uid() === $changedGroup->uid()) {
-                if (null !== $newAccessLevel) {
-                    $max = max($max, $newAccessLevel);
-                }
-
-                continue;
-            }
-
-            $max = max($max, $group->accessLevel());
-        }
-
-        return $max;
-    }
-
-    private function groupCountWithGroupChange(UserAccount $user, AclGroup $changedGroup, ?int $newAccessLevel): int
-    {
-        $count = 0;
-
-        foreach ($user->groups() as $group) {
-            if (!$group instanceof AclGroup) {
-                continue;
-            }
-
-            if ($group->uid() === $changedGroup->uid() && null === $newAccessLevel) {
-                continue;
-            }
-
-            ++$count;
-        }
-
-        return $count;
-    }
-
-    private function preservesRegisteredUserGroupFloorAfterGroupChange(AclGroup $changedGroup, ?int $newAccessLevel): bool
-    {
-        foreach ($this->registeredUsers() as $user) {
-            if (
-                $this->groupCountWithGroupChange($user, $changedGroup, $newAccessLevel) < 1
-                || $this->maxAccessLevelWithGroupChange($user, $changedGroup, $newAccessLevel) < AccessLevel::REGISTERED
-            ) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -351,14 +260,4 @@ final readonly class AdminUserAccessPolicy
         ));
     }
 
-    /**
-     * @return list<UserAccount>
-     */
-    private function registeredUsers(): array
-    {
-        return array_values(array_filter(
-            $this->entityManager->getRepository(UserAccount::class)->findAll(),
-            static fn (mixed $user): bool => $user instanceof UserAccount && UserAccountStatus::Deleted !== $user->status(),
-        ));
-    }
 }

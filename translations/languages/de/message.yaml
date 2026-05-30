@@ -227,8 +227,10 @@ message:
   user:
     username:
       invalid: 'Username "%username%" muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
+      duplicate: 'Username "%value%" ist bereits einem anderen Account zugewiesen.'
     email:
       invalid: 'E-Mail-Adresse "%email%" ist ungültig.'
+      duplicate: 'E-Mail-Adresse "%value%" ist bereits einem anderen Account zugewiesen.'
   account_token:
     hash:
       invalid: 'Der Account-Token-Hash muss ein kleingeschriebener SHA-256-Hex-Digest sein.'

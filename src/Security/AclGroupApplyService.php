@@ -73,17 +73,15 @@ final readonly class AclGroupApplyService
     {
         $nameEn = $this->string($payload['name_en'] ?? null);
         $nameDe = $this->string($payload['name_de'] ?? null) ?: $nameEn;
-        $accessLevel = (int) ($payload['access_level'] ?? -1);
-        $allowEmpty = true === ($payload['allow_empty'] ?? null) || '1' === ($payload['allow_empty'] ?? null);
+        $minRole = (int) ($payload['min_role'] ?? -1);
 
-        if ('' === $nameEn || null !== $this->policy->validateGroupUpdateSystem($group, $accessLevel)) {
+        if ('' === $nameEn || null !== $this->policy->validateGroupUpdateSystem($group, $minRole)) {
             return WorkflowResult::blocked([$this->message('acl.group.update_blocked', ['group' => $group->identifier()])]);
         }
 
         $impact = $this->impactService->impact($group);
         $group->rename(['en' => $nameEn, 'de' => $nameDe]);
-        $group->changeAccessLevel($accessLevel);
-        $group->changeEmptyMembershipPolicy($allowEmpty);
+        $group->changeMinRole($minRole);
         $this->entityManager->flush();
 
         return WorkflowResult::success([

@@ -8,6 +8,7 @@ use App\Core\Message\MessageKey;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenType;
 use App\Security\UserFlowConfig;
+use App\Security\UserRole;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
@@ -25,6 +26,17 @@ final class AccountTokenIssuerTest extends TestCase
             $token->createdAt()->modify('+24 hours')->getTimestamp(),
             $token->expiresAt()->getTimestamp(),
         );
+    }
+
+    public function testItStoresTheTargetRoleForAccountLinks(): void
+    {
+        [$token] = (new AccountTokenIssuer())->issue(
+            AccountTokenType::Invitation,
+            'invitee@example.test',
+            role: UserRole::Author,
+        );
+
+        self::assertSame(UserRole::Author, $token->role());
     }
 
     public function testPasswordResetTtlIsOneHour(): void

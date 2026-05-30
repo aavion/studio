@@ -11,6 +11,7 @@ use App\Core\Validation\Uid;
 use App\Repository\UserAccountRepository;
 use App\Security\AccessLevelAwareUserInterface;
 use App\Security\UserAccountStatus;
+use App\Security\UserRole;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -51,6 +52,9 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
     #[ORM\Column(enumType: UserAccountStatus::class)]
     private UserAccountStatus $status = UserAccountStatus::Active;
 
+    #[ORM\Column(enumType: UserRole::class, options: ['default' => 'user'])]
+    private UserRole $role = UserRole::User;
+
     /**
      * @var Collection<int, AclGroup>
      */
@@ -71,6 +75,7 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         array $profile = [],
         array $settings = ['language' => 'default'],
         UserAccountStatus $status = UserAccountStatus::Active,
+        UserRole $role = UserRole::User,
     ) {
         $this->uid = Uid::assert($uid, 'User UID');
         $this->username = self::assertUsername($username);
@@ -79,6 +84,7 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         $this->profile = $profile;
         $this->settings = $settings;
         $this->status = $status;
+        $this->role = $role;
         $this->groups = new ArrayCollection();
     }
 
@@ -122,7 +128,7 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
      */
     public function getRoles(): array
     {
-        return [];
+        return $this->role->symfonyRoles();
     }
 
     public function getUserIdentifier(): string
@@ -177,6 +183,16 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         $this->status = $status;
     }
 
+    public function role(): UserRole
+    {
+        return $this->role;
+    }
+
+    public function changeRole(UserRole $role): void
+    {
+        $this->role = $role;
+    }
+
     /**
      * @return Collection<int, AclGroup>
      */
@@ -202,15 +218,9 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         $this->groups->clear();
     }
 
-    public function maxAccessLevel(): int
+    public function accessLevel(): int
     {
-        $max = 0;
-
-        foreach ($this->groups as $group) {
-            $max = max($max, $group->accessLevel());
-        }
-
-        return $max;
+        return $this->role->accessLevel();
     }
 
     private static function assertUsername(string $username): string

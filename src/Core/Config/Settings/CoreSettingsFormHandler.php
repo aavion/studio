@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Config\Settings;
 
-use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
+use App\Core\Access\AccessLevel;
 use App\Entity\AclGroup;
 use App\Form\FormFieldDefinition;
 use App\Form\FormSubmissionHandler;
@@ -73,7 +73,7 @@ final readonly class CoreSettingsFormHandler
 
         $group = $this->entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => $identifier]);
 
-        if (!$group instanceof AclGroup || $group->accessLevel() < AccessLevel::REGISTERED) {
+        if (!$group instanceof AclGroup || $group->minRole() > AccessLevel::USER) {
             return new FormSubmissionResult($result->values(), [
                 UserFlowConfig::DEFAULT_ACL_GROUP_KEY => ['admin.settings.form.errors.default_acl_group'],
             ]);

@@ -24,9 +24,8 @@ final class TestDatabaseSecuritySeeder
                 'uid' => $group['uid'],
                 'identifier' => $group['identifier'],
                 'name' => $writer->json($group['name']),
-                'access_level' => $group['access_level'],
+                'min_role' => $group['min_role'],
                 'locked' => $group['locked'] ? 1 : 0,
-                'allow_empty' => $group['allow_empty'] ? 1 : 0,
                 'metadata' => $writer->json(['preset' => true]),
             ]);
             $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000091%d', $index), 'acl_group', $group['uid'], 'created', 'test_seed', null, ['identifier' => $group['identifier']]);
@@ -47,6 +46,7 @@ final class TestDatabaseSecuritySeeder
             ]),
             'settings' => $writer->json(['language' => 'default']),
             'status' => 'active',
+            'role' => 'owner',
         ]);
         $writer->seedStateMarker('00000000-0000-0000-0000-000000000901', 'user_account', '00000000-0000-0000-0000-000000000201', 'created', 'test_seed');
         $writer->seedStateMarker('00000000-0000-0000-0000-000000000902', 'user_account', '00000000-0000-0000-0000-000000000201', 'password_changed', 'test_seed');

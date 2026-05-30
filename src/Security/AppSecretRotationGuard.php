@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Core\Access\AccessActor;
+use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Log\AuditLoggerInterface;
@@ -160,7 +161,7 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
         $issued = 0;
 
         foreach ($this->entityManager->getRepository(UserAccount::class)->findBy(['status' => UserAccountStatus::Active]) as $user) {
-            if (!$user instanceof UserAccount || 9 !== $user->maxAccessLevel()) {
+            if (!$user instanceof UserAccount || AccessLevel::OWNER !== $user->accessLevel()) {
                 continue;
             }
 

@@ -76,27 +76,26 @@ final class SetupRunnerTest extends TestCase
 
         $pdo = new PDO('sqlite:'.$databasePath);
         $configRows = $pdo->query('SELECT config_key, value FROM config_entry')->fetchAll(PDO::FETCH_KEY_PAIR);
-        $aclGroups = $pdo->query('SELECT identifier, access_level, locked, allow_empty FROM acl_group ORDER BY access_level')->fetchAll(PDO::FETCH_ASSOC);
-        $passwordHash = $pdo->query("SELECT password_hash FROM user_account WHERE username = 'admin'")->fetchColumn();
+        $aclGroups = $pdo->query('SELECT identifier, min_role, locked FROM acl_group ORDER BY min_role')->fetchAll(PDO::FETCH_ASSOC);
+        $adminUser = $pdo->query("SELECT password_hash, role FROM user_account WHERE username = 'admin'")->fetch(PDO::FETCH_ASSOC);
         $stateMarkers = $pdo->query("SELECT marker_key, marker_value FROM state_marker WHERE subject_type = 'user_account' ORDER BY marker_key")->fetchAll(PDO::FETCH_KEY_PAIR);
-        $groups = $pdo->query("SELECT g.identifier FROM acl_group g INNER JOIN user_acl_group ug ON ug.group_uid = g.uid INNER JOIN user_account u ON u.uid = ug.user_uid WHERE u.username = 'admin' ORDER BY g.access_level")->fetchAll(PDO::FETCH_COLUMN);
+        $groups = $pdo->query("SELECT g.identifier FROM acl_group g INNER JOIN user_acl_group ug ON ug.group_uid = g.uid INNER JOIN user_account u ON u.uid = ug.user_uid WHERE u.username = 'admin' ORDER BY g.min_role")->fetchAll(PDO::FETCH_COLUMN);
         $home = $pdo->query(sprintf("SELECT ci.slug, ci.status, ci.visibility, ci.active_revision_uid, cs.identifier AS schema_identifier FROM content_item ci INNER JOIN content_schema cs ON cs.uid = ci.schema_uid WHERE ci.slug = '%s'", $seed->homeContentItem()['slug']))->fetch(PDO::FETCH_ASSOC);
         $homeTitle = $pdo->query(sprintf("SELECT field_content FROM content_field_value WHERE revision_uid = '%s' AND field_identifier = 'title' AND language = 'en'", $seed->homeContentRevision()['uid']))->fetchColumn();
 
         self::assertSame($seed->configMap($input), $this->decodedConfigRows($configRows, array_keys($seed->configMap($input))));
         self::assertSame(array_map(static fn (array $group): array => [
             'identifier' => $group['identifier'],
-            'access_level' => $group['access_level'],
+            'min_role' => $group['min_role'],
             'locked' => $group['locked'] ? 1 : 0,
-            'allow_empty' => $group['allow_empty'] ? 1 : 0,
         ], $seed->aclGroups()), array_map(static fn (array $row): array => [
             'identifier' => $row['identifier'],
-            'access_level' => (int) $row['access_level'],
+            'min_role' => (int) $row['min_role'],
             'locked' => (int) $row['locked'],
-            'allow_empty' => (int) $row['allow_empty'],
         ], $aclGroups));
-        self::assertIsString($passwordHash);
-        self::assertTrue(password_verify('secret-password', $passwordHash));
+        self::assertIsArray($adminUser);
+        self::assertTrue(password_verify('secret-password', (string) $adminUser['password_hash']));
+        self::assertSame('owner', $adminUser['role']);
         self::assertSame([
             'created' => null,
             'password_changed' => null,
@@ -208,10 +207,10 @@ final class SetupRunnerTest extends TestCase
         $adminGroup = $this->seedAclGroup($seed->adminGroupIdentifier());
         $existingAdminGroupUid = '99999999-0000-0000-0000-000000000105';
         $existingAdminUserUid = '99999999-0000-0000-0000-000000000201';
-        $pdo->prepare('INSERT INTO acl_group (uid, identifier, name, access_level, locked, allow_empty, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)')
-            ->execute([$existingAdminGroupUid, $adminGroup['identifier'], '{"en":"Legacy Admin"}', 8, 0, 1, '{}']);
-        $pdo->prepare('INSERT INTO user_account (uid, username, email, password_hash, profile, settings, status) VALUES (?, ?, ?, ?, ?, ?, ?)')
-            ->execute([$existingAdminUserUid, 'legacy-admin', 'legacy-admin@example.test', password_hash('legacy-secret', PASSWORD_DEFAULT), '{}', '{}', 'active']);
+        $pdo->prepare('INSERT INTO acl_group (uid, identifier, name, min_role, locked, metadata) VALUES (?, ?, ?, ?, ?, ?)')
+            ->execute([$existingAdminGroupUid, $adminGroup['identifier'], '{"en":"Legacy Admin"}', 8, 0, '{}']);
+        $pdo->prepare('INSERT INTO user_account (uid, username, email, password_hash, profile, settings, status, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+            ->execute([$existingAdminUserUid, 'legacy-admin', 'legacy-admin@example.test', password_hash('legacy-secret', PASSWORD_DEFAULT), '{}', '{}', 'active', 'owner']);
         $pdo->prepare('INSERT INTO user_acl_group (user_uid, group_uid) VALUES (?, ?)')
             ->execute([$existingAdminUserUid, $existingAdminGroupUid]);
 
@@ -232,9 +231,8 @@ final class SetupRunnerTest extends TestCase
 
         self::assertTrue($result->isSuccess());
         self::assertSame($existingAdminGroupUid, $pdo->query(sprintf("SELECT uid FROM acl_group WHERE identifier = '%s'", $adminGroup['identifier']))->fetchColumn());
-        self::assertSame($adminGroup['access_level'], (int) $pdo->query(sprintf("SELECT access_level FROM acl_group WHERE identifier = '%s'", $adminGroup['identifier']))->fetchColumn());
+        self::assertSame($adminGroup['min_role'], (int) $pdo->query(sprintf("SELECT min_role FROM acl_group WHERE identifier = '%s'", $adminGroup['identifier']))->fetchColumn());
         self::assertSame($adminGroup['locked'] ? 1 : 0, (int) $pdo->query(sprintf("SELECT locked FROM acl_group WHERE identifier = '%s'", $adminGroup['identifier']))->fetchColumn());
-        self::assertSame($adminGroup['allow_empty'] ? 1 : 0, (int) $pdo->query(sprintf("SELECT allow_empty FROM acl_group WHERE identifier = '%s'", $adminGroup['identifier']))->fetchColumn());
         self::assertSame(1, (int) $pdo->query("SELECT COUNT(*) FROM user_acl_group WHERE user_uid = '$existingAdminUserUid' AND group_uid = '$existingAdminGroupUid'")->fetchColumn());
         self::assertSame(1, (int) $pdo->query("SELECT COUNT(*) FROM state_marker WHERE subject_type = 'acl_group' AND subject_uid = '$existingAdminGroupUid'")->fetchColumn());
     }
@@ -492,7 +490,7 @@ final class SetupRunnerTest extends TestCase
     }
 
     /**
-     * @return array{uid: string, identifier: string, name: array<string, string>, access_level: int, locked: bool, allow_empty: bool}
+     * @return array{uid: string, identifier: string, name: array<string, string>, min_role: int, locked: bool}
      */
     private function seedAclGroup(string $identifier): array
     {
@@ -528,9 +526,9 @@ final class SetupRunnerTest extends TestCase
         $pdo = new PDO('sqlite:'.$databasePath);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL, modified_at DATETIME NOT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
-        $pdo->exec('CREATE TABLE acl_group (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(80) NOT NULL UNIQUE, name CLOB NOT NULL, access_level INTEGER NOT NULL, locked BOOLEAN NOT NULL, allow_empty BOOLEAN NOT NULL, metadata CLOB NOT NULL)');
+        $pdo->exec('CREATE TABLE acl_group (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(80) NOT NULL UNIQUE, name CLOB NOT NULL, min_role INTEGER NOT NULL, locked BOOLEAN NOT NULL, metadata CLOB NOT NULL)');
         $pdo->exec('CREATE TABLE state_marker (uid VARCHAR(36) NOT NULL PRIMARY KEY, subject_type VARCHAR(80) NOT NULL, subject_uid VARCHAR(36) NOT NULL, marker_key VARCHAR(80) NOT NULL, marker_at DATETIME NOT NULL, marker_by VARCHAR(180) DEFAULT NULL, marker_value VARCHAR(255) DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(subject_type, subject_uid, marker_key))');
-        $pdo->exec('CREATE TABLE user_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(180) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, profile CLOB NOT NULL, settings CLOB NOT NULL, status VARCHAR(32) NOT NULL)');
+        $pdo->exec("CREATE TABLE user_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(180) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, profile CLOB NOT NULL, settings CLOB NOT NULL, status VARCHAR(32) NOT NULL, role VARCHAR(40) NOT NULL DEFAULT 'user')");
         $pdo->exec('CREATE TABLE user_acl_group (user_uid VARCHAR(36) NOT NULL, group_uid VARCHAR(36) NOT NULL, PRIMARY KEY(user_uid, group_uid))');
         $pdo->exec('CREATE TABLE content_schema (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(120) NOT NULL UNIQUE, source VARCHAR(255) NOT NULL, locked BOOLEAN NOT NULL, active_version_uid VARCHAR(36) DEFAULT NULL, labels CLOB NOT NULL, descriptions CLOB NOT NULL, metadata CLOB NOT NULL)');
         $pdo->exec('CREATE TABLE content_schema_version (uid VARCHAR(36) NOT NULL PRIMARY KEY, schema_uid VARCHAR(36) NOT NULL, version INTEGER NOT NULL, title CLOB NOT NULL, description CLOB NOT NULL, definition CLOB NOT NULL, custom_twig CLOB DEFAULT NULL, definition_hash VARCHAR(64) NOT NULL, use_min_level INTEGER DEFAULT NULL, use_group_identifiers CLOB DEFAULT NULL, edit_min_level INTEGER DEFAULT NULL, edit_group_identifiers CLOB DEFAULT NULL, manage_min_level INTEGER DEFAULT NULL, manage_group_identifiers CLOB DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(schema_uid, version))');

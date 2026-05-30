@@ -39,7 +39,7 @@ final class AuditLoggerTest extends TestCase
         self::assertSame(Level::Info, $records[0]->level);
         self::assertSame('package.activate', $records[0]->message);
         self::assertSame('admin', $records[0]->context['user']);
-        self::assertSame(9, $records[0]->context['user_max_access_level']);
+        self::assertSame(9, $records[0]->context['user_access_level']);
         self::assertSame('package.activate', $records[0]->context['action']);
         self::assertSame('demo-module', $records[0]->context['context']['package']);
         self::assertSame('[redacted]', $records[0]->context['context']['api_token']);

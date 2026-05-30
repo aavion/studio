@@ -92,7 +92,7 @@ final readonly class AclGroupImpactService
     }
 
     /**
-     * @return list<array{uid: string, username: string, email: string, status: string, access_level: int}>
+     * @return list<array{uid: string, username: string, email: string, status: string, role: string}>
      */
     private function affectedUsers(AclGroup $group): array
     {
@@ -108,7 +108,7 @@ final readonly class AclGroupImpactService
                 'username' => $user->username(),
                 'email' => $user->email(),
                 'status' => $user->status()->value,
-                'access_level' => $user->maxAccessLevel(),
+                'role' => $user->role()->value,
             ];
         }
 

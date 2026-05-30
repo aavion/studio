@@ -88,6 +88,9 @@
                             </h2>
                             <p class="studio-muted">
                                 {{ 'admin.user_reviews.requested_at'|trans({'%datetime%': item.requested_at|date('Y-m-d H:i')}) }}
+                                {% if item.role is defined %}
+                                    · {{ 'admin.user_reviews.role'|trans({'%role%': ('admin.users.roles.' ~ item.role)|trans}) }}
+                                {% endif %}
                                 {% if item.groups is not empty %}
                                     · {{ 'admin.user_reviews.groups'|trans({'%groups%': item.groups|join(', ')}) }}
                                 {% endif %}

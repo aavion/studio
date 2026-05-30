@@ -48,6 +48,7 @@ $RECYCLE.BIN/
 
 ###> generated translation metadata ###
 /translations/runtime/.manifest.json
+/translations/runtime/messages.*.yaml
 ###< generated translation metadata ###
 
 ###> release artifacts ###

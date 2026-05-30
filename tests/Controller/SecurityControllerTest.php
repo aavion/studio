@@ -8,6 +8,7 @@ use App\Core\Config\Config;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
 use App\Security\UserAccountStatus;
+use App\Security\UserRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -225,6 +226,7 @@ final class SecurityControllerTest extends WebTestCase
 
         if ($existingUser instanceof UserAccount) {
             $existingUser->changeStatus($status);
+            $existingUser->changeRole(UserRole::fromAccessLevel($level));
             $entityManager->flush();
 
             return $existingUser;
@@ -236,6 +238,7 @@ final class SecurityControllerTest extends WebTestCase
             $username.'@example.test',
             'pending',
             status: $status,
+            role: UserRole::fromAccessLevel($level),
         );
         $user->changePassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, $password));
         $user->addGroup($group);

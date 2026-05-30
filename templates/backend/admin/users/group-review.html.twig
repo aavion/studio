@@ -54,12 +54,8 @@
                     <dd>{{ group.name.de|default('') }} -> {{ pending.name_de }}</dd>
                 </div>
                 <div>
-                    <dt>{{ 'admin.groups.fields.access_level'|trans }}</dt>
-                    <dd>{{ group.accessLevel }} -> {{ pending.access_level }}</dd>
-                </div>
-                <div>
-                    <dt>{{ 'admin.groups.fields.allow_empty'|trans }}</dt>
-                    <dd>{{ group.allowsEmptyMembership ? 'ui.form.yes'|trans : 'ui.form.no'|trans }} -> {{ pending.allow_empty ? 'ui.form.yes'|trans : 'ui.form.no'|trans }}</dd>
+                    <dt>{{ 'admin.groups.fields.min_role'|trans }}</dt>
+                    <dd>{{ group.minRole }} -> {{ pending.min_role }}</dd>
                 </div>
             </dl>
         </section>
@@ -115,8 +111,7 @@
                 <input type="hidden" name="confirm_update" value="1">
                 <input type="hidden" name="name_en" value="{{ pending.name_en }}">
                 <input type="hidden" name="name_de" value="{{ pending.name_de }}">
-                <input type="hidden" name="access_level" value="{{ pending.access_level }}">
-                <input type="hidden" name="allow_empty" value="{{ pending.allow_empty ? '1' : '0' }}">
+                <input type="hidden" name="min_role" value="{{ pending.min_role }}">
                 <button class="studio-backend-button studio-button-primary" type="submit">{{ 'admin.groups.review.confirm_update'|trans }}</button>
                 <a class="studio-backend-button studio-button-secondary" href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">
                     {{ 'admin.groups.review.cancel'|trans }}

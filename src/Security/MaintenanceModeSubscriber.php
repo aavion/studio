@@ -54,7 +54,7 @@ final readonly class MaintenanceModeSubscriber implements EventSubscriberInterfa
             return false;
         }
 
-        return $user->maxAccessLevel() >= AccessLevel::ADMIN;
+        return $user->accessLevel() >= AccessLevel::ADMIN;
     }
 
     private function isBypassPath(string $path): bool

@@ -151,6 +151,12 @@ final class AdminUserReviewController extends AbstractController
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
 
+        if (!$this->adminUserPolicy->allowsAccountClosure($user)) {
+            $this->addFlash('error', 'admin.users.form.errors.last_owner');
+
+            return $this->redirectToRoute('backend_admin_user_reviews');
+        }
+
         $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Deleted, $this->actorName());
         $this->deleteUsedSecurityReviewTokens($user);
         $this->entityManager->flush();

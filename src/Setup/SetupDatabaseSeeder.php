@@ -59,9 +59,8 @@ final readonly class SetupDatabaseSeeder
                 $group['uid'],
                 $group['identifier'],
                 $group['name'],
-                $group['access_level'],
+                $group['min_role'],
                 $group['locked'],
-                $group['allow_empty'],
             );
             $this->upsertStateMarker($connection, StateSubjectType::ACL_GROUP, $groupUid, StateMarkerKey::CREATED, $now, 'setup', null, ['identifier' => $group['identifier']]);
         }
@@ -113,16 +112,14 @@ final readonly class SetupDatabaseSeeder
         string $uid,
         string $identifier,
         array $name,
-        int $accessLevel,
+        int $minRole,
         bool $locked,
-        bool $allowEmpty,
     ): string {
         $values = [
             'identifier' => $identifier,
             'name' => json_encode($name, JSON_THROW_ON_ERROR),
-            'access_level' => $accessLevel,
+            'min_role' => $minRole,
             'locked' => $locked ? 1 : 0,
-            'allow_empty' => $allowEmpty ? 1 : 0,
             'metadata' => json_encode(['seeded_by' => 'setup'], JSON_THROW_ON_ERROR),
         ];
         $existingUid = $connection->fetchOne('SELECT uid FROM acl_group WHERE identifier = ?', [$identifier]);
@@ -148,6 +145,7 @@ final readonly class SetupDatabaseSeeder
             'profile' => json_encode(['created_by' => 'setup', 'updated_at' => $now], JSON_THROW_ON_ERROR),
             'settings' => json_encode(['language' => 'default'], JSON_THROW_ON_ERROR),
             'status' => 'active',
+            'role' => 'owner',
         ];
 
         if (is_string($existingUid) && '' !== $existingUid) {

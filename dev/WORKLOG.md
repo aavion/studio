@@ -65,6 +65,11 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-30
+- Refactored user access so accounts carry one global role while ACL groups are contextual memberships with minimum assignable roles; wired Symfony role hierarchy, owner invariants, admin/owner management guards, group assignment validation, setup seeds/migrations, UI, translations, class map, security draft notes, and focused role/group regression coverage.
+- Completed the role/group detective pass by making invitation and registration tokens carry target roles, applying token roles on acceptance/reactivation, allowing registration without a default group, and fixing the ACL-role migration backfill guard.
+- Hardened account-link acceptance edges: deleted token groups are ignored at redemption, claimed email addresses are rejected before persistence, and admin-level actors cannot approve account links that would assign their own role tier.
+- Added a Doctrine flush guard for user-account email/username uniqueness so duplicate profile, admin, registration, invitation, or future persistence paths are logged as structured messages, shown in UI-capable flows, and rejected before database constraints are hit.
+- Extended `bin/lint` with optional file/directory targets for focused type-based checks, including a strict CSS-parser warning for Tailwind-specific syntax, while preserving the full project-wide default run.
 - Hardened remaining review-reported account-token and credential races: stale dispute reactivation, inactive/deleted password resets, deleted-account invitation approval/reissue, invitation token type/group POST validation, active API-key reveal/revoke checks, complete owner reset delivery for APP_SECRET rotation, cheap Messenger storage readiness checks before package queue dispatch, and added `bin/lint` as the shared project validation entry point.
 - Updated bin/composer to the latest version (2.10.0) and did a small Update to the root README-file.
 ### 2026-05-29

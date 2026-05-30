@@ -28,8 +28,8 @@
                 <dd>{{ user_account.email }}</dd>
             </div>
             <div>
-                <dt>{{ 'ui.user.profile.access_level'|trans }}</dt>
-                <dd>{{ user_account.maxAccessLevel }}</dd>
+                <dt>{{ 'ui.user.profile.role'|trans }}</dt>
+                <dd>{{ ('ui.user.roles.' ~ user_account.role.value)|trans }}</dd>
             </div>
         </dl>
         <form method="post" class="studio-auth-form">

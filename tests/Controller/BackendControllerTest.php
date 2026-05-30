@@ -20,6 +20,7 @@ use App\Entity\AclGroup;
 use App\Entity\ExtensionPackage;
 use App\Entity\UserAccount;
 use App\Security\UserFlowConfig;
+use App\Security\UserRole;
 use App\Setup\SetupCompletionMarker;
 use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
 use App\View\Injection\StaticViewInjection;
@@ -873,7 +874,7 @@ final class BackendControllerTest extends WebTestCase
         $client->submit($form);
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-backend-form-errors', 'Choose an existing ACL group with at least access level 1.');
+        self::assertSelectorTextContains('.studio-backend-form-errors', 'Choose an existing ACL group assignable to the User role.');
         self::assertSame($originalDefaultGroup, $config->get('user.default_acl_group', 'registered'));
     }
 
@@ -938,6 +939,9 @@ final class BackendControllerTest extends WebTestCase
         $existingUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'testuser'.$level]);
 
         if ($existingUser instanceof UserAccount) {
+            $existingUser->changeRole(UserRole::fromAccessLevel($level));
+            $entityManager->flush();
+
             return $existingUser;
         }
 
@@ -946,6 +950,7 @@ final class BackendControllerTest extends WebTestCase
             'testuser'.$level,
             'testuser'.$level.'@example.test',
             'hash',
+            role: UserRole::fromAccessLevel($level),
         );
         $user->addGroup($group);
         $entityManager->persist($user);

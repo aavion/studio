@@ -33,7 +33,7 @@ final readonly class AccessActor
             $groupIdentifiers[] = $group->identifier();
         }
 
-        return new self($user->uid(), $user->username(), $user->maxAccessLevel(), self::normalizeGroupIdentifiers($groupIdentifiers));
+        return new self($user->uid(), $user->username(), $user->accessLevel(), self::normalizeGroupIdentifiers($groupIdentifiers));
     }
 
     /**

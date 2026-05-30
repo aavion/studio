@@ -88,7 +88,6 @@ ui:
             errors:
                 invalid_csrf: 'The registration form expired. Please try again.'
                 email: 'Enter a valid email address.'
-                default_group: 'Registration is temporarily unavailable because the default access group is not configured correctly.'
                 delivery_failed: 'The account email could not be created. Please try again later.'
         password_reset:
             title: 'Reset password'
@@ -110,7 +109,7 @@ ui:
             subtitle: 'Review and update your account preferences.'
             username: Username
             email: Email
-            access_level: 'Access level'
+            role: Role
             display_name: 'Display name'
             language: Language
             language_default: Default
@@ -130,11 +129,21 @@ ui:
                     invalid_csrf: 'The account closure form expired. Please try again.'
                     confirmation: 'Confirm that you want to close the account.'
                     password: 'The password is not correct.'
-                    last_admin: 'The last active admin account cannot be closed.'
+                    last_owner: 'The last active owner account cannot be closed.'
             errors:
                 invalid_csrf: 'The profile form expired. Please try again.'
                 username_invalid: 'Choose a username that starts with a letter and contains 5 to 30 letters, digits, hyphens, or underscores.'
                 username_in_use: 'This username is already used.'
+        roles:
+            user: User
+            moderator: Moderator
+            author: Author
+            publisher: Publisher
+            curator: Curator
+            manager: Manager
+            director: Director
+            admin: Admin
+            owner: Owner
         password:
             title: 'Change password'
             placeholder: 'Update the password for your account.'
@@ -201,7 +210,7 @@ ui:
             confirm_submit: 'Lock account'
             errors:
                 invalid_csrf: 'The security review form expired. Please try again.'
-                last_admin: 'The last active admin account cannot be locked from this review link.'
+                last_owner: 'The last active owner account cannot be locked from this review link.'
         logout:
             title: 'Sign out'
             placeholder: 'Confirm that you want to end your session.'
@@ -405,9 +414,6 @@ admin:
             activated: 'Deleted account activated.'
             deactivated: 'Deleted account deactivated.'
             not_deleted: 'Only deleted accounts can be changed from this view.'
-            heal_title: 'Repair account groups'
-            heal_text: 'The account "%username%" cannot be restored with its current groups. Assign "%group%" and continue.'
-            heal_confirm: 'Assign group and continue'
             retention: 'Retention: %days% day(s). Accounts deleted on or before %cutoff% are eligible for cleanup.'
             deleted_at: 'Deleted at'
             deleted_by: 'Deleted by'
@@ -422,6 +428,8 @@ admin:
             status_active: Active
             status_inactive: Inactive
             status_deleted: Deleted
+            role: Role
+            any_role: 'Any role'
             group: Group
             any_group: 'Any group'
             sort: 'Sort by'
@@ -435,7 +443,17 @@ admin:
             username: Username
             email: Email
             status: Status
-            access_level: 'Access level'
+            role: Role
+        roles:
+            user: User
+            moderator: Moderator
+            author: Author
+            publisher: Publisher
+            curator: Curator
+            manager: Manager
+            director: Director
+            admin: Admin
+            owner: Owner
         pagination:
             page_summary: 'Page %page% of %pages% · %total% users'
             previous: Previous
@@ -469,7 +487,7 @@ admin:
             username: Username
             email: Email
             status: Status
-            access_level: 'Access level'
+            role: Role
             groups: Groups
             actions: Actions
             type: Type
@@ -502,12 +520,15 @@ admin:
                 mail_delivery_failed: 'The account email could not be created. Check the configured site URL and try again.'
                 email_in_use: 'A user account already exists for this email address.'
                 invalid_status: 'Choose a valid account status.'
-                target_higher_access: 'Only level 9 administrators can edit users at or above their own access level.'
-                group_level_too_high: 'Only level 9 administrators can assign access groups at or above their own access level.'
-                group_required: 'User accounts must keep at least one ACL group.'
-                group_access_too_low: 'User accounts must keep at least access level 1.'
+                invalid_role: 'Choose a valid account role.'
+                target_higher_access: 'Only owners can edit users at or above their own role level.'
+                role_too_high: 'Only owners can assign roles at or above their own role level.'
+                role_too_low: 'Active user accounts must keep at least the User role.'
+                group_level_too_high: 'Only owners can assign groups at or above their own role level.'
+                group_role_too_low: 'The selected role is below the minimum role required by one of the selected groups.'
+                group_invalid: 'Choose existing ACL groups only.'
                 self_lockout: 'This change would remove your own Admin access.'
-                last_admin: 'At least one active user with Admin access must remain.'
+                last_owner: 'At least one active owner account must remain.'
         saved: 'User saved.'
     user_reviews:
         title: 'User reviews'
@@ -515,6 +536,7 @@ admin:
         empty_title: 'No reviews'
         empty_message: 'No account request or security review needs attention.'
         requested_at: 'Requested %datetime%'
+        role: 'Role: %role%'
         groups: 'Groups: %groups%'
         filters:
             title: Filters
@@ -595,7 +617,7 @@ admin:
         sort:
             identifier: Identifier
             name: Name
-            access_level: 'Access level'
+            min_role: 'Minimum role'
             locked: Locked
         pagination:
             page_summary: 'Page %page% of %pages% · %total% groups'
@@ -639,9 +661,8 @@ admin:
             name: Name
             name_en: 'English name'
             name_de: 'German name'
-            access_level: 'Access level'
+            min_role: 'Minimum role'
             locked: Locked
-            allow_empty: 'Allow empty membership'
         actions:
             create: 'Create group'
             delete: 'Delete group'
@@ -653,11 +674,8 @@ admin:
         delete_blocked: 'This group cannot be deleted.'
         form:
             invalid: 'The group could not be saved.'
-            higher_access: 'Only level 9 administrators can manage ACL groups at or above their own access level.'
-            self_lockout: 'This group change would remove your own Admin access.'
-            last_admin: 'At least one active user with Admin access must remain.'
-            registered_user_floor: 'This group change would leave at least one user without a group or below access level 1.'
-            default_registration_group: 'The default registration group must stay available with at least access level 1.'
+            higher_access: 'Only owners can manage ACL groups at or above their own role level.'
+            default_registration_group: 'The default registration group must stay available.'
     scheduler:
         title: Scheduler
         foundation_title: 'Scheduler operations foundation'
@@ -859,7 +877,7 @@ admin:
                 pattern: 'The submitted value does not match the expected format.'
                 required: 'This field is required.'
                 save_failed: 'The settings could not be saved.'
-                default_acl_group: 'Choose an existing ACL group with at least access level 1.'
+                default_acl_group: 'Choose an existing ACL group assignable to the User role.'
         fields:
             site_title:
                 label: 'Site title'
@@ -1186,8 +1204,10 @@ message:
     user:
         username:
             invalid: 'Username "%username%" must start with a letter and contain 5 to 30 letters, digits, hyphens, or underscores.'
+            duplicate: 'Username "%value%" is already assigned to another account.'
         email:
             invalid: 'Email address "%email%" is invalid.'
+            duplicate: 'Email address "%value%" is already assigned to another account.'
     account_token:
         hash:
             invalid: 'Account token hash must be a lowercase SHA-256 hex digest.'

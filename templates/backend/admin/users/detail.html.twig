@@ -22,8 +22,8 @@
                 <dd>{{ user_account.email }}</dd>
             </div>
             <div>
-                <dt>{{ 'admin.users.fields.access_level'|trans }}</dt>
-                <dd>{{ user_account.maxAccessLevel }}</dd>
+                <dt>{{ 'admin.users.fields.role'|trans }}</dt>
+                <dd>{{ ('admin.users.roles.' ~ user_account.role.value)|trans }}</dd>
             </div>
             <div>
                 <dt>{{ 'admin.users.fields.login_possible'|trans }}</dt>
@@ -32,6 +32,14 @@
         </dl>
         <form method="post" class="studio-backend-form">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_' ~ user_account.uid) }}">
+            {% include '@backend/partials/forms/fields/select.html.twig' with {
+                id: 'user_role',
+                name: 'role',
+                label: 'admin.users.fields.role'|trans,
+                value: user_account.role.value,
+                options: role_options|reduce((carry, role) => carry|merge({(role.value): ('admin.users.roles.' ~ role.value)|trans}), {}),
+                required: true,
+            } only %}
             {% include '@backend/partials/forms/fields/select.html.twig' with {
                 id: 'user_status',
                 name: 'status',

@@ -88,7 +88,6 @@ ui:
             errors:
                 invalid_csrf: 'Das Registrierungsformular ist abgelaufen. Bitte versuche es erneut.'
                 email: 'Gib eine gültige E-Mail-Adresse ein.'
-                default_group: 'Die Registrierung ist vorübergehend nicht verfügbar, weil die Standard-Zugriffsgruppe nicht korrekt konfiguriert ist.'
                 delivery_failed: 'Die Account-E-Mail konnte nicht erstellt werden. Bitte versuche es später erneut.'
         password_reset:
             title: 'Passwort zurücksetzen'
@@ -110,7 +109,7 @@ ui:
             subtitle: 'Prüfe und aktualisiere deine Account-Einstellungen.'
             username: Username
             email: E-Mail
-            access_level: Access-Level
+            role: Rolle
             display_name: Anzeigename
             language: Sprache
             language_default: Standard
@@ -130,11 +129,21 @@ ui:
                     invalid_csrf: 'Das Formular zum Schließen des Accounts ist abgelaufen. Bitte versuche es erneut.'
                     confirmation: 'Bestätige, dass du den Account schließen möchtest.'
                     password: 'Das Passwort ist nicht korrekt.'
-                    last_admin: 'Der letzte aktive Admin-Account kann nicht geschlossen werden.'
+                    last_owner: 'Der letzte aktive Owner-Account kann nicht geschlossen werden.'
             errors:
                 invalid_csrf: 'Das Profilformular ist abgelaufen. Bitte versuche es erneut.'
                 username_invalid: 'Wähle einen Username, der mit einem Buchstaben beginnt und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthält.'
                 username_in_use: 'Dieser Username wird bereits verwendet.'
+        roles:
+            user: Benutzer
+            moderator: Moderator
+            author: Autor
+            publisher: Publisher
+            curator: Kurator
+            manager: Manager
+            director: Director
+            admin: Admin
+            owner: Owner
         password:
             title: 'Passwort ändern'
             placeholder: 'Aktualisiere das Passwort für deinen Account.'
@@ -201,7 +210,7 @@ ui:
             confirm_submit: 'Account sperren'
             errors:
                 invalid_csrf: 'Das Sicherheitsprüfungsformular ist abgelaufen. Bitte versuche es erneut.'
-                last_admin: 'Der letzte aktive Admin-Account kann über diesen Sicherheitsprüfungs-Link nicht gesperrt werden.'
+                last_owner: 'Der letzte aktive Owner-Account kann über diesen Sicherheitsprüfungs-Link nicht gesperrt werden.'
         logout:
             title: Abmelden
             placeholder: 'Bestätige, dass du deine Sitzung beenden möchtest.'
@@ -405,9 +414,6 @@ admin:
             activated: 'Gelöschter Account aktiviert.'
             deactivated: 'Gelöschter Account deaktiviert.'
             not_deleted: 'Nur gelöschte Accounts können aus dieser Ansicht geändert werden.'
-            heal_title: 'Account-Gruppen reparieren'
-            heal_text: 'Der Account "%username%" kann mit seinen aktuellen Gruppen nicht wiederhergestellt werden. Weise "%group%" zu und fahre fort.'
-            heal_confirm: 'Gruppe zuweisen und fortfahren'
             retention: 'Retention: %days% Tag(e). Accounts, die am oder vor dem %cutoff% gelöscht wurden, können aufgeräumt werden.'
             deleted_at: 'Gelöscht am'
             deleted_by: 'Gelöscht von'
@@ -422,6 +428,8 @@ admin:
             status_active: Aktiv
             status_inactive: Inaktiv
             status_deleted: Gelöscht
+            role: Rolle
+            any_role: 'Alle Rollen'
             group: Gruppe
             any_group: 'Alle Gruppen'
             sort: 'Sortieren nach'
@@ -435,7 +443,17 @@ admin:
             username: Username
             email: E-Mail
             status: Status
-            access_level: Access-Level
+            role: Rolle
+        roles:
+            user: Benutzer
+            moderator: Moderator
+            author: Autor
+            publisher: Publisher
+            curator: Kurator
+            manager: Manager
+            director: Director
+            admin: Admin
+            owner: Owner
         pagination:
             page_summary: 'Seite %page% von %pages% · %total% Benutzer'
             previous: Zurück
@@ -469,7 +487,7 @@ admin:
             username: Username
             email: E-Mail
             status: Status
-            access_level: Access-Level
+            role: Rolle
             groups: Gruppen
             actions: Aktionen
             type: Typ
@@ -502,12 +520,15 @@ admin:
                 mail_delivery_failed: 'Die Account-E-Mail konnte nicht erstellt werden. Prüfe die konfigurierte Website-URL und versuche es erneut.'
                 email_in_use: 'Für diese E-Mail-Adresse existiert bereits ein Benutzerkonto.'
                 invalid_status: 'Wähle einen gültigen Account-Status.'
-                target_higher_access: 'Nur Administratoren auf Level 9 können Benutzer auf dem eigenen oder einem höheren Access-Level bearbeiten.'
-                group_level_too_high: 'Nur Administratoren auf Level 9 können ACL-Gruppen auf dem eigenen oder einem höheren Access-Level zuweisen.'
-                group_required: 'Benutzerkonten müssen mindestens eine ACL-Gruppe behalten.'
-                group_access_too_low: 'Benutzerkonten müssen mindestens Access-Level 1 behalten.'
+                invalid_role: 'Wähle eine gültige Account-Rolle.'
+                target_higher_access: 'Nur Owner können Benutzer auf der eigenen oder einer höheren Rollenstufe bearbeiten.'
+                role_too_high: 'Nur Owner können Rollen auf der eigenen oder einer höheren Rollenstufe zuweisen.'
+                role_too_low: 'Aktive Benutzerkonten müssen mindestens die Benutzer-Rolle behalten.'
+                group_level_too_high: 'Nur Owner können Gruppen auf der eigenen oder einer höheren Rollenstufe zuweisen.'
+                group_role_too_low: 'Die gewählte Rolle liegt unter der Mindestrolle einer gewählten Gruppe.'
+                group_invalid: 'Wähle nur existierende ACL-Gruppen.'
                 self_lockout: 'Diese Änderung würde deinen eigenen Admin-Zugriff entfernen.'
-                last_admin: 'Es muss mindestens ein aktiver Benutzer mit Admin-Zugriff verbleiben.'
+                last_owner: 'Es muss mindestens ein aktiver Owner-Account verbleiben.'
         saved: 'Benutzer gespeichert.'
     user_reviews:
         title: Benutzer-Reviews
@@ -515,6 +536,7 @@ admin:
         empty_title: 'Keine Reviews'
         empty_message: 'Keine Account-Anfrage oder Sicherheitsprüfung benötigt Aufmerksamkeit.'
         requested_at: 'Angefragt %datetime%'
+        role: 'Rolle: %role%'
         groups: 'Gruppen: %groups%'
         filters:
             title: Filter
@@ -595,7 +617,7 @@ admin:
         sort:
             identifier: Identifier
             name: Name
-            access_level: Access-Level
+            min_role: Mindestrolle
             locked: Gesperrt
         pagination:
             page_summary: 'Seite %page% von %pages% · %total% Gruppen'
@@ -639,9 +661,8 @@ admin:
             name: Name
             name_en: 'Englischer Name'
             name_de: 'Deutscher Name'
-            access_level: Access-Level
+            min_role: Mindestrolle
             locked: Gesperrt
-            allow_empty: 'Leere Mitgliedschaft erlauben'
         actions:
             create: 'Gruppe erstellen'
             delete: 'Gruppe löschen'
@@ -653,11 +674,8 @@ admin:
         delete_blocked: 'Diese Gruppe kann nicht gelöscht werden.'
         form:
             invalid: 'Die Gruppe konnte nicht gespeichert werden.'
-            higher_access: 'Nur Administratoren auf Level 9 können ACL-Gruppen auf dem eigenen oder einem höheren Access-Level verwalten.'
-            self_lockout: 'Diese Gruppenänderung würde deinen eigenen Admin-Zugriff entfernen.'
-            last_admin: 'Es muss mindestens ein aktiver Benutzer mit Admin-Zugriff verbleiben.'
-            registered_user_floor: 'Diese Gruppenänderung würde mindestens einen Benutzer ohne Gruppe oder unter Access-Level 1 zurücklassen.'
-            default_registration_group: 'Die Standard-Registrierungsgruppe muss mit mindestens Access-Level 1 verfügbar bleiben.'
+            higher_access: 'Nur Owner können ACL-Gruppen auf der eigenen oder einer höheren Rollenstufe verwalten.'
+            default_registration_group: 'Die Standard-Registrierungsgruppe muss verfügbar bleiben.'
     scheduler:
         title: Scheduler
         foundation_title: Scheduler-Operations-Fundament
@@ -859,7 +877,7 @@ admin:
                 pattern: 'Der gesendete Wert entspricht nicht dem erwarteten Format.'
                 required: 'Dieses Feld ist erforderlich.'
                 save_failed: 'Die Einstellungen konnten nicht gespeichert werden.'
-                default_acl_group: 'Wähle eine bestehende ACL-Gruppe mit mindestens Access-Level 1.'
+                default_acl_group: 'Wähle eine bestehende ACL-Gruppe, die der Benutzer-Rolle zugewiesen werden darf.'
         fields:
             site_title:
                 label: Seitentitel
@@ -1186,8 +1204,10 @@ message:
     user:
         username:
             invalid: 'Username "%username%" muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
+            duplicate: 'Username "%value%" ist bereits einem anderen Account zugewiesen.'
         email:
             invalid: 'E-Mail-Adresse "%email%" ist ungültig.'
+            duplicate: 'E-Mail-Adresse "%value%" ist bereits einem anderen Account zugewiesen.'
     account_token:
         hash:
             invalid: 'Der Account-Token-Hash muss ein kleingeschriebener SHA-256-Hex-Digest sein.'
