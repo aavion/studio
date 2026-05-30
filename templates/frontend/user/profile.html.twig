@@ -44,6 +44,14 @@
                 } only %}
             {% endif %}
             {% include '@frontend/partials/forms/fields/input.html.twig' with {
+                name: 'email',
+                type: 'email',
+                label: 'ui.user.profile.email'|trans,
+                value: user_account.email,
+                required: true,
+                autocomplete: 'email',
+            } only %}
+            {% include '@frontend/partials/forms/fields/input.html.twig' with {
                 name: 'display_name',
                 label: 'ui.user.profile.display_name'|trans,
                 value: user_account.profile.display_name|default(''),

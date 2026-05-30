@@ -67,6 +67,12 @@ final class AdminUserInvitationController extends AbstractController
         $role = UserRole::tryFrom($this->field($request, 'role'));
 
         try {
+            if (!EmailAddress::isValid($email)) {
+                $this->addFlash('error', 'admin.users.form.errors.email_invalid');
+
+                return $this->redirectToRoute('backend_admin_users');
+            }
+
             if (!$role instanceof UserRole || UserRole::Public === $role) {
                 $this->addFlash('error', 'admin.users.form.errors.invalid_role');
 
@@ -79,16 +85,40 @@ final class AdminUserInvitationController extends AbstractController
                 return $this->redirectToRoute('backend_admin_users');
             }
 
-            if ($error = $this->adminUserPolicy->validateGroupAssignment($this->actor(), $groups, $role)) {
-                $this->addFlash('error', $error);
-
-                return $this->redirectToRoute('backend_admin_users');
-            }
-
             $existingUser = $this->userByEmail($email);
+            $targetRole = $existingUser instanceof UserAccount && $existingUser->role()->accessLevel() > $role->accessLevel()
+                ? $existingUser->role()
+                : $role;
 
             if ($existingUser instanceof UserAccount && UserAccountStatus::Deleted !== $existingUser->status()) {
-                $this->addFlash('error', 'admin.users.form.errors.email_in_use');
+                if ($error = $this->adminUserPolicy->validateUserAction($this->actor(), $existingUser)) {
+                    $this->addFlash('error', $error);
+
+                    return $this->redirectToRoute('backend_admin_users');
+                }
+
+                if ($error = $this->adminUserPolicy->validateGroupAssignment($this->actor(), $groups, $targetRole)) {
+                    $this->addFlash('error', $error);
+
+                    return $this->redirectToRoute('backend_admin_users');
+                }
+
+                $oldRole = $existingUser->role()->value;
+                $oldGroups = $this->userGroupIdentifiers($existingUser);
+                $this->addGroups($existingUser, $groups);
+                $existingUser->changeRole($targetRole);
+                $this->entityManager->flush();
+                $this->audit('user.invitation_existing_account_updated', [
+                    'target_user' => $existingUser->uid(),
+                    'email' => $email,
+                    'old_role' => $oldRole,
+                    'new_role' => $targetRole->value,
+                    'old_groups' => $oldGroups,
+                    'new_groups' => $this->userGroupIdentifiers($existingUser),
+                    'requested_role' => $role->value,
+                    'requested_groups' => $groups,
+                ]);
+                $this->addFlash('success', 'admin.users.invitation.existing_updated');
 
                 return $this->redirectToRoute('backend_admin_users');
             }
@@ -99,13 +129,22 @@ final class AdminUserInvitationController extends AbstractController
                 return $this->redirectToRoute('backend_admin_users');
             }
 
+            $tokenRole = $existingUser instanceof UserAccount ? $this->reactivationRole($existingUser) : $role;
+            $tokenGroups = $existingUser instanceof UserAccount ? $this->reactivationGroupIdentifiers($existingUser, $tokenRole) : $groups;
+
+            if (!$existingUser instanceof UserAccount && ($error = $this->adminUserPolicy->validateGroupAssignment($this->actor(), $tokenGroups, $tokenRole))) {
+                $this->addFlash('error', $error);
+
+                return $this->redirectToRoute('backend_admin_users');
+            }
+
             $this->tokenMaintenance->revokePendingForEmail($email, [AccountTokenType::Invitation, AccountTokenType::Registration]);
             [$token, $plainToken] = $this->tokenIssuer->issue(
                 AccountTokenType::Invitation,
                 $email,
-                $groups,
+                $tokenGroups,
                 UserAccountStatus::Deleted === $existingUser?->status() ? $existingUser : null,
-                role: $role,
+                role: $tokenRole,
                 ttl: $this->userFlowConfig->accountLinkTtl(),
             );
             $url = $this->absoluteUris->generateUri(__METHOD__, 'user_invitation_accept', ['token' => $plainToken]);
@@ -119,7 +158,7 @@ final class AdminUserInvitationController extends AbstractController
             $this->entityManager->persist($token);
             $this->entityManager->flush();
             $this->linkDelivery->deliver($token, AccountMailFlow::InvitationLink, $plainToken, $url, $this->mailLocaleResolver->forAdminAction());
-            $this->audit('user.invitation_created', ['email' => $email, 'role' => $role->value, 'groups' => $groups, 'token_uid' => $token->uid()]);
+            $this->audit('user.invitation_created', ['email' => $email, 'role' => $tokenRole->value, 'groups' => $tokenGroups, 'token_uid' => $token->uid()]);
             $this->addFlash('success', 'admin.users.invitation.created');
         } catch (Throwable) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_invitation');
@@ -325,6 +364,43 @@ final class AdminUserInvitationController extends AbstractController
         return $user instanceof UserAccount ? $user : null;
     }
 
+    /**
+     * @param list<string> $groupIdentifiers
+     */
+    private function addGroups(UserAccount $user, array $groupIdentifiers): void
+    {
+        $groups = $this->entityManager->getRepository(AclGroup::class)->findBy(['identifier' => $groupIdentifiers]);
+
+        foreach ($groups as $group) {
+            if ($group instanceof AclGroup) {
+                $user->addGroup($group);
+            }
+        }
+    }
+
+    private function reactivationRole(UserAccount $user): UserRole
+    {
+        return UserRole::Public === $user->role() ? UserRole::User : $user->role();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function reactivationGroupIdentifiers(UserAccount $user, UserRole $role): array
+    {
+        $identifiers = [];
+
+        foreach ($user->groups() as $group) {
+            if ($group instanceof AclGroup && $role->accessLevel() >= $group->minRole()) {
+                $identifiers[] = $group->identifier();
+            }
+        }
+
+        sort($identifiers);
+
+        return array_values(array_unique($identifiers));
+    }
+
     private function ttlForToken(AccountToken $token): string
     {
         return AccountTokenType::PasswordReset === $token->type()
@@ -387,6 +463,24 @@ final class AdminUserInvitationController extends AbstractController
         sort($valid);
 
         return array_values(array_unique($valid));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function userGroupIdentifiers(UserAccount $user): array
+    {
+        $identifiers = [];
+
+        foreach ($user->groups() as $group) {
+            if ($group instanceof AclGroup) {
+                $identifiers[] = $group->identifier();
+            }
+        }
+
+        sort($identifiers);
+
+        return $identifiers;
     }
 
     /**

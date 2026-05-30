@@ -134,6 +134,8 @@ ui:
                 invalid_csrf: 'Das Profilformular ist abgelaufen. Bitte versuche es erneut.'
                 username_invalid: 'Wähle einen Username, der mit einem Buchstaben beginnt und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthält.'
                 username_in_use: 'Dieser Username wird bereits verwendet.'
+                email_invalid: 'Wähle eine gültige E-Mail-Adresse.'
+                email_in_use: 'Diese E-Mail-Adresse wird bereits verwendet.'
         roles:
             user: Benutzer
             moderator: Moderator
@@ -398,6 +400,7 @@ admin:
             approved: 'Registrierung freigegeben. Der Account-Link wurde ins Message-Log geschrieben.'
             reissued: 'Account-Link neu ausgestellt. Der neue Link wurde ins Message-Log geschrieben.'
             revoked: 'Account-Token widerrufen.'
+            existing_updated: 'Bestehende Account-Berechtigungen wurden aktualisiert.'
             unavailable: 'Die Einladung ist nicht mehr verfügbar.'
         accounts:
             title: Accounts
@@ -518,6 +521,7 @@ admin:
                 invalid_csrf: 'Das Formular ist abgelaufen. Bitte versuche es erneut.'
                 invalid_invitation: 'Die Einladung konnte nicht erstellt werden.'
                 mail_delivery_failed: 'Die Account-E-Mail konnte nicht erstellt werden. Prüfe die konfigurierte Website-URL und versuche es erneut.'
+                email_invalid: 'Wähle eine gültige E-Mail-Adresse.'
                 email_in_use: 'Für diese E-Mail-Adresse existiert bereits ein Benutzerkonto.'
                 invalid_status: 'Wähle einen gültigen Account-Status.'
                 invalid_role: 'Wähle eine gültige Account-Rolle.'
@@ -1212,6 +1216,7 @@ message:
         hash:
             invalid: 'Der Account-Token-Hash muss ein kleingeschriebener SHA-256-Hex-Digest sein.'
     account_link:
+        invalid: 'Dieser Account-Setup-Link kann nicht mehr verwendet werden.'
         delivered: 'Account-Link für %email% (%type%, %flow%) wurde über das Message-Log zugestellt.'
         notification_delivered: 'Account-Benachrichtigung für %email% (%type%, %flow%) wurde über das Message-Log zugestellt.'
     routing:

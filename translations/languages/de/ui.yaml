@@ -89,6 +89,8 @@ ui:
           last_owner: 'Der letzte aktive Owner-Account kann nicht geschlossen werden.'
       errors:
         invalid_csrf: 'Das Profilformular ist abgelaufen. Bitte versuche es erneut.'
+        email_invalid: 'Wähle eine gültige E-Mail-Adresse.'
+        email_in_use: 'Diese E-Mail-Adresse wird bereits verwendet.'
         username_invalid: 'Wähle einen Username, der mit einem Buchstaben beginnt und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthält.'
         username_in_use: 'Dieser Username wird bereits verwendet.'
     roles:

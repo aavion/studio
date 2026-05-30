@@ -134,6 +134,8 @@ ui:
                 invalid_csrf: 'The profile form expired. Please try again.'
                 username_invalid: 'Choose a username that starts with a letter and contains 5 to 30 letters, digits, hyphens, or underscores.'
                 username_in_use: 'This username is already used.'
+                email_invalid: 'Choose a valid email address.'
+                email_in_use: 'This email address is already used.'
         roles:
             user: User
             moderator: Moderator
@@ -398,6 +400,7 @@ admin:
             approved: 'Registration approved. The account link was written to the message log.'
             reissued: 'Account link reissued. The new link was written to the message log.'
             revoked: 'Account token revoked.'
+            existing_updated: 'Existing account access was updated.'
             unavailable: 'The invitation is no longer available.'
         accounts:
             title: Accounts
@@ -518,6 +521,7 @@ admin:
                 invalid_csrf: 'The form expired. Please try again.'
                 invalid_invitation: 'The invitation could not be created.'
                 mail_delivery_failed: 'The account email could not be created. Check the configured site URL and try again.'
+                email_invalid: 'Choose a valid email address.'
                 email_in_use: 'A user account already exists for this email address.'
                 invalid_status: 'Choose a valid account status.'
                 invalid_role: 'Choose a valid account role.'
@@ -1212,6 +1216,7 @@ message:
         hash:
             invalid: 'Account token hash must be a lowercase SHA-256 hex digest.'
     account_link:
+        invalid: 'This account setup link can no longer be used.'
         delivered: 'Account link for %email% (%type%, %flow%) was delivered through the message log.'
         notification_delivered: 'Account notification for %email% (%type%, %flow%) was delivered through the message log.'
     routing:

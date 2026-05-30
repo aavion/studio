@@ -8,7 +8,9 @@ use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
 use App\Core\Id\UuidFactory;
 use App\Core\Log\AuditLoggerInterface;
+use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
+use App\Core\Message\MessageKey;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
@@ -104,6 +106,10 @@ final class UserRegistrationController extends AbstractController
                 }
 
                 $defaultGroup = $this->defaultRegistrationGroup();
+                $tokenRole = $existingUser instanceof UserAccount ? $this->reactivationRole($existingUser) : UserRole::User;
+                $tokenGroups = $existingUser instanceof UserAccount
+                    ? $this->reactivationGroupIdentifiers($existingUser, $tokenRole)
+                    : ($defaultGroup instanceof AclGroup ? [$defaultGroup->identifier()] : []);
             }
 
             if ([] === $errors) {
@@ -111,9 +117,9 @@ final class UserRegistrationController extends AbstractController
                 [$token, $plainToken] = $this->tokenIssuer->issue(
                     AccountTokenType::Registration,
                     $email,
-                    $defaultGroup instanceof AclGroup ? [$defaultGroup->identifier()] : [],
+                    $tokenGroups,
                     UserAccountStatus::Deleted === $existingUser?->status() ? $existingUser : null,
-                    role: UserRole::User,
+                    role: $tokenRole,
                     status: $requiresApproval ? AccountTokenStatus::PendingApproval : AccountTokenStatus::Pending,
                     ttl: $this->userFlowConfig->accountLinkTtl(),
                 );
@@ -186,7 +192,7 @@ final class UserRegistrationController extends AbstractController
                     }
 
                     if ($accountToken->role()->accessLevel() < AccessLevel::USER) {
-                        throw new \RuntimeException('Account token assigns a non-login role.');
+                        $this->rejectAccountLink('non_login_role');
                     }
 
                     $isNewUser = !$accountToken->user() instanceof UserAccount;
@@ -206,7 +212,10 @@ final class UserRegistrationController extends AbstractController
                     $this->audit($user, 'user.invitation_accepted', ['token_type' => $accountToken->type()->value]);
                     $success = true;
                 } catch (MessageException $exception) {
-                    $errors[] = $exception->messageKey();
+                    $errors[] = [
+                        'translation_key' => $exception->messageKey(),
+                        'parameters' => $exception->parameters(),
+                    ];
                 } catch (Throwable) {
                     $errors[] = 'ui.user.invitation.errors.create_failed';
                 }
@@ -259,6 +268,29 @@ final class UserRegistrationController extends AbstractController
         return $group instanceof AclGroup && $group->minRole() <= AccessLevel::USER ? $group : null;
     }
 
+    private function reactivationRole(UserAccount $user): UserRole
+    {
+        return UserRole::Public === $user->role() ? UserRole::User : $user->role();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function reactivationGroupIdentifiers(UserAccount $user, UserRole $role): array
+    {
+        $identifiers = [];
+
+        foreach ($user->groups() as $group) {
+            if ($group instanceof AclGroup && $role->accessLevel() >= $group->minRole()) {
+                $identifiers[] = $group->identifier();
+            }
+        }
+
+        sort($identifiers);
+
+        return array_values(array_unique($identifiers));
+    }
+
     private function userForAccountToken(AccountToken $token, string $username): UserAccount
     {
         $existingTokenUser = $token->user();
@@ -267,15 +299,15 @@ final class UserRegistrationController extends AbstractController
 
         if ($existingTokenUser instanceof UserAccount) {
             if (UserAccountStatus::Deleted !== $existingTokenUser->status()) {
-                throw new \RuntimeException('Account token user is not deleted.');
+                $this->rejectAccountLink('token_user_status');
             }
 
             if ($existingEmailUser instanceof UserAccount && $existingEmailUser !== $existingTokenUser) {
-                throw new \RuntimeException('Email is already assigned.');
+                $this->rejectDuplicateEmail($token->email());
             }
 
             if ($existingUsernameUser instanceof UserAccount && $existingUsernameUser !== $existingTokenUser) {
-                throw new \RuntimeException('Username is already assigned.');
+                $this->rejectDuplicateUsername($username);
             }
 
             $existingTokenUser->changeUsername($username);
@@ -285,11 +317,11 @@ final class UserRegistrationController extends AbstractController
         }
 
         if ($existingEmailUser instanceof UserAccount) {
-            throw new \RuntimeException('Email is already assigned.');
+            $this->rejectDuplicateEmail($token->email());
         }
 
         if ($existingUsernameUser instanceof UserAccount) {
-            throw new \RuntimeException('Username is already assigned.');
+            $this->rejectDuplicateUsername($username);
         }
 
         return new UserAccount($this->uuidFactory->v4(), $username, $token->email(), '', role: $token->role());
@@ -310,7 +342,7 @@ final class UserRegistrationController extends AbstractController
         foreach ($groups as $group) {
             if ($group instanceof AclGroup) {
                 if ($role->accessLevel() < $group->minRole()) {
-                    throw new \RuntimeException('Account token assigns an ACL group above the target role.');
+                    $this->rejectAccountLink('group_role_floor', ['group' => $group->identifier()]);
                 }
             }
         }
@@ -329,6 +361,35 @@ final class UserRegistrationController extends AbstractController
         $value = $request->request->get($name);
 
         return is_string($value) ? $value : '';
+    }
+
+    private function rejectDuplicateEmail(string $email): never
+    {
+        throw MessageException::forMessage(MessageCode::USER_EMAIL_DUPLICATE, MessageKey::USER_EMAIL_DUPLICATE, [
+            '%value%' => $email,
+        ], [
+            'field' => 'email',
+        ]);
+    }
+
+    private function rejectDuplicateUsername(string $username): never
+    {
+        throw MessageException::forMessage(MessageCode::USER_USERNAME_DUPLICATE, MessageKey::USER_USERNAME_DUPLICATE, [
+            '%value%' => $username,
+        ], [
+            'field' => 'username',
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function rejectAccountLink(string $reason, array $context = []): never
+    {
+        throw MessageException::forMessage(MessageCode::ACCOUNT_LINK_INVALID, MessageKey::ACCOUNT_LINK_INVALID, context: [
+            'reason' => $reason,
+            ...$context,
+        ]);
     }
 
     /**

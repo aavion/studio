@@ -11,6 +11,7 @@ use App\Core\Routing\AbsoluteUriGenerator;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
+use App\Core\Validation\EmailAddress;
 use App\Entity\AccountToken;
 use App\Entity\UserAccount;
 use App\Mail\AccountMailFlow;
@@ -93,6 +94,26 @@ final class UserController extends AbstractController
                             $user->changeUsername($newUsername);
                         } catch (Throwable) {
                             $errors[] = 'ui.user.profile.errors.username_invalid';
+                        }
+                    }
+                }
+            }
+
+            if ([] === $errors) {
+                $newEmail = EmailAddress::normalize($this->stringField($request, 'email'));
+
+                if (!EmailAddress::isValid($newEmail)) {
+                    $errors[] = 'ui.user.profile.errors.email_invalid';
+                } else {
+                    $existingEmailUser = $this->userByEmail($newEmail);
+
+                    if ($existingEmailUser instanceof UserAccount && $existingEmailUser !== $user) {
+                        $errors[] = 'ui.user.profile.errors.email_in_use';
+                    } else {
+                        try {
+                            $user->changeEmail($newEmail);
+                        } catch (MessageException) {
+                            $errors[] = 'ui.user.profile.errors.email_invalid';
                         }
                     }
                 }
@@ -306,6 +327,13 @@ final class UserController extends AbstractController
     private function userByUsername(string $username): ?UserAccount
     {
         $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
+
+        return $user instanceof UserAccount ? $user : null;
+    }
+
+    private function userByEmail(string $email): ?UserAccount
+    {
+        $user = $this->entityManager->getRepository(UserAccount::class)->findOneByEmail($email);
 
         return $user instanceof UserAccount ? $user : null;
     }

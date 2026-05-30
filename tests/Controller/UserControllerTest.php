@@ -75,6 +75,7 @@ final class UserControllerTest extends WebTestCase
         $client->request('POST', '/user/profile', [
             '_csrf_token' => (string) $crawler->filter('input[name="_csrf_token"]')->attr('value'),
             'username' => 'ChangedProfile',
+            'email' => $user->email(),
             'display_name' => 'Stable Profile',
             'language' => 'default',
         ]);
@@ -104,6 +105,7 @@ final class UserControllerTest extends WebTestCase
 
             $client->submit($crawler->selectButton('Save profile')->form([
                 'username' => 'Renamed_Profile',
+                'email' => $user->email(),
                 'display_name' => 'Renamed Profile',
                 'language' => 'default',
             ]));
@@ -135,6 +137,7 @@ final class UserControllerTest extends WebTestCase
             $crawler = $client->request('GET', '/user/profile');
             $client->submit($crawler->selectButton('Save profile')->form([
                 'username' => 'takenprofile',
+                'email' => $user->email(),
                 'display_name' => 'Duplicate Profile',
                 'language' => 'default',
             ]));
@@ -151,6 +154,55 @@ final class UserControllerTest extends WebTestCase
         } finally {
             $config->set('user.username_change.enabled', false);
         }
+    }
+
+    public function testProfileEmailCanBeChanged(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'emailprofile', 'profile-password');
+
+        $client->loginUser($user);
+        $crawler = $client->request('GET', '/user/profile');
+        $client->submit($crawler->selectButton('Save profile')->form([
+            'email' => 'changed-emailprofile@example.test',
+            'display_name' => 'Email Profile',
+            'language' => 'default',
+        ]));
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-auth-notice', 'Profile saved.');
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $updatedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+        self::assertInstanceOf(UserAccount::class, $updatedUser);
+        self::assertSame('changed-emailprofile@example.test', $updatedUser->email());
+    }
+
+    public function testProfileEmailChangeRejectsDuplicateEmail(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'emailduplicate', 'profile-password');
+        $taken = $this->createUserWithLevel(1, 'emailtaken', 'profile-password');
+
+        $client->loginUser($user);
+        $crawler = $client->request('GET', '/user/profile');
+        $client->submit($crawler->selectButton('Save profile')->form([
+            'email' => $taken->email(),
+            'display_name' => 'Email Duplicate',
+            'language' => 'default',
+        ]));
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-form-errors', 'This email address is already used.');
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $unchangedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+        self::assertInstanceOf(UserAccount::class, $unchangedUser);
+        self::assertSame('emailduplicate@example.test', $unchangedUser->email());
     }
 
     public function testPasswordRouteChangesPassword(): void
@@ -511,6 +563,69 @@ final class UserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testInvitationTokenCannotEnterPasswordResetFlow(): void
+    {
+        $client = self::createClient();
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'invitation-not-reset@example.test',
+            [],
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->request('GET', '/user/reset-password/'.$plainToken);
+
+        self::assertResponseStatusCodeSame(404);
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->flush();
+    }
+
+    public function testInvitationTokenCannotEnterSecurityReviewFlow(): void
+    {
+        $client = self::createClient();
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'invitation-not-review@example.test',
+            [],
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->request('GET', '/user/security-review/'.$plainToken);
+
+        self::assertResponseStatusCodeSame(404);
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->flush();
+    }
+
+    public function testPasswordResetTokenCannotEnterInvitationFlow(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'resetnotinvite', 'current-password');
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::PasswordReset,
+            $user->email(),
+            [],
+            $user,
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->request('GET', '/user/invitation/'.$plainToken);
+
+        self::assertResponseStatusCodeSame(404);
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $user->uid()));
+        $entityManager->flush();
+    }
+
     public function testInvitationAcceptanceIgnoresMissingGroupsOnPost(): void
     {
         $client = self::createClient();
@@ -571,11 +686,39 @@ final class UserControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-form-errors', 'The account could not be created. The username or email may already be used.');
+        self::assertSelectorTextContains('.studio-form-errors', 'Email address "claimed-invitee@example.test" is already assigned to another account.');
         self::assertNull($entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'claimednewuser']));
 
         $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
         $entityManager->remove($entityManager->find(UserAccount::class, $claimedUser->uid()));
+        $entityManager->flush();
+    }
+
+    public function testInvitationAcceptanceRejectsGroupsAboveTokenRoleWithMessage(): void
+    {
+        $client = self::createClient();
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'low-role-group-invitee@example.test',
+            ['editor'],
+            role: UserRole::User,
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/user/invitation/'.$plainToken);
+        $client->submit($crawler->selectButton('Create account')->form([
+            'username' => 'lowrolegroup',
+            'password' => 'current-password',
+            'confirm_password' => 'current-password',
+        ]));
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-form-errors', 'This account setup link can no longer be used.');
+        self::assertNull($entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'lowrolegroup']));
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
         $entityManager->flush();
     }
 
@@ -684,7 +827,8 @@ final class UserControllerTest extends WebTestCase
 
             self::assertInstanceOf(AccountToken::class, $token);
             self::assertSame($deletedUser->uid(), $token->user()?->uid());
-            self::assertSame(['registered'], $token->groupIdentifiers());
+            self::assertSame(UserRole::Admin, $token->role());
+            self::assertSame(['admin'], $token->groupIdentifiers());
             $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
             self::assertStringContainsString('account.registration.link', $messageLog);
             self::assertStringContainsString('https://example.test/user/invitation/', $messageLog);

@@ -128,6 +128,7 @@ final class MessageCode
     public const ACL_GROUP_APPLY_BLOCKED = 'acl.group_apply_blocked';
     public const USER_EMAIL_DUPLICATE = 'user.email_duplicate';
     public const USER_USERNAME_DUPLICATE = 'user.username_duplicate';
+    public const ACCOUNT_LINK_INVALID = 'account.link_invalid';
     public const ACCOUNT_LINK_DELIVERED = 'account.link_delivered';
     public const ACCOUNT_NOTIFICATION_DELIVERED = 'account.notification_delivered';
     public const ACCOUNT_MAIL_STUB_QUEUED = 'account.mail_stub_queued';

@@ -355,7 +355,7 @@ final class AdminUserControllerTest extends WebTestCase
         }
     }
 
-    public function testAdminCannotInviteExistingAccountEmail(): void
+    public function testAdminCannotInviteSelfAccountEmail(): void
     {
         $client = self::createClient();
         $admin = $this->adminUser();
@@ -376,10 +376,52 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertNull($token);
     }
 
+    public function testAdminInvitationUpdatesExistingAccountWithoutDowngrade(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $user = $this->createUser('existinginvitee', UserAccountStatus::Active);
+        $user->changeRole(UserRole::Author);
+        $user->addGroup($this->registeredGroup());
+        $group = $this->createGroup('existing_invite_group', AccessLevel::USER);
+        $entityManager->flush();
+
+        $client->loginUser($this->adminUser());
+        $crawler = $client->request('GET', '/admin/users');
+        $client->request('POST', '/admin/users/invitations', [
+            '_csrf_token' => (string) $crawler->filter('form[action="/admin/users/invitations"] input[name="_csrf_token"]')->attr('value'),
+            'email' => $user->email(),
+            'role' => UserRole::User->value,
+            'groups' => [$group->identifier()],
+        ]);
+
+        self::assertResponseRedirects('/admin/users');
+
+        $entityManager->clear();
+        $updatedUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'existinginvitee']);
+
+        self::assertInstanceOf(UserAccount::class, $updatedUser);
+        self::assertSame(UserRole::Author, $updatedUser->role());
+        self::assertSame(['existing_invite_group', 'registered'], $this->userGroupIdentifiers($updatedUser));
+        self::assertNull($entityManager->getRepository(AccountToken::class)->findOneBy([
+            'email' => $user->email(),
+            'type' => AccountTokenType::Invitation,
+        ]));
+
+        $entityManager->remove($updatedUser);
+        $entityManager->remove($entityManager->find(AclGroup::class, $group->uid()));
+        $entityManager->flush();
+    }
+
     public function testAdminCanInviteDeletedAccountForReactivation(): void
     {
         $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $deletedUser = $this->createUser('deletedinvitee', UserAccountStatus::Deleted);
+        $preservedGroup = $this->createGroup('deleted_reactivation_group', AccessLevel::USER);
+        $deletedUser->changeRole(UserRole::Author);
+        $deletedUser->addGroup($preservedGroup);
+        $entityManager->flush();
         $client->loginUser($this->adminUser());
         $crawler = $client->request('GET', '/admin/users');
         $form = $crawler->selectButton('Create invitation')->form([
@@ -397,7 +439,13 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertInstanceOf(AccountToken::class, $token);
         self::assertSame(AccountTokenStatus::Pending, $token->status());
         self::assertSame($deletedUser->uid(), $token->user()?->uid());
-        self::assertSame(['registered'], $token->groupIdentifiers());
+        self::assertSame(UserRole::Author, $token->role());
+        self::assertSame(['deleted_reactivation_group'], $token->groupIdentifiers());
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $deletedUser->uid()));
+        $entityManager->remove($entityManager->find(AclGroup::class, $preservedGroup->uid()));
+        $entityManager->flush();
     }
 
     public function testLowerAccessAdminCannotInviteDeletedHigherAccessAccount(): void

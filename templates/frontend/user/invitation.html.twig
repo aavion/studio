@@ -20,7 +20,13 @@
             {% if errors|default([]) is not empty %}
                 <ul class="studio-form-errors">
                     {% for error in errors %}
-                        <li>{{ error|trans }}</li>
+                        <li>
+                            {% if error is iterable %}
+                                {{ error.translation_key|trans(error.parameters|default({})) }}
+                            {% else %}
+                                {{ error|trans }}
+                            {% endif %}
+                        </li>
                     {% endfor %}
                 </ul>
             {% endif %}

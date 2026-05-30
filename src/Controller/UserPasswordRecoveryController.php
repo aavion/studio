@@ -115,62 +115,57 @@ final class UserPasswordRecoveryController extends AbstractController
     public function securityReview(Request $request, string $token): Response
     {
         $accountToken = $this->usableToken($token, AccountTokenType::SecurityReview);
-        $locked = false;
-        $errors = [];
 
-        if ($accountToken instanceof AccountToken && $this->hasUsableTokenUser($accountToken)) {
-            if (!$request->isMethod('POST')) {
-                return $this->render('@frontend/user/security-review.html.twig', [
-                    'account_token' => $accountToken,
-                    'confirm' => true,
-                    'locked' => false,
-                    'errors' => [],
-                ]);
-            }
-
-            if (!$this->isCsrfTokenValid('user_security_review_'.$accountToken->uid(), $this->stringField($request, '_csrf_token'))) {
-                return $this->render('@frontend/user/security-review.html.twig', [
-                    'account_token' => $accountToken,
-                    'confirm' => true,
-                    'locked' => false,
-                    'errors' => ['ui.user.security_review.errors.invalid_csrf'],
-                ]);
-            }
-
-            $user = $accountToken->user();
-            if (!$user instanceof UserAccount || !$user->status()->isUsable() || $accountToken->isExpired() || AccountTokenStatus::Pending !== $accountToken->status()) {
-                return $this->httpError->notFound($request);
-            }
-
-            if (!$this->adminUserPolicy->allowsSecurityReviewLock($user)) {
-                return $this->render('@frontend/user/security-review.html.twig', [
-                    'account_token' => $accountToken,
-                    'confirm' => true,
-                    'locked' => false,
-                    'errors' => ['ui.user.security_review.errors.last_owner'],
-                ]);
-            }
-
-            $accountToken->consume($user);
-            $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Inactive, $user->username());
-            $this->entityManager->flush();
-            $this->linkDelivery->notify($accountToken, AccountMailFlow::PasswordChangeDisputed, $this->userFlowConfig->securityNotificationEmail(), $this->mailLocaleResolver->defaultLocale(), [
-                'username' => $user->username(),
-                'user_uid' => $user->uid(),
-            ]);
-            $this->audit($user, 'auth.password_change_disputed', ['result_status' => 'locked', ...$effects]);
-            $locked = true;
-        }
-
-        if ($accountToken instanceof AccountToken && !$locked) {
+        if (!$accountToken instanceof AccountToken || !$this->hasUsableTokenUser($accountToken)) {
             return $this->httpError->notFound($request);
         }
+
+        if (!$request->isMethod('POST')) {
+            return $this->render('@frontend/user/security-review.html.twig', [
+                'account_token' => $accountToken,
+                'confirm' => true,
+                'locked' => false,
+                'errors' => [],
+            ]);
+        }
+
+        if (!$this->isCsrfTokenValid('user_security_review_'.$accountToken->uid(), $this->stringField($request, '_csrf_token'))) {
+            return $this->render('@frontend/user/security-review.html.twig', [
+                'account_token' => $accountToken,
+                'confirm' => true,
+                'locked' => false,
+                'errors' => ['ui.user.security_review.errors.invalid_csrf'],
+            ]);
+        }
+
+        $user = $accountToken->user();
+        if (!$user instanceof UserAccount || !$user->status()->isUsable() || $accountToken->isExpired() || AccountTokenStatus::Pending !== $accountToken->status()) {
+            return $this->httpError->notFound($request);
+        }
+
+        if (!$this->adminUserPolicy->allowsSecurityReviewLock($user)) {
+            return $this->render('@frontend/user/security-review.html.twig', [
+                'account_token' => $accountToken,
+                'confirm' => true,
+                'locked' => false,
+                'errors' => ['ui.user.security_review.errors.last_owner'],
+            ]);
+        }
+
+        $accountToken->consume($user);
+        $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Inactive, $user->username());
+        $this->entityManager->flush();
+        $this->linkDelivery->notify($accountToken, AccountMailFlow::PasswordChangeDisputed, $this->userFlowConfig->securityNotificationEmail(), $this->mailLocaleResolver->defaultLocale(), [
+            'username' => $user->username(),
+            'user_uid' => $user->uid(),
+        ]);
+        $this->audit($user, 'auth.password_change_disputed', ['result_status' => 'locked', ...$effects]);
 
         return $this->render('@frontend/user/security-review.html.twig', [
             'account_token' => $accountToken,
             'confirm' => false,
-            'locked' => $locked,
-            'errors' => $errors,
+            'locked' => true,
+            'errors' => [],
         ]);
     }
 
