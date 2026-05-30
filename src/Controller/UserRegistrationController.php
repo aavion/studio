@@ -26,8 +26,10 @@ use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\AccountReactivationAccessResolver;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
+use App\Security\UserGroupMembershipManager;
 use App\Security\UserRole;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
@@ -53,6 +55,8 @@ final class UserRegistrationController extends AbstractController
         private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly StateMarkerRecorder $stateMarkers,
         private readonly UuidFactory $uuidFactory,
+        private readonly AccountReactivationAccessResolver $reactivationAccess,
+        private readonly UserGroupMembershipManager $userGroups,
     ) {
     }
 
@@ -106,9 +110,9 @@ final class UserRegistrationController extends AbstractController
                 }
 
                 $defaultGroup = $this->defaultRegistrationGroup();
-                $tokenRole = $existingUser instanceof UserAccount ? $this->reactivationRole($existingUser) : UserRole::User;
+                $tokenRole = $existingUser instanceof UserAccount ? $this->reactivationAccess->role($existingUser) : UserRole::User;
                 $tokenGroups = $existingUser instanceof UserAccount
-                    ? $this->reactivationGroupIdentifiers($existingUser, $tokenRole)
+                    ? $this->reactivationAccess->groupIdentifiers($existingUser, $tokenRole)
                     : ($defaultGroup instanceof AclGroup ? [$defaultGroup->identifier()] : []);
             }
 
@@ -268,29 +272,6 @@ final class UserRegistrationController extends AbstractController
         return $group instanceof AclGroup && $group->minRole() <= AccessLevel::USER ? $group : null;
     }
 
-    private function reactivationRole(UserAccount $user): UserRole
-    {
-        return UserRole::Public === $user->role() ? UserRole::User : $user->role();
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function reactivationGroupIdentifiers(UserAccount $user, UserRole $role): array
-    {
-        $identifiers = [];
-
-        foreach ($user->groups() as $group) {
-            if ($group instanceof AclGroup && $role->accessLevel() >= $group->minRole()) {
-                $identifiers[] = $group->identifier();
-            }
-        }
-
-        sort($identifiers);
-
-        return array_values(array_unique($identifiers));
-    }
-
     private function userForAccountToken(AccountToken $token, string $username): UserAccount
     {
         $existingTokenUser = $token->user();
@@ -338,21 +319,17 @@ final class UserRegistrationController extends AbstractController
             return;
         }
 
-        $groups = $this->entityManager->getRepository(AclGroup::class)->findBy(['identifier' => $groupIdentifiers]);
+        $groups = $this->userGroups->groups($groupIdentifiers);
         foreach ($groups as $group) {
-            if ($group instanceof AclGroup) {
-                if ($role->accessLevel() < $group->minRole()) {
-                    $this->rejectAccountLink('group_role_floor', ['group' => $group->identifier()]);
-                }
+            if ($role->accessLevel() < $group->minRole()) {
+                $this->rejectAccountLink('group_role_floor', ['group' => $group->identifier()]);
             }
         }
 
         $user->clearGroups();
 
         foreach ($groups as $group) {
-            if ($group instanceof AclGroup) {
-                $user->addGroup($group);
-            }
+            $user->addGroup($group);
         }
     }
 

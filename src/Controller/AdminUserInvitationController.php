@@ -20,9 +20,11 @@ use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\AccountReactivationAccessResolver;
 use App\Security\AdminUserAccessPolicy;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
+use App\Security\UserGroupMembershipManager;
 use App\Security\UserRole;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
@@ -45,6 +47,8 @@ final class AdminUserInvitationController extends AbstractController
         private readonly MailLocaleResolver $mailLocaleResolver,
         private readonly UserFlowConfig $userFlowConfig,
         private readonly AdminUserAccessPolicy $adminUserPolicy,
+        private readonly AccountReactivationAccessResolver $reactivationAccess,
+        private readonly UserGroupMembershipManager $userGroups,
         private readonly AuditLoggerInterface $auditLogger,
     ) {
     }
@@ -104,8 +108,8 @@ final class AdminUserInvitationController extends AbstractController
                 }
 
                 $oldRole = $existingUser->role()->value;
-                $oldGroups = $this->userGroupIdentifiers($existingUser);
-                $this->addGroups($existingUser, $groups);
+                $oldGroups = $this->userGroups->identifiers($existingUser);
+                $this->userGroups->addExisting($existingUser, $groups);
                 $existingUser->changeRole($targetRole);
                 $this->entityManager->flush();
                 $this->audit('user.invitation_existing_account_updated', [
@@ -114,7 +118,7 @@ final class AdminUserInvitationController extends AbstractController
                     'old_role' => $oldRole,
                     'new_role' => $targetRole->value,
                     'old_groups' => $oldGroups,
-                    'new_groups' => $this->userGroupIdentifiers($existingUser),
+                    'new_groups' => $this->userGroups->identifiers($existingUser),
                     'requested_role' => $role->value,
                     'requested_groups' => $groups,
                 ]);
@@ -129,8 +133,8 @@ final class AdminUserInvitationController extends AbstractController
                 return $this->redirectToRoute('backend_admin_users');
             }
 
-            $tokenRole = $existingUser instanceof UserAccount ? $this->reactivationRole($existingUser) : $role;
-            $tokenGroups = $existingUser instanceof UserAccount ? $this->reactivationGroupIdentifiers($existingUser, $tokenRole) : $groups;
+            $tokenRole = $existingUser instanceof UserAccount ? $this->reactivationAccess->role($existingUser) : $role;
+            $tokenGroups = $existingUser instanceof UserAccount ? $this->reactivationAccess->groupIdentifiers($existingUser, $tokenRole) : $groups;
 
             if (!$existingUser instanceof UserAccount && ($error = $this->adminUserPolicy->validateGroupAssignment($this->actor(), $tokenGroups, $tokenRole))) {
                 $this->addFlash('error', $error);
@@ -364,43 +368,6 @@ final class AdminUserInvitationController extends AbstractController
         return $user instanceof UserAccount ? $user : null;
     }
 
-    /**
-     * @param list<string> $groupIdentifiers
-     */
-    private function addGroups(UserAccount $user, array $groupIdentifiers): void
-    {
-        $groups = $this->entityManager->getRepository(AclGroup::class)->findBy(['identifier' => $groupIdentifiers]);
-
-        foreach ($groups as $group) {
-            if ($group instanceof AclGroup) {
-                $user->addGroup($group);
-            }
-        }
-    }
-
-    private function reactivationRole(UserAccount $user): UserRole
-    {
-        return UserRole::Public === $user->role() ? UserRole::User : $user->role();
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function reactivationGroupIdentifiers(UserAccount $user, UserRole $role): array
-    {
-        $identifiers = [];
-
-        foreach ($user->groups() as $group) {
-            if ($group instanceof AclGroup && $role->accessLevel() >= $group->minRole()) {
-                $identifiers[] = $group->identifier();
-            }
-        }
-
-        sort($identifiers);
-
-        return array_values(array_unique($identifiers));
-    }
-
     private function ttlForToken(AccountToken $token): string
     {
         return AccountTokenType::PasswordReset === $token->type()
@@ -463,24 +430,6 @@ final class AdminUserInvitationController extends AbstractController
         sort($valid);
 
         return array_values(array_unique($valid));
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function userGroupIdentifiers(UserAccount $user): array
-    {
-        $identifiers = [];
-
-        foreach ($user->groups() as $group) {
-            if ($group instanceof AclGroup) {
-                $identifiers[] = $group->identifier();
-            }
-        }
-
-        sort($identifiers);
-
-        return $identifiers;
     }
 
     /**

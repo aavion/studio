@@ -25,6 +25,7 @@ use App\Security\AdminUserListViewFactory;
 use App\Security\DeletedUserCleanup;
 use App\Security\UserAccountLifecycle;
 use App\Security\UserAccountStatus;
+use App\Security\UserGroupMembershipManager;
 use App\Security\UserRole;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
@@ -49,6 +50,7 @@ final class AdminUserController extends AbstractController
         private readonly AdminUserListViewFactory $adminUserLists,
         private readonly StateMarkerRecorder $stateMarkers,
         private readonly DeletedUserCleanup $deletedUserCleanup,
+        private readonly UserGroupMembershipManager $userGroups,
     ) {
     }
 
@@ -246,11 +248,11 @@ final class AdminUserController extends AbstractController
 
         $oldStatus = $user->status()->value;
         $oldRole = $user->role()->value;
-        $oldGroups = $this->userGroupIdentifiers($user);
+        $oldGroups = $this->userGroups->identifiers($user);
         $oldAccessLevel = $user->accessLevel();
         $effects = $this->userLifecycle->changeStatus($user, $status, $this->adminContext->actorName($this->getUser()));
         $user->changeRole($role);
-        $this->syncGroups($user, $newGroupIdentifiers);
+        $this->userGroups->replaceExisting($user, $newGroupIdentifiers);
         $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::MODIFIED, $this->adminContext->actorName($this->getUser()), 'admin_update', [
             'old_role' => $oldRole,
             'new_role' => $role->value,
@@ -276,7 +278,7 @@ final class AdminUserController extends AbstractController
             'old_role' => $oldRole,
             'new_role' => $role->value,
             'old_groups' => $oldGroups,
-            'new_groups' => $this->userGroupIdentifiers($user),
+            'new_groups' => $this->userGroups->identifiers($user),
             'old_access_level' => $oldAccessLevel,
             'new_access_level' => $user->accessLevel(),
             ...$effects,
@@ -308,7 +310,7 @@ final class AdminUserController extends AbstractController
             return $this->redirectToRoute('backend_admin_deleted_users');
         }
 
-        $groups = $this->userGroupIdentifiers($user);
+        $groups = $this->userGroups->identifiers($user);
         $role = UserAccountStatus::Active === $status && UserRole::Public === $user->role()
             ? UserRole::User
             : $user->role();
@@ -322,7 +324,7 @@ final class AdminUserController extends AbstractController
 
         $oldStatus = $user->status()->value;
         $oldRole = $user->role()->value;
-        $oldGroups = $this->userGroupIdentifiers($user);
+        $oldGroups = $this->userGroups->identifiers($user);
         $effects = $this->userLifecycle->changeStatus($user, $status, $this->adminContext->actorName($this->getUser()));
         $user->changeRole($role);
 
@@ -342,35 +344,12 @@ final class AdminUserController extends AbstractController
             'old_role' => $oldRole,
             'new_role' => $role->value,
             'old_groups' => $oldGroups,
-            'new_groups' => $this->userGroupIdentifiers($user),
+            'new_groups' => $this->userGroups->identifiers($user),
             ...$effects,
         ]);
         $this->addFlash('success', UserAccountStatus::Active === $status ? 'admin.users.deleted.activated' : 'admin.users.deleted.deactivated');
 
         return $this->redirectToRoute('backend_admin_deleted_users');
-    }
-
-    /**
-     * @param list<string> $groupIdentifiers
-     */
-    private function syncGroups(UserAccount $user, array $groupIdentifiers): void
-    {
-        $groups = $this->entityManager->getRepository(AclGroup::class)->findBy(['identifier' => $groupIdentifiers]);
-        $wanted = [];
-
-        foreach ($groups as $group) {
-            $wanted[$group->uid()] = $group;
-        }
-
-        foreach ($user->groups()->toArray() as $group) {
-            if ($group instanceof AclGroup && !isset($wanted[$group->uid()])) {
-                $user->removeGroup($group);
-            }
-        }
-
-        foreach ($wanted as $group) {
-            $user->addGroup($group);
-        }
     }
 
     /**
@@ -415,24 +394,6 @@ final class AdminUserController extends AbstractController
         }
 
         return $groupsByRole;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function userGroupIdentifiers(UserAccount $user): array
-    {
-        $identifiers = [];
-
-        foreach ($user->groups() as $group) {
-            if ($group instanceof AclGroup) {
-                $identifiers[] = $group->identifier();
-            }
-        }
-
-        sort($identifiers);
-
-        return $identifiers;
     }
 
     /**
