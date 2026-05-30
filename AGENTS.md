@@ -45,6 +45,7 @@
 ## Build and Verification Commands
 - `bin/init` initializes the repository, refreshes dependencies and assets, and is the preferred recovery path for broken or incomplete `vendor/` packages because it removes an existing `vendor/` tree before Composer runs.
 - `composer install` installs PHP dependencies and verifies required extensions.
+- `bin/lint` runs the full project lint suite; pass one or more files or directories to run focused type-based checks instead, for example `bin/lint src/Security templates/backend/admin/users`.
 - `php -l <path>` checks PHP syntax for a changed file.
 - `php bin/console lint:container` validates Symfony container wiring after service or configuration changes.
 - `php bin/console tailwind:build` compiles Tailwind CSS.
@@ -60,7 +61,8 @@
 - PHP-only logic: run targeted PHPUnit coverage and `php -l` for edited PHP files.
 - Service, DI, security, or configuration changes: run targeted tests and `php bin/console lint:container`.
 - Twig, translation, or UX copy changes: run `.codex/compare_translations.php` and render affected routes with `.codex/render.php`.
-- Asset, Stimulus, or Tailwind changes: run the relevant asset build command and targeted UI/functional checks.
+- Asset or Stimulus changes: prefer `bin/lint <changed path...>` for focused JavaScript, JSON, CSS, YAML, Twig, and PHP syntax checks, then run the relevant asset build command and targeted UI/functional checks when build output or rendering can change.
+- Focused CSS checks use the strict CSS parser and may report Tailwind-specific directives or generated modern at-rules such as `@apply`, `@theme`, or `@supports` as unsupported syntax; treat the accompanying linter note as context, and use `php bin/console tailwind:build` for the authoritative full Tailwind validation.
 - Doctrine mapping or entity changes: generate or update migrations and run tests covering persistence behavior.
 - Documentation changes: verify style, relative links, and alignment with current behavior.
 - If a recommended verification step cannot run, record the reason in the final response and, when relevant, in `dev/WORKLOG.md`.
