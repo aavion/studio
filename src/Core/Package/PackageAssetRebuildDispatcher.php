@@ -10,6 +10,7 @@ use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Workflow\WorkflowResult;
+use Doctrine\DBAL\Connection;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Throwable;
 
@@ -18,6 +19,7 @@ final readonly class PackageAssetRebuildDispatcher
     public function __construct(
         private MessageBusInterface $messageBus,
         private WorkflowResultMessageReporterInterface $messageReporter,
+        private ?Connection $connection = null,
     )
     {
     }
@@ -30,6 +32,21 @@ final readonly class PackageAssetRebuildDispatcher
         $environment = '' === trim($environment) ? 'prod' : trim($environment);
         $trigger = '' === trim($trigger) ? 'package_lifecycle' : trim($trigger);
         $context = ['operation' => 'package.asset_rebuild.dispatch', 'environment' => $environment, 'trigger' => $trigger];
+
+        if (!$this->messengerStorageReady()) {
+            return $this->report(WorkflowResult::failed([
+                Message::warning(
+                    MessageCode::PACKAGE_ASSET_REBUILD_QUEUE_FAILED,
+                    MessageKey::PACKAGE_ASSET_REBUILD_QUEUE_FAILED,
+                    ['%trigger%' => $trigger],
+                    ['trigger' => $trigger, 'environment' => $environment, 'reason' => 'messenger_storage_unavailable'],
+                ),
+            ], [
+                'trigger' => $trigger,
+                'environment' => $environment,
+                'deferred' => true,
+            ]), $context);
+        }
 
         try {
             $this->messageBus->dispatch(new PackageAssetRebuildMessage($environment, $trigger));
@@ -75,5 +92,18 @@ final readonly class PackageAssetRebuildDispatcher
     private function report(WorkflowResult $result, array $context): WorkflowResult
     {
         return $this->messageReporter->report($result, $context);
+    }
+
+    private function messengerStorageReady(): bool
+    {
+        if (!$this->connection instanceof Connection) {
+            return true;
+        }
+
+        try {
+            return in_array('messenger_messages', $this->connection->createSchemaManager()->listTableNames(), true);
+        } catch (Throwable) {
+            return false;
+        }
     }
 }

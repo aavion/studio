@@ -10,6 +10,7 @@ use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Workflow\WorkflowResult;
+use Doctrine\DBAL\Connection;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Throwable;
 
@@ -18,6 +19,7 @@ final readonly class PackageDiscoveryDispatcher
     public function __construct(
         private MessageBusInterface $messageBus,
         private WorkflowResultMessageReporterInterface $messageReporter,
+        private ?Connection $connection = null,
     )
     {
     }
@@ -29,6 +31,20 @@ final readonly class PackageDiscoveryDispatcher
     {
         $trigger = '' === trim($trigger) ? 'manual' : trim($trigger);
         $context = ['operation' => 'package.discovery.dispatch', 'trigger' => $trigger];
+
+        if (!$this->messengerStorageReady()) {
+            return $this->report(WorkflowResult::failed([
+                Message::warning(
+                    MessageCode::PACKAGE_DISCOVERY_QUEUE_FAILED,
+                    MessageKey::PACKAGE_DISCOVERY_QUEUE_FAILED,
+                    ['%trigger%' => $trigger],
+                    ['trigger' => $trigger, 'reason' => 'messenger_storage_unavailable'],
+                ),
+            ], [
+                'trigger' => $trigger,
+                'deferred' => true,
+            ]), $context);
+        }
 
         try {
             $this->messageBus->dispatch(new PackageDiscoveryMessage($trigger));
@@ -70,5 +86,18 @@ final readonly class PackageDiscoveryDispatcher
     private function report(WorkflowResult $result, array $context): WorkflowResult
     {
         return $this->messageReporter->report($result, $context);
+    }
+
+    private function messengerStorageReady(): bool
+    {
+        if (!$this->connection instanceof Connection) {
+            return true;
+        }
+
+        try {
+            return in_array('messenger_messages', $this->connection->createSchemaManager()->listTableNames(), true);
+        } catch (Throwable) {
+            return false;
+        }
     }
 }
