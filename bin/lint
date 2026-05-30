@@ -1,0 +1,190 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__).'/vendor/autoload.php';
+
+use App\Core\Lint\JavaScriptLinter;
+use App\Core\Lint\JsonLinter;
+use App\Core\Lint\LinterInterface;
+
+$root = dirname(__DIR__);
+$php = PHP_BINARY;
+$failures = 0;
+
+$run = static function (array $command, string $label) use (&$failures, $root): void {
+    fwrite(STDOUT, sprintf("\n==> %s\n", $label));
+    $process = proc_open(
+        $command,
+        [
+            0 => STDIN,
+            1 => STDOUT,
+            2 => STDERR,
+        ],
+        $pipes,
+        $root,
+    );
+
+    if (!is_resource($process)) {
+        fwrite(STDERR, sprintf("Failed to start %s.\n", $label));
+        ++$failures;
+
+        return;
+    }
+
+    $exitCode = proc_close($process);
+
+    if (0 !== $exitCode) {
+        ++$failures;
+    }
+};
+
+$phpFiles = static function (string $root): array {
+    return filesWithExtensions($root, ['php']);
+};
+
+/**
+ * @param list<string> $extensions
+ *
+ * @return list<string>
+ */
+function filesWithExtensions(string $root, array $extensions): array
+{
+    $excluded = [
+        '.git',
+        'assets/packages',
+        'node_modules',
+        'public/assets',
+        'tests/Fixtures',
+        'var',
+        'vendor',
+    ];
+    $files = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveCallbackFilterIterator(
+            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
+            static function (SplFileInfo $file) use ($root, $excluded): bool {
+                $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
+
+                foreach ($excluded as $path) {
+                    if ($relative === $path || str_starts_with($relative, $path.'/')) {
+                        return false;
+                    }
+                }
+
+                return true;
+            },
+        ),
+    );
+
+    $extensions = array_flip($extensions);
+
+    foreach ($iterator as $file) {
+        if ($file instanceof SplFileInfo && $file->isFile() && isset($extensions[$file->getExtension()])) {
+            $files[] = $file->getPathname();
+        }
+    }
+
+    sort($files);
+
+    return $files;
+}
+
+function lintSources(string $root, array $extensions, LinterInterface $linter, string $label, array $includePrefixes = []): int
+{
+    fwrite(STDOUT, sprintf("\n==> %s\n", $label));
+    $failures = 0;
+
+    foreach (filesWithExtensions($root, $extensions) as $file) {
+        $relative = str_replace('\\', '/', substr($file, strlen($root) + 1));
+
+        if ([] !== $includePrefixes && !pathMatchesAnyPrefix($relative, $includePrefixes)) {
+            continue;
+        }
+
+        $result = $linter->lint((string) file_get_contents($file), $relative);
+
+        foreach ($result->issues() as $issue) {
+            fwrite(STDERR, sprintf(
+                "%s:%s:%s %s\n",
+                $relative,
+                $issue->line() ?? 1,
+                $issue->column() ?? 1,
+                $issue->details()['error'] ?? $issue->message(),
+            ));
+            ++$failures;
+        }
+    }
+
+    if (0 === $failures) {
+        fwrite(STDOUT, sprintf("%s OK.\n", $label));
+    }
+
+    return $failures;
+}
+
+/**
+ * @param list<string> $prefixes
+ */
+function pathMatchesAnyPrefix(string $path, array $prefixes): bool
+{
+    foreach ($prefixes as $prefix) {
+        if ($path === $prefix || str_starts_with($path, rtrim($prefix, '/').'/')) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+fwrite(STDOUT, "\n==> PHP syntax\n");
+
+foreach ($phpFiles($root) as $file) {
+    $process = proc_open(
+        [$php, '-l', $file],
+        [
+            0 => ['file', '/dev/null', 'r'],
+            1 => ['pipe', 'w'],
+            2 => STDERR,
+        ],
+        $pipes,
+        $root,
+    );
+
+    if (!is_resource($process)) {
+        fwrite(STDERR, sprintf("Failed to lint %s.\n", $file));
+        ++$failures;
+
+        continue;
+    }
+
+    $output = stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+    $exitCode = proc_close($process);
+
+    if (0 !== $exitCode) {
+        fwrite(STDOUT, (string) $output);
+        ++$failures;
+    }
+}
+
+if (0 === $failures) {
+    fwrite(STDOUT, "PHP syntax OK.\n");
+}
+
+$run([$php, 'bin/console', 'lint:container'], 'Symfony container');
+$run([$php, 'bin/console', 'lint:twig', 'templates'], 'Twig templates');
+$run([$php, 'bin/console', 'lint:yaml', '--parse-tags', 'config', 'translations'], 'YAML config and translations');
+$failures += lintSources($root, ['js'], new JavaScriptLinter(), 'JavaScript module syntax');
+$failures += lintSources($root, ['json'], new JsonLinter(), 'JSON syntax');
+$run([$php, 'bin/console', 'tailwind:build'], 'Tailwind CSS build');
+$run([$php, '.codex/compare_translations.php'], 'Translation source keys');
+
+if (0 !== $failures) {
+    fwrite(STDERR, sprintf("\nLint failed with %d failing check(s).\n", $failures));
+
+    exit(1);
+}
+
+fwrite(STDOUT, "\nAll lint checks passed.\n");
