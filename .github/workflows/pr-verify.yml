@@ -1,4 +1,4 @@
-name: Validate Test-Suite
+name: Pull Request Verification
 
 on:
   pull_request:
