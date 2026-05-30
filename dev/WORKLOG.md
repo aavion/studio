@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-05-28
+> **Updated**: 2026-05-30
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -65,6 +65,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-30
+- Hardened remaining review-reported account-token and credential races: stale dispute reactivation, inactive/deleted password resets, deleted-account invitation approval/reissue, invitation token type/group POST validation, active API-key reveal/revoke checks, complete owner reset delivery for APP_SECRET rotation, cheap Messenger storage readiness checks before package queue dispatch, and added `bin/lint` as the shared project validation entry point.
 - Updated bin/composer to the latest version (2.10.0) and did a small Update to the root README-file.
 ### 2026-05-29
 - Requested a full audit because of the massive ammount of review findings. Instructions will follow.
