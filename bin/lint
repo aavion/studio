@@ -9,6 +9,7 @@ use App\Core\Lint\CssLinter;
 use App\Core\Lint\JavaScriptLinter;
 use App\Core\Lint\JsonLinter;
 use App\Core\Lint\LinterInterface;
+use Symfony\Component\Yaml\Yaml;
 
 $root = dirname(__DIR__);
 $php = PHP_BINARY;
@@ -281,6 +282,172 @@ function containsTranslationSource(string $root, array $files): bool
     return false;
 }
 
+function lintTranslationSourceKeys(string $root): int
+{
+    fwrite(STDOUT, "\n==> Translation source keys\n");
+
+    $translationDirectory = $root.'/translations/languages';
+    $localeDirectories = translationLocaleDirectories($translationDirectory);
+    $referenceLocale = isset($localeDirectories['en']) ? 'en' : array_key_first($localeDirectories);
+    $failures = 0;
+
+    if (null === $referenceLocale) {
+        fwrite(STDERR, "No translation source locale directories found.\n");
+
+        return 1;
+    }
+
+    foreach ($localeDirectories as $locale => $directory) {
+        try {
+            mergedTranslationLocaleCatalogue($directory);
+        } catch (RuntimeException $error) {
+            ++$failures;
+            fwrite(STDERR, sprintf("%s: %s\n", $locale, $error->getMessage()));
+        }
+    }
+
+    $referenceCatalogues = translationSourceCatalogues($localeDirectories[$referenceLocale]);
+
+    foreach ($localeDirectories as $locale => $directory) {
+        $catalogues = translationSourceCatalogues($directory);
+
+        foreach (array_keys(array_diff_key($referenceCatalogues, $catalogues)) as $domain) {
+            ++$failures;
+            fwrite(STDERR, sprintf("%s: missing source catalogue %s.yaml from reference locale %s\n", $locale, $domain, $referenceLocale));
+        }
+
+        foreach (array_keys(array_diff_key($catalogues, $referenceCatalogues)) as $domain) {
+            ++$failures;
+            fwrite(STDERR, sprintf("%s: extra source catalogue %s.yaml missing from reference locale %s\n", $locale, $domain, $referenceLocale));
+        }
+
+        foreach (array_intersect(array_keys($referenceCatalogues), array_keys($catalogues)) as $domain) {
+            $referenceKeys = flattenTranslationCatalogue((array) Yaml::parseFile($referenceCatalogues[$domain]));
+            $localeKeys = flattenTranslationCatalogue((array) Yaml::parseFile($catalogues[$domain]));
+
+            foreach (array_keys(array_diff_key($referenceKeys, $localeKeys)) as $key) {
+                ++$failures;
+                fwrite(STDERR, sprintf("%s: missing %s key %s from reference locale %s\n", $domain, $locale, $key, $referenceLocale));
+            }
+
+            foreach (array_keys(array_diff_key($localeKeys, $referenceKeys)) as $key) {
+                ++$failures;
+                fwrite(STDERR, sprintf("%s: extra %s key %s missing from reference locale %s\n", $domain, $locale, $key, $referenceLocale));
+            }
+        }
+    }
+
+    if (0 === $failures) {
+        fwrite(STDOUT, "Translation source keys OK.\n");
+    }
+
+    return $failures;
+}
+
+/**
+ * @return array<string, string>
+ */
+function translationLocaleDirectories(string $translationDirectory): array
+{
+    $directories = [];
+
+    foreach (glob($translationDirectory.'/*', GLOB_ONLYDIR) ?: [] as $directory) {
+        $locale = basename($directory);
+        if (1 === preg_match('/^[a-z][a-z0-9]*(?:[_-][a-zA-Z0-9]+)*$/', $locale)) {
+            $directories[$locale] = $directory;
+        }
+    }
+
+    ksort($directories);
+
+    return $directories;
+}
+
+/**
+ * @return array<string, string>
+ */
+function translationSourceCatalogues(string $directory): array
+{
+    $catalogues = [];
+
+    foreach (glob($directory.'/*.yaml') ?: [] as $path) {
+        $catalogues[basename($path, '.yaml')] = $path;
+    }
+
+    ksort($catalogues);
+
+    return $catalogues;
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function mergedTranslationLocaleCatalogue(string $directory): array
+{
+    $catalogue = [];
+    $files = glob($directory.'/*.yaml') ?: [];
+    sort($files);
+
+    foreach ($files as $file) {
+        $catalogue = mergeTranslationCatalogue($catalogue, (array) Yaml::parseFile($file), $file);
+    }
+
+    return $catalogue;
+}
+
+/**
+ * @param array<string, mixed> $left
+ * @param array<string, mixed> $right
+ *
+ * @return array<string, mixed>
+ */
+function mergeTranslationCatalogue(array $left, array $right, string $source, string $prefix = ''): array
+{
+    foreach ($right as $key => $value) {
+        $path = '' === $prefix ? (string) $key : $prefix.'.'.(string) $key;
+
+        if (!array_key_exists($key, $left)) {
+            $left[$key] = $value;
+
+            continue;
+        }
+
+        if (is_array($left[$key]) && is_array($value)) {
+            $left[$key] = mergeTranslationCatalogue($left[$key], $value, $source, $path);
+
+            continue;
+        }
+
+        throw new RuntimeException(sprintf('duplicate key "%s" in %s', $path, $source));
+    }
+
+    return $left;
+}
+
+/**
+ * @param array<string, mixed> $data
+ *
+ * @return array<string, mixed>
+ */
+function flattenTranslationCatalogue(array $data, string $prefix = ''): array
+{
+    $flat = [];
+
+    foreach ($data as $key => $value) {
+        $path = '' === $prefix ? (string) $key : $prefix.'.'.(string) $key;
+
+        if (is_array($value)) {
+            $flat += flattenTranslationCatalogue($value, $path);
+
+            continue;
+        }
+
+        $flat[$path] = $value;
+    }
+
+    return $flat;
+}
+
 if ([] !== $targets) {
     $collected = collectTargetFiles($root, $targets);
     $failures += $collected['failures'];
@@ -314,7 +481,7 @@ if ([] !== $targets) {
     }
 
     if (containsTranslationSource($root, $collected['files'])) {
-        $run([$php, '.codex/compare_translations.php'], 'Translation source keys');
+        $failures += lintTranslationSourceKeys($root);
     }
 
     if ([] === $collected['files'] && 0 === $failures) {
@@ -339,7 +506,7 @@ $run([$php, 'bin/console', 'lint:yaml', '--parse-tags', 'config', 'translations'
 $failures += lintSourceFiles($root, filesWithExtensions($root, ['js']), new JavaScriptLinter(), 'JavaScript module syntax');
 $failures += lintSourceFiles($root, filesWithExtensions($root, ['json']), new JsonLinter(), 'JSON syntax');
 $run([$php, 'bin/console', 'tailwind:build'], 'Tailwind CSS build');
-$run([$php, '.codex/compare_translations.php'], 'Translation source keys');
+$failures += lintTranslationSourceKeys($root);
 
 if (0 !== $failures) {
     fwrite(STDERR, sprintf("\nLint failed with %d failing check(s).\n", $failures));

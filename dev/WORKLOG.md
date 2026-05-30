@@ -69,6 +69,7 @@
 - Completed account-link hardening across invitation, registration, recovery, security-review, APP_SECRET rotation, API-key, and deleted-account flows, including role-carrying tokens, reactivation guards, stale-token/status checks, structured UI messages, owner delivery retries, and enumeration-safe public registration.
 - Added database-near user email/username uniqueness protection with structured message reporting and UI-capable error handling, while token-only onboarding keeps helpful duplicate username feedback.
 - Extended `bin/lint` with optional file/directory targets for focused type-based checks and kept project validation, Symfony container checks, Twig/YAML linting, translation comparisons, and Tailwind-aware full-suite behavior aligned.
+- Made `bin/lint` release-safe by embedding the translation source catalogue comparison instead of depending on `.codex/` helper scripts.
 - Post-checked review readiness by adding Symfony firewall access-control rules, account-flow GET token-type 404s, existing-account invite upgrades without downgrades, profile email validation, and shared ACL helper services for group membership/reactivation handling.
 - Updated bin/composer to the latest version (2.10.0) and did a small Update to the root README-file.
 ### 2026-05-29
