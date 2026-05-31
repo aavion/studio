@@ -12,4 +12,5 @@
         } only %}
         {% include '@frontend/error-pages/partials/_debug.html.twig' with {http_error: http_error|default(null)} only %}
     </main>
+    {% include '@root/partials/layout/_system-footer.html.twig' with {area: 'frontend'} only %}
 {% endblock %}
