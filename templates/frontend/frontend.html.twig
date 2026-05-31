@@ -11,5 +11,7 @@
         <main id="studio-main" class="studio-frontend-main">
             {% block frontend_body %}{% endblock %}
         </main>
+
+        {% include '@root/partials/layout/_system-footer.html.twig' with {area: 'frontend'} only %}
     </div>
 {% endblock %}

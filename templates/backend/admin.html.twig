@@ -21,6 +21,7 @@
                 </div>
             </section>
         </div>
+        {% include '@root/partials/layout/_system-footer.html.twig' with {area: 'backend'} only %}
     </main>
     {% include '@backend/operations/action-log-overlay.html.twig' %}
 {% endblock %}

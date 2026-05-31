@@ -1,8 +1,12 @@
+.studio-setup-frame {
+    display: grid;
+    width: min(100%, 820px);
+    margin: 0 auto;
+}
+
 .studio-setup-shell {
     display: grid;
     gap: 0;
-    width: min(100%, 820px);
-    margin: 0 auto;
     overflow: hidden;
     border: var(--studio-border);
     border-radius: var(--studio-layout-radius);

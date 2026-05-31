@@ -8,5 +8,6 @@
             {% include '@backend/partials/layout/_topbar.html.twig' with {area_key: 'ui.editor.area'} only %}
             {% block editor_body %}{% endblock %}
         </section>
+        {% include '@root/partials/layout/_system-footer.html.twig' with {area: 'backend'} only %}
     </main>
 {% endblock %}

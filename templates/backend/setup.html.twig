@@ -1,15 +1,18 @@
 {% extends '@root/base.html.twig' %}
 
-{% block body_class %}studio-body studio-backend studio-setup-page{% endblock %}
+{% block body_class %}studio-body studio-backend{% endblock %}
 
 {% block body %}
     <main class="studio-backend-shell">
-        <section class="studio-setup-shell">
-            {% include '@backend/partials/layout/_topbar.html.twig' with {area_key: 'ui.setup.area'} only %}
-            <div class="studio-setup-content">
-                {% block setup_body %}{% endblock %}
-            </div>
-        </section>
+        <div class="studio-setup-frame">
+            <section class="studio-setup-shell">
+                {% include '@backend/partials/layout/_topbar.html.twig' with {area_key: 'ui.setup.area'} only %}
+                <div class="studio-setup-content">
+                    {% block setup_body %}{% endblock %}
+                </div>
+            </section>
+            {% include '@root/partials/layout/_system-footer.html.twig' with {area: 'backend'} only %}
+        </div>
     </main>
     {% include '@backend/operations/action-log-overlay.html.twig' %}
 {% endblock %}

@@ -90,12 +90,7 @@ html {
 }
 
 .studio-system-footer-backend {
-    width: min(100% - 2rem, var(--studio-container-wide));
-    padding-top: 0;
-}
-
-.studio-setup-page .studio-system-footer {
-    width: min(100%, 820px);
+    width: 100%;
     padding-top: 0.35rem;
     padding-right: 0.5rem;
 }
