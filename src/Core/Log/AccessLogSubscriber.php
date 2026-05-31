@@ -37,7 +37,7 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest() || $this->shouldSkip($event->getRequest()->getPathInfo())) {
+        if (!$event->isMainRequest() || $this->shouldSkipAccessLog($event->getRequest()->getPathInfo())) {
             return;
         }
 
@@ -46,7 +46,7 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
 
     public function onKernelResponse(ResponseEvent $event): void
     {
-        if (!$event->isMainRequest() || $this->shouldSkip($event->getRequest()->getPathInfo())) {
+        if (!$event->isMainRequest() || $this->shouldSkipAccessLog($event->getRequest()->getPathInfo())) {
             return;
         }
 
@@ -56,14 +56,24 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
             $this->reportAccessLogFailure($event, $error);
         }
 
-        try {
-            $this->accessStatisticsRecorder->record($event->getRequest(), $event->getResponse());
-        } catch (Throwable) {
-            return;
+        if (!$this->shouldSkipStatistics($event->getRequest()->getPathInfo())) {
+            try {
+                $this->accessStatisticsRecorder->record($event->getRequest(), $event->getResponse());
+            } catch (Throwable) {
+                return;
+            }
         }
     }
 
-    private function shouldSkip(string $path): bool
+    private function shouldSkipAccessLog(string $path): bool
+    {
+        return str_starts_with($path, '/_profiler')
+            || str_starts_with($path, '/_wdt')
+            || str_starts_with($path, '/assets/')
+            || str_starts_with($path, '/build/');
+    }
+
+    private function shouldSkipStatistics(string $path): bool
     {
         return $this->databaseIsNotReady()
             || str_starts_with($path, '/setup')

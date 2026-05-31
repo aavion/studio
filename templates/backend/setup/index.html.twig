@@ -27,7 +27,7 @@
         {% endif %}
         data-turbo="false"
     >
-        <input type="hidden" name="_form_id" value="setup-wizard-{{ setup_step }}">
+        <input type="hidden" name="_form_id" value="setup-wizard-{{ setup_step }}{{ setup_step == 'review' ? '-live-v2' : '' }}">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token('setup-wizard') }}">
         <input type="hidden" name="_setup_action" value="">
         {% include '@backend/partials/forms/_errors.html.twig' with {errors: setup_errors.__form|default([])} only %}
