@@ -138,14 +138,17 @@ final readonly class PackageAssetSyncer
                 $contributions = $registryEvent->contributions();
             }
 
-            $this->mirror->commitMirrorDirectory($mirrorRoot);
+            $this->registryWriter->writeThen(
+                $contributions,
+                function () use ($mirrorRoot): void {
+                    $this->mirror->commitMirrorDirectory($mirrorRoot);
+                },
+            );
         } catch (Throwable $error) {
             $this->mirror->discardMirrorDirectory($mirrorRoot);
 
             throw $error;
         }
-
-        $this->registryWriter->write($contributions);
 
         $context = [
             'packages' => count($packages),

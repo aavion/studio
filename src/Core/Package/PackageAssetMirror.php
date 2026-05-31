@@ -31,20 +31,27 @@ final readonly class PackageAssetMirror
         }
 
         $stagingPath = 'assets/.packages.tmp-'.bin2hex(random_bytes(8));
-        $this->filesystem->ensureDirectory($stagingPath);
 
-        foreach (['.gitignore', 'README.md'] as $preservedFile) {
-            $source = $root.DIRECTORY_SEPARATOR.$preservedFile;
+        try {
+            $this->filesystem->ensureDirectory($stagingPath);
 
-            if (!is_file($source) || is_link($source)) {
-                continue;
+            foreach (['.gitignore', 'README.md'] as $preservedFile) {
+                $source = $root.DIRECTORY_SEPARATOR.$preservedFile;
+
+                if (!is_file($source) || is_link($source)) {
+                    continue;
+                }
+
+                $target = $this->filesystem->absolutePath($stagingPath.'/'.$preservedFile);
+
+                if (!copy($source, $target)) {
+                    throw new RuntimeException(sprintf('Package asset mirror file "%s" could not be staged.', $preservedFile));
+                }
             }
+        } catch (\Throwable $error) {
+            $this->discardMirrorDirectory($stagingPath);
 
-            $target = $this->filesystem->absolutePath($stagingPath.'/'.$preservedFile);
-
-            if (!copy($source, $target)) {
-                throw new RuntimeException(sprintf('Package asset mirror file "%s" could not be staged.', $preservedFile));
-            }
+            throw $error;
         }
 
         return $stagingPath;
@@ -77,7 +84,11 @@ final readonly class PackageAssetMirror
         }
 
         if (is_dir($backup)) {
-            $this->filesystem->removePath($backup);
+            try {
+                $this->filesystem->removePath($backup);
+            } catch (RuntimeException) {
+                return;
+            }
         }
     }
 

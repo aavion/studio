@@ -10,6 +10,8 @@ use App\Core\Package\Event\PackageAssetRegistryBuildEvent;
 use App\Core\Package\Event\PackageAssetSyncCompletedEvent;
 use App\Core\Package\Event\PackageAssetSyncStartedEvent;
 use App\Core\Package\PackageAssetContribution;
+use App\Core\Package\PackageAssetFilesystem;
+use App\Core\Package\PackageAssetRegistryWriter;
 use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageAssetSyncer;
 use App\Core\Package\PackageScope;
@@ -215,6 +217,47 @@ final class PackageAssetSyncerTest extends TestCase
         self::assertSame(PackageAssetRegistryBuildEvent::class, $result->firstIssue()?->context()['event']);
         self::assertFileExists($this->root.'/assets/packages/stale/old.css');
         self::assertDirectoryDoesNotExist($this->root.'/assets/packages/demo');
+    }
+
+    public function testItKeepsPreviousMirrorWhenRegistryWriteFails(): void
+    {
+        $this->writeTestFile($this->root, 'packages/demo/assets/module.css', '.demo {}');
+        $this->writeTestFile($this->root, 'assets/styles/packages/extension.css', 'old extension registry');
+        mkdir($this->root.'/assets/styles/packages/frontend-theme.css', 0775, true);
+
+        $result = (new PackageAssetSyncer($this->root))->sync([
+            new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
+        ]);
+
+        self::assertSame(WorkflowStatus::Failed, $result->status());
+        self::assertSame('old extension registry', file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertFileExists($this->root.'/assets/packages/stale/old.css');
+        self::assertDirectoryDoesNotExist($this->root.'/assets/packages/demo');
+        self::assertSame([], glob($this->root.'/assets/.packages.tmp-*'));
+    }
+
+    public function testRegistryWriterRollsBackWhenFollowUpFails(): void
+    {
+        $this->writeTestFile($this->root, 'assets/styles/packages/extension.css', 'old extension registry');
+
+        $writer = new PackageAssetRegistryWriter(new PackageAssetFilesystem($this->root));
+
+        try {
+            $writer->writeThen([
+                PackageAssetContribution::css('demo', PackageScope::Module, 'assets/packages/demo/module.css'),
+            ], static function (): void {
+                throw new \RuntimeException('follow-up failed');
+            });
+            self::fail('Expected registry write follow-up to fail.');
+        } catch (\RuntimeException $error) {
+            self::assertSame('follow-up failed', $error->getMessage());
+        }
+
+        self::assertSame('old extension registry', file_get_contents($this->root.'/assets/styles/packages/extension.css'));
+        self::assertFileDoesNotExist($this->root.'/assets/styles/packages/frontend-theme.css');
+        self::assertFileDoesNotExist($this->root.'/assets/js/packages/extension.js');
+        self::assertSame([], glob($this->root.'/assets/styles/packages/*.backup-*'));
+        self::assertSame([], glob($this->root.'/assets/js/packages/*.backup-*'));
     }
 
     public function testItRemovesDeactivatedPackageMirrorAndRegistryEntries(): void
