@@ -206,10 +206,12 @@ final class BackendControllerTest extends WebTestCase
             $client->submit($form);
 
             self::assertResponseStatusCodeSame(404);
+            self::assertSelectorTextContains('h1', 'Page not found');
             $html = (string) $client->getResponse()->getContent();
             self::assertStringNotContainsString('Setup result', $html);
             self::assertStringNotContainsString('Write environment', $html);
             self::assertStringNotContainsString('Setup is already completed and is no longer available.', $html);
+            self::assertStringNotContainsString('Symfony Exception', $html);
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
         }

@@ -13,6 +13,7 @@ use App\Setup\SetupDatabaseConnectionFactory;
 use App\Setup\SetupPreflightChecker;
 use App\Setup\SetupSiteSettings;
 use App\Setup\SetupWebInputFactory;
+use App\View\Http\HttpErrorRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -39,6 +40,7 @@ final class SetupController extends AbstractController
         private readonly LiveOperationHttpResponder $liveOperationResponder,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
         private readonly LocaleSwitcher $localeSwitcher,
+        private readonly HttpErrorRenderer $httpError,
     ) {
     }
 
@@ -47,7 +49,7 @@ final class SetupController extends AbstractController
     public function __invoke(Request $request, string $step = 'language'): Response
     {
         if ($this->completionMarker->isComplete($this->projectDir, $this->environment)) {
-            throw $this->createNotFoundException('Setup is already completed.');
+            return $this->httpError->notFound($request);
         }
 
         $state = $this->state($request);
