@@ -36,6 +36,7 @@ final readonly class SetupDryRunPlanner
                     'APP_SECRET' => $appSecret,
                     'DEFAULT_URI' => $input->defaultUri(),
                     'DATABASE_URL' => $this->sensitiveValueMasker->maskDatabaseUrl($databaseUrl),
+                    'APP_DATABASE_PREFIX' => $input->databasePrefix() ?? '',
                 ],
             ], ActionLogStatus::Skipped],
             ['dump_environment', fn (): array => [

@@ -300,6 +300,7 @@ final class SetupRunner
             'APP_SECRET' => $appSecret,
             'DEFAULT_URI' => $input->defaultUri(),
             'DATABASE_URL' => $databaseUrl,
+            'APP_DATABASE_PREFIX' => $input->databasePrefix() ?? '',
             'APP_DEBUG' => '0',
             'SHELL_VERBOSITY' => '-1',
         ];

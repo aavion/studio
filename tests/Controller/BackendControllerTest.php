@@ -27,6 +27,7 @@ use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
 use App\View\Injection\StaticViewInjection;
 use App\View\Injection\ViewSurface;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -48,15 +49,15 @@ final class BackendControllerTest extends WebTestCase
             self::assertResponseIsSuccessful();
             self::assertSelectorExists('.studio-setup-shell');
             self::assertSelectorTextContains('h1', 'Setup');
-            self::assertSelectorExists('form#setup-web');
-            self::assertSelectorExists('form#setup-web[data-turbo="false"]');
+            self::assertSelectorExists('form#setup-wizard');
+            self::assertSelectorExists('form#setup-wizard[data-turbo="false"]');
             self::assertSelectorExists('input[name="_csrf_token"]');
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
         }
     }
 
-    public function testSetupRouteRunsDryRunWithoutAuthentication(): void
+    public function testSetupWizardUsesSelectedLanguageAndAdvancesPastGreenPreflight(): void
     {
         $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
         $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
@@ -68,26 +69,65 @@ final class BackendControllerTest extends WebTestCase
         try {
             $client = self::createClient();
             $crawler = $client->request('GET', '/setup');
-            $form = $crawler->selectButton('Run setup')->form([
-                'language' => 'en',
-                'site_title' => 'Dry Run Studio',
+            $crawler = $client->submit($crawler->selectButton('Continue')->form(['language' => 'de']));
+
+            self::assertSelectorTextContains('h1', 'Setup');
+            self::assertStringContainsString('Vorabprüfung', (string) $client->getResponse()->getContent());
+
+            $client->submit($crawler->selectButton('Weiter')->form());
+
+            self::assertResponseIsSuccessful();
+            self::assertStringContainsString('Seiteninformationen', (string) $client->getResponse()->getContent());
+        } finally {
+            $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
+        }
+    }
+
+    public function testSetupRouteWalksToReviewWithoutAuthentication(): void
+    {
+        $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
+        $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
+        $previousPutenvValue = getenv(SetupCompletionMarker::KEY);
+
+        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
+        putenv(SetupCompletionMarker::KEY);
+
+        try {
+            $client = self::createClient();
+            $client->request('GET', '/setup');
+            $this->setSetupWizardState($client, [
+                'values' => ['language' => 'en'],
+                'completed' => ['language', 'preflight'],
+                'workflow' => null,
+                'action_log' => null,
+            ]);
+            $crawler = $client->request('GET', '/setup/site');
+            $crawler = $client->submit($crawler->selectButton('Continue')->form([
+                'site_title' => 'Wizard Studio',
                 'default_uri' => 'http://localhost',
+                'registration_mode' => 'admin_approval',
+                'statistics_enabled' => '1',
+                'statistics_respect_dnt' => '1',
+            ]));
+            $crawler = $client->submit($crawler->selectButton('Continue')->form([
                 'database_driver' => 'sqlite',
                 'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+            ]));
+            $client->submit($crawler->selectButton('Continue')->form([
                 'admin_username' => 'admin',
                 'admin_password' => 'admin-password',
                 'admin_password_confirm' => 'admin-password',
                 'admin_email' => 'admin@localhost.local',
-                'dry_run' => '1',
-            ]);
-
-            $client->submit($form);
+            ]));
 
             self::assertResponseIsSuccessful();
             $html = (string) $client->getResponse()->getContent();
-            self::assertStringContainsString('Setup result', $html);
-            self::assertStringContainsString('Write environment', $html);
-            self::assertStringContainsString('Skipped', $html);
+            self::assertStringContainsString('Review setup', $html);
+            self::assertStringContainsString('Wizard Studio', $html);
+            self::assertStringContainsString('Admin approval', $html);
+            self::assertSelectorExists('form#setup-wizard[data-controller="setup-wizard operation-overlay"]');
+            self::assertSelectorExists('form#setup-wizard[data-action="submit->operation-overlay#submit"]');
+            self::assertSelectorExists('form#setup-wizard[data-operation-overlay-enabled-value="true"]');
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
         }
@@ -104,18 +144,25 @@ final class BackendControllerTest extends WebTestCase
 
         try {
             $client = self::createClient();
-            $crawler = $client->request('GET', '/setup');
-            $form = $crawler->selectButton('Run setup')->form([
-                'language' => 'en',
-                'site_title' => 'Short Password Studio',
-                'default_uri' => 'http://localhost',
-                'database_driver' => 'sqlite',
-                'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+            $client->request('GET', '/setup');
+            $this->setSetupWizardState($client, [
+                'values' => [
+                    'language' => 'en',
+                    'site_title' => 'Short Password Studio',
+                    'default_uri' => 'http://localhost',
+                    'database_driver' => 'sqlite',
+                    'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+                ],
+                'completed' => ['language', 'preflight', 'site', 'database'],
+                'workflow' => null,
+                'action_log' => null,
+            ]);
+            $crawler = $client->request('GET', '/setup/admin');
+            $form = $crawler->selectButton('Continue')->form([
                 'admin_username' => 'admin',
                 'admin_password' => 'short',
                 'admin_password_confirm' => 'short',
                 'admin_email' => 'admin@localhost.local',
-                'dry_run' => '1',
             ]);
 
             $client->submit($form);
@@ -141,17 +188,8 @@ final class BackendControllerTest extends WebTestCase
         try {
             $client = self::createClient();
             $crawler = $client->request('GET', '/setup');
-            $form = $crawler->selectButton('Run setup')->form([
+            $form = $crawler->selectButton('Continue')->form([
                 'language' => 'en',
-                'site_title' => 'Locked Setup Studio',
-                'default_uri' => 'http://localhost',
-                'database_driver' => 'sqlite',
-                'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
-                'admin_username' => 'admin',
-                'admin_password' => 'admin-password',
-                'admin_password_confirm' => 'admin-password',
-                'admin_email' => 'admin@localhost.local',
-                'dry_run' => '1',
             ]);
 
             $_SERVER[SetupCompletionMarker::KEY] = '1';
@@ -1084,5 +1122,15 @@ final class BackendControllerTest extends WebTestCase
         }
 
         putenv(SetupCompletionMarker::KEY);
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     */
+    private function setSetupWizardState(KernelBrowser $client, array $state): void
+    {
+        $session = $client->getRequest()->getSession();
+        $session->set('_studio_setup_wizard', $state);
+        $session->save();
     }
 }

@@ -8,8 +8,65 @@ setup:
     status: 'First run'
     foundation_title: 'Setup routine'
     foundation_text: 'Run the same setup routine used by the CLI. Keep dry run enabled to verify the planned steps without changing files or the database.'
+  landing:
+    title: 'Welcome to setup'
+    text: 'Choose the language for this setup session. You can return to this step later without losing your entries.'
+  navigation:
+    label: 'Setup steps'
+    back: 'Back'
+    next: 'Continue'
   message:
     title: 'Setup route'
+  preflight:
+    title: 'Preflight checks'
+    text: 'Setup checks required write paths and PHP capabilities before asking for database details.'
+    errors:
+      required: 'Resolve the required checks before continuing.'
+    status:
+      ok: 'OK'
+      failed: 'Needs attention'
+      missing: 'Missing'
+    checks:
+      var_writable:
+        label: 'Runtime directory'
+        help: 'The var directory must be writable for cache, logs, and local data.'
+      environment_writable:
+        label: 'Environment override'
+        help: 'Setup must be able to create or update the local environment override file.'
+      runtime_translations_writable:
+        label: 'Runtime translations'
+        help: 'The generated translation directory must be writable so setup can refresh catalogues.'
+      public_writable:
+        label: 'Public asset directory'
+        help: 'The public directory must be writable while setup prepares generated assets.'
+      extension_ctype:
+        label: 'PHP extension ctype'
+        help: 'Required by Symfony and validation routines.'
+      extension_fileinfo:
+        label: 'PHP extension fileinfo'
+        help: 'Required for safe file and upload handling.'
+      extension_iconv:
+        label: 'PHP extension iconv'
+        help: 'Required for text normalization.'
+      extension_intl:
+        label: 'PHP extension intl'
+        help: 'Required for locale-aware formatting and translations.'
+      extension_sqlite3:
+        label: 'PHP extension sqlite3'
+        help: 'Required for the default SQLite setup profile.'
+      extension_pdo_mysql:
+        label: 'PHP extension pdo_mysql'
+        help: 'Install this extension when using MySQL or MariaDB.'
+      extension_pdo_pgsql:
+        label: 'PHP extension pdo_pgsql'
+        help: 'Install this extension when using PostgreSQL.'
+  site:
+    title: 'Site information'
+    settings_title: 'Initial settings'
+  database:
+    title: 'Database connection'
+  admin:
+    title: 'Owner account'
   form:
     language:
       label: 'Installer language'
@@ -17,6 +74,14 @@ setup:
       label: 'Site title'
     default_uri:
       label: 'Site URL'
+    registration_mode:
+      label: 'User registration'
+    username_change_enabled:
+      label: 'Allow username changes'
+    statistics_enabled:
+      label: 'Enable access statistics'
+    statistics_respect_dnt:
+      label: 'Respect Do Not Track'
     database_driver:
       label: 'Database driver'
       options:
@@ -26,11 +91,26 @@ setup:
     database_url:
       label: 'Database URL'
       help: 'Leave empty to let setup build a URL from the selected driver defaults.'
+      sqlite_help: 'The default SQLite path is recommended. Change it only when you intentionally keep the database somewhere else.'
+    database_host:
+      label: 'Database host'
+    database_port:
+      label: 'Database port'
+    database_name:
+      label: 'Database name'
+    database_user:
+      label: 'Database user'
+    database_password:
+      label: 'Database password'
+    database_prefix:
+      label: 'Table prefix'
+      help: 'Optional prefix for shared database schemas, for example studio_. Leave empty unless you need it.'
     admin_username:
       label: 'Admin username'
     admin_password:
       label: 'Admin password'
       help: 'Use at least 12 characters.'
+      keep_help: 'Leave blank to keep the password already entered in this setup session.'
     admin_password_confirm:
       label: 'Confirm admin password'
     admin_email:
@@ -42,18 +122,31 @@ setup:
       label: 'Dry run only'
       help: 'Show planned setup steps without writing files, running migrations, or seeding data.'
     submit: 'Run setup'
+    apply: 'Apply setup'
     errors:
       choice: 'Choose one of the available options.'
+      database_prefix: 'Use a lowercase prefix that starts with a letter and ends with an underscore.'
       email: 'Enter a valid email address.'
       invalid: 'The submitted setup data could not be used.'
       invalid_csrf: 'The setup form expired. Please try again.'
       password_mismatch: 'The password confirmation does not match.'
       password_length: 'The admin password must contain at least 12 characters.'
+      port: 'Enter a port between 1 and 65535.'
       username: 'The admin username must start with a letter and contain 5 to 30 letters, digits, hyphens, or underscores.'
       required: 'This field is required.'
+  review:
+    title: 'Review setup'
+    none: 'None'
+    enabled: 'Enabled'
+    disabled: 'Disabled'
   result:
     success_title: 'Setup result'
+    success_text: 'Setup completed successfully. The setup route is now locked.'
     failed_title: 'Setup failed'
+    failed_text: 'Setup did not complete. Review the log below, adjust the relevant step, and run setup again.'
+    back_to_database: 'Edit database'
+    back_to_review: 'Back to review'
+    go_home: 'Go to start page'
   action_log:
     status:
       success: 'Success'
@@ -63,11 +156,21 @@ setup:
       pending: 'Pending'
       running: 'Running'
   steps:
+    language: 'Language'
+    preflight: 'Preflight'
+    site: 'Site'
+    database: 'Database'
+    admin: 'Owner'
+    review: 'Review'
+    result: 'Result'
     select_language: 'Select language'
     write_environment: 'Write environment'
     dump_environment: 'Dump environment'
     run_migrations: 'Run migrations'
     seed_default_settings: 'Seed default settings'
     seed_admin_user: 'Seed admin user'
+    seed_initial_content: 'Seed initial content'
     mark_setup_completed: 'Mark setup completed'
     clear_cache: 'Clear cache'
+    run_package_discovery: 'Run package discovery'
+    run_asset_rebuild: 'Rebuild assets'

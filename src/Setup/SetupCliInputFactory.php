@@ -21,6 +21,7 @@ final class SetupCliInputFactory
         private readonly string $projectDir,
         private readonly SetupLanguageCatalog $languageCatalog = new SetupLanguageCatalog(),
         SetupMessageTranslator $translator = new SetupMessageTranslator(),
+        private readonly SetupSiteSettings $siteSettings = new SetupSiteSettings(),
         mixed $input = null,
         mixed $output = null,
         private readonly ?bool $interactive = null,
@@ -55,6 +56,7 @@ final class SetupCliInputFactory
             databaseName: $parts['database_name'],
             databaseUser: $parts['database_user'],
             databasePassword: $parts['database_password'],
+            databasePrefix: $this->option($options, 'db-prefix', $this->environment('APP_DATABASE_PREFIX')) ?: null,
             adminUsername: $this->prompter->value($options, 'admin-username', 'admin', $interactive, $language, MessageKey::SETUP_PROMPT_ADMIN_USERNAME),
             adminPassword: $this->prompter->confirmedValue(
                 $options,
@@ -67,8 +69,35 @@ final class SetupCliInputFactory
             ),
             adminEmail: $this->prompter->value($options, 'admin-email', self::adminEmailFromDefaultUri($defaultUri), $interactive, $language, MessageKey::SETUP_PROMPT_ADMIN_EMAIL),
             appSecret: $this->prompter->value($options, 'app-secret', '', $interactive, $language, MessageKey::SETUP_PROMPT_APP_SECRET) ?: null,
+            siteSettings: $this->siteSettings($options),
             dryRun: array_key_exists('dry-run', $options),
         );
+    }
+
+    /**
+     * @param array<string, string|false> $options
+     *
+     * @return array<string, mixed>
+     */
+    private function siteSettings(array $options): array
+    {
+        $values = $this->siteSettings->defaults();
+
+        if (($mode = $this->option($options, 'registration-mode')) !== null) {
+            $values['registration_mode'] = $mode;
+        }
+
+        foreach ([
+            'username-change-enabled' => 'username_change_enabled',
+            'statistics-enabled' => 'statistics_enabled',
+            'statistics-respect-dnt' => 'statistics_respect_dnt',
+        ] as $option => $name) {
+            if (array_key_exists($option, $options)) {
+                $values[$name] = $this->boolOption($options[$option]);
+            }
+        }
+
+        return $this->siteSettings->configMap($values);
     }
 
     /**
@@ -236,6 +265,15 @@ final class SetupCliInputFactory
         $value = $options[$name] ?? null;
 
         return is_string($value) && '' !== $value ? $value : $default;
+    }
+
+    private function boolOption(string|false $value): bool
+    {
+        if (false === $value) {
+            return true;
+        }
+
+        return in_array(strtolower($value), ['1', 'true', 'yes', 'on', 'enabled'], true);
     }
 
     private function environment(string $key, ?string $default = null): string

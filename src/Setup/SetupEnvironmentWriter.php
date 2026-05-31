@@ -21,6 +21,10 @@ final readonly class SetupEnvironmentWriter
             'DEFAULT_URI' => $input->defaultUri(),
             'DATABASE_URL' => $databaseUrl,
         ];
+
+        if (null !== $input->databasePrefix() && '' !== trim($input->databasePrefix())) {
+            $values['APP_DATABASE_PREFIX'] = $input->databasePrefix();
+        }
         $contents = '';
 
         if (is_file($path)) {

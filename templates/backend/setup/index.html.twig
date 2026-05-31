@@ -5,131 +5,198 @@
 {% block setup_body %}
     {% include '@backend/setup/partials/_step-header.html.twig' with {
         title: 'setup.dashboard.title'|trans,
-        step: 'setup.dashboard.status'|trans,
+        step: ('setup.steps.' ~ setup_step)|trans,
     } only %}
 
-    {% include '@backend/partials/feedback/_message.html.twig' with {message: message} only %}
+    <nav class="studio-setup-steps" aria-label="{{ 'setup.navigation.label'|trans }}">
+        {% for step in setup_steps %}
+            {% set unlocked = loop.first or setup_steps[loop.index0 - 1] in setup_completed_steps %}
+            {% set active = step == setup_step %}
+            {% if unlocked %}
+                <a class="studio-setup-step{{ active ? ' is-active' : '' }}" href="{{ path('backend_setup_step', {step}) }}">
+                    <span>{{ loop.index }}</span>
+                    {{ ('setup.steps.' ~ step)|trans }}
+                </a>
+            {% else %}
+                <span class="studio-setup-step is-locked">
+                    <span>{{ loop.index }}</span>
+                    {{ ('setup.steps.' ~ step)|trans }}
+                </span>
+            {% endif %}
+        {% endfor %}
+    </nav>
 
-    <section class="studio-panel">
-        <h2>{{ 'setup.dashboard.foundation_title'|trans }}</h2>
-        <p class="studio-muted">{{ 'setup.dashboard.foundation_text'|trans }}</p>
+    <form
+        id="setup-wizard"
+        class="studio-backend-form studio-setup-wizard"
+        method="post"
+        action="{{ setup_step == 'language' ? path('backend_setup_index') : path('backend_setup_step', {step: setup_step}) }}"
+        data-controller="setup-wizard{{ setup_step == 'review' ? ' operation-overlay' : '' }}"
+        {% if setup_step == 'review' %}
+            data-action="submit->operation-overlay#submit"
+            data-operation-overlay-enabled-value="true"
+            data-operation-overlay-redirect-on-success-value="/"
+        {% endif %}
+        data-turbo="false"
+    >
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('setup-wizard') }}">
+        {% include '@backend/partials/forms/_errors.html.twig' with {errors: setup_errors.__form|default([])} only %}
 
-        <form id="setup-web" class="studio-backend-form" method="post" action="{{ path('backend_setup_index') }}" data-turbo="false">
-            <input type="hidden" name="_form_id" value="setup-web">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('setup-web') }}">
-            {% include '@backend/partials/forms/_errors.html.twig' with {errors: setup_errors.__form|default([])} only %}
+        {% if setup_step == 'language' %}
+            <section class="studio-panel">
+                <h2>{{ 'setup.landing.title'|trans }}</h2>
+                <p class="studio-muted">{{ 'setup.landing.text'|trans }}</p>
 
-            {% set language_options = {} %}
-            {% for language in setup_available_languages %}
-                {% set language_options = language_options|merge({(language): language}) %}
-            {% endfor %}
+                {% set language_options = {} %}
+                {% for language in setup_available_languages %}
+                    {% set language_options = language_options|merge({(language): language}) %}
+                {% endfor %}
 
-            {% include '@backend/partials/forms/fields/select.html.twig' with {
-                name: 'language',
-                label: 'setup.form.language.label'|trans,
-                value: setup_values.language,
-                options: language_options,
-                required: true,
-                errors: setup_errors.language|default([]),
-            } only %}
+                {% include '@backend/partials/forms/fields/select.html.twig' with {
+                    name: 'language',
+                    label: 'setup.form.language.label'|trans,
+                    value: setup_values.language,
+                    options: language_options,
+                    required: true,
+                    errors: setup_errors.language|default([]),
+                } only %}
+            </section>
+        {% elseif setup_step == 'preflight' %}
+            <section class="studio-panel">
+                <h2>{{ 'setup.preflight.title'|trans }}</h2>
+                <p class="studio-muted">{{ 'setup.preflight.text'|trans }}</p>
+                <div class="studio-setup-checks">
+                    {% for check in setup_preflight.checks %}
+                        <article class="studio-setup-check">
+                            <strong>{{ check.label_key|trans }}</strong>
+                            <span class="studio-badge {{ check.status == 'ok' ? 'studio-badge-success' : (check.required ? 'studio-badge-error' : 'studio-badge-neutral') }}">
+                                {{ ('setup.preflight.status.' ~ check.status)|trans }}
+                            </span>
+                            <p class="studio-muted">{{ check.help_key|trans }}</p>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+        {% elseif setup_step == 'site' %}
+            <section class="studio-panel">
+                <h2>{{ 'setup.site.title'|trans }}</h2>
+                {% include '@backend/partials/forms/fields/input.html.twig' with {
+                    name: 'site_title',
+                    label: 'setup.form.site_title.label'|trans,
+                    value: setup_values.site_title,
+                    required: true,
+                    errors: setup_errors.site_title|default([]),
+                } only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {
+                    name: 'default_uri',
+                    label: 'setup.form.default_uri.label'|trans,
+                    value: setup_values.default_uri,
+                    required: true,
+                    errors: setup_errors.default_uri|default([]),
+                } only %}
+                <h3>{{ setup_site_settings_form.title|trans }}</h3>
+                {% include '@backend/partials/forms/_dynamic_fields.html.twig' with {fields: setup_site_settings_form.fields} only %}
+            </section>
+        {% elseif setup_step == 'database' %}
+            <section class="studio-panel">
+                <h2>{{ 'setup.database.title'|trans }}</h2>
+                {% set database_driver_options = {} %}
+                {% for driver_value, driver_label in setup_database_driver_options %}
+                    {% set database_driver_options = database_driver_options|merge({(driver_value): driver_label|trans}) %}
+                {% endfor %}
 
-            {% include '@backend/partials/forms/fields/input.html.twig' with {
-                name: 'site_title',
-                label: 'setup.form.site_title.label'|trans,
-                value: setup_values.site_title,
-                required: true,
-                errors: setup_errors.site_title|default([]),
-            } only %}
+                {% include '@backend/partials/forms/fields/select.html.twig' with {
+                    name: 'database_driver',
+                    label: 'setup.form.database_driver.label'|trans,
+                    value: setup_values.database_driver,
+                    options: database_driver_options,
+                    required: true,
+                    errors: setup_errors.database_driver|default([]),
+                    attributes: {'data-setup-wizard-target': 'driver', 'data-action': 'setup-wizard#driverChanged'},
+                } only %}
 
-            {% include '@backend/partials/forms/fields/input.html.twig' with {
-                name: 'default_uri',
-                label: 'setup.form.default_uri.label'|trans,
-                value: setup_values.default_uri,
-                required: true,
-                errors: setup_errors.default_uri|default([]),
-            } only %}
+                <div data-setup-wizard-target="sqliteFields">
+                    {% include '@backend/partials/forms/fields/input.html.twig' with {
+                        name: 'database_url',
+                        label: 'setup.form.database_url.label'|trans,
+                        value: setup_values.database_url,
+                        help: 'setup.form.database_url.sqlite_help'|trans,
+                        errors: setup_errors.database_url|default([]),
+                    } only %}
+                </div>
 
-            {% set database_driver_options = {} %}
-            {% for driver_value, driver_label in setup_database_driver_options %}
-                {% set database_driver_options = database_driver_options|merge({(driver_value): driver_label|trans}) %}
-            {% endfor %}
+                <div data-setup-wizard-target="serverFields">
+                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_host', label: 'setup.form.database_host.label'|trans, value: setup_values.database_host, required: true, errors: setup_errors.database_host|default([])} only %}
+                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_port', label: 'setup.form.database_port.label'|trans, value: setup_values.database_port, required: true, errors: setup_errors.database_port|default([])} only %}
+                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_name', label: 'setup.form.database_name.label'|trans, value: setup_values.database_name, required: true, errors: setup_errors.database_name|default([])} only %}
+                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_user', label: 'setup.form.database_user.label'|trans, value: setup_values.database_user, required: true, errors: setup_errors.database_user|default([])} only %}
+                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_password', label: 'setup.form.database_password.label'|trans, type: 'password', value: setup_values.database_password, errors: setup_errors.database_password|default([])} only %}
+                </div>
 
-            {% include '@backend/partials/forms/fields/select.html.twig' with {
-                name: 'database_driver',
-                label: 'setup.form.database_driver.label'|trans,
-                value: setup_values.database_driver,
-                options: database_driver_options,
-                required: true,
-                errors: setup_errors.database_driver|default([]),
-            } only %}
+                <div data-setup-wizard-target="prefixField">
+                    {% include '@backend/partials/forms/fields/input.html.twig' with {
+                        name: 'database_prefix',
+                        label: 'setup.form.database_prefix.label'|trans,
+                        value: setup_values.database_prefix,
+                        help: 'setup.form.database_prefix.help'|trans,
+                        errors: setup_errors.database_prefix|default([]),
+                    } only %}
+                </div>
+            </section>
+        {% elseif setup_step == 'admin' %}
+            <section class="studio-panel">
+                <h2>{{ 'setup.admin.title'|trans }}</h2>
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_username', label: 'setup.form.admin_username.label'|trans, value: setup_values.admin_username, required: true, errors: setup_errors.admin_username|default([])} only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_email', label: 'setup.form.admin_email.label'|trans, type: 'email', value: setup_values.admin_email, required: true, errors: setup_errors.admin_email|default([])} only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password', label: 'setup.form.admin_password.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, help: (setup_values.admin_password is empty ? 'setup.form.admin_password.help' : 'setup.form.admin_password.keep_help')|trans, errors: setup_errors.admin_password|default([])} only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password_confirm', label: 'setup.form.admin_password_confirm.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, errors: setup_errors.admin_password_confirm|default([])} only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'app_secret', label: 'setup.form.app_secret.label'|trans, value: setup_values.app_secret, help: 'setup.form.app_secret.help'|trans, errors: setup_errors.app_secret|default([])} only %}
+            </section>
+        {% elseif setup_step == 'review' %}
+            <section class="studio-panel">
+                <h2>{{ 'setup.review.title'|trans }}</h2>
+                <dl class="studio-definition-list">
+                    <dt>{{ 'setup.form.language.label'|trans }}</dt><dd>{{ setup_values.language }}</dd>
+                    <dt>{{ 'setup.form.site_title.label'|trans }}</dt><dd>{{ setup_values.site_title }}</dd>
+                    <dt>{{ 'setup.form.default_uri.label'|trans }}</dt><dd>{{ setup_values.default_uri }}</dd>
+                    <dt>{{ 'setup.form.registration_mode.label'|trans }}</dt><dd>{{ ('admin.settings.options.registration.' ~ setup_values.registration_mode)|trans }}</dd>
+                    <dt>{{ 'setup.form.statistics_enabled.label'|trans }}</dt><dd>{{ (setup_values.statistics_enabled ? 'setup.review.enabled' : 'setup.review.disabled')|trans }}</dd>
+                    <dt>{{ 'setup.form.database_driver.label'|trans }}</dt><dd>{{ ('setup.form.database_driver.options.' ~ setup_values.database_driver)|trans }}</dd>
+                    <dt>{{ 'setup.form.database_prefix.label'|trans }}</dt><dd>{{ setup_values.database_prefix ?: 'setup.review.none'|trans }}</dd>
+                    <dt>{{ 'setup.form.admin_username.label'|trans }}</dt><dd>{{ setup_values.admin_username }}</dd>
+                    <dt>{{ 'setup.form.admin_email.label'|trans }}</dt><dd>{{ setup_values.admin_email }}</dd>
+                </dl>
+                <input type="hidden" name="_setup_action" value="apply">
+            </section>
+        {% elseif setup_step == 'result' %}
+            <section class="studio-panel">
+                <h2>{{ (setup_workflow.success|default(false) ? 'setup.result.success_title' : 'setup.result.failed_title')|trans }}</h2>
+                <p class="studio-muted">{{ (setup_workflow.success|default(false) ? 'setup.result.success_text' : 'setup.result.failed_text')|trans }}</p>
+                {% if not setup_workflow.success|default(false) %}
+                    <div class="studio-button-group">
+                        <a class="studio-button studio-button-secondary" href="{{ path('backend_setup_step', {step: 'database'}) }}">{{ 'setup.result.back_to_database'|trans }}</a>
+                        <a class="studio-button studio-button-secondary" href="{{ path('backend_setup_step', {step: 'review'}) }}">{{ 'setup.result.back_to_review'|trans }}</a>
+                    </div>
+                {% else %}
+                    <a class="studio-button studio-button-primary" href="/">{{ 'setup.result.go_home'|trans }}</a>
+                {% endif %}
+            </section>
+        {% endif %}
 
-            {% include '@backend/partials/forms/fields/input.html.twig' with {
-                name: 'database_url',
-                label: 'setup.form.database_url.label'|trans,
-                value: setup_values.database_url,
-                help: 'setup.form.database_url.help'|trans,
-                errors: setup_errors.database_url|default([]),
-            } only %}
+        <div class="studio-form-actions">
+            {% if setup_previous_step %}
+                <a class="studio-button studio-button-secondary" href="{{ path('backend_setup_step', {step: setup_previous_step}) }}">{{ 'setup.navigation.back'|trans }}</a>
+            {% endif %}
+            {% if setup_step != 'result' %}
+                {% include '@backend/partials/forms/fields/submit.html.twig' with {
+                    label: (setup_step == 'review' ? 'setup.form.apply' : 'setup.navigation.next')|trans,
+                    variant: 'primary',
+                } only %}
+            {% endif %}
+        </div>
+    </form>
 
-            {% include '@backend/partials/forms/fields/input.html.twig' with {
-                name: 'admin_username',
-                label: 'setup.form.admin_username.label'|trans,
-                value: setup_values.admin_username,
-                required: true,
-                errors: setup_errors.admin_username|default([]),
-            } only %}
-
-            {% include '@backend/partials/forms/fields/input.html.twig' with {
-                name: 'admin_password',
-                label: 'setup.form.admin_password.label'|trans,
-                type: 'password',
-                value: '',
-                required: true,
-                help: 'setup.form.admin_password.help'|trans,
-                errors: setup_errors.admin_password|default([]),
-            } only %}
-
-            {% include '@backend/partials/forms/fields/input.html.twig' with {
-                name: 'admin_password_confirm',
-                label: 'setup.form.admin_password_confirm.label'|trans,
-                type: 'password',
-                value: '',
-                required: true,
-                errors: setup_errors.admin_password_confirm|default([]),
-            } only %}
-
-            {% include '@backend/partials/forms/fields/input.html.twig' with {
-                name: 'admin_email',
-                label: 'setup.form.admin_email.label'|trans,
-                type: 'email',
-                value: setup_values.admin_email,
-                required: true,
-                errors: setup_errors.admin_email|default([]),
-            } only %}
-
-            {% include '@backend/partials/forms/fields/input.html.twig' with {
-                name: 'app_secret',
-                label: 'setup.form.app_secret.label'|trans,
-                value: setup_values.app_secret,
-                help: 'setup.form.app_secret.help'|trans,
-                errors: setup_errors.app_secret|default([]),
-            } only %}
-
-            {% include '@backend/partials/forms/fields/toggle.html.twig' with {
-                name: 'dry_run',
-                label: 'setup.form.dry_run.label'|trans,
-                checked: setup_values.dry_run,
-                help: 'setup.form.dry_run.help'|trans,
-            } only %}
-
-            {% include '@backend/partials/forms/fields/submit.html.twig' with {
-                label: 'setup.form.submit'|trans,
-                variant: 'primary',
-            } only %}
-        </form>
-    </section>
-
-    {% if setup_workflow %}
+    {% if setup_step == 'result' and setup_workflow %}
         <section class="studio-panel">
             <h2>{{ (setup_workflow.success ? 'setup.result.success_title' : 'setup.result.failed_title')|trans }}</h2>
             {% if setup_workflow.issues|default([])|length > 0 %}
@@ -139,20 +206,12 @@
                     {% endfor %}
                 </ul>
             {% endif %}
-
             {% if setup_action_log.entries|default([])|length > 0 %}
-                <ol>
+                <ol class="studio-action-log-list">
                     {% for entry in setup_action_log.entries %}
                         <li>
                             <strong>{{ ('setup.steps.' ~ entry.name)|trans }}</strong>
                             <span class="studio-badge studio-badge-neutral">{{ ('setup.action_log.status.' ~ entry.status)|trans }}</span>
-                            {% if entry.issues|default([])|length > 0 %}
-                                <ul class="studio-backend-form-errors">
-                                    {% for issue in entry.issues %}
-                                        <li>{{ issue.translation_key|trans(issue.parameters|default({})) }}</li>
-                                    {% endfor %}
-                                </ul>
-                            {% endif %}
                         </li>
                     {% endfor %}
                 </ol>

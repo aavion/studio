@@ -8,8 +8,65 @@ setup:
     status: 'Ersteinrichtung'
     foundation_title: 'Setup-Routine'
     foundation_text: 'Führt dieselbe Setup-Routine aus wie die CLI. Lass den Dry-Run aktiv, um die geplanten Schritte ohne Datei- oder Datenbankänderungen zu prüfen.'
+  landing:
+    title: 'Willkommen im Setup'
+    text: 'Wähle die Sprache für diese Setup-Sitzung. Du kannst später zu diesem Schritt zurückkehren, ohne deine Eingaben zu verlieren.'
+  navigation:
+    label: 'Setup-Schritte'
+    back: 'Zurück'
+    next: 'Weiter'
   message:
     title: 'Setup-Route'
+  preflight:
+    title: 'Vorabprüfung'
+    text: 'Setup prüft erforderliche Schreibpfade und PHP-Funktionen, bevor Datenbankdetails abgefragt werden.'
+    errors:
+      required: 'Behebe die erforderlichen Prüfungen, bevor du fortfährst.'
+    status:
+      ok: 'OK'
+      failed: 'Handlung nötig'
+      missing: 'Fehlt'
+    checks:
+      var_writable:
+        label: 'Runtime-Verzeichnis'
+        help: 'Das var-Verzeichnis muss für Cache, Logs und lokale Daten beschreibbar sein.'
+      environment_writable:
+        label: 'Environment-Override'
+        help: 'Setup muss die lokale Environment-Override-Datei erstellen oder aktualisieren können.'
+      runtime_translations_writable:
+        label: 'Runtime-Übersetzungen'
+        help: 'Das generierte Übersetzungsverzeichnis muss beschreibbar sein, damit Setup Kataloge aktualisieren kann.'
+      public_writable:
+        label: 'Public-Asset-Verzeichnis'
+        help: 'Das public-Verzeichnis muss beschreibbar sein, während Setup generierte Assets vorbereitet.'
+      extension_ctype:
+        label: 'PHP-Erweiterung ctype'
+        help: 'Wird von Symfony und Validierungsroutinen benötigt.'
+      extension_fileinfo:
+        label: 'PHP-Erweiterung fileinfo'
+        help: 'Wird für sichere Datei- und Upload-Verarbeitung benötigt.'
+      extension_iconv:
+        label: 'PHP-Erweiterung iconv'
+        help: 'Wird für Textnormalisierung benötigt.'
+      extension_intl:
+        label: 'PHP-Erweiterung intl'
+        help: 'Wird für lokalisierte Formatierung und Übersetzungen benötigt.'
+      extension_sqlite3:
+        label: 'PHP-Erweiterung sqlite3'
+        help: 'Wird für das standardmäßige SQLite-Setup-Profil benötigt.'
+      extension_pdo_mysql:
+        label: 'PHP-Erweiterung pdo_mysql'
+        help: 'Installiere diese Erweiterung, wenn du MySQL oder MariaDB verwendest.'
+      extension_pdo_pgsql:
+        label: 'PHP-Erweiterung pdo_pgsql'
+        help: 'Installiere diese Erweiterung, wenn du PostgreSQL verwendest.'
+  site:
+    title: 'Seiteninformationen'
+    settings_title: 'Initiale Einstellungen'
+  database:
+    title: 'Datenbankverbindung'
+  admin:
+    title: 'Owner-Konto'
   form:
     language:
       label: 'Installer-Sprache'
@@ -17,6 +74,14 @@ setup:
       label: 'Seitentitel'
     default_uri:
       label: 'Website-URL'
+    registration_mode:
+      label: 'Benutzerregistrierung'
+    username_change_enabled:
+      label: 'Benutzernamenänderungen erlauben'
+    statistics_enabled:
+      label: 'Zugriffsstatistiken aktivieren'
+    statistics_respect_dnt:
+      label: 'Do Not Track respektieren'
     database_driver:
       label: 'Datenbanktreiber'
       options:
@@ -26,11 +91,26 @@ setup:
     database_url:
       label: 'Datenbank-URL'
       help: 'Leer lassen, damit Setup eine URL aus den Standardwerten des gewählten Treibers erzeugt.'
+      sqlite_help: 'Der Standardpfad für SQLite wird empfohlen. Ändere ihn nur, wenn die Datenbank bewusst an einem anderen Ort liegen soll.'
+    database_host:
+      label: 'Datenbankhost'
+    database_port:
+      label: 'Datenbankport'
+    database_name:
+      label: 'Datenbankname'
+    database_user:
+      label: 'Datenbankbenutzer'
+    database_password:
+      label: 'Datenbankpasswort'
+    database_prefix:
+      label: 'Tabellenpräfix'
+      help: 'Optionales Präfix für gemeinsam genutzte Datenbankschemas, zum Beispiel studio_. Leer lassen, wenn du es nicht brauchst.'
     admin_username:
       label: 'Admin-Benutzername'
     admin_password:
       label: 'Admin-Passwort'
       help: 'Nutze mindestens 12 Zeichen.'
+      keep_help: 'Leer lassen, um das bereits in dieser Setup-Sitzung eingegebene Passwort zu behalten.'
     admin_password_confirm:
       label: 'Admin-Passwort bestätigen'
     admin_email:
@@ -42,18 +122,31 @@ setup:
       label: 'Nur Dry-Run'
       help: 'Zeigt die geplanten Setup-Schritte, ohne Dateien zu schreiben, Migrationen auszuführen oder Daten anzulegen.'
     submit: 'Setup ausführen'
+    apply: 'Setup anwenden'
     errors:
       choice: 'Wähle eine der verfügbaren Optionen.'
+      database_prefix: 'Nutze ein kleingeschriebenes Präfix, das mit einem Buchstaben beginnt und mit einem Unterstrich endet.'
       email: 'Gib eine gültige E-Mail-Adresse ein.'
       invalid: 'Die gesendeten Setup-Daten konnten nicht verwendet werden.'
       invalid_csrf: 'Das Setup-Formular ist abgelaufen. Bitte versuche es erneut.'
       password_mismatch: 'Die Passwortbestätigung stimmt nicht überein.'
       password_length: 'Das Admin-Passwort muss mindestens 12 Zeichen enthalten.'
+      port: 'Gib einen Port zwischen 1 und 65535 ein.'
       username: 'Der Admin-Username muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
       required: 'Dieses Feld ist erforderlich.'
+  review:
+    title: 'Setup prüfen'
+    none: 'Keine'
+    enabled: 'Aktiviert'
+    disabled: 'Deaktiviert'
   result:
     success_title: 'Setup-Ergebnis'
+    success_text: 'Setup wurde erfolgreich abgeschlossen. Die Setup-Route ist jetzt gesperrt.'
     failed_title: 'Setup fehlgeschlagen'
+    failed_text: 'Setup wurde nicht abgeschlossen. Prüfe das Log, passe den betroffenen Schritt an und starte Setup erneut.'
+    back_to_database: 'Datenbank bearbeiten'
+    back_to_review: 'Zur Prüfung'
+    go_home: 'Zur Startseite'
   action_log:
     status:
       success: 'Erfolgreich'
@@ -63,11 +156,21 @@ setup:
       pending: 'Ausstehend'
       running: 'Läuft'
   steps:
+    language: 'Sprache'
+    preflight: 'Vorabprüfung'
+    site: 'Website'
+    database: 'Datenbank'
+    admin: 'Owner'
+    review: 'Prüfung'
+    result: 'Ergebnis'
     select_language: 'Sprache auswählen'
     write_environment: 'Environment schreiben'
     dump_environment: 'Environment dumpen'
     run_migrations: 'Migrationen ausführen'
     seed_default_settings: 'Standard-Einstellungen anlegen'
     seed_admin_user: 'Admin-Benutzer anlegen'
+    seed_initial_content: 'Startinhalt anlegen'
     mark_setup_completed: 'Setup als abgeschlossen markieren'
     clear_cache: 'Cache leeren'
+    run_package_discovery: 'Paket-Discovery ausführen'
+    run_asset_rebuild: 'Assets neu bauen'

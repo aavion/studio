@@ -24,19 +24,24 @@ final readonly class SetupDefaultSeed
             ['key' => 'localization.route_prefixes_enabled', 'value' => false, 'type' => ConfigValueType::Boolean],
             ['key' => 'content.home_path', 'value' => '/home', 'type' => ConfigValueType::String],
             ['key' => UserFlowConfig::DEFAULT_ACL_GROUP_KEY, 'value' => '', 'type' => ConfigValueType::String],
-            ['key' => UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, 'value' => false, 'type' => ConfigValueType::Boolean],
+            ['key' => UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, 'value' => $this->setting($input, UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'value' => UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, 'type' => ConfigValueType::Integer],
             ['key' => UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, 'value' => '', 'type' => ConfigValueType::String],
             ['key' => UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, 'value' => '', 'type' => ConfigValueType::String],
             ['key' => UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY, 'value' => UserFlowConfig::DEFAULT_DELETED_USER_RETENTION_DAYS, 'type' => ConfigValueType::Integer],
             ['key' => 'user.menu.enabled', 'value' => true, 'type' => ConfigValueType::Boolean],
             ['key' => 'user.menu.sort_order', 'value' => 900, 'type' => ConfigValueType::Integer],
-            ['key' => UserFlowConfig::REGISTRATION_MODE_KEY, 'value' => UserFlowConfig::REGISTRATION_DISABLED, 'type' => ConfigValueType::String],
+            ['key' => UserFlowConfig::REGISTRATION_MODE_KEY, 'value' => $this->setting($input, UserFlowConfig::REGISTRATION_MODE_KEY, UserFlowConfig::REGISTRATION_DISABLED), 'type' => ConfigValueType::String],
             ['key' => ConfigAuditLogPolicy::ENABLED_KEY, 'value' => true, 'type' => ConfigValueType::Boolean],
             ['key' => ConfigAuditLogPolicy::EVENTS_KEY, 'value' => ConfigAuditLogPolicy::DEFAULT_CATEGORIES, 'type' => ConfigValueType::Json],
-            ['key' => AccessStatisticsPolicy::ENABLED_KEY, 'value' => true, 'type' => ConfigValueType::Boolean],
-            ['key' => AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'value' => true, 'type' => ConfigValueType::Boolean],
+            ['key' => AccessStatisticsPolicy::ENABLED_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
+            ['key' => AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, true), 'type' => ConfigValueType::Boolean],
         ];
+    }
+
+    private function setting(SetupInput $input, string $key, mixed $default): mixed
+    {
+        return $input->siteSettings()[$key] ?? $default;
     }
 
     /**
