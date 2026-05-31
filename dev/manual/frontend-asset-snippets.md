@@ -1,7 +1,7 @@
 # Frontend asset snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-25  
+> **Updated**: 2026-05-31
 > **Owner**: Core  
 > **Purpose:** Record early notes for AssetMapper, ImportMap, Tailwind, theme assets, illustrations, and package asset rebuilds.  
 
@@ -34,6 +34,8 @@ The command publishes a planned step count in dry-run mode and reports current s
 `cache:clear` intentionally runs last. The rebuild should run in a CLI worker or subprocess with persisted ActionLog entries, while the UI reads progress through streaming or `/api/live/operations/{operationId}/log?cursor=<number>`. If clearing the cache briefly interrupts polling, the UI can resume from the stored cursor. The command must not depend on the current HTTP request continuing after cache invalidation.
 
 Use `php bin/console studio:packages:assets:sync` when only the active package mirror and generated registry files need to be refreshed without running the full Symfony asset lifecycle.
+
+Package asset sync and translation aggregation should preserve the previous generated state until the replacement is ready. Package assets are mirrored into a temporary `assets/.packages.tmp-*` directory before `assets/packages` is swapped, generated CSS/JavaScript registries are replaced through temporary files, and runtime translation catalogues are aggregated into a temporary `translations/runtime/{APP_ENV}.tmp-*` directory before the environment runtime directory is replaced. Production rebuilds still remove `public/assets` before `asset-map:compile` because AssetMapper writes versioned files and repeated compiles would otherwise leave stale compiled assets behind.
 
 ## Theme asset notes
 

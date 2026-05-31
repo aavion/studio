@@ -93,8 +93,16 @@ final readonly class PackageAssetFilesystem
 
         $this->ensureParentDirectory($path);
 
-        if (false === file_put_contents($absolutePath, $contents, LOCK_EX)) {
+        $temporaryPath = $absolutePath.'.tmp-'.bin2hex(random_bytes(8));
+
+        if (false === file_put_contents($temporaryPath, $contents, LOCK_EX)) {
+            @unlink($temporaryPath);
             throw new RuntimeException(sprintf('Target file "%s" could not be written.', $path));
+        }
+
+        if (!@rename($temporaryPath, $absolutePath)) {
+            @unlink($temporaryPath);
+            throw new RuntimeException(sprintf('Target file "%s" could not be replaced.', $path));
         }
     }
 

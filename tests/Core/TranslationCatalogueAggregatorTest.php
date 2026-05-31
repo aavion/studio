@@ -81,6 +81,7 @@ final class TranslationCatalogueAggregatorTest extends TestCase
         self::assertFalse($result->isSuccess());
         self::assertSame(MessageKey::TRANSLATION_AGGREGATE_FAILED, $result->firstIssue()?->translationKey());
         self::assertSame(TranslationCatalogueCollisionException::class, $result->context()['exception']);
+        self::assertFileExists($this->root.'/translations/runtime/test/messages.fr.yaml');
     }
 
     private function aggregator(): TranslationCatalogueAggregator

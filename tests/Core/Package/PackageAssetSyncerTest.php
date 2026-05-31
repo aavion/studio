@@ -213,6 +213,8 @@ final class PackageAssetSyncerTest extends TestCase
         self::assertSame(WorkflowStatus::Failed, $result->status());
         self::assertSame('event.hook_listener_failed', $result->firstIssue()?->code());
         self::assertSame(PackageAssetRegistryBuildEvent::class, $result->firstIssue()?->context()['event']);
+        self::assertFileExists($this->root.'/assets/packages/stale/old.css');
+        self::assertDirectoryDoesNotExist($this->root.'/assets/packages/demo');
     }
 
     public function testItRemovesDeactivatedPackageMirrorAndRegistryEntries(): void
