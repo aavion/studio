@@ -4,13 +4,24 @@ declare(strict_types=1);
 
 namespace App\Database;
 
+use App\Setup\SetupCompletionMarker;
 use Doctrine\DBAL\Cache\QueryCacheProfile;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Driver\Connection as DriverConnection;
 use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Statement;
 
 final class PrefixedConnection extends Connection
 {
+    protected function connect(): DriverConnection
+    {
+        if (!$this->databaseAccessAllowed()) {
+            return $this->_conn ??= new BlockedDriverConnection();
+        }
+
+        return parent::connect();
+    }
+
     public function prepare(string $sql): Statement
     {
         return parent::prepare($this->prefixSql($sql));
@@ -60,6 +71,23 @@ final class PrefixedConnection extends Connection
         }
 
         return TablePrefix::apply($table, $prefix);
+    }
+
+    private function databaseAccessAllowed(): bool
+    {
+        $params = $this->getParams();
+
+        if (($params['studio_allow_unready_database'] ?? false) === true) {
+            return true;
+        }
+
+        return $this->truthy($_SERVER[SetupCompletionMarker::KEY] ?? $_ENV[SetupCompletionMarker::KEY] ?? getenv(SetupCompletionMarker::KEY))
+            || $this->truthy($_SERVER[DatabaseReadyState::ALLOW_UNREADY_KEY] ?? $_ENV[DatabaseReadyState::ALLOW_UNREADY_KEY] ?? getenv(DatabaseReadyState::ALLOW_UNREADY_KEY));
+    }
+
+    private function truthy(mixed $value): bool
+    {
+        return is_string($value) && in_array(strtolower(trim($value, " \t\n\r\0\x0B'\"")), ['1', 'true', 'yes'], true);
     }
 
     private function prefixSql(string $sql): string

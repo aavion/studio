@@ -10,6 +10,7 @@ use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Routing\AbsoluteUriGenerator;
+use App\Database\DatabaseReadyState;
 use App\Entity\AccountToken;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
@@ -35,6 +36,7 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
         private AuditLoggerInterface $auditLogger,
         private string $secret,
         private string $environment,
+        private ?DatabaseReadyState $databaseReadyState = null,
     ) {
     }
 
@@ -56,6 +58,10 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
 
     public function handle(): void
     {
+        if (null !== $this->databaseReadyState && !$this->databaseReadyState->isReady()) {
+            return;
+        }
+
         if (!$this->schemaReady()) {
             return;
         }

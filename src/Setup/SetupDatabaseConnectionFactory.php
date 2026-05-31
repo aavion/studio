@@ -25,7 +25,12 @@ final readonly class SetupDatabaseConnectionFactory
     private function connectionParameters(string $databaseUrl): array
     {
         if (str_starts_with($databaseUrl, 'sqlite:///')) {
-            return ['driver' => 'pdo_sqlite', 'path' => preg_replace('#^sqlite:///#', '/', $databaseUrl), 'wrapperClass' => PrefixedConnection::class];
+            return [
+                'driver' => 'pdo_sqlite',
+                'path' => preg_replace('#^sqlite:///#', '/', $databaseUrl),
+                'wrapperClass' => PrefixedConnection::class,
+                'studio_allow_unready_database' => true,
+            ];
         }
 
         $scheme = (string) parse_url($databaseUrl, PHP_URL_SCHEME);
@@ -33,6 +38,7 @@ final readonly class SetupDatabaseConnectionFactory
         return [
             'url' => $databaseUrl,
             'wrapperClass' => PrefixedConnection::class,
+            'studio_allow_unready_database' => true,
             'driver' => match ($scheme) {
                 'mysql', 'mariadb' => 'pdo_mysql',
                 'pgsql', 'postgres', 'postgresql' => 'pdo_pgsql',

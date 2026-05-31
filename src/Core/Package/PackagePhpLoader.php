@@ -11,6 +11,7 @@ use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Workflow\WorkflowResult;
+use App\Database\DatabaseReadyState;
 use App\Entity\ExtensionPackage;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -36,6 +37,7 @@ final class PackagePhpLoader implements EventSubscriberInterface
         private readonly string $environment = 'test',
         private readonly ?PackageRuntimeContributionRegistry $runtimeContributions = null,
         private readonly PathGuard $pathGuard = new PathGuard(),
+        private readonly ?DatabaseReadyState $databaseReadyState = null,
         ?PackageDependentDeactivator $dependentDeactivator = null,
     ) {
         $this->dependentDeactivator = $dependentDeactivator ?? new PackageDependentDeactivator($entityManager);
@@ -70,6 +72,10 @@ final class PackagePhpLoader implements EventSubscriberInterface
      */
     private function doLoadActivePackages(): WorkflowResult
     {
+        if (null !== $this->databaseReadyState && !$this->databaseReadyState->isReady()) {
+            return WorkflowResult::success(['loaded' => [], 'skipped' => []], ['database_ready' => false]);
+        }
+
         try {
             $packages = $this->packageProvider->packages();
         } catch (Throwable $error) {

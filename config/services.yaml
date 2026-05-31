@@ -137,6 +137,11 @@ services:
             $environment: '%kernel.environment%'
             $validationSpec: null
 
+    App\Database\DatabaseReadyState:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
     App\Core\Package\PackageDiscoveryRunner:
         arguments:
             $projectDir: '%kernel.project_dir%'

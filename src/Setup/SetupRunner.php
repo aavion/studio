@@ -13,6 +13,7 @@ use App\Core\Message\MessageKey;
 use App\Core\Operation\ActionQueue;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Workflow\WorkflowResult;
+use App\Database\DatabaseReadyState;
 use App\Security\PasswordPolicy;
 use Throwable;
 
@@ -228,7 +229,7 @@ final class SetupRunner
     private function runMigrations(SetupInput $input, array $environment): array
     {
         $command = $this->migrationCommand($input);
-        $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
+        $result = $this->commandExecutor->run($command, $this->projectDir, $this->databaseCommandEnvironment($environment));
 
         if (!$result->isSuccessful()) {
             throw new SetupStepFailedException($this->commandError($result));
@@ -245,7 +246,7 @@ final class SetupRunner
     private function clearCache(SetupInput $input, array $environment): array
     {
         $command = $this->cacheClearCommand($input);
-        $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
+        $result = $this->commandExecutor->run($command, $this->projectDir, $this->databaseCommandEnvironment($environment));
 
         if (!$result->isSuccessful()) {
             throw new SetupStepFailedException($this->commandError($result));
@@ -269,7 +270,7 @@ final class SetupRunner
             '--trigger=setup',
             '--env='.$input->appEnv(),
         ];
-        $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
+        $result = $this->commandExecutor->run($command, $this->projectDir, $this->databaseCommandEnvironment($environment));
 
         if (!$result->isSuccessful()) {
             throw new SetupStepFailedException($this->commandError($result));
@@ -292,7 +293,7 @@ final class SetupRunner
             '--trigger=setup',
             '--env='.$input->appEnv(),
         ];
-        $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
+        $result = $this->commandExecutor->run($command, $this->projectDir, $this->databaseCommandEnvironment($environment));
 
         if (!$result->isSuccessful()) {
             throw new SetupStepFailedException($this->commandError($result));
@@ -341,6 +342,19 @@ final class SetupRunner
             'APP_DATABASE_PREFIX' => $input->databasePrefix() ?? '',
             'APP_DEBUG' => '0',
             'SHELL_VERBOSITY' => '-1',
+        ];
+    }
+
+    /**
+     * @param array<string, string> $environment
+     *
+     * @return array<string, string>
+     */
+    private function databaseCommandEnvironment(array $environment): array
+    {
+        return [
+            ...$environment,
+            DatabaseReadyState::ALLOW_UNREADY_KEY => '1',
         ];
     }
 

@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Core\Log;
 
-use App\Core\Statistics\AccessStatisticsRecorderInterface;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
+use App\Core\Statistics\AccessStatisticsRecorderInterface;
+use App\Database\DatabaseReadyState;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
@@ -22,6 +23,7 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
         private AccessStatisticsRecorderInterface $accessStatisticsRecorder,
         private AccessRequestMetadata $accessRequestMetadata,
         private ?MessageReporterInterface $messageReporter = null,
+        private ?DatabaseReadyState $databaseReadyState = null,
     ) {
     }
 
@@ -63,10 +65,17 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
 
     private function shouldSkip(string $path): bool
     {
-        return str_starts_with($path, '/_profiler')
+        return $this->databaseIsNotReady()
+            || str_starts_with($path, '/setup')
+            || str_starts_with($path, '/_profiler')
             || str_starts_with($path, '/_wdt')
             || str_starts_with($path, '/assets/')
             || str_starts_with($path, '/build/');
+    }
+
+    private function databaseIsNotReady(): bool
+    {
+        return null !== $this->databaseReadyState && !$this->databaseReadyState->isReady();
     }
 
     private function reportAccessLogFailure(ResponseEvent $event, Throwable $error): void

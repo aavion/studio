@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Filesystem\PathGuard;
+use App\Database\DatabaseReadyState;
 use App\Entity\ExtensionPackage;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -13,6 +14,7 @@ final readonly class ActivePackageProvider implements ActivePackageProviderInter
     public function __construct(
         private EntityManagerInterface $entityManager,
         private PathGuard $pathGuard = new PathGuard(),
+        private ?DatabaseReadyState $databaseReadyState = null,
     ) {
     }
 
@@ -21,6 +23,10 @@ final readonly class ActivePackageProvider implements ActivePackageProviderInter
      */
     public function packages(?PackageScope $scope = null): array
     {
+        if (null !== $this->databaseReadyState && !$this->databaseReadyState->isReady()) {
+            return [];
+        }
+
         $packages = [];
 
         foreach ($this->entityManager->getRepository(ExtensionPackage::class)->findBy(['status' => ExtensionPackageStatus::Active]) as $package) {
