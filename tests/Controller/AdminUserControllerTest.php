@@ -261,6 +261,10 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertStringNotContainsString('filterhidden', (string) $client->getResponse()->getContent());
         self::assertSelectorTextContains('.studio-toolbar', 'Page 1 of 1');
 
+        $client->request('GET', '/admin/users?sort=role&direction=desc&per_page=25');
+
+        self::assertResponseIsSuccessful();
+
         $entityManager->remove($entityManager->find(UserAccount::class, $visibleUser->uid()));
         $entityManager->remove($entityManager->find(UserAccount::class, $hiddenUser->uid()));
         $entityManager->flush();

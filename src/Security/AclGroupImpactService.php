@@ -336,18 +336,22 @@ final readonly class AclGroupImpactService
      */
     private function entitiesByUid(string $className, array $uids): array
     {
-        $repository = $this->entityManager->getRepository($className);
-        $entities = [];
+        $uids = array_values(array_unique(array_filter($uids, 'is_string')));
 
-        foreach (array_unique(array_filter($uids, 'is_string')) as $uid) {
-            $entity = $repository->find($uid);
-
-            if ($entity instanceof $className) {
-                $entities[] = $entity;
-            }
+        if ([] === $uids) {
+            return [];
         }
 
-        return $entities;
+        return array_values(array_filter(
+            $this->entityManager->createQueryBuilder()
+                ->select('entity')
+                ->from($className, 'entity')
+                ->andWhere('entity.uid IN (:uids)')
+                ->setParameter('uids', $uids)
+                ->getQuery()
+                ->getResult(),
+            static fn (mixed $entity): bool => $entity instanceof $className,
+        ));
     }
 
     private function jsonStringPattern(string $identifier): string

@@ -18,17 +18,23 @@ services:
 
     _instanceof:
         App\Core\Event\EventHookDescriptorProviderInterface:
-            tags: ['studio.event_hook_provider']
+            tags:
+                - { name: 'studio.event_hook_provider', priority: 0 }
         App\Backend\BackendViewProviderInterface:
-            tags: ['studio.backend_view_provider']
+            tags:
+                - { name: 'studio.backend_view_provider', priority: 0 }
         App\View\Injection\StaticViewInjectionProviderInterface:
-            tags: ['studio.static_view_injection_provider']
+            tags:
+                - { name: 'studio.static_view_injection_provider', priority: 0 }
         App\View\Injection\DynamicViewInjectionProviderInterface:
-            tags: ['studio.dynamic_view_injection_provider']
+            tags:
+                - { name: 'studio.dynamic_view_injection_provider', priority: 0 }
         App\Core\Package\Settings\PackageSettingProviderInterface:
-            tags: ['studio.package_setting_provider']
+            tags:
+                - { name: 'studio.package_setting_provider', priority: 0 }
         App\Core\Operation\Live\LiveOperationQueueProviderInterface:
-            tags: ['studio.live_operation_queue_provider']
+            tags:
+                - { name: 'studio.live_operation_queue_provider', priority: 0 }
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -63,16 +69,16 @@ services:
 
     App\Backend\BackendViewRegistry:
         arguments:
-            $providers: !tagged_iterator studio.backend_view_provider
+            $providers: !tagged_iterator { tag: studio.backend_view_provider }
 
     App\View\Injection\ViewInjectionRegistry:
         arguments:
-            $staticProviders: !tagged_iterator studio.static_view_injection_provider
-            $dynamicProviders: !tagged_iterator studio.dynamic_view_injection_provider
+            $staticProviders: !tagged_iterator { tag: studio.static_view_injection_provider }
+            $dynamicProviders: !tagged_iterator { tag: studio.dynamic_view_injection_provider }
 
     App\Core\Package\Settings\PackageSettingRegistry:
         arguments:
-            $providers: !tagged_iterator studio.package_setting_provider
+            $providers: !tagged_iterator { tag: studio.package_setting_provider }
 
     App\Localization\TranslationLanguageCatalog:
         arguments:
@@ -128,7 +134,7 @@ services:
 
     App\Core\Event\PublicEventHookRegistry:
         arguments:
-            $providers: !tagged_iterator studio.event_hook_provider
+            $providers: !tagged_iterator { tag: studio.event_hook_provider }
 
     App\Core\Package\ActivePackageAssetProviderInterface:
         alias: App\Core\Package\ActivePackageAssetProvider
@@ -230,7 +236,7 @@ services:
 
     App\Core\Operation\Live\LiveOperationQueueFactory:
         arguments:
-            $providers: !tagged_iterator studio.live_operation_queue_provider
+            $providers: !tagged_iterator { tag: studio.live_operation_queue_provider }
 
     App\Security\MaintenanceModeSubscriber:
         arguments:
