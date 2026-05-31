@@ -204,7 +204,7 @@ final class SetupController extends AbstractController
 
             return [[], ['success' => true, 'key' => 'setup.database.test_success']];
         } catch (\Throwable) {
-            return [['__form' => ['setup.database.test_failed']], ['success' => false, 'key' => 'setup.database.test_failed']];
+            return [[], ['success' => false, 'key' => 'setup.database.test_failed']];
         }
     }
 

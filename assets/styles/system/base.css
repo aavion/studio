@@ -411,17 +411,87 @@ html {
     }
 }
 
+.studio-alert-stack {
+    position: fixed;
+    z-index: 70;
+    top: clamp(0.75rem, 2vw, 1.25rem);
+    right: clamp(0.75rem, 2vw, 1.25rem);
+    display: grid;
+    width: min(calc(100vw - 1.5rem), 26rem);
+    gap: 0.45rem;
+    pointer-events: none;
+}
+
 .studio-alert {
     padding: 0.875rem 1rem;
     border: var(--studio-border);
     border-left-width: 4px;
     border-radius: var(--studio-radius);
     background: var(--color-paper);
+    overflow-wrap: anywhere;
+}
+
+.studio-alert-stack .studio-alert {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: start;
+    min-width: 0;
+    padding: 0.85rem 0.85rem 0.85rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    color: var(--color-ink);
+    font-size: var(--studio-text-sm);
+    font-weight: 700;
+    line-height: var(--studio-leading-copy);
+    box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--color-brand-canvas) 22%, transparent);
+    pointer-events: auto;
+    transform-origin: top right;
+    animation: studio-alert-enter 180ms ease-out both;
+    transition: opacity 1200ms ease, transform 1200ms ease, margin 1200ms ease;
+}
+
+.studio-alert-stack .studio-alert.is-leaving {
+    opacity: 0;
+    transform: translateY(-0.35rem) scale(0.99);
+}
+
+.studio-alert-stack .studio-alert-content {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.studio-alert-stack .studio-alert-close {
+    display: inline-grid;
+    width: 1.65rem;
+    height: 1.65rem;
+    place-items: center;
+    border: 0;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-paper) 46%, transparent);
+    color: inherit;
+    cursor: pointer;
+}
+
+.studio-alert-stack .studio-alert-close:hover,
+.studio-alert-stack .studio-alert-close:focus-visible {
+    background: color-mix(in srgb, var(--color-paper) 74%, transparent);
 }
 
 .studio-alert-info {
     border-left-color: var(--color-info);
     background: var(--color-info-soft);
+}
+
+.studio-alert-debug {
+    border-left-color: var(--color-debug);
+    background: var(--color-debug-soft);
+}
+
+.studio-alert-success {
+    border-left-color: var(--color-success);
+    background: var(--color-success-soft);
 }
 
 .studio-alert-warning {
@@ -433,6 +503,44 @@ html {
 .studio-alert-exception {
     border-left-color: var(--color-error);
     background: var(--color-error-soft);
+}
+
+.studio-alert-stack .studio-alert-info {
+    border-color: color-mix(in srgb, var(--color-info) 46%, transparent);
+    background: color-mix(in srgb, var(--color-info-soft) 86%, transparent);
+}
+
+.studio-alert-stack .studio-alert-debug {
+    border-color: color-mix(in srgb, var(--color-debug) 42%, transparent);
+    background: color-mix(in srgb, var(--color-debug-soft) 88%, transparent);
+}
+
+.studio-alert-stack .studio-alert-success {
+    border-color: color-mix(in srgb, var(--color-success) 46%, transparent);
+    background: color-mix(in srgb, var(--color-success-soft) 86%, transparent);
+}
+
+.studio-alert-stack .studio-alert-warning {
+    border-color: color-mix(in srgb, var(--color-warning) 48%, transparent);
+    background: color-mix(in srgb, var(--color-warning-soft) 88%, transparent);
+}
+
+.studio-alert-stack .studio-alert-error,
+.studio-alert-stack .studio-alert-exception {
+    border-color: color-mix(in srgb, var(--color-error) 52%, transparent);
+    background: color-mix(in srgb, var(--color-error-soft) 90%, transparent);
+}
+
+@keyframes studio-alert-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-0.6rem) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .studio-panel,

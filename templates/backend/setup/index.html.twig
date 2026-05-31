@@ -3,6 +3,18 @@
 {% block title %}{{ 'setup.dashboard.title'|trans }}{% endblock %}
 
 {% block setup_body %}
+    {% set setup_alerts = [] %}
+    {% for error in setup_errors.__form|default([]) %}
+        {% set setup_alerts = setup_alerts|merge([{level: 'error', message: error|trans}]) %}
+    {% endfor %}
+    {% if setup_database_test %}
+        {% set setup_alerts = setup_alerts|merge([{
+            level: setup_database_test.success ? 'success' : 'error',
+            message: setup_database_test.key|trans,
+        }]) %}
+    {% endif %}
+    {% include '@root/partials/feedback/_alert-stack.html.twig' with {alerts: setup_alerts} only %}
+
     {% if setup_step != 'language' %}
         {% set step_icon = {
             site: 'ti-adjustments',
@@ -40,12 +52,6 @@
         <input type="hidden" name="_form_id" value="setup-wizard-{{ setup_step }}{{ setup_step == 'review' ? '-live-v2' : '' }}">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token('setup-wizard') }}">
         <input type="hidden" name="_setup_action" value="">
-        {% if setup_errors.__form|default([]) is not empty %}
-            <div class="studio-setup-toast" role="alert">
-                {% include '@backend/partials/forms/_errors.html.twig' with {errors: setup_errors.__form|default([])} only %}
-            </div>
-        {% endif %}
-
         {% if setup_step == 'language' %}
             <section class="studio-setup-landing px-6 pb-12 pt-16 md:px-10 md:pb-14 md:pt-20">
                 <div class="studio-setup-landing-pattern" aria-hidden="true"></div>
@@ -181,11 +187,6 @@
             <section class="studio-panel">
                 <h2>{{ 'setup.database.title'|trans }}</h2>
                 <p class="studio-muted">{{ 'setup.database.text'|trans }}</p>
-                {% if setup_database_test %}
-                    <p class="studio-setup-summary {{ setup_database_test.success ? 'is-ok' : 'is-error' }}">
-                        {{ setup_database_test.key|trans }}
-                    </p>
-                {% endif %}
                 {% set database_driver_options = {} %}
                 {% for driver_value, driver_label in setup_database_driver_options %}
                     {% set database_driver_options = database_driver_options|merge({(driver_value): driver_label|trans}) %}

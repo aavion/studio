@@ -1,6 +1,8 @@
 ui:
   app:
     name: 'Studio'
+  alert:
+    close: 'Close notification'
   navigation:
     skip_to_content: 'Skip to content'
   frontend:

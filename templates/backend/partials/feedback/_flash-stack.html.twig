@@ -1,11 +1,10 @@
+{% set alerts = [] %}
 {% for label, messages in app.flashes %}
     {% for message in messages %}
-        <div class="studio-alert studio-alert-{{ label }}" role="status">
-            {% if message is iterable and message.translation_key is defined %}
-                {{ message.translation_key|trans(message.parameters|default({})) }}
-            {% else %}
-                {{ message|trans }}
-            {% endif %}
-        </div>
+        {% set alerts = alerts|merge([{
+            level: label,
+            message: message is iterable and message.translation_key is defined ? message.translation_key|trans(message.parameters|default({})) : message|trans,
+        }]) %}
     {% endfor %}
 {% endfor %}
+{% include '@root/partials/feedback/_alert-stack.html.twig' with {alerts} only %}

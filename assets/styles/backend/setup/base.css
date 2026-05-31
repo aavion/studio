@@ -92,24 +92,6 @@
     white-space: nowrap;
 }
 
-.studio-setup-toast {
-    position: fixed;
-    z-index: 50;
-    top: 1rem;
-    right: max(1rem, calc((100vw - min(100%, clamp(46rem, 84vw, 78rem))) / 2));
-    width: min(calc(100vw - 2rem), 24rem);
-}
-
-.studio-setup-toast .studio-backend-form-errors {
-    @apply m-0;
-
-    padding: 0.875rem 1rem 0.875rem 2rem;
-    border: 1px solid var(--color-error);
-    border-radius: 0.85rem;
-    background: color-mix(in srgb, var(--color-error-soft) 86%, #ffffff);
-    box-shadow: 0 1rem 3rem rgb(15 23 42 / 22%);
-}
-
 .studio-setup-step-header {
     @apply relative grid justify-items-center gap-3 text-center;
 

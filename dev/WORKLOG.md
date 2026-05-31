@@ -93,6 +93,7 @@
 - Restyled the setup wizard toward the generated design direction with a dark backend canvas, text-logo chrome, bright adaptive shell, primary-gradient welcome hero, centered icon step headers, toast-style form errors, status-card preflight summary, grouped icon-led preflight rows, and separated footer progress actions.
 - Renamed the product display name from `aavion Studio` to `Studio`, moved setup/admin defaults to the manifest-backed app name where project context exists, and refreshed docs, translations, tests, and runtime catalogues.
 - Reworded the README toward a warmer product-facing project overview and tightened the setup system-footer spacing against the shell.
+- Added a root-scoped dismissible alert stack shared by setup, backend flashes, and frontend flashes, with timed success/info dismissal and persistent error feedback.
 
 ### 2026-05-30
 - Finished the ACL role refactor: one exact account role plus optional groups with minimum-role floors, Symfony hierarchy/firewalls, owner guardrails, optional default groups, no obsolete locked-group behavior, updated migrations/setup/UI/translations/docs/class map, and regression coverage.
