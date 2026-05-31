@@ -50,6 +50,8 @@ final readonly class CoreTranslationBootstrapper
         $locales = [];
         $files = 0;
 
+        $this->removeGeneratedCatalogues($runtimePath);
+
         foreach ($this->localeDirectories($sourceRoot) as $locale => $directory) {
             $catalogue = [];
             foreach ($this->yamlFiles($directory) as $file) {
@@ -73,6 +75,15 @@ final readonly class CoreTranslationBootstrapper
             'locales' => $locales,
             'files' => $files,
         ];
+    }
+
+    private function removeGeneratedCatalogues(TranslationRuntimePath $runtimePath): void
+    {
+        foreach ($runtimePath->generatedCataloguePaths() as $path) {
+            if (is_file($path) && !is_link($path)) {
+                unlink($path);
+            }
+        }
     }
 
     /**
