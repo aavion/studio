@@ -89,7 +89,7 @@ final readonly class SetupRollbacker
             foreach ($this->rollbackTables($input) as $table) {
                 $connection->executeStatement(sprintf(
                     'DROP TABLE IF EXISTS %s',
-                    $connection->getDatabasePlatform()->quoteIdentifier($table),
+                    $connection->getDatabasePlatform()->quoteSingleIdentifier($table),
                 ));
                 $removed[] = $table;
             }
@@ -110,7 +110,7 @@ final readonly class SetupRollbacker
         foreach ($this->rollbackTables($input) as $table) {
             $connection->executeStatement(sprintf(
                 'DROP TABLE IF EXISTS %s CASCADE',
-                $connection->getDatabasePlatform()->quoteIdentifier($table),
+                $connection->getDatabasePlatform()->quoteSingleIdentifier($table),
             ));
             $removed[] = $table;
         }
@@ -130,7 +130,7 @@ final readonly class SetupRollbacker
             foreach ($this->rollbackTables($input) as $table) {
                 $connection->executeStatement(sprintf(
                     'DROP TABLE IF EXISTS %s',
-                    $connection->getDatabasePlatform()->quoteIdentifier($table),
+                    $connection->getDatabasePlatform()->quoteSingleIdentifier($table),
                 ));
                 $removed[] = $table;
             }
