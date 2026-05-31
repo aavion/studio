@@ -68,6 +68,8 @@ final readonly class PackageAssetSyncer
     private function doSync(iterable $packages): WorkflowResult
     {
         $packages = $this->sortedPackages($packages);
+        $this->registryWriter->ensureRegistryFilesExist();
+
         $started = $this->dispatchHook(new PackageAssetSyncStartedEvent($packages));
         if (null !== $started) {
             return $started;

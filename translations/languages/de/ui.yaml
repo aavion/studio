@@ -211,3 +211,8 @@ ui:
       visitor_id: 'Visitor-ID'
       requested_path: 'Angefragter Pfad'
       resolved_route: 'Aufgelöste Route'
+    debug:
+      summary: 'Debug-Trace'
+      exception: 'Exception'
+      message: 'Meldung'
+      location: 'Fundstelle'

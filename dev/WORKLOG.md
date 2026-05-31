@@ -86,6 +86,8 @@
 - Hardened retained deleted-user cleanup to use the newest deletion marker and aligned the terminate-time Messenger drain with the configured Doctrine queue name.
 - Reduced cold init/container pressure by moving package discovery and translation aggregation out of cache warmers into setup/admin-triggered flows, narrowing service discovery away from non-service value objects and messages, and confirming cold `bin/init` no longer OOMs under the default memory limit.
 - Polished the LiveOperation overlay so setup/admin action logs use translated step labels, replace in-flight rows with terminal rows, keep long logs scrollable, and keep controls visible outside the log overflow.
+- Tightened shell/panel responsiveness so long text and form controls cannot expand wrappers, moved error diagnostics into a subdued bottom block, and kept 401 login pages free of debug details.
+- Moved package asset mirrors and generated CSS/JS registries out of Git tracking while keeping directory anchors, and made `bin/init` plus package asset sync recreate the ignored registry files before Tailwind or AssetMapper need them.
 
 ### 2026-05-30
 - Finished the ACL role refactor: one exact account role plus optional groups with minimum-role floors, Symfony hierarchy/firewalls, owner guardrails, optional default groups, no obsolete locked-group behavior, updated migrations/setup/UI/translations/docs/class map, and regression coverage.

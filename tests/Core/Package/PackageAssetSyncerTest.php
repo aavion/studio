@@ -71,6 +71,25 @@ final class PackageAssetSyncerTest extends TestCase
         self::assertStringNotContainsString('vendor/library/index.js', $javaScriptRegistry);
     }
 
+    public function testRegistryWriterCreatesMissingEmptyRegistries(): void
+    {
+        $root = $this->createTemporaryDirectory('studio-package-registry-writer');
+
+        try {
+            $writer = new PackageAssetRegistryWriter(new PackageAssetFilesystem($root));
+            $writer->ensureRegistryFilesExist();
+
+            self::assertStringContainsString('Generated CSS package asset registry: extension.', (string) file_get_contents($root.'/assets/styles/packages/extension.css'));
+            self::assertStringContainsString('Generated CSS package asset registry: frontend-theme.', (string) file_get_contents($root.'/assets/styles/packages/frontend-theme.css'));
+            self::assertStringContainsString('Generated CSS package asset registry: backend-theme.', (string) file_get_contents($root.'/assets/styles/packages/backend-theme.css'));
+            self::assertStringContainsString('Generated JavaScript package asset registry: extension.', (string) file_get_contents($root.'/assets/js/packages/extension.js'));
+            self::assertStringContainsString('Generated JavaScript package asset registry: frontend-theme.', (string) file_get_contents($root.'/assets/js/packages/frontend-theme.js'));
+            self::assertStringContainsString('Generated JavaScript package asset registry: backend-theme.', (string) file_get_contents($root.'/assets/js/packages/backend-theme.js'));
+        } finally {
+            $this->removeDirectory($root);
+        }
+    }
+
     public function testItRoutesFrontendAndBackendThemeAssetsToSeparateBuckets(): void
     {
         $this->writeTestFile($this->root, 'packages/dual/assets/frontend/app.css', '.front {}');

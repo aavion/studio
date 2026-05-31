@@ -39,7 +39,7 @@ Package asset sync and translation aggregation should preserve the previous gene
 
 ## Theme asset notes
 
-Packages should keep assets namespaced. Active package assets are not loaded directly from `packages/` and inactive package assets must never become public. The package lifecycle mirrors only active package assets into `assets/packages/<package-slug>/`, then rewrites the stable generated registry files:
+Packages should keep assets namespaced. Active package assets are not loaded directly from `packages/` and inactive package assets must never become public. The package lifecycle mirrors only active package assets into `assets/packages/<package-slug>/`, then rewrites ignored generated registry files:
 
 - `assets/styles/packages/extension.css`
 - `assets/styles/packages/frontend-theme.css`
@@ -49,6 +49,8 @@ Packages should keep assets namespaced. Active package assets are not loaded dir
 - `assets/js/packages/backend-theme.js`
 
 `assets/styles/app.css` imports the CSS registries after native system styles. Tailwind therefore sees active package `@source` entries and `@import` entries before it writes the built aggregate CSS that AssetMapper serves instead of the source input. `assets/app.js` imports the JavaScript registries after native system JavaScript and before Alpine starts.
+
+The package asset mirror and generated registries are runtime build artifacts. Git tracks only the package asset directories, their `.gitignore` files, and their README anchors. `bin/init` and package asset sync both ensure the six registry files exist before Tailwind or AssetMapper can require them, so clean checkouts work while local package activation does not dirty the Git index.
 
 Database-backed schema Twig is not part of Tailwind's normal filesystem scan. Before schema-authored CSS classes are supported in production, the schema renderer needs a build input layer that aggregates class usage from active custom schema Twig and exposes it to `tailwind:build`, for example through a generated safelist/source artifact written during `studio:assets:rebuild`.
 

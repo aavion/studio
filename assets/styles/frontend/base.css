@@ -105,9 +105,10 @@
 .studio-auth-panel {
     display: grid;
     gap: 0.75rem;
-    max-width: 640px;
+    width: min(100%, clamp(20rem, 92vw, 40rem));
     margin: 0 auto;
-    padding: clamp(2rem, 8vw, 5rem);
+    padding: clamp(1.25rem, 8vw, 5rem);
+    overflow: hidden;
 }
 
 .studio-error-lightweight {
@@ -130,6 +131,86 @@
     margin: 0;
     color: var(--color-muted);
     line-height: var(--studio-leading-copy);
+}
+
+.studio-error-diagnostics {
+    display: grid;
+    gap: 0.4rem;
+    margin-top: clamp(1rem, 6vw, 2.5rem);
+    padding-top: 0.75rem;
+    border-top: var(--studio-border);
+    color: var(--color-muted);
+    font-size: var(--studio-text-xs);
+    line-height: 1.45;
+}
+
+.studio-error-diagnostics dl {
+    display: block;
+    margin: 0;
+}
+
+.studio-error-reference-item,
+.studio-debug-trace dl {
+    display: grid;
+    min-width: 0;
+    gap: 0.15rem;
+}
+
+.studio-error-reference-item {
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0.35rem 0.5rem;
+    padding-block: 0.2rem;
+}
+
+.studio-error-diagnostics dt {
+    min-width: 0;
+    font-weight: 750;
+}
+
+.studio-error-diagnostics dd {
+    min-width: 0;
+    margin: 0;
+}
+
+.studio-error-diagnostics code,
+.studio-error-diagnostics pre,
+.studio-error-diagnostics summary {
+    font-size: inherit;
+}
+
+.studio-error-diagnostics code {
+    display: block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.studio-error-token {
+    display: inline-block;
+    padding: 0.25rem 0.4rem;
+    overflow-x: auto;
+    border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+    border-radius: var(--studio-radius-sm);
+    background: color-mix(in srgb, var(--color-surface-muted) 76%, transparent);
+    font-size: 0.7rem;
+    line-height: 1.35;
+    white-space: nowrap;
+}
+
+.studio-debug-trace {
+    min-width: 0;
+}
+
+.studio-debug-trace summary {
+    cursor: pointer;
+}
+
+.studio-debug-trace .studio-code-block {
+    max-height: 12rem;
+    margin-top: 0.5rem;
+    padding: 0.65rem;
+    white-space: pre-wrap;
 }
 
 .studio-user-summary {
