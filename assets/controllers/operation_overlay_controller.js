@@ -6,6 +6,8 @@ export default class extends Controller {
         redirectOnSuccess: String,
     };
 
+    static storedOperationMaxAgeMs = 10 * 60 * 1000;
+
     connect() {
         const stored = this.storedOperation();
 
@@ -75,7 +77,7 @@ export default class extends Controller {
                 return;
             }
 
-            this.storeOperation(payload.value.status_url, 0);
+            this.storeOperation(payload.value.status_url, 0, null, 'queued');
             await this.poll(payload.value.status_url);
         } catch (error) {
             this.clearStoredOperation();
@@ -115,7 +117,7 @@ export default class extends Controller {
 
                 const payload = await this.readJson(response);
                 cursor = Number(payload.cursor || cursor);
-                this.storeOperation(statusUrl, cursor, payload.continue_url || null);
+                this.storeOperation(statusUrl, cursor, payload.continue_url || null, payload.status || null);
                 this.render(payload);
 
                 if (['success', 'requires_review', 'failed'].includes(payload.status)) {
@@ -375,18 +377,27 @@ export default class extends Controller {
         try {
             const raw = window.sessionStorage.getItem(this.storageKey());
 
-            return raw ? JSON.parse(raw) : null;
+            const stored = raw ? JSON.parse(raw) : null;
+
+            if (!stored || this.storedOperationExpired(stored) || this.storedOperationTerminal(stored)) {
+                this.clearStoredOperation();
+
+                return null;
+            }
+
+            return stored;
         } catch {
             return null;
         }
     }
 
-    storeOperation(statusUrl, cursor, continueUrl = null) {
+    storeOperation(statusUrl, cursor, continueUrl = null, status = null) {
         try {
             window.sessionStorage.setItem(this.storageKey(), JSON.stringify({
                 statusUrl,
                 cursor,
                 continueUrl,
+                status,
                 updatedAt: new Date().toISOString(),
             }));
         } catch {
@@ -400,6 +411,20 @@ export default class extends Controller {
         } catch {
             // Session storage can be unavailable in hardened browser contexts.
         }
+    }
+
+    storedOperationExpired(stored) {
+        const updatedAt = Date.parse(stored.updatedAt || '');
+
+        return Number.isNaN(updatedAt) || Date.now() - updatedAt > this.constructor.storedOperationMaxAgeMs;
+    }
+
+    storedOperationTerminal(stored) {
+        if (!stored.status) {
+            return true;
+        }
+
+        return ['success', 'requires_review', 'failed'].includes(stored.status);
     }
 
     get rootElement() {
