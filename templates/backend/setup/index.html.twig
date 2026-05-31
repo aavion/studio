@@ -125,29 +125,26 @@
                                 {% set check_icon = 'ti-folders' %}
                             {% elseif check.key == 'environment_writable' %}
                                 {% set check_icon = 'ti-file-settings' %}
-                            {% elseif check.key == 'temporary_heal_probe' %}
-                                {% set check_icon = 'ti-lock' %}
                             {% endif %}
                             <article class="studio-setup-check">
-                                <span class="studio-setup-check-icon ti {{ check_icon }}" aria-hidden="true"></span>
-                                <div class="studio-setup-check-main">
-                                    <p>
-                                        <strong>{{ check.label_key|trans }}:</strong>
-                                        <span>{{ check.value_key|trans(check.value_parameters) }}</span>
-                                    </p>
-                                    {% if check.status != 'ok' %}
-                                        <p class="studio-muted">{{ (check.healable ? check.help_key : check.instruction_key)|trans }}</p>
-                                    {% endif %}
+                                <div class="studio-setup-check-title">
+                                    <span class="studio-setup-check-icon ti {{ check_icon }}" aria-hidden="true"></span>
+                                    <span>{{ check.label_key|trans }}</span>
                                 </div>
+                                <p class="studio-setup-check-result">{{ check.value_key|trans(check.value_parameters) }}</p>
                                 <span class="studio-setup-status {{ check.status == 'ok' ? 'is-ok' : (check.required ? 'is-error' : 'is-neutral') }}">
                                     <span class="ti {{ check.status == 'ok' ? 'ti-check' : (check.required ? 'ti-x' : 'ti-minus') }}" aria-hidden="true"></span>
                                     {{ (check.status == 'ok' ? 'setup.preflight.status.ok' : (check.required ? 'setup.preflight.status.failed' : 'setup.preflight.status.optional'))|trans }}
                                 </span>
+                                {% if check.status != 'ok' %}
+                                    <p class="studio-setup-check-help">{{ (check.healable ? check.help_key : check.instruction_key)|trans(check.value_parameters) }}</p>
+                                {% endif %}
                             </article>
                         {% endfor %}
                     </div>
                     {% if setup_preflight.can_auto_heal %}
                         <div class="studio-setup-heal-actions">
+                            <p>{{ 'setup.preflight.auto_heal_hint'|trans }}</p>
                             <button class="studio-button studio-button-secondary" type="submit" name="_setup_action" value="heal_preflight" formnovalidate>
                                 {{ 'setup.preflight.auto_heal'|trans }}
                             </button>

@@ -39,12 +39,13 @@ setup:
   preflight:
     title: 'Vorabprüfung'
     text: 'Setup prüft die wichtigsten Voraussetzungen, bevor Datenbankdetails abgefragt werden.'
-    auto_heal: 'Automatisch reparieren'
+    auto_heal: 'Reparieren'
+    auto_heal_hint: 'Setup kann versuchen, die markierten Datei- und Verzeichnisprüfungen automatisch zu reparieren.'
     show_ready_checks: '%count% fertige Prüfungen anzeigen'
     show_details: 'Details anzeigen'
     summary:
       ok: 'Alles Nötige für das Setup ist bereit.'
-      healable: 'Setup kann die markierten Datei- und Verzeichnisprüfungen automatisch reparieren.'
+      healable: 'Setup kann in dieser Umgebung aktuell nicht ausgeführt werden.'
       failed: 'Einige Prüfungen benötigen eine Server- oder PHP-Konfigurationsänderung, bevor das Setup fortfahren kann.'
     errors:
       required: 'Behebe die erforderlichen Prüfungen, bevor du fortfährst.'
@@ -71,7 +72,8 @@ setup:
       optional_extensions_all_present: 'Alle %count% optionalen Datenbank-Erweiterungen sind vorhanden'
       extensions_missing: 'Fehlt: %extensions%'
       writable_paths_ok: '%count% beschreibbare Pfade sind bereit'
-      writable_paths_failed: 'Nicht beschreibbar: %paths%'
+      writable_paths_unavailable: '%paths_count% Pfade nicht beschreibbar'
+      writable_paths_blocked: '%paths_count% Pfade benötigen Rechteanpassung'
     checks:
       webroot_public:
         label: 'Public-Webroot'
@@ -96,15 +98,15 @@ setup:
       required_extensions:
         label: 'Erforderliche Erweiterungen'
         help: 'Alle erforderlichen PHP-Erweiterungen sind vorhanden.'
-        instruction: 'Installiere oder aktiviere die fehlenden erforderlichen PHP-Erweiterungen.'
+        instruction: 'Installiere oder aktiviere diese erforderlichen PHP-Erweiterungen: %extensions%'
       optional_database_extensions:
         label: 'Datenbank-Erweiterungen'
         help: 'Optionale Datenbank-Erweiterungen sind verfügbar, wenn ihr Treiber gewählt wird.'
-        instruction: 'Installiere die passende Erweiterung, wenn du diesen Datenbanktreiber verwendest.'
+        instruction: 'Installiere diese Erweiterungen, wenn du MySQL/MariaDB oder PostgreSQL verwenden möchtest: %extensions%'
       writable_paths:
         label: 'Beschreibbare Pfade'
-        help: 'Setup kann die gelisteten Datei- und Verzeichnisprüfungen automatisch reparieren.'
-        instruction: 'Mache die gelisteten Pfade für den Webserver-Benutzer beschreibbar.'
+        help: 'Diese Pfade sind aktuell nicht beschreibbar: %paths%'
+        instruction: 'Mache diese Pfade für den Webserver-Benutzer beschreibbar und lade die Prüfung danach neu: %paths%'
       php_version:
         label: 'PHP-Version'
         help: 'Die aktuelle PHP-Laufzeit erfüllt die Projektanforderung.'
@@ -113,10 +115,6 @@ setup:
         label: 'Composer'
         help: 'Setup kann PHP-Abhängigkeiten installieren und aktualisieren.'
         instruction: 'Installiere Composer global oder stelle den gebündelten bin/composer-Fallback wieder her.'
-      temporary_heal_probe:
-        label: 'Temporäre Reparaturprüfung'
-        help: 'Setup kann eine temporäre Marker-Datei anlegen, um automatische Reparatur zu simulieren.'
-        instruction: 'Mache das Projekt-Root beschreibbar, damit Setup den temporären Reparaturmarker anlegen kann.'
       cli_runner:
         label: 'CLI-Runner'
         help: 'Setup kann PHP-CLI-Subprozesse für länger laufende Arbeiten starten.'
@@ -137,10 +135,10 @@ setup:
         label: 'PHP-Erweiterung intl'
         help: 'Wird für lokalisierte Formatierung und Übersetzungen benötigt.'
         instruction: 'Installiere oder aktiviere die PHP-Erweiterung intl.'
-      extension_sqlite3:
-        label: 'PHP-Erweiterung sqlite3'
+      extension_pdo_sqlite:
+        label: 'PHP-Erweiterung pdo_sqlite'
         help: 'Wird für das standardmäßige SQLite-Setup-Profil benötigt.'
-        instruction: 'Installiere oder aktiviere die PHP-Erweiterung sqlite3, oder konfiguriere später einen anderen Datenbanktreiber.'
+        instruction: 'Installiere oder aktiviere die PHP-Erweiterung pdo_sqlite, oder konfiguriere später einen anderen Datenbanktreiber.'
       extension_pdo_mysql:
         label: 'PHP-Erweiterung pdo_mysql'
         help: 'Installiere diese Erweiterung, wenn du MySQL oder MariaDB verwendest.'

@@ -90,7 +90,7 @@ final class SetupWebInputFactoryTest extends TestCase
 
     public function testItNormalizesDatabasePrefixWithOneSeparatorWhenMissing(): void
     {
-        $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test');
+        $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test', extensionAvailability: ['pdo_mysql' => true]);
 
         $result = $factory->create([
             'language' => 'en',
@@ -118,7 +118,7 @@ final class SetupWebInputFactoryTest extends TestCase
 
     public function testItKeepsExplicitTrailingSeparatorSingular(): void
     {
-        $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test');
+        $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test', extensionAvailability: ['pdo_mysql' => true]);
 
         $result = $factory->create([
             'language' => 'en',
@@ -146,7 +146,7 @@ final class SetupWebInputFactoryTest extends TestCase
 
     public function testItKeepsEmptyDatabasePrefixEmpty(): void
     {
-        $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test');
+        $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test', extensionAvailability: ['pdo_mysql' => true]);
 
         $result = $factory->create([
             'language' => 'en',
@@ -188,6 +188,51 @@ final class SetupWebInputFactoryTest extends TestCase
         $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test');
 
         self::assertSame('studio', $factory->defaults()['database_prefix']);
+    }
+
+    public function testItOnlyOffersDatabaseDriversWithAvailablePhpExtensions(): void
+    {
+        $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test', extensionAvailability: [
+            'pdo_sqlite' => true,
+            'pdo_mysql' => false,
+            'pdo_pgsql' => true,
+        ]);
+
+        self::assertSame([
+            'sqlite' => 'setup.form.database_driver.options.sqlite',
+            'postgresql' => 'setup.form.database_driver.options.postgresql',
+        ], $factory->databaseDriverOptions());
+    }
+
+    public function testItRejectsUnavailableDatabaseDrivers(): void
+    {
+        $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test', extensionAvailability: [
+            'pdo_sqlite' => true,
+            'pdo_mysql' => false,
+            'pdo_pgsql' => false,
+        ]);
+
+        $result = $factory->create([
+            'language' => 'en',
+            'site_title' => 'Unavailable DB Studio',
+            'default_uri' => 'http://localhost',
+            'registration_mode' => 'disabled',
+            'username_change_enabled' => false,
+            'statistics_enabled' => true,
+            'statistics_respect_dnt' => true,
+            'database_driver' => 'mysql',
+            'database_host' => '127.0.0.1',
+            'database_port' => '3306',
+            'database_name' => 'app',
+            'database_user' => 'app',
+            'admin_username' => 'admin',
+            'admin_password' => 'Safe1!pass',
+            'admin_password_confirm' => 'Safe1!pass',
+            'admin_email' => 'admin@localhost.local',
+        ]);
+
+        self::assertFalse($result->isValid());
+        self::assertSame(['setup.form.errors.choice'], $result->errors()['database_driver']);
     }
 
     public function testItRejectsInvalidDatabaseUrl(): void

@@ -39,12 +39,13 @@ setup:
   preflight:
     title: 'Preflight checks'
     text: 'Setup checks the essentials before asking for database details.'
-    auto_heal: 'Repair automatically'
+    auto_heal: 'Repair'
+    auto_heal_hint: 'Setup can try to repair the highlighted file and directory checks automatically.'
     show_ready_checks: 'Show %count% ready checks'
     show_details: 'Show details'
     summary:
       ok: 'Everything needed for setup is ready.'
-      healable: 'Setup can repair the highlighted file and directory checks automatically.'
+      healable: 'Setup cannot currently run in this environment.'
       failed: 'Some checks need a server or PHP configuration change before setup can continue.'
     errors:
       required: 'Resolve the required checks before continuing.'
@@ -71,7 +72,8 @@ setup:
       optional_extensions_all_present: 'All %count% optional database extensions are available'
       extensions_missing: 'Missing: %extensions%'
       writable_paths_ok: '%count% writable paths are ready'
-      writable_paths_failed: 'Not writable: %paths%'
+      writable_paths_unavailable: '%paths_count% paths are not writable'
+      writable_paths_blocked: '%paths_count% paths need permission changes'
     checks:
       webroot_public:
         label: 'Public webroot'
@@ -96,15 +98,15 @@ setup:
       required_extensions:
         label: 'Required extensions'
         help: 'All required PHP extensions are available.'
-        instruction: 'Install or enable the missing required PHP extensions.'
+        instruction: 'Install or enable these required PHP extensions: %extensions%'
       optional_database_extensions:
         label: 'Database extensions'
         help: 'Optional database extensions are available when their driver is selected.'
-        instruction: 'Install the matching extension when using that database driver.'
+        instruction: 'Install these extensions when using MySQL/MariaDB or PostgreSQL: %extensions%'
       writable_paths:
         label: 'Writable paths'
-        help: 'Setup can repair the listed file and directory checks automatically.'
-        instruction: 'Make the listed paths writable for the web-server user.'
+        help: 'These paths are currently not writable: %paths%'
+        instruction: 'Make these paths writable for the web-server user, then reload the check: %paths%'
       php_version:
         label: 'PHP version'
         help: 'The current PHP runtime satisfies the project requirement.'
@@ -113,10 +115,6 @@ setup:
         label: 'Composer'
         help: 'Setup can install and refresh PHP dependencies.'
         instruction: 'Install Composer globally or restore the bundled bin/composer fallback.'
-      temporary_heal_probe:
-        label: 'Temporary repair probe'
-        help: 'Setup can create a temporary marker file to simulate automatic repair.'
-        instruction: 'Make the project root writable so setup can create the temporary repair marker.'
       cli_runner:
         label: 'CLI runner'
         help: 'Setup can start PHP CLI subprocesses for long-running work.'
@@ -137,10 +135,10 @@ setup:
         label: 'PHP extension intl'
         help: 'Required for locale-aware formatting and translations.'
         instruction: 'Install or enable the PHP intl extension.'
-      extension_sqlite3:
-        label: 'PHP extension sqlite3'
+      extension_pdo_sqlite:
+        label: 'PHP extension pdo_sqlite'
         help: 'Required for the default SQLite setup profile.'
-        instruction: 'Install or enable the PHP sqlite3 extension, or configure another database driver later.'
+        instruction: 'Install or enable the PHP pdo_sqlite extension, or configure another database driver later.'
       extension_pdo_mysql:
         label: 'PHP extension pdo_mysql'
         help: 'Install this extension when using MySQL or MariaDB.'

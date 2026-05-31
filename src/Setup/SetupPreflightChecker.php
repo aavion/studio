@@ -23,13 +23,12 @@ final readonly class SetupPreflightChecker
             $this->fileWritable($projectDir.'/.env.'.$environment.'.local', 'environment_writable', true, $autoHeal),
             $this->directoryWritable($projectDir.'/translations/runtime', 'runtime_translations_writable', true, $autoHeal),
             $this->directoryWritable($projectDir.'/public', 'public_writable', true, $autoHeal),
-            $this->temporaryHealProbe($projectDir, $autoHeal),
             $this->cliRunnerAvailable(),
             $this->phpExtension('ctype', true),
             $this->phpExtension('fileinfo', true),
             $this->phpExtension('iconv', true),
             $this->phpExtension('intl', true),
-            $this->phpExtension('sqlite3', true),
+            $this->phpExtension('pdo_sqlite', true),
             $this->phpExtension('pdo_mysql', false),
             $this->phpExtension('pdo_pgsql', false),
         ];
@@ -117,7 +116,7 @@ final readonly class SetupPreflightChecker
             ? 'ok'
             : 'failed';
 
-        return $this->checkRow('php_version', $status, true, false, null === $requiredVersion ? 'php_version' : 'php_version_requirement', [
+        return $this->checkRow('php_version', $status, true, false, 'ok' === $status ? 'php_version' : 'php_version_requirement', [
             '%version%' => PHP_VERSION,
             '%required%' => $requiredVersion ?? '',
         ]);
@@ -138,22 +137,6 @@ final readonly class SetupPreflightChecker
         }
 
         return $this->checkRow('composer_binary', 'failed', true, false, 'unavailable');
-    }
-
-    /**
-     * @return array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}
-     */
-    private function temporaryHealProbe(string $projectDir, bool $autoHeal): array
-    {
-        $path = $projectDir.'/.setup-preflight-heal-probe';
-
-        if ($autoHeal && !is_file($path) && is_writable($projectDir)) {
-            @touch($path);
-        }
-
-        return $this->checkRow('temporary_heal_probe', is_file($path) ? 'ok' : 'failed', true, is_writable($projectDir), is_file($path) ? 'present' : 'missing', [
-            '%path%' => $this->shortPath($path),
-        ]);
     }
 
     /**
@@ -216,7 +199,7 @@ final readonly class SetupPreflightChecker
         ));
         $writablePaths = array_values(array_filter(
             $checks,
-            static fn (array $check): bool => in_array($check['key'], ['var_writable', 'environment_writable', 'runtime_translations_writable', 'public_writable', 'temporary_heal_probe'], true),
+            static fn (array $check): bool => in_array($check['key'], ['var_writable', 'environment_writable', 'runtime_translations_writable', 'public_writable'], true),
         ));
 
         return array_values(array_filter([
@@ -269,9 +252,14 @@ final readonly class SetupPreflightChecker
             [] === $failed ? 'ok' : 'failed',
             true,
             [] !== $failed && [] === array_filter($failed, static fn (array $check): bool => true !== $check['healable']),
-            [] === $failed ? 'writable_paths_ok' : 'writable_paths_failed',
+            [] === $failed ? 'writable_paths_ok' : (
+                [] === array_filter($failed, static fn (array $check): bool => true !== $check['healable'])
+                    ? 'writable_paths_unavailable'
+                    : 'writable_paths_blocked'
+            ),
             [
                 '%count%' => (string) count($checks),
+                '%paths_count%' => (string) count($failed),
                 '%paths%' => implode(', ', array_map(
                     static fn (array $check): string => $check['value_parameters']['%path%'] ?? $check['key'],
                     $failed,

@@ -20,6 +20,7 @@ final readonly class SetupWebInputFactory
         private SetupLanguageCatalog $languageCatalog = new SetupLanguageCatalog(),
         private SetupPasswordPolicy $passwordPolicy = new SetupPasswordPolicy(),
         private SetupSiteSettings $siteSettings = new SetupSiteSettings(),
+        private ?array $extensionAvailability = null,
     ) {
     }
 
@@ -36,7 +37,7 @@ final readonly class SetupWebInputFactory
             'site_title' => $this->appName(),
             'default_uri' => '' === trim($defaultUri) ? 'http://localhost' : $defaultUri,
             ...$this->siteSettings->defaults(),
-            'database_driver' => $this->driverFromDatabaseUrl($databaseUrl)->value,
+            'database_driver' => $this->defaultDatabaseDriver($databaseUrl),
             'database_url' => $databaseUrl,
             'database_host' => $this->databaseUrlPart($databaseUrl, 'host') ?? '127.0.0.1',
             'database_port' => $this->databaseUrlPart($databaseUrl, 'port') ?? '',
@@ -66,11 +67,18 @@ final readonly class SetupWebInputFactory
      */
     public function databaseDriverOptions(): array
     {
-        return [
-            DatabaseDriver::SQLite->value => 'setup.form.database_driver.options.sqlite',
-            DatabaseDriver::MySql->value => 'setup.form.database_driver.options.mysql',
-            DatabaseDriver::PostgreSql->value => 'setup.form.database_driver.options.postgresql',
-        ];
+        $options = [];
+        if ($this->extensionLoaded('pdo_sqlite')) {
+            $options[DatabaseDriver::SQLite->value] = 'setup.form.database_driver.options.sqlite';
+        }
+        if ($this->extensionLoaded('pdo_mysql')) {
+            $options[DatabaseDriver::MySql->value] = 'setup.form.database_driver.options.mysql';
+        }
+        if ($this->extensionLoaded('pdo_pgsql')) {
+            $options[DatabaseDriver::PostgreSql->value] = 'setup.form.database_driver.options.postgresql';
+        }
+
+        return $options;
     }
 
     public function databasePrefixInputValue(string $prefix): string
@@ -83,6 +91,19 @@ final readonly class SetupWebInputFactory
         $prefix = (string) ($_SERVER['APP_DATABASE_PREFIX'] ?? $_ENV['APP_DATABASE_PREFIX'] ?? '');
 
         return '' === trim($prefix) ? 'studio' : $prefix;
+    }
+
+    private function defaultDatabaseDriver(string $databaseUrl): string
+    {
+        $driver = $this->driverFromDatabaseUrl($databaseUrl)->value;
+        $options = $this->databaseDriverOptions();
+
+        return isset($options[$driver]) ? $driver : (array_key_first($options) ?? DatabaseDriver::SQLite->value);
+    }
+
+    private function extensionLoaded(string $extension): bool
+    {
+        return $this->extensionAvailability[$extension] ?? extension_loaded($extension);
     }
 
     private function appName(): string
