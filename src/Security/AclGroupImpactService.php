@@ -10,12 +10,16 @@ use App\Entity\ContentItem;
 use App\Entity\ContentSchemaVersion;
 use App\Entity\SiteMenuItem;
 use App\Entity\UserAccount;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class AclGroupImpactService
 {
-    public function __construct(private EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private Connection $connection,
+    ) {
     }
 
     /**
@@ -55,37 +59,25 @@ final readonly class AclGroupImpactService
         $impact = $this->impact($group);
         $identifier = $group->identifier();
 
-        foreach ($this->entityManager->getRepository(AccountToken::class)->findAll() as $token) {
-            if ($token instanceof AccountToken && in_array($identifier, $token->groupIdentifiers(), true)) {
-                $token->updateGroups($this->withoutIdentifier($token->groupIdentifiers(), $identifier));
-            }
+        foreach ($this->accountTokensWithGroupIdentifier($identifier) as $token) {
+            $token->updateGroups($this->withoutIdentifier($token->groupIdentifiers(), $identifier));
         }
 
-        foreach ($this->entityManager->getRepository(ContentItem::class)->findAll() as $content) {
-            if (!$content instanceof ContentItem) {
-                continue;
-            }
-
+        foreach ($this->contentItemsWithGroupIdentifier($identifier) as $content) {
             $content->setAclRestrictions($this->withoutIdentifier($content->aclRestrictions(), $identifier));
             $content->setViewRule($content->viewMinLevel(), $this->withoutIdentifierOrNull($content->viewGroupIdentifiers(), $identifier));
             $content->setEditRule($content->editMinLevel(), $this->withoutIdentifierOrNull($content->editGroupIdentifiers(), $identifier));
             $content->setManageRule($content->manageMinLevel(), $this->withoutIdentifierOrNull($content->manageGroupIdentifiers(), $identifier));
         }
 
-        foreach ($this->entityManager->getRepository(ContentSchemaVersion::class)->findAll() as $version) {
-            if (!$version instanceof ContentSchemaVersion) {
-                continue;
-            }
-
+        foreach ($this->schemaVersionsWithGroupIdentifier($identifier) as $version) {
             $version->setUseRule($version->useMinLevel(), $this->withoutIdentifierOrNull($version->useGroupIdentifiers(), $identifier));
             $version->setEditRule($version->editMinLevel(), $this->withoutIdentifierOrNull($version->editGroupIdentifiers(), $identifier));
             $version->setManageRule($version->manageMinLevel(), $this->withoutIdentifierOrNull($version->manageGroupIdentifiers(), $identifier));
         }
 
-        foreach ($this->entityManager->getRepository(SiteMenuItem::class)->findAll() as $item) {
-            if ($item instanceof SiteMenuItem) {
-                $item->setViewRule($item->viewMinLevel(), $this->withoutIdentifierOrNull($item->viewGroupIdentifiers(), $identifier));
-            }
+        foreach ($this->siteMenuItemsWithGroupIdentifier($identifier) as $item) {
+            $item->setViewRule($item->viewMinLevel(), $this->withoutIdentifierOrNull($item->viewGroupIdentifiers(), $identifier));
         }
 
         return $impact;
@@ -98,8 +90,8 @@ final readonly class AclGroupImpactService
     {
         $summary = ['users' => 0, 'account_tokens' => 0];
 
-        foreach ($this->entityManager->getRepository(UserAccount::class)->findAll() as $user) {
-            if (!$user instanceof UserAccount || !$user->groups()->contains($group) || $user->accessLevel() >= $minRole) {
+        foreach ($this->usersInGroup($group) as $user) {
+            if ($user->accessLevel() >= $minRole) {
                 continue;
             }
 
@@ -108,8 +100,8 @@ final readonly class AclGroupImpactService
         }
 
         $identifier = $group->identifier();
-        foreach ($this->entityManager->getRepository(AccountToken::class)->findAll() as $token) {
-            if (!$token instanceof AccountToken || !in_array($identifier, $token->groupIdentifiers(), true) || $token->role()->accessLevel() >= $minRole) {
+        foreach ($this->accountTokensWithGroupIdentifier($identifier) as $token) {
+            if ($token->role()->accessLevel() >= $minRole) {
                 continue;
             }
 
@@ -127,11 +119,7 @@ final readonly class AclGroupImpactService
     {
         $rows = [];
 
-        foreach ($this->entityManager->getRepository(UserAccount::class)->findBy([], ['username' => 'ASC']) as $user) {
-            if (!$user instanceof UserAccount || !$user->groups()->contains($group)) {
-                continue;
-            }
-
+        foreach ($this->usersInGroup($group) as $user) {
             $rows[] = [
                 'uid' => $user->uid(),
                 'username' => $user->username(),
@@ -151,11 +139,7 @@ final readonly class AclGroupImpactService
     {
         $rows = [];
 
-        foreach ($this->entityManager->getRepository(AccountToken::class)->findAll() as $token) {
-            if (!$token instanceof AccountToken || !in_array($identifier, $token->groupIdentifiers(), true)) {
-                continue;
-            }
-
+        foreach ($this->accountTokensWithGroupIdentifier($identifier) as $token) {
             $rows[] = [
                 'uid' => $token->uid(),
                 'email' => $token->email(),
@@ -175,11 +159,7 @@ final readonly class AclGroupImpactService
     {
         $rows = [];
 
-        foreach ($this->entityManager->getRepository(ContentItem::class)->findAll() as $content) {
-            if (!$content instanceof ContentItem) {
-                continue;
-            }
-
+        foreach ($this->contentItemsWithGroupIdentifier($identifier) as $content) {
             $fields = [
                 ...$this->fieldIfContains('acl_restrictions', $content->aclRestrictions(), $identifier),
                 ...$this->fieldIfContains('view_group_identifiers', $content->viewGroupIdentifiers(), $identifier),
@@ -222,11 +202,7 @@ final readonly class AclGroupImpactService
     {
         $rows = [];
 
-        foreach ($this->entityManager->getRepository(ContentSchemaVersion::class)->findAll() as $version) {
-            if (!$version instanceof ContentSchemaVersion) {
-                continue;
-            }
-
+        foreach ($this->schemaVersionsWithGroupIdentifier($identifier) as $version) {
             $fields = [
                 ...$this->fieldIfContains('use_group_identifiers', $version->useGroupIdentifiers(), $identifier),
                 ...$this->fieldIfContains('edit_group_identifiers', $version->editGroupIdentifiers(), $identifier),
@@ -252,11 +228,7 @@ final readonly class AclGroupImpactService
     {
         $rows = [];
 
-        foreach ($this->entityManager->getRepository(SiteMenuItem::class)->findAll() as $item) {
-            if (!$item instanceof SiteMenuItem) {
-                continue;
-            }
-
+        foreach ($this->siteMenuItemsWithGroupIdentifier($identifier) as $item) {
             $fields = $this->fieldIfContains('view_group_identifiers', $item->viewGroupIdentifiers(), $identifier);
 
             if ([] !== $fields) {
@@ -265,6 +237,131 @@ final readonly class AclGroupImpactService
         }
 
         return $rows;
+    }
+
+    /**
+     * @return list<UserAccount>
+     */
+    private function usersInGroup(AclGroup $group): array
+    {
+        return $this->entityManager->createQueryBuilder()
+            ->select('user')
+            ->from(UserAccount::class, 'user')
+            ->innerJoin('user.groups', 'aclGroup')
+            ->andWhere('aclGroup = :group')
+            ->setParameter('group', $group)
+            ->orderBy('user.username', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<AccountToken>
+     */
+    private function accountTokensWithGroupIdentifier(string $identifier): array
+    {
+        $pattern = $this->jsonStringPattern($identifier);
+
+        return $this->entitiesByUid(
+            AccountToken::class,
+            $this->connection->fetchFirstColumn(
+                'SELECT uid FROM account_token WHERE '.$this->jsonLikeClause('group_identifiers'),
+                [$pattern],
+            ),
+        );
+    }
+
+    /**
+     * @return list<ContentItem>
+     */
+    private function contentItemsWithGroupIdentifier(string $identifier): array
+    {
+        $pattern = $this->jsonStringPattern($identifier);
+
+        return $this->entitiesByUid(
+            ContentItem::class,
+            $this->connection->fetchFirstColumn(
+                'SELECT uid FROM content_item WHERE '
+                .$this->jsonLikeClause('acl_restrictions').' OR '
+                .$this->jsonLikeClause('view_group_identifiers').' OR '
+                .$this->jsonLikeClause('edit_group_identifiers').' OR '
+                .$this->jsonLikeClause('manage_group_identifiers'),
+                [$pattern, $pattern, $pattern, $pattern],
+            ),
+        );
+    }
+
+    /**
+     * @return list<ContentSchemaVersion>
+     */
+    private function schemaVersionsWithGroupIdentifier(string $identifier): array
+    {
+        $pattern = $this->jsonStringPattern($identifier);
+
+        return $this->entitiesByUid(
+            ContentSchemaVersion::class,
+            $this->connection->fetchFirstColumn(
+                'SELECT uid FROM content_schema_version WHERE '
+                .$this->jsonLikeClause('use_group_identifiers').' OR '
+                .$this->jsonLikeClause('edit_group_identifiers').' OR '
+                .$this->jsonLikeClause('manage_group_identifiers'),
+                [$pattern, $pattern, $pattern],
+            ),
+        );
+    }
+
+    /**
+     * @return list<SiteMenuItem>
+     */
+    private function siteMenuItemsWithGroupIdentifier(string $identifier): array
+    {
+        $pattern = $this->jsonStringPattern($identifier);
+
+        return $this->entitiesByUid(
+            SiteMenuItem::class,
+            $this->connection->fetchFirstColumn(
+                'SELECT uid FROM site_menu_item WHERE '.$this->jsonLikeClause('view_group_identifiers'),
+                [$pattern],
+            ),
+        );
+    }
+
+    /**
+     * @template T of object
+     *
+     * @param class-string<T> $className
+     * @param list<mixed>    $uids
+     *
+     * @return list<T>
+     */
+    private function entitiesByUid(string $className, array $uids): array
+    {
+        $repository = $this->entityManager->getRepository($className);
+        $entities = [];
+
+        foreach (array_unique(array_filter($uids, 'is_string')) as $uid) {
+            $entity = $repository->find($uid);
+
+            if ($entity instanceof $className) {
+                $entities[] = $entity;
+            }
+        }
+
+        return $entities;
+    }
+
+    private function jsonStringPattern(string $identifier): string
+    {
+        return '%'.json_encode($identifier, JSON_THROW_ON_ERROR).'%';
+    }
+
+    private function jsonLikeClause(string $column): string
+    {
+        if ($this->connection->getDatabasePlatform() instanceof PostgreSQLPlatform) {
+            return $column.'::text LIKE ?';
+        }
+
+        return $column.' LIKE ?';
     }
 
     /**
