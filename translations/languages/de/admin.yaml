@@ -630,6 +630,7 @@ admin:
         integer: 'Gib eine ganze Zahl ein.'
         invalid: 'Gib einen gültigen Wert ein.'
         invalid_csrf: 'Das Einstellungsformular ist abgelaufen. Bitte versuche es erneut.'
+        email_invalid: 'Gib eine gültige E-Mail-Adresse ein oder lasse das Feld leer.'
         json: 'Gib gültiges JSON ein.'
         max: 'Gib einen kleineren Wert ein.'
         max_length: 'Gib einen kürzeren Wert ein.'

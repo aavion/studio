@@ -6,6 +6,7 @@ namespace App\Core\Config\Settings;
 
 use App\Core\Config\Config;
 use App\Core\Access\AccessLevel;
+use App\Core\Validation\EmailAddress;
 use App\Entity\AclGroup;
 use App\Form\FormFieldDefinition;
 use App\Form\FormSubmissionHandler;
@@ -63,7 +64,19 @@ final readonly class CoreSettingsFormHandler
             return null;
         }
 
+        foreach ([UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY] as $key) {
+            if (!$this->isValidOptionalEmail($result->value($key))) {
+                return new FormSubmissionResult($result->values(), [
+                    $key => ['admin.settings.form.errors.email_invalid'],
+                ]);
+            }
+        }
+
         $identifier = $result->value(UserFlowConfig::DEFAULT_ACL_GROUP_KEY);
+
+        if (null === $identifier) {
+            return null;
+        }
 
         if (!is_string($identifier)) {
             return new FormSubmissionResult($result->values(), [
@@ -86,5 +99,14 @@ final readonly class CoreSettingsFormHandler
         }
 
         return null;
+    }
+
+    private function isValidOptionalEmail(mixed $email): bool
+    {
+        if (null === $email) {
+            return true;
+        }
+
+        return is_string($email) && ('' === trim($email) || EmailAddress::isValid($email));
     }
 }

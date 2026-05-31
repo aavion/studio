@@ -65,6 +65,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-31
+- Addressed follow-up review hardening for user-management settings and ACL cleanup: made the ACL role migration drop the legacy access-level index portably on MySQL/MariaDB, validated notification email settings before persistence, allowed clearing the optional default ACL group, and warned when deleting the sole published view group would make content public.
 - Reduced cold container warmup pressure by removing package discovery and runtime translation aggregation from automatic Symfony cache-warmer registration, moving setup package discovery and package-aware rebuild/translation aggregation into serial setup subprocesses, documenting explicit setup/Admin/scheduler trigger points, and narrowing service discovery away from entities and the kernel.
 - Closed the latest ACL/account-link review findings: preserved unresolved security-review dispute tokens during used-token cleanup, blocked default registration group floors above User, cleaned below-floor user/token group references on confirmed ACL group updates, filtered stale below-floor groups out of effective access actors, rechecked ACL live-apply actor permissions, revoked recovery tokens on profile email changes, rejected stale account-link/recovery delivery when target users changed state, and logged stale account-link group identifiers as warning messages without blocking activation.
 ### 2026-05-30

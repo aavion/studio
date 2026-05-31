@@ -630,6 +630,7 @@ admin:
         integer: 'Enter a whole number.'
         invalid: 'Enter a valid value.'
         invalid_csrf: 'The settings form expired. Please try again.'
+        email_invalid: 'Enter a valid email address or leave the field empty.'
         json: 'Enter valid JSON.'
         max: 'Enter a smaller value.'
         max_length: 'Enter a shorter value.'

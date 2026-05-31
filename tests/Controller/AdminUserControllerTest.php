@@ -1600,6 +1600,10 @@ final class AdminUserControllerTest extends WebTestCase
         $content->setEditRule(AccessLevel::AUTHOR, [$group->identifier()]);
         $content->setManageRule(AccessLevel::MANAGER, [$group->identifier()]);
         $content->publish();
+        $viewOnlyContent = new ContentItem('64000000-0000-0000-0000-000000000006', 'acl-view-only-content');
+        $viewOnlyContent->setAclRestrictions([]);
+        $viewOnlyContent->setViewRule(null, [$group->identifier()]);
+        $viewOnlyContent->publish();
         $schema = new ContentSchema('64000000-0000-0000-0000-000000000002', 'acl_cleanup_schema', ContentSchemaSource::Custom, ['en' => 'ACL cleanup']);
         $version = new ContentSchemaVersion(
             '64000000-0000-0000-0000-000000000003',
@@ -1623,6 +1627,7 @@ final class AdminUserControllerTest extends WebTestCase
         $menu->addItem($menuItem);
         $entityManager->persist($token);
         $entityManager->persist($content);
+        $entityManager->persist($viewOnlyContent);
         $entityManager->persist($schema);
         $entityManager->persist($version);
         $entityManager->persist($menu);
@@ -1636,6 +1641,7 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Review ACL group change');
         self::assertSelectorTextContains('main', 'groupcleanup@example.test');
         self::assertSelectorTextContains('main', 'acl-cleanup-content');
+        self::assertSelectorTextContains('main', 'acl-view-only-content');
         self::assertSelectorTextContains('main', 'Published content may become public');
         self::assertSelectorTextContains('main', 'acl_cleanup_schema v1');
         self::assertSelectorTextContains('main', 'cleanup-invite@example.test');
@@ -1651,6 +1657,7 @@ final class AdminUserControllerTest extends WebTestCase
         $updatedUser = $entityManager->find(UserAccount::class, $user->uid());
         $updatedToken = $entityManager->find(AccountToken::class, $token->uid());
         $updatedContent = $entityManager->find(ContentItem::class, $content->uid());
+        $updatedViewOnlyContent = $entityManager->find(ContentItem::class, $viewOnlyContent->uid());
         $updatedVersion = $entityManager->find(ContentSchemaVersion::class, $version->uid());
         $updatedMenuItem = $entityManager->find(SiteMenuItem::class, $menuItem->uid());
 
@@ -1665,6 +1672,10 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertNull($updatedContent->viewGroupIdentifiers());
         self::assertSame([], $updatedContent->editGroupIdentifiers());
         self::assertSame([], $updatedContent->manageGroupIdentifiers());
+        self::assertInstanceOf(ContentItem::class, $updatedViewOnlyContent);
+        self::assertSame([], $updatedViewOnlyContent->aclRestrictions());
+        self::assertNull($updatedViewOnlyContent->viewMinLevel());
+        self::assertSame([], $updatedViewOnlyContent->viewGroupIdentifiers());
         self::assertInstanceOf(ContentSchemaVersion::class, $updatedVersion);
         self::assertSame([], $updatedVersion->useGroupIdentifiers());
         self::assertSame([], $updatedVersion->editGroupIdentifiers());
@@ -1674,6 +1685,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         $entityManager->remove($updatedToken);
         $entityManager->remove($updatedContent);
+        $entityManager->remove($updatedViewOnlyContent);
         $entityManager->remove($entityManager->find(ContentSchema::class, $schema->uid()));
         $entityManager->remove($entityManager->find(SiteMenu::class, $menu->uid()));
         $entityManager->remove($updatedUser);

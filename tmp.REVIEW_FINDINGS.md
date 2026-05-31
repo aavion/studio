@@ -20,11 +20,6 @@ Additional context:
 
 Do not start with fixes! First establish a memory profile. Measure. Then isolate. Then fix. Symfony\Component\Stopwatch\Stopwatch might help with that. Always prefer code optimization over environment adjustments.
 
-### P2 | src/Core/Translation/TranslationCatalogueCacheWarmer.php
-The TranslationCatalogueCacheWarmer currently performs runtime translation catalogue generation during Symfony cache warmup. After a clean checkout, the initial procedure combines translation generation with dev/test cache clearing, Twig warmup, Symfony warmers and Composer auto-scripts in the same cold boot path.
-Runtime translation generation is an application setup/test lifecycle concern, not a Symfony cache-warmer side effect. Move the generation into an explicit console command invoked by bin/init and the PHPUnit test lifecycle before cache warmup/tests. Keep the cache warmer either removed or reduced to a cheap freshness/existence check for handing off the task e.g. into the Symfony messenger queue if needed. Ensure the explicit generation path is idempotent and memory-safe for large translation catalogues.
-**– This item may be related to the P0 memory investigation and should be evaluated as part of the root-cause analysis.**
-
 ### P4 | Audit required: Project goal/rules drift
 The project goals explicitly prefer existing Symfony and vendor components over custom implementations where equivalent, well-maintained functionality is already available. A targeted audit should identify areas where custom abstractions duplicate functionality that is already provided by Symfony or available vendor packages.
 Potential examples requiring verification:
@@ -36,6 +31,25 @@ This is not necessarily a functional defect. The goal is to identify maintainabi
 Only report findings that can be demonstrated by concrete code locations and existing vendor/framework alternatives.
 
 ## Fixed
+### P1 | Use portable SQL when dropping the ACL index
+On MySQL/MariaDB installs that still have idx_acl_group_access_level, this raw DROP INDEX idx_acl_group_access_level statement uses PostgreSQL/SQLite syntax; MySQL requires dropping an index in the context of its table. That makes this migration fail before the role backfill and column cleanup can run, blocking upgrades on the supported MySQL path; use Doctrine schema operations or platform-specific SQL for the index drop.
+**– Fixed by emitting MySQL/MariaDB-specific `DROP INDEX ... ON acl_group` SQL while keeping the existing PostgreSQL/SQLite form for other platforms.**
+
+### P2 | Validate notification email settings
+When an admin enters a non-empty but invalid address for either notification setting, the form accepts it because these fields only have a length check, while UserFlowConfig::normalizedEmailSetting() later returns null for invalid emails. In admin-approval registration or password-dispute flows this means the user/request can be accepted but the configured administrator notification is silently dropped, so reject invalid non-empty email values at settings-save time.
+**– Fixed by validating both optional notification email settings in the Users settings form before persistence and adding localized UI errors.**
+
+### P2 | Allow clearing the default ACL group
+When the Users settings form leaves user.default_acl_group blank, FormSubmissionHandler stores optional empty strings as null, but this branch treats every non-string as an unavailable group. Because the registry default for this setting is intentionally empty and registration can run without a default ACL group, this makes it impossible to save/clear the Users settings section with the blank default value; accept null the same as an empty string before checking for an existing group.
+**– Fixed by treating null as a valid empty default ACL group value before checking group existence/minimum role.**
+
+### P2 | Warn when deleting the sole view group
+Fresh evidence: this warning predicate only checks acl_restrictions, so a published item whose access is protected solely by view_group_identifiers: [deleted_group] with view_min_level === null and no ACL restrictions is omitted from the dedicated warning. In that case removeReferences() clears the view group, and PublishedContentResolver later evaluates AccessRule::from(null, []) as inherited/default public view, so the confirmation screen does not flag content that will become public after the delete.
+**– Fixed by flagging published content as access-opening when the deleted group is the sole view group and no minimum view level or ACL restrictions remain.**
+
+### P2 | Removed cache-warmer side effects from cold bootstrap
+Deleted the runtime translation catalogue and package discovery cache-warmers, keeping runtime catalogue generation in setup/test bootstrap and package-aware rebuild paths instead of cold container warmup. Setup now runs package discovery first and then package-aware asset/translation rebuild work in serial subprocesses after the database is initialized.
+
 ### P2 | Re-check ACL permissions in live group apply
 When _operation_live queues a group delete/update, the controller validates the requester only before the background process is started; if the group is raised above that actor’s access level (or the actor is downgraded) before the runner reaches this service, this path only checks system constraints and still mutates the group. Persist the requesting actor or expected access boundary with the job and re-run the same validateGroupDelete/validateGroupUpdate policy here before applying the operation.
 **– Fixed by storing the confirming admin UID with ACL group live operations and re-running the same current-user validateGroupDelete/validateGroupUpdate policy in the apply service before mutation.**

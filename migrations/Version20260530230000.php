@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DoctrineMigrations;
 
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
@@ -36,7 +37,7 @@ final class Version20260530230000 extends AbstractMigration
         }
 
         if ($aclGroupTable->hasIndex('idx_acl_group_access_level')) {
-            $this->addSql('DROP INDEX idx_acl_group_access_level');
+            $this->addSql($this->dropIndexSql('idx_acl_group_access_level', 'acl_group'));
         }
 
         if ($needsUserRoleBackfill) {
@@ -121,5 +122,14 @@ SQL);
         if ($schema->getTable('account_token')->hasColumn('role')) {
             $this->addSql('ALTER TABLE account_token DROP COLUMN role');
         }
+    }
+
+    private function dropIndexSql(string $indexName, string $tableName): string
+    {
+        if ($this->connection->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
+            return sprintf('DROP INDEX %s ON %s', $indexName, $tableName);
+        }
+
+        return sprintf('DROP INDEX %s', $indexName);
     }
 }
