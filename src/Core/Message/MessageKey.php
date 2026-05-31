@@ -171,6 +171,9 @@ final class MessageKey
     public const SETUP_PROMPT_INVALID_CHOICE = 'message.setup.prompt.invalid_choice';
     public const SETUP_PROMPT_PASSWORD_MISMATCH = 'message.setup.prompt.password_mismatch';
     public const SETUP_ADMIN_PASSWORD_TOO_SHORT = 'message.setup.admin_password.too_short';
+    public const SETUP_ADMIN_PASSWORD_COMPLEXITY = 'message.setup.admin_password.complexity';
+    public const SETUP_ADMIN_PASSWORD_REPEATED = 'message.setup.admin_password.repeated';
+    public const SETUP_ADMIN_PASSWORD_PERSONAL = 'message.setup.admin_password.personal';
     public const SETUP_PROMPT_PASSWORD_RESET_CONTINUE = 'message.setup.prompt.password_reset_continue';
     public const SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD = 'message.setup.prompt.password_reset_new_password';
     public const SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD = 'message.setup.prompt.password_reset_confirm_password';

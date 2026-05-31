@@ -6,6 +6,7 @@ namespace App\Setup;
 
 use App\Core\Validation\EmailAddress;
 use App\Entity\UserAccount;
+use App\Security\PasswordPolicy;
 use Throwable;
 
 final readonly class SetupWebInputFactory
@@ -36,10 +37,10 @@ final readonly class SetupWebInputFactory
             'database_url' => $databaseUrl,
             'database_host' => $this->databaseUrlPart($databaseUrl, 'host') ?? '127.0.0.1',
             'database_port' => $this->databaseUrlPart($databaseUrl, 'port') ?? '',
-            'database_name' => $this->databaseUrlPathName($databaseUrl) ?? 'studio',
-            'database_user' => $this->databaseUrlPart($databaseUrl, 'user') ?? 'studio',
+            'database_name' => $this->databaseUrlPathName($databaseUrl) ?? 'app',
+            'database_user' => $this->databaseUrlPart($databaseUrl, 'user') ?? 'app',
             'database_password' => $this->databaseUrlPart($databaseUrl, 'pass') ?? '',
-            'database_prefix' => (string) ($_SERVER['APP_DATABASE_PREFIX'] ?? $_ENV['APP_DATABASE_PREFIX'] ?? ''),
+            'database_prefix' => (string) ($_SERVER['APP_DATABASE_PREFIX'] ?? $_ENV['APP_DATABASE_PREFIX'] ?? 'studio_'),
             'admin_username' => 'admin',
             'admin_email' => $this->adminEmailFromDefaultUri($defaultUri),
             'admin_password' => '',
@@ -171,7 +172,9 @@ final readonly class SetupWebInputFactory
             }
 
             if (isset($submitted[$key]) && is_scalar($submitted[$key])) {
-                $values[$key] = trim((string) $submitted[$key]);
+                $values[$key] = 'database_prefix' === $key
+                    ? $this->normalizePrefix((string) $submitted[$key])
+                    : trim((string) $submitted[$key]);
             }
         }
 
@@ -205,6 +208,10 @@ final readonly class SetupWebInputFactory
             $errors['registration_mode'][] = 'setup.form.errors.choice';
         }
 
+        if (false === filter_var((string) $values['default_uri'], FILTER_VALIDATE_URL)) {
+            $errors['default_uri'][] = 'setup.form.errors.url';
+        }
+
         if (!isset($this->databaseDriverOptions()[(string) $values['database_driver']])) {
             $errors['database_driver'][] = 'setup.form.errors.choice';
         }
@@ -223,7 +230,11 @@ final readonly class SetupWebInputFactory
             $errors['database_port'][] = 'setup.form.errors.port';
         }
 
-        if ('' !== trim((string) $values['database_prefix']) && 1 !== preg_match('/^[a-z][a-z0-9_]*_$/', (string) $values['database_prefix'])) {
+        if ('' !== trim((string) $values['database_url']) && !$this->isValidDatabaseUrl((string) $values['database_url'])) {
+            $errors['database_url'][] = 'setup.form.errors.database_url';
+        }
+
+        if ('' !== trim((string) $values['database_prefix']) && 1 !== preg_match('/^[a-z][a-z0-9_]*$/', (string) $values['database_prefix'])) {
             $errors['database_prefix'][] = 'setup.form.errors.database_prefix';
         }
 
@@ -237,8 +248,15 @@ final readonly class SetupWebInputFactory
 
         $adminPassword = (string) $values['admin_password'];
 
-        if ('' !== trim($adminPassword) && !$this->passwordPolicy->isValidAdminPassword($adminPassword)) {
-            $errors['admin_password'][] = 'setup.form.errors.password_length';
+        if ('' !== trim($adminPassword)) {
+            foreach ($this->passwordPolicy->violationCodes($adminPassword, (string) $values['admin_username'], (string) $values['admin_email']) as $violation) {
+                $errors['admin_password'][] = match ($violation) {
+                    PasswordPolicy::VIOLATION_COMPLEXITY => 'setup.form.errors.password_complexity',
+                    PasswordPolicy::VIOLATION_REPEATED => 'setup.form.errors.password_repeated',
+                    PasswordPolicy::VIOLATION_PERSONAL => 'setup.form.errors.password_personal',
+                    default => 'setup.form.errors.password_length',
+                };
+            }
         }
 
         if (!EmailAddress::isValid((string) $values['admin_email'])) {
@@ -264,6 +282,28 @@ final readonly class SetupWebInputFactory
         }
 
         return is_scalar($value) && in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    private function normalizePrefix(string $prefix): string
+    {
+        $prefix = trim($prefix);
+
+        return '' === $prefix || str_ends_with($prefix, '_') ? $prefix : $prefix.'_';
+    }
+
+    private function isValidDatabaseUrl(string $databaseUrl): bool
+    {
+        if (str_starts_with($databaseUrl, 'sqlite:///')) {
+            return '' !== trim((string) preg_replace('#^sqlite:///#', '', $databaseUrl));
+        }
+
+        $scheme = parse_url($databaseUrl, PHP_URL_SCHEME);
+        $host = parse_url($databaseUrl, PHP_URL_HOST);
+
+        return is_string($scheme)
+            && in_array($scheme, ['mysql', 'mariadb', 'pgsql', 'postgres', 'postgresql'], true)
+            && is_string($host)
+            && '' !== trim($host);
     }
 
     private function driverFromDatabaseUrl(string $databaseUrl): DatabaseDriver

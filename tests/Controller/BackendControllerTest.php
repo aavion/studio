@@ -115,8 +115,8 @@ final class BackendControllerTest extends WebTestCase
             ]));
             $client->submit($crawler->selectButton('Continue')->form([
                 'admin_username' => 'admin',
-                'admin_password' => 'admin-password',
-                'admin_password_confirm' => 'admin-password',
+                'admin_password' => 'Safe1!pass',
+                'admin_password_confirm' => 'Safe1!pass',
                 'admin_email' => 'admin@localhost.local',
             ]));
 
@@ -126,7 +126,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertStringContainsString('Wizard Studio', $html);
             self::assertStringContainsString('Admin approval', $html);
             self::assertSelectorExists('form#setup-wizard[data-controller="setup-wizard operation-overlay"]');
-            self::assertSelectorExists('form#setup-wizard[data-action="submit->operation-overlay#submit"]');
+            self::assertSelectorExists('form#setup-wizard[data-action="submit->setup-wizard#submit submit->operation-overlay#submit"]');
             self::assertSelectorExists('form#setup-wizard[data-operation-overlay-enabled-value="true"]');
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
@@ -169,7 +169,7 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             $html = (string) $client->getResponse()->getContent();
-            self::assertStringContainsString('The admin password must contain at least 12 characters.', $html);
+            self::assertStringContainsString('The admin password must contain at least 8 characters.', $html);
             self::assertStringNotContainsString('Setup result', $html);
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);

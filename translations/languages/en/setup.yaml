@@ -85,6 +85,10 @@ setup:
     settings_title: 'Initial settings'
   database:
     title: 'Database connection'
+    test_connection: 'Test connection'
+    test_success: 'Database connection works.'
+    test_failed: 'Database connection failed. Check the connection data and try again.'
+    test_invalid: 'Complete valid database settings before testing the connection.'
   admin:
     title: 'Owner account'
   form:
@@ -124,20 +128,20 @@ setup:
       label: 'Database password'
     database_prefix:
       label: 'Table prefix'
-      help: 'Optional prefix for shared database schemas, for example studio_. Leave empty unless you need it.'
+      help: 'Optional prefix for shared database schemas. The form appends an underscore before saving; leave empty for no prefix.'
     admin_username:
       label: 'Admin username'
     admin_password:
       label: 'Admin password'
-      help: 'Use at least 12 characters.'
+      help: 'Use at least 8 characters and meet the password policy.'
       keep_help: 'Leave blank to keep the password already entered in this setup session.'
     admin_password_confirm:
       label: 'Confirm admin password'
     admin_email:
       label: 'Admin email'
     app_secret:
-      label: 'APP_SECRET'
-      help: 'Leave empty to generate a secure value.'
+      label: 'Hash salt'
+      help: 'Leave empty to generate a secure value. Changing this value later is not recommended because it invalidates password hashes and API keys.'
     dry_run:
       label: 'Dry run only'
       help: 'Show planned setup steps without writing files, running migrations, or seeding data.'
@@ -145,15 +149,25 @@ setup:
     apply: 'Apply setup'
     errors:
       choice: 'Choose one of the available options.'
-      database_prefix: 'Use a lowercase prefix that starts with a letter and ends with an underscore.'
+      database_prefix: 'Use a lowercase prefix that starts with a letter and contains only lowercase letters, digits, and underscores.'
+      database_url: 'Enter a supported database URL such as sqlite:///var/data.db, mysql://user:pass@host/db, or postgresql://user:pass@host/db.'
       email: 'Enter a valid email address.'
       invalid: 'The submitted setup data could not be used.'
       invalid_csrf: 'The setup form expired. Please try again.'
       password_mismatch: 'The password confirmation does not match.'
-      password_length: 'The admin password must contain at least 12 characters.'
+      password_length: 'The admin password must contain at least 8 characters.'
+      password_complexity: 'The admin password must use at least three character types.'
+      password_repeated: 'The admin password must not repeat the same character more than three times in a row.'
+      password_personal: 'The admin password must not contain the admin username or email name.'
       port: 'Enter a port between 1 and 65535.'
       username: 'The admin username must start with a letter and contain 5 to 30 letters, digits, hyphens, or underscores.'
       required: 'This field is required.'
+      url: 'Enter a valid URL.'
+  password_meter:
+    length: 'At least 8 characters'
+    classes: 'At least three character types'
+    repeated: 'No character repeated more than three times'
+    personal: 'No username or email name'
   review:
     title: 'Review setup'
     none: 'None'

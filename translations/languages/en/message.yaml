@@ -193,7 +193,7 @@ message:
       admin_password: 'Admin password'
       admin_password_confirm: 'Confirm admin password'
       admin_email: 'Admin email'
-      app_secret: 'APP_SECRET (leave empty to generate one)'
+      app_secret: 'Hash salt (leave empty to generate one)'
       invalid_choice: 'Unsupported value. Choose one of: %choices%'
       password_mismatch: 'Passwords do not match.'
       password_reset_continue: 'Reset the password for "%username%"?'
@@ -201,6 +201,9 @@ message:
       password_reset_confirm_password: 'Confirm new password'
     admin_password:
       too_short: 'The setup admin password must contain at least %min_length% characters.'
+      complexity: 'The setup admin password must use at least three character types.'
+      repeated: 'The setup admin password must not repeat the same character more than three times in a row.'
+      personal: 'The setup admin password must not contain the admin username or email name.'
     password_reset:
       database_url_missing: 'DATABASE_URL is required for password reset.'
       user_not_found: 'User "%username%" was not found.'

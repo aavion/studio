@@ -24,7 +24,7 @@ final readonly class SetupInput
         private ?string $databasePassword = null,
         private ?string $databasePrefix = null,
         private string $adminUsername = 'admin',
-        private string $adminPassword = 'admin-password',
+        private string $adminPassword = 'Safe1!pass',
         private ?string $adminEmail = null,
         private ?string $appSecret = null,
         /** @var array<string, mixed> */
@@ -55,8 +55,8 @@ final readonly class SetupInput
             throw new InvalidArgumentException('Setup admin email must be valid.');
         }
 
-        if (null !== $this->databasePrefix && '' !== $this->databasePrefix && 1 !== preg_match('/^[a-z][a-z0-9_]*_$/', $this->databasePrefix)) {
-            throw new InvalidArgumentException('Setup database prefix must start with a lowercase letter, contain lowercase letters, digits, or underscores, and end with an underscore.');
+        if (null !== $this->databasePrefix && '' !== $this->databasePrefix && 1 !== preg_match('/^[a-z][a-z0-9_]*$/', $this->databasePrefix)) {
+            throw new InvalidArgumentException('Setup database prefix must start with a lowercase letter and contain lowercase letters, digits, or underscores.');
         }
     }
 

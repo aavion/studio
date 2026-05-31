@@ -32,8 +32,8 @@
         method="post"
         action="{{ setup_step == 'language' ? path('backend_setup_index') : path('backend_setup_step', {step: setup_step}) }}"
         data-controller="setup-wizard{{ setup_step == 'review' ? ' operation-overlay' : '' }}"
+        data-action="submit->setup-wizard#submit{% if setup_step == 'review' %} submit->operation-overlay#submit{% endif %}"
         {% if setup_step == 'review' %}
-            data-action="submit->operation-overlay#submit"
             data-operation-overlay-enabled-value="true"
             data-operation-overlay-redirect-on-success-value="/"
         {% endif %}
@@ -103,13 +103,16 @@
                     label: 'setup.form.site_title.label'|trans,
                     value: setup_values.site_title,
                     required: true,
+                    attributes: {maxlength: 120},
                     errors: setup_errors.site_title|default([]),
                 } only %}
                 {% include '@backend/partials/forms/fields/input.html.twig' with {
                     name: 'default_uri',
                     label: 'setup.form.default_uri.label'|trans,
+                    type: 'url',
                     value: setup_values.default_uri,
                     required: true,
+                    attributes: {placeholder: 'https://example.test'},
                     errors: setup_errors.default_uri|default([]),
                 } only %}
                 <h3>{{ setup_site_settings_form.title|trans }}</h3>
@@ -118,6 +121,11 @@
         {% elseif setup_step == 'database' %}
             <section class="studio-panel">
                 <h2>{{ 'setup.database.title'|trans }}</h2>
+                {% if setup_database_test %}
+                    <p class="studio-setup-summary {{ setup_database_test.success ? 'is-ok' : 'is-error' }}">
+                        {{ setup_database_test.key|trans }}
+                    </p>
+                {% endif %}
                 {% set database_driver_options = {} %}
                 {% for driver_value, driver_label in setup_database_driver_options %}
                     {% set database_driver_options = database_driver_options|merge({(driver_value): driver_label|trans}) %}
@@ -139,15 +147,19 @@
                         label: 'setup.form.database_url.label'|trans,
                         value: setup_values.database_url,
                         help: 'setup.form.database_url.sqlite_help'|trans,
+                        attributes: {
+                            pattern: 'sqlite:///.+|mysql://.+|mariadb://.+|pgsql://.+|postgres://.+|postgresql://.+',
+                            placeholder: 'sqlite:///%kernel.project_dir%/var/data_prod.db',
+                        },
                         errors: setup_errors.database_url|default([]),
                     } only %}
                 </div>
 
                 <div data-setup-wizard-target="serverFields">
-                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_host', label: 'setup.form.database_host.label'|trans, value: setup_values.database_host, required: true, errors: setup_errors.database_host|default([])} only %}
-                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_port', label: 'setup.form.database_port.label'|trans, value: setup_values.database_port, required: true, errors: setup_errors.database_port|default([])} only %}
-                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_name', label: 'setup.form.database_name.label'|trans, value: setup_values.database_name, required: true, errors: setup_errors.database_name|default([])} only %}
-                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_user', label: 'setup.form.database_user.label'|trans, value: setup_values.database_user, required: true, errors: setup_errors.database_user|default([])} only %}
+                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_host', label: 'setup.form.database_host.label'|trans, value: setup_values.database_host, required: true, attributes: {maxlength: 255}, errors: setup_errors.database_host|default([])} only %}
+                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_port', label: 'setup.form.database_port.label'|trans, type: 'number', value: setup_values.database_port, required: true, attributes: {min: 1, max: 65535, step: 1}, errors: setup_errors.database_port|default([])} only %}
+                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_name', label: 'setup.form.database_name.label'|trans, value: setup_values.database_name, required: true, attributes: {maxlength: 120, pattern: '[A-Za-z0-9_\\-]+'}, errors: setup_errors.database_name|default([])} only %}
+                    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_user', label: 'setup.form.database_user.label'|trans, value: setup_values.database_user, required: true, attributes: {maxlength: 120}, errors: setup_errors.database_user|default([])} only %}
                     {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_password', label: 'setup.form.database_password.label'|trans, type: 'password', value: setup_values.database_password, errors: setup_errors.database_password|default([])} only %}
                 </div>
 
@@ -156,17 +168,32 @@
                     label: 'setup.form.database_prefix.label'|trans,
                     value: setup_values.database_prefix,
                     help: 'setup.form.database_prefix.help'|trans,
+                    attributes: {maxlength: 80, pattern: '[a-z][a-z0-9_]*', 'data-setup-wizard-target': 'prefix'},
                     errors: setup_errors.database_prefix|default([]),
                 } only %}
+                <div class="studio-button-group">
+                    <button class="studio-button studio-button-secondary" type="submit" name="_setup_action" value="test_database">
+                        {{ 'setup.database.test_connection'|trans }}
+                    </button>
+                </div>
             </section>
         {% elseif setup_step == 'admin' %}
             <section class="studio-panel">
                 <h2>{{ 'setup.admin.title'|trans }}</h2>
-                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_username', label: 'setup.form.admin_username.label'|trans, value: setup_values.admin_username, required: true, errors: setup_errors.admin_username|default([])} only %}
-                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_email', label: 'setup.form.admin_email.label'|trans, type: 'email', value: setup_values.admin_email, required: true, errors: setup_errors.admin_email|default([])} only %}
-                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password', label: 'setup.form.admin_password.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, help: (setup_values.admin_password is empty ? 'setup.form.admin_password.help' : 'setup.form.admin_password.keep_help')|trans, errors: setup_errors.admin_password|default([])} only %}
-                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password_confirm', label: 'setup.form.admin_password_confirm.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, errors: setup_errors.admin_password_confirm|default([])} only %}
-                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'app_secret', label: 'setup.form.app_secret.label'|trans, value: setup_values.app_secret, help: 'setup.form.app_secret.help'|trans, errors: setup_errors.app_secret|default([])} only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_username', label: 'setup.form.admin_username.label'|trans, value: setup_values.admin_username, required: true, attributes: {minlength: 5, maxlength: 30, pattern: '[A-Za-z][A-Za-z0-9_-]{4,29}', autocomplete: 'username', 'data-setup-wizard-target': 'username', 'data-action': 'input->setup-wizard#updatePasswordMeter'}, errors: setup_errors.admin_username|default([])} only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_email', label: 'setup.form.admin_email.label'|trans, type: 'email', value: setup_values.admin_email, required: true, attributes: {'data-setup-wizard-target': 'email', 'data-action': 'input->setup-wizard#updatePasswordMeter'}, errors: setup_errors.admin_email|default([])} only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password', label: 'setup.form.admin_password.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, help: (setup_values.admin_password is empty ? 'setup.form.admin_password.help' : 'setup.form.admin_password.keep_help')|trans, attributes: {minlength: 8, autocomplete: 'new-password', 'data-setup-wizard-target': 'password', 'data-action': 'input->setup-wizard#updatePasswordMeter'}, errors: setup_errors.admin_password|default([])} only %}
+                <div class="studio-password-meter" aria-live="polite">
+                    <meter min="0" max="4" value="0" data-setup-wizard-target="passwordMeter"></meter>
+                    <ul>
+                        <li data-setup-wizard-target="passwordRule" data-password-rule="length">{{ 'setup.password_meter.length'|trans }}</li>
+                        <li data-setup-wizard-target="passwordRule" data-password-rule="classes">{{ 'setup.password_meter.classes'|trans }}</li>
+                        <li data-setup-wizard-target="passwordRule" data-password-rule="repeated">{{ 'setup.password_meter.repeated'|trans }}</li>
+                        <li data-setup-wizard-target="passwordRule" data-password-rule="personal">{{ 'setup.password_meter.personal'|trans }}</li>
+                    </ul>
+                </div>
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password_confirm', label: 'setup.form.admin_password_confirm.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, attributes: {minlength: 8, autocomplete: 'new-password'}, errors: setup_errors.admin_password_confirm|default([])} only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'app_secret', label: 'setup.form.app_secret.label'|trans, value: setup_values.app_secret, help: 'setup.form.app_secret.help'|trans, attributes: {autocomplete: 'off'}, errors: setup_errors.app_secret|default([])} only %}
             </section>
         {% elseif setup_step == 'review' %}
             <section class="studio-panel">

@@ -13,6 +13,7 @@ use App\Core\Message\MessageKey;
 use App\Core\Operation\ActionQueue;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Workflow\WorkflowResult;
+use App\Security\PasswordPolicy;
 use Throwable;
 
 final class SetupRunner
@@ -143,18 +144,27 @@ final class SetupRunner
      */
     private function validate(SetupInput $input): array
     {
-        if ($this->passwordPolicy->isValidAdminPassword($input->adminPassword())) {
-            return [];
-        }
+        return array_map(
+            fn (string $violation): Message => $this->adminPasswordMessage($violation),
+            $this->passwordPolicy->violationCodes($input->adminPassword(), $input->adminUsername(), $input->adminEmail()),
+        );
+    }
 
-        return [
-            Message::error(
-                MessageCode::SETUP_ADMIN_PASSWORD_TOO_SHORT,
-                MessageKey::SETUP_ADMIN_PASSWORD_TOO_SHORT,
-                ['%min_length%' => SetupPasswordPolicy::MIN_ADMIN_PASSWORD_LENGTH],
-                ['field' => 'admin_password', 'min_length' => SetupPasswordPolicy::MIN_ADMIN_PASSWORD_LENGTH],
-            ),
-        ];
+    private function adminPasswordMessage(string $violation): Message
+    {
+        [$code, $key] = match ($violation) {
+            PasswordPolicy::VIOLATION_COMPLEXITY => [MessageCode::SETUP_ADMIN_PASSWORD_COMPLEXITY, MessageKey::SETUP_ADMIN_PASSWORD_COMPLEXITY],
+            PasswordPolicy::VIOLATION_REPEATED => [MessageCode::SETUP_ADMIN_PASSWORD_REPEATED, MessageKey::SETUP_ADMIN_PASSWORD_REPEATED],
+            PasswordPolicy::VIOLATION_PERSONAL => [MessageCode::SETUP_ADMIN_PASSWORD_PERSONAL, MessageKey::SETUP_ADMIN_PASSWORD_PERSONAL],
+            default => [MessageCode::SETUP_ADMIN_PASSWORD_TOO_SHORT, MessageKey::SETUP_ADMIN_PASSWORD_TOO_SHORT],
+        };
+
+        return Message::error(
+            $code,
+            $key,
+            ['%min_length%' => SetupPasswordPolicy::MIN_ADMIN_PASSWORD_LENGTH],
+            ['field' => 'admin_password', 'min_length' => SetupPasswordPolicy::MIN_ADMIN_PASSWORD_LENGTH, 'violation' => $violation],
+        );
     }
 
     /**

@@ -112,6 +112,38 @@
     margin: 0;
 }
 
+.studio-password-meter {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: -0.25rem;
+    font-size: var(--studio-text-sm);
+}
+
+.studio-password-meter meter {
+    width: 100%;
+    height: 0.5rem;
+}
+
+.studio-password-meter ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 0.35rem 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--color-muted);
+}
+
+.studio-password-meter li::before {
+    content: '•';
+    margin-right: 0.35rem;
+}
+
+.studio-password-meter li.is-ok {
+    color: var(--color-success);
+    font-weight: 700;
+}
+
 .studio-form-actions {
     display: flex;
     flex-wrap: wrap;

@@ -56,7 +56,7 @@ final class SetupDefaultSeedTest extends TestCase
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: 'sqlite:///%kernel.project_dir%/var/test/test.db',
             adminUsername: 'admin',
-            adminPassword: 'secret-password',
+            adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
         );
     }

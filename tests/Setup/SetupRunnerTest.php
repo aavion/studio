@@ -51,7 +51,7 @@ final class SetupRunnerTest extends TestCase
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: 'sqlite:///'.$databasePath,
             adminUsername: 'admin',
-            adminPassword: 'secret-password',
+            adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
             appSecret: 'test-secret',
         );
@@ -94,7 +94,7 @@ final class SetupRunnerTest extends TestCase
             'min_role' => (int) $row['min_role'],
         ], $aclGroups));
         self::assertIsArray($adminUser);
-        self::assertTrue(password_verify('secret-password', (string) $adminUser['password_hash']));
+        self::assertTrue(password_verify('Secret1!password', (string) $adminUser['password_hash']));
         self::assertSame('owner', $adminUser['role']);
         self::assertSame([
             'created' => null,
@@ -154,7 +154,7 @@ final class SetupRunnerTest extends TestCase
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: 'sqlite:///%kernel.project_dir%/var/data_%kernel.environment%.db',
             adminUsername: 'admin',
-            adminPassword: 'secret-password',
+            adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
             appSecret: 'test-secret',
         ));
@@ -182,7 +182,7 @@ final class SetupRunnerTest extends TestCase
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: 'sqlite:///'.$this->root.'/var/missing-schema.db',
             adminUsername: 'admin',
-            adminPassword: 'secret-password',
+            adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
             appSecret: 'test-secret',
         ));
@@ -232,7 +232,7 @@ final class SetupRunnerTest extends TestCase
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: 'sqlite:///'.$databasePath,
             adminUsername: 'admin',
-            adminPassword: 'secret-password',
+            adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
             appSecret: 'test-secret',
         ));
@@ -314,7 +314,7 @@ final class SetupRunnerTest extends TestCase
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: 'sqlite:///'.$databasePath,
             adminUsername: 'admin',
-            adminPassword: 'secret-password',
+            adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
             dryRun: true,
         );

@@ -7,7 +7,9 @@ namespace App\Controller;
 use App\Core\Operation\Live\LiveOperationHttpResponder;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationStarter;
+use App\Setup\DatabaseUrlFactory;
 use App\Setup\SetupCompletionMarker;
+use App\Setup\SetupDatabaseConnectionFactory;
 use App\Setup\SetupPreflightChecker;
 use App\Setup\SetupRunner;
 use App\Setup\SetupSiteSettings;
@@ -31,6 +33,8 @@ final class SetupController extends AbstractController
         private readonly SetupCompletionMarker $completionMarker,
         private readonly SetupWebInputFactory $inputFactory,
         private readonly SetupPreflightChecker $preflightChecker,
+        private readonly DatabaseUrlFactory $databaseUrlFactory,
+        private readonly SetupDatabaseConnectionFactory $databaseConnectionFactory,
         private readonly SetupRunner $setupRunner,
         private readonly SetupSiteSettings $siteSettings,
         private readonly LiveOperationStarter $liveOperationStarter,
@@ -57,6 +61,7 @@ final class SetupController extends AbstractController
         $state = $this->state($request);
         $this->applyLocale($request, $state);
         $errors = [];
+        $databaseTest = null;
 
         if ($request->isMethod('POST')) {
             if (!$this->csrfTokenManager->isTokenValid(new CsrfToken('setup-wizard', (string) $request->request->get('_csrf_token', '')))) {
@@ -69,6 +74,8 @@ final class SetupController extends AbstractController
                 if ('preflight' === $step && 'heal_preflight' === $request->request->get('_setup_action')) {
                     $preflight = $this->preflightChecker->check($this->projectDir, $this->environment, autoHeal: true, server: $request->server->all());
                     $errors = $preflight['ok'] ? [] : ['__form' => ['setup.preflight.errors.required']];
+                } elseif ('database' === $step && 'test_database' === $request->request->get('_setup_action')) {
+                    [$errors, $databaseTest] = $this->testDatabaseConnection($state['values']);
                 } elseif ('review' === $step && 'apply' === $request->request->get('_setup_action') && $this->wantsLiveOperation($request)) {
                     $input = $this->inputFactory->create($state['values']);
 
@@ -105,6 +112,7 @@ final class SetupController extends AbstractController
             'setup_preflight' => $preflight,
             'setup_workflow' => $state['workflow'],
             'setup_action_log' => $state['action_log'],
+            'setup_database_test' => $databaseTest,
             'setup_previous_step' => $this->previousStep($step),
             'setup_next_step' => $this->nextStep($step),
         ]);
@@ -143,6 +151,42 @@ final class SetupController extends AbstractController
     {
         return '1' === (string) $request->request->get('_operation_live', '')
             || $request->isXmlHttpRequest();
+    }
+
+    /**
+     * @param array<string, mixed> $values
+     *
+     * @return array{0: array<string, list<string>>, 1: array{success: bool, key: string}|null}
+     */
+    private function testDatabaseConnection(array $values): array
+    {
+        $errors = $this->inputFactory->validateStep('database', $values);
+
+        if ([] !== $errors) {
+            return [$errors, ['success' => false, 'key' => 'setup.database.test_invalid']];
+        }
+
+        $input = $this->inputFactory->create([
+            ...$values,
+            'admin_username' => 'admin',
+            'admin_password' => 'Valid1!pass',
+            'admin_password_confirm' => 'Valid1!pass',
+            'admin_email' => 'admin@example.test',
+        ]);
+
+        if (!$input->isValid() || null === $input->input()) {
+            return [$input->errors(), ['success' => false, 'key' => 'setup.database.test_invalid']];
+        }
+
+        try {
+            $databaseUrl = $this->databaseUrlFactory->create($input->input(), $this->projectDir);
+            $connection = $this->databaseConnectionFactory->create($this->projectDir, $databaseUrl, $this->environment);
+            $connection->fetchOne('SELECT 1');
+
+            return [[], ['success' => true, 'key' => 'setup.database.test_success']];
+        } catch (\Throwable) {
+            return [['__form' => ['setup.database.test_failed']], ['success' => false, 'key' => 'setup.database.test_failed']];
+        }
     }
 
     /**

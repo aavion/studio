@@ -26,7 +26,7 @@ final class SetupCliInputFactoryTest extends TestCase
             'url' => 'https://option.example.test',
             'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
             'admin-username' => 'owner',
-            'admin-password' => 'owner-secret',
+            'admin-password' => 'Safe1!pass',
             'admin-email' => 'owner@example.test',
             'app-secret' => 'app-secret',
             'dry-run' => false,
@@ -59,7 +59,7 @@ final class SetupCliInputFactoryTest extends TestCase
             'url' => 'https://option.example.test',
             'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
             'admin-username' => 'admin.name',
-            'admin-password' => 'owner-secret',
+            'admin-password' => 'Safe1!pass',
             'admin-email' => 'owner@example.test',
         ]);
     }
@@ -116,8 +116,8 @@ final class SetupCliInputFactoryTest extends TestCase
             'studio_user',
             'db-secret',
             'owner',
-            'owner-secret',
-            'owner-secret',
+            'Safe1!pass',
+            'Safe1!pass',
             'owner@example.test',
             'app-secret',
             '',

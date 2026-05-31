@@ -29,6 +29,7 @@ use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
 use App\Security\AccountReactivationAccessResolver;
+use App\Security\PasswordPolicy;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\Security\UserGroupMembershipManager;
@@ -60,6 +61,7 @@ final class UserRegistrationController extends AbstractController
         private readonly UuidFactory $uuidFactory,
         private readonly AccountReactivationAccessResolver $reactivationAccess,
         private readonly UserGroupMembershipManager $userGroups,
+        private readonly PasswordPolicy $passwordPolicy,
     ) {
     }
 
@@ -191,9 +193,10 @@ final class UserRegistrationController extends AbstractController
                 $errors[] = 'ui.user.invitation.errors.invalid_csrf';
             }
 
-            if (12 > strlen($password)) {
-                $errors[] = 'ui.user.password.errors.new_password_length';
-            }
+            $errors = [
+                ...$errors,
+                ...$this->passwordViolationKeys($password, $username, $accountToken->email()),
+            ];
 
             if ($password !== $confirmPassword) {
                 $errors[] = 'ui.user.password.errors.password_mismatch';
@@ -257,6 +260,22 @@ final class UserRegistrationController extends AbstractController
         $token = $this->entityManager->getRepository(AccountToken::class)->findOneBy($criteria);
 
         return $token instanceof AccountToken && !$token->isExpired() ? $token : null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function passwordViolationKeys(string $password, string $username, string $email): array
+    {
+        return array_map(
+            static fn (string $violation): string => match ($violation) {
+                PasswordPolicy::VIOLATION_COMPLEXITY => 'ui.user.password.errors.new_password_complexity',
+                PasswordPolicy::VIOLATION_REPEATED => 'ui.user.password.errors.new_password_repeated',
+                PasswordPolicy::VIOLATION_PERSONAL => 'ui.user.password.errors.new_password_personal',
+                default => 'ui.user.password.errors.new_password_length',
+            },
+            $this->passwordPolicy->violationCodes($password, $username, $email),
+        );
     }
 
     private function userByEmail(string $email): ?UserAccount

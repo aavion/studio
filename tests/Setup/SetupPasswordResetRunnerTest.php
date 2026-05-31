@@ -39,7 +39,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
         self::assertSame('00000000-0000-0000-0000-000000000201', $user->uid());
         self::assertSame('admin@example.test', $user->email());
 
-        $result = $runner->reset($this->root, $databaseUrl, 'admin', 'new-password', 'test');
+        $result = $runner->reset($this->root, $databaseUrl, 'admin', 'NewPassword1!', 'test');
 
         self::assertTrue($result->isSuccess());
         self::assertInstanceOf(ActionLog::class, $result->value());
@@ -53,7 +53,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
             ->fetchColumn();
 
         self::assertIsArray($row);
-        self::assertTrue(password_verify('new-password', (string) $row['password_hash']));
+        self::assertTrue(password_verify('NewPassword1!', (string) $row['password_hash']));
         self::assertSame('test', $marker);
     }
 
@@ -61,7 +61,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
     {
         $runner = new SetupPasswordResetRunner(new NullWorkflowResultMessageReporter());
 
-        $result = $runner->reset($this->root, 'sqlite:///'.$this->databasePath, 'missing', 'new-password');
+        $result = $runner->reset($this->root, 'sqlite:///'.$this->databasePath, 'missing', 'NewPassword1!');
 
         self::assertFalse($result->isSuccess());
         self::assertTrue($result->context()['halt_on_error']);

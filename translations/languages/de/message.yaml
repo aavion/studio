@@ -193,7 +193,7 @@ message:
       admin_password: 'Admin-Passwort'
       admin_password_confirm: 'Admin-Passwort bestätigen'
       admin_email: 'Admin-E-Mail'
-      app_secret: 'APP_SECRET (leer lassen, um einen zu generieren)'
+      app_secret: 'Hash-Salt (leer lassen, um einen zu generieren)'
       invalid_choice: 'Nicht unterstützter Wert. Wähle einen der folgenden Werte: %choices%'
       password_mismatch: 'Die Passwörter stimmen nicht überein.'
       password_reset_continue: 'Passwort für "%username%" zurücksetzen?'
@@ -201,6 +201,9 @@ message:
       password_reset_confirm_password: 'Neues Passwort bestätigen'
     admin_password:
       too_short: 'Das Setup-Admin-Passwort muss mindestens %min_length% Zeichen enthalten.'
+      complexity: 'Das Setup-Admin-Passwort muss mindestens drei Zeichentypen verwenden.'
+      repeated: 'Das Setup-Admin-Passwort darf dasselbe Zeichen nicht mehr als dreimal direkt hintereinander enthalten.'
+      personal: 'Das Setup-Admin-Passwort darf Admin-Username oder E-Mail-Name nicht enthalten.'
     password_reset:
       database_url_missing: 'DATABASE_URL wird für den Passwort-Reset benötigt.'
       user_not_found: 'Nutzer "%username%" wurde nicht gefunden.'

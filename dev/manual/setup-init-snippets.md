@@ -53,7 +53,7 @@ Setup subprocesses provide a local `COMPOSER_HOME` under `var/composer-home` whe
 
 Use `--no-interaction` for scripted CLI setup with defaults and explicit options. `--json` is also non-interactive so automation receives machine-readable output only.
 
-Interactive CLI setup asks for the admin password twice. Non-interactive setup uses the provided `--admin-password` value directly. Password reset displays the matched user's UID, username, email, and status before prompting for confirmation and the new password; scripted reset runs should pass `--confirm` and `--new-password`.
+Interactive CLI setup asks for the admin password twice. Non-interactive setup uses the provided `--admin-password` value directly. Setup, registration, profile password changes, and reset flows enforce the shared password policy: at least 8 characters, at least three character types, no character repeated more than three times in a row, and no username or email local-part inside the password. Password reset displays the matched user's UID, username, email, and status before prompting for confirmation and the new password; scripted reset runs should pass `--confirm` and `--new-password`.
 
 ## Automation notes
 

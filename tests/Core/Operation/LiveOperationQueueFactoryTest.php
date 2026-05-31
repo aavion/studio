@@ -118,8 +118,8 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
             'values' => [
                 'language' => 'en',
                 'admin_username' => 'admin',
-                'admin_password' => 'very-secure-password',
-                'admin_password_confirm' => 'very-secure-password',
+                'admin_password' => 'VerySecure1!',
+                'admin_password_confirm' => 'VerySecure1!',
                 'admin_email' => 'admin@example.test',
             ],
             'trigger' => 'setup_wizard',

@@ -32,9 +32,9 @@
             {% endif %}
             <form method="post" class="studio-auth-form">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_invitation_' ~ account_token.uid) }}">
-                {% include '@frontend/partials/forms/fields/input.html.twig' with {name: 'username', label: 'ui.user.invitation.username'|trans, required: true, autocomplete: 'username'} only %}
-                {% include '@frontend/partials/forms/fields/input.html.twig' with {name: 'password', type: 'password', label: 'ui.user.password.new_password'|trans, required: true, autocomplete: 'new-password'} only %}
-                {% include '@frontend/partials/forms/fields/input.html.twig' with {name: 'confirm_password', type: 'password', label: 'ui.user.password.confirm_password'|trans, required: true, autocomplete: 'new-password'} only %}
+                {% include '@frontend/partials/forms/fields/input.html.twig' with {name: 'username', label: 'ui.user.invitation.username'|trans, required: true, autocomplete: 'username', attributes: {minlength: 5, maxlength: 30, pattern: '[A-Za-z][A-Za-z0-9_-]{4,29}'}} only %}
+                {% include '@frontend/partials/forms/fields/input.html.twig' with {name: 'password', type: 'password', label: 'ui.user.password.new_password'|trans, required: true, autocomplete: 'new-password', help: 'ui.user.password.new_password_help'|trans, attributes: {minlength: 8}} only %}
+                {% include '@frontend/partials/forms/fields/input.html.twig' with {name: 'confirm_password', type: 'password', label: 'ui.user.password.confirm_password'|trans, required: true, autocomplete: 'new-password', attributes: {minlength: 8}} only %}
                 {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.invitation.submit'|trans} only %}
             </form>
         {% endif %}
