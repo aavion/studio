@@ -283,6 +283,7 @@ admin:
         mail_delivery_failed: 'The account email could not be created. Check the configured site URL and try again.'
         email_invalid: 'Choose a valid email address.'
         email_in_use: 'A user account already exists for this email address.'
+        self_invitation: 'You cannot invite your own account.'
         invalid_status: 'Choose a valid account status.'
         invalid_role: 'Choose a valid account role.'
         target_higher_access: 'Only owners can edit users at or above their own role level.'

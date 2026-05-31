@@ -374,6 +374,13 @@ final class AdminUserControllerTest extends WebTestCase
             ->findOneBy(['email' => $admin->email(), 'type' => AccountTokenType::Invitation]);
 
         self::assertNull($token);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $unchangedAdmin = $entityManager->find(UserAccount::class, $admin->uid());
+
+        self::assertInstanceOf(UserAccount::class, $unchangedAdmin);
+        self::assertSame(['admin'], $this->userGroupIdentifiers($unchangedAdmin));
     }
 
     public function testAdminInvitationUpdatesExistingAccountWithoutDowngrade(): void

@@ -95,6 +95,12 @@ final class AdminUserInvitationController extends AbstractController
                 : $role;
 
             if ($existingUser instanceof UserAccount && UserAccountStatus::Deleted !== $existingUser->status()) {
+                if ($this->actor()->userUid() === $existingUser->uid()) {
+                    $this->addFlash('error', 'admin.users.form.errors.self_invitation');
+
+                    return $this->redirectToRoute('backend_admin_users');
+                }
+
                 if ($error = $this->adminUserPolicy->validateUserAction($this->actor(), $existingUser)) {
                     $this->addFlash('error', $error);
 
