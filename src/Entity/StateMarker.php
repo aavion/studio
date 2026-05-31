@@ -117,6 +117,21 @@ class StateMarker
     /**
      * @param array<string, mixed> $metadata
      */
+    public function update(
+        DateTimeImmutable $markerAt,
+        ?string $markerBy = null,
+        ?string $markerValue = null,
+        array $metadata = [],
+    ): void {
+        $this->markerAt = $markerAt;
+        $this->markerBy = $markerBy;
+        $this->markerValue = $markerValue;
+        $this->metadata = self::assertMetadata($metadata);
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     */
     private static function assertMetadata(array $metadata): array
     {
         foreach (array_keys($metadata) as $key) {

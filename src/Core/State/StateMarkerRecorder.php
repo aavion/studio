@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace App\Core\State;
 
+use App\Entity\StateMarker;
 use Doctrine\ORM\EntityManagerInterface;
 
-final readonly class StateMarkerRecorder
+final class StateMarkerRecorder
 {
+    /**
+     * @var array<string, StateMarker>
+     */
+    private array $pendingMarkers = [];
+
     public function __construct(private EntityManagerInterface $entityManager)
     {
     }
@@ -23,31 +29,40 @@ final readonly class StateMarkerRecorder
         ?string $markerValue = null,
         array $metadata = [],
     ): void {
-        $connection = $this->entityManager->getConnection();
-        $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
-        $where = [
-            'subject_type' => $subjectType,
-            'subject_uid' => $subjectUid,
-            'marker_key' => $markerKey,
+        $now = new \DateTimeImmutable();
+        $metadata = $this->safeMetadata($metadata);
+        $lookup = [
+            'subjectType' => $subjectType,
+            'subjectUid' => $subjectUid,
+            'markerKey' => $markerKey,
         ];
-        $values = [
-            'marker_at' => $now,
-            'marker_by' => $markerBy,
-            'marker_value' => $markerValue,
-            'metadata' => $this->encodeMetadata($metadata),
-        ];
-        $existingUid = $connection->fetchOne(
-            'SELECT uid FROM state_marker WHERE subject_type = ? AND subject_uid = ? AND marker_key = ?',
-            [$subjectType, $subjectUid, $markerKey],
-        );
+        $pendingKey = implode("\0", [$subjectType, $subjectUid, $markerKey]);
+        $marker = $this->pendingMarkers[$pendingKey] ?? null;
 
-        if (is_string($existingUid) && '' !== $existingUid) {
-            $connection->update('state_marker', $values, ['uid' => $existingUid]);
+        if (!$marker instanceof StateMarker || !$this->entityManager->contains($marker)) {
+            unset($this->pendingMarkers[$pendingKey]);
+            $marker = $this->entityManager->getRepository(StateMarker::class)->findOneBy($lookup);
+        }
+
+        if ($marker instanceof StateMarker) {
+            $marker->update($now, $markerBy, $markerValue, $metadata);
+            $this->pendingMarkers[$pendingKey] = $marker;
 
             return;
         }
 
-        $connection->insert('state_marker', ['uid' => self::uuid(), ...$where, ...$values]);
+        $marker = new StateMarker(
+            self::uuid(),
+            $subjectType,
+            $subjectUid,
+            $markerKey,
+            $now,
+            $markerBy,
+            $markerValue,
+            $metadata,
+        );
+        $this->entityManager->persist($marker);
+        $this->pendingMarkers[$pendingKey] = $marker;
     }
 
     /**
@@ -89,12 +104,15 @@ final readonly class StateMarkerRecorder
     /**
      * @param array<string, mixed> $metadata
      */
-    private function encodeMetadata(array $metadata): string
+    private function safeMetadata(array $metadata): array
     {
         try {
-            return json_encode($metadata, JSON_THROW_ON_ERROR);
+            $encoded = json_encode($metadata, JSON_THROW_ON_ERROR);
+            $decoded = json_decode($encoded, true, flags: JSON_THROW_ON_ERROR);
+
+            return is_array($decoded) ? $decoded : [];
         } catch (\Throwable) {
-            return '{"encoding_error":true,"metadata":{}}';
+            return ['encoding_error' => true, 'metadata' => []];
         }
     }
 }

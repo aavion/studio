@@ -1696,6 +1696,44 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testGroupDeleteWarnsWhenMenuItemLosesOnlyViewGroup(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $group = $this->createGroup('menu_public_warning', AccessLevel::USER);
+        $menu = new SiteMenu('64000000-0000-0000-0000-000000000007', 'acl_menu_warning', ['en' => 'ACL menu warning']);
+        $menuItem = new SiteMenuItem('64000000-0000-0000-0000-000000000008', $menu, ['en' => 'ACL menu warning'], 'route', 'content_home', viewGroupIdentifiers: [$group->identifier()]);
+
+        $menu->addItem($menuItem);
+        $entityManager->persist($menu);
+        $entityManager->persist($menuItem);
+        $entityManager->flush();
+
+        try {
+            $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
+            $client->submit($crawler->filter('form[action="/admin/users/groups/'.$group->uid().'/delete"]')->form());
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('main', 'Published content may become public');
+            self::assertSelectorTextContains('main', $menuItem->uid());
+        } finally {
+            $managedMenu = $entityManager->find(SiteMenu::class, $menu->uid());
+
+            if ($managedMenu instanceof SiteMenu) {
+                $entityManager->remove($managedMenu);
+            }
+
+            $managedGroup = $entityManager->find(AclGroup::class, $group->uid());
+
+            if ($managedGroup instanceof AclGroup) {
+                $entityManager->remove($managedGroup);
+            }
+
+            $entityManager->flush();
+        }
+    }
+
     public function testGroupDeleteAllowsUsersToLoseLastGroup(): void
     {
         $client = self::createClient();

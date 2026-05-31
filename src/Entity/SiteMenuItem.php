@@ -102,6 +102,16 @@ class SiteMenuItem
         return $this->viewMinLevel;
     }
 
+    public function targetType(): string
+    {
+        return $this->targetType;
+    }
+
+    public function targetValue(): string
+    {
+        return $this->targetValue;
+    }
+
     /**
      * @return list<string>|null
      */

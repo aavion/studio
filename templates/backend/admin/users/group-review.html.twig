@@ -61,7 +61,13 @@
         </section>
     {% endif %}
 
-    {% set opens_published_access = impact.content_items|filter(item => item.opens_published_access|default(false)) %}
+    {% set opens_content_access = impact.content_items|filter(item => item.opens_published_access|default(false)) %}
+    {% set opens_content_uids = opens_content_access|map(item => item.uid) %}
+    {% set opens_menu_access = impact.site_menu_items|filter(item =>
+        item.opens_public_access|default(false)
+        and not (item.target_type|default('') == 'content' and item.target_value|default('') in opens_content_uids)
+    ) %}
+    {% set opens_published_access = opens_content_access|merge(opens_menu_access) %}
     {% if operation == 'delete' and opens_published_access is not empty %}
         <section class="studio-panel">
             <h2>{{ 'admin.groups.review.access_warning_title'|trans }}</h2>

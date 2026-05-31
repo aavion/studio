@@ -153,7 +153,7 @@ final readonly class AclGroupImpactService
     }
 
     /**
-     * @return list<array{uid: string, label: string, fields: list<string>}>
+     * @return list<array{uid: string, label: string, fields: list<string>, opens_published_access: bool}>
      */
     private function affectedContentItems(string $identifier): array
     {
@@ -196,7 +196,7 @@ final readonly class AclGroupImpactService
     }
 
     /**
-     * @return list<array{uid: string, label: string, fields: list<string>}>
+     * @return list<array{uid: string, label: string, fields: list<string>, target_type: string, target_value: string, opens_public_access: bool}>
      */
     private function affectedSchemaVersions(string $identifier): array
     {
@@ -232,7 +232,15 @@ final readonly class AclGroupImpactService
             $fields = $this->fieldIfContains('view_group_identifiers', $item->viewGroupIdentifiers(), $identifier);
 
             if ([] !== $fields) {
-                $rows[] = ['uid' => $item->uid(), 'label' => $item->uid(), 'fields' => $fields];
+                $rows[] = [
+                    'uid' => $item->uid(),
+                    'label' => $item->uid(),
+                    'fields' => $fields,
+                    'target_type' => $item->targetType(),
+                    'target_value' => $item->targetValue(),
+                    'opens_public_access' => null === $item->viewMinLevel()
+                        && $item->viewGroupIdentifiers() === [$identifier],
+                ];
             }
         }
 
