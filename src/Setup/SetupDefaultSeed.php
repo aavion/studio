@@ -54,7 +54,7 @@ final readonly class SetupDefaultSeed
     }
 
     /**
-     * @return list<array{uid: string, identifier: string, name: array<string, string>, min_role: int, locked: bool}>
+     * @return list<array{uid: string, identifier: string, name: array<string, string>, min_role: int}>
      */
     public function aclGroups(): array
     {

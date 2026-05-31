@@ -31,9 +31,6 @@ class AclGroup
     #[ORM\Column]
     private int $minRole;
 
-    #[ORM\Column]
-    private bool $locked;
-
     /**
      * @var array<string, mixed>
      */
@@ -49,14 +46,12 @@ class AclGroup
         string $identifier,
         array $name,
         int $minRole,
-        bool $locked = false,
         array $metadata = [],
     ) {
         $this->uid = Uid::assert($uid, 'ACL group UID');
         $this->identifier = Identifier::assertAclGroupIdentifier($identifier);
         $this->name = $name;
         $this->minRole = AccessLevel::assert($minRole);
-        $this->locked = $locked;
         $this->metadata = $metadata;
     }
 
@@ -81,11 +76,6 @@ class AclGroup
     public function minRole(): int
     {
         return $this->minRole;
-    }
-
-    public function isLocked(): bool
-    {
-        return $this->locked;
     }
 
     /**

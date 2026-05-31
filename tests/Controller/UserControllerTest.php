@@ -853,7 +853,6 @@ final class UserControllerTest extends WebTestCase
             'signup_default',
             ['en' => 'Signup Default'],
             AccessLevel::USER,
-            false,
         );
         $entityManager->persist($group);
         $entityManager->flush();

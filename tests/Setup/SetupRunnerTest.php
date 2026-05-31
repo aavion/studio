@@ -76,7 +76,7 @@ final class SetupRunnerTest extends TestCase
 
         $pdo = new PDO('sqlite:'.$databasePath);
         $configRows = $pdo->query('SELECT config_key, value FROM config_entry')->fetchAll(PDO::FETCH_KEY_PAIR);
-        $aclGroups = $pdo->query('SELECT identifier, min_role, locked FROM acl_group ORDER BY min_role')->fetchAll(PDO::FETCH_ASSOC);
+        $aclGroups = $pdo->query('SELECT identifier, min_role FROM acl_group WHERE json_extract(metadata, "$.seeded_by") = "setup" ORDER BY min_role')->fetchAll(PDO::FETCH_ASSOC);
         $adminUser = $pdo->query("SELECT password_hash, role FROM user_account WHERE username = 'admin'")->fetch(PDO::FETCH_ASSOC);
         $stateMarkers = $pdo->query("SELECT marker_key, marker_value FROM state_marker WHERE subject_type = 'user_account' ORDER BY marker_key")->fetchAll(PDO::FETCH_KEY_PAIR);
         $groups = $pdo->query("SELECT g.identifier FROM acl_group g INNER JOIN user_acl_group ug ON ug.group_uid = g.uid INNER JOIN user_account u ON u.uid = ug.user_uid WHERE u.username = 'admin' ORDER BY g.min_role")->fetchAll(PDO::FETCH_COLUMN);
@@ -87,11 +87,9 @@ final class SetupRunnerTest extends TestCase
         self::assertSame(array_map(static fn (array $group): array => [
             'identifier' => $group['identifier'],
             'min_role' => $group['min_role'],
-            'locked' => $group['locked'] ? 1 : 0,
         ], $seed->aclGroups()), array_map(static fn (array $row): array => [
             'identifier' => $row['identifier'],
             'min_role' => (int) $row['min_role'],
-            'locked' => (int) $row['locked'],
         ], $aclGroups));
         self::assertIsArray($adminUser);
         self::assertTrue(password_verify('secret-password', (string) $adminUser['password_hash']));
@@ -471,7 +469,7 @@ final class SetupRunnerTest extends TestCase
         $pdo = new PDO('sqlite:'.$databasePath);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL, modified_at DATETIME NOT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
-        $pdo->exec('CREATE TABLE acl_group (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(80) NOT NULL UNIQUE, name CLOB NOT NULL, min_role INTEGER NOT NULL, locked BOOLEAN NOT NULL, metadata CLOB NOT NULL)');
+        $pdo->exec('CREATE TABLE acl_group (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(80) NOT NULL UNIQUE, name CLOB NOT NULL, min_role INTEGER NOT NULL, metadata CLOB NOT NULL)');
         $pdo->exec('CREATE TABLE state_marker (uid VARCHAR(36) NOT NULL PRIMARY KEY, subject_type VARCHAR(80) NOT NULL, subject_uid VARCHAR(36) NOT NULL, marker_key VARCHAR(80) NOT NULL, marker_at DATETIME NOT NULL, marker_by VARCHAR(180) DEFAULT NULL, marker_value VARCHAR(255) DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(subject_type, subject_uid, marker_key))');
         $pdo->exec("CREATE TABLE user_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(180) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, profile CLOB NOT NULL, settings CLOB NOT NULL, status VARCHAR(32) NOT NULL, role VARCHAR(40) NOT NULL DEFAULT 'user')");
         $pdo->exec('CREATE TABLE user_acl_group (user_uid VARCHAR(36) NOT NULL, group_uid VARCHAR(36) NOT NULL, PRIMARY KEY(user_uid, group_uid))');

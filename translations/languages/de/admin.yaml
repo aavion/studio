@@ -383,7 +383,6 @@ admin:
       identifier: 'Identifier'
       name: 'Name'
       min_role: 'Mindestrolle'
-      locked: 'Gesperrt'
     pagination:
       page_summary: 'Seite %page% von %pages% · %total% Gruppen'
       previous: 'Zurück'
@@ -427,7 +426,6 @@ admin:
       name_en: 'Englischer Name'
       name_de: 'Deutscher Name'
       min_role: 'Mindestrolle'
-      locked: 'Gesperrt'
     actions:
       create: 'Gruppe erstellen'
       delete: 'Gruppe löschen'
@@ -435,8 +433,6 @@ admin:
     created: 'Gruppe erstellt.'
     saved: 'Gruppe gespeichert.'
     deleted: 'Gruppe gelöscht.'
-    locked: 'Gesperrte Preset-Gruppen können nicht bearbeitet werden.'
-    delete_blocked: 'Diese Gruppe kann nicht gelöscht werden.'
     form:
       invalid: 'Die Gruppe konnte nicht gespeichert werden.'
       higher_access: 'Nur Owner können ACL-Gruppen auf der eigenen oder einer höheren Rollenstufe verwalten.'

@@ -383,7 +383,6 @@ admin:
       identifier: 'Identifier'
       name: 'Name'
       min_role: 'Minimum role'
-      locked: 'Locked'
     pagination:
       page_summary: 'Page %page% of %pages% · %total% groups'
       previous: 'Previous'
@@ -427,7 +426,6 @@ admin:
       name_en: 'English name'
       name_de: 'German name'
       min_role: 'Minimum role'
-      locked: 'Locked'
     actions:
       create: 'Create group'
       delete: 'Delete group'
@@ -435,8 +433,6 @@ admin:
     created: 'Group created.'
     saved: 'Group saved.'
     deleted: 'Group deleted.'
-    locked: 'Locked preset groups cannot be edited.'
-    delete_blocked: 'This group cannot be deleted.'
     form:
       invalid: 'The group could not be saved.'
       higher_access: 'Only owners can manage ACL groups at or above their own role level.'

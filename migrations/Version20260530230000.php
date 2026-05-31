@@ -106,6 +106,10 @@ SQL);
         if ($aclGroupTable->hasColumn('allow_empty')) {
             $this->addSql('ALTER TABLE acl_group DROP COLUMN allow_empty');
         }
+
+        if ($aclGroupTable->hasColumn('locked')) {
+            $this->addSql('ALTER TABLE acl_group DROP COLUMN locked');
+        }
     }
 
     public function down(Schema $schema): void

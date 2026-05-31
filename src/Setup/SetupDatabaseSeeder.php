@@ -60,7 +60,6 @@ final readonly class SetupDatabaseSeeder
                 $group['identifier'],
                 $group['name'],
                 $group['min_role'],
-                $group['locked'],
             );
             $this->upsertStateMarker($connection, StateSubjectType::ACL_GROUP, $groupUid, StateMarkerKey::CREATED, $now, 'setup', null, ['identifier' => $group['identifier']]);
         }
@@ -111,13 +110,11 @@ final readonly class SetupDatabaseSeeder
         string $identifier,
         array $name,
         int $minRole,
-        bool $locked,
     ): string {
         $values = [
             'identifier' => $identifier,
             'name' => json_encode($name, JSON_THROW_ON_ERROR),
             'min_role' => $minRole,
-            'locked' => $locked ? 1 : 0,
             'metadata' => json_encode(['seeded_by' => 'setup'], JSON_THROW_ON_ERROR),
         ];
         $existingUid = $connection->fetchOne('SELECT uid FROM acl_group WHERE identifier = ?', [$identifier]);

@@ -98,7 +98,7 @@ final readonly class AdminUserListViewFactory
     public function groupsView(Request $request): array
     {
         $search = $this->listViews->queryString($request, 'q');
-        $sort = $this->listViews->queryChoice($request, 'sort', ['identifier', 'name', 'min_role', 'locked'], 'min_role');
+        $sort = $this->listViews->queryChoice($request, 'sort', ['identifier', 'name', 'min_role'], 'min_role');
         $direction = $this->listViews->queryChoice($request, 'direction', ['asc', 'desc'], 'asc');
         $perPage = $this->listViews->perPage($request->query->get('per_page'));
         $page = $this->listViews->page($request->query->get('page'));
@@ -160,7 +160,6 @@ final readonly class AdminUserListViewFactory
         usort($groups, static function (AclGroup $left, AclGroup $right) use ($sort, $direction): int {
             $result = match ($sort) {
                 'name' => strcasecmp((string) ($left->name()['en'] ?? $left->identifier()), (string) ($right->name()['en'] ?? $right->identifier())),
-                'locked' => ((int) $left->isLocked()) <=> ((int) $right->isLocked()),
                 'identifier' => strcasecmp($left->identifier(), $right->identifier()),
                 default => [$left->minRole(), $left->identifier()] <=> [$right->minRole(), $right->identifier()],
             };
@@ -191,7 +190,6 @@ final readonly class AdminUserListViewFactory
             ['key' => 'min_role', 'label' => 'admin.groups.sort.min_role'],
             ['key' => 'identifier', 'label' => 'admin.groups.sort.identifier'],
             ['key' => 'name', 'label' => 'admin.groups.sort.name'],
-            ['key' => 'locked', 'label' => 'admin.groups.sort.locked'],
         ];
     }
 }

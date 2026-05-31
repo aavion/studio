@@ -109,12 +109,6 @@ final class AdminAclGroupController extends AbstractController
             return $this->redirectToRoute('backend_admin_user_group_detail', ['uid' => $uid]);
         }
 
-        if ($group->isLocked()) {
-            $this->addFlash('error', 'admin.groups.delete_blocked');
-
-            return $this->redirectToRoute('backend_admin_user_group_detail', ['uid' => $uid]);
-        }
-
         if ($error = $this->adminUserPolicy->validateGroupDelete($this->adminContext->actor($this->getUser()), $group)) {
             $this->addFlash('error', $error);
 
@@ -174,7 +168,6 @@ final class AdminAclGroupController extends AbstractController
                     'de' => $this->field($request, 'name_de') ?: $this->field($request, 'name_en'),
                 ],
                 $accessLevel,
-                false,
             );
             $this->entityManager->persist($group);
             $this->entityManager->flush();
@@ -189,12 +182,6 @@ final class AdminAclGroupController extends AbstractController
     {
         if (!$this->isCsrfTokenValid('admin_group_'.$group->uid(), $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
-
-            return null;
-        }
-
-        if ($group->isLocked()) {
-            $this->addFlash('error', 'admin.groups.locked');
 
             return null;
         }

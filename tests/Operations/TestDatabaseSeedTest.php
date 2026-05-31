@@ -31,17 +31,15 @@ final class TestDatabaseSeedTest extends TestCase
     {
         $seed = new SetupDefaultSeed();
         $groups = $this->pdo
-            ->query('SELECT identifier, min_role, locked FROM acl_group WHERE locked = 1 ORDER BY min_role')
+            ->query('SELECT identifier, min_role FROM acl_group WHERE json_extract(metadata, "$.preset") = 1 ORDER BY min_role')
             ->fetchAll(PDO::FETCH_ASSOC);
 
         self::assertSame(array_map(static fn (array $group): array => [
             'identifier' => $group['identifier'],
             'min_role' => $group['min_role'],
-            'locked' => $group['locked'] ? 1 : 0,
         ], $seed->aclGroups()), array_map(static fn (array $row): array => [
             'identifier' => $row['identifier'],
             'min_role' => (int) $row['min_role'],
-            'locked' => (int) $row['locked'],
         ], $groups));
 
         $adminGroups = $this->pdo

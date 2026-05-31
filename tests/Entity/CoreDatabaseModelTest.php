@@ -37,7 +37,6 @@ final class CoreDatabaseModelTest extends TestCase
             'content_authors',
             ['en' => 'Content authors'],
             AccessLevel::AUTHOR,
-            true,
         );
         $reviewBoard = new AclGroup(
             '22222222-2222-2222-2222-222222222222',
@@ -79,7 +78,6 @@ final class CoreDatabaseModelTest extends TestCase
         self::assertSame(['ROLE_PUBLIC', 'ROLE_USER', 'ROLE_MODERATOR', 'ROLE_AUTHOR', 'ROLE_PUBLISHER', 'ROLE_CURATOR', 'ROLE_MANAGER'], $user->getRoles());
         self::assertSame(UserAccountStatus::Active, $user->status());
         self::assertSame(['language' => 'default'], $user->settings());
-        self::assertTrue($contentAuthors->isLocked());
         self::assertSame(AccessLevel::AUTHOR, $contentAuthors->minRole());
         self::assertSame('abcd1234', $apiKey->prefix());
         self::assertSame($hmacHash, $apiKey->hmacHash());

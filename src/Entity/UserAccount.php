@@ -52,7 +52,7 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
     #[ORM\Column(enumType: UserAccountStatus::class)]
     private UserAccountStatus $status = UserAccountStatus::Active;
 
-    #[ORM\Column(enumType: UserRole::class, options: ['default' => 'user'])]
+    #[ORM\Column(length: 40, enumType: UserRole::class, options: ['default' => 'user'])]
     private UserRole $role = UserRole::User;
 
     /**

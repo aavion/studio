@@ -67,7 +67,6 @@
                     <th scope="col">{{ 'admin.groups.fields.identifier'|trans }}</th>
                     <th scope="col">{{ 'admin.groups.fields.name'|trans }}</th>
                     <th scope="col">{{ 'admin.groups.fields.min_role'|trans }}</th>
-                    <th scope="col">{{ 'admin.groups.fields.locked'|trans }}</th>
                     <th scope="col">{{ 'admin.users.fields.actions'|trans }}</th>
                 </tr>
             </thead>
@@ -77,7 +76,6 @@
                         <td>{{ group.identifier }}</td>
                         <td>{{ group.name.en|default(group.identifier) }}</td>
                         <td>{{ group.minRole }}</td>
-                        <td>{{ group.locked ? 'ui.form.yes'|trans : 'ui.form.no'|trans }}</td>
                         <td><a href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">{{ 'admin.users.actions.details'|trans }}</a></td>
                     </tr>
                 {% endfor %}

@@ -115,7 +115,6 @@ final class Version20260527120000 extends AbstractMigration
         $aclGroup->addColumn('identifier', 'string', ['length' => 80]);
         $aclGroup->addColumn('name', 'json');
         $aclGroup->addColumn('min_role', 'integer');
-        $aclGroup->addColumn('locked', 'boolean');
         $aclGroup->addColumn('metadata', 'json');
         $this->addPrimaryKey($aclGroup, 'uid');
         $aclGroup->addUniqueIndex(['identifier'], 'uniq_acl_group_identifier');

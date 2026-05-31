@@ -65,15 +65,11 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-30
-- Refactored user access into one global account role plus contextual ACL groups with minimum roles; wired Symfony role hierarchy, owner invariants, group assignment validation, setup seeds/migrations, UI, translations, docs, class map, and focused role/group regression coverage.
-- Completed account-link hardening across invitation, registration, recovery, security-review, APP_SECRET rotation, API-key, and deleted-account flows, including role-carrying tokens, reactivation guards, stale-token/status checks, structured UI messages, owner delivery retries, and enumeration-safe public registration.
-- Added database-near user email/username uniqueness protection with structured message reporting and UI-capable error handling, while token-only onboarding keeps helpful duplicate username feedback.
-- Extended `bin/lint` with optional file/directory targets for focused type-based checks and kept project validation, Symfony container checks, Twig/YAML linting, translation comparisons, and Tailwind-aware full-suite behavior aligned.
-- Made `bin/lint` release-safe by embedding the translation source catalogue comparison instead of depending on `.codex/` helper scripts.
-- Post-checked review readiness by adding Symfony firewall access-control rules, account-flow GET token-type 404s, existing-account invite upgrades without downgrades, profile email validation, and shared ACL helper services for group membership/reactivation handling.
-- Removed role-like default ACL context groups from setup/test seeds, made registration default groups optional by default, and renamed group-focused tests to semantic context groups.
-- Made generated runtime translation catalogues and freshness manifests environment-specific under `translations/runtime/{APP_ENV}` so test/dev/prod package sets cannot overwrite each other.
-- Updated bin/composer to the latest version (2.10.0) and did a small Update to the root README-file.
+- Refactored user access into one exact global role plus optional contextual ACL groups with minimum roles; wired Symfony hierarchy, owner guardrails, assignment validation, setup/migrations, UI, translations, docs, class map, and focused regression coverage.
+- Hardened account-link and account-management flows across invitation, registration, recovery, security review, deleted-account reactivation, APP_SECRET rotation, API-key handling, uniqueness validation, enumeration boundaries, and structured UI/reporting messages.
+- Completed review-readiness cleanup for ACL/user management: firewall access controls, token-type route guards, existing-account invite upgrades, reusable group/reactivation helpers, optional default groups, semantic test groups, and removal of obsolete ACL group locking while keeping default-registration-group delete protection.
+- Improved tooling and generated translation handling with focused `bin/lint` targets, release-safe translation comparison, environment-scoped runtime catalogues/manifests, PHPUnit bootstrap generation for test translations, and a full-suite-verified runtime cleanup path.
+- Updated bin/composer to 2.10.0, refreshed the root README, and verified the slice with focused checks plus full PHPUnit runs.
 ### 2026-05-29
 - Requested a full audit because of the massive ammount of review findings. Instructions will follow.
 - Updated Symfony framework to version 8.1.0 and also some minor dependency updates, fixed an issue within the test suite that was made visible by these updates. No conflicts found.

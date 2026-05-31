@@ -38,10 +38,6 @@ final readonly class AclGroupApplyService
             return WorkflowResult::invalid([$this->message(MessageKey::ACL_GROUP_APPLY_NOT_FOUND, ['%group%' => $groupUid], ['group_uid' => $groupUid])]);
         }
 
-        if ($group->isLocked()) {
-            return WorkflowResult::blocked([$this->message(MessageKey::ACL_GROUP_APPLY_LOCKED, ['%group%' => $group->identifier()], ['group_uid' => $groupUid, 'group' => $group->identifier()])]);
-        }
-
         try {
             return match ($action) {
                 self::ACTION_UPDATE => $this->update($group, $payload),
