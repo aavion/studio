@@ -10,6 +10,10 @@
     padding: clamp(1rem, 3vw, 2rem) 0;
 }
 
+.studio-setup-page .studio-backend-shell {
+    padding-bottom: 0;
+}
+
 .studio-backend-topbar {
     display: flex;
     min-height: 3.25rem;

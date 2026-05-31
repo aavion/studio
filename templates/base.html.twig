@@ -19,7 +19,12 @@
         <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
         {% endif %}
     </head>
-    <body class="{% block body_class %}studio-body{% endblock %}">
+    {% set studio_body_class = block('body_class')|trim %}
+    <body class="{{ studio_body_class }}">
         {% block body %}{% endblock %}
+        {% set studio_footer_area = 'studio-backend' in studio_body_class ? 'backend' : ('studio-frontend' in studio_body_class ? 'frontend' : '') %}
+        {% if studio_footer_area is not empty %}
+            {% include '@root/partials/layout/_system-footer.html.twig' with {area: studio_footer_area} only %}
+        {% endif %}
     </body>
 </html>

@@ -73,6 +73,7 @@
 - Moved setup step navigation into a compact footer progress checklist beside the form actions.
 - Split setup wizard subsections into separate panels so language, preflight, initial behavior, and hash-salt sections read as distinct tasks.
 - Polished setup copy and flow edges: clearer website-feature/hash-salt labels, blank default admin email, review-only apply submission, operation-overlay submitter handling, and a lightweight manifest-based setup footer.
+- Promoted the system footer to a shared base-template partial with backend default rendering and frontend config-key override support.
 - Hardened setup live-operation recovery and Composer resolution so stale browser-side operation state is ignored and setup prefers bundled Composer with a global Composer fallback.
 - Removed the setup review synchronous apply fallback so every valid setup apply creates a LiveOperation instead of running invisibly in the request when JavaScript or stale assets misbehave.
 - Restored DB-free setup access logging while keeping statistics disabled before setup completion, and versioned the setup review LiveOperation form key to avoid replaying stale browser-side operation state.

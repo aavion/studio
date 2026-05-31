@@ -207,9 +207,9 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseStatusCodeSame(404);
             $html = (string) $client->getResponse()->getContent();
-            self::assertStringContainsString('Setup is already completed and is no longer available.', $html);
             self::assertStringNotContainsString('Setup result', $html);
             self::assertStringNotContainsString('Write environment', $html);
+            self::assertStringNotContainsString('Setup is already completed and is no longer available.', $html);
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
         }
@@ -863,7 +863,7 @@ final class BackendControllerTest extends WebTestCase
             $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
             self::assertStringContainsString('settings.core.save', $auditLog);
             self::assertStringContainsString('"section":"general"', $auditLog);
-            self::assertStringContainsString('"setting_keys":["content.home_path","localization.default_language","localization.route_prefixes_enabled","site.title","site.url"]', $auditLog);
+            self::assertStringContainsString('"setting_keys":["content.home_path","localization.default_language","localization.route_prefixes_enabled","site.footer_copyright","site.title","site.url"]', $auditLog);
             self::assertStringNotContainsString('Saved Admin Title', $auditLog);
             self::assertStringNotContainsString('https://example.test', $auditLog);
 

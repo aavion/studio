@@ -1,10 +1,15 @@
 .studio-frontend-shell {
     display: grid;
-    min-height: 100vh;
-    grid-template-rows: auto 1fr auto;
+    min-height: 100%;
+    grid-template-rows: auto 1fr;
     background:
         linear-gradient(180deg, rgb(81 112 255 / 7%), transparent 20rem),
         var(--color-surface);
+}
+
+.studio-body.studio-frontend {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .studio-frontend-lightweight {
@@ -29,8 +34,7 @@
     transform: translateY(0);
 }
 
-.studio-frontend-header,
-.studio-frontend-footer {
+.studio-frontend-header {
     width: min(100% - 2rem, var(--studio-container));
     margin-inline: auto;
 }
@@ -98,11 +102,6 @@
 
 .studio-frontend-main {
     min-width: 0;
-}
-
-.studio-frontend-footer {
-    padding-block: 1.5rem;
-    color: var(--color-muted);
 }
 
 .studio-error-page,

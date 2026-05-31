@@ -24,6 +24,7 @@ final readonly class SetupDefaultSeed
             ['key' => ContentRouteLocalization::DEFAULT_LANGUAGE_KEY, 'value' => $input->language(), 'type' => ConfigValueType::String],
             ['key' => ContentRouteLocalization::ENABLED_KEY, 'value' => $this->setting($input, ContentRouteLocalization::ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => 'content.home_path', 'value' => '/home', 'type' => ConfigValueType::String],
+            ['key' => 'site.footer_copyright', 'value' => '', 'type' => ConfigValueType::String],
             ['key' => UserFlowConfig::DEFAULT_ACL_GROUP_KEY, 'value' => '', 'type' => ConfigValueType::String],
             ['key' => UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, 'value' => $this->setting($input, UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'value' => UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, 'type' => ConfigValueType::Integer],

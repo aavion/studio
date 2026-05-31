@@ -1,6 +1,6 @@
 {% extends '@root/base.html.twig' %}
 
-{% block body_class %}studio-body studio-backend{% endblock %}
+{% block body_class %}studio-body studio-backend studio-setup-page{% endblock %}
 
 {% block body %}
     <main class="studio-backend-shell">
@@ -10,9 +10,6 @@
                 {% block setup_body %}{% endblock %}
             </div>
         </section>
-        <footer class="studio-shell-footer">
-            {{ setup_footer_copyright|default('')|studio_markdown('basic')|raw }}
-        </footer>
     </main>
     {% include '@backend/operations/action-log-overlay.html.twig' %}
 {% endblock %}

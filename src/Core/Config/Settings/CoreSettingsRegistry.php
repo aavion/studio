@@ -39,6 +39,7 @@ final readonly class CoreSettingsRegistry
             new CoreSettingDefinition('general', 'localization.default_language', 'admin.settings.fields.default_language.label', $this->languages->defaultLanguage(), ConfigValueType::String, FormInputType::Select, options: $this->languageOptions(), validation: ['required' => true], sortOrder: 30),
             new CoreSettingDefinition('general', 'localization.route_prefixes_enabled', 'admin.settings.fields.route_prefixes_enabled.label', false, ConfigValueType::Boolean, sortOrder: 40),
             new CoreSettingDefinition('general', 'content.home_path', 'admin.settings.fields.home_path.label', '/home', ConfigValueType::String, validation: ['required' => true, 'pattern' => '^/.*$'], sortOrder: 50),
+            new CoreSettingDefinition('general', 'site.footer_copyright', 'admin.settings.fields.footer_copyright.label', '', ConfigValueType::String, FormInputType::Textarea, help: 'admin.settings.fields.footer_copyright.help', validation: ['max_length' => 500], sortOrder: 60),
 
             new CoreSettingDefinition('dashboard', 'admin.dashboard.widgets', 'admin.settings.fields.dashboard_widgets.label', ['system_status', 'packages', 'recent_activity'], ConfigValueType::Json, FormInputType::MultiSelect, options: [
                 'system_status' => 'admin.settings.options.dashboard.system_status',

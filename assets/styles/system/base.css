@@ -79,6 +79,35 @@ html {
     line-height: var(--studio-leading-copy);
 }
 
+.studio-system-footer {
+    width: min(100% - 2rem, var(--studio-container));
+    margin: 0 auto;
+    padding-block: 1.25rem;
+    color: var(--color-muted);
+    font-size: var(--studio-text-xs);
+    font-weight: 400;
+    text-align: right;
+}
+
+.studio-system-footer-backend {
+    width: min(100% - 2rem, var(--studio-container-wide));
+    padding-top: 0;
+}
+
+.studio-setup-page .studio-system-footer {
+    width: min(100%, 820px);
+    padding-top: 0.35rem;
+    padding-right: 0.5rem;
+}
+
+.studio-system-footer p {
+    margin: 0;
+}
+
+.studio-system-footer a {
+    color: inherit;
+}
+
 .studio-page-actions,
 .studio-button-group,
 .studio-backend-button-group,
