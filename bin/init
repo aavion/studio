@@ -119,9 +119,8 @@ final class InitCommand
 
         require_once $this->projectDir.'/vendor/autoload.php';
 
-        $this->generateCoreTranslations();
-
         $environment = $this->loadSymfonyEnvironment();
+        $this->generateCoreTranslations($environment);
         $this->checkEnvironmentConfiguration($environment);
         $this->checkWebServerContext();
 
@@ -251,9 +250,9 @@ final class InitCommand
         return $environment;
     }
 
-    private function generateCoreTranslations(): void
+    private function generateCoreTranslations(string $environment): void
     {
-        $result = (new CoreTranslationBootstrapper())->generate($this->projectDir);
+        $result = (new CoreTranslationBootstrapper())->generate($this->projectDir, $environment);
 
         if ($result['success']) {
             $this->reporter->success(sprintf(

@@ -48,7 +48,7 @@ final class InitScriptTest extends TestCase
         self::assertStringContainsString('CoreTranslationBootstrapper', $contents);
         self::assertLessThan(
             strpos($contents, "in_array(\$environment, ['dev', 'test'], true)"),
-            strpos($contents, 'generateCoreTranslations()'),
+            strpos($contents, 'generateCoreTranslations($environment)'),
         );
         self::assertStringContainsString("in_array(\$environment, ['dev', 'test'], true)", $contents);
         self::assertStringContainsString("'install', '--optimize-autoloader'", $contents);

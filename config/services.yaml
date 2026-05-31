@@ -76,6 +76,11 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Core\Translation\TranslationRuntimePath:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
     App\Core\Package\PackageAssetSyncer:
         arguments:
             $projectDir: '%kernel.project_dir%'

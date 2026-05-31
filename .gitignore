@@ -46,10 +46,9 @@ $RECYCLE.BIN/
 /assets/vendor/
 ###< symfony/asset-mapper ###
 
-###> generated translation metadata ###
-/translations/runtime/.manifest.json
-/translations/runtime/messages.*.yaml
-###< generated translation metadata ###
+###> generated translations ###
+/translations/runtime/
+###< generated translations ###
 
 ###> release artifacts ###
 /build/

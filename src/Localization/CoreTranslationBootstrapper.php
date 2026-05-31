@@ -5,21 +5,24 @@ declare(strict_types=1);
 namespace App\Localization;
 
 use App\Core\Translation\TranslationCatalogueCollisionException;
+use App\Core\Translation\TranslationRuntimePath;
 use Symfony\Component\Yaml\Yaml;
 use Throwable;
 
 final readonly class CoreTranslationBootstrapper
 {
     public const SOURCE_DIRECTORY = 'translations/languages';
-    public const TARGET_PATTERN = 'translations/runtime/messages.%s.yaml';
 
     /**
      * @return array{success: bool, locales: list<string>, files: int, error?: string}
      */
-    public function generate(string $projectDir): array
+    public function generate(string $projectDir, ?string $environment = null): array
     {
         try {
-            return $this->doGenerate($projectDir);
+            return $this->doGenerate(
+                $projectDir,
+                new TranslationRuntimePath($projectDir, $environment ?? (string) ($_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? 'dev')),
+            );
         } catch (Throwable $error) {
             return [
                 'success' => false,
@@ -33,7 +36,7 @@ final readonly class CoreTranslationBootstrapper
     /**
      * @return array{success: bool, locales: list<string>, files: int}
      */
-    private function doGenerate(string $projectDir): array
+    private function doGenerate(string $projectDir, TranslationRuntimePath $runtimePath): array
     {
         $sourceRoot = $projectDir.'/'.self::SOURCE_DIRECTORY;
         if (!is_dir($sourceRoot)) {
@@ -54,7 +57,7 @@ final readonly class CoreTranslationBootstrapper
                 ++$files;
             }
 
-            $target = $projectDir.'/'.sprintf(self::TARGET_PATTERN, $locale);
+            $target = $runtimePath->absoluteCataloguePath($locale);
             if (!is_dir(dirname($target))) {
                 mkdir(dirname($target), 0775, true);
             }

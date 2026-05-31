@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Translation\TranslationRuntimePath;
+
 final readonly class SetupLanguageCatalog
 {
     /**
      * @return list<string>
      */
-    public function availableLanguages(string $projectDir): array
+    public function availableLanguages(string $projectDir, ?string $environment = null): array
     {
         $languages = [];
+        $runtimePath = new TranslationRuntimePath($projectDir, $environment ?? (string) ($_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? 'dev'));
 
-        foreach (glob($projectDir.'/translations/runtime/messages.*.yaml') ?: [] as $path) {
+        foreach ($runtimePath->generatedCataloguePaths() as $path) {
             if (1 === preg_match('/messages\.([a-z][a-z0-9]*(?:[_-][a-zA-Z0-9]+)*)\.yaml$/', basename($path), $matches)) {
                 $languages[] = $matches[1];
             }
@@ -31,9 +34,9 @@ final readonly class SetupLanguageCatalog
         return $languages;
     }
 
-    public function defaultLanguage(string $projectDir): string
+    public function defaultLanguage(string $projectDir, ?string $environment = null): string
     {
-        $languages = $this->availableLanguages($projectDir);
+        $languages = $this->availableLanguages($projectDir, $environment);
 
         if (in_array('en', $languages, true)) {
             return 'en';
@@ -42,8 +45,8 @@ final readonly class SetupLanguageCatalog
         return $languages[0] ?? 'en';
     }
 
-    public function supports(string $projectDir, string $language): bool
+    public function supports(string $projectDir, string $language, ?string $environment = null): bool
     {
-        return in_array($language, $this->availableLanguages($projectDir), true);
+        return in_array($language, $this->availableLanguages($projectDir, $environment), true);
     }
 }

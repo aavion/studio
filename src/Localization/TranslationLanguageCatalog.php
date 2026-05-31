@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Localization;
 
+use App\Core\Translation\TranslationRuntimePath;
+
 final readonly class TranslationLanguageCatalog
 {
-    public function __construct(private string $projectDir)
+    private TranslationRuntimePath $runtimePath;
+
+    public function __construct(private string $projectDir, ?TranslationRuntimePath $runtimePath = null)
     {
+        $this->runtimePath = $runtimePath ?? TranslationRuntimePath::fromGlobals($projectDir);
     }
 
     /**
@@ -17,7 +22,7 @@ final readonly class TranslationLanguageCatalog
     {
         $languages = [];
 
-        foreach (glob($this->projectDir.'/translations/runtime/messages.*.yaml') ?: [] as $path) {
+        foreach ($this->runtimePath->generatedCataloguePaths() as $path) {
             if (1 === preg_match('/messages\.([a-z][a-z0-9]*(?:[_-][a-zA-Z0-9]+)*)\.yaml$/', basename($path), $matches)) {
                 $languages[] = $matches[1];
             }

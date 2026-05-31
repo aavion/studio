@@ -7,6 +7,7 @@ namespace App\Tests\Controller;
 use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageScope;
 use App\Core\Translation\TranslationCatalogueAggregator;
+use App\Core\Translation\TranslationRuntimePath;
 use Doctrine\DBAL\Connection;
 use JsonException;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -159,12 +160,12 @@ final class DemoControllerTest extends WebTestCase
     private function aggregateDemoTranslations(): void
     {
         $projectDir = dirname(__DIR__, 2);
-        foreach (['translations/runtime/messages.en.yaml', 'translations/runtime/messages.de.yaml'] as $relativePath) {
+        foreach (['translations/runtime/test/messages.en.yaml', 'translations/runtime/test/messages.de.yaml'] as $relativePath) {
             $path = $projectDir.'/'.$relativePath;
             $this->catalogueBackups[$path] = is_file($path) ? (string) file_get_contents($path) : null;
         }
 
-        $result = (new TranslationCatalogueAggregator($projectDir))->aggregate([
+        $result = (new TranslationCatalogueAggregator($projectDir, runtimePath: new TranslationRuntimePath($projectDir, 'test')))->aggregate([
             new PackageAssetSyncPackage('demo-module', 'packages/demo-module', [PackageScope::Module]),
         ]);
 

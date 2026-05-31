@@ -11,13 +11,15 @@ use Throwable;
 
 final readonly class TranslationCatalogueCacheWarmer implements CacheWarmerInterface
 {
-    private const MANIFEST_PATH = 'translations/runtime/.manifest.json';
+    private TranslationRuntimePath $runtimePath;
 
     public function __construct(
         private string $projectDir,
         private TranslationCatalogueAggregator $aggregator,
         private ActivePackageAssetProviderInterface $packageProvider,
+        ?TranslationRuntimePath $runtimePath = null,
     ) {
+        $this->runtimePath = $runtimePath ?? TranslationRuntimePath::fromGlobals($projectDir);
     }
 
     /**
@@ -166,6 +168,6 @@ final readonly class TranslationCatalogueCacheWarmer implements CacheWarmerInter
 
     private function manifestPath(): string
     {
-        return $this->projectDir.'/'.self::MANIFEST_PATH;
+        return $this->runtimePath->absoluteManifestPath();
     }
 }

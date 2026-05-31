@@ -25,11 +25,11 @@ final class SetupRunnerTest extends TestCase
     {
         $this->root = sys_get_temp_dir().'/studio-setup-test-'.bin2hex(random_bytes(6));
         mkdir($this->root.'/bin', 0777, true);
-        mkdir($this->root.'/translations/runtime', 0777, true);
+        mkdir($this->root.'/translations/runtime/test', 0777, true);
         mkdir($this->root.'/var', 0777, true);
         touch($this->root.'/bin/console');
-        file_put_contents($this->root.'/translations/runtime/messages.en.yaml', "message: []\n");
-        file_put_contents($this->root.'/translations/runtime/messages.de.yaml', "message: []\n");
+        file_put_contents($this->root.'/translations/runtime/test/messages.en.yaml', "message: []\n");
+        file_put_contents($this->root.'/translations/runtime/test/messages.de.yaml', "message: []\n");
     }
 
     protected function tearDown(): void
@@ -422,10 +422,10 @@ final class SetupRunnerTest extends TestCase
     {
         $catalog = new SetupLanguageCatalog();
 
-        self::assertSame(['de', 'en'], $catalog->availableLanguages($this->root));
-        self::assertSame('en', $catalog->defaultLanguage($this->root));
-        self::assertTrue($catalog->supports($this->root, 'de'));
-        self::assertFalse($catalog->supports($this->root, 'fr'));
+        self::assertSame(['de', 'en'], $catalog->availableLanguages($this->root, 'test'));
+        self::assertSame('en', $catalog->defaultLanguage($this->root, 'test'));
+        self::assertTrue($catalog->supports($this->root, 'de', 'test'));
+        self::assertFalse($catalog->supports($this->root, 'fr', 'test'));
     }
 
     public function testItBuildsServerDatabaseUrlsFromConnectionParts(): void
