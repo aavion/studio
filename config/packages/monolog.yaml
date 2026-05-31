@@ -46,6 +46,7 @@ when@test:
                 handler: nested
                 excluded_http_codes: [404, 405]
                 channels: ["!event", "!studio_message", "!studio_audit", "!studio_access"]
+                buffer_size: 50
             nested:
                 type: stream
                 path: "%kernel.logs_dir%/%kernel.environment%.log"

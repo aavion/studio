@@ -69,6 +69,7 @@
 - Hardened account-link and account-management flows across invitation, registration, recovery, security review, deleted-account reactivation, APP_SECRET rotation, API-key handling, uniqueness validation, enumeration boundaries, and structured UI/reporting messages.
 - Completed review-readiness cleanup for ACL/user management: firewall access controls, token-type route guards, existing-account invite upgrades, reusable group/reactivation helpers, optional default groups, semantic test groups, and removal of obsolete ACL group locking while keeping default-registration-group delete protection.
 - Improved tooling and generated translation handling with focused `bin/lint` targets, release-safe translation comparison, environment-scoped runtime catalogues/manifests, PHPUnit bootstrap generation for test translations, and a full-suite-verified runtime cleanup path.
+- Made cold `bin/init` deterministic under low PHP memory limits by disabling Composer auto-scripts, running Symfony init commands explicitly, and clearing cache without warmup before asset/importmap/Tailwind setup.
 - Updated bin/composer to 2.10.0, refreshed the root README, and verified the slice with focused checks plus full PHPUnit runs.
 ### 2026-05-29
 - Requested a full audit because of the massive ammount of review findings. Instructions will follow.

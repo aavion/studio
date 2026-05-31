@@ -132,12 +132,12 @@ final class InitCommand
 
         if (in_array($environment, ['dev', 'test'], true)) {
             $this->runRequiredCommand(
-                [...$composer, 'install', '--optimize-autoloader'],
+                [...$composer, 'install', '--optimize-autoloader', '--no-scripts'],
                 'Composer packages with development dependencies are installed.',
             );
         } else {
             $this->runRequiredCommand(
-                [...$composer, 'install', '--no-dev', '--optimize-autoloader'],
+                [...$composer, 'install', '--no-dev', '--optimize-autoloader', '--no-scripts'],
                 'Production Composer packages are installed.',
             );
         }
@@ -148,8 +148,16 @@ final class InitCommand
             return 1;
         }
 
+        $console = [PHP_BINARY, $this->projectDir.'/bin/console'];
+        $this->runSymfonyAssetSetup($console);
+
+        if ($this->reporter->hasFailures()) {
+            $this->reporter->printSummary();
+
+            return 1;
+        }
+
         if ('prod' === $environment) {
-            $console = [PHP_BINARY, $this->projectDir.'/bin/console'];
             $this->runRequiredCommand([...$console, 'asset-map:compile'], 'Production asset map is compiled.');
         } else {
             $this->reporter->success(sprintf('Skipped asset-map compilation for "%s" environment.', $environment));
@@ -158,6 +166,17 @@ final class InitCommand
         $this->reporter->printSummary();
 
         return $this->reporter->hasFailures() ? 1 : 0;
+    }
+
+    /**
+     * @param list<string> $console
+     */
+    private function runSymfonyAssetSetup(array $console): void
+    {
+        $this->runRequiredCommand([...$console, 'cache:clear', '--no-warmup'], 'Symfony cache is cleared without warmup.');
+        $this->runRequiredCommand([...$console, 'assets:install', 'public'], 'Bundle assets are installed.');
+        $this->runRequiredCommand([...$console, 'importmap:install'], 'Importmap packages are installed.');
+        $this->runRequiredCommand([...$console, 'tailwind:build'], 'Tailwind CSS is built.');
     }
 
     private function checkCliRuntime(): void
