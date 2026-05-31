@@ -116,7 +116,7 @@ final class SetupWebInputFactoryTest extends TestCase
         self::assertSame('studio_', $result->input()?->databasePrefix());
     }
 
-    public function testItAppendsSeparatorToExplicitTrailingSeparator(): void
+    public function testItKeepsExplicitTrailingSeparatorSingular(): void
     {
         $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test');
 
@@ -141,7 +141,7 @@ final class SetupWebInputFactoryTest extends TestCase
         ]);
 
         self::assertTrue($result->isValid());
-        self::assertSame('studio__', $result->input()?->databasePrefix());
+        self::assertSame('studio_', $result->input()?->databasePrefix());
     }
 
     public function testItKeepsEmptyDatabasePrefixEmpty(): void

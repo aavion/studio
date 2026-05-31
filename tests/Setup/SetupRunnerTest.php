@@ -274,7 +274,7 @@ final class SetupRunnerTest extends TestCase
         self::assertFileDoesNotExist($this->root.'/.env.local.php');
     }
 
-    public function testItRollsBackGeneratedFilesWhenFinalCacheClearFails(): void
+    public function testItRollsBackGeneratedFilesAndSqliteTablesWhenFinalCacheClearFails(): void
     {
         $databasePath = $this->root.'/var/setup.db';
         $this->createSchema($databasePath);
@@ -298,9 +298,13 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('clear_cache', $result->context()['failed_step']);
         self::assertFileDoesNotExist($this->root.'/.env.test.local');
         self::assertFileDoesNotExist($this->root.'/.env.local.php');
-        self::assertFileDoesNotExist($databasePath);
+        self::assertFileExists($databasePath);
         self::assertSame(['.env.test.local', '.env.local.php'], $result->context()['rollback']['env_files_removed']);
-        self::assertSame(['var/setup.db'], $result->context()['rollback']['sqlite_files_removed']);
+        self::assertSame([], $result->context()['rollback']['sqlite_files_removed']);
+        self::assertContains('config_entry', $result->context()['rollback']['database_tables_removed']['tables']);
+
+        $pdo = new PDO('sqlite:'.$databasePath);
+        self::assertSame([], $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('config_entry', 'user_account')")->fetchAll(PDO::FETCH_COLUMN));
     }
 
     public function testItStopsWhenEnvironmentOverridesCannotBeWritten(): void

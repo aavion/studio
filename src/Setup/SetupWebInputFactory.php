@@ -306,7 +306,7 @@ final readonly class SetupWebInputFactory
     {
         $prefix = trim($prefix);
 
-        return '' === $prefix ? '' : $prefix.'_';
+        return '' === $prefix ? '' : rtrim($prefix, '_').'_';
     }
 
     private function isValidDatabaseUrl(string $databaseUrl): bool
