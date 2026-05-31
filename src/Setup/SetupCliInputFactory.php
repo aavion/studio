@@ -23,6 +23,7 @@ final class SetupCliInputFactory
         private readonly SetupLanguageCatalog $languageCatalog = new SetupLanguageCatalog(),
         SetupMessageTranslator $translator = new SetupMessageTranslator(),
         private readonly SetupSiteSettings $siteSettings = new SetupSiteSettings(),
+        private readonly ?array $extensionAvailability = null,
         mixed $input = null,
         mixed $output = null,
         private readonly ?bool $interactive = null,
@@ -171,23 +172,77 @@ final class SetupCliInputFactory
      */
     private function databaseDriver(array $options, ?string $databaseUrl, bool $interactive, string $language): DatabaseDriver
     {
-        $default = $this->driverFromDatabaseUrl($databaseUrl)->value;
+        $availableDrivers = $this->availableDatabaseDrivers();
+        if ([] === $availableDrivers) {
+            throw new \InvalidArgumentException('No supported database PDO driver is available.');
+        }
+
+        $defaultDriver = $this->driverFromDatabaseUrl($databaseUrl);
+        $default = $this->databaseDriverAvailable($defaultDriver) ? $defaultDriver->value : $availableDrivers[0]->value;
         $value = $this->option($options, 'db-driver', $default);
 
         if (isset($options['database-url']) && !isset($options['db-driver'])) {
-            return $this->driverFromDatabaseUrl($databaseUrl);
+            return $this->requireAvailableDatabaseDriver($this->driverFromDatabaseUrl($databaseUrl));
         }
 
         if ($interactive && !isset($options['db-driver'])) {
-            $value = $this->prompter->choice($language, MessageKey::SETUP_PROMPT_DATABASE_DRIVER, ['sqlite', 'mysql', 'postgresql'], $default);
+            $value = $this->prompter->choice(
+                $language,
+                MessageKey::SETUP_PROMPT_DATABASE_DRIVER,
+                array_map(static fn (DatabaseDriver $driver): string => $driver->value, $availableDrivers),
+                $default,
+            );
         }
 
-        return match ($value) {
+        return $this->requireAvailableDatabaseDriver(match ($value) {
             'mysql', 'mariadb' => DatabaseDriver::MySql,
             'postgres', 'pgsql', 'postgresql' => DatabaseDriver::PostgreSql,
             'sqlite', null => DatabaseDriver::SQLite,
             default => throw new \InvalidArgumentException(sprintf('Unsupported database driver "%s".', $value)),
+        });
+    }
+
+    /**
+     * @return list<DatabaseDriver>
+     */
+    private function availableDatabaseDrivers(): array
+    {
+        return array_values(array_filter(
+            [DatabaseDriver::SQLite, DatabaseDriver::MySql, DatabaseDriver::PostgreSql],
+            $this->databaseDriverAvailable(...),
+        ));
+    }
+
+    private function requireAvailableDatabaseDriver(DatabaseDriver $driver): DatabaseDriver
+    {
+        if ($this->databaseDriverAvailable($driver)) {
+            return $driver;
+        }
+
+        throw new \InvalidArgumentException(sprintf(
+            'Database driver "%s" requires PHP extension "%s".',
+            $driver->value,
+            $this->databaseDriverExtension($driver),
+        ));
+    }
+
+    private function databaseDriverAvailable(DatabaseDriver $driver): bool
+    {
+        return $this->extensionLoaded($this->databaseDriverExtension($driver));
+    }
+
+    private function databaseDriverExtension(DatabaseDriver $driver): string
+    {
+        return match ($driver) {
+            DatabaseDriver::SQLite => 'pdo_sqlite',
+            DatabaseDriver::MySql => 'pdo_mysql',
+            DatabaseDriver::PostgreSql => 'pdo_pgsql',
         };
+    }
+
+    private function extensionLoaded(string $extension): bool
+    {
+        return $this->extensionAvailability[$extension] ?? extension_loaded($extension);
     }
 
     /**

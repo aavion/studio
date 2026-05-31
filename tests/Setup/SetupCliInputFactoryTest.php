@@ -144,6 +144,35 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertStringContainsString('Admin-Passwort bestätigen', $output);
     }
 
+    public function testItRejectsUnavailableDatabaseDriverOptions(): void
+    {
+        $factory = new SetupCliInputFactory(
+            dirname(__DIR__, 2),
+            extensionAvailability: [
+                'pdo_sqlite' => true,
+                'pdo_mysql' => false,
+                'pdo_pgsql' => false,
+            ],
+            input: $this->stream(''),
+            output: $this->stream(''),
+            interactive: false,
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Database driver "mysql" requires PHP extension "pdo_mysql".');
+
+        $factory->create([
+            'env' => 'test',
+            'language' => 'en',
+            'site-title' => 'Unavailable DB Studio',
+            'url' => 'https://option.example.test',
+            'db-driver' => 'mysql',
+            'admin-username' => 'owner',
+            'admin-password' => 'Safe1!pass',
+            'admin-email' => 'owner@example.test',
+        ]);
+    }
+
     /**
      * @return resource
      */
