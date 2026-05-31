@@ -73,69 +73,82 @@ final readonly class PackageAssetSyncer
             return $started;
         }
 
-        $this->mirror->resetMirrorDirectory();
+        $mirrorRoot = $this->mirror->prepareMirrorDirectory();
 
         $contributions = [];
         $mirroredAssets = 0;
 
-        foreach ($packages as $package) {
-            $packageAssetRoot = $package->directory().'/assets';
+        try {
+            foreach ($packages as $package) {
+                $packageAssetRoot = $package->directory().'/assets';
 
-            if ($this->filesystem->pathExists($packageAssetRoot)) {
-                if (!$this->filesystem->isSafeDirectory($packageAssetRoot)) {
-                    throw new RuntimeException(sprintf('Package asset root "%s" is not a safe directory.', $packageAssetRoot));
-                }
+                if ($this->filesystem->pathExists($packageAssetRoot)) {
+                    if (!$this->filesystem->isSafeDirectory($packageAssetRoot)) {
+                        throw new RuntimeException(sprintf('Package asset root "%s" is not a safe directory.', $packageAssetRoot));
+                    }
 
-                foreach ($this->mirror->assetFiles($packageAssetRoot) as $assetFile) {
-                    ++$mirroredAssets;
-                    $targetPath = $this->mirror->mirrorAsset($package, $packageAssetRoot, $assetFile);
-                    $scope = $this->scopeForAsset($package, $assetFile);
+                    foreach ($this->mirror->assetFiles($packageAssetRoot) as $assetFile) {
+                        ++$mirroredAssets;
+                        $targetPath = $this->mirror->mirrorAsset($package, $packageAssetRoot, $assetFile, $mirrorRoot);
+                        $scope = $this->scopeForAsset($package, $assetFile);
 
-                    if (null === $scope || $this->isVendorAsset($assetFile) || !$this->isRegistryEntrypoint($assetFile)) {
-                        if (!$this->isStyleOrScript($assetFile)) {
-                            $contributions[] = PackageAssetContribution::staticAsset($package->identifier(), $this->primaryScope($package), $targetPath);
+                        if (null === $scope || $this->isVendorAsset($assetFile) || !$this->isRegistryEntrypoint($assetFile)) {
+                            if (!$this->isStyleOrScript($assetFile)) {
+                                $contributions[] = PackageAssetContribution::staticAsset($package->identifier(), $this->primaryScope($package), $targetPath);
+                            }
+
+                            continue;
                         }
 
-                        continue;
-                    }
+                        if (str_ends_with($assetFile, '.css')) {
+                            $contributions[] = PackageAssetContribution::css($package->identifier(), $scope, $targetPath);
+                        }
 
-                    if (str_ends_with($assetFile, '.css')) {
-                        $contributions[] = PackageAssetContribution::css($package->identifier(), $scope, $targetPath);
+                        if (str_ends_with($assetFile, '.js') || str_ends_with($assetFile, '.mjs')) {
+                            $contributions[] = PackageAssetContribution::javaScript($package->identifier(), $scope, $targetPath);
+                        }
                     }
+                }
 
-                    if (str_ends_with($assetFile, '.js') || str_ends_with($assetFile, '.mjs')) {
-                        $contributions[] = PackageAssetContribution::javaScript($package->identifier(), $scope, $targetPath);
-                    }
+                $templatePath = $package->directory().'/templates';
+                if ($this->filesystem->pathExists($templatePath) && !$this->filesystem->isSafeDirectory($templatePath)) {
+                    throw new RuntimeException(sprintf('Package template root "%s" is not a safe directory.', $templatePath));
+                }
+
+                if (is_dir($this->filesystem->absolutePath($templatePath))) {
+                    $contributions[] = PackageAssetContribution::tailwindSource($package->identifier(), $this->primaryScope($package), $templatePath);
                 }
             }
 
-            $templatePath = $package->directory().'/templates';
-            if ($this->filesystem->pathExists($templatePath) && !$this->filesystem->isSafeDirectory($templatePath)) {
-                throw new RuntimeException(sprintf('Package template root "%s" is not a safe directory.', $templatePath));
-            }
-
-            if (is_dir($this->filesystem->absolutePath($templatePath))) {
-                $contributions[] = PackageAssetContribution::tailwindSource($package->identifier(), $this->primaryScope($package), $templatePath);
-            }
-        }
-
-        if (null !== $this->eventDispatcher) {
-            $registryEvent = new PackageAssetRegistryBuildEvent($packages, $contributions);
-            $registryResult = $this->eventDispatcher->dispatch($registryEvent, [
-                'operation' => 'package_asset_sync',
-                'phase' => 'registry_build',
-            ]);
-            if (!$registryResult->isSuccess()) {
-                return WorkflowResult::failed($registryResult->issues(), [
-                    'packages' => count($packages),
-                    'hook' => $registryEvent::class,
+            if (null !== $this->eventDispatcher) {
+                $registryEvent = new PackageAssetRegistryBuildEvent($packages, $contributions);
+                $registryResult = $this->eventDispatcher->dispatch($registryEvent, [
+                    'operation' => 'package_asset_sync',
+                    'phase' => 'registry_build',
                 ]);
+                if (!$registryResult->isSuccess()) {
+                    $this->mirror->discardMirrorDirectory($mirrorRoot);
+
+                    return WorkflowResult::failed($registryResult->issues(), [
+                        'packages' => count($packages),
+                        'hook' => $registryEvent::class,
+                    ]);
+                }
+
+                $contributions = $registryEvent->contributions();
             }
 
-            $contributions = $registryEvent->contributions();
-        }
+            $this->registryWriter->writeThen(
+                $contributions,
+                function () use ($mirrorRoot): void {
+                    $this->mirror->commitMirrorDirectory($mirrorRoot);
+                },
+            );
+        } catch (Throwable $error) {
+            $this->mirror->discardMirrorDirectory($mirrorRoot);
 
-        $this->registryWriter->write($contributions);
+            throw $error;
+        }
 
         $context = [
             'packages' => count($packages),

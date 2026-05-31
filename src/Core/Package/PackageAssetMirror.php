@@ -17,7 +17,7 @@ final readonly class PackageAssetMirror
     ) {
     }
 
-    public function resetMirrorDirectory(): void
+    public function prepareMirrorDirectory(): string
     {
         $rootPath = 'assets/packages';
         $root = $this->filesystem->absolutePath($rootPath);
@@ -30,23 +30,74 @@ final readonly class PackageAssetMirror
             throw new RuntimeException(sprintf('Package asset mirror "%s" must be a directory.', $rootPath));
         }
 
-        $this->filesystem->ensureDirectory($rootPath);
-        $entries = scandir($root);
+        $stagingPath = 'assets/.packages.tmp-'.bin2hex(random_bytes(8));
 
-        if (false === $entries) {
-            throw new RuntimeException(sprintf('Package asset mirror "%s" cannot be read.', $rootPath));
+        try {
+            $this->filesystem->ensureDirectory($stagingPath);
+
+            foreach (['.gitignore', 'README.md'] as $preservedFile) {
+                $source = $root.DIRECTORY_SEPARATOR.$preservedFile;
+
+                if (!is_file($source) || is_link($source)) {
+                    continue;
+                }
+
+                $target = $this->filesystem->absolutePath($stagingPath.'/'.$preservedFile);
+
+                if (!copy($source, $target)) {
+                    throw new RuntimeException(sprintf('Package asset mirror file "%s" could not be staged.', $preservedFile));
+                }
+            }
+        } catch (\Throwable $error) {
+            $this->discardMirrorDirectory($stagingPath);
+
+            throw $error;
         }
 
-        foreach ($entries as $entry) {
-            if ('.' === $entry || '..' === $entry || '.gitignore' === $entry || 'README.md' === $entry) {
-                continue;
+        return $stagingPath;
+    }
+
+    public function commitMirrorDirectory(string $stagingPath): void
+    {
+        $rootPath = 'assets/packages';
+        $root = $this->filesystem->absolutePath($rootPath);
+        $staging = $this->filesystem->absolutePath($stagingPath);
+        $backupPath = 'assets/.packages.backup-'.bin2hex(random_bytes(8));
+        $backup = $this->filesystem->absolutePath($backupPath);
+
+        if (!is_dir($staging) || is_link($staging)) {
+            throw new RuntimeException(sprintf('Package asset mirror staging directory "%s" is not valid.', $stagingPath));
+        }
+
+        if (file_exists($root) || is_link($root)) {
+            if (!@rename($root, $backup)) {
+                throw new RuntimeException(sprintf('Package asset mirror "%s" could not be moved aside.', $rootPath));
+            }
+        }
+
+        if (!@rename($staging, $root)) {
+            if (is_dir($backup) && !file_exists($root)) {
+                @rename($backup, $root);
             }
 
-            $this->filesystem->removePath($root.DIRECTORY_SEPARATOR.$entry);
+            throw new RuntimeException(sprintf('Package asset mirror "%s" could not be replaced.', $rootPath));
+        }
 
-            if (file_exists($root.DIRECTORY_SEPARATOR.$entry) || is_link($root.DIRECTORY_SEPARATOR.$entry)) {
-                throw new RuntimeException(sprintf('Package asset mirror entry "%s" could not be removed.', 'assets/packages/'.$entry));
+        if (is_dir($backup)) {
+            try {
+                $this->filesystem->removePath($backup);
+            } catch (RuntimeException) {
+                return;
             }
+        }
+    }
+
+    public function discardMirrorDirectory(string $stagingPath): void
+    {
+        $staging = $this->filesystem->absolutePath($stagingPath);
+
+        if (file_exists($staging) || is_link($staging)) {
+            $this->filesystem->removePath($staging);
         }
     }
 
@@ -80,16 +131,17 @@ final readonly class PackageAssetMirror
         return $files;
     }
 
-    public function mirrorAsset(PackageAssetSyncPackage $package, string $packageAssetRoot, string $assetFile): string
+    public function mirrorAsset(PackageAssetSyncPackage $package, string $packageAssetRoot, string $assetFile, string $mirrorRoot = 'assets/packages'): string
     {
         $targetPath = 'assets/packages/'.$package->identifier().'/'.substr($assetFile, strlen('assets/'));
+        $stagedTargetPath = rtrim($mirrorRoot, '/').'/'.$package->identifier().'/'.substr($assetFile, strlen('assets/'));
         $sourcePath = $package->directory().'/'.$assetFile;
-        $absoluteTarget = $this->filesystem->absolutePath($targetPath);
-        $this->filesystem->ensureParentDirectory($targetPath);
+        $absoluteTarget = $this->filesystem->absolutePath($stagedTargetPath);
+        $this->filesystem->ensureParentDirectory($stagedTargetPath);
 
         if (str_ends_with($assetFile, '.css')) {
             $contents = $this->filesystem->readFile($sourcePath);
-            $this->filesystem->writeFile($targetPath, $this->pathRewriter->rewriteCss(
+            $this->filesystem->writeFile($stagedTargetPath, $this->pathRewriter->rewriteCss(
                 $contents,
                 $sourcePath,
                 $packageAssetRoot,
@@ -101,7 +153,7 @@ final readonly class PackageAssetMirror
 
         if (str_ends_with($assetFile, '.js') || str_ends_with($assetFile, '.mjs')) {
             $contents = $this->filesystem->readFile($sourcePath);
-            $this->filesystem->writeFile($targetPath, $this->pathRewriter->rewriteJavaScript(
+            $this->filesystem->writeFile($stagedTargetPath, $this->pathRewriter->rewriteJavaScript(
                 $contents,
                 $sourcePath,
                 $packageAssetRoot,

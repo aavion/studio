@@ -29,12 +29,117 @@ final readonly class PackageAssetRegistryWriter
      */
     public function write(array $contributions): void
     {
+        $this->writeThen($contributions, static function (): void {
+        });
+    }
+
+    /**
+     * @param list<PackageAssetContribution> $contributions
+     */
+    public function writeThen(array $contributions, callable $afterWrite): void
+    {
+        $files = [];
+
         foreach (self::CSS_REGISTRIES as $bucket => $path) {
-            $this->filesystem->writeFile($path, $this->registryBuilder->buildCssRegistry($contributions, $bucket));
+            $files[$path] = $this->registryBuilder->buildCssRegistry($contributions, $bucket);
         }
 
         foreach (self::JAVASCRIPT_REGISTRIES as $bucket => $path) {
-            $this->filesystem->writeFile($path, $this->registryBuilder->buildJavaScriptRegistry($contributions, $bucket));
+            $files[$path] = $this->registryBuilder->buildJavaScriptRegistry($contributions, $bucket);
+        }
+
+        $this->assertWritableTargets(array_keys($files));
+        $backups = $this->backupTargets(array_keys($files));
+
+        try {
+            foreach ($files as $path => $contents) {
+                $this->filesystem->writeFile($path, $contents);
+            }
+
+            $afterWrite();
+        } catch (\Throwable $error) {
+            $this->restoreTargets($backups);
+
+            throw $error;
+        } finally {
+            $this->removeBackups($backups);
+        }
+    }
+
+    /**
+     * @param list<string> $paths
+     */
+    private function assertWritableTargets(array $paths): void
+    {
+        foreach ($paths as $path) {
+            $absolutePath = $this->filesystem->absolutePath($path);
+
+            if (is_link($absolutePath)) {
+                throw new \RuntimeException(sprintf('Target file "%s" must not be a symlink.', $path));
+            }
+
+            if (is_dir($absolutePath)) {
+                throw new \RuntimeException(sprintf('Target file "%s" exists as a directory.', $path));
+            }
+        }
+    }
+
+    /**
+     * @param list<string> $paths
+     *
+     * @return array<string, string|null>
+     */
+    private function backupTargets(array $paths): array
+    {
+        $backups = [];
+
+        foreach ($paths as $path) {
+            $absolutePath = $this->filesystem->absolutePath($path);
+            $backupPath = null;
+
+            if (is_file($absolutePath)) {
+                $backupPath = $absolutePath.'.backup-'.bin2hex(random_bytes(8));
+
+                if (!copy($absolutePath, $backupPath)) {
+                    throw new \RuntimeException(sprintf('Target file "%s" could not be backed up.', $path));
+                }
+            }
+
+            $backups[$path] = $backupPath;
+        }
+
+        return $backups;
+    }
+
+    /**
+     * @param array<string, string|null> $backups
+     */
+    private function restoreTargets(array $backups): void
+    {
+        foreach ($backups as $path => $backupPath) {
+            $absolutePath = $this->filesystem->absolutePath($path);
+
+            if (null === $backupPath) {
+                if (is_file($absolutePath) || is_link($absolutePath)) {
+                    @unlink($absolutePath);
+                }
+
+                continue;
+            }
+
+            @copy($backupPath, $absolutePath);
+        }
+    }
+
+    /**
+     * @param array<string, string|null> $backups
+     */
+    private function removeBackups(array $backups): void
+    {
+        foreach ($backups as $backupPath) {
+            if (null !== $backupPath && is_file($backupPath)) {
+                @unlink($backupPath);
+            }
         }
     }
 }
