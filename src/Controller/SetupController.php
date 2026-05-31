@@ -11,7 +11,6 @@ use App\Setup\DatabaseUrlFactory;
 use App\Setup\SetupCompletionMarker;
 use App\Setup\SetupDatabaseConnectionFactory;
 use App\Setup\SetupPreflightChecker;
-use App\Setup\SetupRunner;
 use App\Setup\SetupSiteSettings;
 use App\Setup\SetupWebInputFactory;
 use App\View\SystemPackageMetadataProvider;
@@ -36,7 +35,6 @@ final class SetupController extends AbstractController
         private readonly SetupPreflightChecker $preflightChecker,
         private readonly DatabaseUrlFactory $databaseUrlFactory,
         private readonly SetupDatabaseConnectionFactory $databaseConnectionFactory,
-        private readonly SetupRunner $setupRunner,
         private readonly SetupSiteSettings $siteSettings,
         private readonly SystemPackageMetadataProvider $systemPackageMetadata,
         private readonly LiveOperationStarter $liveOperationStarter,
@@ -87,16 +85,18 @@ final class SetupController extends AbstractController
                     $errors = $preflight['ok'] ? [] : ['__form' => ['setup.preflight.errors.required']];
                 } elseif ('database' === $step && 'test_database' === $request->request->get('_setup_action')) {
                     [$errors, $databaseTest] = $this->testDatabaseConnection($state['values']);
-                } elseif ('review' === $step && 'apply' === $request->request->get('_setup_action') && $this->wantsLiveOperation($request)) {
+                } elseif ('review' === $step && 'apply' === $request->request->get('_setup_action')) {
                     $input = $this->inputFactory->create($state['values']);
 
                     if (!$input->isValid() || null === $input->input()) {
                         $errors = $input->errors();
 
-                        return $this->json(['success' => false, 'issues' => [[
-                            'translation_key' => 'setup.form.errors.invalid',
-                            'parameters' => [],
-                        ]], 'errors' => $errors], Response::HTTP_BAD_REQUEST);
+                        if ($this->wantsLiveOperation($request)) {
+                            return $this->json(['success' => false, 'issues' => [[
+                                'translation_key' => 'setup.form.errors.invalid',
+                                'parameters' => [],
+                            ]], 'errors' => $errors], Response::HTTP_BAD_REQUEST);
+                        }
                     } else {
                         $this->saveState($request, $state);
 
@@ -270,20 +270,6 @@ final class SetupController extends AbstractController
      */
     private function advance(Request $request, array $state, string $step): array
     {
-        if ('review' === $step && 'apply' === $request->request->get('_setup_action')) {
-            $input = $this->inputFactory->create($state['values']);
-
-            if (!$input->isValid() || null === $input->input()) {
-                return [$state, $step, $input->errors()];
-            }
-
-            $result = $this->setupRunner->run($input->input());
-            $state['workflow'] = $result->toArray();
-            $state['action_log'] = $result->value()?->toArray() ?? $result->context()['action_log'] ?? null;
-
-            return [$state, 'result', []];
-        }
-
         $errors = 'language' === $step && !$this->preflightChecker->check($this->projectDir, $this->environment, server: $request->server->all())['ok']
             ? ['__form' => ['setup.preflight.errors.required']]
             : $this->inputFactory->validateStep($step, $state['values']);

@@ -74,6 +74,7 @@
 - Split setup wizard subsections into separate panels so language, preflight, initial behavior, and hash-salt sections read as distinct tasks.
 - Polished setup copy and flow edges: clearer website-feature/hash-salt labels, blank default admin email, review-only apply submission, operation-overlay submitter handling, and a lightweight manifest-based setup footer.
 - Hardened setup live-operation recovery and Composer resolution so stale browser-side operation state is ignored and setup prefers bundled Composer with a global Composer fallback.
+- Removed the setup review synchronous apply fallback so every valid setup apply creates a LiveOperation instead of running invisibly in the request when JavaScript or stale assets misbehave.
 - Hardened pre-completion setup isolation with a central database-ready switch so normal app services do not open Doctrine connections before setup completes; only setup DB test/apply subprocesses opt in.
 - Applied Symfony 8.1 compatibility cleanup by removing deprecated profiler serializer-data config and making LiveOperation cursor parsing tolerant of non-integer query values.
 - Started the isolated `improve-asset-rebuild` branch and hardened package-aware rebuilds so package mirrors, package registries, runtime translation catalogues/metadata, and production AssetMapper compiles preserve the previous generated state when a rebuild step fails.
