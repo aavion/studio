@@ -151,8 +151,8 @@ message:
     failed: 'Operation "%operation%" ist fehlgeschlagen.'
     finished_unknown: 'Operation "%operation%" wurde mit unbekanntem Status abgeschlossen.'
   process:
-    command_failed: 'Befehl "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
-    command_completed: 'Befehl "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'
+    command_failed: 'Schritt "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
+    command_completed: 'Schritt "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'
   access:
     granted: 'Zugriff für "%capability%" erlaubt.'
     denied: 'Zugriff für "%capability%" verweigert: erforderlich ist Level %required_level%; Actor hat Level %actor_level%.'
@@ -160,7 +160,7 @@ message:
     level:
       invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
     group_identifier:
-      invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein.'
+      invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein und mindestens 3 Zeichen enthalten.'
   backend:
     route_not_found: 'Backend-Route "%path%" ist nicht registriert.'
     setup_locked: 'Setup ist bereits abgeschlossen und nicht mehr verfügbar.'
@@ -213,6 +213,16 @@ message:
     read_failed: 'Konfigurations-Key "%key%" konnte nicht gelesen werden.'
     write_failed: 'Konfigurations-Key "%key%" konnte nicht geschrieben werden.'
     value_invalid: 'Konfigurations-Key "%key%" enthält einen ungültigen gespeicherten Wert.'
+  acl:
+    group_updated: 'ACL-Gruppe "%group%" wurde aktualisiert. Betroffene Nutzer: %users%, Account-Links: %account_tokens%, Inhalte: %content_items%, Schema-Versionen: %content_schema_versions%, Menüeinträge: %site_menu_items%.'
+    group_deleted: 'ACL-Gruppe "%group%" wurde gelöscht und Referenzen wurden bereinigt. Betroffene Nutzer: %users%, Account-Links: %account_tokens%, Inhalte: %content_items%, Schema-Versionen: %content_schema_versions%, Menüeinträge: %site_menu_items%.'
+    group_apply:
+      not_found: 'ACL-Gruppe "%group%" existiert nicht mehr.'
+      action_invalid: 'Für ACL-Gruppe "%group%" kann die unbekannte Aktion "%action%" nicht angewendet werden.'
+      update_blocked: 'ACL-Gruppe "%group%" kann mit den gesendeten Werten nicht aktualisiert werden.'
+      delete_blocked: 'ACL-Gruppe "%group%" kann nicht gelöscht werden, solange sie als Registrierungsstandard konfiguriert ist.'
+  account_mail:
+    stub_queued: 'Account-Mail-Flow %flow% für %email% wurde über den Message-Log-Stub eingereiht.'
   state:
     subject_type:
       invalid: 'State-Subject-Type "%subject_type%" muss lowercase snake_case sein.'
@@ -220,9 +230,21 @@ message:
       invalid: 'State-Marker-Key "%marker_key%" muss lowercase snake_case sein.'
   user:
     username:
-      invalid: 'Username "%username%" ist ungültig.'
+      invalid: 'Username "%username%" muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
+      duplicate: 'Username "%value%" ist bereits einem anderen Account zugewiesen.'
     email:
       invalid: 'E-Mail-Adresse "%email%" ist ungültig.'
+      duplicate: 'E-Mail-Adresse "%value%" ist bereits einem anderen Account zugewiesen.'
+  account_token:
+    hash:
+      invalid: 'Der Account-Token-Hash muss ein kleingeschriebener SHA-256-Hex-Digest sein.'
+  account_link:
+    invalid: 'Dieser Account-Setup-Link kann nicht mehr verwendet werden.'
+    stale_groups: 'Account-Setup-Link referenziert fehlende ACL-Gruppen.'
+    delivered: 'Account-Link für %email% (%type%, %flow%) wurde über das Message-Log zugestellt.'
+    notification_delivered: 'Account-Benachrichtigung für %email% (%type%, %flow%) wurde über das Message-Log zugestellt.'
+  routing:
+    absolute_uri_generation_failed: 'Absolute-URI-Erzeugung für %caller% ist fehlgeschlagen.'
   api_key:
     prefix:
       invalid: 'API-Key-Präfix "%prefix%" ist ungültig.'

@@ -8,6 +8,29 @@
             title: 'ui.user.api_keys.title'|trans,
             subtitle: 'ui.user.api_keys.subtitle'|trans,
         } only %}
+        {% if new_plain_api_key|default(null) %}
+            <section class="studio-panel">
+                <h2>{{ 'ui.user.api_keys.generated_title'|trans }}</h2>
+                <p class="studio-muted">{{ 'ui.user.api_keys.generated_message'|trans }}</p>
+                <code class="studio-code">{{ new_plain_api_key }}</code>
+            </section>
+        {% endif %}
+        <form method="post" class="studio-auth-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_api_key_create') }}">
+            {% include '@frontend/partials/forms/fields/input.html.twig' with {
+                name: 'prefix',
+                label: 'ui.user.api_keys.create.prefix'|trans,
+                help: 'ui.user.api_keys.create.prefix_help'|trans,
+                required: true,
+            } only %}
+            {% include '@frontend/partials/forms/fields/checkbox.html.twig' with {
+                name: 'read_only',
+                label: 'ui.user.api_keys.create.read_only'|trans,
+                checked: true,
+                value: '1',
+            } only %}
+            {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.api_keys.create.submit'|trans} only %}
+        </form>
         {% if api_keys|default([]) is empty %}
             {% include '@frontend/partials/feedback/_empty-state.html.twig' with {
                 title: 'ui.user.api_keys.empty_title'|trans,
@@ -26,6 +49,7 @@
                             <th scope="col">{{ 'ui.user.api_keys.status'|trans }}</th>
                             <th scope="col">{{ 'ui.user.api_keys.created_at'|trans }}</th>
                             <th scope="col">{{ 'ui.user.api_keys.revoked_at'|trans }}</th>
+                            <th scope="col">{{ 'ui.user.api_keys.actions'|trans }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -37,6 +61,17 @@
                                 <td>
                                     {% if api_key.revokedAt %}
                                         {{ api_key.revokedAt|date('Y-m-d H:i') }}
+                                    {% else %}
+                                        {{ 'ui.content.empty_value'|trans }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if api_key.status.value != 'revoked' %}
+                                        <a href="{{ path('user_api_key_reveal', {uid: api_key.uid}) }}">{{ 'ui.user.api_keys.reveal.link'|trans }}</a>
+                                        <form method="post" action="{{ path('user_api_key_revoke', {uid: api_key.uid}) }}" class="studio-inline-form">
+                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_api_key_revoke_' ~ api_key.uid) }}">
+                                            <button type="submit" class="studio-button studio-button-secondary">{{ 'ui.user.api_keys.revoke'|trans }}</button>
+                                        </form>
                                     {% else %}
                                         {{ 'ui.content.empty_value'|trans }}
                                     {% endif %}

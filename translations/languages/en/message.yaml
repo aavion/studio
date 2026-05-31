@@ -151,8 +151,8 @@ message:
     failed: 'Operation "%operation%" failed.'
     finished_unknown: 'Operation "%operation%" finished with an unknown status.'
   process:
-    command_failed: 'Command "%command%" failed with exit code %exit_code%.'
-    command_completed: 'Command "%command%" completed with exit code %exit_code%.'
+    command_failed: 'Step "%command%" failed with exit code %exit_code%.'
+    command_completed: 'Step "%command%" completed with exit code %exit_code%.'
   access:
     granted: 'Access granted for "%capability%".'
     denied: 'Access denied for "%capability%": requires level %required_level%; actor has level %actor_level%.'
@@ -160,7 +160,7 @@ message:
     level:
       invalid: 'Access level %level% must be between 0 and 9.'
     group_identifier:
-      invalid: 'ACL group identifier "%identifier%" must be lowercase snake_case.'
+      invalid: 'ACL group identifier "%identifier%" must be lowercase snake_case with at least 3 characters.'
   backend:
     route_not_found: 'Backend route "%path%" is not registered.'
     setup_locked: 'Setup is already completed and is no longer available.'
@@ -213,6 +213,16 @@ message:
     read_failed: 'Configuration key "%key%" could not be read.'
     write_failed: 'Configuration key "%key%" could not be written.'
     value_invalid: 'Configuration key "%key%" contains an invalid stored value.'
+  acl:
+    group_updated: 'ACL group "%group%" was updated. Affected users: %users%, account links: %account_tokens%, content items: %content_items%, schema versions: %content_schema_versions%, menu items: %site_menu_items%.'
+    group_deleted: 'ACL group "%group%" was deleted and references were cleaned. Affected users: %users%, account links: %account_tokens%, content items: %content_items%, schema versions: %content_schema_versions%, menu items: %site_menu_items%.'
+    group_apply:
+      not_found: 'ACL group "%group%" no longer exists.'
+      action_invalid: 'ACL group "%group%" cannot apply unknown action "%action%".'
+      update_blocked: 'ACL group "%group%" cannot be updated with the submitted values.'
+      delete_blocked: 'ACL group "%group%" cannot be deleted while it is configured as the registration default.'
+  account_mail:
+    stub_queued: 'Account mail flow %flow% for %email% was queued through the message-log stub.'
   state:
     subject_type:
       invalid: 'State subject type "%subject_type%" must be lowercase snake_case.'
@@ -220,9 +230,21 @@ message:
       invalid: 'State marker key "%marker_key%" must be lowercase snake_case.'
   user:
     username:
-      invalid: 'Username "%username%" is invalid.'
+      invalid: 'Username "%username%" must start with a letter and contain 5 to 30 letters, digits, hyphens, or underscores.'
+      duplicate: 'Username "%value%" is already assigned to another account.'
     email:
       invalid: 'Email address "%email%" is invalid.'
+      duplicate: 'Email address "%value%" is already assigned to another account.'
+  account_token:
+    hash:
+      invalid: 'Account token hash must be a lowercase SHA-256 hex digest.'
+  account_link:
+    invalid: 'This account setup link can no longer be used.'
+    stale_groups: 'Account setup link referenced missing ACL groups.'
+    delivered: 'Account link for %email% (%type%, %flow%) was delivered through the message log.'
+    notification_delivered: 'Account notification for %email% (%type%, %flow%) was delivered through the message log.'
+  routing:
+    absolute_uri_generation_failed: 'Absolute URI generation failed for %caller%.'
   api_key:
     prefix:
       invalid: 'API key prefix "%prefix%" is invalid.'

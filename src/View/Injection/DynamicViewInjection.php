@@ -6,7 +6,6 @@ namespace App\View\Injection;
 
 use App\Content\Routing\ContentRoutePath;
 use App\Core\Access\AccessLevel;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 
 final readonly class DynamicViewInjection
@@ -31,7 +30,7 @@ final readonly class DynamicViewInjection
         null === $variantSlug || $this->normalizeVariantSlug($variantSlug);
         null === $accessLevel || AccessLevel::assert($accessLevel);
         foreach ($accessGroups as $group) {
-            Identifier::assertSnakeCase($group, MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, '%identifier%');
+            Identifier::assertAclGroupIdentifier($group);
         }
     }
 

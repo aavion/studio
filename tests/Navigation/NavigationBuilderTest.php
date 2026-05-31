@@ -396,7 +396,7 @@ final class NavigationBuilderTest extends KernelTestCase
                     'Group Blocked',
                     'url',
                     '/group-blocked',
-                    metadata: ['access_groups' => ['admin_team']],
+                    metadata: ['access_groups' => ['release_board']],
                 ));
             },
         );

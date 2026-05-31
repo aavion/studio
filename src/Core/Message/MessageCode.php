@@ -123,6 +123,17 @@ final class MessageCode
     public const CONFIG_READ_FAILED = 'config.read_failed';
     public const CONFIG_WRITE_FAILED = 'config.write_failed';
     public const CONFIG_VALUE_INVALID = 'config.value_invalid';
+    public const ACL_GROUP_UPDATED = 'acl.group_updated';
+    public const ACL_GROUP_DELETED = 'acl.group_deleted';
+    public const ACL_GROUP_APPLY_BLOCKED = 'acl.group_apply_blocked';
+    public const USER_EMAIL_DUPLICATE = 'user.email_duplicate';
+    public const USER_USERNAME_DUPLICATE = 'user.username_duplicate';
+    public const ACCOUNT_LINK_INVALID = 'account.link_invalid';
+    public const ACCOUNT_LINK_STALE_GROUPS = 'account.link_stale_groups';
+    public const ACCOUNT_LINK_DELIVERED = 'account.link_delivered';
+    public const ACCOUNT_NOTIFICATION_DELIVERED = 'account.notification_delivered';
+    public const ACCOUNT_MAIL_STUB_QUEUED = 'account.mail_stub_queued';
+    public const ABSOLUTE_URI_GENERATION_FAILED = 'routing.absolute_uri_generation_failed';
     public const CONTENT_LANGUAGE_FALLBACK = 'content.language_fallback';
     public const CONTENT_VARIANT_FALLBACK = 'content.variant_fallback';
     public const PACKAGE_IDENTIFIER_INVALID = 'package.identifier.invalid';

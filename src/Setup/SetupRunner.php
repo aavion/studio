@@ -158,6 +158,8 @@ final class SetupRunner
             ['seed_admin_user', fn (): array => $this->databaseSeeder->seedAdminUser($this->projectDir, $input, $databaseUrl)],
             ['seed_initial_content', fn (): array => $this->databaseSeeder->seedInitialContent($this->projectDir, $input, $databaseUrl)],
             ['clear_cache', fn (): array => $this->clearCache($input, $environment)],
+            ['run_package_discovery', fn (): array => $this->runPackageDiscovery($input, $environment)],
+            ['run_asset_rebuild', fn (): array => $this->runAssetRebuild($input, $environment)],
             ['mark_setup_completed', fn (): array => $this->completionMarker->markComplete($this->projectDir, $input->appEnv())],
         ];
     }
@@ -205,6 +207,53 @@ final class SetupRunner
     private function clearCache(SetupInput $input, array $environment): array
     {
         $command = $this->cacheClearCommand($input);
+        $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
+
+        if (!$result->isSuccessful()) {
+            throw new SetupStepFailedException($this->commandError($result));
+        }
+
+        return ['command' => $command];
+    }
+
+    /**
+     * @param array<string, string> $environment
+     *
+     * @return array<string, mixed>
+     */
+    private function runPackageDiscovery(SetupInput $input, array $environment): array
+    {
+        $command = [
+            PHP_BINARY,
+            $this->projectDir.'/bin/console',
+            'studio:packages:discover',
+            '--run-now',
+            '--trigger=setup',
+            '--env='.$input->appEnv(),
+        ];
+        $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
+
+        if (!$result->isSuccessful()) {
+            throw new SetupStepFailedException($this->commandError($result));
+        }
+
+        return ['command' => $command];
+    }
+
+    /**
+     * @param array<string, string> $environment
+     *
+     * @return array<string, mixed>
+     */
+    private function runAssetRebuild(SetupInput $input, array $environment): array
+    {
+        $command = [
+            PHP_BINARY,
+            $this->projectDir.'/bin/console',
+            'studio:assets:rebuild',
+            '--trigger=setup',
+            '--env='.$input->appEnv(),
+        ];
         $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
 
         if (!$result->isSuccessful()) {

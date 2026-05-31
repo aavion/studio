@@ -31,14 +31,14 @@ final class CoreTranslationBootstrapperTest extends TestCase
         $this->writeTestFile($this->root, 'translations/languages/en/ui.yaml', "ui:\n  app:\n    name: Studio\n");
         $this->writeTestFile($this->root, 'translations/languages/de/message.yaml', "message:\n  setup:\n    ok: Bereit\n");
 
-        $result = (new CoreTranslationBootstrapper())->generate($this->root);
+        $result = (new CoreTranslationBootstrapper())->generate($this->root, 'test');
 
         self::assertTrue($result['success']);
         self::assertSame(['de', 'en'], $result['locales']);
         self::assertSame(3, $result['files']);
-        self::assertFileExists($this->root.'/translations/runtime/messages.en.yaml');
+        self::assertFileExists($this->root.'/translations/runtime/test/messages.en.yaml');
 
-        $english = Yaml::parseFile($this->root.'/translations/runtime/messages.en.yaml');
+        $english = Yaml::parseFile($this->root.'/translations/runtime/test/messages.en.yaml');
         self::assertSame('Ready', $english['message']['setup']['ok']);
         self::assertSame('Studio', $english['ui']['app']['name']);
     }
@@ -48,7 +48,7 @@ final class CoreTranslationBootstrapperTest extends TestCase
         $this->writeTestFile($this->root, 'translations/languages/en/admin.yaml', "ui:\n  app:\n    name: Admin\n");
         $this->writeTestFile($this->root, 'translations/languages/en/ui.yaml', "ui:\n  app:\n    name: Studio\n");
 
-        $result = (new CoreTranslationBootstrapper())->generate($this->root);
+        $result = (new CoreTranslationBootstrapper())->generate($this->root, 'test');
 
         self::assertFalse($result['success']);
         self::assertStringContainsString('Translation key "ui.app.name" is defined more than once', $result['error'] ?? '');

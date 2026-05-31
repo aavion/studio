@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Core\Config\Config;
-use App\Entity\AclGroup;
 use App\Entity\UserAccount;
 use App\Security\UserAccountStatus;
+use App\Security\UserRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -23,6 +23,7 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Sign in');
         self::assertSelectorExists('form[action="/user/login"][method="post"]');
         self::assertSelectorExists('input[name="_csrf_token"]');
+        self::assertSelectorTextContains('a[href="/user/reset-password"]', 'Forgot password?');
         self::assertSelectorNotExists('.studio-error-reference');
         self::assertSelectorNotExists('a[href="/user/register"]');
     }
@@ -175,7 +176,7 @@ final class SecurityControllerTest extends WebTestCase
     public function testRegistrationRouteAndLoginLinkRenderWhenRegistrationIsEnabled(): void
     {
         $client = self::createClient();
-        $this->setRegistrationEnabled(true);
+        $this->setRegistrationMode('auto_approval');
 
         try {
             $client->request('GET', '/user/login');
@@ -188,7 +189,7 @@ final class SecurityControllerTest extends WebTestCase
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Create account');
         } finally {
-            $this->setRegistrationEnabled(false);
+            $this->setRegistrationMode('disabled');
         }
     }
 
@@ -201,9 +202,9 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Reset password');
     }
 
-    private function setRegistrationEnabled(bool $enabled): void
+    private function setRegistrationMode(string $mode): void
     {
-        self::getContainer()->get(Config::class)->set('user.registration.enabled', $enabled);
+        self::getContainer()->get(Config::class)->set('user.registration.mode', $mode);
     }
 
     private function createUserWithLevel(
@@ -214,16 +215,11 @@ final class SecurityControllerTest extends WebTestCase
     ): UserAccount
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $group = $entityManager->getRepository(AclGroup::class)->findOneBy([
-            'identifier' => $this->seededGroupIdentifier($level),
-        ]);
-
-        self::assertInstanceOf(AclGroup::class, $group);
-
         $existingUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
 
         if ($existingUser instanceof UserAccount) {
             $existingUser->changeStatus($status);
+            $existingUser->changeRole(UserRole::fromAccessLevel($level));
             $entityManager->flush();
 
             return $existingUser;
@@ -235,22 +231,13 @@ final class SecurityControllerTest extends WebTestCase
             $username.'@example.test',
             'pending',
             status: $status,
+            role: UserRole::fromAccessLevel($level),
         );
         $user->changePassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, $password));
-        $user->addGroup($group);
         $entityManager->persist($user);
         $entityManager->flush();
 
         return $user;
-    }
-
-    private function seededGroupIdentifier(int $level): string
-    {
-        return match (true) {
-            $level >= 8 => 'admin',
-            $level >= 3 => 'editor',
-            default => 'registered',
-        };
     }
 
     private function testUserUid(string $username): string

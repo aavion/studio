@@ -9,12 +9,15 @@ use App\Command\PackageAssetSyncCommand;
 use App\Core\Asset\AssetRebuildQueueFactory;
 use App\Core\Operation\OperationExecutor;
 use App\Core\Package\ActivePackageAssetProviderInterface;
+use App\Core\Package\PackageAssetRebuildDispatcher;
+use App\Core\Package\PackageAssetRebuildMessage;
 use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageAssetSyncer;
 use App\Core\Package\PackageScope;
 use App\Core\Translation\TranslationCatalogueAggregator;
 use App\Tests\Support\FilesystemTestHelper;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
+use App\Tests\Support\RecordingMessageBus;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
@@ -48,6 +51,7 @@ final class AssetRebuildCommandTest extends TestCase
                 new TranslationCatalogueAggregator($this->root),
             ),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
+            $this->assetRebuildDispatcher(),
         );
         $tester = new CommandTester($command);
 
@@ -115,6 +119,7 @@ final class AssetRebuildCommandTest extends TestCase
                 new TranslationCatalogueAggregator($this->root),
             ),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
+            $this->assetRebuildDispatcher(),
         );
         $tester = new CommandTester($command);
 
@@ -129,12 +134,47 @@ final class AssetRebuildCommandTest extends TestCase
         self::assertStringContainsString('Asset rebuild failed.', $tester->getDisplay());
     }
 
+    public function testAssetRebuildCanBeQueuedWithoutLoadingPackages(): void
+    {
+        $messageBus = new RecordingMessageBus();
+        $command = new AssetRebuildCommand(
+            $this->kernel('test'),
+            new FailingPackageAssetProvider(),
+            new AssetRebuildQueueFactory(
+                $this->root,
+                new PackageAssetSyncer($this->root),
+                new TranslationCatalogueAggregator($this->root),
+            ),
+            new OperationExecutor(new NullWorkflowResultMessageReporter()),
+            $this->assetRebuildDispatcher($messageBus),
+        );
+        $tester = new CommandTester($command);
+
+        $exitCode = $tester->execute(['--queue' => true, '--trigger' => 'setup', '--json' => true]);
+        $payload = json_decode($tester->getDisplay(), true, flags: JSON_THROW_ON_ERROR);
+
+        self::assertSame(Command::SUCCESS, $exitCode);
+        self::assertSame('success', $payload['status']);
+        self::assertCount(1, $messageBus->messages());
+        self::assertInstanceOf(PackageAssetRebuildMessage::class, $messageBus->messages()[0]);
+        self::assertSame('test', $messageBus->messages()[0]->environment());
+        self::assertSame('setup', $messageBus->messages()[0]->trigger());
+    }
+
     private function kernel(string $environment): KernelInterface
     {
         $kernel = $this->createStub(KernelInterface::class);
         $kernel->method('getEnvironment')->willReturn($environment);
 
         return $kernel;
+    }
+
+    private function assetRebuildDispatcher(?RecordingMessageBus $messageBus = null): PackageAssetRebuildDispatcher
+    {
+        return new PackageAssetRebuildDispatcher(
+            $messageBus ?? new RecordingMessageBus(),
+            new NullWorkflowResultMessageReporter(),
+        );
     }
 
     private function createUnsafePackageAssetRoot(): void

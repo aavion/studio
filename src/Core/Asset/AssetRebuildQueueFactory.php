@@ -25,7 +25,7 @@ final readonly class AssetRebuildQueueFactory
     /**
      * @param list<PackageAssetSyncPackage> $packages
      */
-    public function create(string $environment, array $packages): ActionQueue
+    public function create(string $environment, array $packages, string $trigger = 'manual'): ActionQueue
     {
         $isProduction = 'prod' === $environment;
         $actions = [
@@ -45,6 +45,7 @@ final readonly class AssetRebuildQueueFactory
 
         return ActionQueue::create('asset rebuild', $actions, context: [
             'environment' => $environment,
+            'trigger' => '' === trim($trigger) ? 'manual' : trim($trigger),
             'package_count' => count($packages),
             'production_compile' => $isProduction,
         ]);

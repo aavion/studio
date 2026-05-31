@@ -34,7 +34,7 @@ final readonly class AuditLogger implements AuditLoggerInterface
         $this->logger->info($action, [
             'user' => $actor->username() ?? 'anonymous',
             'user_uid' => $actor->userUid(),
-            'user_max_access_level' => $actor->accessLevel(),
+            'user_access_level' => $actor->accessLevel(),
             'action' => $action,
             'context' => $this->normalize($this->withRequestTrace($context)),
         ]);

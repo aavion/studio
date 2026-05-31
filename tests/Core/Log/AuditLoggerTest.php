@@ -25,7 +25,7 @@ final class AuditLoggerTest extends TestCase
         $monolog->pushHandler($handler);
 
         (new AuditLogger($monolog))->log(
-            AccessActor::fromAccess(9, ['admin'], '10000000-0000-0000-0000-000000000001', 'admin'),
+            AccessActor::fromAccess(9, ['site_operations'], '10000000-0000-0000-0000-000000000001', 'admin'),
             'package.activate',
             [
                 'package' => 'demo-module',
@@ -39,7 +39,7 @@ final class AuditLoggerTest extends TestCase
         self::assertSame(Level::Info, $records[0]->level);
         self::assertSame('package.activate', $records[0]->message);
         self::assertSame('admin', $records[0]->context['user']);
-        self::assertSame(9, $records[0]->context['user_max_access_level']);
+        self::assertSame(9, $records[0]->context['user_access_level']);
         self::assertSame('package.activate', $records[0]->context['action']);
         self::assertSame('demo-module', $records[0]->context['context']['package']);
         self::assertSame('[redacted]', $records[0]->context['context']['api_token']);
@@ -52,7 +52,7 @@ final class AuditLoggerTest extends TestCase
         $monolog->pushHandler($handler);
 
         (new AuditLogger($monolog, new DenyAllAuditLogPolicy()))->log(
-            AccessActor::fromAccess(9, ['admin'], '10000000-0000-0000-0000-000000000001', 'admin'),
+            AccessActor::fromAccess(9, ['site_operations'], '10000000-0000-0000-0000-000000000001', 'admin'),
             'settings.core.save',
         );
 

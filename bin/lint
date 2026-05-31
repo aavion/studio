@@ -1,0 +1,517 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__).'/vendor/autoload.php';
+
+use App\Core\Lint\CssLinter;
+use App\Core\Lint\JavaScriptLinter;
+use App\Core\Lint\JsonLinter;
+use App\Core\Lint\LinterInterface;
+use Symfony\Component\Yaml\Yaml;
+
+$root = dirname(__DIR__);
+$php = PHP_BINARY;
+$failures = 0;
+$targets = array_slice($argv, 1);
+
+$run = static function (array $command, string $label) use (&$failures, $root): void {
+    fwrite(STDOUT, sprintf("\n==> %s\n", $label));
+    $process = proc_open(
+        $command,
+        [
+            0 => STDIN,
+            1 => STDOUT,
+            2 => STDERR,
+        ],
+        $pipes,
+        $root,
+    );
+
+    if (!is_resource($process)) {
+        fwrite(STDERR, sprintf("Failed to start %s.\n", $label));
+        ++$failures;
+
+        return;
+    }
+
+    $exitCode = proc_close($process);
+
+    if (0 !== $exitCode) {
+        ++$failures;
+    }
+};
+
+/**
+ * @param list<string> $extensions
+ *
+ * @return list<string>
+ */
+function filesWithExtensions(string $root, array $extensions): array
+{
+    $excluded = [
+        '.git',
+        'assets/packages',
+        'node_modules',
+        'public/assets',
+        'tests/Fixtures',
+        'var',
+        'vendor',
+    ];
+    $files = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveCallbackFilterIterator(
+            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
+            static function (SplFileInfo $file) use ($root, $excluded): bool {
+                $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
+
+                foreach ($excluded as $path) {
+                    if ($relative === $path || str_starts_with($relative, $path.'/')) {
+                        return false;
+                    }
+                }
+
+                return true;
+            },
+        ),
+    );
+
+    $extensions = array_flip($extensions);
+
+    foreach ($iterator as $file) {
+        if ($file instanceof SplFileInfo && $file->isFile() && isset($extensions[$file->getExtension()])) {
+            $files[] = $file->getPathname();
+        }
+    }
+
+    sort($files);
+
+    return $files;
+}
+
+/**
+ * @param list<string> $files
+ */
+function lintPhpFiles(string $root, array $files, string $php): int
+{
+    fwrite(STDOUT, "\n==> PHP syntax\n");
+    $failures = 0;
+
+    foreach ($files as $file) {
+        $process = proc_open(
+            [$php, '-l', $file],
+            [
+                0 => ['file', '/dev/null', 'r'],
+                1 => ['pipe', 'w'],
+                2 => STDERR,
+            ],
+            $pipes,
+            $root,
+        );
+
+        if (!is_resource($process)) {
+            fwrite(STDERR, sprintf("Failed to lint %s.\n", relativePath($root, $file)));
+            ++$failures;
+
+            continue;
+        }
+
+        $output = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        $exitCode = proc_close($process);
+
+        if (0 !== $exitCode) {
+            fwrite(STDOUT, (string) $output);
+            ++$failures;
+        }
+    }
+
+    if (0 === $failures) {
+        fwrite(STDOUT, "PHP syntax OK.\n");
+    }
+
+    return $failures;
+}
+
+/**
+ * @param list<string> $files
+ */
+function lintSourceFiles(string $root, array $files, LinterInterface $linter, string $label): int
+{
+    fwrite(STDOUT, sprintf("\n==> %s\n", $label));
+    $failures = 0;
+
+    foreach ($files as $file) {
+        $relative = relativePath($root, $file);
+
+        $result = $linter->lint((string) file_get_contents($file), $relative);
+
+        foreach ($result->issues() as $issue) {
+            fwrite(STDERR, sprintf(
+                "%s:%s:%s %s\n",
+                $relative,
+                $issue->line() ?? 1,
+                $issue->column() ?? 1,
+                $issue->details()['error'] ?? $issue->message(),
+            ));
+            ++$failures;
+        }
+    }
+
+    if (0 === $failures) {
+        fwrite(STDOUT, sprintf("%s OK.\n", $label));
+    }
+
+    return $failures;
+}
+
+/**
+ * @param list<string> $prefixes
+ */
+function pathMatchesAnyPrefix(string $path, array $prefixes): bool
+{
+    foreach ($prefixes as $prefix) {
+        if ($path === $prefix || str_starts_with($path, rtrim($prefix, '/').'/')) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * @param list<string> $targets
+ *
+ * @return array{files: list<string>, failures: int}
+ */
+function collectTargetFiles(string $root, array $targets): array
+{
+    $supportedExtensions = ['css', 'js', 'json', 'php', 'twig', 'yaml', 'yml'];
+    $files = [];
+    $failures = 0;
+
+    foreach ($targets as $target) {
+        $path = absolutePath($root, $target);
+
+        if (null === $path || (!is_file($path) && !is_dir($path))) {
+            fwrite(STDERR, sprintf("Lint target not found: %s\n", $target));
+            ++$failures;
+
+            continue;
+        }
+
+        if (is_file($path)) {
+            $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+            if (!in_array($extension, $supportedExtensions, true)) {
+                fwrite(STDOUT, sprintf("Skipping unsupported lint target: %s\n", relativePath($root, $path)));
+
+                continue;
+            }
+
+            $files[$path] = true;
+
+            continue;
+        }
+
+        $relativePrefix = relativePath($root, $path);
+
+        foreach (filesWithExtensions($root, $supportedExtensions) as $file) {
+            if (pathMatchesAnyPrefix(relativePath($root, $file), [$relativePrefix])) {
+                $files[$file] = true;
+            }
+        }
+    }
+
+    $files = array_keys($files);
+    sort($files);
+
+    return ['files' => $files, 'failures' => $failures];
+}
+
+function absolutePath(string $root, string $path): ?string
+{
+    $candidate = str_starts_with($path, DIRECTORY_SEPARATOR)
+        ? $path
+        : $root.DIRECTORY_SEPARATOR.$path;
+    $real = realpath($candidate);
+
+    if (!is_string($real) || !pathMatchesAnyPrefix(str_replace('\\', '/', $real), [str_replace('\\', '/', $root)])) {
+        return null;
+    }
+
+    return $real;
+}
+
+function relativePath(string $root, string $path): string
+{
+    return str_replace('\\', '/', substr($path, strlen($root) + 1));
+}
+
+/**
+ * @param list<string> $files
+ *
+ * @return array<string, list<string>>
+ */
+function groupFilesByExtension(array $files): array
+{
+    $groups = [];
+
+    foreach ($files as $file) {
+        $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        $groups[$extension][] = $file;
+    }
+
+    ksort($groups);
+
+    return $groups;
+}
+
+/**
+ * @param list<string> $files
+ */
+function containsTranslationSource(string $root, array $files): bool
+{
+    foreach ($files as $file) {
+        if (pathMatchesAnyPrefix(relativePath($root, $file), ['translations/languages'])) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function lintTranslationSourceKeys(string $root): int
+{
+    fwrite(STDOUT, "\n==> Translation source keys\n");
+
+    $translationDirectory = $root.'/translations/languages';
+    $localeDirectories = translationLocaleDirectories($translationDirectory);
+    $referenceLocale = isset($localeDirectories['en']) ? 'en' : array_key_first($localeDirectories);
+    $failures = 0;
+
+    if (null === $referenceLocale) {
+        fwrite(STDERR, "No translation source locale directories found.\n");
+
+        return 1;
+    }
+
+    foreach ($localeDirectories as $locale => $directory) {
+        try {
+            mergedTranslationLocaleCatalogue($directory);
+        } catch (RuntimeException $error) {
+            ++$failures;
+            fwrite(STDERR, sprintf("%s: %s\n", $locale, $error->getMessage()));
+        }
+    }
+
+    $referenceCatalogues = translationSourceCatalogues($localeDirectories[$referenceLocale]);
+
+    foreach ($localeDirectories as $locale => $directory) {
+        $catalogues = translationSourceCatalogues($directory);
+
+        foreach (array_keys(array_diff_key($referenceCatalogues, $catalogues)) as $domain) {
+            ++$failures;
+            fwrite(STDERR, sprintf("%s: missing source catalogue %s.yaml from reference locale %s\n", $locale, $domain, $referenceLocale));
+        }
+
+        foreach (array_keys(array_diff_key($catalogues, $referenceCatalogues)) as $domain) {
+            ++$failures;
+            fwrite(STDERR, sprintf("%s: extra source catalogue %s.yaml missing from reference locale %s\n", $locale, $domain, $referenceLocale));
+        }
+
+        foreach (array_intersect(array_keys($referenceCatalogues), array_keys($catalogues)) as $domain) {
+            $referenceKeys = flattenTranslationCatalogue((array) Yaml::parseFile($referenceCatalogues[$domain]));
+            $localeKeys = flattenTranslationCatalogue((array) Yaml::parseFile($catalogues[$domain]));
+
+            foreach (array_keys(array_diff_key($referenceKeys, $localeKeys)) as $key) {
+                ++$failures;
+                fwrite(STDERR, sprintf("%s: missing %s key %s from reference locale %s\n", $domain, $locale, $key, $referenceLocale));
+            }
+
+            foreach (array_keys(array_diff_key($localeKeys, $referenceKeys)) as $key) {
+                ++$failures;
+                fwrite(STDERR, sprintf("%s: extra %s key %s missing from reference locale %s\n", $domain, $locale, $key, $referenceLocale));
+            }
+        }
+    }
+
+    if (0 === $failures) {
+        fwrite(STDOUT, "Translation source keys OK.\n");
+    }
+
+    return $failures;
+}
+
+/**
+ * @return array<string, string>
+ */
+function translationLocaleDirectories(string $translationDirectory): array
+{
+    $directories = [];
+
+    foreach (glob($translationDirectory.'/*', GLOB_ONLYDIR) ?: [] as $directory) {
+        $locale = basename($directory);
+        if (1 === preg_match('/^[a-z][a-z0-9]*(?:[_-][a-zA-Z0-9]+)*$/', $locale)) {
+            $directories[$locale] = $directory;
+        }
+    }
+
+    ksort($directories);
+
+    return $directories;
+}
+
+/**
+ * @return array<string, string>
+ */
+function translationSourceCatalogues(string $directory): array
+{
+    $catalogues = [];
+
+    foreach (glob($directory.'/*.yaml') ?: [] as $path) {
+        $catalogues[basename($path, '.yaml')] = $path;
+    }
+
+    ksort($catalogues);
+
+    return $catalogues;
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function mergedTranslationLocaleCatalogue(string $directory): array
+{
+    $catalogue = [];
+    $files = glob($directory.'/*.yaml') ?: [];
+    sort($files);
+
+    foreach ($files as $file) {
+        $catalogue = mergeTranslationCatalogue($catalogue, (array) Yaml::parseFile($file), $file);
+    }
+
+    return $catalogue;
+}
+
+/**
+ * @param array<string, mixed> $left
+ * @param array<string, mixed> $right
+ *
+ * @return array<string, mixed>
+ */
+function mergeTranslationCatalogue(array $left, array $right, string $source, string $prefix = ''): array
+{
+    foreach ($right as $key => $value) {
+        $path = '' === $prefix ? (string) $key : $prefix.'.'.(string) $key;
+
+        if (!array_key_exists($key, $left)) {
+            $left[$key] = $value;
+
+            continue;
+        }
+
+        if (is_array($left[$key]) && is_array($value)) {
+            $left[$key] = mergeTranslationCatalogue($left[$key], $value, $source, $path);
+
+            continue;
+        }
+
+        throw new RuntimeException(sprintf('duplicate key "%s" in %s', $path, $source));
+    }
+
+    return $left;
+}
+
+/**
+ * @param array<string, mixed> $data
+ *
+ * @return array<string, mixed>
+ */
+function flattenTranslationCatalogue(array $data, string $prefix = ''): array
+{
+    $flat = [];
+
+    foreach ($data as $key => $value) {
+        $path = '' === $prefix ? (string) $key : $prefix.'.'.(string) $key;
+
+        if (is_array($value)) {
+            $flat += flattenTranslationCatalogue($value, $path);
+
+            continue;
+        }
+
+        $flat[$path] = $value;
+    }
+
+    return $flat;
+}
+
+if ([] !== $targets) {
+    $collected = collectTargetFiles($root, $targets);
+    $failures += $collected['failures'];
+    $filesByExtension = groupFilesByExtension($collected['files']);
+
+    if (isset($filesByExtension['php'])) {
+        $failures += lintPhpFiles($root, $filesByExtension['php'], $php);
+    }
+
+    $twigFiles = $filesByExtension['twig'] ?? [];
+    if ([] !== $twigFiles) {
+        $run([$php, 'bin/console', 'lint:twig', ...$twigFiles], 'Twig templates');
+    }
+
+    $yamlFiles = [...($filesByExtension['yaml'] ?? []), ...($filesByExtension['yml'] ?? [])];
+    if ([] !== $yamlFiles) {
+        $run([$php, 'bin/console', 'lint:yaml', '--parse-tags', ...$yamlFiles], 'YAML files');
+    }
+
+    if (isset($filesByExtension['js'])) {
+        $failures += lintSourceFiles($root, $filesByExtension['js'], new JavaScriptLinter(), 'JavaScript module syntax');
+    }
+
+    if (isset($filesByExtension['json'])) {
+        $failures += lintSourceFiles($root, $filesByExtension['json'], new JsonLinter(), 'JSON syntax');
+    }
+
+    if (isset($filesByExtension['css'])) {
+        fwrite(STDOUT, "\nNote: focused CSS lint uses the strict CSS parser and may report Tailwind-specific directives or generated modern at-rules such as @apply, @theme, or @supports as unsupported syntax.\n");
+        $failures += lintSourceFiles($root, $filesByExtension['css'], new CssLinter(), 'CSS syntax');
+    }
+
+    if (containsTranslationSource($root, $collected['files'])) {
+        $failures += lintTranslationSourceKeys($root);
+    }
+
+    if ([] === $collected['files'] && 0 === $failures) {
+        fwrite(STDOUT, "No supported lint targets found.\n");
+    }
+
+    if (0 !== $failures) {
+        fwrite(STDERR, sprintf("\nLint failed with %d failing check(s).\n", $failures));
+
+        exit(1);
+    }
+
+    fwrite(STDOUT, "\nSelected lint checks passed.\n");
+
+    exit(0);
+}
+
+$failures += lintPhpFiles($root, filesWithExtensions($root, ['php']), $php);
+$run([$php, 'bin/console', 'lint:container'], 'Symfony container');
+$run([$php, 'bin/console', 'lint:twig', 'templates'], 'Twig templates');
+$run([$php, 'bin/console', 'lint:yaml', '--parse-tags', 'config', 'translations'], 'YAML config and translations');
+$failures += lintSourceFiles($root, filesWithExtensions($root, ['js']), new JavaScriptLinter(), 'JavaScript module syntax');
+$failures += lintSourceFiles($root, filesWithExtensions($root, ['json']), new JsonLinter(), 'JSON syntax');
+$run([$php, 'bin/console', 'tailwind:build'], 'Tailwind CSS build');
+$failures += lintTranslationSourceKeys($root);
+
+if (0 !== $failures) {
+    fwrite(STDERR, sprintf("\nLint failed with %d failing check(s).\n", $failures));
+
+    exit(1);
+}
+
+fwrite(STDOUT, "\nAll lint checks passed.\n");

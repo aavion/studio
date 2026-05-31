@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Validation\EmailAddress;
+use App\Entity\UserAccount;
 use Throwable;
 
 final readonly class SetupWebInputFactory
@@ -143,13 +145,17 @@ final readonly class SetupWebInputFactory
             $errors['admin_password_confirm'][] = 'setup.form.errors.password_mismatch';
         }
 
+        if (!UserAccount::isValidUsername((string) $values['admin_username'])) {
+            $errors['admin_username'][] = 'setup.form.errors.username';
+        }
+
         $adminPassword = (string) $values['admin_password'];
 
         if ('' !== trim($adminPassword) && !$this->passwordPolicy->isValidAdminPassword($adminPassword)) {
             $errors['admin_password'][] = 'setup.form.errors.password_length';
         }
 
-        if (1 !== preg_match('/^[^@\s]+@[^@\s]+$/', (string) $values['admin_email'])) {
+        if (!EmailAddress::isValid((string) $values['admin_email'])) {
             $errors['admin_email'][] = 'setup.form.errors.email';
         }
 
@@ -178,6 +184,10 @@ final readonly class SetupWebInputFactory
     {
         $host = parse_url($defaultUri, PHP_URL_HOST);
 
-        return 'admin@'.(is_string($host) && '' !== $host ? $host : 'localhost');
+        if (!is_string($host) || '' === $host || !EmailAddress::isValid('admin@'.$host)) {
+            $host = 'localhost.local';
+        }
+
+        return EmailAddress::normalize('admin@'.$host);
     }
 }

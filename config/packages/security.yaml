@@ -10,6 +10,17 @@ security:
                 class: App\Entity\UserAccount
                 property: username
 
+    role_hierarchy:
+        ROLE_USER: [ROLE_PUBLIC]
+        ROLE_MODERATOR: [ROLE_USER]
+        ROLE_AUTHOR: [ROLE_MODERATOR]
+        ROLE_PUBLISHER: [ROLE_AUTHOR]
+        ROLE_CURATOR: [ROLE_PUBLISHER]
+        ROLE_MANAGER: [ROLE_CURATOR]
+        ROLE_DIRECTOR: [ROLE_MANAGER]
+        ROLE_ADMIN: [ROLE_DIRECTOR]
+        ROLE_OWNER: [ROLE_ADMIN]
+
     firewalls:
         dev:
             # Ensure dev tools and static assets are always allowed
@@ -40,8 +51,13 @@ security:
 
     # Note: Only the *first* matching rule is applied
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/editor, roles: ROLE_AUTHOR }
+        - { path: ^/user/api-keys, roles: ROLE_USER }
+        - { path: ^/user/profile, roles: ROLE_USER }
+        - { path: ^/user/password, roles: ROLE_USER }
+        - { path: ^/user/logout, roles: ROLE_USER }
+        - { path: ^/user$, roles: ROLE_USER }
 
 when@test:
     security:

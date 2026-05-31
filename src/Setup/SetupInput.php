@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Validation\EmailAddress;
+use App\Entity\UserAccount;
 use InvalidArgumentException;
 
 final readonly class SetupInput
@@ -40,6 +42,14 @@ final readonly class SetupInput
 
         if ('' === trim($this->defaultUri)) {
             throw new InvalidArgumentException('Setup default URI must not be empty.');
+        }
+
+        if (!UserAccount::isValidUsername($this->adminUsername)) {
+            throw new InvalidArgumentException('Setup admin username must start with a letter and contain 5 to 30 letters, digits, hyphens, or underscores.');
+        }
+
+        if (null !== $this->adminEmail && !EmailAddress::isValid($this->adminEmail)) {
+            throw new InvalidArgumentException('Setup admin email must be valid.');
         }
     }
 
@@ -129,7 +139,7 @@ final readonly class SetupInput
 
     public function adminEmail(): string
     {
-        return $this->adminEmail ?? self::adminEmailFromDefaultUri($this->defaultUri);
+        return EmailAddress::assert($this->adminEmail ?? self::adminEmailFromDefaultUri($this->defaultUri));
     }
 
     public function appSecret(): ?string
@@ -161,10 +171,10 @@ final readonly class SetupInput
     {
         $host = parse_url($defaultUri, PHP_URL_HOST);
 
-        if (!is_string($host) || '' === $host) {
-            $host = 'localhost';
+        if (!is_string($host) || '' === $host || !EmailAddress::isValid('admin@'.$host)) {
+            $host = 'localhost.local';
         }
 
-        return 'admin@'.$host;
+        return EmailAddress::normalize('admin@'.$host);
     }
 }

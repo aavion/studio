@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Support;
 
+use App\Localization\CoreTranslationBootstrapper;
 use RuntimeException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -36,6 +37,7 @@ final class TestSuiteLifecycle
 
         self::removeDirectory($testVarDirectory);
         self::removeDirectory($projectRoot.'/var/cache/test');
+        self::initializeRuntimeTranslations($projectRoot);
 
         if (!mkdir($testVarDirectory, 0777, true) && !is_dir($testVarDirectory)) {
             throw new RuntimeException('Unable to create var/test for the SQLite test database.');
@@ -48,6 +50,15 @@ final class TestSuiteLifecycle
         ]);
 
         TestDatabaseSeeder::seed($testVarDirectory.'/test.db');
+    }
+
+    private static function initializeRuntimeTranslations(string $projectRoot): void
+    {
+        $result = (new CoreTranslationBootstrapper())->generate($projectRoot, 'test');
+
+        if (!($result['success'] ?? false)) {
+            throw new RuntimeException('Unable to generate test runtime translations: '.($result['error'] ?? 'unknown error'));
+        }
     }
 
     private static function acquireTestDatabaseLock(string $projectRoot): void

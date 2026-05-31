@@ -102,12 +102,31 @@ class SiteMenuItem
         return $this->viewMinLevel;
     }
 
+    public function targetType(): string
+    {
+        return $this->targetType;
+    }
+
+    public function targetValue(): string
+    {
+        return $this->targetValue;
+    }
+
     /**
      * @return list<string>|null
      */
     public function viewGroupIdentifiers(): ?array
     {
         return $this->viewGroupIdentifiers;
+    }
+
+    /**
+     * @param list<string>|null $groupIdentifiers
+     */
+    public function setViewRule(?int $minLevel, ?array $groupIdentifiers = null): void
+    {
+        $this->viewMinLevel = AccessLevel::assert($minLevel);
+        $this->viewGroupIdentifiers = self::assertOptionalGroupIdentifierList($groupIdentifiers);
     }
 
     /**
@@ -128,7 +147,7 @@ class SiteMenuItem
                 ]);
             }
 
-            Identifier::assertSnakeCase($identifier, MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
+            Identifier::assertAclGroupIdentifier($identifier);
         }
 
         return array_values(array_unique($values));

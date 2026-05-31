@@ -48,7 +48,7 @@ final class PublicContentAccessTest extends WebTestCase
     {
         $client = self::createClient();
         $connection = self::getContainer()->get(Connection::class);
-        $connection->update('content_item', ['view_min_level' => AccessLevel::EDITOR], ['slug' => 'home']);
+        $connection->update('content_item', ['view_min_level' => AccessLevel::AUTHOR], ['slug' => 'home']);
 
         try {
             $client->request('GET', '/');
@@ -75,7 +75,7 @@ final class PublicContentAccessTest extends WebTestCase
                 '@frontend/content/injections/static.html.twig',
             ));
         });
-        $connection->update('content_item', ['view_min_level' => AccessLevel::EDITOR], ['slug' => 'first-update']);
+        $connection->update('content_item', ['view_min_level' => AccessLevel::AUTHOR], ['slug' => 'first-update']);
 
         try {
             $client->request('GET', '/news/first-update');

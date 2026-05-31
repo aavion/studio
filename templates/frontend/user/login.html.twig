@@ -14,6 +14,9 @@
         {% if authentication_error|default(false) %}
             <p class="studio-auth-notice">{{ 'ui.user.login.invalid_credentials'|trans }}</p>
         {% endif %}
+        {% if account_closed|default(false) %}
+            <p class="studio-auth-notice">{{ 'ui.user.login.account_closed'|trans }}</p>
+        {% endif %}
         <form action="{{ path('user_login') }}" method="post" class="studio-auth-form">
             {% include '@frontend/partials/forms/fields/input.html.twig' with {
                 name: 'username',
@@ -36,13 +39,15 @@
             {% include '@frontend/partials/forms/fields/captcha.html.twig' %}
             {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.login.submit'|trans} only %}
         </form>
+        {% set login_actions = [
+            {label: 'ui.user.login.forgot_password'|trans, href: path('user_reset_password'), variant: 'secondary'},
+        ] %}
         {% if registration_enabled|default(false) %}
-            {% include '@frontend/partials/actions/_button-group.html.twig' with {
-                actions: [
-                    {label: 'ui.user.register.link'|trans, href: path('user_register'), variant: 'secondary'},
-                ],
-            } only %}
+            {% set login_actions = login_actions|merge([
+                {label: 'ui.user.register.link'|trans, href: path('user_register'), variant: 'secondary'},
+            ]) %}
         {% endif %}
+        {% include '@frontend/partials/actions/_button-group.html.twig' with {actions: login_actions} only %}
         {% include '@frontend/error-pages/partials/_debug.html.twig' with {http_error: http_error|default(null)} only %}
     </section>
 {% endblock %}

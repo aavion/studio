@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Support\DatabaseSeed;
 
+use App\Setup\SetupDefaultSeed;
+
 final class TestDatabaseContentSeeder
 {
     public static function seed(TestDatabaseSeedWriter $writer): void
@@ -28,16 +30,22 @@ final class TestDatabaseContentSeeder
      */
     private static function contentItems(): array
     {
+        $setupSeed = new SetupDefaultSeed();
+        $homeContent = $setupSeed->homeContentItem();
+        $homeRevision = $setupSeed->homeContentRevision();
+        $setupSchema = $setupSeed->contentSchema();
+        $setupSchemaVersion = $setupSeed->contentSchemaVersion();
+
         return [
             [
-                'content_uid' => '20000000-0000-0000-0000-000000000001',
-                'revision_uid' => '20000000-0000-0000-0000-000000000101',
-                'schema_uid' => '10000000-0000-0000-0000-000000000001',
-                'schema_version_uid' => '10000000-0000-0000-0000-000000000101',
-                'slug' => 'home',
+                'content_uid' => $homeContent['uid'],
+                'revision_uid' => $homeRevision['uid'],
+                'schema_uid' => $setupSchema['uid'],
+                'schema_version_uid' => $setupSchemaVersion['uid'],
+                'slug' => $homeContent['slug'],
                 'custom_url' => null,
-                'sort_order' => 10,
-                'metadata' => ['template_hint' => 'home'],
+                'sort_order' => $homeContent['sort_order'],
+                'metadata' => ['template_hint' => $homeContent['template_hint']],
                 'fields' => [
                     'title' => ['en' => 'Welcome to Studio', 'de' => 'Willkommen in Studio'],
                     'subtitle' => ['en' => 'A flexible content seed for tests.', 'de' => 'Ein flexibler Content-Seed fuer Tests.'],
@@ -51,8 +59,8 @@ final class TestDatabaseContentSeeder
             [
                 'content_uid' => '20000000-0000-0000-0000-000000000002',
                 'revision_uid' => '20000000-0000-0000-0000-000000000102',
-                'schema_uid' => '10000000-0000-0000-0000-000000000001',
-                'schema_version_uid' => '10000000-0000-0000-0000-000000000101',
+                'schema_uid' => $setupSchema['uid'],
+                'schema_version_uid' => $setupSchemaVersion['uid'],
                 'slug' => 'about',
                 'custom_url' => '/about',
                 'sort_order' => 20,

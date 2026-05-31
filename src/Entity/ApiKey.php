@@ -87,6 +87,16 @@ class ApiKey
         return $this->status;
     }
 
+    public function user(): UserAccount
+    {
+        return $this->user;
+    }
+
+    public function reassignToUser(UserAccount $user): void
+    {
+        $this->user = $user;
+    }
+
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;

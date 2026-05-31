@@ -17,12 +17,14 @@ use Throwable;
 final readonly class TranslationCatalogueAggregator
 {
     private const CORE_SOURCE_DIRECTORY = 'translations/languages';
-    private const TARGET_PATTERN = 'translations/runtime/messages.%s.yaml';
+    private TranslationRuntimePath $runtimePath;
 
     public function __construct(
         private string $projectDir,
         private PathGuard $pathGuard = new PathGuard(),
+        ?TranslationRuntimePath $runtimePath = null,
     ) {
+        $this->runtimePath = $runtimePath ?? TranslationRuntimePath::fromGlobals($projectDir);
     }
 
     /**
@@ -38,15 +40,35 @@ final readonly class TranslationCatalogueAggregator
             $context = [
                 'exception' => $error::class,
                 'message' => $error->getMessage(),
-                'target_pattern' => self::TARGET_PATTERN,
+                'target_pattern' => $this->runtimePath->relativeCataloguePattern(),
             ];
 
             return WorkflowResult::failed([
                 Message::exception(MessageCode::TRANSLATION_AGGREGATE_FAILED, MessageKey::TRANSLATION_AGGREGATE_FAILED, [
-                    '%path%' => 'translations/runtime/messages.*.yaml',
+                    '%path%' => $this->runtimePath->relativeDirectory().'/messages.*.yaml',
                 ], $context),
             ], $context);
         }
+    }
+
+    /**
+     * @param iterable<PackageAssetSyncPackage> $packages
+     */
+    public function sourceHash(iterable $packages): string
+    {
+        $packages = $this->sortedPackages($packages);
+        $sources = array_merge($this->coreSources(), $this->packageSources($packages));
+        $fingerprints = [];
+
+        foreach ($sources as $source) {
+            $fingerprints[] = implode("\0", [
+                $source['locale'],
+                $this->relativeSourcePath($source['path']),
+                (string) hash_file('sha256', $source['path']),
+            ]);
+        }
+
+        return hash('sha256', implode("\n", $fingerprints));
     }
 
     /**
@@ -73,7 +95,7 @@ final readonly class TranslationCatalogueAggregator
         $targets = [];
         ksort($catalogues);
         foreach ($catalogues as $locale => $catalogue) {
-            $relativeTarget = sprintf(self::TARGET_PATTERN, $locale);
+            $relativeTarget = $this->runtimePath->relativeCataloguePath($locale);
             $target = $this->absolutePath($relativeTarget);
             if (!is_dir(dirname($target))) {
                 mkdir(dirname($target), 0775, true);
@@ -233,7 +255,7 @@ final readonly class TranslationCatalogueAggregator
 
     private function removeGeneratedCatalogues(): void
     {
-        foreach (glob($this->projectDir.'/translations/runtime/messages.*.yaml') ?: [] as $path) {
+        foreach ($this->runtimePath->generatedCataloguePaths() as $path) {
             if (is_file($path) && !is_link($path)) {
                 unlink($path);
             }
@@ -243,5 +265,12 @@ final readonly class TranslationCatalogueAggregator
     private function absolutePath(string $path): string
     {
         return $this->projectDir.'/'.$this->pathGuard->relativePath($path);
+    }
+
+    private function relativeSourcePath(string $path): string
+    {
+        $prefix = rtrim($this->projectDir, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+
+        return str_starts_with($path, $prefix) ? substr($path, strlen($prefix)) : $path;
     }
 }

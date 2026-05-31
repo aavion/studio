@@ -9,6 +9,7 @@ use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
+use App\Security\UserFlowConfig;
 
 final readonly class CoreSettingsRegistry
 {
@@ -46,10 +47,19 @@ final readonly class CoreSettingsRegistry
                 'setup_warnings' => 'admin.settings.options.dashboard.setup_warnings',
             ], sortOrder: 10),
 
-            new CoreSettingDefinition('users', 'user.registration.enabled', 'admin.settings.fields.registration_enabled.label', false, ConfigValueType::Boolean, sortOrder: 10),
-            new CoreSettingDefinition('users', 'user.default_acl_group', 'admin.settings.fields.default_acl_group.label', 'registered', ConfigValueType::String, validation: ['required' => true], sortOrder: 20),
-            new CoreSettingDefinition('users', 'user.menu.enabled', 'admin.settings.fields.user_menu_enabled.label', true, ConfigValueType::Boolean, sortOrder: 30),
-            new CoreSettingDefinition('users', 'user.menu.sort_order', 'admin.settings.fields.user_menu_sort_order.label', 900, ConfigValueType::Integer, FormInputType::Number, validation: ['min' => 0, 'max' => 9999], sortOrder: 40),
+            new CoreSettingDefinition('users', UserFlowConfig::REGISTRATION_MODE_KEY, 'admin.settings.fields.registration_mode.label', UserFlowConfig::REGISTRATION_DISABLED, ConfigValueType::String, FormInputType::Select, options: [
+                UserFlowConfig::REGISTRATION_DISABLED => 'admin.settings.options.registration.disabled',
+                UserFlowConfig::REGISTRATION_ADMIN_APPROVAL => 'admin.settings.options.registration.admin_approval',
+                UserFlowConfig::REGISTRATION_AUTO_APPROVAL => 'admin.settings.options.registration.auto_approval',
+            ], validation: ['required' => true], sortOrder: 10),
+            new CoreSettingDefinition('users', UserFlowConfig::DEFAULT_ACL_GROUP_KEY, 'admin.settings.fields.default_acl_group.label', '', ConfigValueType::String, sortOrder: 20),
+            new CoreSettingDefinition('users', UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, 'admin.settings.fields.username_change_enabled.label', false, ConfigValueType::Boolean, sortOrder: 30),
+            new CoreSettingDefinition('users', UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'admin.settings.fields.account_link_ttl_hours.label', UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.account_link_ttl_hours.help', validation: ['min' => 1, 'max' => 168], sortOrder: 40),
+            new CoreSettingDefinition('users', UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, 'admin.settings.fields.registration_admin_notification_email.label', '', ConfigValueType::String, validation: ['max_length' => 180], sortOrder: 50),
+            new CoreSettingDefinition('users', UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, 'admin.settings.fields.security_notification_email.label', '', ConfigValueType::String, validation: ['max_length' => 180], sortOrder: 60),
+            new CoreSettingDefinition('users', UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY, 'admin.settings.fields.deleted_user_retention_days.label', UserFlowConfig::DEFAULT_DELETED_USER_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.deleted_user_retention_days.help', validation: ['min' => 1, 'max' => 3650], sortOrder: 70),
+            new CoreSettingDefinition('users', 'user.menu.enabled', 'admin.settings.fields.user_menu_enabled.label', true, ConfigValueType::Boolean, sortOrder: 80),
+            new CoreSettingDefinition('users', 'user.menu.sort_order', 'admin.settings.fields.user_menu_sort_order.label', 900, ConfigValueType::Integer, FormInputType::Number, validation: ['min' => 0, 'max' => 9999], sortOrder: 90),
 
             new CoreSettingDefinition('mail', 'mail.enabled', 'admin.settings.fields.mail_enabled.label', false, ConfigValueType::Boolean, sortOrder: 10),
             new CoreSettingDefinition('mail', 'mail.from_address', 'admin.settings.fields.mail_from_address.label', 'admin@localhost', ConfigValueType::String, validation: ['max_length' => 180], sortOrder: 20),

@@ -114,13 +114,11 @@ final class Version20260527120000 extends AbstractMigration
         $aclGroup->addColumn('uid', 'string', ['length' => 36]);
         $aclGroup->addColumn('identifier', 'string', ['length' => 80]);
         $aclGroup->addColumn('name', 'json');
-        $aclGroup->addColumn('access_level', 'integer');
-        $aclGroup->addColumn('locked', 'boolean');
-        $aclGroup->addColumn('allow_empty', 'boolean');
+        $aclGroup->addColumn('min_role', 'integer');
         $aclGroup->addColumn('metadata', 'json');
         $this->addPrimaryKey($aclGroup, 'uid');
         $aclGroup->addUniqueIndex(['identifier'], 'uniq_acl_group_identifier');
-        $aclGroup->addIndex(['access_level'], 'idx_acl_group_access_level');
+        $aclGroup->addIndex(['min_role'], 'idx_acl_group_min_role');
 
         $user = $schema->createTable('user_account');
         $user->addColumn('uid', 'string', ['length' => 36]);
@@ -130,6 +128,7 @@ final class Version20260527120000 extends AbstractMigration
         $user->addColumn('profile', 'json');
         $user->addColumn('settings', 'json');
         $user->addColumn('status', 'string', ['length' => 255]);
+        $user->addColumn('role', 'string', ['length' => 40, 'default' => 'user']);
         $this->addPrimaryKey($user, 'uid');
         $user->addUniqueIndex(['username'], 'uniq_user_account_username');
         $user->addUniqueIndex(['email'], 'uniq_user_account_email');
@@ -143,6 +142,27 @@ final class Version20260527120000 extends AbstractMigration
         $userGroup->addIndex(['group_uid'], 'IDX_E9B9849ED009EE7F');
         $userGroup->addForeignKeyConstraint('user_account', ['user_uid'], ['uid'], ['onDelete' => 'CASCADE'], 'fk_user_acl_group_user');
         $userGroup->addForeignKeyConstraint('acl_group', ['group_uid'], ['uid'], ['onDelete' => 'CASCADE'], 'fk_user_acl_group_group');
+
+        $accountToken = $schema->createTable('account_token');
+        $accountToken->addColumn('uid', 'string', ['length' => 36]);
+        $accountToken->addColumn('token_hash', 'string', ['length' => 64]);
+        $accountToken->addColumn('type', 'string', ['length' => 255]);
+        $accountToken->addColumn('status', 'string', ['length' => 255]);
+        $accountToken->addColumn('email', 'string', ['length' => 180]);
+        $accountToken->addColumn('user_uid', 'string', ['length' => 36, 'notnull' => false]);
+        $accountToken->addColumn('group_identifiers', 'json');
+        $accountToken->addColumn('role', 'string', ['length' => 40, 'default' => 'user']);
+        $accountToken->addColumn('metadata', 'json');
+        $accountToken->addColumn('created_at', 'datetime_immutable');
+        $accountToken->addColumn('expires_at', 'datetime_immutable');
+        $accountToken->addColumn('consumed_at', 'datetime_immutable', ['notnull' => false]);
+        $this->addPrimaryKey($accountToken, 'uid');
+        $accountToken->addUniqueIndex(['token_hash'], 'uniq_account_token_hash');
+        $accountToken->addIndex(['email'], 'idx_account_token_email');
+        $accountToken->addIndex(['type', 'status'], 'idx_account_token_type_status');
+        $accountToken->addIndex(['user_uid', 'type'], 'idx_account_token_user_type');
+        $accountToken->addIndex(['expires_at'], 'idx_account_token_expires_at');
+        $accountToken->addForeignKeyConstraint('user_account', ['user_uid'], ['uid'], ['onDelete' => 'CASCADE'], 'fk_account_token_user');
 
         $apiKey = $schema->createTable('api_key');
         $apiKey->addColumn('uid', 'string', ['length' => 36]);
@@ -320,6 +340,7 @@ final class Version20260527120000 extends AbstractMigration
         $schema->dropTable('site_menu');
         $schema->dropTable('extension_package');
         $schema->dropTable('api_key');
+        $schema->dropTable('account_token');
         $schema->dropTable('user_acl_group');
         $schema->dropTable('user_account');
         $schema->dropTable('acl_group');

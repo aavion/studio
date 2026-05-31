@@ -6,15 +6,18 @@ namespace App\Entity;
 
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
+use App\Core\Validation\EmailAddress;
 use App\Core\Validation\Uid;
+use App\Repository\UserAccountRepository;
 use App\Security\AccessLevelAwareUserInterface;
 use App\Security\UserAccountStatus;
+use App\Security\UserRole;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: UserAccountRepository::class)]
 #[ORM\Table(name: 'user_account')]
 #[ORM\UniqueConstraint(name: 'uniq_user_account_username', columns: ['username'])]
 #[ORM\UniqueConstraint(name: 'uniq_user_account_email', columns: ['email'])]
@@ -49,6 +52,9 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
     #[ORM\Column(enumType: UserAccountStatus::class)]
     private UserAccountStatus $status = UserAccountStatus::Active;
 
+    #[ORM\Column(length: 40, enumType: UserRole::class, options: ['default' => 'user'])]
+    private UserRole $role = UserRole::User;
+
     /**
      * @var Collection<int, AclGroup>
      */
@@ -69,6 +75,7 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         array $profile = [],
         array $settings = ['language' => 'default'],
         UserAccountStatus $status = UserAccountStatus::Active,
+        UserRole $role = UserRole::User,
     ) {
         $this->uid = Uid::assert($uid, 'User UID');
         $this->username = self::assertUsername($username);
@@ -77,6 +84,7 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         $this->profile = $profile;
         $this->settings = $settings;
         $this->status = $status;
+        $this->role = $role;
         $this->groups = new ArrayCollection();
     }
 
@@ -90,9 +98,19 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         return $this->username;
     }
 
+    public function changeUsername(string $username): void
+    {
+        $this->username = self::assertUsername($username);
+    }
+
     public function email(): string
     {
         return $this->email;
+    }
+
+    public function changeEmail(string $email): void
+    {
+        $this->email = self::assertEmail($email);
     }
 
     public function passwordHash(): string
@@ -110,7 +128,7 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
      */
     public function getRoles(): array
     {
-        return [];
+        return $this->role->symfonyRoles();
     }
 
     public function getUserIdentifier(): string
@@ -127,11 +145,27 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
     }
 
     /**
+     * @param array<string, mixed> $profile
+     */
+    public function updateProfile(array $profile): void
+    {
+        $this->profile = $profile;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function settings(): array
     {
         return $this->settings;
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     */
+    public function updateSettings(array $settings): void
+    {
+        $this->settings = $settings;
     }
 
     public function status(): UserAccountStatus
@@ -149,6 +183,16 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         $this->status = $status;
     }
 
+    public function role(): UserRole
+    {
+        return $this->role;
+    }
+
+    public function changeRole(UserRole $role): void
+    {
+        $this->role = $role;
+    }
+
     /**
      * @return Collection<int, AclGroup>
      */
@@ -164,20 +208,24 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         }
     }
 
-    public function maxAccessLevel(): int
+    public function removeGroup(AclGroup $group): void
     {
-        $max = 0;
+        $this->groups->removeElement($group);
+    }
 
-        foreach ($this->groups as $group) {
-            $max = max($max, $group->accessLevel());
-        }
+    public function clearGroups(): void
+    {
+        $this->groups->clear();
+    }
 
-        return $max;
+    public function accessLevel(): int
+    {
+        return $this->role->accessLevel();
     }
 
     private static function assertUsername(string $username): string
     {
-        if (1 !== preg_match('/^[a-z][a-z0-9_.-]{2,79}$/', $username)) {
+        if (!self::isValidUsername($username)) {
             throw MessageException::invalidArgument(MessageKey::USERNAME_INVALID, [
                 '%username%' => $username,
             ]);
@@ -186,14 +234,13 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
         return $username;
     }
 
+    public static function isValidUsername(string $username): bool
+    {
+        return 1 === preg_match('/^[A-Za-z][A-Za-z0-9_-]{4,29}$/', $username);
+    }
+
     private static function assertEmail(string $email): string
     {
-        if (false === filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw MessageException::invalidArgument(MessageKey::USER_EMAIL_INVALID, [
-                '%email%' => $email,
-            ]);
-        }
-
-        return $email;
+        return EmailAddress::assert($email);
     }
 }

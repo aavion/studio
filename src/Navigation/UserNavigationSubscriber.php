@@ -46,14 +46,14 @@ final readonly class UserNavigationSubscriber implements EventSubscriberInterfac
             'route',
             'user_profile',
             sortOrder: $this->config->menuSortOrder(),
-            metadata: ['min_access_level' => AccessLevel::REGISTERED],
+            metadata: ['min_access_level' => AccessLevel::USER],
         ));
 
-        $this->addChild($event, 'api-keys', 'ui.user.api_keys.title', 'user_api_keys', 20, ['min_access_level' => AccessLevel::REGISTERED]);
-        $this->addChild($event, 'studio', 'ui.user.navigation.studio', 'backend_editor_index', 80, ['min_access_level' => AccessLevel::EDITOR]);
-        $this->addChild($event, 'admin', 'ui.user.navigation.admin', 'backend_admin_index', 90, ['min_access_level' => 8]);
+        $this->addChild($event, 'api-keys', 'ui.user.api_keys.title', 'user_api_keys', 20, ['min_access_level' => AccessLevel::USER]);
+        $this->addChild($event, 'studio', 'ui.user.navigation.studio', 'backend_editor_index', 80, ['min_access_level' => AccessLevel::AUTHOR]);
+        $this->addChild($event, 'admin', 'ui.user.navigation.admin', 'backend_admin_index', 90, ['min_access_level' => AccessLevel::ADMIN]);
         $this->addChild($event, 'logout', 'ui.user.logout.title', 'user_logout', 1000, [
-            'min_access_level' => AccessLevel::REGISTERED,
+            'min_access_level' => AccessLevel::USER,
             'link_attributes' => [
                 'data-turbo' => 'false',
                 'data-turbo-prefetch' => 'false',

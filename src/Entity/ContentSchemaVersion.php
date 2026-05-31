@@ -180,6 +180,15 @@ class ContentSchemaVersion
         return $this->useGroupIdentifiers;
     }
 
+    /**
+     * @param list<string>|null $groupIdentifiers
+     */
+    public function setUseRule(?int $minLevel, ?array $groupIdentifiers = null): void
+    {
+        $this->useMinLevel = AccessLevel::assert($minLevel);
+        $this->useGroupIdentifiers = self::assertOptionalGroupIdentifierList($groupIdentifiers);
+    }
+
     public function editMinLevel(): ?int
     {
         return $this->editMinLevel;
@@ -193,6 +202,15 @@ class ContentSchemaVersion
         return $this->editGroupIdentifiers;
     }
 
+    /**
+     * @param list<string>|null $groupIdentifiers
+     */
+    public function setEditRule(?int $minLevel, ?array $groupIdentifiers = null): void
+    {
+        $this->editMinLevel = AccessLevel::assert($minLevel);
+        $this->editGroupIdentifiers = self::assertOptionalGroupIdentifierList($groupIdentifiers);
+    }
+
     public function manageMinLevel(): ?int
     {
         return $this->manageMinLevel;
@@ -204,6 +222,15 @@ class ContentSchemaVersion
     public function manageGroupIdentifiers(): ?array
     {
         return $this->manageGroupIdentifiers;
+    }
+
+    /**
+     * @param list<string>|null $groupIdentifiers
+     */
+    public function setManageRule(?int $minLevel, ?array $groupIdentifiers = null): void
+    {
+        $this->manageMinLevel = AccessLevel::assert($minLevel);
+        $this->manageGroupIdentifiers = self::assertOptionalGroupIdentifierList($groupIdentifiers);
     }
 
     public function activate(): void
@@ -282,7 +309,7 @@ class ContentSchemaVersion
                 ]);
             }
 
-            Identifier::assertSnakeCase($identifier, MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
+            Identifier::assertAclGroupIdentifier($identifier);
         }
 
         return array_values(array_unique($values));

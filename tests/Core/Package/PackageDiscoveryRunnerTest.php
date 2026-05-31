@@ -5,14 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Core\Package;
 
 use App\Core\Package\PackageDiscovery;
-use App\Core\Package\PackageDiscoveryCacheWarmer;
-use App\Core\Package\PackageDiscoveryDispatcher;
 use App\Core\Package\PackageDiscoveryMessage;
 use App\Core\Package\PackageDiscoveryMessageHandler;
 use App\Core\Package\PackageDiscoveryRunner;
 use App\Core\Package\PackageRegistryHandler;
 use App\Tests\Support\FilesystemTestHelper;
-use App\Tests\Support\RecordingMessageBus;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
@@ -88,30 +85,6 @@ final class PackageDiscoveryRunnerTest extends KernelTestCase
         self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
         self::assertSame('messenger', $result->context()['trigger']);
         self::assertSame('inactive', $this->packageRow('message-module')['status']);
-    }
-
-    public function testCacheWarmerQueuesDiscoveryWithCacheWarmupTrigger(): void
-    {
-        $cacheDir = $this->projectDir.'/var/cache/test';
-        $messageBus = new RecordingMessageBus();
-
-        $classes = (new PackageDiscoveryCacheWarmer(new PackageDiscoveryDispatcher($messageBus, new NullWorkflowResultMessageReporter())))->warmUp($cacheDir);
-
-        self::assertSame([], $classes);
-        self::assertCount(1, $messageBus->messages());
-        self::assertInstanceOf(PackageDiscoveryMessage::class, $messageBus->messages()[0]);
-        self::assertSame('cache_warmup', $messageBus->messages()[0]->trigger());
-        self::assertFileExists($cacheDir.'/studio-package-discovery-warmup.lock');
-
-        $payload = json_decode(
-            (string) file_get_contents($cacheDir.'/studio-package-discovery-warmup.json'),
-            true,
-            flags: JSON_THROW_ON_ERROR,
-        );
-
-        self::assertSame('success', $payload['status']);
-        self::assertSame('cache_warmup', $payload['context']['trigger']);
-        self::assertTrue($payload['context']['deferred']);
     }
 
     private function runner(): PackageDiscoveryRunner

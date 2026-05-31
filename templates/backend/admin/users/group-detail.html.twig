@@ -1,0 +1,64 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ group.identifier }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.groups.title'|trans,
+        title: group.identifier,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.groups.detail.title'|trans }}</h2>
+        <p class="studio-muted">{{ 'admin.groups.member_count'|trans({'%count%': member_count}) }}</p>
+        <form method="post" class="studio-backend-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_' ~ group.uid) }}">
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name_en', name: 'name_en', label: 'admin.groups.fields.name_en'|trans, value: group.name.en|default(''), required: true} only %}
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name_de', name: 'name_de', label: 'admin.groups.fields.name_de'|trans, value: group.name.de|default('')} only %}
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_min_role', name: 'min_role', label: 'admin.groups.fields.min_role'|trans, type: 'number', value: group.minRole, required: true, attributes: {min: 0, max: 9}} only %}
+            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.actions.save'|trans} only %}
+        </form>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.groups.delete.title'|trans }}</h2>
+        <form method="post" action="{{ path('backend_admin_user_group_delete', {uid: group.uid}) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_delete_' ~ group.uid) }}">
+            <button class="studio-button studio-button-danger" type="submit">{{ 'admin.groups.actions.delete'|trans }}</button>
+        </form>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.groups.members.title'|trans }}</h2>
+        {% if members is empty %}
+            <p class="studio-muted">{{ 'admin.groups.members.empty'|trans }}</p>
+        {% else %}
+            <table class="studio-field-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.users.fields.username'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.email'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.status'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.role'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in members %}
+                        <tr>
+                            <td><a href="{{ path('backend_admin_user_detail', {uid: member.uid}) }}">{{ member.username }}</a></td>
+                            <td>{{ member.email }}</td>
+                            <td>{{ ('admin.users.status.' ~ member.status.value)|trans }}</td>
+                            <td>{{ ('ui.user.roles.' ~ member.role.value)|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
+{% endblock %}

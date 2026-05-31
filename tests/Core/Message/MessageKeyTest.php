@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Message;
 
 use App\Core\Message\MessageKey;
+use App\Localization\CoreTranslationBootstrapper;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Symfony\Component\Yaml\Yaml;
@@ -31,9 +32,12 @@ final class MessageKeyTest extends TestCase
         $constants = (new ReflectionClass(MessageKey::class))->getConstants();
         $knownKeys = array_values($constants);
         $root = dirname(__DIR__, 3);
+        $generation = (new CoreTranslationBootstrapper())->generate($root, 'test');
 
-        $englishKeys = array_keys(self::flatten(Yaml::parseFile($root . '/translations/runtime/messages.en.yaml')));
-        $germanKeys = array_keys(self::flatten(Yaml::parseFile($root . '/translations/runtime/messages.de.yaml')));
+        self::assertTrue($generation['success'], $generation['error'] ?? 'Runtime translation generation failed.');
+
+        $englishKeys = array_keys(self::flatten(Yaml::parseFile($root . '/translations/runtime/test/messages.en.yaml')));
+        $germanKeys = array_keys(self::flatten(Yaml::parseFile($root . '/translations/runtime/test/messages.de.yaml')));
 
         self::assertSame([], array_values(array_diff($knownKeys, $englishKeys)));
         self::assertSame([], array_values(array_diff($knownKeys, $germanKeys)));

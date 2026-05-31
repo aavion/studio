@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Core\Access\AccessLevel;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
 use Doctrine\ORM\Mapping as ORM;
@@ -13,7 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'acl_group')]
 #[ORM\UniqueConstraint(name: 'uniq_acl_group_identifier', columns: ['identifier'])]
-#[ORM\Index(name: 'idx_acl_group_access_level', columns: ['access_level'])]
+#[ORM\Index(name: 'idx_acl_group_min_role', columns: ['min_role'])]
 class AclGroup
 {
     #[ORM\Id]
@@ -30,13 +29,7 @@ class AclGroup
     private array $name;
 
     #[ORM\Column]
-    private int $accessLevel;
-
-    #[ORM\Column]
-    private bool $locked;
-
-    #[ORM\Column]
-    private bool $allowEmpty;
+    private int $minRole;
 
     /**
      * @var array<string, mixed>
@@ -52,17 +45,13 @@ class AclGroup
         string $uid,
         string $identifier,
         array $name,
-        int $accessLevel,
-        bool $locked = false,
-        bool $allowEmpty = true,
+        int $minRole,
         array $metadata = [],
     ) {
         $this->uid = Uid::assert($uid, 'ACL group UID');
-        $this->identifier = Identifier::assertSnakeCase($identifier, MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, '%identifier%');
+        $this->identifier = Identifier::assertAclGroupIdentifier($identifier);
         $this->name = $name;
-        $this->accessLevel = AccessLevel::assert($accessLevel);
-        $this->locked = $locked;
-        $this->allowEmpty = $allowEmpty;
+        $this->minRole = AccessLevel::assert($minRole);
         $this->metadata = $metadata;
     }
 
@@ -84,18 +73,21 @@ class AclGroup
         return $this->name;
     }
 
-    public function accessLevel(): int
+    public function minRole(): int
     {
-        return $this->accessLevel;
+        return $this->minRole;
     }
 
-    public function isLocked(): bool
+    /**
+     * @param array<string, string> $name
+     */
+    public function rename(array $name): void
     {
-        return $this->locked;
+        $this->name = $name;
     }
 
-    public function allowsEmptyMembership(): bool
+    public function changeMinRole(int $minRole): void
     {
-        return $this->allowEmpty;
+        $this->minRole = AccessLevel::assert($minRole);
     }
 }

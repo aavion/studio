@@ -6,7 +6,29 @@
     <section class="studio-auth-panel">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             title: 'ui.user.register.title'|trans,
-            subtitle: 'ui.user.register.placeholder'|trans,
+            subtitle: 'ui.user.register.subtitle'|trans,
         } only %}
+        {% if success|default(false) %}
+            <p class="studio-auth-notice">
+                {{ requires_approval|default(false) ? 'ui.user.register.success_approval'|trans : 'ui.user.register.success'|trans }}
+            </p>
+        {% else %}
+            {% if errors|default([]) is not empty %}
+                <ul class="studio-form-errors">
+                    {% for error in errors %}
+                        <li>{{ error|trans }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <form method="post" class="studio-auth-form">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_register') }}">
+                {% include '@frontend/partials/forms/fields/email.html.twig' with {
+                    name: 'email',
+                    label: 'ui.user.register.email'|trans,
+                    required: true,
+                } only %}
+                {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.register.submit'|trans} only %}
+            </form>
+        {% endif %}
     </section>
 {% endblock %}

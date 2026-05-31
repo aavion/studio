@@ -57,7 +57,7 @@ if (null !== $resetUsername) {
 }
 
 $input = (new SetupCliInputFactory($projectDir))->create($options);
-$translator = new SetupMessageTranslator();
+$translator = new SetupMessageTranslator($input->appEnv());
 $language = $input->language();
 
 $result = (new SetupRunner($projectDir, workflowResultMessageReporter($projectDir, $input->appEnv())))->run($input);
@@ -212,13 +212,13 @@ function resetPasswordUsername(array $argv, array $options): ?string
  */
 function handlePasswordReset(string $projectDir, array $options, string $username): int
 {
-    $translator = new SetupMessageTranslator();
     $environment = is_string($options['env'] ?? null) && '' !== trim($options['env'])
         ? trim($options['env'])
         : (string) ($_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? 'dev');
+    $translator = new SetupMessageTranslator($environment);
     $language = is_string($options['language'] ?? null)
         ? $options['language']
-        : (new SetupLanguageCatalog())->defaultLanguage($projectDir);
+        : (new SetupLanguageCatalog())->defaultLanguage($projectDir, $environment);
     $databaseUrl = is_string($options['database-url'] ?? null) && '' !== $options['database-url']
         ? $options['database-url']
         : (string) ($_SERVER['DATABASE_URL'] ?? $_ENV['DATABASE_URL'] ?? '');

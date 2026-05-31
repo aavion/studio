@@ -4,26 +4,35 @@ declare(strict_types=1);
 
 namespace App\Tests\Support\DatabaseSeed;
 
-use App\Core\Log\ConfigAuditLogPolicy;
+use App\Setup\DatabaseDriver;
+use App\Setup\SetupDefaultSeed;
+use App\Setup\SetupInput;
 
 final class TestDatabaseConfigSeeder
 {
     public static function seed(TestDatabaseSeedWriter $writer): void
     {
+        $setupSeed = new SetupDefaultSeed();
+        $setupEntries = array_map(
+            static fn (array $entry): array => [$entry['key'], $entry['value'], $entry['type']->value],
+            $setupSeed->configEntries(new SetupInput(
+                appEnv: 'test',
+                language: 'en',
+                siteTitle: 'Test Studio',
+                defaultUri: 'https://example.test',
+                databaseDriver: DatabaseDriver::SQLite,
+                databaseUrl: 'sqlite:///%kernel.project_dir%/var/test/test.db',
+                adminUsername: 'admin',
+                adminPassword: (string) ($_SERVER['APP_SECRET'] ?? 'test-secret'),
+                adminEmail: 'admin@example.test',
+            )),
+        );
         $entries = [
-            ['user.default_acl_group', 'registered', 'string'],
+            ...$setupEntries,
             ['content.default_locale', 'en', 'string'],
-            ['localization.default_language', 'en', 'string'],
-            ['localization.route_prefixes_enabled', false, 'boolean'],
-            ['content.home_path', '/home', 'string'],
             ['content.enabled_locales', ['en', 'de'], 'json'],
             ['content.default_variant', 'default', 'string'],
             ['content.revision_retention_count', 10, 'integer'],
-            ['user.menu.enabled', true, 'boolean'],
-            ['user.menu.sort_order', 900, 'integer'],
-            ['user.registration.enabled', false, 'boolean'],
-            [ConfigAuditLogPolicy::ENABLED_KEY, true, 'boolean'],
-            [ConfigAuditLogPolicy::EVENTS_KEY, ConfigAuditLogPolicy::DEFAULT_CATEGORIES, 'json'],
         ];
 
         foreach ($entries as [$key, $value, $type]) {

@@ -1,0 +1,37 @@
+{% extends '@frontend/frontend.html.twig' %}
+
+{% block title %}{{ 'ui.user.api_keys.reveal.title'|trans }}{% endblock %}
+
+{% block frontend_body %}
+    <section class="studio-auth-panel">
+        {% include '@frontend/partials/typography/_page-header.html.twig' with {
+            title: 'ui.user.api_keys.reveal.title'|trans,
+            subtitle: 'ui.user.api_keys.reveal.subtitle'|trans,
+        } only %}
+        {% if plain_api_key|default(null) %}
+            <section class="studio-panel">
+                <h2>{{ api_key.prefix }}</h2>
+                <code class="studio-code">{{ plain_api_key }}</code>
+            </section>
+        {% else %}
+            {% if errors|default([]) is not empty %}
+                <ul class="studio-form-errors">
+                    {% for error in errors %}
+                        <li>{{ error|trans }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <form method="post" class="studio-auth-form">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_api_key_reveal_' ~ api_key.uid) }}">
+                {% include '@frontend/partials/forms/fields/input.html.twig' with {
+                    name: 'password',
+                    type: 'password',
+                    label: 'ui.user.api_keys.reveal.password'|trans,
+                    autocomplete: 'current-password',
+                    required: true,
+                } only %}
+                {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.api_keys.reveal.submit'|trans} only %}
+            </form>
+        {% endif %}
+    </section>
+{% endblock %}

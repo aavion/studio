@@ -1,0 +1,128 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.groups.review.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.groups.title'|trans,
+        title: 'admin.groups.review.title'|trans,
+        subtitle: 'admin.groups.review.subtitle'|trans({'%group%': group.identifier}),
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.groups.review.summary_title'|trans }}</h2>
+        <dl class="studio-backend-summary">
+            <div>
+                <dt>{{ 'admin.groups.review.summary.users'|trans }}</dt>
+                <dd>{{ impact.summary.users }}</dd>
+            </div>
+            <div>
+                <dt>{{ 'admin.groups.review.summary.account_tokens'|trans }}</dt>
+                <dd>{{ impact.summary.account_tokens }}</dd>
+            </div>
+            <div>
+                <dt>{{ 'admin.groups.review.summary.content_items'|trans }}</dt>
+                <dd>{{ impact.summary.content_items }}</dd>
+            </div>
+            <div>
+                <dt>{{ 'admin.groups.review.summary.content_schema_versions'|trans }}</dt>
+                <dd>{{ impact.summary.content_schema_versions }}</dd>
+            </div>
+            <div>
+                <dt>{{ 'admin.groups.review.summary.site_menu_items'|trans }}</dt>
+                <dd>{{ impact.summary.site_menu_items }}</dd>
+            </div>
+        </dl>
+    </section>
+
+    {% if operation == 'update' %}
+        <section class="studio-panel">
+            <h2>{{ 'admin.groups.review.update_title'|trans }}</h2>
+            <dl class="studio-backend-summary">
+                <div>
+                    <dt>{{ 'admin.groups.fields.name_en'|trans }}</dt>
+                    <dd>{{ group.name.en|default('') }} -> {{ pending.name_en }}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'admin.groups.fields.name_de'|trans }}</dt>
+                    <dd>{{ group.name.de|default('') }} -> {{ pending.name_de }}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'admin.groups.fields.min_role'|trans }}</dt>
+                    <dd>{{ group.minRole }} -> {{ pending.min_role }}</dd>
+                </div>
+            </dl>
+        </section>
+    {% endif %}
+
+    {% set opens_content_access = impact.content_items|filter(item => item.opens_published_access|default(false)) %}
+    {% set opens_content_uids = opens_content_access|map(item => item.uid) %}
+    {% set opens_menu_access = impact.site_menu_items|filter(item =>
+        item.opens_public_access|default(false)
+        and not (item.target_type|default('') == 'content' and item.target_value|default('') in opens_content_uids)
+    ) %}
+    {% set opens_published_access = opens_content_access|merge(opens_menu_access) %}
+    {% if operation == 'delete' and opens_published_access is not empty %}
+        <section class="studio-panel">
+            <h2>{{ 'admin.groups.review.access_warning_title'|trans }}</h2>
+            <p class="studio-muted">{{ 'admin.groups.review.access_warning_text'|trans }}</p>
+            <ul>
+                {% for item in opens_published_access %}
+                    <li>{{ item.label }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+
+    {% include '@backend/admin/users/partials/_group-impact.html.twig' with {impact: impact} only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.groups.review.confirm_title'|trans }}</h2>
+        {% if operation == 'delete' %}
+            <form
+                method="post"
+                action="{{ path('backend_admin_user_group_delete', {uid: group.uid}) }}"
+                class="studio-backend-form"
+                data-controller="operation-overlay"
+                data-action="submit->operation-overlay#submit"
+                data-operation-overlay-enabled-value="true"
+                data-operation-overlay-redirect-on-success-value="{{ path('backend_admin_user_groups') }}"
+            >
+                <input type="hidden" name="_form_id" value="acl-group-delete-{{ group.uid }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_delete_' ~ group.uid) }}">
+                <input type="hidden" name="confirm_delete" value="1">
+                <button class="studio-backend-button studio-button-danger" type="submit">{{ 'admin.groups.review.confirm_delete'|trans }}</button>
+                <a class="studio-backend-button studio-button-secondary" href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">
+                    {{ 'admin.groups.review.cancel'|trans }}
+                </a>
+            </form>
+        {% else %}
+            <form
+                method="post"
+                action="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}"
+                class="studio-backend-form"
+                data-controller="operation-overlay"
+                data-action="submit->operation-overlay#submit"
+                data-operation-overlay-enabled-value="true"
+                data-operation-overlay-redirect-on-success-value="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}"
+            >
+                <input type="hidden" name="_form_id" value="acl-group-update-{{ group.uid }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_' ~ group.uid) }}">
+                <input type="hidden" name="confirm_update" value="1">
+                <input type="hidden" name="name_en" value="{{ pending.name_en }}">
+                <input type="hidden" name="name_de" value="{{ pending.name_de }}">
+                <input type="hidden" name="min_role" value="{{ pending.min_role }}">
+                <button class="studio-backend-button studio-button-primary" type="submit">{{ 'admin.groups.review.confirm_update'|trans }}</button>
+                <a class="studio-backend-button studio-button-secondary" href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">
+                    {{ 'admin.groups.review.cancel'|trans }}
+                </a>
+            </form>
+        {% endif %}
+    </section>
+{% endblock %}

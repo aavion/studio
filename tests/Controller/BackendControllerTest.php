@@ -6,6 +6,7 @@ namespace App\Tests\Controller;
 
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
+use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Log\ConfigAuditLogPolicy;
@@ -19,6 +20,8 @@ use App\Core\Workflow\WorkflowResult;
 use App\Entity\AclGroup;
 use App\Entity\ExtensionPackage;
 use App\Entity\UserAccount;
+use App\Security\UserFlowConfig;
+use App\Security\UserRole;
 use App\Setup\SetupCompletionMarker;
 use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
 use App\View\Injection\StaticViewInjection;
@@ -74,7 +77,7 @@ final class BackendControllerTest extends WebTestCase
                 'admin_username' => 'admin',
                 'admin_password' => 'admin-password',
                 'admin_password_confirm' => 'admin-password',
-                'admin_email' => 'admin@localhost',
+                'admin_email' => 'admin@localhost.local',
                 'dry_run' => '1',
             ]);
 
@@ -111,7 +114,7 @@ final class BackendControllerTest extends WebTestCase
                 'admin_username' => 'admin',
                 'admin_password' => 'short',
                 'admin_password_confirm' => 'short',
-                'admin_email' => 'admin@localhost',
+                'admin_email' => 'admin@localhost.local',
                 'dry_run' => '1',
             ]);
 
@@ -147,7 +150,7 @@ final class BackendControllerTest extends WebTestCase
                 'admin_username' => 'admin',
                 'admin_password' => 'admin-password',
                 'admin_password_confirm' => 'admin-password',
-                'admin_email' => 'admin@localhost',
+                'admin_email' => 'admin@localhost.local',
                 'dry_run' => '1',
             ]);
 
@@ -768,6 +771,13 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('form#admin-settings-packages');
         self::assertSelectorExists('select[name="packages.update_check_interval"]');
 
+        $client->request('GET', '/admin/settings/users');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'User settings');
+        self::assertSelectorExists('form#admin-settings-users');
+        self::assertSelectorExists(sprintf('input[name="%s"][min="1"][max="3650"]', UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY));
+
         $client->request('GET', '/admin/settings/security');
 
         self::assertResponseIsSuccessful();
@@ -845,6 +855,109 @@ final class BackendControllerTest extends WebTestCase
         self::assertStringContainsString('The submitted value does not match the expected format.', $html);
     }
 
+    public function testAdminUserSettingsRejectInvalidDefaultAclGroup(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $config = self::getContainer()->get(Config::class);
+        $originalDefaultGroup = $config->get('user.default_acl_group', '');
+
+        $crawler = $client->request('GET', '/admin/settings/users');
+        $form = $crawler->selectButton('Save settings')->form([
+            'user.registration.mode' => 'auto_approval',
+            'user.default_acl_group' => 'missing_default_acl_group',
+            'user.account_link_ttl_hours' => '24',
+            'user.registration.admin_notification_email' => '',
+            'user.security_notification_email' => '',
+            'user.menu.sort_order' => '900',
+        ]);
+
+        $client->submit($form);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-backend-form-errors', 'Enter an existing ACL group with minimum role User or lower, or leave the field empty.');
+        self::assertSame($originalDefaultGroup, $config->get('user.default_acl_group', ''));
+    }
+
+    public function testAdminUserSettingsAllowClearingDefaultAclGroup(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $config = self::getContainer()->get(Config::class);
+        $originalDefaultGroup = $config->get('user.default_acl_group', '');
+        $originalRegistrationMode = $config->get(UserFlowConfig::REGISTRATION_MODE_KEY, UserFlowConfig::REGISTRATION_DISABLED);
+        $originalAccountLinkTtl = $config->get(UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS);
+        $originalRegistrationEmail = $config->get(UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '');
+        $originalSecurityEmail = $config->get(UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, '');
+        $originalMenuSortOrder = $config->get(UserFlowConfig::MENU_SORT_ORDER_KEY, 900);
+        $group = new AclGroup('66000000-0000-0000-0000-000000000001', 'settings_clear_default', ['en' => 'Settings clear default'], AccessLevel::USER);
+        $entityManager->persist($group);
+        $entityManager->flush();
+        $config->set('user.default_acl_group', $group->identifier(), ConfigValueType::String, modifiedBy: 'test');
+
+        try {
+            $crawler = $client->request('GET', '/admin/settings/users');
+            $form = $crawler->selectButton('Save settings')->form([
+                'user.registration.mode' => 'auto_approval',
+                'user.default_acl_group' => '',
+                'user.account_link_ttl_hours' => '24',
+                'user.registration.admin_notification_email' => '',
+                'user.security_notification_email' => '',
+                'user.menu.sort_order' => '900',
+            ]);
+
+            $client->submit($form);
+
+            self::assertResponseRedirects('/admin/settings/users');
+            self::assertNull($config->get('user.default_acl_group', 'fallback'));
+        } finally {
+            $config->set('user.default_acl_group', $originalDefaultGroup, ConfigValueType::String, modifiedBy: 'test');
+            $config->set(UserFlowConfig::REGISTRATION_MODE_KEY, $originalRegistrationMode, ConfigValueType::String, modifiedBy: 'test');
+            $config->set(UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, $originalAccountLinkTtl, ConfigValueType::Integer, modifiedBy: 'test');
+            $config->set(UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, $originalRegistrationEmail, ConfigValueType::String, modifiedBy: 'test');
+            $config->set(UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, $originalSecurityEmail, ConfigValueType::String, modifiedBy: 'test');
+            $config->set(UserFlowConfig::MENU_SORT_ORDER_KEY, $originalMenuSortOrder, ConfigValueType::Integer, modifiedBy: 'test');
+            $managedGroup = $entityManager->find(AclGroup::class, $group->uid());
+
+            if ($managedGroup instanceof AclGroup) {
+                $entityManager->remove($managedGroup);
+                $entityManager->flush();
+            }
+        }
+    }
+
+    public function testAdminUserSettingsRejectInvalidNotificationEmail(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $config = self::getContainer()->get(Config::class);
+        $originalRegistrationEmail = $config->get(UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '');
+        $originalSecurityEmail = $config->get(UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, '');
+
+        try {
+            $crawler = $client->request('GET', '/admin/settings/users');
+            $form = $crawler->selectButton('Save settings')->form([
+                'user.registration.mode' => 'admin_approval',
+                'user.default_acl_group' => '',
+                'user.account_link_ttl_hours' => '24',
+                'user.registration.admin_notification_email' => 'not an email',
+                'user.security_notification_email' => 'security@example.test',
+                'user.menu.sort_order' => '900',
+            ]);
+
+            $client->submit($form);
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-backend-form-errors', 'Enter a valid email address or leave the field empty.');
+            self::assertSame($originalRegistrationEmail, $config->get(UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, ''));
+            self::assertSame($originalSecurityEmail, $config->get(UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, ''));
+        } finally {
+            $config->set(UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, $originalRegistrationEmail, ConfigValueType::String, modifiedBy: 'test');
+            $config->set(UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, $originalSecurityEmail, ConfigValueType::String, modifiedBy: 'test');
+        }
+    }
+
     public function testAdminStaticViewInjectionsRenderThroughBackendRegistry(): void
     {
         $client = self::createClient();
@@ -897,15 +1010,12 @@ final class BackendControllerTest extends WebTestCase
     private function createUserWithLevel(int $level): UserAccount
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $group = $entityManager->getRepository(AclGroup::class)->findOneBy([
-            'identifier' => $level >= 8 ? 'admin' : 'editor',
-        ]);
-
-        self::assertInstanceOf(AclGroup::class, $group);
-
         $existingUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'testuser'.$level]);
 
         if ($existingUser instanceof UserAccount) {
+            $existingUser->changeRole(UserRole::fromAccessLevel($level));
+            $entityManager->flush();
+
             return $existingUser;
         }
 
@@ -914,8 +1024,8 @@ final class BackendControllerTest extends WebTestCase
             'testuser'.$level,
             'testuser'.$level.'@example.test',
             'hash',
+            role: UserRole::fromAccessLevel($level),
         );
-        $user->addGroup($group);
         $entityManager->persist($user);
         $entityManager->flush();
 

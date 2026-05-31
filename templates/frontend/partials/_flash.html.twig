@@ -1,5 +1,11 @@
 {% for label, messages in app.flashes %}
     {% for message in messages %}
-        <div class="studio-alert studio-alert-{{ label }}" role="status">{{ message }}</div>
+        <div class="studio-alert studio-alert-{{ label }}" role="status">
+            {% if message is iterable and message.translation_key is defined %}
+                {{ message.translation_key|trans(message.parameters|default({})) }}
+            {% else %}
+                {{ message|trans }}
+            {% endif %}
+        </div>
     {% endfor %}
 {% endfor %}

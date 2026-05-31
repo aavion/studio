@@ -1,0 +1,60 @@
+<section class="studio-panel">
+    <h2>{{ 'admin.groups.review.users_title'|trans }}</h2>
+    {% if impact.users is empty %}
+        <p class="studio-muted">{{ 'admin.groups.review.empty'|trans }}</p>
+    {% else %}
+        <table class="studio-field-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ 'admin.users.fields.username'|trans }}</th>
+                    <th scope="col">{{ 'admin.users.fields.email'|trans }}</th>
+                    <th scope="col">{{ 'admin.users.fields.status'|trans }}</th>
+                    <th scope="col">{{ 'admin.users.fields.role'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in impact.users %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ ('admin.users.status.' ~ user.status)|trans }}</td>
+                        <td>{{ ('ui.user.roles.' ~ user.role)|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</section>
+
+{% set sections = {
+    account_tokens: 'admin.groups.review.account_tokens_title',
+    content_items: 'admin.groups.review.content_items_title',
+    content_schema_versions: 'admin.groups.review.content_schema_versions_title',
+    site_menu_items: 'admin.groups.review.site_menu_items_title',
+} %}
+
+{% for key, title_key in sections %}
+    <section class="studio-panel">
+        <h2>{{ title_key|trans }}</h2>
+        {% if impact[key] is empty %}
+            <p class="studio-muted">{{ 'admin.groups.review.empty'|trans }}</p>
+        {% else %}
+            <table class="studio-field-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.groups.review.fields.item'|trans }}</th>
+                        <th scope="col">{{ 'admin.groups.review.fields.fields'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in impact[key] %}
+                        <tr>
+                            <td>{{ item.label|default(item.email|default(item.uid)) }}</td>
+                            <td>{{ item.fields|join(', ') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
+{% endfor %}

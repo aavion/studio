@@ -147,7 +147,7 @@ final class PublishedContentResolverTest extends KernelTestCase
 
     public function testItAppliesViewAclRules(): void
     {
-        $this->connection->update('content_item', ['view_min_level' => AccessLevel::EDITOR], ['slug' => 'home']);
+        $this->connection->update('content_item', ['view_min_level' => AccessLevel::AUTHOR], ['slug' => 'home']);
         $this->entityManager->clear();
 
         self::assertNull($this->resolver->findBySlug('home', AccessActor::anonymous()));
@@ -156,10 +156,10 @@ final class PublishedContentResolverTest extends KernelTestCase
             $this->resolver->resolveBySlug('home', AccessActor::anonymous())->status(),
         );
 
-        $view = $this->resolver->findBySlug('home', AccessActor::fromAccess(AccessLevel::EDITOR, ['editor']));
+        $view = $this->resolver->findBySlug('home', AccessActor::fromAccess(AccessLevel::AUTHOR, ['content_authors']));
 
         self::assertNotNull($view);
-        self::assertSame(AccessLevel::EDITOR, $view->accessDecision()->rule()->minLevel());
+        self::assertSame(AccessLevel::AUTHOR, $view->accessDecision()->rule()->minLevel());
     }
 
     public function testItDoesNotResolvePrivateOrRevisionlessContentForPublicReads(): void
@@ -167,19 +167,19 @@ final class PublishedContentResolverTest extends KernelTestCase
         $this->connection->update('content_item', ['visibility' => 'private'], ['slug' => 'home']);
         $this->entityManager->clear();
 
-        self::assertNull($this->resolver->findBySlug('home', AccessActor::fromAccess(AccessLevel::ADMIN, ['admin'])));
+        self::assertNull($this->resolver->findBySlug('home', AccessActor::fromAccess(AccessLevel::ADMIN, ['site_operations'])));
         self::assertSame(
             PublishedContentResolveStatus::NotPublic,
-            $this->resolver->resolveBySlug('home', AccessActor::fromAccess(AccessLevel::ADMIN, ['admin']))->status(),
+            $this->resolver->resolveBySlug('home', AccessActor::fromAccess(AccessLevel::ADMIN, ['site_operations']))->status(),
         );
 
         $this->connection->update('content_item', ['visibility' => 'public', 'active_revision_uid' => null], ['slug' => 'home']);
         $this->entityManager->clear();
 
-        self::assertNull($this->resolver->findBySlug('home', AccessActor::fromAccess(AccessLevel::ADMIN, ['admin'])));
+        self::assertNull($this->resolver->findBySlug('home', AccessActor::fromAccess(AccessLevel::ADMIN, ['site_operations'])));
         self::assertSame(
             PublishedContentResolveStatus::ContextUnavailable,
-            $this->resolver->resolveBySlug('home', AccessActor::fromAccess(AccessLevel::ADMIN, ['admin']))->status(),
+            $this->resolver->resolveBySlug('home', AccessActor::fromAccess(AccessLevel::ADMIN, ['site_operations']))->status(),
         );
     }
 
@@ -188,10 +188,10 @@ final class PublishedContentResolverTest extends KernelTestCase
         $this->connection->update('content_item', ['status' => 'draft'], ['slug' => 'home']);
         $this->entityManager->clear();
 
-        self::assertNull($this->resolver->findBySlug('home', AccessActor::fromAccess(AccessLevel::ADMIN, ['admin'])));
+        self::assertNull($this->resolver->findBySlug('home', AccessActor::fromAccess(AccessLevel::ADMIN, ['site_operations'])));
         self::assertSame(
             PublishedContentResolveStatus::NotPublished,
-            $this->resolver->resolveBySlug('home', AccessActor::fromAccess(AccessLevel::ADMIN, ['admin']))->status(),
+            $this->resolver->resolveBySlug('home', AccessActor::fromAccess(AccessLevel::ADMIN, ['site_operations']))->status(),
         );
     }
 

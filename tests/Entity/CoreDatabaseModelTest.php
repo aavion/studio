@@ -10,6 +10,7 @@ use App\Core\Message\MessageKey;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
 use App\Entity\AclGroup;
+use App\Entity\AccountToken;
 use App\Entity\ApiKey;
 use App\Entity\ConfigEntry;
 use App\Entity\ExtensionPackage;
@@ -18,8 +19,11 @@ use App\Entity\SiteMenu;
 use App\Entity\SiteMenuItem;
 use App\Entity\StateMarker;
 use App\Entity\UserAccount;
+use App\Security\AccountTokenStatus;
+use App\Security\AccountTokenType;
 use App\Security\ApiKeyStatus;
 use App\Security\UserAccountStatus;
+use App\Security\UserRole;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -28,29 +32,28 @@ final class CoreDatabaseModelTest extends TestCase
 {
     public function testItModelsUsersGroupsAndApiKeys(): void
     {
-        $editor = new AclGroup(
+        $contentAuthors = new AclGroup(
             '11111111-1111-1111-1111-111111111111',
-            'editor',
-            ['en' => 'Editor'],
-            AccessLevel::EDITOR,
-            true,
-            false,
+            'content_authors',
+            ['en' => 'Content authors'],
+            AccessLevel::AUTHOR,
         );
-        $manager = new AclGroup(
+        $reviewBoard = new AclGroup(
             '22222222-2222-2222-2222-222222222222',
-            'manager',
-            ['en' => 'Manager'],
+            'review_board',
+            ['en' => 'Review board'],
             AccessLevel::MANAGER,
         );
         $user = new UserAccount(
             '33333333-3333-3333-3333-333333333333',
             'dominique',
-            'dom@example.com',
+            'Dom@Example.COM',
             'hash',
             ['display_name' => 'Dominique'],
+            role: UserRole::Manager,
         );
-        $user->addGroup($editor);
-        $user->addGroup($manager);
+        $user->addGroup($contentAuthors);
+        $user->addGroup($reviewBoard);
         $hmacHash = hash_hmac('sha256', 'plain-key', 'app-secret');
         $apiKey = new ApiKey(
             '44444444-4444-4444-4444-444444444444',
@@ -60,19 +63,32 @@ final class CoreDatabaseModelTest extends TestCase
             $user,
             ApiKeyStatus::ReadWrite,
         );
+        $accountToken = new AccountToken(
+            '55555555-5555-4555-8555-555555555555',
+            hash('sha256', 'plain-account-token'),
+            AccountTokenType::Invitation,
+            'Invitee@Example.COM',
+            ['launch_team'],
+        );
 
-        self::assertSame(AccessLevel::MANAGER, $user->maxAccessLevel());
+        self::assertSame(AccessLevel::MANAGER, $user->accessLevel());
         self::assertSame('dominique', $user->getUserIdentifier());
+        self::assertSame('dom@example.com', $user->email());
         self::assertSame('hash', $user->getPassword());
-        self::assertSame([], $user->getRoles());
+        self::assertSame(['ROLE_PUBLIC', 'ROLE_USER', 'ROLE_MODERATOR', 'ROLE_AUTHOR', 'ROLE_PUBLISHER', 'ROLE_CURATOR', 'ROLE_MANAGER'], $user->getRoles());
         self::assertSame(UserAccountStatus::Active, $user->status());
         self::assertSame(['language' => 'default'], $user->settings());
-        self::assertTrue($editor->isLocked());
-        self::assertFalse($editor->allowsEmptyMembership());
+        self::assertSame(AccessLevel::AUTHOR, $contentAuthors->minRole());
         self::assertSame('abcd1234', $apiKey->prefix());
         self::assertSame($hmacHash, $apiKey->hmacHash());
         self::assertSame('v1.test.encrypted-key', $apiKey->encryptedKey());
         self::assertSame(ApiKeyStatus::ReadWrite, $apiKey->status());
+        self::assertSame(AccountTokenType::Invitation, $accountToken->type());
+        self::assertSame('invitee@example.com', $accountToken->email());
+        self::assertSame(AccountTokenStatus::Pending, $accountToken->status());
+        self::assertSame(UserRole::User, $accountToken->role());
+        self::assertSame(['launch_team'], $accountToken->groupIdentifiers());
+        self::assertTrue($accountToken->status()->isUsable());
         self::assertSame(MessageKey::API_KEY_STATUS_READ_WRITE, ApiKeyStatus::ReadWrite->messageKey());
         self::assertSame(MessageKey::API_KEY_STATUS_READ_ONLY, ApiKeyStatus::ReadOnly->messageKey());
         self::assertSame(MessageKey::API_KEY_STATUS_REVOKED, ApiKeyStatus::Revoked->messageKey());
@@ -92,6 +108,42 @@ final class CoreDatabaseModelTest extends TestCase
 
         self::assertSame('new-hash', $user->passwordHash());
         self::assertSame(UserAccountStatus::Inactive, $user->status());
+    }
+
+    public function testItRejectsShortAclGroupIdentifiers(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
+
+        new AclGroup(
+            '11111111-1111-1111-1111-111111111111',
+            'ab',
+            ['en' => 'Short'],
+            AccessLevel::USER,
+        );
+    }
+
+    public function testItEnforcesUsernamePolicy(): void
+    {
+        $user = new UserAccount(
+            '33333333-3333-3333-3333-333333333334',
+            'alpha_123',
+            'alpha@example.com',
+            'hash',
+        );
+
+        $user->changeUsername('Alpha-123');
+
+        self::assertSame('Alpha-123', $user->username());
+
+        foreach (['abcd', '1abcd', 'alpha.name', 'alpha name', 'alpha@name', str_repeat('a', 31)] as $username) {
+            try {
+                $user->changeUsername($username);
+                self::fail(sprintf('Username "%s" should have been rejected.', $username));
+            } catch (InvalidArgumentException $exception) {
+                self::assertStringContainsString(MessageKey::USERNAME_INVALID, $exception->getMessage());
+            }
+        }
     }
 
     public function testItModelsReusableStateMarkers(): void

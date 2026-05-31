@@ -37,8 +37,8 @@ enum BackendArea: string
     {
         return match ($this) {
             self::Setup => AccessLevel::PUBLIC,
-            self::Editor => AccessLevel::EDITOR,
-            self::Admin => 8,
+            self::Editor => AccessLevel::AUTHOR,
+            self::Admin => AccessLevel::ADMIN,
         };
     }
 

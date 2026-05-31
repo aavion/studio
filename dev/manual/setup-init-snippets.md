@@ -47,6 +47,8 @@ Symfony environment resolution should match Symfony precedence as closely as pra
 - dry-run planning without writing env files, running commands, or seeding the database;
 - setup action logs with halt-on-error results.
 
+After migrations and initial data seeding, setup clears the cache and then runs two serial subprocesses in order: `studio:packages:discover --run-now --trigger=setup`, then `studio:assets:rebuild --trigger=setup`. This keeps cold setup memory bounded per process while still allowing system-default active packages to contribute assets and translations after the package registry is available. `bin/init` still generates core-only runtime catalogues before Symfony console consumers run; setup runs the package-aware rebuild afterwards so active package translations can be aggregated once the database is initialized.
+
 Setup subprocesses provide a local `COMPOSER_HOME` under `var/composer-home` when no explicit Composer home is present, and fall back to `var` as `HOME` when the web server environment omits it. This keeps web setup compatible with Composer without relying on shell-only environment variables.
 
 Use `--no-interaction` for scripted CLI setup with defaults and explicit options. `--json` is also non-interactive so automation receives machine-readable output only.

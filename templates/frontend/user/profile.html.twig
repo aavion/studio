@@ -6,8 +6,18 @@
     <section class="studio-auth-panel">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             title: 'ui.user.profile.title'|trans,
-            subtitle: 'ui.user.profile.placeholder'|trans,
+            subtitle: 'ui.user.profile.subtitle'|trans,
         } only %}
+        {% if success|default(false) %}
+            <p class="studio-auth-notice">{{ 'ui.user.profile.success'|trans }}</p>
+        {% endif %}
+        {% if errors|default([]) is not empty %}
+            <ul class="studio-form-errors">
+                {% for error in errors %}
+                    <li>{{ error|trans }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
         <dl class="studio-user-summary">
             <div>
                 <dt>{{ 'ui.user.profile.username'|trans }}</dt>
@@ -18,15 +28,60 @@
                 <dd>{{ user_account.email }}</dd>
             </div>
             <div>
-                <dt>{{ 'ui.user.profile.access_level'|trans }}</dt>
-                <dd>{{ user_account.maxAccessLevel }}</dd>
+                <dt>{{ 'ui.user.profile.role'|trans }}</dt>
+                <dd>{{ ('ui.user.roles.' ~ user_account.role.value)|trans }}</dd>
             </div>
         </dl>
+        <form method="post" class="studio-auth-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_profile') }}">
+            {% if username_change_enabled|default(false) %}
+                {% include '@frontend/partials/forms/fields/input.html.twig' with {
+                    name: 'username',
+                    label: 'ui.user.profile.username'|trans,
+                    value: user_account.username,
+                    required: true,
+                    autocomplete: 'username',
+                } only %}
+            {% endif %}
+            {% include '@frontend/partials/forms/fields/input.html.twig' with {
+                name: 'email',
+                type: 'email',
+                label: 'ui.user.profile.email'|trans,
+                value: user_account.email,
+                required: true,
+                autocomplete: 'email',
+            } only %}
+            {% include '@frontend/partials/forms/fields/input.html.twig' with {
+                name: 'display_name',
+                label: 'ui.user.profile.display_name'|trans,
+                value: user_account.profile.display_name|default(''),
+            } only %}
+            {% include '@frontend/partials/forms/fields/select.html.twig' with {
+                name: 'language',
+                label: 'ui.user.profile.language'|trans,
+                value: user_account.settings.language|default('default'),
+                options: {
+                    default: 'ui.user.profile.language_default'|trans,
+                    en: 'English',
+                    de: 'Deutsch',
+                },
+            } only %}
+            {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.profile.submit'|trans} only %}
+        </form>
         {% include '@frontend/partials/actions/_button-group.html.twig' with {
             actions: [
                 {label: 'ui.user.password.title'|trans, href: path('user_password'), variant: 'secondary'},
                 {label: 'ui.user.api_keys.title'|trans, href: path('user_api_keys'), variant: 'secondary'},
             ],
         } only %}
+        <section class="studio-panel">
+            <h2>{{ 'ui.user.profile.close.title'|trans }}</h2>
+            <p class="studio-muted">{{ 'ui.user.profile.close.message'|trans }}</p>
+            {% include '@frontend/partials/actions/_button-group.html.twig' with {
+                actions: [
+                    {label: 'ui.user.profile.close.open'|trans, href: path('user_profile_close'), variant: 'secondary'},
+                ],
+            } only %}
+        </section>
     </section>
 {% endblock %}

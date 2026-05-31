@@ -16,6 +16,7 @@ use App\Core\Message\MessageLevel;
 use App\Core\Message\MessageReporterInterface;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
+use App\Security\UserRole;
 use App\Tests\Support\NullMessageReporter;
 use PHPUnit\Framework\TestCase;
 
@@ -36,7 +37,7 @@ final class AccessResolverTest extends TestCase
         self::assertSame(MessageLevel::Debug, $viewDecision->message()->level());
 
         self::assertFalse($editDecision->isGranted());
-        self::assertSame(AccessLevel::EDITOR, $editDecision->rule()->minLevel());
+        self::assertSame(AccessLevel::AUTHOR, $editDecision->rule()->minLevel());
         self::assertSame(MessageCode::ACCESS_DENIED, $editDecision->message()->code());
         self::assertSame(MessageLevel::Warning, $editDecision->message()->level());
     }
@@ -44,7 +45,7 @@ final class AccessResolverTest extends TestCase
     public function testItGrantsAccessByMinimumLevelOrExplicitGroupMembership(): void
     {
         $resolver = new AccessResolver(new NullMessageReporter());
-        $editor = AccessActor::fromAccess(AccessLevel::EDITOR);
+        $editor = AccessActor::fromAccess(AccessLevel::AUTHOR);
         $projectMember = AccessActor::fromAccess(AccessLevel::PUBLIC, ['project_team']);
         $anonymous = AccessActor::anonymous();
         $rule = AccessRule::from(AccessLevel::MANAGER, ['project_team']);
@@ -85,17 +86,20 @@ final class AccessResolverTest extends TestCase
 
     public function testItBuildsActorsFromUserAccounts(): void
     {
-        $editorGroup = new AclGroup('11111111-1111-1111-1111-111111111111', 'editor', ['en' => 'Editor'], AccessLevel::EDITOR);
+        $contentAuthorGroup = new AclGroup('11111111-1111-1111-1111-111111111111', 'content_authors', ['en' => 'Content authors'], AccessLevel::AUTHOR);
         $projectGroup = new AclGroup('22222222-2222-2222-2222-222222222222', 'project_team', ['en' => 'Project'], AccessLevel::PUBLIC);
-        $user = new UserAccount('33333333-3333-3333-3333-333333333333', 'dominik', 'dom@example.test', 'hash');
+        $adminGroup = new AclGroup('44444444-4444-4444-4444-444444444444', 'admin_room', ['en' => 'Admin room'], AccessLevel::ADMIN);
+        $user = new UserAccount('33333333-3333-3333-3333-333333333333', 'dominik', 'dom@example.test', 'hash', role: UserRole::Author);
         $user->addGroup($projectGroup);
-        $user->addGroup($editorGroup);
+        $user->addGroup($contentAuthorGroup);
+        $user->addGroup($adminGroup);
 
         $actor = AccessActor::fromUserAccount($user);
 
-        self::assertSame(AccessLevel::EDITOR, $actor->accessLevel());
-        self::assertSame(['editor', 'project_team'], $actor->groupIdentifiers());
+        self::assertSame(AccessLevel::AUTHOR, $actor->accessLevel());
+        self::assertSame(['content_authors', 'project_team'], $actor->groupIdentifiers());
         self::assertTrue($actor->hasGroupIdentifier('project_team'));
+        self::assertFalse($actor->hasGroupIdentifier('admin_room'));
     }
 
     public function testItReportsDecisionMessagesWhenReporterIsAvailable(): void

@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Translation\TranslationRuntimePath;
 use Symfony\Component\Yaml\Yaml;
 
 final class SetupMessageTranslator
 {
     /** @var array<string, array<string, mixed>> */
     private array $catalogues = [];
+
+    public function __construct(private ?string $environment = null)
+    {
+    }
 
     /**
      * @param array<string, string> $parameters
@@ -41,13 +46,14 @@ final class SetupMessageTranslator
      */
     private function catalogue(string $projectDir, string $language): array
     {
-        $cacheKey = $projectDir.'|'.$language;
+        $runtimePath = new TranslationRuntimePath($projectDir, $this->environment ?? (string) ($_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? 'dev'));
+        $cacheKey = $projectDir.'|'.$runtimePath->relativeDirectory().'|'.$language;
 
         if (array_key_exists($cacheKey, $this->catalogues)) {
             return $this->catalogues[$cacheKey];
         }
 
-        $path = $projectDir.'/translations/runtime/messages.'.$language.'.yaml';
+        $path = $runtimePath->absoluteCataloguePath($language);
 
         if (!is_file($path)) {
             return $this->catalogues[$cacheKey] = [];

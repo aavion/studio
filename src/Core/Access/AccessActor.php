@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Core\Access;
 
-use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 use App\Entity\UserAccount;
 
@@ -31,10 +30,12 @@ final readonly class AccessActor
         $groupIdentifiers = [];
 
         foreach ($user->groups() as $group) {
-            $groupIdentifiers[] = $group->identifier();
+            if ($user->accessLevel() >= $group->minRole()) {
+                $groupIdentifiers[] = $group->identifier();
+            }
         }
 
-        return new self($user->uid(), $user->username(), $user->maxAccessLevel(), self::normalizeGroupIdentifiers($groupIdentifiers));
+        return new self($user->uid(), $user->username(), $user->accessLevel(), self::normalizeGroupIdentifiers($groupIdentifiers));
     }
 
     /**
@@ -94,7 +95,7 @@ final readonly class AccessActor
     private static function normalizeGroupIdentifiers(array $groupIdentifiers): array
     {
         foreach ($groupIdentifiers as $identifier) {
-            Identifier::assertSnakeCase($identifier, MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, '%identifier%');
+            Identifier::assertAclGroupIdentifier($identifier);
         }
 
         sort($groupIdentifiers);

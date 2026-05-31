@@ -87,6 +87,41 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
         self::assertSame('message.operation.invalid_payload', $result->firstIssue()?->translationKey());
     }
 
+    public function testItCreatesAclGroupApplyQueue(): void
+    {
+        self::bootKernel();
+        $factory = self::getContainer()->get(LiveOperationQueueFactory::class);
+
+        $result = $factory->create(LiveOperationQueueFactory::ACL_GROUP_APPLY, [
+            'group_uid' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'action' => 'delete',
+            'actor_uid' => 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+            'environment' => 'test',
+            'trigger' => 'admin_ui',
+        ]);
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('acl group apply', $result->value()?->name());
+        self::assertSame('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', $result->value()?->context()['group_uid']);
+        self::assertSame('delete', $result->value()?->context()['action']);
+        self::assertSame('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', $result->value()?->context()['actor_uid']);
+        self::assertCount(1, $result->value()?->actions());
+        self::assertSame('Delete ACL group and clean references', $result->value()?->actions()[0]->label());
+    }
+
+    public function testItRejectsInvalidAclGroupApplyPayload(): void
+    {
+        self::bootKernel();
+        $factory = self::getContainer()->get(LiveOperationQueueFactory::class);
+
+        $result = $factory->create(LiveOperationQueueFactory::ACL_GROUP_APPLY, [
+            'group_uid' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        ]);
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('message.operation.invalid_payload', $result->firstIssue()?->translationKey());
+    }
+
     public function testItCreatesPackageInstallQueues(): void
     {
         self::bootKernel();

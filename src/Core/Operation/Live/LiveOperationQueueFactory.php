@@ -18,6 +18,7 @@ final readonly class LiveOperationQueueFactory
     public const PACKAGE_LIFECYCLE = 'package.lifecycle';
     public const PACKAGE_INSTALL_VERIFY = 'package.install.verify';
     public const PACKAGE_INSTALL_APPLY = 'package.install.apply';
+    public const ACL_GROUP_APPLY = 'acl.group.apply';
 
     /**
      * @param iterable<LiveOperationQueueProviderInterface> $providers

@@ -108,7 +108,7 @@
                                     <td>{{ entry.context.method|default('admin.logs.empty_value'|trans) }} {{ entry.context.requested_path|default(entry.context.path|default('admin.logs.empty_value'|trans)) }}<br><span class="studio-muted">{{ entry.context.resolved_route|default(entry.context.route|default('admin.logs.empty_value'|trans)) }}</span></td>
                                     <td>{{ entry.context.http_status|default('admin.logs.empty_value'|trans) }}</td>
                                 {% elseif log_view.selected_source == 'audit' %}
-                                    <td>{{ entry.context.user|default('admin.logs.empty_value'|trans) }}<br><span class="studio-muted">{{ entry.context.user_max_access_level|default('0') }}</span></td>
+                                    <td>{{ entry.context.user|default('admin.logs.empty_value'|trans) }}<br><span class="studio-muted">{{ entry.context.user_access_level|default('0') }}</span></td>
                                     <td>{{ entry.context.action|default(entry.message) }}</td>
                                 {% else %}
                                     <td>{{ entry.summary|default(entry.message|default(entry.raw)) }}</td>

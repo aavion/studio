@@ -9,6 +9,7 @@ use App\Core\Asset\AssetRebuildQueueFactory;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Operation\OperationExecutor;
 use App\Core\Package\ActivePackageAssetProviderInterface;
+use App\Core\Package\PackageAssetRebuildDispatcher;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -30,6 +31,7 @@ final class AssetRebuildCommand extends Command
         private readonly ActivePackageAssetProviderInterface $packageProvider,
         private readonly AssetRebuildQueueFactory $queueFactory,
         private readonly OperationExecutor $operationExecutor,
+        private readonly PackageAssetRebuildDispatcher $rebuildDispatcher,
     ) {
         parent::__construct();
     }
@@ -38,7 +40,9 @@ final class AssetRebuildCommand extends Command
     {
         $this
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show the rebuild plan without writing files.')
-            ->addOption('json', null, InputOption::VALUE_NONE, 'Return machine-readable JSON output.');
+            ->addOption('json', null, InputOption::VALUE_NONE, 'Return machine-readable JSON output.')
+            ->addOption('queue', null, InputOption::VALUE_NONE, 'Queue the rebuild through Messenger instead of running it now.')
+            ->addOption('trigger', null, InputOption::VALUE_REQUIRED, 'Record the lifecycle trigger name.', 'manual');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -46,7 +50,23 @@ final class AssetRebuildCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $json = (bool) $input->getOption('json');
         $dryRun = (bool) $input->getOption('dry-run');
+        $queue = (bool) $input->getOption('queue');
+        $trigger = (string) $input->getOption('trigger');
         $packageProviderError = null;
+
+        if ($queue) {
+            $result = $this->rebuildDispatcher->dispatch($this->kernel->getEnvironment(), $trigger);
+
+            if ($json) {
+                $output->writeln($this->json($result->toArray()));
+            } elseif ($result->isSuccess()) {
+                $io->success('Asset rebuild queued.');
+            } else {
+                $io->error('Asset rebuild could not be queued.');
+            }
+
+            return $result->isSuccess() ? Command::SUCCESS : Command::FAILURE;
+        }
 
         try {
             $packages = $this->packageProvider->packages();
@@ -64,7 +84,7 @@ final class AssetRebuildCommand extends Command
             ];
         }
 
-        $queue = $this->queueFactory->create($this->kernel->getEnvironment(), $packages);
+        $queue = $this->queueFactory->create($this->kernel->getEnvironment(), $packages, $trigger);
 
         if ($dryRun) {
             $plan = $this->operationExecutor->planQueue($queue);

@@ -40,10 +40,12 @@
 - Translation changes must keep matching source catalogue files and keys synchronized across all locale directories under `translations/languages/`; runtime `translations/messages.*.yaml` files are generated from those sources.
 - Refactors before the first public `1.0.0` release may remove obsolete code instead of keeping compatibility shims, but callers, tests, docs, and class map entries must be updated immediately.
 - If a requested narrow change exposes unrelated drift, fix it only when it blocks the task; otherwise record the follow-up in `dev/WORKLOG.md`.
+- When addressing review findings, trace adjacent and analogous code paths that share the same policy, transition, or boundary, and apply or explicitly rule out the same fix there to avoid one-path-only hardening.
 
 ## Build and Verification Commands
 - `bin/init` initializes the repository, refreshes dependencies and assets, and is the preferred recovery path for broken or incomplete `vendor/` packages because it removes an existing `vendor/` tree before Composer runs.
 - `composer install` installs PHP dependencies and verifies required extensions.
+- `bin/lint` runs the full project lint suite; pass one or more files or directories to run focused type-based checks instead, for example `bin/lint src/Security templates/backend/admin/users`.
 - `php -l <path>` checks PHP syntax for a changed file.
 - `php bin/console lint:container` validates Symfony container wiring after service or configuration changes.
 - `php bin/console tailwind:build` compiles Tailwind CSS.
@@ -52,14 +54,15 @@
 - `php bin/console doctrine:migrations:migrate` applies schema migrations.
 - `php bin/phpunit` runs the full PHPUnit suite.
 - `php bin/phpunit --coverage-text` runs PHPUnit with quick coverage feedback before PRs.
-- `php .codex/compare_translations.php` compares source catalogue files and keys across all locale directories.
+- `bin/lint` includes the translation source catalogue file/key comparison for release-safe validation without requiring `.codex/`.
 - `php .codex/render.php /<route>` renders a route for Twig and translation review.
 
 ## Verification Matrix
 - PHP-only logic: run targeted PHPUnit coverage and `php -l` for edited PHP files.
 - Service, DI, security, or configuration changes: run targeted tests and `php bin/console lint:container`.
-- Twig, translation, or UX copy changes: run `.codex/compare_translations.php` and render affected routes with `.codex/render.php`.
-- Asset, Stimulus, or Tailwind changes: run the relevant asset build command and targeted UI/functional checks.
+- Twig, translation, or UX copy changes: run `bin/lint <changed translation/template paths...>` and render affected routes with `.codex/render.php` when available.
+- Asset or Stimulus changes: prefer `bin/lint <changed path...>` for focused JavaScript, JSON, CSS, YAML, Twig, and PHP syntax checks, then run the relevant asset build command and targeted UI/functional checks when build output or rendering can change.
+- Focused CSS checks use the strict CSS parser and may report Tailwind-specific directives or generated modern at-rules such as `@apply`, `@theme`, or `@supports` as unsupported syntax; treat the accompanying linter note as context, and use `php bin/console tailwind:build` for the authoritative full Tailwind validation.
 - Doctrine mapping or entity changes: generate or update migrations and run tests covering persistence behavior.
 - Documentation changes: verify style, relative links, and alignment with current behavior.
 - If a recommended verification step cannot run, record the reason in the final response and, when relevant, in `dev/WORKLOG.md`.
@@ -80,7 +83,7 @@
 - Keep matching translation source catalogue files and keys in sync across all locale directories in the same change. Source files live under `translations/languages/{locale}/*.yaml`, with English used as the comparison reference when available and the message-layer source named `message.yaml`; runtime `translations/messages.{locale}.yaml` catalogues are generated for Symfony's default domain.
 - User-facing strings include labels, buttons, links, placeholders, help text, validation messages, flash messages, empty states, error pages, and navigation text.
 - Logs, developer exceptions, CLI output, test names, and internal debug strings do not need localization.
-- For rendered Twig review, use `.codex/render.php /<route>` and then `.codex/compare_translations.php`.
+- For rendered Twig review, use `.codex/render.php /<route>` when available and then `bin/lint <changed translation/template paths...>`.
 
 ## Documentation
 - Follow `dev/STYLEGUIDE.md` for all Markdown documentation.
@@ -117,7 +120,7 @@
 - In code review, lead with findings ordered by severity and include file and line references.
 - Verify worklog, documentation, tests, class map, translations, screenshots, security notes, and PR checklist items when they are relevant to the reviewed change.
 - Check drift between code and feature drafts in `dev/draft/`; update it only when asked to make changes, otherwise report the drift.
-- Review translation coverage with `.codex/compare_translations.php` when user-facing copy changed.
+- Review translation coverage with `bin/lint <changed translation paths...>` when user-facing copy changed.
 - Review relevant Markdown files for completeness and link health. Run or schedule link checks when possible.
 
 ## Commit and Pull Request Guidance

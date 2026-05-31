@@ -40,6 +40,30 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertTrue($input->dryRun());
     }
 
+    public function testItRejectsInvalidAdminUsernameWithoutDatabase(): void
+    {
+        $factory = new SetupCliInputFactory(
+            dirname(__DIR__, 2),
+            input: $this->stream(''),
+            output: $this->stream(''),
+            interactive: false,
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Setup admin username must start with a letter');
+
+        $factory->create([
+            'env' => 'test',
+            'language' => 'en',
+            'site-title' => 'Option Studio',
+            'url' => 'https://option.example.test',
+            'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+            'admin-username' => 'admin.name',
+            'admin-password' => 'owner-secret',
+            'admin-email' => 'owner@example.test',
+        ]);
+    }
+
     public function testItUsesEnvironmentDefaultsWithoutPrompting(): void
     {
         $previous = [

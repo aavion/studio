@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Security\UserFlowConfig;
-use App\View\Http\HttpErrorRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,7 +15,6 @@ final class SecurityController extends AbstractController
 {
     public function __construct(
         private readonly UserFlowConfig $config,
-        private readonly HttpErrorRenderer $httpError,
     ) {
     }
 
@@ -28,6 +26,7 @@ final class SecurityController extends AbstractController
             'authentication_error' => null !== $authenticationUtils->getLastAuthenticationError(),
             'return_to' => $this->returnTo($request),
             'registration_enabled' => $this->config->registrationEnabled(),
+            'account_closed' => '1' === $request->query->get('account_closed'),
         ]);
     }
 
@@ -41,22 +40,6 @@ final class SecurityController extends AbstractController
     public function performLogout(): Response
     {
         return $this->redirectToRoute('user_login');
-    }
-
-    #[Route('/user/register', name: 'user_register', methods: ['GET'])]
-    public function register(Request $request): Response
-    {
-        if (!$this->config->registrationEnabled()) {
-            return $this->httpError->notFound($request);
-        }
-
-        return $this->render('@frontend/user/register.html.twig');
-    }
-
-    #[Route('/user/reset-password', name: 'user_reset_password', methods: ['GET'])]
-    public function resetPassword(): Response
-    {
-        return $this->render('@frontend/user/password-reset.html.twig');
     }
 
     private function returnTo(Request $request): ?string

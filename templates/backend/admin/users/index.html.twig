@@ -1,0 +1,222 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.users.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'ui.admin.area'|trans,
+        title: 'admin.users.title'|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.users.invitation.title'|trans }}</h2>
+        <form
+            method="post"
+            action="{{ path('backend_admin_user_invite') }}"
+            class="studio-backend-form"
+            data-controller="invite-groups"
+            data-invite-groups-options-value="{{ invite_groups_by_role|json_encode|e('html_attr') }}"
+        >
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_invite') }}">
+            {% include '@backend/partials/forms/fields/input.html.twig' with {
+                id: 'invite_email',
+                name: 'email',
+                label: 'admin.users.fields.email'|trans,
+                type: 'email',
+                required: true,
+            } only %}
+            {% include '@backend/partials/forms/fields/select.html.twig' with {
+                id: 'invite_role',
+                name: 'role',
+                label: 'admin.users.fields.role'|trans,
+                value: 'user',
+                attributes: {
+                    'data-invite-groups-target': 'role',
+                    'data-action': 'invite-groups#refresh',
+                },
+                options: role_options|reduce((carry, role) => carry|merge({(role.value): ('admin.users.roles.' ~ role.value)|trans}), {}),
+            } only %}
+            <fieldset id="invite_groups" class="studio-backend-choice-group" data-invite-groups-target="groups">
+                <legend class="studio-backend-form-label">{{ 'admin.users.fields.groups'|trans }}</legend>
+                {% for group in groups %}
+                    {% set option_id = 'invite_groups-' ~ loop.index %}
+                    <label class="studio-backend-checkbox-label" for="{{ option_id }}">
+                        <input
+                            id="{{ option_id }}"
+                            class="studio-backend-checkbox"
+                            type="checkbox"
+                            name="groups[]"
+                            value="{{ group.identifier }}"
+                        >
+                        <span>{{ group.name.en|default(group.identifier) }}</span>
+                    </label>
+                {% endfor %}
+            </fieldset>
+            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.invitation.submit'|trans} only %}
+        </form>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.users.accounts.title'|trans }}</h2>
+        <form method="get" class="studio-form studio-log-filter-form">
+            <div class="studio-form-grid">
+                <label>
+                    <span>{{ 'admin.users.filters.search'|trans }}</span>
+                    <input type="search" name="q" value="{{ users_view.filters.search }}" maxlength="120">
+                </label>
+                <label>
+                    <span>{{ 'admin.users.filters.status'|trans }}</span>
+                    <select name="status">
+                        {% for status in users_view.status_options %}
+                            <option value="{{ status }}" {% if status == users_view.filters.status %}selected{% endif %}>{{ ('admin.users.filters.status_' ~ status)|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.users.filters.role'|trans }}</span>
+                    <select name="role">
+                        <option value="all" {% if users_view.filters.role == 'all' %}selected{% endif %}>{{ 'admin.users.filters.any_role'|trans }}</option>
+                        {% for role in users_view.role_options %}
+                            <option value="{{ role.value }}" {% if role.value == users_view.filters.role %}selected{% endif %}>{{ ('admin.users.roles.' ~ role.value)|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.users.filters.group'|trans }}</span>
+                    <select name="group">
+                        <option value="">{{ 'admin.users.filters.any_group'|trans }}</option>
+                        {% for group in users_view.group_options %}
+                            <option value="{{ group.identifier }}" {% if group.identifier == users_view.filters.group %}selected{% endif %}>{{ group.name.en|default(group.identifier) }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.users.filters.sort'|trans }}</span>
+                    <select name="sort">
+                        {% for option in users_view.sort_options %}
+                            <option value="{{ option.key }}" {% if option.key == users_view.filters.sort %}selected{% endif %}>{{ option.label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.users.filters.direction'|trans }}</span>
+                    <select name="direction">
+                        <option value="asc" {% if users_view.filters.direction == 'asc' %}selected{% endif %}>{{ 'admin.users.filters.asc'|trans }}</option>
+                        <option value="desc" {% if users_view.filters.direction == 'desc' %}selected{% endif %}>{{ 'admin.users.filters.desc'|trans }}</option>
+                    </select>
+                </label>
+                <label>
+                    <span>{{ 'admin.users.filters.per_page'|trans }}</span>
+                    <select name="per_page">
+                        {% for option in users_view.per_page_options %}
+                            <option value="{{ option.key }}" {% if option.key == users_view.filters.per_page %}selected{% endif %}>{{ option.label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <input type="hidden" name="page" value="1">
+            <button type="submit" class="studio-button">{{ 'admin.users.filters.apply'|trans }}</button>
+        </form>
+        {% if users is empty %}
+            {% include '@backend/partials/feedback/_empty-state.html.twig' with {
+                title: 'admin.users.accounts.empty_title'|trans,
+                message: 'admin.users.accounts.empty_message'|trans,
+            } only %}
+        {% else %}
+            <table class="studio-field-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.users.fields.username'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.email'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.status'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.role'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.groups'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.actions'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ ('admin.users.status.' ~ user.status.value)|trans }}</td>
+                            <td>{{ ('admin.users.roles.' ~ user.role.value)|trans }}</td>
+                            <td>
+                                {% for group in user.groups %}
+                                    {{ group.identifier }}{% if not loop.last %}, {% endif %}
+                                {% else %}
+                                    {{ 'ui.content.empty_value'|trans }}
+                                {% endfor %}
+                            </td>
+                            <td><a href="{{ path('backend_admin_user_detail', {uid: user.uid}) }}">{{ 'admin.users.actions.details'|trans }}</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="studio-toolbar">
+                <span class="studio-muted">{{ 'admin.users.pagination.page_summary'|trans({'%page%': users_view.pagination.page, '%pages%': users_view.pagination.total_pages, '%total%': users_view.pagination.total}) }}</span>
+                {% if users_view.pagination.has_previous %}
+                    <a class="studio-button" href="?{{ app.request.query.all|merge({page: users_view.pagination.previous_page})|url_encode }}">{{ 'admin.users.pagination.previous'|trans }}</a>
+                {% endif %}
+                {% if users_view.pagination.has_next %}
+                    <a class="studio-button" href="?{{ app.request.query.all|merge({page: users_view.pagination.next_page})|url_encode }}">{{ 'admin.users.pagination.next'|trans }}</a>
+                {% endif %}
+            </div>
+        {% endif %}
+        <p><a class="studio-button studio-button-secondary" href="{{ path('backend_admin_deleted_users') }}">{{ 'admin.users.deleted.show'|trans }}</a></p>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.users.pending.title'|trans }}</h2>
+        {% if pending_tokens is empty %}
+            <p class="studio-muted">{{ 'admin.users.pending.empty'|trans }}</p>
+        {% else %}
+            <table class="studio-field-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.users.fields.email'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.type'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.role'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.status'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.expires_at'|trans }}</th>
+                        <th scope="col">{{ 'admin.users.fields.actions'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for token in pending_tokens %}
+                        <tr>
+                            <td>{{ token.email }}</td>
+                            <td>{{ ('admin.users.token_type.' ~ token.type.value)|trans }}</td>
+                            <td>{{ ('admin.users.roles.' ~ token.role.value)|trans }}</td>
+                            <td>{{ ('admin.users.token_status.' ~ token.status.value)|trans }}</td>
+                            <td>{{ token.expiresAt|date('Y-m-d H:i') }}</td>
+                            <td>
+                                {% if token.status.value == 'pending_approval' %}
+                                    <form method="post" action="{{ path('backend_admin_user_invitation_approve', {uid: token.uid}) }}" class="studio-inline-form">
+                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
+                                        <button class="studio-button" type="submit">{{ 'admin.users.actions.approve'|trans }}</button>
+                                    </form>
+                                {% elseif token.status.value == 'pending' %}
+                                    <form method="post" action="{{ path('backend_admin_user_invitation_reissue', {uid: token.uid}) }}" class="studio-inline-form">
+                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
+                                        <button class="studio-button" type="submit">{{ 'admin.users.actions.reissue'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                                <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="studio-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
+                                    <button class="studio-button studio-button-secondary" type="submit">{{ 'admin.users.actions.revoke'|trans }}</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
+{% endblock %}
