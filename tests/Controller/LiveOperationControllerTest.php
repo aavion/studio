@@ -48,6 +48,10 @@ final class LiveOperationControllerTest extends WebTestCase
         self::assertSame('Clear cache', $payload['entries'][0]['name']);
         self::assertSame('Operation "Cache clear" did not report progress in time and was marked as failed.', $payload['result']['issues'][0]['message']);
 
+        $client->request('GET', '/api/live/operations/'.$run['operation_id'].'?token='.$run['token'].'&cursor=not-an-int');
+
+        self::assertResponseIsSuccessful();
+
         $client->request('GET', '/api/live/operations/'.$run['operation_id'].'?token=invalid');
 
         self::assertResponseStatusCodeSame(404);
