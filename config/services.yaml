@@ -35,7 +35,9 @@ services:
     App\:
         resource: '../src/'
         exclude:
+            - '../src/Entity/'
             - '../src/Core/Package/PackageSpec.php'
+            - '../src/Kernel.php'
 
     App\Setup\SetupCommandExecutorInterface:
         alias: App\Setup\ProcOpenSetupCommandExecutor
@@ -89,11 +91,6 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Translation\TranslationCatalogueCacheWarmer:
-        arguments:
-            $projectDir: '%kernel.project_dir%'
-        tags: ['kernel.cache_warmer']
-
     App\Core\Package\PackageRegistryHandler:
         arguments:
             $projectDir: '%kernel.project_dir%'
@@ -128,9 +125,6 @@ services:
     App\Core\Package\PackageRuntimeFailureHandler:
         arguments:
             $environment: '%kernel.environment%'
-
-    App\Core\Package\PackageDiscoveryCacheWarmer:
-        tags: ['kernel.cache_warmer']
 
     App\Core\Event\PublicEventHookRegistry:
         arguments:

@@ -43,11 +43,16 @@ final class AssetRebuildQueueFactoryTest extends TestCase
         self::assertStringContainsString('tailwind:build', $actions[4]->label());
         self::assertStringContainsString('cache:clear', $actions[5]->label());
         self::assertFalse($queue->context()['production_compile']);
+        self::assertSame('manual', $queue->context()['trigger']);
+        self::assertSame(1, count(array_filter(
+            $actions,
+            static fn (object $action): bool => method_exists($action, 'type') && 'translation_aggregate' === $action->type(),
+        )));
     }
 
     public function testItAddsProductionAssetMapCompileAfterRemovingCompiledAssets(): void
     {
-        $queue = $this->factory()->create('prod', []);
+        $queue = $this->factory()->create('prod', [], 'setup');
         $actions = $queue->actions();
 
         self::assertCount(8, $actions);
@@ -56,6 +61,7 @@ final class AssetRebuildQueueFactoryTest extends TestCase
         self::assertStringContainsString('asset-map:compile', $actions[6]->label());
         self::assertStringContainsString('cache:clear', $actions[7]->label());
         self::assertTrue($queue->context()['production_compile']);
+        self::assertSame('setup', $queue->context()['trigger']);
     }
 
     private function factory(): AssetRebuildQueueFactory

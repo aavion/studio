@@ -67,6 +67,14 @@ final readonly class SetupDryRunPlanner
                 'dry_run' => true,
                 'command' => [PHP_BINARY, $projectDir.'/bin/console', 'cache:clear', '--env='.$input->appEnv()],
             ], ActionLogStatus::Skipped],
+            ['run_package_discovery', fn (): array => [
+                'dry_run' => true,
+                'command' => [PHP_BINARY, $projectDir.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env='.$input->appEnv()],
+            ], ActionLogStatus::Skipped],
+            ['run_asset_rebuild', fn (): array => [
+                'dry_run' => true,
+                'command' => [PHP_BINARY, $projectDir.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env='.$input->appEnv()],
+            ], ActionLogStatus::Skipped],
             ['mark_setup_completed', fn (): array => [
                 'dry_run' => true,
                 'would_write' => [

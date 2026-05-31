@@ -65,6 +65,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-31
+- Reduced cold container warmup pressure by removing package discovery and runtime translation aggregation from automatic Symfony cache-warmer registration, moving setup package discovery and package-aware rebuild/translation aggregation into serial setup subprocesses, documenting explicit setup/Admin/scheduler trigger points, and narrowing service discovery away from entities and the kernel.
 - Closed the latest ACL/account-link review findings: preserved unresolved security-review dispute tokens during used-token cleanup, blocked default registration group floors above User, cleaned below-floor user/token group references on confirmed ACL group updates, filtered stale below-floor groups out of effective access actors, rechecked ACL live-apply actor permissions, revoked recovery tokens on profile email changes, rejected stale account-link/recovery delivery when target users changed state, and logged stale account-link group identifiers as warning messages without blocking activation.
 ### 2026-05-30
 - Refactored user access into one exact global role plus optional contextual ACL groups with minimum roles; wired Symfony hierarchy, owner guardrails, assignment validation, setup/migrations, UI, translations, docs, class map, and focused regression coverage.
