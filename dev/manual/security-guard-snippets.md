@@ -1,7 +1,7 @@
 # Security guard snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-23  
+> **Updated**: 2026-05-31  
 > **Owner**: Core  
 > **Purpose:** Collect implementation notes for filesystem, package, operation, and configuration guards before they become formal security documentation.  
 
@@ -53,6 +53,8 @@ Do not downgrade `failed` or `blocked` queues to `requires_review`.
 - Do not log secrets in action logs, dry-runs, context payloads, fixtures, screenshots, or documentation examples.
 - Keep local environment values in `.env.local*` or Symfony secrets.
 - Prefer generated secrets during setup.
+- Do not rotate `APP_SECRET` during normal maintenance. Treat a changed `APP_SECRET` as an emergency response to a confirmed or likely compromise because it invalidates secret-derived hashes and encrypted values.
+- The owner recovery flow after an `APP_SECRET` change is a failsafe only. Prefer direct operator recovery through `bin/setup --reset-password` when CLI access is available.
 
 ## Web server notes
 
