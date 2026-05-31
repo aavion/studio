@@ -886,6 +886,11 @@ final class BackendControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $config = self::getContainer()->get(Config::class);
         $originalDefaultGroup = $config->get('user.default_acl_group', '');
+        $originalRegistrationMode = $config->get(UserFlowConfig::REGISTRATION_MODE_KEY, UserFlowConfig::REGISTRATION_DISABLED);
+        $originalAccountLinkTtl = $config->get(UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS);
+        $originalRegistrationEmail = $config->get(UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '');
+        $originalSecurityEmail = $config->get(UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, '');
+        $originalMenuSortOrder = $config->get(UserFlowConfig::MENU_SORT_ORDER_KEY, 900);
         $group = new AclGroup('66000000-0000-0000-0000-000000000001', 'settings_clear_default', ['en' => 'Settings clear default'], AccessLevel::USER);
         $entityManager->persist($group);
         $entityManager->flush();
@@ -908,6 +913,11 @@ final class BackendControllerTest extends WebTestCase
             self::assertNull($config->get('user.default_acl_group', 'fallback'));
         } finally {
             $config->set('user.default_acl_group', $originalDefaultGroup, ConfigValueType::String, modifiedBy: 'test');
+            $config->set(UserFlowConfig::REGISTRATION_MODE_KEY, $originalRegistrationMode, ConfigValueType::String, modifiedBy: 'test');
+            $config->set(UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, $originalAccountLinkTtl, ConfigValueType::Integer, modifiedBy: 'test');
+            $config->set(UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, $originalRegistrationEmail, ConfigValueType::String, modifiedBy: 'test');
+            $config->set(UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, $originalSecurityEmail, ConfigValueType::String, modifiedBy: 'test');
+            $config->set(UserFlowConfig::MENU_SORT_ORDER_KEY, $originalMenuSortOrder, ConfigValueType::Integer, modifiedBy: 'test');
             $managedGroup = $entityManager->find(AclGroup::class, $group->uid());
 
             if ($managedGroup instanceof AclGroup) {
