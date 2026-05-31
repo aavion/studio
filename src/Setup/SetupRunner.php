@@ -10,6 +10,7 @@ use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Operation\ActionQueue;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Workflow\WorkflowResult;
 use Throwable;
@@ -30,6 +31,33 @@ final class SetupRunner
         private readonly SetupDryRunPlanner $dryRunPlanner = new SetupDryRunPlanner(),
         private readonly SetupPasswordPolicy $passwordPolicy = new SetupPasswordPolicy(),
     ) {
+    }
+
+    /**
+     * @return WorkflowResult<ActionQueue>
+     */
+    public function queue(SetupInput $input): WorkflowResult
+    {
+        $prepare = $this->prepare($input, ActionLog::create());
+
+        if ($prepare instanceof WorkflowResult) {
+            return $this->report($prepare, $input);
+        }
+
+        [$appSecret, $databaseUrl, $environment] = $prepare;
+        $actions = [];
+
+        foreach ($this->steps($input, $appSecret, $databaseUrl, $environment) as [$name, $callback]) {
+            $actions[] = new SetupStepAction($name, $callback);
+        }
+
+        return WorkflowResult::success(ActionQueue::create('setup apply', $actions, context: [
+            'dry_run' => $input->dryRun(),
+            'app_env' => $input->appEnv(),
+            'language' => $input->language(),
+            'default_uri' => $input->defaultUri(),
+            'database_driver' => $input->databaseDriver()->value,
+        ]));
     }
 
     /**

@@ -19,7 +19,12 @@ setup:
     title: 'Setup route'
   preflight:
     title: 'Preflight checks'
-    text: 'Setup checks required write paths and PHP capabilities before asking for database details.'
+    text: 'Setup checks the essentials before asking for database details.'
+    auto_heal: 'Repair automatically'
+    summary:
+      ok: 'Everything needed for setup is ready.'
+      healable: 'Setup can repair the highlighted file and directory checks automatically.'
+      failed: 'Some checks need a server or PHP configuration change before setup can continue.'
     errors:
       required: 'Resolve the required checks before continuing.'
     status:
@@ -27,39 +32,54 @@ setup:
       failed: 'Needs attention'
       missing: 'Missing'
     checks:
+      webroot_public:
+        label: 'Public webroot'
+        help: 'The web server points to public/.'
+        instruction: 'Point the web server document root to the project public/ directory, then reload setup.'
       var_writable:
         label: 'Runtime directory'
-        help: 'The var directory must be writable for cache, logs, and local data.'
+        help: 'Setup can create or fix the runtime directory.'
+        instruction: 'Make var/ writable for the web-server user.'
       environment_writable:
         label: 'Environment override'
-        help: 'Setup must be able to create or update the local environment override file.'
+        help: 'Setup can create the local environment override file.'
+        instruction: 'Make the project root writable enough to create or update the local environment override file.'
       runtime_translations_writable:
         label: 'Runtime translations'
-        help: 'The generated translation directory must be writable so setup can refresh catalogues.'
+        help: 'Setup can create the generated translation directory.'
+        instruction: 'Make translations/runtime writable so generated catalogues can be refreshed.'
       public_writable:
         label: 'Public asset directory'
-        help: 'The public directory must be writable while setup prepares generated assets.'
+        help: 'Setup can create the public asset directory.'
+        instruction: 'Make public/ writable while setup prepares generated assets.'
       extension_ctype:
         label: 'PHP extension ctype'
         help: 'Required by Symfony and validation routines.'
+        instruction: 'Install or enable the PHP ctype extension.'
       extension_fileinfo:
         label: 'PHP extension fileinfo'
         help: 'Required for safe file and upload handling.'
+        instruction: 'Install or enable the PHP fileinfo extension.'
       extension_iconv:
         label: 'PHP extension iconv'
         help: 'Required for text normalization.'
+        instruction: 'Install or enable the PHP iconv extension.'
       extension_intl:
         label: 'PHP extension intl'
         help: 'Required for locale-aware formatting and translations.'
+        instruction: 'Install or enable the PHP intl extension.'
       extension_sqlite3:
         label: 'PHP extension sqlite3'
         help: 'Required for the default SQLite setup profile.'
+        instruction: 'Install or enable the PHP sqlite3 extension, or configure another database driver later.'
       extension_pdo_mysql:
         label: 'PHP extension pdo_mysql'
         help: 'Install this extension when using MySQL or MariaDB.'
+        instruction: 'Install this extension when using MySQL or MariaDB.'
       extension_pdo_pgsql:
         label: 'PHP extension pdo_pgsql'
         help: 'Install this extension when using PostgreSQL.'
+        instruction: 'Install this extension when using PostgreSQL.'
   site:
     title: 'Site information'
     settings_title: 'Initial settings'

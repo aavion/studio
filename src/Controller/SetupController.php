@@ -66,7 +66,10 @@ final class SetupController extends AbstractController
                 $state = $this->resetLaterStepsWhenValuesChanged($state, $step, $submitted);
                 $state['values'] = $submitted;
                 $this->applyLocale($request, $state);
-                if ('review' === $step && 'apply' === $request->request->get('_setup_action') && $this->wantsLiveOperation($request)) {
+                if ('preflight' === $step && 'heal_preflight' === $request->request->get('_setup_action')) {
+                    $preflight = $this->preflightChecker->check($this->projectDir, $this->environment, autoHeal: true, server: $request->server->all());
+                    $errors = $preflight['ok'] ? [] : ['__form' => ['setup.preflight.errors.required']];
+                } elseif ('review' === $step && 'apply' === $request->request->get('_setup_action') && $this->wantsLiveOperation($request)) {
                     $input = $this->inputFactory->create($state['values']);
 
                     if (!$input->isValid() || null === $input->input()) {
@@ -88,7 +91,7 @@ final class SetupController extends AbstractController
             return $this->redirectToRoute('backend_setup_step', ['step' => $this->firstLockedStep($state)]);
         }
 
-        $preflight = $this->preflightChecker->check($this->projectDir, $this->environment);
+        $preflight = $this->preflightChecker->check($this->projectDir, $this->environment, server: $request->server->all());
 
         return $this->render('@backend/setup/index.html.twig', [
             'setup_step' => $step,
@@ -214,7 +217,7 @@ final class SetupController extends AbstractController
             return [$state, 'result', []];
         }
 
-        $errors = 'preflight' === $step && !$this->preflightChecker->check($this->projectDir, $this->environment)['ok']
+        $errors = 'preflight' === $step && !$this->preflightChecker->check($this->projectDir, $this->environment, server: $request->server->all())['ok']
             ? ['__form' => ['setup.preflight.errors.required']]
             : $this->inputFactory->validateStep($step, $state['values']);
 

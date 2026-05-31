@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Database\PrefixedConnection;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 
@@ -24,13 +25,14 @@ final readonly class SetupDatabaseConnectionFactory
     private function connectionParameters(string $databaseUrl): array
     {
         if (str_starts_with($databaseUrl, 'sqlite:///')) {
-            return ['driver' => 'pdo_sqlite', 'path' => preg_replace('#^sqlite:///#', '/', $databaseUrl)];
+            return ['driver' => 'pdo_sqlite', 'path' => preg_replace('#^sqlite:///#', '/', $databaseUrl), 'wrapperClass' => PrefixedConnection::class];
         }
 
         $scheme = (string) parse_url($databaseUrl, PHP_URL_SCHEME);
 
         return [
             'url' => $databaseUrl,
+            'wrapperClass' => PrefixedConnection::class,
             'driver' => match ($scheme) {
                 'mysql', 'mariadb' => 'pdo_mysql',
                 'pgsql', 'postgres', 'postgresql' => 'pdo_pgsql',

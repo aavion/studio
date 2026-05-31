@@ -67,6 +67,13 @@
             <section class="studio-panel">
                 <h2>{{ 'setup.preflight.title'|trans }}</h2>
                 <p class="studio-muted">{{ 'setup.preflight.text'|trans }}</p>
+                {% if setup_preflight.ok %}
+                    <p class="studio-setup-summary is-ok">{{ 'setup.preflight.summary.ok'|trans }}</p>
+                {% elseif setup_preflight.healable_failed %}
+                    <p class="studio-setup-summary is-warning">{{ 'setup.preflight.summary.healable'|trans }}</p>
+                {% else %}
+                    <p class="studio-setup-summary is-error">{{ 'setup.preflight.summary.failed'|trans }}</p>
+                {% endif %}
                 <div class="studio-setup-checks">
                     {% for check in setup_preflight.checks %}
                         <article class="studio-setup-check">
@@ -74,10 +81,19 @@
                             <span class="studio-badge {{ check.status == 'ok' ? 'studio-badge-success' : (check.required ? 'studio-badge-error' : 'studio-badge-neutral') }}">
                                 {{ ('setup.preflight.status.' ~ check.status)|trans }}
                             </span>
-                            <p class="studio-muted">{{ check.help_key|trans }}</p>
+                            {% if check.status != 'ok' %}
+                                <p class="studio-muted">{{ (check.healable ? check.help_key : check.instruction_key)|trans }}</p>
+                            {% endif %}
                         </article>
                     {% endfor %}
                 </div>
+                {% if setup_preflight.healable_failed %}
+                    <div class="studio-button-group">
+                        <button class="studio-button studio-button-secondary" type="submit" name="_setup_action" value="heal_preflight" formnovalidate>
+                            {{ 'setup.preflight.auto_heal'|trans }}
+                        </button>
+                    </div>
+                {% endif %}
             </section>
         {% elseif setup_step == 'site' %}
             <section class="studio-panel">
@@ -135,15 +151,13 @@
                     {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_password', label: 'setup.form.database_password.label'|trans, type: 'password', value: setup_values.database_password, errors: setup_errors.database_password|default([])} only %}
                 </div>
 
-                <div data-setup-wizard-target="prefixField">
-                    {% include '@backend/partials/forms/fields/input.html.twig' with {
-                        name: 'database_prefix',
-                        label: 'setup.form.database_prefix.label'|trans,
-                        value: setup_values.database_prefix,
-                        help: 'setup.form.database_prefix.help'|trans,
-                        errors: setup_errors.database_prefix|default([]),
-                    } only %}
-                </div>
+                {% include '@backend/partials/forms/fields/input.html.twig' with {
+                    name: 'database_prefix',
+                    label: 'setup.form.database_prefix.label'|trans,
+                    value: setup_values.database_prefix,
+                    help: 'setup.form.database_prefix.help'|trans,
+                    errors: setup_errors.database_prefix|default([]),
+                } only %}
             </section>
         {% elseif setup_step == 'admin' %}
             <section class="studio-panel">

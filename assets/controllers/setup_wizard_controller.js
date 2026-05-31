@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
-    static targets = ['driver', 'sqliteFields', 'serverFields', 'prefixField'];
+    static targets = ['driver', 'sqliteFields', 'serverFields'];
 
     connect() {
         this.updateDatabaseFields();
@@ -25,7 +25,6 @@ export default class extends Controller {
 
         this.toggleTarget(this.sqliteFieldsTargets, sqlite);
         this.toggleTarget(this.serverFieldsTargets, !sqlite);
-        this.toggleTarget(this.prefixFieldTargets, !sqlite);
     }
 
     toggleTarget(targets, visible) {

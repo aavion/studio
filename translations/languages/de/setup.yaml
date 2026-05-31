@@ -19,7 +19,12 @@ setup:
     title: 'Setup-Route'
   preflight:
     title: 'Vorabprüfung'
-    text: 'Setup prüft erforderliche Schreibpfade und PHP-Funktionen, bevor Datenbankdetails abgefragt werden.'
+    text: 'Setup prüft die wichtigsten Voraussetzungen, bevor Datenbankdetails abgefragt werden.'
+    auto_heal: 'Automatisch reparieren'
+    summary:
+      ok: 'Alles Nötige für das Setup ist bereit.'
+      healable: 'Setup kann die markierten Datei- und Verzeichnisprüfungen automatisch reparieren.'
+      failed: 'Einige Prüfungen benötigen eine Server- oder PHP-Konfigurationsänderung, bevor das Setup fortfahren kann.'
     errors:
       required: 'Behebe die erforderlichen Prüfungen, bevor du fortfährst.'
     status:
@@ -27,39 +32,54 @@ setup:
       failed: 'Handlung nötig'
       missing: 'Fehlt'
     checks:
+      webroot_public:
+        label: 'Public-Webroot'
+        help: 'Der Webserver zeigt auf public/.'
+        instruction: 'Setze den Document Root des Webservers auf das public/-Verzeichnis des Projekts und lade das Setup neu.'
       var_writable:
         label: 'Runtime-Verzeichnis'
-        help: 'Das var-Verzeichnis muss für Cache, Logs und lokale Daten beschreibbar sein.'
+        help: 'Setup kann das Runtime-Verzeichnis erstellen oder reparieren.'
+        instruction: 'Mache var/ für den Webserver-Benutzer beschreibbar.'
       environment_writable:
         label: 'Environment-Override'
-        help: 'Setup muss die lokale Environment-Override-Datei erstellen oder aktualisieren können.'
+        help: 'Setup kann die lokale Environment-Override-Datei erstellen.'
+        instruction: 'Mache das Projekt-Root ausreichend beschreibbar, damit die lokale Environment-Override-Datei erstellt oder aktualisiert werden kann.'
       runtime_translations_writable:
         label: 'Runtime-Übersetzungen'
-        help: 'Das generierte Übersetzungsverzeichnis muss beschreibbar sein, damit Setup Kataloge aktualisieren kann.'
+        help: 'Setup kann das generierte Übersetzungsverzeichnis erstellen.'
+        instruction: 'Mache translations/runtime beschreibbar, damit generierte Kataloge aktualisiert werden können.'
       public_writable:
         label: 'Public-Asset-Verzeichnis'
-        help: 'Das public-Verzeichnis muss beschreibbar sein, während Setup generierte Assets vorbereitet.'
+        help: 'Setup kann das Public-Asset-Verzeichnis erstellen.'
+        instruction: 'Mache public/ beschreibbar, während Setup generierte Assets vorbereitet.'
       extension_ctype:
         label: 'PHP-Erweiterung ctype'
         help: 'Wird von Symfony und Validierungsroutinen benötigt.'
+        instruction: 'Installiere oder aktiviere die PHP-Erweiterung ctype.'
       extension_fileinfo:
         label: 'PHP-Erweiterung fileinfo'
         help: 'Wird für sichere Datei- und Upload-Verarbeitung benötigt.'
+        instruction: 'Installiere oder aktiviere die PHP-Erweiterung fileinfo.'
       extension_iconv:
         label: 'PHP-Erweiterung iconv'
         help: 'Wird für Textnormalisierung benötigt.'
+        instruction: 'Installiere oder aktiviere die PHP-Erweiterung iconv.'
       extension_intl:
         label: 'PHP-Erweiterung intl'
         help: 'Wird für lokalisierte Formatierung und Übersetzungen benötigt.'
+        instruction: 'Installiere oder aktiviere die PHP-Erweiterung intl.'
       extension_sqlite3:
         label: 'PHP-Erweiterung sqlite3'
         help: 'Wird für das standardmäßige SQLite-Setup-Profil benötigt.'
+        instruction: 'Installiere oder aktiviere die PHP-Erweiterung sqlite3, oder konfiguriere später einen anderen Datenbanktreiber.'
       extension_pdo_mysql:
         label: 'PHP-Erweiterung pdo_mysql'
         help: 'Installiere diese Erweiterung, wenn du MySQL oder MariaDB verwendest.'
+        instruction: 'Installiere diese Erweiterung, wenn du MySQL oder MariaDB verwendest.'
       extension_pdo_pgsql:
         label: 'PHP-Erweiterung pdo_pgsql'
         help: 'Installiere diese Erweiterung, wenn du PostgreSQL verwendest.'
+        instruction: 'Installiere diese Erweiterung, wenn du PostgreSQL verwendest.'
   site:
     title: 'Seiteninformationen'
     settings_title: 'Initiale Einstellungen'

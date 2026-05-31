@@ -175,10 +175,6 @@ final readonly class SetupWebInputFactory
             }
         }
 
-        if (isset($values['database_driver']) && DatabaseDriver::SQLite->value === $values['database_driver']) {
-            $values['database_prefix'] = '';
-        }
-
         if (isset($values['database_driver']) && DatabaseDriver::SQLite->value !== $values['database_driver']) {
             $values['database_url'] = '';
         }

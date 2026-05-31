@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DoctrineMigrations;
 
+use App\Database\TablePrefix;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
@@ -17,9 +18,9 @@ final class Version20260530230000 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $userTable = $schema->getTable('user_account');
-        $aclGroupTable = $schema->getTable('acl_group');
-        $accountTokenTable = $schema->getTable('account_token');
+        $userTable = $schema->getTable($this->table('user_account'));
+        $aclGroupTable = $schema->getTable($this->table('acl_group'));
+        $accountTokenTable = $schema->getTable($this->table('account_token'));
         $needsUserRoleBackfill = !$userTable->hasColumn('role');
 
         if ($needsUserRoleBackfill) {
@@ -42,56 +43,56 @@ final class Version20260530230000 extends AbstractMigration
 
         if ($needsUserRoleBackfill) {
             $this->addSql(<<<'SQL'
-UPDATE user_account
+UPDATE user_account AS ua
 SET role = (
     CASE
         WHEN (
             SELECT COALESCE(MAX(g.access_level), 0)
             FROM user_acl_group ug
             INNER JOIN acl_group g ON g.uid = ug.group_uid
-            WHERE ug.user_uid = user_account.uid
+            WHERE ug.user_uid = ua.uid
         ) >= 9 THEN 'owner'
         WHEN (
             SELECT COALESCE(MAX(g.access_level), 0)
             FROM user_acl_group ug
             INNER JOIN acl_group g ON g.uid = ug.group_uid
-            WHERE ug.user_uid = user_account.uid
+            WHERE ug.user_uid = ua.uid
         ) >= 8 THEN 'admin'
         WHEN (
             SELECT COALESCE(MAX(g.access_level), 0)
             FROM user_acl_group ug
             INNER JOIN acl_group g ON g.uid = ug.group_uid
-            WHERE ug.user_uid = user_account.uid
+            WHERE ug.user_uid = ua.uid
         ) >= 7 THEN 'director'
         WHEN (
             SELECT COALESCE(MAX(g.access_level), 0)
             FROM user_acl_group ug
             INNER JOIN acl_group g ON g.uid = ug.group_uid
-            WHERE ug.user_uid = user_account.uid
+            WHERE ug.user_uid = ua.uid
         ) >= 6 THEN 'manager'
         WHEN (
             SELECT COALESCE(MAX(g.access_level), 0)
             FROM user_acl_group ug
             INNER JOIN acl_group g ON g.uid = ug.group_uid
-            WHERE ug.user_uid = user_account.uid
+            WHERE ug.user_uid = ua.uid
         ) >= 5 THEN 'curator'
         WHEN (
             SELECT COALESCE(MAX(g.access_level), 0)
             FROM user_acl_group ug
             INNER JOIN acl_group g ON g.uid = ug.group_uid
-            WHERE ug.user_uid = user_account.uid
+            WHERE ug.user_uid = ua.uid
         ) >= 4 THEN 'publisher'
         WHEN (
             SELECT COALESCE(MAX(g.access_level), 0)
             FROM user_acl_group ug
             INNER JOIN acl_group g ON g.uid = ug.group_uid
-            WHERE ug.user_uid = user_account.uid
+            WHERE ug.user_uid = ua.uid
         ) >= 3 THEN 'author'
         WHEN (
             SELECT COALESCE(MAX(g.access_level), 0)
             FROM user_acl_group ug
             INNER JOIN acl_group g ON g.uid = ug.group_uid
-            WHERE ug.user_uid = user_account.uid
+            WHERE ug.user_uid = ua.uid
         ) >= 2 THEN 'moderator'
         WHEN status = 'deleted' THEN 'public'
         ELSE 'user'
@@ -115,11 +116,11 @@ SQL);
 
     public function down(Schema $schema): void
     {
-        if ($schema->getTable('user_account')->hasColumn('role')) {
+        if ($schema->getTable($this->table('user_account'))->hasColumn('role')) {
             $this->addSql('ALTER TABLE user_account DROP COLUMN role');
         }
 
-        if ($schema->getTable('account_token')->hasColumn('role')) {
+        if ($schema->getTable($this->table('account_token'))->hasColumn('role')) {
             $this->addSql('ALTER TABLE account_token DROP COLUMN role');
         }
     }
@@ -131,5 +132,10 @@ SQL);
         }
 
         return sprintf('DROP INDEX %s', $indexName);
+    }
+
+    private function table(string $tableName): string
+    {
+        return TablePrefix::apply($tableName);
     }
 }

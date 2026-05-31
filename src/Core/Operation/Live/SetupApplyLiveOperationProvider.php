@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Core\Operation\Live;
 
 use App\Core\Operation\ActionQueue;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Core\Workflow\WorkflowResult;
-use App\Setup\SetupApplyAction;
 use App\Setup\SetupRunner;
 use App\Setup\SetupWebInputFactory;
 
@@ -26,10 +28,26 @@ final readonly class SetupApplyLiveOperationProvider implements LiveOperationQue
     public function create(array $payload = []): WorkflowResult
     {
         $values = is_array($payload['values'] ?? null) ? $payload['values'] : [];
+        $input = $this->inputFactory->create($values);
 
-        return WorkflowResult::success(ActionQueue::create('setup apply', [
-            new SetupApplyAction($this->inputFactory, $this->setupRunner, $values),
-        ], context: [
+        if (!$input->isValid() || null === $input->input()) {
+            return WorkflowResult::invalid([
+                Message::warning(
+                    MessageCode::E_INVALID_ARGUMENT,
+                    MessageKey::OPERATION_INVALID_PAYLOAD,
+                    context: ['operation' => $this->operation(), 'fields' => array_keys($input->errors())],
+                ),
+            ], ['errors' => $input->errors()]);
+        }
+
+        $queue = $this->setupRunner->queue($input->input());
+
+        if (!$queue->isSuccess() || !$queue->value() instanceof ActionQueue) {
+            return $queue;
+        }
+
+        return WorkflowResult::success(ActionQueue::create('setup apply', $queue->value()->actions(), context: [
+            ...$queue->value()->context(),
             'trigger' => $this->trigger($payload),
         ]));
     }

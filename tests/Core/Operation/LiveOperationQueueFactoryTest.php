@@ -115,15 +115,21 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
         $factory = self::getContainer()->get(LiveOperationQueueFactory::class);
 
         $result = $factory->create(LiveOperationQueueFactory::SETUP_APPLY, [
-            'values' => ['language' => 'en'],
+            'values' => [
+                'language' => 'en',
+                'admin_username' => 'admin',
+                'admin_password' => 'very-secure-password',
+                'admin_password_confirm' => 'very-secure-password',
+                'admin_email' => 'admin@example.test',
+            ],
             'trigger' => 'setup_wizard',
         ]);
 
         self::assertTrue($result->isSuccess());
         self::assertSame('setup apply', $result->value()?->name());
         self::assertSame('setup_wizard', $result->value()?->context()['trigger']);
-        self::assertCount(1, $result->value()?->actions());
-        self::assertSame('Apply setup', $result->value()?->actions()[0]->label());
+        self::assertGreaterThan(1, count($result->value()?->actions() ?? []));
+        self::assertSame('select_language', $result->value()?->actions()[0]->label());
     }
 
     public function testItRejectsInvalidAclGroupApplyPayload(): void
