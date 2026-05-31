@@ -437,6 +437,7 @@ admin:
       invalid: 'Die Gruppe konnte nicht gespeichert werden.'
       higher_access: 'Nur Owner können ACL-Gruppen auf der eigenen oder einer höheren Rollenstufe verwalten.'
       default_acl_group_delete_blocked: 'Diese ACL-Gruppe ist als Registrierungsstandard konfiguriert und muss verfügbar bleiben.'
+      default_acl_group_role_blocked: 'Die Registrierungsstandardgruppe darf keine Rolle über User voraussetzen.'
   scheduler:
     title: 'Scheduler'
     foundation_title: 'Scheduler-Operations-Fundament'

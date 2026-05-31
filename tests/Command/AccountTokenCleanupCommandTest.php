@@ -6,9 +6,11 @@ namespace App\Tests\Command;
 
 use App\Command\AccountTokenCleanupCommand;
 use App\Entity\AccountToken;
+use App\Entity\UserAccount;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\UserAccountStatus;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -62,6 +64,34 @@ final class AccountTokenCleanupCommandTest extends KernelTestCase
         self::assertNull($this->findToken($expiredApproval));
         self::assertNull($this->findToken($expiredRevoked));
         self::assertInstanceOf(AccountToken::class, $this->findToken($freshPending));
+    }
+
+    public function testItKeepsUsedSecurityReviewTokensForInactiveUsers(): void
+    {
+        $issuer = new AccountTokenIssuer();
+        $inactiveUser = new UserAccount('61000000-0000-0000-0000-'.substr(md5('cleanupdispute'), 0, 12), 'cleanupdispute', 'cleanupdispute@example.test', 'pending', status: UserAccountStatus::Inactive);
+        $activeUser = new UserAccount('61000000-0000-0000-0000-'.substr(md5('cleanupresolved'), 0, 12), 'cleanupresolved', 'cleanupresolved@example.test', 'pending');
+        [$unresolvedDispute] = $issuer->issue(AccountTokenType::SecurityReview, $inactiveUser->email(), [], $inactiveUser, ttl: '-1 hour');
+        [$resolvedReview] = $issuer->issue(AccountTokenType::SecurityReview, $activeUser->email(), [], $activeUser, ttl: '-1 hour');
+        [$usedReset] = $issuer->issue(AccountTokenType::PasswordReset, $inactiveUser->email(), [], $inactiveUser, ttl: '-1 hour');
+        $unresolvedDispute->consume($inactiveUser);
+        $resolvedReview->consume($activeUser);
+        $usedReset->consume($inactiveUser);
+
+        foreach ([$inactiveUser, $activeUser, $unresolvedDispute, $resolvedReview, $usedReset] as $entity) {
+            $this->entityManager->persist($entity);
+        }
+
+        $this->entityManager->flush();
+
+        $tester = new CommandTester(new AccountTokenCleanupCommand($this->entityManager));
+        $exitCode = $tester->execute(['--include-used' => true]);
+
+        self::assertSame(Command::SUCCESS, $exitCode);
+        self::assertStringContainsString('Removed 2 expired account token(s).', $tester->getDisplay());
+        self::assertInstanceOf(AccountToken::class, $this->findToken($unresolvedDispute));
+        self::assertNull($this->findToken($resolvedReview));
+        self::assertNull($this->findToken($usedReset));
     }
 
     private function findToken(AccountToken $token): ?AccountToken

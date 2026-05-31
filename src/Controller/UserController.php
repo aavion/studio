@@ -101,6 +101,7 @@ final class UserController extends AbstractController
 
             if ([] === $errors) {
                 $newEmail = EmailAddress::normalize($this->stringField($request, 'email'));
+                $oldEmail = $user->email();
 
                 if (!EmailAddress::isValid($newEmail)) {
                     $errors[] = 'ui.user.profile.errors.email_invalid';
@@ -111,6 +112,10 @@ final class UserController extends AbstractController
                         $errors[] = 'ui.user.profile.errors.email_in_use';
                     } else {
                         try {
+                            if ($newEmail !== $oldEmail) {
+                                $this->tokenMaintenance->revokePendingForUser($user, [AccountTokenType::PasswordReset, AccountTokenType::SecurityReview]);
+                            }
+
                             $user->changeEmail($newEmail);
                         } catch (MessageException) {
                             $errors[] = 'ui.user.profile.errors.email_invalid';

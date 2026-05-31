@@ -199,6 +199,7 @@ final class MessageKey
     public const USER_USERNAME_DUPLICATE = 'message.user.username.duplicate';
     public const ACCOUNT_TOKEN_HASH_INVALID = 'message.account_token.hash.invalid';
     public const ACCOUNT_LINK_INVALID = 'message.account_link.invalid';
+    public const ACCOUNT_LINK_STALE_GROUPS = 'message.account_link.stale_groups';
     public const ACCOUNT_LINK_DELIVERED = 'message.account_link.delivered';
     public const ACCOUNT_NOTIFICATION_DELIVERED = 'message.account_link.notification_delivered';
     public const ACCOUNT_MAIL_STUB_QUEUED = 'message.account_mail.stub_queued';

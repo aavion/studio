@@ -40,7 +40,7 @@ final readonly class AccountTokenMaintenance
         $tokens = $this->entityManager->getRepository(AccountToken::class)->findBy([
             'user' => $user,
             'type' => $types,
-            'status' => AccountTokenStatus::Pending,
+            'status' => [AccountTokenStatus::Pending, AccountTokenStatus::PendingApproval],
         ]);
 
         foreach ($tokens as $token) {

@@ -22,6 +22,7 @@ use App\Entity\UserAccount;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\AclGroupApplyService;
 use App\Security\AppSecretRotationGuard;
 use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
@@ -1738,6 +1739,121 @@ final class AdminUserControllerTest extends WebTestCase
                 $entityManager->remove($managedGroup);
                 $entityManager->flush();
             }
+        }
+    }
+
+    public function testDefaultRegistrationGroupCannotBeRaisedAboveUserRole(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $config = self::getContainer()->get(Config::class);
+        $originalDefaultGroup = $config->get('user.default_acl_group', '');
+        $group = $this->createGroup('default_raise_guard', AccessLevel::USER);
+        $entityManager->flush();
+        $config->set('user.default_acl_group', 'default_raise_guard', ConfigValueType::String, modifiedBy: 'test');
+
+        try {
+            $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
+            $client->submit($crawler->selectButton('Save')->form([
+                'name_en' => 'Default raise guard',
+                'name_de' => 'Default raise guard',
+                'min_role' => (string) AccessLevel::AUTHOR,
+            ]));
+
+            self::assertResponseRedirects('/admin/users/groups/'.$group->uid());
+
+            $entityManager->clear();
+            $unchangedGroup = $entityManager->find(AclGroup::class, $group->uid());
+
+            self::assertInstanceOf(AclGroup::class, $unchangedGroup);
+            self::assertSame(AccessLevel::USER, $unchangedGroup->minRole());
+        } finally {
+            $config->set('user.default_acl_group', (string) $originalDefaultGroup, ConfigValueType::String, modifiedBy: 'test');
+            $managedGroup = $entityManager->find(AclGroup::class, $group->uid());
+
+            if ($managedGroup instanceof AclGroup) {
+                $entityManager->remove($managedGroup);
+                $entityManager->flush();
+            }
+        }
+    }
+
+    public function testGroupUpdateRemovesBelowRoleMembersAndTokenGroups(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $group = $this->createGroup('floor_cleanup', AccessLevel::USER);
+        $user = $this->createUser('floorcleanupuser', UserAccountStatus::Active);
+        $user->addGroup($group);
+        [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'floor-cleanup@example.test',
+            [$group->identifier()],
+            role: UserRole::User,
+        );
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
+        $client->submit($crawler->selectButton('Save')->form([
+            'name_en' => 'Floor cleanup',
+            'name_de' => 'Floor cleanup',
+            'min_role' => (string) AccessLevel::AUTHOR,
+        ]));
+
+        self::assertResponseIsSuccessful();
+        $client->submit($client->getCrawler()->selectButton('Apply group update')->form());
+        self::assertResponseRedirects('/admin/users/groups/'.$group->uid());
+
+        $entityManager->clear();
+        $updatedUser = $entityManager->find(UserAccount::class, $user->uid());
+        $updatedToken = $entityManager->find(AccountToken::class, $token->uid());
+        $updatedGroup = $entityManager->find(AclGroup::class, $group->uid());
+
+        self::assertInstanceOf(UserAccount::class, $updatedUser);
+        self::assertInstanceOf(AccountToken::class, $updatedToken);
+        self::assertInstanceOf(AclGroup::class, $updatedGroup);
+        self::assertSame(AccessLevel::AUTHOR, $updatedGroup->minRole());
+        self::assertSame([], $this->userGroupIdentifiers($updatedUser));
+        self::assertSame([], $updatedToken->groupIdentifiers());
+
+        $entityManager->remove($updatedToken);
+        $entityManager->remove($updatedUser);
+        $entityManager->remove($updatedGroup);
+        $entityManager->flush();
+    }
+
+    public function testLiveGroupUpdateRechecksActorPermissions(): void
+    {
+        self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $admin = $this->adminUser();
+        $group = $this->createGroup('live_floor_guard', AccessLevel::MANAGER);
+        $entityManager->flush();
+
+        $admin->changeRole(UserRole::Manager);
+        $entityManager->flush();
+
+        try {
+            $result = self::getContainer()->get(AclGroupApplyService::class)->apply(
+                $group->uid(),
+                AclGroupApplyService::ACTION_UPDATE,
+                $admin->uid(),
+                [
+                    'name_en' => 'Live floor guard',
+                    'name_de' => 'Live floor guard',
+                    'min_role' => AccessLevel::MANAGER,
+                ],
+            );
+
+            self::assertFalse($result->isSuccess());
+            self::assertSame('message.acl.group_apply.update_blocked', $result->firstIssue()?->translationKey());
+        } finally {
+            $admin->changeRole(UserRole::Owner);
+            $entityManager->remove($entityManager->find(AclGroup::class, $group->uid()));
+            $entityManager->flush();
         }
     }
 

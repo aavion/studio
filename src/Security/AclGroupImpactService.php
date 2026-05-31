@@ -92,6 +92,35 @@ final readonly class AclGroupImpactService
     }
 
     /**
+     * @return array{users: int, account_tokens: int}
+     */
+    public function removeBelowMinRoleReferences(AclGroup $group, int $minRole): array
+    {
+        $summary = ['users' => 0, 'account_tokens' => 0];
+
+        foreach ($this->entityManager->getRepository(UserAccount::class)->findAll() as $user) {
+            if (!$user instanceof UserAccount || !$user->groups()->contains($group) || $user->accessLevel() >= $minRole) {
+                continue;
+            }
+
+            $user->removeGroup($group);
+            ++$summary['users'];
+        }
+
+        $identifier = $group->identifier();
+        foreach ($this->entityManager->getRepository(AccountToken::class)->findAll() as $token) {
+            if (!$token instanceof AccountToken || !in_array($identifier, $token->groupIdentifiers(), true) || $token->role()->accessLevel() >= $minRole) {
+                continue;
+            }
+
+            $token->updateGroups($this->withoutIdentifier($token->groupIdentifiers(), $identifier));
+            ++$summary['account_tokens'];
+        }
+
+        return $summary;
+    }
+
+    /**
      * @return list<array{uid: string, username: string, email: string, status: string, role: string}>
      */
     private function affectedUsers(AclGroup $group): array

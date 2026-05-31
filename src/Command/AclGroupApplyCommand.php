@@ -29,6 +29,7 @@ final class AclGroupApplyCommand extends Command
         $this
             ->addArgument('group-uid', InputArgument::REQUIRED, 'The ACL group UID.')
             ->addArgument('action', InputArgument::REQUIRED, 'The ACL group action.')
+            ->addOption('actor-uid', null, InputOption::VALUE_REQUIRED, 'The admin user UID that confirmed the ACL group action.')
             ->addOption('payload', null, InputOption::VALUE_REQUIRED, 'Base64-encoded JSON payload for the action.');
     }
 
@@ -37,6 +38,7 @@ final class AclGroupApplyCommand extends Command
         $result = $this->applyService->apply(
             (string) $input->getArgument('group-uid'),
             (string) $input->getArgument('action'),
+            (string) ($input->getOption('actor-uid') ?? ''),
             $this->payload((string) ($input->getOption('payload') ?? '')),
         );
 

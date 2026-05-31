@@ -95,6 +95,7 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
         $result = $factory->create(LiveOperationQueueFactory::ACL_GROUP_APPLY, [
             'group_uid' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
             'action' => 'delete',
+            'actor_uid' => 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
             'environment' => 'test',
             'trigger' => 'admin_ui',
         ]);
@@ -103,6 +104,7 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
         self::assertSame('acl group apply', $result->value()?->name());
         self::assertSame('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', $result->value()?->context()['group_uid']);
         self::assertSame('delete', $result->value()?->context()['action']);
+        self::assertSame('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', $result->value()?->context()['actor_uid']);
         self::assertCount(1, $result->value()?->actions());
         self::assertSame('Delete ACL group and clean references', $result->value()?->actions()[0]->label());
     }

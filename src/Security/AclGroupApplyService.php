@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Security;
 
+use App\Core\Access\AccessActor;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\AclGroup;
+use App\Entity\UserAccount;
 use Doctrine\ORM\EntityManagerInterface;
 use Throwable;
 
@@ -30,18 +32,23 @@ final readonly class AclGroupApplyService
      *
      * @return WorkflowResult<array<string, mixed>|null>
      */
-    public function apply(string $groupUid, string $action, array $payload = []): WorkflowResult
+    public function apply(string $groupUid, string $action, string $actorUid, array $payload = []): WorkflowResult
     {
         $group = $this->entityManager->find(AclGroup::class, $groupUid);
+        $actor = $this->actor($actorUid);
 
         if (!$group instanceof AclGroup) {
             return WorkflowResult::invalid([$this->message(MessageKey::ACL_GROUP_APPLY_NOT_FOUND, ['%group%' => $groupUid], ['group_uid' => $groupUid])]);
         }
 
+        if (!$actor instanceof AccessActor) {
+            return WorkflowResult::blocked([$this->message(MessageKey::ACL_GROUP_APPLY_ACTION_INVALID, ['%group%' => $group->identifier(), '%action%' => $action], ['group_uid' => $groupUid, 'group' => $group->identifier(), 'action' => $action, 'actor_uid' => $actorUid])]);
+        }
+
         try {
             return match ($action) {
-                self::ACTION_UPDATE => $this->update($group, $payload),
-                self::ACTION_DELETE => $this->delete($group),
+                self::ACTION_UPDATE => $this->update($group, $actor, $payload),
+                self::ACTION_DELETE => $this->delete($group, $actor),
                 default => WorkflowResult::invalid([$this->message(MessageKey::ACL_GROUP_APPLY_ACTION_INVALID, ['%group%' => $group->identifier(), '%action%' => $action], ['group_uid' => $groupUid, 'group' => $group->identifier(), 'action' => $action])]),
             };
         } catch (Throwable $error) {
@@ -65,18 +72,19 @@ final readonly class AclGroupApplyService
      *
      * @return WorkflowResult<array<string, mixed>>
      */
-    private function update(AclGroup $group, array $payload): WorkflowResult
+    private function update(AclGroup $group, AccessActor $actor, array $payload): WorkflowResult
     {
         $nameEn = $this->string($payload['name_en'] ?? null);
         $nameDe = $this->string($payload['name_de'] ?? null) ?: $nameEn;
         $minRole = (int) ($payload['min_role'] ?? -1);
 
-        if ('' === $nameEn || null !== $this->policy->validateGroupUpdateSystem($group, $minRole)) {
+        if ('' === $nameEn || null !== $this->policy->validateGroupUpdate($actor, $group, $minRole)) {
             return WorkflowResult::blocked([$this->message(MessageKey::ACL_GROUP_APPLY_UPDATE_BLOCKED, ['%group%' => $group->identifier()], ['group_uid' => $group->uid(), 'group' => $group->identifier()])]);
         }
 
         $impact = $this->impactService->impact($group);
         $group->rename(['en' => $nameEn, 'de' => $nameDe]);
+        $floorCleanup = $this->impactService->removeBelowMinRoleReferences($group, $minRole);
         $group->changeMinRole($minRole);
         $this->entityManager->flush();
 
@@ -84,10 +92,12 @@ final readonly class AclGroupApplyService
             'group' => $group->identifier(),
             'action' => self::ACTION_UPDATE,
             'impact' => $impact['summary'],
+            'floor_cleanup' => $floorCleanup,
         ], [
             'group_uid' => $group->uid(),
             'group' => $group->identifier(),
             'impact' => $impact['summary'],
+            'floor_cleanup' => $floorCleanup,
         ], [
             Message::create(
                 MessageCode::ACL_GROUP_UPDATED,
@@ -102,9 +112,9 @@ final readonly class AclGroupApplyService
     /**
      * @return WorkflowResult<array<string, mixed>>
      */
-    private function delete(AclGroup $group): WorkflowResult
+    private function delete(AclGroup $group, AccessActor $actor): WorkflowResult
     {
-        if (null !== $this->policy->validateGroupDeleteSystem($group)) {
+        if (null !== $this->policy->validateGroupDelete($actor, $group)) {
             return WorkflowResult::blocked([$this->message(MessageKey::ACL_GROUP_APPLY_DELETE_BLOCKED, ['%group%' => $group->identifier()], ['group_uid' => $group->uid(), 'group' => $group->identifier()])]);
         }
 
@@ -167,5 +177,14 @@ final readonly class AclGroupApplyService
     private function string(mixed $value): string
     {
         return is_scalar($value) ? trim((string) $value) : '';
+    }
+
+    private function actor(string $actorUid): ?AccessActor
+    {
+        $user = $this->entityManager->find(UserAccount::class, $actorUid);
+
+        return $user instanceof UserAccount && $user->status()->isUsable()
+            ? AccessActor::fromUserAccount($user)
+            : null;
     }
 }

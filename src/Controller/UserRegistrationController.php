@@ -8,6 +8,8 @@ use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
 use App\Core\Id\UuidFactory;
 use App\Core\Log\AuditLoggerInterface;
+use App\Core\Log\MessageLoggerInterface;
+use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
@@ -47,6 +49,7 @@ final class UserRegistrationController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly AuditLoggerInterface $auditLogger,
+        private readonly MessageLoggerInterface $messageLogger,
         private readonly UserFlowConfig $userFlowConfig,
         private readonly AccountTokenIssuer $tokenIssuer,
         private readonly AccountTokenMaintenance $tokenMaintenance,
@@ -204,7 +207,7 @@ final class UserRegistrationController extends AbstractController
                     $user->changePassword($this->passwordHasher->hashPassword($user, $password));
                     $user->changeRole($accountToken->role());
                     $user->changeStatus(UserAccountStatus::Active);
-                    $this->replaceGroups($user, $accountToken->groupIdentifiers(), $accountToken->role());
+                    $this->replaceGroups($user, $accountToken);
                     $accountToken->consume($user);
                     $this->entityManager->persist($user);
                     if ($isNewUser) {
@@ -314,11 +317,10 @@ final class UserRegistrationController extends AbstractController
         return new UserAccount($this->uuidFactory->v4(), $username, $token->email(), '', role: $token->role());
     }
 
-    /**
-     * @param list<string> $groupIdentifiers
-     */
-    private function replaceGroups(UserAccount $user, array $groupIdentifiers, UserRole $role): void
+    private function replaceGroups(UserAccount $user, AccountToken $token): void
     {
+        $groupIdentifiers = $token->groupIdentifiers();
+
         if ([] === $groupIdentifiers) {
             $user->clearGroups();
 
@@ -326,8 +328,13 @@ final class UserRegistrationController extends AbstractController
         }
 
         $groups = $this->userGroups->groups($groupIdentifiers);
+        $resolvedIdentifiers = array_map(static fn (AclGroup $group): string => $group->identifier(), $groups);
+        $missingIdentifiers = array_values(array_diff($groupIdentifiers, $resolvedIdentifiers));
+
+        $this->logStaleTokenGroups($token, $user, $missingIdentifiers);
+
         foreach ($groups as $group) {
-            if ($role->accessLevel() < $group->minRole()) {
+            if ($token->role()->accessLevel() < $group->minRole()) {
                 $this->rejectAccountLink('group_role_floor', ['group' => $group->identifier()]);
             }
         }
@@ -336,6 +343,32 @@ final class UserRegistrationController extends AbstractController
 
         foreach ($groups as $group) {
             $user->addGroup($group);
+        }
+    }
+
+    /**
+     * @param list<string> $missingIdentifiers
+     */
+    private function logStaleTokenGroups(AccountToken $token, UserAccount $user, array $missingIdentifiers): void
+    {
+        if ([] === $missingIdentifiers) {
+            return;
+        }
+
+        try {
+            $this->messageLogger->log(Message::warning(
+                MessageCode::ACCOUNT_LINK_STALE_GROUPS,
+                MessageKey::ACCOUNT_LINK_STALE_GROUPS,
+                context: [
+                    'token_uid' => $token->uid(),
+                    'token_type' => $token->type()->value,
+                    'user_uid' => $user->uid(),
+                    'email' => $user->email(),
+                    'missing_groups' => $missingIdentifiers,
+                ],
+            ));
+        } catch (Throwable) {
+            return;
         }
     }
 

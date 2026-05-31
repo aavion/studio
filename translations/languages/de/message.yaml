@@ -240,6 +240,7 @@ message:
       invalid: 'Der Account-Token-Hash muss ein kleingeschriebener SHA-256-Hex-Digest sein.'
   account_link:
     invalid: 'Dieser Account-Setup-Link kann nicht mehr verwendet werden.'
+    stale_groups: 'Account-Setup-Link referenziert fehlende ACL-Gruppen.'
     delivered: 'Account-Link für %email% (%type%, %flow%) wurde über das Message-Log zugestellt.'
     notification_delivered: 'Account-Benachrichtigung für %email% (%type%, %flow%) wurde über das Message-Log zugestellt.'
   routing:

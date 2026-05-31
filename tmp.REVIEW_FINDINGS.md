@@ -36,6 +36,30 @@ This is not necessarily a functional defect. The goal is to identify maintainabi
 Only report findings that can be demonstrated by concrete code locations and existing vendor/framework alternatives.
 
 ## Fixed
+### P2 | Re-check ACL permissions in live group apply
+When _operation_live queues a group delete/update, the controller validates the requester only before the background process is started; if the group is raised above that actor’s access level (or the actor is downgraded) before the runner reaches this service, this path only checks system constraints and still mutates the group. Persist the requesting actor or expected access boundary with the job and re-run the same validateGroupDelete/validateGroupUpdate policy here before applying the operation.
+**– Fixed by storing the confirming admin UID with ACL group live operations and re-running the same current-user validateGroupDelete/validateGroupUpdate policy in the apply service before mutation.**
+
+### P2 | Keep unresolved disputes out of used-token cleanup
+If an operator runs studio:account-tokens:cleanup --include-used after a user disputes a password change, the consumed SecurityReview token is expired by the original link TTL and is deleted along with other used tokens. The reviews list and reactivate/delete handlers require that used token to identify the unresolved dispute, so the inactive account can disappear from review with no admin recovery action; exclude used security-review tokens while their user is still inactive.
+**– Fixed by preserving used security-review tokens while their linked account is still inactive, even when cleanup includes used tokens.**
+
+### P2 | Block raising the default registration group
+When the group configured as user.default_acl_group is edited to require a role above USER, this validator accepts the change even though settings validation only allows default registration groups at user level and defaultRegistrationGroup() later ignores groups whose minRole() > USER. That leaves public registrations silently created without the configured default ACL group; block this update or clear/repair the setting just as deletion of the default group is blocked.
+**– Fixed by rejecting default registration group updates that would raise its minimum role above User.**
+
+### P2 | Enforce raised group floors for existing members
+When a group’s min_role is raised above some current members’ roles, this update keeps those users in the group, and AccessActor::fromUserAccount()/AccessRule::allows() still grants group-based access solely from the identifier without re-checking min_role. That leaves lower-role users retaining access through a group they could no longer be assigned; block the raise until affected memberships/tokens are repaired, or remove memberships that fall below the new floor.
+**– Fixed by removing the group from existing users and pending account links whose role falls below the new floor during confirmed ACL group updates, plus filtering below-floor memberships out of effective access actors as a stale-state fallback.**
+
+### P2 | Revoke recovery tokens when changing email
+When a user has a pending password-reset/security-review link sent to their old address and then changes the profile email here, the token remains pending and bound to the same account, so anyone with the old mailbox link can still reset or dispute the account after it moved to a new address. Revoke pending recovery tokens when the normalized email actually changes before flushing the profile update.
+**– Fixed by revoking pending password-reset and security-review tokens before persisting a normalized profile email change.**
+
+### P2 | Reject stale token groups before activation
+When an already-delivered invitation or registration link is submitted after one of its ACL groups has been deleted, groups() silently drops the missing identifier and this path still activates the account and consumes the token. That gives the user a different ACL assignment than the admin approved, often with the intended contextual group missing; compare the resolved groups with the token identifiers and reject or repair stale links before clearing/replacing memberships.
+**– Closed as Won't Fix for blocking behavior: account activation intentionally ignores missing groups for user experience, but now logs a warning Message with the stale group identifiers without exposing the issue in the UI.**
+
 ### P2 | ACL model review required: OWNER role, role/group separation and granular access rules
 Several existing authorization and account-management findings assumed the previous ACL hierarchy where ADMIN represented the highest privilege level and groups carried access-level semantics.
 **– Fixed by introducing the dedicated OWNER role at access level 9, moving ADMIN to access level 8, separating one global account role from optional contextual ACL groups, adding per-group minimum-role assignment checks, preserving owner/last-owner invariants, wiring Symfony role hierarchy/access-control rules, updating invitation/registration/recovery/token flows to carry and enforce roles, and covering the affected user-management, account-link, content/menu ACL and UI paths with focused regression tests.**
@@ -101,11 +125,6 @@ The invitation acceptance route currently rejects password-reset tokens, but sec
 Reject expired tokens at mutation time, not only page-render time
 Any GET confirmation page followed by POST should re-run expiration checks on POST. Otherwise a token that was valid during GET but expired before POST could still be consumed if the handler carries stale assumptions.
 **– Fixed for invitation acceptance, password reset completion and security-review completion POST paths.**
-
-### P3 | Invitation/registration group assignment
-Revalidate token group identifiers on POST acceptance
-If ACL groups are deleted or changed between invitation page render and POST submit, the acceptance flow should validate that all token groups still exist and still grant at least registered access before activating/reassigning the account.
-**– Fixed by requiring every token group identifier to resolve to an existing registered-or-higher group before account activation.**
 
 ### P3 | src/Security/AppSecretRotationGuard.php
 The current retry fix stores the new APP_SECRET fingerprint when at least one owner reset link was issued. If multiple owners exist and URL generation fails for some but not all, the guard may treat the rotation as handled while some owners never receive recovery links. Prefer marking the fingerprint only when there are no active owners or when reset links were successfully generated for every intended owner, or store explicit retry state for partial delivery failures.

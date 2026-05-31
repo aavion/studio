@@ -30,7 +30,9 @@ final readonly class AccessActor
         $groupIdentifiers = [];
 
         foreach ($user->groups() as $group) {
-            $groupIdentifiers[] = $group->identifier();
+            if ($user->accessLevel() >= $group->minRole()) {
+                $groupIdentifiers[] = $group->identifier();
+            }
         }
 
         return new self($user->uid(), $user->username(), $user->accessLevel(), self::normalizeGroupIdentifiers($groupIdentifiers));

@@ -18,6 +18,7 @@ final readonly class AclGroupApplyAction implements OperationActionInterface
         private AclGroupApplyService $applyService,
         private string $groupUid,
         private string $action,
+        private string $actorUid,
         private array $payload = [],
     ) {
     }
@@ -41,6 +42,7 @@ final readonly class AclGroupApplyAction implements OperationActionInterface
         return DryRunAction::create($this->type(), $this->label(), DryRunRisk::High, context: [
             'group_uid' => $this->groupUid,
             'action' => $this->action,
+            'actor_uid' => $this->actorUid,
             'payload_keys' => array_keys($this->payload),
         ]);
     }
@@ -50,6 +52,6 @@ final readonly class AclGroupApplyAction implements OperationActionInterface
      */
     public function execute(): WorkflowResult
     {
-        return $this->applyService->apply($this->groupUid, $this->action, $this->payload);
+        return $this->applyService->apply($this->groupUid, $this->action, $this->actorUid, $this->payload);
     }
 }

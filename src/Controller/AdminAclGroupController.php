@@ -229,6 +229,7 @@ final class AdminAclGroupController extends AbstractController
                 'en' => $pending['name_en'],
                 'de' => $pending['name_de'],
             ]);
+            $floorCleanup = $this->aclGroupImpact->removeBelowMinRoleReferences($group, $pending['min_role']);
             $group->changeMinRole($pending['min_role']);
             $this->entityManager->flush();
             $this->adminContext->audit($this->getUser(), 'acl.group_updated', [
@@ -238,6 +239,7 @@ final class AdminAclGroupController extends AbstractController
                 'old_min_role' => $oldMinRole,
                 'new_min_role' => $group->minRole(),
                 'impact' => $impact['summary'],
+                'floor_cleanup' => $floorCleanup,
             ]);
             $this->addFlash('success', 'admin.groups.saved');
         } catch (Throwable) {
@@ -258,6 +260,7 @@ final class AdminAclGroupController extends AbstractController
                 'group_uid' => $group->uid(),
                 'action' => $action,
                 'payload' => $payload,
+                'actor_uid' => $this->adminContext->actor($this->getUser())->userUid(),
                 'trigger' => 'admin_ui',
             ],
             sprintf('ACL group %s %s', $group->identifier(), $action),

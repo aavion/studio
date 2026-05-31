@@ -116,6 +116,10 @@ final readonly class AdminUserAccessPolicy
             return 'admin.groups.form.invalid';
         }
 
+        if ($this->isDefaultRegistrationGroup($group) && $newAccessLevel > AccessLevel::USER) {
+            return 'admin.groups.form.default_acl_group_role_blocked';
+        }
+
         return null;
     }
 

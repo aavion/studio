@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-05-30
+> **Updated**: 2026-05-31
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -64,6 +64,8 @@
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
+### 2026-05-31
+- Closed the latest ACL/account-link review findings: preserved unresolved security-review dispute tokens during used-token cleanup, blocked default registration group floors above User, cleaned below-floor user/token group references on confirmed ACL group updates, filtered stale below-floor groups out of effective access actors, rechecked ACL live-apply actor permissions, revoked recovery tokens on profile email changes, and logged stale account-link group identifiers as warning messages without blocking activation.
 ### 2026-05-30
 - Refactored user access into one exact global role plus optional contextual ACL groups with minimum roles; wired Symfony hierarchy, owner guardrails, assignment validation, setup/migrations, UI, translations, docs, class map, and focused regression coverage.
 - Hardened account-link and account-management flows across invitation, registration, recovery, security review, deleted-account reactivation, APP_SECRET rotation, API-key handling, uniqueness validation, enumeration boundaries, and structured UI/reporting messages.

@@ -240,6 +240,7 @@ message:
       invalid: 'Account token hash must be a lowercase SHA-256 hex digest.'
   account_link:
     invalid: 'This account setup link can no longer be used.'
+    stale_groups: 'Account setup link referenced missing ACL groups.'
     delivered: 'Account link for %email% (%type%, %flow%) was delivered through the message log.'
     notification_delivered: 'Account notification for %email% (%type%, %flow%) was delivered through the message log.'
   routing:

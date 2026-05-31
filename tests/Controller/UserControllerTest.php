@@ -180,6 +180,37 @@ final class UserControllerTest extends WebTestCase
         self::assertSame('changed-emailprofile@example.test', $updatedUser->email());
     }
 
+    public function testProfileEmailChangeRevokesPendingRecoveryTokens(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'emailrecovery', 'profile-password');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        [$resetToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(AccountTokenType::PasswordReset, $user->email(), [], $user);
+        [$reviewToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(AccountTokenType::SecurityReview, $user->email(), [], $user);
+        $entityManager->persist($resetToken);
+        $entityManager->persist($reviewToken);
+        $entityManager->flush();
+
+        $client->loginUser($user);
+        $crawler = $client->request('GET', '/user/profile');
+        $client->submit($crawler->selectButton('Save profile')->form([
+            'email' => 'changed-emailrecovery@example.test',
+            'display_name' => 'Email Recovery',
+            'language' => 'default',
+        ]));
+
+        self::assertResponseIsSuccessful();
+
+        $entityManager->clear();
+        $updatedReset = $entityManager->find(AccountToken::class, $resetToken->uid());
+        $updatedReview = $entityManager->find(AccountToken::class, $reviewToken->uid());
+
+        self::assertInstanceOf(AccountToken::class, $updatedReset);
+        self::assertInstanceOf(AccountToken::class, $updatedReview);
+        self::assertSame(AccountTokenStatus::Revoked, $updatedReset->status());
+        self::assertSame(AccountTokenStatus::Revoked, $updatedReview->status());
+    }
+
     public function testProfileEmailChangeRejectsDuplicateEmail(): void
     {
         $client = self::createClient();
@@ -629,6 +660,12 @@ final class UserControllerTest extends WebTestCase
     public function testInvitationAcceptanceIgnoresMissingGroupsOnPost(): void
     {
         $client = self::createClient();
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
         [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
             AccountTokenType::Invitation,
             'missing-group-invitee@example.test',
@@ -652,6 +689,9 @@ final class UserControllerTest extends WebTestCase
 
         self::assertInstanceOf(UserAccount::class, $user);
         self::assertSame([], $this->userGroupIdentifiers($user));
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        self::assertStringContainsString('account.link_stale_groups', $messageLog);
+        self::assertStringContainsString('deleted_between_get_and_post', $messageLog);
 
         $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
         $entityManager->remove($user);

@@ -35,8 +35,9 @@ final readonly class AclGroupApplyLiveOperationProvider implements LiveOperation
     {
         $groupUid = $payload['group_uid'] ?? null;
         $action = $payload['action'] ?? null;
+        $actorUid = $payload['actor_uid'] ?? null;
 
-        if (!is_string($groupUid) || '' === trim($groupUid) || !is_string($action) || '' === trim($action)) {
+        if (!is_string($groupUid) || '' === trim($groupUid) || !is_string($action) || '' === trim($action) || !is_string($actorUid) || '' === trim($actorUid)) {
             return WorkflowResult::invalid([
                 Message::warning(
                     MessageCode::E_INVALID_ARGUMENT,
@@ -51,11 +52,12 @@ final readonly class AclGroupApplyLiveOperationProvider implements LiveOperation
         $actionPayload = is_array($actionPayload) ? $actionPayload : [];
 
         return WorkflowResult::success(ActionQueue::create('acl group apply', [
-            new AclGroupApplyAction($this->applyService, trim($groupUid), trim($action), $actionPayload),
+            new AclGroupApplyAction($this->applyService, trim($groupUid), trim($action), trim($actorUid), $actionPayload),
         ], context: [
             'operation' => $this->operation(),
             'group_uid' => trim($groupUid),
             'action' => trim($action),
+            'actor_uid' => trim($actorUid),
             'environment' => $this->environment($payload),
             'trigger' => $this->trigger($payload),
         ]));
