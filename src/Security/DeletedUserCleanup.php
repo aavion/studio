@@ -137,7 +137,7 @@ final readonly class DeletedUserCleanup
         }
 
         $rows = $this->entityManager->getConnection()->fetchAllAssociative(
-            'SELECT subject_uid, marker_at, marker_by FROM state_marker WHERE subject_type = ? AND marker_key = ? AND marker_value = ? AND subject_uid IN (?) AND subject_uid <> ?',
+            'SELECT subject_uid, marker_at, marker_by FROM state_marker WHERE subject_type = ? AND marker_key = ? AND marker_value = ? AND subject_uid IN (?) AND subject_uid <> ? ORDER BY subject_uid ASC, marker_at DESC',
             [StateSubjectType::USER_ACCOUNT, StateMarkerKey::STATUS_CHANGED, UserAccountStatus::Deleted->value, $userUids, self::DELETED_USER_UID],
             [ParameterType::STRING, ParameterType::STRING, ParameterType::STRING, ArrayParameterType::STRING, ParameterType::STRING],
         );
@@ -145,6 +145,11 @@ final readonly class DeletedUserCleanup
 
         foreach ($rows as $row) {
             $uid = (string) $row['subject_uid'];
+
+            if (isset($markers[$uid])) {
+                continue;
+            }
+
             $markerAt = is_string($row['marker_at'] ?? null) ? new DateTimeImmutable($row['marker_at']) : null;
             $markers[$uid] = [
                 'deleted_at' => $markerAt,

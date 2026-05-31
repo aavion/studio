@@ -23,6 +23,7 @@ final readonly class DeferredMessengerDrain
         private string $projectDir,
         private string $environment,
         private string $transportName = self::DEFAULT_TRANSPORT,
+        private ?string $transportDsn = null,
         private int $cooldownSeconds = self::DEFAULT_COOLDOWN_SECONDS,
     ) {
     }
@@ -52,7 +53,7 @@ final readonly class DeferredMessengerDrain
             $count = $this->connection->fetchOne(
                 'SELECT COUNT(*) FROM messenger_messages WHERE queue_name = :queue_name AND delivered_at IS NULL AND available_at <= :now',
                 [
-                    'queue_name' => $this->transportName,
+                    'queue_name' => $this->doctrineQueueName(),
                     'now' => new DateTimeImmutable(),
                 ],
                 [
@@ -65,6 +66,37 @@ final readonly class DeferredMessengerDrain
         }
 
         return 0 < (int) $count;
+    }
+
+    private function doctrineQueueName(): string
+    {
+        $dsn = $this->transportDsn ?? $this->environmentTransportDsn();
+
+        if ('' === $dsn) {
+            return 'default';
+        }
+
+        $query = parse_url($dsn, PHP_URL_QUERY);
+
+        if (!is_string($query) || '' === $query) {
+            return 'default';
+        }
+
+        parse_str($query, $parameters);
+        $queueName = $parameters['queue_name'] ?? null;
+
+        if (!is_string($queueName) || '' === trim($queueName)) {
+            return 'default';
+        }
+
+        return trim($queueName);
+    }
+
+    private function environmentTransportDsn(): string
+    {
+        $dsn = $_SERVER['MESSENGER_TRANSPORT_DSN'] ?? $_ENV['MESSENGER_TRANSPORT_DSN'] ?? getenv('MESSENGER_TRANSPORT_DSN');
+
+        return is_string($dsn) ? $dsn : '';
     }
 
     private function acquireCooldownLock(): bool

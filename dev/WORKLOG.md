@@ -70,6 +70,7 @@
 - Started the isolated `improve-asset-rebuild` branch and hardened package-aware rebuilds so package mirrors, package registries, runtime translations, and production AssetMapper compiles preserve the previous generated state when a rebuild step fails.
 - Completed the final user-management review hardening pass: elevated deleted-account reactivation now requires admin approval, ACL/account-link stale-state paths are guarded, registration/default-group settings validate cleanly, stale token groups are logged without blocking users, and the branch is ready to merge unless a later review round finds new issues.
 - Kept user state markers atomic with Doctrine mutations and extended ACL group delete exposure warnings to menu links, avoiding duplicate menu warnings when the linked content item is already listed.
+- Hardened retained deleted-user cleanup to use the newest deletion marker and aligned the terminate-time Messenger drain with the configured Doctrine queue name.
 - Reduced cold init/container pressure by moving package discovery and translation aggregation out of cache warmers into setup/admin-triggered flows, narrowing service discovery away from non-service value objects and messages, and confirming cold `bin/init` no longer OOMs under the default memory limit.
 
 ### 2026-05-30
