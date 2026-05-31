@@ -204,6 +204,8 @@ message:
       complexity: 'Das Setup-Admin-Passwort muss mindestens drei Zeichentypen verwenden.'
       repeated: 'Das Setup-Admin-Passwort darf dasselbe Zeichen nicht mehr als dreimal direkt hintereinander enthalten.'
       personal: 'Das Setup-Admin-Passwort darf Admin-Username oder E-Mail-Name nicht enthalten.'
+    app_secret:
+      too_short: 'Der Setup-Hash-Salt muss mindestens %min_length% Zeichen enthalten, wenn er gesetzt wird.'
     password_reset:
       database_url_missing: 'DATABASE_URL wird für den Passwort-Reset benötigt.'
       user_not_found: 'Nutzer "%username%" wurde nicht gefunden.'

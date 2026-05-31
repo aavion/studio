@@ -204,6 +204,8 @@ message:
       complexity: 'The setup admin password must use at least three character types.'
       repeated: 'The setup admin password must not repeat the same character more than three times in a row.'
       personal: 'The setup admin password must not contain the admin username or email name.'
+    app_secret:
+      too_short: 'The setup hash salt must contain at least %min_length% characters when provided.'
     password_reset:
       database_url_missing: 'DATABASE_URL is required for password reset.'
       user_not_found: 'User "%username%" was not found.'

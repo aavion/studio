@@ -126,6 +126,7 @@ ui:
         classes: 'Mindestens drei von vier Zeichentypen'
         personal: 'Kein Username oder E-Mail-Name'
         repeated: 'Kein Zeichen mehr als dreimal direkt hintereinander'
+        match: 'Beide Passwort-Felder sind identisch'
     api_keys:
       title: 'API-Keys'
       subtitle: 'Hier werden nur API-Keys angezeigt, die deinem Account zugeordnet sind.'

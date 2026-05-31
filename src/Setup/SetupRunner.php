@@ -145,10 +145,21 @@ final class SetupRunner
      */
     private function validate(SetupInput $input): array
     {
-        return array_map(
+        $issues = array_map(
             fn (string $violation): Message => $this->adminPasswordMessage($violation),
             $this->passwordPolicy->violationCodes($input->adminPassword(), $input->adminUsername(), $input->adminEmail()),
         );
+
+        if (null !== $input->appSecret() && strlen($input->appSecret()) < SetupWebInputFactory::MIN_APP_SECRET_LENGTH) {
+            $issues[] = Message::error(
+                MessageCode::SETUP_APP_SECRET_TOO_SHORT,
+                MessageKey::SETUP_APP_SECRET_TOO_SHORT,
+                ['%min_length%' => SetupWebInputFactory::MIN_APP_SECRET_LENGTH],
+                ['field' => 'app_secret', 'min_length' => SetupWebInputFactory::MIN_APP_SECRET_LENGTH],
+            );
+        }
+
+        return $issues;
     }
 
     private function adminPasswordMessage(string $violation): Message
@@ -193,9 +204,9 @@ final class SetupRunner
             ['write_environment', fn (): array => $this->environmentWriter->write($this->projectDir, $input, $appSecret, $databaseUrl)],
             ['dump_environment', fn (): array => $this->dumpEnvironment($input, $environment)],
             ['run_migrations', fn (): array => $this->runMigrations($input, $environment)],
-            ['seed_default_settings', fn (): array => $this->databaseSeeder->seedDefaultSettings($this->projectDir, $input, $databaseUrl)],
-            ['seed_admin_user', fn (): array => $this->databaseSeeder->seedAdminUser($this->projectDir, $input, $databaseUrl)],
-            ['seed_initial_content', fn (): array => $this->databaseSeeder->seedInitialContent($this->projectDir, $input, $databaseUrl)],
+            ['seed_default_settings', fn (): array => $this->withDatabaseEnvironment($environment, fn (): array => $this->databaseSeeder->seedDefaultSettings($this->projectDir, $input, $databaseUrl))],
+            ['seed_admin_user', fn (): array => $this->withDatabaseEnvironment($environment, fn (): array => $this->databaseSeeder->seedAdminUser($this->projectDir, $input, $databaseUrl))],
+            ['seed_initial_content', fn (): array => $this->withDatabaseEnvironment($environment, fn (): array => $this->databaseSeeder->seedInitialContent($this->projectDir, $input, $databaseUrl))],
             ['clear_cache', fn (): array => $this->clearCache($input, $environment)],
             ['run_package_discovery', fn (): array => $this->runPackageDiscovery($input, $environment)],
             ['run_asset_rebuild', fn (): array => $this->runAssetRebuild($input, $environment)],
@@ -356,6 +367,55 @@ final class SetupRunner
             ...$environment,
             DatabaseReadyState::ALLOW_UNREADY_KEY => '1',
         ];
+    }
+
+    /**
+     * @param array<string, string> $environment
+     * @param callable(): array<string, mixed> $callback
+     *
+     * @return array<string, mixed>
+     */
+    private function withDatabaseEnvironment(array $environment, callable $callback): array
+    {
+        $environment = $this->databaseCommandEnvironment($environment);
+        $previous = [];
+
+        foreach ($environment as $name => $value) {
+            $previous[$name] = [
+                'server_exists' => array_key_exists($name, $_SERVER),
+                'server_value' => $_SERVER[$name] ?? null,
+                'env_exists' => array_key_exists($name, $_ENV),
+                'env_value' => $_ENV[$name] ?? null,
+                'process_value' => getenv($name),
+            ];
+            $_SERVER[$name] = $value;
+            $_ENV[$name] = $value;
+            putenv($name.'='.$value);
+        }
+
+        try {
+            return $callback();
+        } finally {
+            foreach ($previous as $name => $state) {
+                if ($state['server_exists']) {
+                    $_SERVER[$name] = $state['server_value'];
+                } else {
+                    unset($_SERVER[$name]);
+                }
+
+                if ($state['env_exists']) {
+                    $_ENV[$name] = $state['env_value'];
+                } else {
+                    unset($_ENV[$name]);
+                }
+
+                if (false === $state['process_value']) {
+                    putenv($name);
+                } else {
+                    putenv($name.'='.$state['process_value']);
+                }
+            }
+        }
     }
 
     private function commandError(SetupCommandResult $result): string

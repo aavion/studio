@@ -164,6 +164,7 @@ final class MessageCode
     public const SETUP_ADMIN_PASSWORD_COMPLEXITY = 'setup.admin_password.complexity';
     public const SETUP_ADMIN_PASSWORD_REPEATED = 'setup.admin_password.repeated';
     public const SETUP_ADMIN_PASSWORD_PERSONAL = 'setup.admin_password.personal';
+    public const SETUP_APP_SECRET_TOO_SHORT = 'setup.app_secret.too_short';
     public const SETUP_PROMPT_PASSWORD_RESET_CONTINUE = 'setup.prompt.password_reset_continue';
     public const SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD = 'setup.prompt.password_reset_new_password';
     public const SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD = 'setup.prompt.password_reset_confirm_password';

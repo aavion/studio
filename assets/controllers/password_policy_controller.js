@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
-    static targets = ['password', 'confirm', 'username', 'email', 'meter', 'rule', 'match'];
+    static targets = ['password', 'confirm', 'username', 'email', 'meter', 'rule'];
     static values = {
         email: String,
         mismatchMessage: String,
@@ -27,7 +27,7 @@ export default class extends Controller {
         const passed = checks.filter((check) => check.passed).length;
         const allPassed = checks.every((check) => check.passed);
         const fullStrength = allPassed && password.length > 10 && this.characterClassCount(password) === 4;
-        const strength = password === '' ? 0 : Math.min(5, passed + (fullStrength ? 1 : 0));
+        const strength = password === '' ? 0 : Math.min(6, passed + (fullStrength ? 1 : 0));
 
         this.meterTarget.value = strength;
         this.meterTarget.dataset.strength = String(strength);
@@ -53,9 +53,6 @@ export default class extends Controller {
 
         this.confirmTarget.setCustomValidity(mismatch ? this.mismatchMessageValue : '');
 
-        if (this.hasMatchTarget) {
-            this.matchTarget.hidden = !mismatch;
-        }
     }
 
     passwordChecks(password) {
@@ -69,7 +66,16 @@ export default class extends Controller {
             { rule: 'classes', passed: this.characterClassCount(password) >= 3 },
             { rule: 'repeated', passed: !/(.)\1{3,}/u.test(password) },
             { rule: 'personal', passed: !personalIdentifiers.some((value) => loweredPassword.includes(value)) },
+            { rule: 'match', passed: this.passwordsMatch(password) },
         ];
+    }
+
+    passwordsMatch(password) {
+        if (!this.hasConfirmTarget) {
+            return true;
+        }
+
+        return password !== '' && password === this.confirmTarget.value;
     }
 
     characterClassCount(password) {

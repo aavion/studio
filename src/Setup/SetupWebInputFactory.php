@@ -11,6 +11,8 @@ use Throwable;
 
 final readonly class SetupWebInputFactory
 {
+    public const MIN_APP_SECRET_LENGTH = 12;
+
     public function __construct(
         private string $projectDir,
         private string $environment,
@@ -273,6 +275,10 @@ final readonly class SetupWebInputFactory
 
         if (!EmailAddress::isValid((string) $values['admin_email'])) {
             $errors['admin_email'][] = 'setup.form.errors.email';
+        }
+
+        if ('' !== trim((string) $values['app_secret']) && strlen((string) $values['app_secret']) < self::MIN_APP_SECRET_LENGTH) {
+            $errors['app_secret'][] = 'setup.form.errors.app_secret_length';
         }
 
         return $errors;

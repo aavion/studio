@@ -176,6 +176,7 @@ setup:
       password_complexity: 'The admin password must use at least three character types.'
       password_repeated: 'The admin password must not repeat the same character more than three times in a row.'
       password_personal: 'The admin password must not contain the admin username or email name.'
+      app_secret_length: 'The hash salt must contain at least 12 characters when provided.'
       port: 'Enter a port between 1 and 65535.'
       username: 'The admin username must start with a letter and contain 5 to 30 letters, digits, hyphens, or underscores.'
       required: 'This field is required.'

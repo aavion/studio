@@ -126,6 +126,7 @@ ui:
         classes: 'At least three of four character types'
         personal: 'No username or email name'
         repeated: 'No character repeated more than three times'
+        match: 'Password fields match'
     api_keys:
       title: 'API keys'
       subtitle: 'Only API keys assigned to your account are shown here.'

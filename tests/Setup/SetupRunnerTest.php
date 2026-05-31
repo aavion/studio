@@ -53,7 +53,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret',
+            appSecret: 'test-secret-12',
         );
         $seed = new SetupDefaultSeed();
 
@@ -63,7 +63,7 @@ final class SetupRunnerTest extends TestCase
         self::assertInstanceOf(ActionLog::class, $result->value());
         self::assertFalse($result->context()['halt_on_error']);
         self::assertFileExists($this->root.'/.env.test.local');
-        self::assertStringContainsString("APP_SECRET='test-secret'", (string) file_get_contents($this->root.'/.env.test.local'));
+        self::assertStringContainsString("APP_SECRET='test-secret-12'", (string) file_get_contents($this->root.'/.env.test.local'));
         self::assertFileExists($this->root.'/.env.local.php');
         $dumpedEnvironment = include $this->root.'/.env.local.php';
         self::assertSame('1', $dumpedEnvironment['APP_SETUP_COMPLETED']);
@@ -132,12 +132,67 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'short',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret',
+            appSecret: 'test-secret-12',
         ));
 
         self::assertFalse($result->isSuccess());
         self::assertSame('setup.admin_password.too_short', $result->firstIssue()?->code());
         self::assertSame([], $executor->commands);
+    }
+
+    public function testItRejectsShortAppSecretBeforeSetupSteps(): void
+    {
+        $databasePath = $this->root.'/var/setup.db';
+        $this->createSchema($databasePath);
+        $executor = new RecordingSetupCommandExecutor();
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Example Studio',
+            defaultUri: 'https://example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///'.$databasePath,
+            adminUsername: 'admin',
+            adminPassword: 'Secret1!password',
+            adminEmail: 'admin@example.test',
+            appSecret: 'short',
+        ));
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('setup.app_secret.too_short', $result->firstIssue()?->code());
+        self::assertSame([], $executor->commands);
+    }
+
+    public function testItSeedsPrefixedDatabaseTablesInRunnerProcess(): void
+    {
+        $databasePath = $this->root.'/var/setup-prefixed.db';
+        $this->createSchema($databasePath, 'studio_');
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), new RecordingSetupCommandExecutor());
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Prefixed Studio',
+            defaultUri: 'https://prefixed.example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///'.$databasePath,
+            databasePrefix: 'studio_',
+            adminUsername: 'admin',
+            adminPassword: 'Secret1!password',
+            adminEmail: 'admin@example.test',
+            appSecret: 'test-secret-12',
+        ));
+
+        self::assertTrue($result->isSuccess());
+
+        $pdo = new PDO('sqlite:'.$databasePath);
+        self::assertSame(
+            'Prefixed Studio',
+            json_decode((string) $pdo->query("SELECT value FROM studio_config_entry WHERE config_key = 'site.title'")->fetchColumn(), true, flags: JSON_THROW_ON_ERROR),
+        );
+        self::assertSame(1, (int) $pdo->query("SELECT COUNT(*) FROM studio_user_account WHERE username = 'admin'")->fetchColumn());
     }
 
     public function testItSeedsTheSameSqliteDatabaseThatSymfonyMigratesWhenUrlUsesKernelEnvironmentPlaceholder(): void
@@ -156,7 +211,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret',
+            appSecret: 'test-secret-12',
         ));
 
         self::assertTrue($result->isSuccess());
@@ -184,7 +239,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret',
+            appSecret: 'test-secret-12',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -208,7 +263,7 @@ final class SetupRunnerTest extends TestCase
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: 'sqlite:///'.$this->root.'/var/setup.db',
-            appSecret: 'test-secret',
+            appSecret: 'test-secret-12',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -234,7 +289,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret',
+            appSecret: 'test-secret-12',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -257,7 +312,7 @@ final class SetupRunnerTest extends TestCase
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: 'sqlite:///'.$this->root.'/var/setup.db',
-            appSecret: 'test-secret',
+            appSecret: 'test-secret-12',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -285,7 +340,7 @@ final class SetupRunnerTest extends TestCase
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: 'sqlite:///'.$databasePath,
-            appSecret: 'test-secret',
+            appSecret: 'test-secret-12',
         ));
 
         self::assertTrue($result->isSuccess());
@@ -472,20 +527,20 @@ final class SetupRunnerTest extends TestCase
         return $decoded;
     }
 
-    private function createSchema(string $databasePath): void
+    private function createSchema(string $databasePath, string $prefix = ''): void
     {
         $pdo = new PDO('sqlite:'.$databasePath);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->exec('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL, modified_at DATETIME NOT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
-        $pdo->exec('CREATE TABLE acl_group (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(80) NOT NULL UNIQUE, name CLOB NOT NULL, min_role INTEGER NOT NULL, metadata CLOB NOT NULL)');
-        $pdo->exec('CREATE TABLE state_marker (uid VARCHAR(36) NOT NULL PRIMARY KEY, subject_type VARCHAR(80) NOT NULL, subject_uid VARCHAR(36) NOT NULL, marker_key VARCHAR(80) NOT NULL, marker_at DATETIME NOT NULL, marker_by VARCHAR(180) DEFAULT NULL, marker_value VARCHAR(255) DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(subject_type, subject_uid, marker_key))');
-        $pdo->exec("CREATE TABLE user_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(180) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, profile CLOB NOT NULL, settings CLOB NOT NULL, status VARCHAR(32) NOT NULL, role VARCHAR(40) NOT NULL DEFAULT 'user')");
-        $pdo->exec('CREATE TABLE user_acl_group (user_uid VARCHAR(36) NOT NULL, group_uid VARCHAR(36) NOT NULL, PRIMARY KEY(user_uid, group_uid))');
-        $pdo->exec('CREATE TABLE content_schema (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(120) NOT NULL UNIQUE, source VARCHAR(255) NOT NULL, locked BOOLEAN NOT NULL, active_version_uid VARCHAR(36) DEFAULT NULL, labels CLOB NOT NULL, descriptions CLOB NOT NULL, metadata CLOB NOT NULL)');
-        $pdo->exec('CREATE TABLE content_schema_version (uid VARCHAR(36) NOT NULL PRIMARY KEY, schema_uid VARCHAR(36) NOT NULL, version INTEGER NOT NULL, title CLOB NOT NULL, description CLOB NOT NULL, definition CLOB NOT NULL, custom_twig CLOB DEFAULT NULL, definition_hash VARCHAR(64) NOT NULL, use_min_level INTEGER DEFAULT NULL, use_group_identifiers CLOB DEFAULT NULL, edit_min_level INTEGER DEFAULT NULL, edit_group_identifiers CLOB DEFAULT NULL, manage_min_level INTEGER DEFAULT NULL, manage_group_identifiers CLOB DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(schema_uid, version))');
-        $pdo->exec('CREATE TABLE content_item (uid VARCHAR(36) NOT NULL PRIMARY KEY, slug VARCHAR(160) NOT NULL, status VARCHAR(255) NOT NULL, parent_uid VARCHAR(36) NOT NULL DEFAULT \'/\', sort_order INTEGER NOT NULL, custom_url VARCHAR(1024) DEFAULT NULL UNIQUE, redirect_target VARCHAR(1024) DEFAULT NULL, schema_uid VARCHAR(36) DEFAULT NULL, schema_version INTEGER DEFAULT NULL, active_revision_uid VARCHAR(36) DEFAULT NULL, version INTEGER NOT NULL, available_languages CLOB NOT NULL, available_variants CLOB NOT NULL, visibility VARCHAR(255) NOT NULL, acl_restrictions CLOB NOT NULL, view_min_level INTEGER DEFAULT NULL, view_group_identifiers CLOB DEFAULT NULL, edit_min_level INTEGER DEFAULT NULL, edit_group_identifiers CLOB DEFAULT NULL, manage_min_level INTEGER DEFAULT NULL, manage_group_identifiers CLOB DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(parent_uid, slug))');
-        $pdo->exec('CREATE TABLE content_revision (uid VARCHAR(36) NOT NULL PRIMARY KEY, content_uid VARCHAR(36) NOT NULL, version INTEGER NOT NULL, schema_uid VARCHAR(36) NOT NULL, schema_version_uid VARCHAR(36) NOT NULL, change_summary VARCHAR(255) DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(content_uid, version))');
-        $pdo->exec('CREATE TABLE content_field_value (uid VARCHAR(36) NOT NULL PRIMARY KEY, revision_uid VARCHAR(36) NOT NULL, language VARCHAR(16) NOT NULL, variant VARCHAR(80) NOT NULL, field_identifier VARCHAR(160) NOT NULL, field_content CLOB NOT NULL, UNIQUE(revision_uid, language, variant, field_identifier))');
+        $pdo->exec(sprintf('CREATE TABLE %sconfig_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL, modified_at DATETIME NOT NULL, modified_by VARCHAR(180) DEFAULT NULL)', $prefix));
+        $pdo->exec(sprintf('CREATE TABLE %sacl_group (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(80) NOT NULL UNIQUE, name CLOB NOT NULL, min_role INTEGER NOT NULL, metadata CLOB NOT NULL)', $prefix));
+        $pdo->exec(sprintf('CREATE TABLE %sstate_marker (uid VARCHAR(36) NOT NULL PRIMARY KEY, subject_type VARCHAR(80) NOT NULL, subject_uid VARCHAR(36) NOT NULL, marker_key VARCHAR(80) NOT NULL, marker_at DATETIME NOT NULL, marker_by VARCHAR(180) DEFAULT NULL, marker_value VARCHAR(255) DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(subject_type, subject_uid, marker_key))', $prefix));
+        $pdo->exec(sprintf("CREATE TABLE %suser_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(180) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, profile CLOB NOT NULL, settings CLOB NOT NULL, status VARCHAR(32) NOT NULL, role VARCHAR(40) NOT NULL DEFAULT 'user')", $prefix));
+        $pdo->exec(sprintf('CREATE TABLE %suser_acl_group (user_uid VARCHAR(36) NOT NULL, group_uid VARCHAR(36) NOT NULL, PRIMARY KEY(user_uid, group_uid))', $prefix));
+        $pdo->exec(sprintf('CREATE TABLE %scontent_schema (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(120) NOT NULL UNIQUE, source VARCHAR(255) NOT NULL, locked BOOLEAN NOT NULL, active_version_uid VARCHAR(36) DEFAULT NULL, labels CLOB NOT NULL, descriptions CLOB NOT NULL, metadata CLOB NOT NULL)', $prefix));
+        $pdo->exec(sprintf('CREATE TABLE %scontent_schema_version (uid VARCHAR(36) NOT NULL PRIMARY KEY, schema_uid VARCHAR(36) NOT NULL, version INTEGER NOT NULL, title CLOB NOT NULL, description CLOB NOT NULL, definition CLOB NOT NULL, custom_twig CLOB DEFAULT NULL, definition_hash VARCHAR(64) NOT NULL, use_min_level INTEGER DEFAULT NULL, use_group_identifiers CLOB DEFAULT NULL, edit_min_level INTEGER DEFAULT NULL, edit_group_identifiers CLOB DEFAULT NULL, manage_min_level INTEGER DEFAULT NULL, manage_group_identifiers CLOB DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(schema_uid, version))', $prefix));
+        $pdo->exec(sprintf('CREATE TABLE %scontent_item (uid VARCHAR(36) NOT NULL PRIMARY KEY, slug VARCHAR(160) NOT NULL, status VARCHAR(255) NOT NULL, parent_uid VARCHAR(36) NOT NULL DEFAULT \'/\', sort_order INTEGER NOT NULL, custom_url VARCHAR(1024) DEFAULT NULL UNIQUE, redirect_target VARCHAR(1024) DEFAULT NULL, schema_uid VARCHAR(36) DEFAULT NULL, schema_version INTEGER DEFAULT NULL, active_revision_uid VARCHAR(36) DEFAULT NULL, version INTEGER NOT NULL, available_languages CLOB NOT NULL, available_variants CLOB NOT NULL, visibility VARCHAR(255) NOT NULL, acl_restrictions CLOB NOT NULL, view_min_level INTEGER DEFAULT NULL, view_group_identifiers CLOB DEFAULT NULL, edit_min_level INTEGER DEFAULT NULL, edit_group_identifiers CLOB DEFAULT NULL, manage_min_level INTEGER DEFAULT NULL, manage_group_identifiers CLOB DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(parent_uid, slug))', $prefix));
+        $pdo->exec(sprintf('CREATE TABLE %scontent_revision (uid VARCHAR(36) NOT NULL PRIMARY KEY, content_uid VARCHAR(36) NOT NULL, version INTEGER NOT NULL, schema_uid VARCHAR(36) NOT NULL, schema_version_uid VARCHAR(36) NOT NULL, change_summary VARCHAR(255) DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(content_uid, version))', $prefix));
+        $pdo->exec(sprintf('CREATE TABLE %scontent_field_value (uid VARCHAR(36) NOT NULL PRIMARY KEY, revision_uid VARCHAR(36) NOT NULL, language VARCHAR(16) NOT NULL, variant VARCHAR(80) NOT NULL, field_identifier VARCHAR(160) NOT NULL, field_content CLOB NOT NULL, UNIQUE(revision_uid, language, variant, field_identifier))', $prefix));
     }
 
     private function removeDirectory(string $directory): void
