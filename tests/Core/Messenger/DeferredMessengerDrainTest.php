@@ -21,9 +21,9 @@ final class DeferredMessengerDrainTest extends TestCase
         $projectDir = $this->createTemporaryDirectory('messenger-drain');
         $connection = $this->connectionWithMessengerTable();
         $starter = new RecordingDeferredMessengerStarter();
-        $this->insertMessage($connection, 'async');
+        $this->insertMessage($connection, 'default');
 
-        $drain = new DeferredMessengerDrain($connection, $starter, $projectDir, 'test');
+        $drain = new DeferredMessengerDrain($connection, $starter, $projectDir, 'test', transportDsn: 'doctrine://default?auto_setup=0');
 
         self::assertTrue($drain->drainPendingMessages());
         self::assertCount(1, $starter->starts);
@@ -57,11 +57,27 @@ final class DeferredMessengerDrainTest extends TestCase
         $starter = new RecordingDeferredMessengerStarter();
         $this->insertMessage($connection, 'async');
 
-        $drain = new DeferredMessengerDrain($connection, $starter, $projectDir, 'test', cooldownSeconds: 300);
+        $drain = new DeferredMessengerDrain($connection, $starter, $projectDir, 'test', transportDsn: 'doctrine://default?queue_name=async', cooldownSeconds: 300);
 
         self::assertTrue($drain->drainPendingMessages());
         self::assertFalse($drain->drainPendingMessages());
         self::assertCount(1, $starter->starts);
+
+        $this->removeDirectory($projectDir);
+    }
+
+    public function testItUsesConfiguredDoctrineQueueNameForPendingCheck(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('messenger-drain-queue-name');
+        $connection = $this->connectionWithMessengerTable();
+        $starter = new RecordingDeferredMessengerStarter();
+        $this->insertMessage($connection, 'custom_queue');
+
+        $drain = new DeferredMessengerDrain($connection, $starter, $projectDir, 'test', transportDsn: 'doctrine://default?auto_setup=0&queue_name=custom_queue');
+
+        self::assertTrue($drain->drainPendingMessages());
+        self::assertCount(1, $starter->starts);
+        self::assertContains('async', $starter->starts[0]['command']);
 
         $this->removeDirectory($projectDir);
     }

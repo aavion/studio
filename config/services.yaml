@@ -184,6 +184,7 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
+            $transportDsn: '%env(MESSENGER_TRANSPORT_DSN)%'
 
     App\Core\Log\MessageLoggerInterface:
         alias: App\Core\Log\MonologMessageLogger

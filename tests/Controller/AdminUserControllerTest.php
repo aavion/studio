@@ -204,6 +204,66 @@ final class AdminUserControllerTest extends WebTestCase
         }
     }
 
+    public function testDeletedUserCleanupUsesLatestDeletionMarkerForRetention(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $config = self::getContainer()->get(Config::class);
+        $lifecycle = self::getContainer()->get(UserAccountLifecycle::class);
+        $originalRetention = $config->get('user.deleted_user_retention_days', 7);
+        $user = $this->createUser('redeleteduser', UserAccountStatus::Active);
+        $config->set('user.deleted_user_retention_days', 7, ConfigValueType::Integer, modifiedBy: 'test');
+
+        try {
+            $lifecycle->changeStatus($user, UserAccountStatus::Deleted, 'cleanup-admin');
+            $entityManager->flush();
+            $entityManager->getConnection()->update('state_marker', [
+                'marker_at' => '2026-05-01 10:00:00',
+            ], [
+                'subject_type' => StateSubjectType::USER_ACCOUNT,
+                'subject_uid' => $user->uid(),
+                'marker_key' => StateMarkerKey::STATUS_CHANGED,
+            ]);
+            $lifecycle->changeStatus($user, UserAccountStatus::Active, 'cleanup-admin');
+            $entityManager->flush();
+            $lifecycle->changeStatus($user, UserAccountStatus::Deleted, 'cleanup-admin');
+            $entityManager->flush();
+            $entityManager->getConnection()->update('state_marker', [
+                'marker_at' => (new \DateTimeImmutable('-1 day'))->format('Y-m-d H:i:s'),
+            ], [
+                'subject_type' => StateSubjectType::USER_ACCOUNT,
+                'subject_uid' => $user->uid(),
+                'marker_key' => StateMarkerKey::STATUS_CHANGED,
+            ]);
+
+            $crawler = $client->request('GET', '/admin/users/deleted');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('main', 'redeleteduser@example.test');
+            self::assertSelectorTextContains('main', 'Within retention');
+
+            $client->submit($crawler->selectButton('Clean up retained deleted users')->form());
+
+            self::assertResponseRedirects('/admin/users/deleted');
+            $entityManager->clear();
+            self::assertInstanceOf(UserAccount::class, $entityManager->find(UserAccount::class, $user->uid()));
+        } finally {
+            $config->set('user.deleted_user_retention_days', (int) $originalRetention, ConfigValueType::Integer, modifiedBy: 'test');
+            $managedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+            if ($managedUser instanceof UserAccount) {
+                $entityManager->remove($managedUser);
+            }
+
+            $entityManager->getConnection()->delete('state_marker', [
+                'subject_type' => StateSubjectType::USER_ACCOUNT,
+                'subject_uid' => $user->uid(),
+            ]);
+            $entityManager->flush();
+        }
+    }
+
     public function testDeletedUserActivationRestoresPublicRole(): void
     {
         $client = self::createClient();
