@@ -623,6 +623,43 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testAdminCannotReissueRecoveryTokenForInactiveUser(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $user = $this->createUser('reissueinactive', UserAccountStatus::Active);
+        [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::PasswordReset,
+            $user->email(),
+            [],
+            $user,
+            ttl: '-1 hour',
+        );
+        $originalHash = $token->tokenHash();
+        $user->changeStatus(UserAccountStatus::Inactive);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/admin/users');
+        $client->submit($crawler->filter('form[action="/admin/users/invitations/'.$token->uid().'/reissue"]')->form());
+
+        self::assertResponseRedirects('/admin/users');
+
+        $entityManager->clear();
+        $unchangedToken = $entityManager->find(AccountToken::class, $token->uid());
+        $managedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+        self::assertInstanceOf(AccountToken::class, $unchangedToken);
+        self::assertInstanceOf(UserAccount::class, $managedUser);
+        self::assertSame(AccountTokenStatus::Pending, $unchangedToken->status());
+        self::assertSame($originalHash, $unchangedToken->tokenHash());
+
+        $entityManager->remove($unchangedToken);
+        $entityManager->remove($managedUser);
+        $entityManager->flush();
+    }
+
     public function testLowerAccessAdminCannotReissueOwnerRecoveryToken(): void
     {
         $client = self::createClient();
@@ -764,6 +801,43 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSame(AccountTokenStatus::Pending, $approvedToken->status());
         self::assertSame([], $approvedToken->groupIdentifiers());
         $entityManager->remove($approvedToken);
+        $entityManager->flush();
+    }
+
+    public function testAdminCannotApproveBoundRegistrationAfterDeletedUserWasReactivated(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->adminUser());
+        $user = $this->createUser('approvalreactivated', UserAccountStatus::Deleted);
+        [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Registration,
+            $user->email(),
+            [],
+            $user,
+            status: AccountTokenStatus::PendingApproval,
+        );
+        $originalHash = $token->tokenHash();
+        $user->changeStatus(UserAccountStatus::Active);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/admin/users/reviews');
+        $client->submit($crawler->filter('form[action="/admin/users/invitations/'.$token->uid().'/approve"]')->form());
+
+        self::assertResponseRedirects('/admin/users/reviews');
+
+        $entityManager->clear();
+        $unchangedToken = $entityManager->find(AccountToken::class, $token->uid());
+        $managedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+        self::assertInstanceOf(AccountToken::class, $unchangedToken);
+        self::assertInstanceOf(UserAccount::class, $managedUser);
+        self::assertSame(AccountTokenStatus::PendingApproval, $unchangedToken->status());
+        self::assertSame($originalHash, $unchangedToken->tokenHash());
+
+        $entityManager->remove($unchangedToken);
+        $entityManager->remove($managedUser);
         $entityManager->flush();
     }
 

@@ -332,7 +332,7 @@ final class AdminUserInvitationController extends AbstractController
 
         return match ($token->type()) {
             AccountTokenType::Invitation, AccountTokenType::Registration => $this->validateAccountLinkAssignment($token),
-            AccountTokenType::PasswordReset, AccountTokenType::SecurityReview => null,
+            AccountTokenType::PasswordReset, AccountTokenType::SecurityReview => $this->validateRecoveryTokenTarget($token),
         };
     }
 
@@ -353,11 +353,24 @@ final class AdminUserInvitationController extends AbstractController
             return 'admin.users.form.errors.role_too_low';
         }
 
+        if ($token->user() instanceof UserAccount && UserAccountStatus::Deleted !== $token->user()->status()) {
+            return 'admin.users.invitation.unavailable';
+        }
+
         if ($error = $this->adminUserPolicy->validateRoleAssignment($this->actor(), $token->role())) {
             return $error;
         }
 
         return $this->adminUserPolicy->validateGroupAssignment($this->actor(), $token->groupIdentifiers(), $token->role());
+    }
+
+    private function validateRecoveryTokenTarget(AccountToken $token): ?string
+    {
+        $user = $token->user();
+
+        return $user instanceof UserAccount && $user->status()->isUsable()
+            ? null
+            : 'admin.users.invitation.unavailable';
     }
 
     private function redirectAfterTokenAction(Request $request): Response

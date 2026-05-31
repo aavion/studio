@@ -92,7 +92,7 @@ A stale password-change security-review token can still be consumed after the li
 
 ### P2 | src/Controller/AdminUserInvitationController.php
 Invitation and registration token approve/reissue paths validate group assignment but may not validate the target user when the token is bound to an existing or deleted account. A lower-privileged admin could potentially approve or reissue a setup/reactivation link for a high-access deleted account as long as the replacement groups are assignable. If token->user() exists, run the same target-user authorization used by password-reset creation and recovery-token reissue before delivering a fresh link. Revocation should remain possible for stale/broken tokens without requiring the old groups to still be deliverable.
-**– Fixed by validating bound target users before token delivery while keeping revocation independent from stale group deliverability.**
+**– Fixed by validating bound target users and current target-user state before token delivery while keeping revocation independent from stale group deliverability.**
 
 ### P2 | src/Controller/UserPasswordRecoveryController.php
 The public password-reset flow can create reset tokens for any matched account and complete pending reset tokens without checking whether the linked user is still usable. Inactive or deleted accounts should not receive or consume password-reset links. Keep the public request response enumeration-safe, but skip token creation for non-usable accounts and reject/reset-token completion when the linked account is no longer usable.
