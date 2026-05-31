@@ -71,7 +71,7 @@ final readonly class SetupInput
         return new self(
             appEnv: $appEnv,
             language: $language,
-            siteTitle: 'aavion Studio',
+            siteTitle: 'Studio',
             defaultUri: $defaultUri,
             databaseDriver: self::driverFromDatabaseUrl($databaseUrl),
             databaseUrl: $databaseUrl,

@@ -6,6 +6,7 @@ namespace App\Setup;
 
 use App\Core\Message\MessageKey;
 use App\Core\Validation\EmailAddress;
+use App\View\SystemPackageMetadataProvider;
 
 final class SetupCliInputFactory
 {
@@ -39,7 +40,7 @@ final class SetupCliInputFactory
         $interactive = $this->prompter->isInteractive($options);
         $databaseUrl = $this->initialDatabaseUrl($options);
         $language = $this->language($options, $interactive);
-        $siteTitle = $this->prompter->value($options, 'site-title', 'aavion Studio', $interactive, $language, MessageKey::SETUP_PROMPT_SITE_TITLE);
+        $siteTitle = $this->prompter->value($options, 'site-title', $this->appName(), $interactive, $language, MessageKey::SETUP_PROMPT_SITE_TITLE);
         $defaultUri = $this->prompter->value($options, 'url', $this->environment('DEFAULT_URI', 'http://localhost'), $interactive, $language, MessageKey::SETUP_PROMPT_DEFAULT_URI);
         $databaseDriver = $this->databaseDriver($options, $databaseUrl, $interactive, $language);
         $parts = $this->databaseParts($options, $databaseUrl, $databaseDriver, $interactive, $language);
@@ -72,6 +73,11 @@ final class SetupCliInputFactory
             siteSettings: $this->siteSettings($options),
             dryRun: array_key_exists('dry-run', $options),
         );
+    }
+
+    private function appName(): string
+    {
+        return (new SystemPackageMetadataProvider($this->projectDir))->metadata()['name'];
     }
 
     /**

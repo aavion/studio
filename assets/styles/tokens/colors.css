@@ -1,8 +1,8 @@
 @theme {
-    --color-primary: #5170ff;
-    --color-primary-action: #3154e8;
-    --color-primary-soft: #eef2ff;
-    --color-primary-strong: #243fd0;
+    --color-primary: var(--color-brand-primary);
+    --color-primary-action: var(--color-brand-primary-action);
+    --color-primary-soft: var(--color-brand-primary-soft);
+    --color-primary-strong: var(--color-brand-primary-strong);
 
     --color-gray-50: #f8fafc;
     --color-gray-100: #f1f5f9;
@@ -34,8 +34,6 @@
 
 :root {
     color-scheme: light;
-    --color-studio-primary: var(--color-primary);
-    --color-studio-accent: var(--color-primary-strong);
     --color-studio-ink: var(--color-ink);
     --color-studio-muted: var(--color-muted);
     --color-studio-line: var(--color-line);

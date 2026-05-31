@@ -1,5 +1,5 @@
 :root {
-    --studio-focus-ring: 0 0 0 3px rgb(81 112 255 / 28%);
+    --studio-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 28%, transparent);
     --studio-transition-fast: 140ms ease;
 }
 

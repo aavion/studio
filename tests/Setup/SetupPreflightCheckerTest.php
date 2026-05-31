@@ -41,6 +41,7 @@ final class SetupPreflightCheckerTest extends TestCase
 
         self::assertTrue($result['ok']);
         self::assertFileExists($this->root.'/.env.test.local');
+        self::assertFileExists($this->root.'/.setup-preflight-heal-probe');
         self::assertDirectoryExists($this->root.'/var');
         self::assertDirectoryExists($this->root.'/translations/runtime');
     }
@@ -52,8 +53,14 @@ final class SetupPreflightCheckerTest extends TestCase
         ]);
 
         $keys = array_column($result['checks'], 'key');
+        $detailKeys = array_column($result['detail_rows'], 'key');
 
         self::assertContains('cli_runner', $keys);
+        self::assertContains('composer_binary', $keys);
+        self::assertContains('php_version', $keys);
+        self::assertContains('temporary_heal_probe', $keys);
+        self::assertContains('required_extensions', $detailKeys);
+        self::assertContains('writable_paths', $detailKeys);
     }
 
     private function removeDirectory(string $path): void

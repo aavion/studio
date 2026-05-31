@@ -91,7 +91,7 @@ html {
 
 .studio-system-footer-backend {
     width: 100%;
-    padding-top: 0.35rem;
+    padding-top: 0.15rem;
     padding-right: 0.5rem;
 }
 
@@ -101,6 +101,26 @@ html {
 
 .studio-system-footer a {
     color: inherit;
+}
+
+.studio-brand {
+    display: inline-flex;
+    gap: 0.6rem;
+    align-items: center;
+    color: var(--color-ink);
+    font-weight: 850;
+    text-decoration: none;
+}
+
+.studio-brand-mark {
+    display: inline-grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border-radius: var(--studio-radius);
+    background: var(--color-primary-action);
+    color: #ffffff;
+    font-weight: 900;
 }
 
 .studio-page-actions,

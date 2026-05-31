@@ -88,6 +88,11 @@
 - Polished the LiveOperation overlay so setup/admin action logs use translated step labels, replace in-flight rows with terminal rows, keep long logs scrollable, and keep controls visible outside the log overflow.
 - Tightened shell/panel responsiveness so long text and form controls cannot expand wrappers, moved error diagnostics into a subdued bottom block, and kept 401 login pages free of debug details.
 - Moved package asset mirrors and generated CSS/JS registries out of Git tracking while keeping directory anchors, and made `bin/init` plus package asset sync recreate the ignored registry files before Tailwind or AssetMapper need them.
+- Made the setup shell width adaptive with container-based footer wrapping so the wizard can use more space on wider screens without breaking compact viewports.
+- Refined the setup landing page and preflight details with app-aware copy, centered language selection, detected check values, Composer/PHP checks, and a temporary auto-heal probe for UI testing.
+- Restyled the setup wizard toward the generated design direction with a dark backend canvas, text-logo chrome, bright adaptive shell, primary-gradient welcome hero, centered icon step headers, toast-style form errors, status-card preflight summary, grouped icon-led preflight rows, and separated footer progress actions.
+- Renamed the product display name from `aavion Studio` to `Studio`, moved setup/admin defaults to the manifest-backed app name where project context exists, and refreshed docs, translations, tests, and runtime catalogues.
+- Reworded the README toward a warmer product-facing project overview and tightened the setup system-footer spacing against the shell.
 
 ### 2026-05-30
 - Finished the ACL role refactor: one exact account role plus optional groups with minimum-role floors, Symfony hierarchy/firewalls, owner guardrails, optional default groups, no obsolete locked-group behavior, updated migrations/setup/UI/translations/docs/class map, and regression coverage.

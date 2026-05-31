@@ -9,8 +9,20 @@ setup:
     foundation_title: 'Setup-Routine'
     foundation_text: 'Führt dieselbe Setup-Routine aus wie die CLI. Lass den Dry-Run aktiv, um die geplanten Schritte ohne Datei- oder Datenbankänderungen zu prüfen.'
   landing:
-    title: 'Willkommen im Setup'
-    text: 'Wähle die Standardsprache für deine neue Webseite. Weitere Sprachen kannst du später im Adminbereich ergänzen.'
+    title: 'Willkommen zu %app_name%'
+    text: 'Dein neues Projekt wartet auf dich. Wähle eine Sprache, um fortzufahren:'
+  header:
+    eyebrow: '%app_name% Setup-Wizard'
+  chrome:
+    label: 'Setup-Navigation'
+    stub: 'Setup-Wizard'
+  step_title:
+    language: 'Willkommen'
+    site: 'Grundeinstellungen'
+    database: 'Datenbankverbindung'
+    admin: 'Administratorkonto'
+    review: 'Setup prüfen'
+    result: 'Setup-Ergebnis'
   step_intro:
     language: 'Beginne mit der Sprache der Webseite und einer kurzen Umgebungsprüfung.'
     site: 'Lege die öffentlichen Grundeinstellungen fest und wähle, welche Funktionen die neue Webseite direkt nutzen soll.'
@@ -29,16 +41,37 @@ setup:
     text: 'Setup prüft die wichtigsten Voraussetzungen, bevor Datenbankdetails abgefragt werden.'
     auto_heal: 'Automatisch reparieren'
     show_ready_checks: '%count% fertige Prüfungen anzeigen'
+    show_details: 'Details anzeigen'
     summary:
       ok: 'Alles Nötige für das Setup ist bereit.'
       healable: 'Setup kann die markierten Datei- und Verzeichnisprüfungen automatisch reparieren.'
       failed: 'Einige Prüfungen benötigen eine Server- oder PHP-Konfigurationsänderung, bevor das Setup fortfahren kann.'
     errors:
       required: 'Behebe die erforderlichen Prüfungen, bevor du fortfährst.'
+      auto_heal_failed: 'Die automatische Reparatur konnte nicht alle erforderlichen Prüfungen beheben.'
     status:
       ok: 'OK'
-      failed: 'Handlung nötig'
+      failed: 'FEHLER'
       missing: 'Fehlt'
+      optional: 'Optional'
+    values:
+      executable: 'ausführbar'
+      not_detected: 'nicht erkannt'
+      not_writable: 'nicht beschreibbar'
+      path: '%path%'
+      php_version: 'PHP %version%'
+      php_version_requirement: 'PHP %version% (erforderlich: %required% oder neuer)'
+      present: 'vorhanden'
+      missing: 'nicht vorhanden'
+      unavailable: 'nicht verfügbar'
+      writable: 'beschreibbar'
+      composer_system: 'System-Composer verfügbar'
+      composer_bundled: 'bin/composer-Fallback aktiv'
+      extensions_all_present: 'Alle %count% erforderlichen Erweiterungen sind vorhanden'
+      optional_extensions_all_present: 'Alle %count% optionalen Datenbank-Erweiterungen sind vorhanden'
+      extensions_missing: 'Fehlt: %extensions%'
+      writable_paths_ok: '%count% beschreibbare Pfade sind bereit'
+      writable_paths_failed: 'Nicht beschreibbar: %paths%'
     checks:
       webroot_public:
         label: 'Public-Webroot'
@@ -60,6 +93,30 @@ setup:
         label: 'Public-Asset-Verzeichnis'
         help: 'Setup kann das Public-Asset-Verzeichnis erstellen.'
         instruction: 'Mache public/ beschreibbar, während Setup generierte Assets vorbereitet.'
+      required_extensions:
+        label: 'Erforderliche Erweiterungen'
+        help: 'Alle erforderlichen PHP-Erweiterungen sind vorhanden.'
+        instruction: 'Installiere oder aktiviere die fehlenden erforderlichen PHP-Erweiterungen.'
+      optional_database_extensions:
+        label: 'Datenbank-Erweiterungen'
+        help: 'Optionale Datenbank-Erweiterungen sind verfügbar, wenn ihr Treiber gewählt wird.'
+        instruction: 'Installiere die passende Erweiterung, wenn du diesen Datenbanktreiber verwendest.'
+      writable_paths:
+        label: 'Beschreibbare Pfade'
+        help: 'Setup kann die gelisteten Datei- und Verzeichnisprüfungen automatisch reparieren.'
+        instruction: 'Mache die gelisteten Pfade für den Webserver-Benutzer beschreibbar.'
+      php_version:
+        label: 'PHP-Version'
+        help: 'Die aktuelle PHP-Laufzeit erfüllt die Projektanforderung.'
+        instruction: 'Führe Setup mit einer von composer.json unterstützten PHP-Version aus.'
+      composer_binary:
+        label: 'Composer'
+        help: 'Setup kann PHP-Abhängigkeiten installieren und aktualisieren.'
+        instruction: 'Installiere Composer global oder stelle den gebündelten bin/composer-Fallback wieder her.'
+      temporary_heal_probe:
+        label: 'Temporäre Reparaturprüfung'
+        help: 'Setup kann eine temporäre Marker-Datei anlegen, um automatische Reparatur zu simulieren.'
+        instruction: 'Mache das Projekt-Root beschreibbar, damit Setup den temporären Reparaturmarker anlegen kann.'
       cli_runner:
         label: 'CLI-Runner'
         help: 'Setup kann PHP-CLI-Subprozesse für länger laufende Arbeiten starten.'

@@ -20,7 +20,7 @@ final class ViewTwigExtensionTest extends KernelTestCase
         )->render();
 
         self::assertArrayHasKey('studio_view', $globals);
-        self::assertSame('aavion Studio|@root/macros/core/ui.html.twig|11|4|debug|fallback|Powered by [aavion Studio](https://www.aavion.media) 0.2.0|<p><strong>ok</strong></p>', $html);
+        self::assertSame('Studio|@root/macros/core/ui.html.twig|11|4|debug|fallback|Powered by [Studio](https://www.aavion.media) 0.2.0|<p><strong>ok</strong></p>', $html);
     }
 
     public function testItRendersSafeHtmlAttributes(): void

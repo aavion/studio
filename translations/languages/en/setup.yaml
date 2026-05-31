@@ -9,8 +9,20 @@ setup:
     foundation_title: 'Setup routine'
     foundation_text: 'Run the same setup routine used by the CLI. Keep dry run enabled to verify the planned steps without changing files or the database.'
   landing:
-    title: 'Welcome to setup'
-    text: 'Choose the default language for your new website. You can adjust additional languages later in the admin area.'
+    title: 'Welcome to %app_name%'
+    text: 'Your new project is waiting. Choose a language to continue:'
+  header:
+    eyebrow: '%app_name% setup wizard'
+  chrome:
+    label: 'Setup navigation'
+    stub: 'Setup Wizard'
+  step_title:
+    language: 'Welcome'
+    site: 'Basic settings'
+    database: 'Database connection'
+    admin: 'Administrator account'
+    review: 'Review setup'
+    result: 'Setup result'
   step_intro:
     language: 'Start with the website language and a short environment check.'
     site: 'Set the public site basics and choose which features the new website should use right away.'
@@ -29,16 +41,37 @@ setup:
     text: 'Setup checks the essentials before asking for database details.'
     auto_heal: 'Repair automatically'
     show_ready_checks: 'Show %count% ready checks'
+    show_details: 'Show details'
     summary:
       ok: 'Everything needed for setup is ready.'
       healable: 'Setup can repair the highlighted file and directory checks automatically.'
       failed: 'Some checks need a server or PHP configuration change before setup can continue.'
     errors:
       required: 'Resolve the required checks before continuing.'
+      auto_heal_failed: 'Automatic repair could not resolve every required check.'
     status:
       ok: 'OK'
-      failed: 'Needs attention'
+      failed: 'ERROR'
       missing: 'Missing'
+      optional: 'Optional'
+    values:
+      executable: 'executable'
+      not_detected: 'not detected'
+      not_writable: 'not writable'
+      path: '%path%'
+      php_version: 'PHP %version%'
+      php_version_requirement: 'PHP %version% (required: %required% or newer)'
+      present: 'present'
+      missing: 'missing'
+      unavailable: 'unavailable'
+      writable: 'writable'
+      composer_system: 'system Composer available'
+      composer_bundled: 'bin/composer fallback active'
+      extensions_all_present: 'All %count% required extensions are available'
+      optional_extensions_all_present: 'All %count% optional database extensions are available'
+      extensions_missing: 'Missing: %extensions%'
+      writable_paths_ok: '%count% writable paths are ready'
+      writable_paths_failed: 'Not writable: %paths%'
     checks:
       webroot_public:
         label: 'Public webroot'
@@ -60,6 +93,30 @@ setup:
         label: 'Public asset directory'
         help: 'Setup can create the public asset directory.'
         instruction: 'Make public/ writable while setup prepares generated assets.'
+      required_extensions:
+        label: 'Required extensions'
+        help: 'All required PHP extensions are available.'
+        instruction: 'Install or enable the missing required PHP extensions.'
+      optional_database_extensions:
+        label: 'Database extensions'
+        help: 'Optional database extensions are available when their driver is selected.'
+        instruction: 'Install the matching extension when using that database driver.'
+      writable_paths:
+        label: 'Writable paths'
+        help: 'Setup can repair the listed file and directory checks automatically.'
+        instruction: 'Make the listed paths writable for the web-server user.'
+      php_version:
+        label: 'PHP version'
+        help: 'The current PHP runtime satisfies the project requirement.'
+        instruction: 'Run setup with a PHP version supported by composer.json.'
+      composer_binary:
+        label: 'Composer'
+        help: 'Setup can install and refresh PHP dependencies.'
+        instruction: 'Install Composer globally or restore the bundled bin/composer fallback.'
+      temporary_heal_probe:
+        label: 'Temporary repair probe'
+        help: 'Setup can create a temporary marker file to simulate automatic repair.'
+        instruction: 'Make the project root writable so setup can create the temporary repair marker.'
       cli_runner:
         label: 'CLI runner'
         help: 'Setup can start PHP CLI subprocesses for long-running work.'

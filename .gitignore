@@ -26,6 +26,7 @@ $RECYCLE.BIN/
 /.env.local.php
 /.env.*.local
 /.env.*.local.php
+/.setup-preflight-heal-probe
 /config/secrets/prod/prod.decrypt.private.php
 /public/bundles/
 /var/

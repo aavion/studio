@@ -1,6 +1,6 @@
 ui:
   app:
-    name: 'aavion Studio'
+    name: 'Studio'
   navigation:
     skip_to_content: 'Skip to content'
   frontend:

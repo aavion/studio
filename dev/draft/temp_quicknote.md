@@ -25,6 +25,6 @@
 - Editor functionality
 - Automatic resolver for cross-references with neural-like content-indexing (that can also be used for a search-function)
 - Script-based setup/init-procedure with base-configuration in env:test for phpunit and code-review automations
-- Self-Update aavion Studio, Themes and Plugin-Modules using .manifest (decision: update directly via git or release-packages? dev-channel should use git, if possible)
+- Self-Update Studio, Themes and Plugin-Modules using .manifest (decision: update directly via git or release-packages? dev-channel should use git, if possible)
 - Script-based release-workflow (auto-cleanup of unnecessary files, release-packaging)
 - Ideas for upcoming features in future releases: CommunityHub (Comments, Forum, Profiles), Inline Frontpage-Editor, REI3-tickets integration via plugin module

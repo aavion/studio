@@ -14,6 +14,7 @@ use App\Setup\SetupPreflightChecker;
 use App\Setup\SetupSiteSettings;
 use App\Setup\SetupWebInputFactory;
 use App\View\Http\HttpErrorRenderer;
+use App\View\SystemPackageMetadataProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -41,6 +42,7 @@ final class SetupController extends AbstractController
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
         private readonly LocaleSwitcher $localeSwitcher,
         private readonly HttpErrorRenderer $httpError,
+        private readonly SystemPackageMetadataProvider $systemPackageMetadata,
     ) {
     }
 
@@ -76,7 +78,7 @@ final class SetupController extends AbstractController
                     $errors = $this->inputFactory->validateStep('language', $state['values']);
                 } elseif ('language' === $step && 'heal_preflight' === $request->request->get('_setup_action')) {
                     $preflight = $this->preflightChecker->check($this->projectDir, $this->environment, autoHeal: true, server: $request->server->all());
-                    $errors = $preflight['ok'] ? [] : ['__form' => ['setup.preflight.errors.required']];
+                    $errors = $preflight['ok'] ? [] : ['__form' => ['setup.preflight.errors.auto_heal_failed']];
                 } elseif ('database' === $step && 'test_database' === $request->request->get('_setup_action')) {
                     [$errors, $databaseTest] = $this->testDatabaseConnection($state['values']);
                 } elseif ('review' === $step && 'apply' === $request->request->get('_setup_action')) {
@@ -131,6 +133,7 @@ final class SetupController extends AbstractController
             'setup_database_test' => $databaseTest,
             'setup_previous_step' => $this->previousStep($step),
             'setup_next_step' => $this->nextStep($step),
+            'setup_app_name' => $this->systemPackageMetadata->metadata()['name'],
         ]);
     }
 

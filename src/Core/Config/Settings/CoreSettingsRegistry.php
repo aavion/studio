@@ -10,11 +10,14 @@ use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
 use App\Security\UserFlowConfig;
+use App\View\SystemPackageMetadataProvider;
 
 final readonly class CoreSettingsRegistry
 {
-    public function __construct(private TranslationLanguageCatalog $languages)
-    {
+    public function __construct(
+        private TranslationLanguageCatalog $languages,
+        private SystemPackageMetadataProvider $systemPackageMetadata,
+    ) {
     }
 
     /**
@@ -34,7 +37,7 @@ final readonly class CoreSettingsRegistry
     private function allDefinitions(): array
     {
         return [
-            new CoreSettingDefinition('general', 'site.title', 'admin.settings.fields.site_title.label', 'aavion Studio', ConfigValueType::String, validation: ['required' => true, 'max_length' => 120], sortOrder: 10),
+            new CoreSettingDefinition('general', 'site.title', 'admin.settings.fields.site_title.label', $this->appName(), ConfigValueType::String, validation: ['required' => true, 'max_length' => 120], sortOrder: 10),
             new CoreSettingDefinition('general', 'site.url', 'admin.settings.fields.site_url.label', 'http://localhost', ConfigValueType::String, validation: ['required' => true, 'max_length' => 255], sortOrder: 20),
             new CoreSettingDefinition('general', 'localization.default_language', 'admin.settings.fields.default_language.label', $this->languages->defaultLanguage(), ConfigValueType::String, FormInputType::Select, options: $this->languageOptions(), validation: ['required' => true], sortOrder: 30),
             new CoreSettingDefinition('general', 'localization.route_prefixes_enabled', 'admin.settings.fields.route_prefixes_enabled.label', false, ConfigValueType::Boolean, sortOrder: 40),
@@ -64,7 +67,7 @@ final readonly class CoreSettingsRegistry
 
             new CoreSettingDefinition('mail', 'mail.enabled', 'admin.settings.fields.mail_enabled.label', false, ConfigValueType::Boolean, sortOrder: 10),
             new CoreSettingDefinition('mail', 'mail.from_address', 'admin.settings.fields.mail_from_address.label', 'admin@localhost', ConfigValueType::String, validation: ['max_length' => 180], sortOrder: 20),
-            new CoreSettingDefinition('mail', 'mail.from_name', 'admin.settings.fields.mail_from_name.label', 'aavion Studio', ConfigValueType::String, validation: ['max_length' => 120], sortOrder: 30),
+            new CoreSettingDefinition('mail', 'mail.from_name', 'admin.settings.fields.mail_from_name.label', $this->appName(), ConfigValueType::String, validation: ['max_length' => 120], sortOrder: 30),
 
             new CoreSettingDefinition('security', 'security.captcha.enabled', 'admin.settings.fields.captcha_enabled.label', false, ConfigValueType::Boolean, sortOrder: 10),
             new CoreSettingDefinition('security', 'security.captcha.provider', 'admin.settings.fields.captcha_provider.label', 'none', ConfigValueType::String, FormInputType::Select, options: ['none' => 'admin.settings.options.captcha.none'], validation: ['required' => true], sortOrder: 20),
@@ -110,5 +113,10 @@ final readonly class CoreSettingsRegistry
         }
 
         return $options;
+    }
+
+    private function appName(): string
+    {
+        return $this->systemPackageMetadata->metadata()['name'];
     }
 }

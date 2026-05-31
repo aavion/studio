@@ -11,13 +11,14 @@ use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
 use App\Security\UserFlowConfig;
+use App\View\SystemPackageMetadataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class CoreSettingsRegistryTest extends TestCase
 {
     public function testItDefinesKnownCoreSettingsForAdminForms(): void
     {
-        $registry = new CoreSettingsRegistry(new TranslationLanguageCatalog(dirname(__DIR__, 3)));
+        $registry = $this->registry();
 
         $general = $registry->definitions('general');
         $users = $registry->definitions('users');
@@ -30,6 +31,7 @@ final class CoreSettingsRegistryTest extends TestCase
             'localization.default_language',
             'localization.route_prefixes_enabled',
             'content.home_path',
+            'site.footer_copyright',
         ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $general));
         self::assertSame(FormInputType::Select, $general[2]->formField()->inputType());
         self::assertSame(['de' => 'de', 'en' => 'en'], $general[2]->formField()->options());
@@ -68,10 +70,17 @@ final class CoreSettingsRegistryTest extends TestCase
 
     public function testItKeepsContentEditorSectionsOutOfTheAdminSettingsRegistry(): void
     {
-        $registry = new CoreSettingsRegistry(new TranslationLanguageCatalog(dirname(__DIR__, 3)));
+        $registry = $this->registry();
 
         self::assertSame([], $registry->definitions('content'));
         self::assertSame([], $registry->definitions('schemas'));
         self::assertSame([], $registry->definitions('imports'));
+    }
+
+    private function registry(): CoreSettingsRegistry
+    {
+        $projectDir = dirname(__DIR__, 3);
+
+        return new CoreSettingsRegistry(new TranslationLanguageCatalog($projectDir), new SystemPackageMetadataProvider($projectDir));
     }
 }

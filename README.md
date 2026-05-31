@@ -1,38 +1,42 @@
-# aavion.studio
+# Studio
 
 > **Version**: 0.2.0  
 > **Status**: Active development  
-> **Updated**: 2026-05-30  
+> **Updated**: 2026-06-01  
 > **Owner**: Dominik Letica  
-> **Purpose:** Symfony 8.1 based content-management system for structured project websites.  
+> **Purpose:** A Symfony-based CMS foundation for structured, extensible project websites.  
 
-**Note:** This repository is not ready for production use yet. Clone at your own risk!
+**Note:** Studio is still in active development and is not ready for production use yet.
 
-aavion Studio is an experimental CMS foundation for project websites that need structured content, modular extension points for customizability and safe operational workflows. The project is currently in its planning and early development/implementation phase.
+Studio is a CMS foundation for websites that need more than a pile of static pages: structured content, thoughtful access control, package-based customization, and admin workflows that stay understandable when something goes wrong.
 
-The intended direction is a Symfony-native application with:
+The goal is a quiet, dependable system for project websites, portfolios, documentation hubs, and small editorial sites. Content should be modelled clearly, extended through packages, and managed through tools that explain what they are about to do before they do it.
 
-- schema-driven content and variable fieldsets;
-- package-scoped frontend themes, backend themes, modules, captcha providers, and editor providers;
-- first-party and third-party packages under one lifecycle;
-- explicit event hooks, provider contracts, and replaceable services;
-- draft, publish, preview, diff, import, export, and backup workflows;
-- ACL-aware content, media, API, resolver, and search behavior;
-- operational admin tools with action logs and recoverable failure handling.
+Studio is built around:
 
-The project favors native Symfony components and bundles over custom framework code. Core features should stay small and inspectable, while packages can extend or replace behavior through documented contracts.
+- structured content with schema-driven fields;
+- package-scoped themes, modules, captcha providers, and editor integrations;
+- a shared lifecycle for first-party and third-party packages;
+- explicit hooks, provider contracts, and replaceable services;
+- editorial workflows such as draft, publish, preview, diff, import, export, and backup;
+- ACL-aware content, menus, users, media, APIs, resolvers, and search;
+- operational admin tools with action logs and recoverable failure paths.
+
+The project stays close to Symfony, Doctrine, Twig, AssetMapper, Tailwind, Stimulus, and PHPUnit. Core code should remain small and inspectable; packages can extend or replace behavior through documented contracts.
 
 ## Current state
 
-The repository currently contains planning drafts, project scaffolding and first implemented features. Feature drafts live in [dev/draft](dev/draft/README.md), developer documentation starts in [dev/manual](dev/manual/README.md), and active work is tracked in [dev/WORKLOG.md](dev/WORKLOG.md).
+Studio currently contains the first system foundations, setup flow, package lifecycle pieces, backend/admin surfaces, user management, ACL roles and groups, runtime translations, asset rebuild tooling, action logs, and early content primitives. It is moving quickly, so expect APIs, migrations, and UI details to change before `1.0.0`.
+
+Feature drafts live in [dev/draft](dev/draft/README.md), developer notes start in [dev/manual](dev/manual/README.md), and active work is tracked in [dev/WORKLOG.md](dev/WORKLOG.md).
 
 ## Development
 
-This project targets Symfony 8.1 and uses Composer, Doctrine, Twig, AssetMapper, Tailwind, Stimulus, and PHPUnit. The expected workflow is still being finalized. Before making changes, read:
+Before making changes, read:
 
 - [Repository agent guide](AGENTS.md)
 - [Feature drafts](dev/draft/README.md)
 - [Developer manual](dev/manual/README.md)
 - [Worklog](dev/WORKLOG.md)
 
-Common verification commands will be documented as implementation progresses.
+Start with `bin/init` after a clean checkout. Use focused checks while developing and run broader verification before opening a pull request.

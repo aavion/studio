@@ -29,7 +29,7 @@ final class ViewContextProviderTest extends TestCase
             new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter()),
         ))->context();
 
-        self::assertSame('aavion Studio', $context['system_package']['name']);
+        self::assertSame('Studio', $context['system_package']['name']);
         self::assertSame('@root/macros/core/content.html.twig', $context['macro_namespaces']['core']['content']);
         self::assertSame(['enabled' => true], $context['package_demo']);
     }

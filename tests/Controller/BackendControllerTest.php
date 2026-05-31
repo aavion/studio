@@ -48,7 +48,7 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             self::assertSelectorExists('.studio-setup-shell');
-            self::assertSelectorTextContains('h1', 'Setup');
+            self::assertSelectorTextContains('h1', 'Welcome');
             self::assertSelectorExists('form#setup-wizard');
             self::assertSelectorExists('form#setup-wizard[data-turbo="false"]');
             self::assertSelectorExists('input[name="_csrf_token"]');
@@ -65,6 +65,7 @@ final class BackendControllerTest extends WebTestCase
 
         unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
         putenv(SetupCompletionMarker::KEY);
+        @unlink(dirname(__DIR__, 2).'/.setup-preflight-heal-probe');
 
         try {
             $client = self::createClient();
@@ -72,14 +73,18 @@ final class BackendControllerTest extends WebTestCase
             $form = $crawler->selectButton('Continue')->form(['language' => 'de']);
             $crawler = $client->submit($form, ['_setup_action' => 'set_language']);
 
-            self::assertSelectorTextContains('h1', 'Setup');
-            self::assertStringContainsString('Vorabprüfung', (string) $client->getResponse()->getContent());
+            self::assertSelectorTextContains('h1', 'Willkommen');
+            self::assertStringContainsString('Automatisch reparieren', (string) $client->getResponse()->getContent());
+
+            $crawler = $client->submit($crawler->selectButton('Automatisch reparieren')->form(), ['_setup_action' => 'heal_preflight']);
+            self::assertStringContainsString('Alles Nötige für das Setup ist bereit.', (string) $client->getResponse()->getContent());
 
             $client->submit($crawler->selectButton('Weiter')->form());
 
             self::assertResponseIsSuccessful();
             self::assertStringContainsString('Grundeinstellungen', (string) $client->getResponse()->getContent());
         } finally {
+            @unlink(dirname(__DIR__, 2).'/.setup-preflight-heal-probe');
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
         }
     }
@@ -580,7 +585,7 @@ final class BackendControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/admin/packages/system');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'aavion Studio');
+        self::assertSelectorTextContains('h1', 'Studio');
 
         $form = $crawler->filter('.studio-backend-topbar form')->first()->form();
 
@@ -591,7 +596,7 @@ final class BackendControllerTest extends WebTestCase
         $client->followRedirect();
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'aavion Studio');
+        self::assertSelectorTextContains('h1', 'Studio');
     }
 
     public function testAdminPackageDetailAndLifecycleReviewRoutesRender(): void
@@ -874,7 +879,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('.studio-alert-success', 'Settings saved.');
             self::assertStringContainsString('value="Saved Admin Title"', (string) $client->getResponse()->getContent());
         } finally {
-            $config->set('site.title', 'aavion Studio', ConfigValueType::String, modifiedBy: 'test');
+            $config->set('site.title', 'Studio', ConfigValueType::String, modifiedBy: 'test');
             $config->set('site.url', 'http://localhost', ConfigValueType::String, modifiedBy: 'test');
             $config->set('localization.default_language', 'en', ConfigValueType::String, modifiedBy: 'test');
             $config->set('localization.route_prefixes_enabled', false, ConfigValueType::Boolean, modifiedBy: 'test');

@@ -5,9 +5,9 @@
 ##> aavion/studio manifest ###
 APP_VERSION=0.2.0
 APP_DATE=2026-05-24
-APP_NAME=aavion Studio
+APP_NAME=Studio
 APP_AUTHOR=Dominik Letica
-APP_DESCRIPTION=Symfony 8 based content-management system for structured project websites.
+APP_DESCRIPTION=Symfony 8.1 based content-management system for structured project websites.
 APP_LICENSE=MIT
 APP_HOMEPAGE=https://www.aavion.media
 APP_CHANNEL=dev-latest

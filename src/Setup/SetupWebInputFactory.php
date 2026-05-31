@@ -7,6 +7,7 @@ namespace App\Setup;
 use App\Core\Validation\EmailAddress;
 use App\Entity\UserAccount;
 use App\Security\PasswordPolicy;
+use App\View\SystemPackageMetadataProvider;
 use Throwable;
 
 final readonly class SetupWebInputFactory
@@ -32,7 +33,7 @@ final readonly class SetupWebInputFactory
 
         return [
             'language' => $this->languageCatalog->defaultLanguage($this->projectDir),
-            'site_title' => 'aavion Studio',
+            'site_title' => $this->appName(),
             'default_uri' => '' === trim($defaultUri) ? 'http://localhost' : $defaultUri,
             ...$this->siteSettings->defaults(),
             'database_driver' => $this->driverFromDatabaseUrl($databaseUrl)->value,
@@ -82,6 +83,11 @@ final readonly class SetupWebInputFactory
         $prefix = (string) ($_SERVER['APP_DATABASE_PREFIX'] ?? $_ENV['APP_DATABASE_PREFIX'] ?? '');
 
         return '' === trim($prefix) ? 'studio' : $prefix;
+    }
+
+    private function appName(): string
+    {
+        return (new SystemPackageMetadataProvider($this->projectDir))->metadata()['name'];
     }
 
     /**
