@@ -69,7 +69,8 @@ final class BackendControllerTest extends WebTestCase
         try {
             $client = self::createClient();
             $crawler = $client->request('GET', '/setup');
-            $crawler = $client->submit($crawler->selectButton('Continue')->form(['language' => 'de']));
+            $form = $crawler->selectButton('Continue')->form(['language' => 'de']);
+            $crawler = $client->submit($form, ['_setup_action' => 'set_language']);
 
             self::assertSelectorTextContains('h1', 'Setup');
             self::assertStringContainsString('Vorabprüfung', (string) $client->getResponse()->getContent());
@@ -77,7 +78,7 @@ final class BackendControllerTest extends WebTestCase
             $client->submit($crawler->selectButton('Weiter')->form());
 
             self::assertResponseIsSuccessful();
-            self::assertStringContainsString('Seiteninformationen', (string) $client->getResponse()->getContent());
+            self::assertStringContainsString('Grundeinstellungen', (string) $client->getResponse()->getContent());
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
         }
@@ -97,7 +98,7 @@ final class BackendControllerTest extends WebTestCase
             $client->request('GET', '/setup');
             $this->setSetupWizardState($client, [
                 'values' => ['language' => 'en'],
-                'completed' => ['language', 'preflight'],
+                'completed' => ['language'],
                 'workflow' => null,
                 'action_log' => null,
             ]);
@@ -127,7 +128,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertStringContainsString('Wizard Studio', $html);
             self::assertStringContainsString('Admin approval', $html);
             self::assertSelectorExists('form#setup-wizard[data-controller="setup-wizard operation-overlay"]');
-            self::assertSelectorExists('form#setup-wizard[data-action="submit->setup-wizard#submit submit->operation-overlay#submit"]');
+            self::assertSelectorExists('form#setup-wizard[data-action="submit->operation-overlay#submit"]');
             self::assertSelectorExists('form#setup-wizard[data-operation-overlay-enabled-value="true"]');
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
@@ -154,7 +155,7 @@ final class BackendControllerTest extends WebTestCase
                     'database_driver' => 'sqlite',
                     'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
                 ],
-                'completed' => ['language', 'preflight', 'site', 'database'],
+                'completed' => ['language', 'site', 'database'],
                 'workflow' => null,
                 'action_log' => null,
             ]);

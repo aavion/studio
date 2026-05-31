@@ -10,7 +10,14 @@ setup:
     foundation_text: 'Führt dieselbe Setup-Routine aus wie die CLI. Lass den Dry-Run aktiv, um die geplanten Schritte ohne Datei- oder Datenbankänderungen zu prüfen.'
   landing:
     title: 'Willkommen im Setup'
-    text: 'Wähle die Sprache für diese Setup-Sitzung. Du kannst später zu diesem Schritt zurückkehren, ohne deine Eingaben zu verlieren.'
+    text: 'Wähle die Sprache für diese Setup-Sitzung. Die Prüfungen darunter stellen sicher, dass Setup Dateien schreiben und Hintergrundprozesse starten kann, bevor Datenbankdetails nötig sind.'
+  step_intro:
+    language: 'Beginne mit der Installer-Sprache und einer kurzen Umgebungsprüfung.'
+    site: 'Lege die öffentlichen Grundeinstellungen fest und wähle das Startverhalten für Registrierung, Lokalisierung und Statistiken.'
+    database: 'Wähle, wo Studio seine Daten speichert. SQLite ist für kleine Installationen geeignet; Server-Datenbanken sind für geteilte oder größere Seiten besser.'
+    admin: 'Erstelle das erste Administratorkonto. Dieses Konto erhält Owner-Rechte und kann die Seite fertig konfigurieren.'
+    review: 'Prüfe die Werte, bevor Setup Dateien schreibt, Migrationen ausführt und die Datenbank befüllt.'
+    result: 'Prüfe das Setup-Ergebnis.'
   navigation:
     label: 'Setup-Schritte'
     back: 'Zurück'
@@ -21,6 +28,7 @@ setup:
     title: 'Vorabprüfung'
     text: 'Setup prüft die wichtigsten Voraussetzungen, bevor Datenbankdetails abgefragt werden.'
     auto_heal: 'Automatisch reparieren'
+    show_ready_checks: '%count% fertige Prüfungen anzeigen'
     summary:
       ok: 'Alles Nötige für das Setup ist bereit.'
       healable: 'Setup kann die markierten Datei- und Verzeichnisprüfungen automatisch reparieren.'
@@ -52,6 +60,10 @@ setup:
         label: 'Public-Asset-Verzeichnis'
         help: 'Setup kann das Public-Asset-Verzeichnis erstellen.'
         instruction: 'Mache public/ beschreibbar, während Setup generierte Assets vorbereitet.'
+      cli_runner:
+        label: 'CLI-Runner'
+        help: 'Setup kann PHP-CLI-Subprozesse für länger laufende Arbeiten starten.'
+        instruction: 'Aktiviere PHP-CLI-Subprozesse oder führe Setup in einer Umgebung aus, die Hintergrundbefehle erlaubt.'
       extension_ctype:
         label: 'PHP-Erweiterung ctype'
         help: 'Wird von Symfony und Validierungsroutinen benötigt.'
@@ -81,16 +93,19 @@ setup:
         help: 'Installiere diese Erweiterung, wenn du PostgreSQL verwendest.'
         instruction: 'Installiere diese Erweiterung, wenn du PostgreSQL verwendest.'
   site:
-    title: 'Seiteninformationen'
-    settings_title: 'Initiale Einstellungen'
+    title: 'Grundeinstellungen'
+    text: 'Diese Werte werden als erste gespeicherte Konfiguration der Seite übernommen. Du kannst sie später im Adminbereich anpassen.'
+    settings_title: 'Startverhalten'
   database:
     title: 'Datenbankverbindung'
+    text: 'Teste die Verbindung, bevor du fortfährst. Das optionale Präfix wird mit einem abschließenden Unterstrich gespeichert, wenn es nicht leer ist.'
     test_connection: 'Verbindung testen'
     test_success: 'Die Datenbankverbindung funktioniert.'
     test_failed: 'Die Datenbankverbindung ist fehlgeschlagen. Prüfe die Verbindungsdaten und versuche es erneut.'
     test_invalid: 'Vervollständige gültige Datenbankeinstellungen, bevor du die Verbindung testest.'
   admin:
-    title: 'Owner-Konto'
+    title: 'Administratorkonto'
+    text: 'Dieses erste Konto wird als Administrator mit Owner-Rechten erstellt. Nutze eine E-Mail-Adresse, auf die du Zugriff hast.'
   form:
     language:
       label: 'Installer-Sprache'
@@ -102,6 +117,8 @@ setup:
       label: 'Benutzerregistrierung'
     username_change_enabled:
       label: 'Benutzernamenänderungen erlauben'
+    route_prefixes_enabled:
+      label: 'Sprach-Präfixe in URLs nutzen'
     statistics_enabled:
       label: 'Zugriffsstatistiken aktivieren'
     statistics_respect_dnt:
@@ -165,6 +182,7 @@ setup:
       url: 'Gib eine gültige URL ein.'
   review:
     title: 'Setup prüfen'
+    text: 'Setup schreibt jetzt den Environment-Override, führt Migrationen aus, legt Standarddaten an, startet Paket-Discovery, baut Assets neu und sperrt die Setup-Route erst nach Erfolg.'
     none: 'Keine'
     enabled: 'Aktiviert'
     disabled: 'Deaktiviert'
@@ -187,9 +205,9 @@ setup:
   steps:
     language: 'Sprache'
     preflight: 'Vorabprüfung'
-    site: 'Website'
+    site: 'Grundeinstellungen'
     database: 'Datenbank'
-    admin: 'Owner'
+    admin: 'Administratorkonto'
     review: 'Prüfung'
     result: 'Ergebnis'
     select_language: 'Sprache auswählen'

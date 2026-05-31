@@ -40,7 +40,7 @@ final readonly class SetupWebInputFactory
             'database_name' => $this->databaseUrlPathName($databaseUrl) ?? 'app',
             'database_user' => $this->databaseUrlPart($databaseUrl, 'user') ?? 'app',
             'database_password' => $this->databaseUrlPart($databaseUrl, 'pass') ?? '',
-            'database_prefix' => (string) ($_SERVER['APP_DATABASE_PREFIX'] ?? $_ENV['APP_DATABASE_PREFIX'] ?? 'studio_'),
+            'database_prefix' => $this->databasePrefixInputValue($this->defaultDatabasePrefix()),
             'admin_username' => 'admin',
             'admin_email' => $this->adminEmailFromDefaultUri($defaultUri),
             'admin_password' => '',
@@ -68,6 +68,18 @@ final readonly class SetupWebInputFactory
             DatabaseDriver::MySql->value => 'setup.form.database_driver.options.mysql',
             DatabaseDriver::PostgreSql->value => 'setup.form.database_driver.options.postgresql',
         ];
+    }
+
+    public function databasePrefixInputValue(string $prefix): string
+    {
+        return str_ends_with($prefix, '_') ? substr($prefix, 0, -1) : $prefix;
+    }
+
+    private function defaultDatabasePrefix(): string
+    {
+        $prefix = (string) ($_SERVER['APP_DATABASE_PREFIX'] ?? $_ENV['APP_DATABASE_PREFIX'] ?? '');
+
+        return '' === trim($prefix) ? 'studio' : $prefix;
     }
 
     /**
@@ -288,7 +300,7 @@ final readonly class SetupWebInputFactory
     {
         $prefix = trim($prefix);
 
-        return '' === $prefix || str_ends_with($prefix, '_') ? $prefix : $prefix.'_';
+        return '' === $prefix ? '' : $prefix.'_';
     }
 
     private function isValidDatabaseUrl(string $databaseUrl): bool

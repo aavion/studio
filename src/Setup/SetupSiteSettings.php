@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Config\ConfigValueType;
+use App\Content\Routing\ContentRouteLocalization;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormBuilder;
 use App\Form\FormFieldDefinition;
@@ -41,6 +42,14 @@ final readonly class SetupSiteSettings
                 ConfigValueType::Boolean,
                 metadata: ['config_key' => UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY],
                 sortOrder: 40,
+            ),
+            new FormFieldDefinition(
+                'route_prefixes_enabled',
+                'setup.form.route_prefixes_enabled.label',
+                false,
+                ConfigValueType::Boolean,
+                metadata: ['config_key' => ContentRouteLocalization::ENABLED_KEY],
+                sortOrder: 45,
             ),
             new FormFieldDefinition(
                 'statistics_enabled',

@@ -75,7 +75,7 @@ services:
             - '../src/Kernel.php'
 
     App\Setup\SetupCommandExecutorInterface:
-        alias: App\Setup\ProcOpenSetupCommandExecutor
+        alias: App\Setup\ProcessSetupCommandExecutor
 
     App\Setup\SetupRunner:
         arguments:

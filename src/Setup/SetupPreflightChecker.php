@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use Symfony\Component\Process\Process;
+
 final readonly class SetupPreflightChecker
 {
     /**
@@ -19,6 +21,7 @@ final readonly class SetupPreflightChecker
             $this->fileWritable($projectDir.'/.env.'.$environment.'.local', 'environment_writable', true, $autoHeal),
             $this->directoryWritable($projectDir.'/translations/runtime', 'runtime_translations_writable', true, $autoHeal),
             $this->directoryWritable($projectDir.'/public', 'public_writable', true, $autoHeal),
+            $this->cliRunnerAvailable(),
             $this->phpExtension('ctype', true),
             $this->phpExtension('fileinfo', true),
             $this->phpExtension('iconv', true),
@@ -98,6 +101,21 @@ final readonly class SetupPreflightChecker
     private function phpExtension(string $extension, bool $required): array
     {
         return $this->checkRow('extension_'.$extension, extension_loaded($extension) ? 'ok' : 'missing', $required, false);
+    }
+
+    /**
+     * @return array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string}
+     */
+    private function cliRunnerAvailable(): array
+    {
+        try {
+            $process = new Process([PHP_BINARY, '-r', 'exit(0);'], timeout: 5.0);
+            $process->run();
+        } catch (\Throwable) {
+            return $this->checkRow('cli_runner', 'failed', true, false);
+        }
+
+        return $this->checkRow('cli_runner', $process->isSuccessful() ? 'ok' : 'failed', true, false);
     }
 
     /**

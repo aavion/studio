@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
-    static targets = ['driver', 'sqliteFields', 'serverFields', 'prefix'];
+    static targets = ['driver', 'sqliteFields', 'serverFields'];
 
     connect() {
         this.updateDatabaseFields();
@@ -13,11 +13,11 @@ export default class extends Controller {
 
     submitOnChange(event) {
         event.preventDefault();
+        this.setAction('set_language');
         this.element.requestSubmit();
     }
 
-    submit(event) {
-        this.appendPrefixSeparator();
+    submit() {
     }
 
     updateDatabaseFields() {
@@ -40,16 +40,17 @@ export default class extends Controller {
         }
     }
 
-    appendPrefixSeparator() {
-        if (!this.hasPrefixTarget) {
-            return;
+    setAction(action) {
+        let input = this.element.querySelector('input[name="_setup_action"]');
+
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = '_setup_action';
+            this.element.append(input);
         }
 
-        const value = this.prefixTarget.value.trim();
-
-        if (value !== '' && !value.endsWith('_')) {
-            this.prefixTarget.value = `${value}_`;
-        }
+        input.value = action;
     }
 
 }

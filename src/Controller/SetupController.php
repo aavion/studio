@@ -25,7 +25,7 @@ use Symfony\Component\Translation\LocaleSwitcher;
 final class SetupController extends AbstractController
 {
     private const SESSION_KEY = '_studio_setup_wizard';
-    private const STEPS = ['language', 'preflight', 'site', 'database', 'admin', 'review'];
+    private const STEPS = ['language', 'site', 'database', 'admin', 'review'];
 
     public function __construct(
         private readonly string $projectDir,
@@ -45,7 +45,7 @@ final class SetupController extends AbstractController
     }
 
     #[Route('/setup', name: 'backend_setup_index', methods: ['GET', 'POST'])]
-    #[Route('/setup/{step}', name: 'backend_setup_step', requirements: ['step' => 'language|preflight|site|database|admin|review|result'], methods: ['GET', 'POST'])]
+    #[Route('/setup/{step}', name: 'backend_setup_step', requirements: ['step' => 'language|site|database|admin|review|result'], methods: ['GET', 'POST'])]
     public function __invoke(Request $request, string $step = 'language'): Response
     {
         if ($this->completionMarker->isComplete($this->projectDir, $this->environment)) {
@@ -66,12 +66,21 @@ final class SetupController extends AbstractController
         if ($request->isMethod('POST')) {
             if (!$this->csrfTokenManager->isTokenValid(new CsrfToken('setup-wizard', (string) $request->request->get('_csrf_token', '')))) {
                 $errors['__form'] = ['setup.form.errors.invalid_csrf'];
+
+                if ($this->wantsLiveOperation($request)) {
+                    return $this->json(['success' => false, 'issues' => [[
+                        'translation_key' => 'setup.form.errors.invalid_csrf',
+                        'parameters' => [],
+                    ]]], Response::HTTP_BAD_REQUEST);
+                }
             } else {
                 $submitted = $this->mergeSubmittedValues($state['values'], $this->inputFactory->normalize($request->request->all()));
                 $state = $this->resetLaterStepsWhenValuesChanged($state, $step, $submitted);
                 $state['values'] = $submitted;
                 $this->applyLocale($request, $state);
-                if ('preflight' === $step && 'heal_preflight' === $request->request->get('_setup_action')) {
+                if ('language' === $step && 'set_language' === $request->request->get('_setup_action')) {
+                    $errors = $this->inputFactory->validateStep('language', $state['values']);
+                } elseif ('language' === $step && 'heal_preflight' === $request->request->get('_setup_action')) {
                     $preflight = $this->preflightChecker->check($this->projectDir, $this->environment, autoHeal: true, server: $request->server->all());
                     $errors = $preflight['ok'] ? [] : ['__form' => ['setup.preflight.errors.required']];
                 } elseif ('database' === $step && 'test_database' === $request->request->get('_setup_action')) {
@@ -81,6 +90,11 @@ final class SetupController extends AbstractController
 
                     if (!$input->isValid() || null === $input->input()) {
                         $errors = $input->errors();
+
+                        return $this->json(['success' => false, 'issues' => [[
+                            'translation_key' => 'setup.form.errors.invalid',
+                            'parameters' => [],
+                        ]], 'errors' => $errors], Response::HTTP_BAD_REQUEST);
                     } else {
                         $this->saveState($request, $state);
 
@@ -99,12 +113,18 @@ final class SetupController extends AbstractController
         }
 
         $preflight = $this->preflightChecker->check($this->projectDir, $this->environment, server: $request->server->all());
+        $values = array_replace($this->inputFactory->defaults(), $state['values']);
+        $displayValues = [
+            ...$values,
+            'database_prefix' => $this->inputFactory->databasePrefixInputValue((string) ($values['database_prefix'] ?? '')),
+        ];
 
         return $this->render('@backend/setup/index.html.twig', [
             'setup_step' => $step,
             'setup_steps' => self::STEPS,
             'setup_completed_steps' => $state['completed'],
-            'setup_values' => array_replace($this->inputFactory->defaults(), $state['values']),
+            'setup_values' => $values,
+            'setup_display_values' => $displayValues,
             'setup_errors' => $errors,
             'setup_site_settings_form' => $this->siteSettings->form($state['values'], $errors),
             'setup_available_languages' => $this->inputFactory->availableLanguages(),
@@ -225,7 +245,7 @@ final class SetupController extends AbstractController
     {
         $fields = match ($step) {
             'language' => ['language'],
-            'site' => ['site_title', 'default_uri'],
+            'site' => ['site_title', 'default_uri', ...array_keys($this->siteSettings->defaults())],
             'database' => ['database_driver', 'database_url', 'database_host', 'database_port', 'database_name', 'database_user', 'database_password', 'database_prefix'],
             'admin' => ['admin_username', 'admin_password', 'admin_password_confirm', 'admin_email', 'app_secret'],
             default => [],
@@ -261,7 +281,7 @@ final class SetupController extends AbstractController
             return [$state, 'result', []];
         }
 
-        $errors = 'preflight' === $step && !$this->preflightChecker->check($this->projectDir, $this->environment, server: $request->server->all())['ok']
+        $errors = 'language' === $step && !$this->preflightChecker->check($this->projectDir, $this->environment, server: $request->server->all())['ok']
             ? ['__form' => ['setup.preflight.errors.required']]
             : $this->inputFactory->validateStep($step, $state['values']);
 
@@ -325,6 +345,10 @@ final class SetupController extends AbstractController
      */
     private function stepReachable(string $step, array $state): bool
     {
+        if ('preflight' === $step) {
+            return false;
+        }
+
         if ('result' === $step) {
             return null !== $state['workflow'];
         }

@@ -7,6 +7,7 @@ namespace App\Setup;
 use App\Core\Access\AccessLevel;
 use App\Core\Config\ConfigValueType;
 use App\Core\Log\ConfigAuditLogPolicy;
+use App\Content\Routing\ContentRouteLocalization;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Security\UserFlowConfig;
 
@@ -20,8 +21,8 @@ final readonly class SetupDefaultSeed
         return [
             ['key' => 'site.title', 'value' => $input->siteTitle(), 'type' => ConfigValueType::String],
             ['key' => 'site.url', 'value' => $input->defaultUri(), 'type' => ConfigValueType::String],
-            ['key' => 'localization.default_language', 'value' => $input->language(), 'type' => ConfigValueType::String],
-            ['key' => 'localization.route_prefixes_enabled', 'value' => false, 'type' => ConfigValueType::Boolean],
+            ['key' => ContentRouteLocalization::DEFAULT_LANGUAGE_KEY, 'value' => $input->language(), 'type' => ConfigValueType::String],
+            ['key' => ContentRouteLocalization::ENABLED_KEY, 'value' => $this->setting($input, ContentRouteLocalization::ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => 'content.home_path', 'value' => '/home', 'type' => ConfigValueType::String],
             ['key' => UserFlowConfig::DEFAULT_ACL_GROUP_KEY, 'value' => '', 'type' => ConfigValueType::String],
             ['key' => UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, 'value' => $this->setting($input, UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],

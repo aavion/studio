@@ -11,6 +11,7 @@ use App\Core\Message\MessageKey;
 use App\Core\Log\OperationLoggerInterface;
 use App\Core\Workflow\WorkflowResult;
 use RuntimeException;
+use Symfony\Component\Process\Process;
 use Throwable;
 
 final readonly class LiveOperationRunStore
@@ -862,17 +863,14 @@ final readonly class LiveOperationRunStore
 
     private function processCommand(int $pid): ?string
     {
-        $command = sprintf('ps -p %d -o command=', $pid);
-        $output = [];
-        $exitCode = 1;
+        $process = new Process(['ps', '-p', (string) $pid, '-o', 'command='], timeout: 2.0);
+        $process->run();
 
-        @exec($command, $output, $exitCode);
-
-        if (0 !== $exitCode || [] === $output) {
+        if (!$process->isSuccessful()) {
             return null;
         }
 
-        $line = trim(implode(' ', $output));
+        $line = trim($process->getOutput());
 
         return '' !== $line ? $line : null;
     }
@@ -893,14 +891,11 @@ final readonly class LiveOperationRunStore
             return null === $this->processCommand($pid);
         }
 
-        $command = sprintf('kill -TERM %d', $pid);
-        $output = [];
-        $exitCode = 1;
-
-        @exec($command, $output, $exitCode);
+        $process = new Process(['kill', '-TERM', (string) $pid], timeout: 2.0);
+        $process->run();
         usleep(200000);
 
-        return 0 === $exitCode && null === $this->processCommand($pid);
+        return $process->isSuccessful() && null === $this->processCommand($pid);
     }
 
     private function writeRunnerLockState(string $owner, string $operationId): void

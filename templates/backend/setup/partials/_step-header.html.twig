@@ -2,6 +2,9 @@
     <div>
         <div class="studio-kicker">{{ eyebrow|default('ui.setup.area'|trans) }}</div>
         <h1>{{ title }}</h1>
+        {% if subtitle is defined and subtitle is not empty %}
+            <p class="studio-muted">{{ subtitle }}</p>
+        {% endif %}
     </div>
     {% if step is defined and step is not empty %}
         <span class="studio-badge studio-badge-neutral">{{ step }}</span>

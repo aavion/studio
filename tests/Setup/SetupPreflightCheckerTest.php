@@ -45,6 +45,17 @@ final class SetupPreflightCheckerTest extends TestCase
         self::assertDirectoryExists($this->root.'/translations/runtime');
     }
 
+    public function testItChecksCliRunnerAvailability(): void
+    {
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+
+        $keys = array_column($result['checks'], 'key');
+
+        self::assertContains('cli_runner', $keys);
+    }
+
     private function removeDirectory(string $path): void
     {
         if (!is_dir($path)) {

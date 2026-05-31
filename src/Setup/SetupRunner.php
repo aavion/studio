@@ -22,7 +22,7 @@ final class SetupRunner
     public function __construct(
         private readonly string $projectDir,
         private readonly WorkflowResultMessageReporterInterface $messageReporter,
-        private readonly SetupCommandExecutorInterface $commandExecutor = new ProcOpenSetupCommandExecutor(),
+        private readonly SetupCommandExecutorInterface $commandExecutor = new ProcessSetupCommandExecutor(),
         private readonly DatabaseUrlFactory $databaseUrlFactory = new DatabaseUrlFactory(),
         private readonly SetupEnvironmentWriter $environmentWriter = new SetupEnvironmentWriter(),
         private readonly SetupDatabaseSeeder $databaseSeeder = new SetupDatabaseSeeder(),

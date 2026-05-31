@@ -10,7 +10,14 @@ setup:
     foundation_text: 'Run the same setup routine used by the CLI. Keep dry run enabled to verify the planned steps without changing files or the database.'
   landing:
     title: 'Welcome to setup'
-    text: 'Choose the language for this setup session. You can return to this step later without losing your entries.'
+    text: 'Choose the language for this setup session. The checks below make sure setup can write files and run background work before database details are needed.'
+  step_intro:
+    language: 'Start with the installer language and a short environment check.'
+    site: 'Set the public site basics and choose the initial behavior for registration, localization, and statistics.'
+    database: 'Choose where Studio stores its data. SQLite is fine for small installations; server databases are better for shared or larger sites.'
+    admin: 'Create the first administrator account. This account receives owner permissions and can finish configuring the site.'
+    review: 'Review the values before setup writes files, runs migrations, and seeds the database.'
+    result: 'Review the setup result.'
   navigation:
     label: 'Setup steps'
     back: 'Back'
@@ -21,6 +28,7 @@ setup:
     title: 'Preflight checks'
     text: 'Setup checks the essentials before asking for database details.'
     auto_heal: 'Repair automatically'
+    show_ready_checks: 'Show %count% ready checks'
     summary:
       ok: 'Everything needed for setup is ready.'
       healable: 'Setup can repair the highlighted file and directory checks automatically.'
@@ -52,6 +60,10 @@ setup:
         label: 'Public asset directory'
         help: 'Setup can create the public asset directory.'
         instruction: 'Make public/ writable while setup prepares generated assets.'
+      cli_runner:
+        label: 'CLI runner'
+        help: 'Setup can start PHP CLI subprocesses for long-running work.'
+        instruction: 'Enable PHP CLI subprocesses, or run setup from an environment that allows background commands.'
       extension_ctype:
         label: 'PHP extension ctype'
         help: 'Required by Symfony and validation routines.'
@@ -81,16 +93,19 @@ setup:
         help: 'Install this extension when using PostgreSQL.'
         instruction: 'Install this extension when using PostgreSQL.'
   site:
-    title: 'Site information'
-    settings_title: 'Initial settings'
+    title: 'Basic settings'
+    text: 'These values become the first persisted configuration for the site. You can adjust them later in the admin area.'
+    settings_title: 'Initial behavior'
   database:
     title: 'Database connection'
+    text: 'Test the connection before continuing. The optional prefix is saved with one trailing underscore when it is not empty.'
     test_connection: 'Test connection'
     test_success: 'Database connection works.'
     test_failed: 'Database connection failed. Check the connection data and try again.'
     test_invalid: 'Complete valid database settings before testing the connection.'
   admin:
-    title: 'Owner account'
+    title: 'Administrator account'
+    text: 'This first account is created as the owner-level administrator. Use an email address you can access.'
   form:
     language:
       label: 'Installer language'
@@ -102,6 +117,8 @@ setup:
       label: 'User registration'
     username_change_enabled:
       label: 'Allow username changes'
+    route_prefixes_enabled:
+      label: 'Use language route prefixes'
     statistics_enabled:
       label: 'Enable access statistics'
     statistics_respect_dnt:
@@ -165,6 +182,7 @@ setup:
       url: 'Enter a valid URL.'
   review:
     title: 'Review setup'
+    text: 'Setup will now write the environment override, apply migrations, seed defaults, run package discovery, rebuild assets, and lock the setup route only after success.'
     none: 'None'
     enabled: 'Enabled'
     disabled: 'Disabled'
@@ -187,9 +205,9 @@ setup:
   steps:
     language: 'Language'
     preflight: 'Preflight'
-    site: 'Site'
+    site: 'Basic settings'
     database: 'Database'
-    admin: 'Owner'
+    admin: 'Administrator account'
     review: 'Review'
     result: 'Result'
     select_language: 'Select language'

@@ -57,7 +57,7 @@ export default class extends Controller {
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             });
-            const payload = await response.json();
+            const payload = await this.readJson(response);
 
             if (!response.ok || !payload.success || !payload.value?.status_url) {
                 this.clearStoredOperation();
@@ -104,7 +104,7 @@ export default class extends Controller {
                     return;
                 }
 
-                const payload = await response.json();
+                const payload = await this.readJson(response);
                 cursor = Number(payload.cursor || cursor);
                 this.storeOperation(statusUrl, cursor, payload.continue_url || null);
                 this.render(payload);
@@ -215,7 +215,7 @@ export default class extends Controller {
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             });
-            const payload = await response.json();
+            const payload = await this.readJson(response);
 
             if (!response.ok || !payload.success || !payload.value?.status_url) {
                 this.fail(payload.issues?.[0]?.message || payload.issues?.[0]?.translation_key || this.label('startError'));
@@ -322,6 +322,16 @@ export default class extends Controller {
 
     sleep(ms) {
         return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    async readJson(response) {
+        const contentType = response.headers.get('content-type') || '';
+
+        if (!contentType.includes('application/json')) {
+            throw new Error(this.label('requestError'));
+        }
+
+        return response.json();
     }
 
     tone(status) {

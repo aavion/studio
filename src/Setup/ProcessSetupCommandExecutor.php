@@ -7,35 +7,25 @@ namespace App\Setup;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
-use RuntimeException;
+use Symfony\Component\Process\Process;
 
-final readonly class ProcOpenSetupCommandExecutor implements SetupCommandExecutorInterface
+final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutorInterface
 {
     public function run(array $command, string $cwd, array $environment = []): SetupCommandResult
     {
-        $processEnvironment = $this->processEnvironment($cwd, $environment);
-        $process = proc_open(
-            $command,
-            [
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w'],
-            ],
-            $pipes,
-            $cwd,
-            $processEnvironment,
-        );
-
-        if (!is_resource($process)) {
-            throw new RuntimeException('Unable to start setup command.');
+        try {
+            $process = new Process($command, $cwd, $this->processEnvironment($cwd, $environment), null, null);
+            $process->run();
+        } catch (\Throwable $error) {
+            throw SetupStepFailedException::fromMessage(Message::exception(
+                MessageCode::E_OPERATION_FAILED,
+                MessageKey::OPERATION_FAILED,
+                ['%operation%' => basename($command[0] ?? 'command')],
+                ['command' => $command, 'cwd' => $cwd, 'exception' => $error::class, 'message' => $error->getMessage()],
+            ));
         }
 
-        $output = stream_get_contents($pipes[1]);
-        $errorOutput = stream_get_contents($pipes[2]);
-
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-
-        return new SetupCommandResult(proc_close($process), (string) $output, (string) $errorOutput);
+        return new SetupCommandResult($process->getExitCode() ?? 1, $process->getOutput(), $process->getErrorOutput());
     }
 
     /**

@@ -559,6 +559,20 @@ html {
     padding: 0.625rem 0.75rem;
 }
 
+.studio-form-field input[type="checkbox"],
+.studio-backend-form-field input[type="checkbox"] {
+    width: auto;
+    min-height: 0;
+    padding: 0;
+}
+
+.studio-backend-checkbox-label,
+.studio-backend-toggle-label {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 .studio-table {
     width: 100%;
     border-collapse: collapse;
