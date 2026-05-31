@@ -9,24 +9,6 @@
         subtitle: ('setup.step_intro.' ~ setup_step)|trans,
     } only %}
 
-    <nav class="studio-setup-steps" aria-label="{{ 'setup.navigation.label'|trans }}">
-        {% for step in setup_steps %}
-            {% set unlocked = loop.first or setup_steps[loop.index0 - 1] in setup_completed_steps %}
-            {% set active = step == setup_step %}
-            {% if unlocked %}
-                <a class="studio-setup-step{{ active ? ' is-active' : '' }}" href="{{ path('backend_setup_step', {step}) }}">
-                    <span>{{ loop.index }}</span>
-                    {{ ('setup.steps.' ~ step)|trans }}
-                </a>
-            {% else %}
-                <span class="studio-setup-step is-locked">
-                    <span>{{ loop.index }}</span>
-                    {{ ('setup.steps.' ~ step)|trans }}
-                </span>
-            {% endif %}
-        {% endfor %}
-    </nav>
-
     <form
         id="setup-wizard"
         class="studio-backend-form studio-setup-wizard"
@@ -70,61 +52,62 @@
                     attributes: {'data-action': 'change->setup-wizard#submitOnChange'},
                 } only %}
 
-                <div class="studio-setup-preflight">
-                    <h3>{{ 'setup.preflight.title'|trans }}</h3>
-                    <p class="studio-muted">{{ 'setup.preflight.text'|trans }}</p>
-                    {% if setup_preflight.ok %}
-                        <p class="studio-setup-summary is-ok">{{ 'setup.preflight.summary.ok'|trans }}</p>
-                    {% elseif setup_preflight.healable_failed %}
-                        <p class="studio-setup-summary is-warning">{{ 'setup.preflight.summary.healable'|trans }}</p>
+            </section>
+
+            <section class="studio-panel studio-setup-preflight">
+                <h2>{{ 'setup.preflight.title'|trans }}</h2>
+                <p class="studio-muted">{{ 'setup.preflight.text'|trans }}</p>
+                {% if setup_preflight.ok %}
+                    <p class="studio-setup-summary is-ok">{{ 'setup.preflight.summary.ok'|trans }}</p>
+                {% elseif setup_preflight.healable_failed %}
+                    <p class="studio-setup-summary is-warning">{{ 'setup.preflight.summary.healable'|trans }}</p>
+                {% else %}
+                    <p class="studio-setup-summary is-error">{{ 'setup.preflight.summary.failed'|trans }}</p>
+                {% endif %}
+
+                {% set visible_checks = [] %}
+                {% set ok_checks = [] %}
+                {% for check in setup_preflight.checks %}
+                    {% if check.status == 'ok' %}
+                        {% set ok_checks = ok_checks|merge([check]) %}
                     {% else %}
-                        <p class="studio-setup-summary is-error">{{ 'setup.preflight.summary.failed'|trans }}</p>
+                        {% set visible_checks = visible_checks|merge([check]) %}
                     {% endif %}
+                {% endfor %}
 
-                    {% set visible_checks = [] %}
-                    {% set ok_checks = [] %}
-                    {% for check in setup_preflight.checks %}
-                        {% if check.status == 'ok' %}
-                            {% set ok_checks = ok_checks|merge([check]) %}
-                        {% else %}
-                            {% set visible_checks = visible_checks|merge([check]) %}
-                        {% endif %}
-                    {% endfor %}
+                {% if visible_checks|length > 0 %}
+                    <div class="studio-setup-checks">
+                        {% for check in visible_checks %}
+                            <article class="studio-setup-check">
+                                <strong>{{ check.label_key|trans }}</strong>
+                                <span class="studio-badge {{ check.required ? 'studio-badge-error' : 'studio-badge-neutral' }}">
+                                    {{ ('setup.preflight.status.' ~ check.status)|trans }}
+                                </span>
+                                <p class="studio-muted">{{ (check.healable ? check.help_key : check.instruction_key)|trans }}</p>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% endif %}
 
-                    {% if visible_checks|length > 0 %}
-                        <div class="studio-setup-checks">
-                            {% for check in visible_checks %}
-                                <article class="studio-setup-check">
-                                    <strong>{{ check.label_key|trans }}</strong>
-                                    <span class="studio-badge {{ check.required ? 'studio-badge-error' : 'studio-badge-neutral' }}">
-                                        {{ ('setup.preflight.status.' ~ check.status)|trans }}
-                                    </span>
-                                    <p class="studio-muted">{{ (check.healable ? check.help_key : check.instruction_key)|trans }}</p>
-                                </article>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                <details class="studio-setup-check-details">
+                    <summary>{{ 'setup.preflight.show_ready_checks'|trans({'%count%': ok_checks|length}) }}</summary>
+                    <div class="studio-setup-checks">
+                        {% for check in ok_checks %}
+                            <article class="studio-setup-check">
+                                <strong>{{ check.label_key|trans }}</strong>
+                                <span class="studio-badge studio-badge-success">{{ ('setup.preflight.status.' ~ check.status)|trans }}</span>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </details>
 
-                    <details class="studio-setup-check-details">
-                        <summary>{{ 'setup.preflight.show_ready_checks'|trans({'%count%': ok_checks|length}) }}</summary>
-                        <div class="studio-setup-checks">
-                            {% for check in ok_checks %}
-                                <article class="studio-setup-check">
-                                    <strong>{{ check.label_key|trans }}</strong>
-                                    <span class="studio-badge studio-badge-success">{{ ('setup.preflight.status.' ~ check.status)|trans }}</span>
-                                </article>
-                            {% endfor %}
-                        </div>
-                    </details>
-
-                    {% if setup_preflight.healable_failed %}
-                        <div class="studio-button-group">
-                            <button class="studio-button studio-button-secondary" type="submit" name="_setup_action" value="heal_preflight" formnovalidate>
-                                {{ 'setup.preflight.auto_heal'|trans }}
-                            </button>
-                        </div>
-                    {% endif %}
-                </div>
+                {% if setup_preflight.healable_failed %}
+                    <div class="studio-button-group">
+                        <button class="studio-button studio-button-secondary" type="submit" name="_setup_action" value="heal_preflight" formnovalidate>
+                            {{ 'setup.preflight.auto_heal'|trans }}
+                        </button>
+                    </div>
+                {% endif %}
             </section>
         {% elseif setup_step == 'site' %}
             <section class="studio-panel">
@@ -147,7 +130,10 @@
                     attributes: {placeholder: 'https://example.test'},
                     errors: setup_errors.default_uri|default([]),
                 } only %}
-                <h3>{{ setup_site_settings_form.title|trans }}</h3>
+            </section>
+
+            <section class="studio-panel">
+                <h2>{{ setup_site_settings_form.title|trans }}</h2>
                 {% include '@backend/partials/forms/_dynamic_fields.html.twig' with {fields: setup_site_settings_form.fields} only %}
             </section>
         {% elseif setup_step == 'database' %}
@@ -219,6 +205,10 @@
                 {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password', label: 'setup.form.admin_password.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, help: (setup_values.admin_password is empty ? 'setup.form.admin_password.help' : 'setup.form.admin_password.keep_help')|trans, attributes: {minlength: 8, autocomplete: 'new-password', 'data-password-policy-target': 'password', 'data-action': 'input->password-policy#update'}, errors: setup_errors.admin_password|default([])} only %}
                 {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password_confirm', label: 'setup.form.admin_password_confirm.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, attributes: {minlength: 8, autocomplete: 'new-password', 'data-password-policy-target': 'confirm', 'data-action': 'input->password-policy#update'}, errors: setup_errors.admin_password_confirm|default([])} only %}
                 {% include '@root/partials/forms/_password_policy_meter.html.twig' only %}
+            </section>
+
+            <section class="studio-panel">
+                <h2>{{ 'setup.form.app_secret.label'|trans }}</h2>
                 {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'app_secret', label: 'setup.form.app_secret.label'|trans, value: setup_display_values.app_secret, help: 'setup.form.app_secret.help'|trans, attributes: {autocomplete: 'off', minlength: 12}, errors: setup_errors.app_secret|default([])} only %}
             </section>
         {% elseif setup_step == 'review' %}
@@ -253,16 +243,42 @@
             </section>
         {% endif %}
 
-        <div class="studio-form-actions">
-            {% if setup_previous_step %}
-                <a class="studio-button studio-button-secondary" href="{{ path('backend_setup_step', {step: setup_previous_step}) }}">{{ 'setup.navigation.back'|trans }}</a>
-            {% endif %}
-            {% if setup_step != 'result' %}
-                {% include '@backend/partials/forms/fields/submit.html.twig' with {
-                    label: (setup_step == 'review' ? 'setup.form.apply' : 'setup.navigation.next')|trans,
-                    variant: 'primary',
-                } only %}
-            {% endif %}
+        <div class="studio-setup-footer">
+            <nav class="studio-setup-progress" aria-label="{{ 'setup.navigation.label'|trans }}">
+                <ol>
+                    {% for step in setup_steps %}
+                        {% set unlocked = loop.first or setup_steps[loop.index0 - 1] in setup_completed_steps %}
+                        {% set active = step == setup_step %}
+                        {% set completed = step in setup_completed_steps %}
+                        <li class="{{ completed ? 'is-completed' : (active ? 'is-active' : 'is-open') }}">
+                            {% if unlocked %}
+                                <a href="{{ path('backend_setup_step', {step}) }}"{% if active %} aria-current="step"{% endif %}>
+                                    <span aria-hidden="true">{{ completed ? '✓' : '' }}</span>
+                                    {{ ('setup.steps.' ~ step)|trans }}
+                                </a>
+                            {% else %}
+                                <span>
+                                    <span aria-hidden="true"></span>
+                                    {{ ('setup.steps.' ~ step)|trans }}
+                                </span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ol>
+            </nav>
+
+            <div class="studio-form-actions">
+                {% if setup_previous_step %}
+                    <a class="studio-setup-nav-button is-back" href="{{ path('backend_setup_step', {step: setup_previous_step}) }}" aria-label="{{ 'setup.navigation.back'|trans }}" title="{{ 'setup.navigation.back'|trans }}">
+                        <span class="ti ti-arrow-left" aria-hidden="true"></span>
+                    </a>
+                {% endif %}
+                {% if setup_step != 'result' %}
+                    <button class="studio-setup-nav-button is-next" type="submit" aria-label="{{ (setup_step == 'review' ? 'setup.form.apply' : 'setup.navigation.next')|trans }}" title="{{ (setup_step == 'review' ? 'setup.form.apply' : 'setup.navigation.next')|trans }}">
+                        <span class="ti {{ setup_step == 'review' ? 'ti-check' : 'ti-arrow-right' }}" aria-hidden="true"></span>
+                    </button>
+                {% endif %}
+            </div>
         </div>
     </form>
 

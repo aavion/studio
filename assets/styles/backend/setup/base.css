@@ -16,51 +16,6 @@
     padding: clamp(1rem, 4vw, 2rem);
 }
 
-.studio-setup-steps {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-    gap: 0.5rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.studio-setup-step {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-    padding: 0.75rem;
-    border: var(--studio-border);
-    border-radius: var(--studio-radius);
-    background: var(--color-gray-50);
-    color: var(--color-ink);
-    font-size: var(--studio-text-sm);
-    font-weight: 750;
-    text-decoration: none;
-}
-
-.studio-setup-step span {
-    display: inline-grid;
-    width: 1.5rem;
-    min-width: 1.5rem;
-    height: 1.5rem;
-    place-items: center;
-    border-radius: 999px;
-    background: var(--color-paper);
-    color: var(--color-muted);
-    font-size: var(--studio-text-xs);
-    font-weight: 900;
-}
-
-.studio-setup-step.is-active {
-    border-color: var(--color-primary);
-    background: var(--color-primary-soft);
-}
-
-.studio-setup-step.is-locked {
-    color: var(--color-muted);
-}
-
 .studio-setup-wizard {
     display: grid;
     gap: 1rem;
@@ -69,10 +24,9 @@
 .studio-setup-preflight {
     display: grid;
     gap: 0.75rem;
-    margin-top: 1rem;
 }
 
-.studio-setup-preflight h3,
+.studio-setup-preflight h2,
 .studio-setup-preflight p {
     margin: 0;
 }
@@ -211,9 +165,127 @@
     font-weight: 700;
 }
 
+.studio-setup-footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: center;
+    padding-top: 0.25rem;
+}
+
+.studio-setup-progress {
+    width: 100%;
+}
+
+.studio-setup-progress ol {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.studio-setup-progress li {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    color: var(--color-muted);
+    font-size: var(--studio-text-xs);
+    font-weight: 750;
+}
+
+.studio-setup-progress a,
+.studio-setup-progress li > span {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+}
+
+.studio-setup-progress a:hover {
+    color: var(--color-primary-strong);
+}
+
+.studio-setup-progress a span,
+.studio-setup-progress li > span span {
+    display: inline-grid;
+    width: 1.15rem;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    place-items: center;
+    border: 2px solid var(--color-gray-300);
+    border-radius: 999px;
+    background: transparent;
+    color: #ffffff;
+    font-size: 0.68rem;
+    line-height: 1;
+}
+
+.studio-setup-progress .is-completed {
+    color: var(--color-success);
+}
+
+.studio-setup-progress .is-completed a span {
+    border-color: var(--color-success);
+    background: var(--color-success);
+}
+
+.studio-setup-progress .is-active {
+    color: var(--color-primary-strong);
+}
+
+.studio-setup-progress .is-active a span {
+    border-color: var(--color-primary-action);
+    background: var(--color-paper);
+}
+
 .studio-form-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    flex-wrap: nowrap;
     gap: 0.5rem;
-    justify-content: flex-end;
+    align-items: flex-end;
+    justify-content: center;
+    margin-left: auto;
+}
+
+.studio-setup-nav-button {
+    display: inline-grid;
+    width: 3rem;
+    height: 3rem;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: var(--color-primary-action);
+    color: #ffffff;
+    font: inherit;
+    font-size: 1.35rem;
+    line-height: 1;
+    text-decoration: none;
+    box-shadow: var(--studio-shadow-panel);
+    cursor: pointer;
+}
+
+.studio-setup-nav-button.is-back {
+    border-color: var(--color-line);
+    background: var(--color-paper);
+    color: var(--color-ink);
+}
+
+.studio-setup-nav-button:hover {
+    transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+    .studio-setup-footer {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    .studio-form-actions {
+        flex-direction: row;
+        justify-content: flex-end;
+    }
 }

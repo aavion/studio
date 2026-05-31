@@ -10,9 +10,9 @@ setup:
     foundation_text: 'Run the same setup routine used by the CLI. Keep dry run enabled to verify the planned steps without changing files or the database.'
   landing:
     title: 'Welcome to setup'
-    text: 'Choose the language for this setup session. The checks below make sure setup can write files and run background work before database details are needed.'
+    text: 'Choose the default language for your new website. You can adjust additional languages later in the admin area.'
   step_intro:
-    language: 'Start with the installer language and a short environment check.'
+    language: 'Start with the website language and a short environment check.'
     site: 'Set the public site basics and choose the initial behavior for registration, localization, and statistics.'
     database: 'Choose where Studio stores its data. SQLite is fine for small installations; server databases are better for shared or larger sites.'
     admin: 'Create the first administrator account. This account receives owner permissions and can finish configuring the site.'
@@ -108,7 +108,7 @@ setup:
     text: 'This first account is created as the owner-level administrator. Use an email address you can access.'
   form:
     language:
-      label: 'Installer language'
+      label: 'Website language'
     site_title:
       label: 'Site title'
     default_uri:
@@ -204,7 +204,7 @@ setup:
       pending: 'Pending'
       running: 'Running'
   steps:
-    language: 'Language'
+    language: 'Start'
     preflight: 'Preflight'
     site: 'Basic settings'
     database: 'Database'

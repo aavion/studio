@@ -10,9 +10,9 @@ setup:
     foundation_text: 'Führt dieselbe Setup-Routine aus wie die CLI. Lass den Dry-Run aktiv, um die geplanten Schritte ohne Datei- oder Datenbankänderungen zu prüfen.'
   landing:
     title: 'Willkommen im Setup'
-    text: 'Wähle die Sprache für diese Setup-Sitzung. Die Prüfungen darunter stellen sicher, dass Setup Dateien schreiben und Hintergrundprozesse starten kann, bevor Datenbankdetails nötig sind.'
+    text: 'Wähle die Standardsprache für deine neue Webseite. Weitere Sprachen kannst du später im Adminbereich ergänzen.'
   step_intro:
-    language: 'Beginne mit der Installer-Sprache und einer kurzen Umgebungsprüfung.'
+    language: 'Beginne mit der Sprache der Webseite und einer kurzen Umgebungsprüfung.'
     site: 'Lege die öffentlichen Grundeinstellungen fest und wähle das Startverhalten für Registrierung, Lokalisierung und Statistiken.'
     database: 'Wähle, wo Studio seine Daten speichert. SQLite ist für kleine Installationen geeignet; Server-Datenbanken sind für geteilte oder größere Seiten besser.'
     admin: 'Erstelle das erste Administratorkonto. Dieses Konto erhält Owner-Rechte und kann die Seite fertig konfigurieren.'
@@ -108,7 +108,7 @@ setup:
     text: 'Dieses erste Konto wird als Administrator mit Owner-Rechten erstellt. Nutze eine E-Mail-Adresse, auf die du Zugriff hast.'
   form:
     language:
-      label: 'Installer-Sprache'
+      label: 'Sprache der Webseite'
     site_title:
       label: 'Seitentitel'
     default_uri:
@@ -204,7 +204,7 @@ setup:
       pending: 'Ausstehend'
       running: 'Läuft'
   steps:
-    language: 'Sprache'
+    language: 'Start'
     preflight: 'Vorabprüfung'
     site: 'Grundeinstellungen'
     database: 'Datenbank'
