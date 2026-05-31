@@ -32,6 +32,7 @@ final class SetupRunner
         private readonly SetupComposerCommandResolver $composerCommandResolver = new SetupComposerCommandResolver(),
         private readonly SetupDryRunPlanner $dryRunPlanner = new SetupDryRunPlanner(),
         private readonly SetupPasswordPolicy $passwordPolicy = new SetupPasswordPolicy(),
+        private readonly SetupRollbacker $rollbacker = new SetupRollbacker(),
     ) {
     }
 
@@ -50,7 +51,11 @@ final class SetupRunner
         $actions = [];
 
         foreach ($this->steps($input, $appSecret, $databaseUrl, $environment) as [$name, $callback]) {
-            $actions[] = new SetupStepAction($name, $callback);
+            $actions[] = new SetupStepAction(
+                $name,
+                $callback,
+                fn (Throwable $_): array => $this->rollback($input, $databaseUrl),
+            );
         }
 
         return WorkflowResult::success(ActionQueue::create('setup apply', $actions, context: [
@@ -88,12 +93,14 @@ final class SetupRunner
                 $log = $log->add($entry->finish($status, context: $context, messages: $messages));
             } catch (Throwable $throwable) {
                 $issue = $this->failureMessage($name, $throwable);
-                $log = $log->add($entry->finish(ActionLogStatus::Failed, [$issue]));
+                $context = $this->rollback($input, $databaseUrl);
+                $log = $log->add($entry->finish(ActionLogStatus::Failed, [$issue], $context));
 
                 return $this->report(WorkflowResult::failed([$issue], [
                     'halt_on_error' => true,
                     'failed_step' => $name,
                     'action_log' => $log->toArray(),
+                    ...$context,
                 ]), $input);
             }
         }
@@ -479,5 +486,13 @@ final class SetupRunner
             'dry_run' => $input->dryRun(),
             'language' => $input->language(),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function rollback(SetupInput $input, string $databaseUrl): array
+    {
+        return $this->rollbacker->rollback($this->projectDir, $input, $databaseUrl);
     }
 }

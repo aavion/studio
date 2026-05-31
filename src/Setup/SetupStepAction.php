@@ -17,12 +17,15 @@ use Throwable;
 final readonly class SetupStepAction implements OperationActionInterface
 {
     private Closure $callback;
+    private ?Closure $failureCallback;
 
     public function __construct(
         private string $name,
         callable $callback,
+        ?callable $failureCallback = null,
     ) {
         $this->callback = Closure::fromCallable($callback);
+        $this->failureCallback = null === $failureCallback ? null : Closure::fromCallable($failureCallback);
     }
 
     public function type(): string
@@ -55,10 +58,19 @@ final readonly class SetupStepAction implements OperationActionInterface
 
             return WorkflowResult::success(context: $context, messages: $messages);
         } catch (Throwable $throwable) {
-            return WorkflowResult::failed([$this->failureMessage($throwable)], [
+            $context = [
                 'halt_on_error' => true,
                 'failed_step' => $this->name,
-            ]);
+            ];
+
+            if (null !== $this->failureCallback) {
+                $context = [
+                    ...$context,
+                    ...($this->failureCallback)($throwable),
+                ];
+            }
+
+            return WorkflowResult::failed([$this->failureMessage($throwable)], $context);
         }
     }
 

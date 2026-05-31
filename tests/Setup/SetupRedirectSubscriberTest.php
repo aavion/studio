@@ -47,7 +47,7 @@ final class SetupRedirectSubscriberTest extends TestCase
     {
         $subscriber = $this->subscriber();
 
-        foreach (['/setup', '/setup/recovery', '/assets/app.css', '/build/app.js', '/_profiler', '/_wdt/token', '/favicon.ico'] as $path) {
+        foreach (['/setup', '/setup/recovery', '/api/live/operations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '/api/live/future-poll', '/assets/app.css', '/build/app.js', '/_profiler', '/_wdt/token', '/favicon.ico'] as $path) {
             $event = $this->event($path);
             $subscriber->onKernelRequest($event);
 

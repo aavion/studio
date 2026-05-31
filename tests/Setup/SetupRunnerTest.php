@@ -270,9 +270,11 @@ final class SetupRunnerTest extends TestCase
         self::assertTrue($result->context()['halt_on_error']);
         self::assertSame('dump_environment', $result->context()['failed_step']);
         self::assertArrayHasKey('action_log', $result->context());
+        self::assertFileDoesNotExist($this->root.'/.env.test.local');
+        self::assertFileDoesNotExist($this->root.'/.env.local.php');
     }
 
-    public function testItDoesNotLockSetupWhenFinalCacheClearFails(): void
+    public function testItRollsBackGeneratedFilesWhenFinalCacheClearFails(): void
     {
         $databasePath = $this->root.'/var/setup.db';
         $this->createSchema($databasePath);
@@ -294,9 +296,11 @@ final class SetupRunnerTest extends TestCase
 
         self::assertFalse($result->isSuccess());
         self::assertSame('clear_cache', $result->context()['failed_step']);
-        self::assertFileExists($this->root.'/.env.local.php');
-        $dumpedEnvironment = include $this->root.'/.env.local.php';
-        self::assertArrayNotHasKey('APP_SETUP_COMPLETED', $dumpedEnvironment);
+        self::assertFileDoesNotExist($this->root.'/.env.test.local');
+        self::assertFileDoesNotExist($this->root.'/.env.local.php');
+        self::assertFileDoesNotExist($databasePath);
+        self::assertSame(['.env.test.local', '.env.local.php'], $result->context()['rollback']['env_files_removed']);
+        self::assertSame(['var/setup.db'], $result->context()['rollback']['sqlite_files_removed']);
     }
 
     public function testItStopsWhenEnvironmentOverridesCannotBeWritten(): void
@@ -325,7 +329,7 @@ final class SetupRunnerTest extends TestCase
         );
     }
 
-    public function testItUsesBundledComposerWhenSystemComposerIsUnavailable(): void
+    public function testItFallsBackToSystemComposerWhenBundledComposerIsUnavailable(): void
     {
         $databasePath = $this->root.'/var/setup.db';
         $this->createSchema($databasePath);
@@ -345,9 +349,9 @@ final class SetupRunnerTest extends TestCase
 
         self::assertTrue($result->isSuccess());
         self::assertSame([
-            ['composer', '--version'],
             [PHP_BINARY, $this->root.'/bin/composer', '--version'],
-            [PHP_BINARY, $this->root.'/bin/composer', 'dump-env', 'test'],
+            ['composer', '--version'],
+            ['composer', 'dump-env', 'test'],
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'],
