@@ -163,11 +163,6 @@ setup:
       username: 'Der Admin-Username muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
       required: 'Dieses Feld ist erforderlich.'
       url: 'Gib eine gültige URL ein.'
-  password_meter:
-    length: 'Mindestens 8 Zeichen'
-    classes: 'Mindestens drei Zeichentypen'
-    repeated: 'Kein Zeichen mehr als dreimal direkt hintereinander'
-    personal: 'Kein Username oder E-Mail-Name'
   review:
     title: 'Setup prüfen'
     none: 'Keine'

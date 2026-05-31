@@ -124,6 +124,29 @@
     height: 0.5rem;
 }
 
+.studio-password-meter meter::-webkit-meter-bar {
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-gray-100);
+}
+
+.studio-password-meter meter::-webkit-meter-optimum-value {
+    border-radius: 999px;
+    background: var(--color-primary-action);
+}
+
+.studio-password-meter meter::-moz-meter-bar {
+    border-radius: 999px;
+    background: var(--color-primary-action);
+}
+
+.studio-password-meter meter.is-valid::-webkit-meter-optimum-value,
+.studio-password-meter meter.is-full-strength::-webkit-meter-optimum-value,
+.studio-password-meter meter.is-valid::-moz-meter-bar,
+.studio-password-meter meter.is-full-strength::-moz-meter-bar {
+    background: var(--color-success);
+}
+
 .studio-password-meter ul {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
@@ -141,6 +164,13 @@
 
 .studio-password-meter li.is-ok {
     color: var(--color-success);
+    font-weight: 700;
+}
+
+.studio-password-match {
+    margin: 0;
+    color: var(--color-error);
+    font-size: var(--studio-text-sm);
     font-weight: 700;
 }
 

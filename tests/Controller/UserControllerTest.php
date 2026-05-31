@@ -252,6 +252,7 @@ final class UserControllerTest extends WebTestCase
         }
 
         $crawler = $client->request('GET', '/user/password');
+        self::assertSelectorExists('form[data-controller="password-policy"] .studio-password-meter');
         $form = $crawler->selectButton('Update password')->form([
             'current_password' => 'current-password',
             'new_password' => 'NewPassword1!',
@@ -544,6 +545,32 @@ final class UserControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Accept invitation');
         self::assertSelectorExists('input[name="username"]');
+        self::assertSelectorExists('form[data-controller="password-policy"] .studio-password-meter');
+    }
+
+    public function testPasswordResetTokenRendersPasswordPolicyMeter(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'resetmeter', 'current-password');
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::PasswordReset,
+            $user->email(),
+            [],
+            $user,
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->request('GET', '/user/reset-password/'.$plainToken);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Choose new password');
+        self::assertSelectorExists('form[data-controller="password-policy"] .studio-password-meter');
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $user->uid()));
+        $entityManager->flush();
     }
 
     public function testExpiredInvitationTokenCannotBeAccepted(): void

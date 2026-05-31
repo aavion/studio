@@ -31,8 +31,13 @@
         class="studio-backend-form studio-setup-wizard"
         method="post"
         action="{{ setup_step == 'language' ? path('backend_setup_index') : path('backend_setup_step', {step: setup_step}) }}"
-        data-controller="setup-wizard{{ setup_step == 'review' ? ' operation-overlay' : '' }}"
+        data-controller="setup-wizard{% if setup_step == 'admin' %} password-policy{% endif %}{{ setup_step == 'review' ? ' operation-overlay' : '' }}"
         data-action="submit->setup-wizard#submit{% if setup_step == 'review' %} submit->operation-overlay#submit{% endif %}"
+        {% if setup_step == 'admin' %}
+            data-password-policy-username-value="{{ setup_values.admin_username }}"
+            data-password-policy-email-value="{{ setup_values.admin_email }}"
+            data-password-policy-mismatch-message-value="{{ 'ui.user.password.errors.password_mismatch'|trans }}"
+        {% endif %}
         {% if setup_step == 'review' %}
             data-operation-overlay-enabled-value="true"
             data-operation-overlay-redirect-on-success-value="/"
@@ -180,19 +185,11 @@
         {% elseif setup_step == 'admin' %}
             <section class="studio-panel">
                 <h2>{{ 'setup.admin.title'|trans }}</h2>
-                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_username', label: 'setup.form.admin_username.label'|trans, value: setup_values.admin_username, required: true, attributes: {minlength: 5, maxlength: 30, pattern: '[A-Za-z][A-Za-z0-9_-]{4,29}', autocomplete: 'username', 'data-setup-wizard-target': 'username', 'data-action': 'input->setup-wizard#updatePasswordMeter'}, errors: setup_errors.admin_username|default([])} only %}
-                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_email', label: 'setup.form.admin_email.label'|trans, type: 'email', value: setup_values.admin_email, required: true, attributes: {'data-setup-wizard-target': 'email', 'data-action': 'input->setup-wizard#updatePasswordMeter'}, errors: setup_errors.admin_email|default([])} only %}
-                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password', label: 'setup.form.admin_password.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, help: (setup_values.admin_password is empty ? 'setup.form.admin_password.help' : 'setup.form.admin_password.keep_help')|trans, attributes: {minlength: 8, autocomplete: 'new-password', 'data-setup-wizard-target': 'password', 'data-action': 'input->setup-wizard#updatePasswordMeter'}, errors: setup_errors.admin_password|default([])} only %}
-                <div class="studio-password-meter" aria-live="polite">
-                    <meter min="0" max="4" value="0" data-setup-wizard-target="passwordMeter"></meter>
-                    <ul>
-                        <li data-setup-wizard-target="passwordRule" data-password-rule="length">{{ 'setup.password_meter.length'|trans }}</li>
-                        <li data-setup-wizard-target="passwordRule" data-password-rule="classes">{{ 'setup.password_meter.classes'|trans }}</li>
-                        <li data-setup-wizard-target="passwordRule" data-password-rule="repeated">{{ 'setup.password_meter.repeated'|trans }}</li>
-                        <li data-setup-wizard-target="passwordRule" data-password-rule="personal">{{ 'setup.password_meter.personal'|trans }}</li>
-                    </ul>
-                </div>
-                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password_confirm', label: 'setup.form.admin_password_confirm.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, attributes: {minlength: 8, autocomplete: 'new-password'}, errors: setup_errors.admin_password_confirm|default([])} only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_username', label: 'setup.form.admin_username.label'|trans, value: setup_values.admin_username, required: true, attributes: {minlength: 5, maxlength: 30, pattern: '[A-Za-z][A-Za-z0-9_-]{4,29}', autocomplete: 'username', 'data-password-policy-target': 'username', 'data-action': 'input->password-policy#update'}, errors: setup_errors.admin_username|default([])} only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_email', label: 'setup.form.admin_email.label'|trans, type: 'email', value: setup_values.admin_email, required: true, attributes: {'data-password-policy-target': 'email', 'data-action': 'input->password-policy#update'}, errors: setup_errors.admin_email|default([])} only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password', label: 'setup.form.admin_password.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, help: (setup_values.admin_password is empty ? 'setup.form.admin_password.help' : 'setup.form.admin_password.keep_help')|trans, attributes: {minlength: 8, autocomplete: 'new-password', 'data-password-policy-target': 'password', 'data-action': 'input->password-policy#update'}, errors: setup_errors.admin_password|default([])} only %}
+                {% include '@root/partials/forms/_password_policy_meter.html.twig' only %}
+                {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password_confirm', label: 'setup.form.admin_password_confirm.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, attributes: {minlength: 8, autocomplete: 'new-password', 'data-password-policy-target': 'confirm', 'data-action': 'input->password-policy#update'}, errors: setup_errors.admin_password_confirm|default([])} only %}
                 {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'app_secret', label: 'setup.form.app_secret.label'|trans, value: setup_values.app_secret, help: 'setup.form.app_secret.help'|trans, attributes: {autocomplete: 'off'}, errors: setup_errors.app_secret|default([])} only %}
             </section>
         {% elseif setup_step == 'review' %}

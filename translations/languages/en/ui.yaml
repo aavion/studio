@@ -121,6 +121,11 @@ ui:
         new_password_personal: 'The new password must not contain your username or email name.'
         password_mismatch: 'The new passwords do not match.'
         delivery_failed: 'The password-change security email could not be created. Please try again later.'
+      policy:
+        length: 'At least 8 characters'
+        classes: 'At least three of four character types'
+        personal: 'No username or email name'
+        repeated: 'No character repeated more than three times'
     api_keys:
       title: 'API keys'
       subtitle: 'Only API keys assigned to your account are shown here.'

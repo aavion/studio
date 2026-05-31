@@ -281,6 +281,7 @@ final class UserController extends AbstractController
         return $this->render('@frontend/user/password.html.twig', [
             'errors' => $errors,
             'success' => $success,
+            'user_account' => $user,
         ]);
     }
 

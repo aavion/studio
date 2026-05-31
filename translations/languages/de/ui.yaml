@@ -121,6 +121,11 @@ ui:
         new_password_personal: 'Das neue Passwort darf deinen Username oder E-Mail-Namen nicht enthalten.'
         password_mismatch: 'Die neuen Passwörter stimmen nicht überein.'
         delivery_failed: 'Die Sicherheits-E-Mail zur Passwortänderung konnte nicht erstellt werden. Bitte versuche es später erneut.'
+      policy:
+        length: 'Mindestens 8 Zeichen'
+        classes: 'Mindestens drei von vier Zeichentypen'
+        personal: 'Kein Username oder E-Mail-Name'
+        repeated: 'Kein Zeichen mehr als dreimal direkt hintereinander'
     api_keys:
       title: 'API-Keys'
       subtitle: 'Hier werden nur API-Keys angezeigt, die deinem Account zugeordnet sind.'

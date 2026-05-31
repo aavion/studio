@@ -113,6 +113,7 @@ final class BackendControllerTest extends WebTestCase
                 'database_driver' => 'sqlite',
                 'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
             ]));
+            self::assertSelectorExists('form#setup-wizard[data-controller="setup-wizard password-policy"] .studio-password-meter');
             $client->submit($crawler->selectButton('Continue')->form([
                 'admin_username' => 'admin',
                 'admin_password' => 'Safe1!pass',
