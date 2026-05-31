@@ -31,6 +31,10 @@ This is not necessarily a functional defect. The goal is to identify maintainabi
 Only report findings that can be demonstrated by concrete code locations and existing vendor/framework alternatives.
 
 ## Fixed
+### P1 | Avoid restoring elevated roles through public registration
+When registration is in auto_approval mode and the submitted email belongs to a deleted admin/owner account, this copies the deleted account's previous role into the new registration token; the acceptance path later calls changeRole($accountToken->role()), so anyone with access to that mailbox can self-reactivate the deleted account with its old elevated role without an admin review. Use the normal public registration role for auto-approved deleted-account registrations, or force these reactivation tokens through admin approval before preserving elevated roles.
+**- Fixed by forcing public auto-approval reactivation requests for deleted accounts above the normal User role into pending admin approval while preserving the elevated role only for the approval workflow.**
+
 ### P1 | Use portable SQL when dropping the ACL index
 On MySQL/MariaDB installs that still have idx_acl_group_access_level, this raw DROP INDEX idx_acl_group_access_level statement uses PostgreSQL/SQLite syntax; MySQL requires dropping an index in the context of its table. That makes this migration fail before the role backfill and column cleanup can run, blocking upgrades on the supported MySQL path; use Doctrine schema operations or platform-specific SQL for the index drop.
 **– Fixed by emitting MySQL/MariaDB-specific `DROP INDEX ... ON acl_group` SQL while keeping the existing PostgreSQL/SQLite form for other platforms.**

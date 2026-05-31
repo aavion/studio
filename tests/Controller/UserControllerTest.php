@@ -838,7 +838,7 @@ final class UserControllerTest extends WebTestCase
         }
     }
 
-    public function testRegistrationForDeletedAccountCreatesReactivationToken(): void
+    public function testAutoApprovalRegistrationForDeletedElevatedAccountRequiresReview(): void
     {
         $client = self::createClient();
         $config = self::getContainer()->get(Config::class);
@@ -862,6 +862,97 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
+
+            $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
+                'email' => $deletedUser->email(),
+                'type' => AccountTokenType::Registration,
+                'status' => AccountTokenStatus::PendingApproval,
+            ]);
+
+            self::assertInstanceOf(AccountToken::class, $token);
+            self::assertSame($deletedUser->uid(), $token->user()?->uid());
+            self::assertSame(UserRole::Admin, $token->role());
+            self::assertSame([], $token->groupIdentifiers());
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            self::assertStringContainsString('account.registration.approval_requested', $messageLog);
+            self::assertStringNotContainsString('https://example.test/user/invitation/', $messageLog);
+            self::assertStringNotContainsString('account.registration.existing_account', $messageLog);
+        } finally {
+            $config->set('site.url', (string) $originalSiteUrl);
+            $config->set('user.registration.mode', 'disabled');
+        }
+    }
+
+    public function testAutoApprovalRegistrationForDeletedNonUserRoleRequiresReview(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $deletedUser = $this->createUserWithLevel(3, 'deleteduserregister', 'old-password');
+        $deletedUser->changeStatus(UserAccountStatus::Deleted);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->flush();
+        $originalSiteUrl = $config->get('site.url', 'http://localhost');
+        $config->set('site.url', 'https://example.test');
+        $config->set('user.registration.mode', 'auto_approval');
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
+        try {
+            $crawler = $client->request('GET', '/user/register');
+            $client->submit($crawler->selectButton('Request account')->form([
+                'email' => $deletedUser->email(),
+            ]));
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
+
+            $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
+                'email' => $deletedUser->email(),
+                'type' => AccountTokenType::Registration,
+                'status' => AccountTokenStatus::PendingApproval,
+            ]);
+
+            self::assertInstanceOf(AccountToken::class, $token);
+            self::assertSame($deletedUser->uid(), $token->user()?->uid());
+            self::assertSame(UserRole::Author, $token->role());
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            self::assertStringContainsString('account.registration.approval_requested', $messageLog);
+            self::assertStringNotContainsString('https://example.test/user/invitation/', $messageLog);
+        } finally {
+            $config->set('site.url', (string) $originalSiteUrl);
+            $config->set('user.registration.mode', 'disabled');
+        }
+    }
+
+    public function testAutoApprovalRegistrationForDeletedUserRoleCreatesReactivationToken(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $deletedUser = $this->createUserWithLevel(1, 'deletednormalregister', 'old-password');
+        $deletedUser->changeStatus(UserAccountStatus::Deleted);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->flush();
+        $originalSiteUrl = $config->get('site.url', 'http://localhost');
+        $config->set('site.url', 'https://example.test');
+        $config->set('user.registration.mode', 'auto_approval');
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+
+        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
+        try {
+            $crawler = $client->request('GET', '/user/register');
+            $client->submit($crawler->selectButton('Request account')->form([
+                'email' => $deletedUser->email(),
+            ]));
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.studio-auth-notice', 'If the address can be registered, an email with account setup instructions was created.');
 
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $deletedUser->email(),
@@ -871,12 +962,10 @@ final class UserControllerTest extends WebTestCase
 
             self::assertInstanceOf(AccountToken::class, $token);
             self::assertSame($deletedUser->uid(), $token->user()?->uid());
-            self::assertSame(UserRole::Admin, $token->role());
-            self::assertSame([], $token->groupIdentifiers());
+            self::assertSame(UserRole::User, $token->role());
             $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
             self::assertStringContainsString('account.registration.link', $messageLog);
             self::assertStringContainsString('https://example.test/user/invitation/', $messageLog);
-            self::assertStringNotContainsString('account.registration.existing_account', $messageLog);
         } finally {
             $config->set('site.url', (string) $originalSiteUrl);
             $config->set('user.registration.mode', 'disabled');

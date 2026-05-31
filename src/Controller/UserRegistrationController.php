@@ -75,6 +75,10 @@ final class UserRegistrationController extends AbstractController
         $errors = [];
 
         if ($request->isMethod('POST')) {
+            $existingUser = null;
+            $tokenGroups = [];
+            $tokenRole = UserRole::User;
+
             if (!$this->isCsrfTokenValid('user_register', $this->stringField($request, '_csrf_token'))) {
                 $errors[] = 'ui.user.register.errors.invalid_csrf';
             }
@@ -85,25 +89,21 @@ final class UserRegistrationController extends AbstractController
                 $errors[] = 'ui.user.register.errors.email';
             }
 
-            if ([] === $errors && !$requiresApproval) {
-                $canCreateRegistrationUrl = null !== $this->absoluteUris->generateUri(__METHOD__.'.preflight', 'user_invitation_accept', ['token' => str_repeat('0', 64)]);
-
-                if (!$canCreateRegistrationUrl) {
-                    $errors[] = 'ui.user.register.errors.delivery_failed';
-                }
-            }
-
             if ([] === $errors) {
                 $existingUser = $this->userByEmail($email);
 
                 if ($existingUser instanceof UserAccount && UserAccountStatus::Deleted !== $existingUser->status()) {
-                    $this->linkDelivery->notifyAddress(
-                        $existingUser->email(),
-                        AccountMailFlow::RegistrationExistingAccount,
-                        $this->mailLocaleResolver->forPublicRequest($request, $existingUser),
-                        ['username' => $existingUser->username()],
-                    );
-                    $success = true;
+                    if (!$requiresApproval && !$this->canCreateRegistrationLink()) {
+                        $errors[] = 'ui.user.register.errors.delivery_failed';
+                    } else {
+                        $this->linkDelivery->notifyAddress(
+                            $existingUser->email(),
+                            AccountMailFlow::RegistrationExistingAccount,
+                            $this->mailLocaleResolver->forPublicRequest($request, $existingUser),
+                            ['username' => $existingUser->username()],
+                        );
+                        $success = true;
+                    }
 
                     return $this->render('@frontend/user/register.html.twig', [
                         'success' => $success,
@@ -117,6 +117,13 @@ final class UserRegistrationController extends AbstractController
                 $tokenGroups = $existingUser instanceof UserAccount
                     ? $this->reactivationAccess->groupIdentifiers($existingUser, $tokenRole)
                     : ($defaultGroup instanceof AclGroup ? [$defaultGroup->identifier()] : []);
+                $requiresApproval = $requiresApproval || $this->requiresElevatedReactivationApproval($existingUser, $tokenRole);
+            }
+
+            if ([] === $errors && !$requiresApproval) {
+                if (!$this->canCreateRegistrationLink()) {
+                    $errors[] = 'ui.user.register.errors.delivery_failed';
+                }
             }
 
             if ([] === $errors) {
@@ -279,6 +286,18 @@ final class UserRegistrationController extends AbstractController
         ]);
 
         return $group instanceof AclGroup && $group->minRole() <= AccessLevel::USER ? $group : null;
+    }
+
+    private function canCreateRegistrationLink(): bool
+    {
+        return null !== $this->absoluteUris->generateUri(__METHOD__.'.preflight', 'user_invitation_accept', ['token' => str_repeat('0', 64)]);
+    }
+
+    private function requiresElevatedReactivationApproval(?UserAccount $existingUser, UserRole $tokenRole): bool
+    {
+        return $existingUser instanceof UserAccount
+            && UserAccountStatus::Deleted === $existingUser->status()
+            && $tokenRole->accessLevel() > AccessLevel::USER;
     }
 
     private function userForAccountToken(AccountToken $token, string $username): UserAccount
