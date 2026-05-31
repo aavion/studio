@@ -33,10 +33,10 @@ export default class extends Controller {
             return;
         }
 
-        await this.startOperation();
+        await this.startOperation(event.submitter || null);
     }
 
-    async startOperation() {
+    async startOperation(submitter = null) {
         if (this.starting) {
             return;
         }
@@ -46,6 +46,15 @@ export default class extends Controller {
         this.reset();
 
         const formData = new FormData(this.element);
+        if (submitter?.name) {
+            formData.set(submitter.name, submitter.value || '');
+        }
+        if (!formData.get('_setup_action')) {
+            const applyButton = this.element.querySelector('button[name="_setup_action"][value="apply"]');
+            if (applyButton) {
+                formData.set('_setup_action', 'apply');
+            }
+        }
         formData.set('_operation_live', '1');
 
         try {

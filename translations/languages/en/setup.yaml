@@ -13,7 +13,7 @@ setup:
     text: 'Choose the default language for your new website. You can adjust additional languages later in the admin area.'
   step_intro:
     language: 'Start with the website language and a short environment check.'
-    site: 'Set the public site basics and choose the initial behavior for registration, localization, and statistics.'
+    site: 'Set the public site basics and choose which features the new website should use right away.'
     database: 'Choose where Studio stores its data. SQLite is fine for small installations; server databases are better for shared or larger sites.'
     admin: 'Create the first administrator account. This account receives owner permissions and can finish configuring the site.'
     review: 'Review the values before setup writes files, runs migrations, and seeds the database.'
@@ -95,7 +95,9 @@ setup:
   site:
     title: 'Basic settings'
     text: 'These values become the first persisted configuration for the site. You can adjust them later in the admin area.'
-    settings_title: 'Initial behavior'
+    settings_title: 'Website features'
+    behavior_title: 'Website features'
+    behavior_text: 'Enable only the features your site should use immediately after setup.'
   database:
     title: 'Database connection'
     text: 'Test the connection before continuing. The optional prefix is saved with one trailing underscore when it is not empty.'
@@ -106,6 +108,9 @@ setup:
   admin:
     title: 'Administrator account'
     text: 'This first account is created as the owner-level administrator. Use an email address you can access.'
+  app_secret:
+    title: 'Hash salt'
+    text: 'This value protects passwords, API keys, and other sensitive data.'
   form:
     language:
       label: 'Website language'
@@ -118,11 +123,11 @@ setup:
     username_change_enabled:
       label: 'Allow username changes'
     route_prefixes_enabled:
-      label: 'Use language route prefixes'
+      label: 'Enable multilingual features'
     statistics_enabled:
       label: 'Enable access statistics'
     statistics_respect_dnt:
-      label: 'Respect Do Not Track'
+      label: 'Respect Do Not Track for website visitors'
     database_driver:
       label: 'Database driver'
       options:
@@ -157,8 +162,8 @@ setup:
     admin_email:
       label: 'Admin email'
     app_secret:
-      label: 'Hash salt'
-      help: 'Leave empty to generate a secure value. Changing this value later is not recommended because it invalidates password hashes and API keys.'
+      label: 'Secret used for sensitive data'
+      help: 'Leave empty so setup automatically generates a secure value. Changing this value later is not recommended because it invalidates password hashes and API keys.'
     dry_run:
       label: 'Dry run only'
       help: 'Show planned setup steps without writing files, running migrations, or seeding data.'

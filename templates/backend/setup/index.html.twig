@@ -29,7 +29,7 @@
     >
         <input type="hidden" name="_form_id" value="setup-wizard-{{ setup_step }}">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token('setup-wizard') }}">
-        <input type="hidden" name="_setup_action" value="{{ setup_step == 'review' ? 'apply' : '' }}">
+        <input type="hidden" name="_setup_action" value="">
         {% include '@backend/partials/forms/_errors.html.twig' with {errors: setup_errors.__form|default([])} only %}
 
         {% if setup_step == 'language' %}
@@ -133,7 +133,8 @@
             </section>
 
             <section class="studio-panel">
-                <h2>{{ setup_site_settings_form.title|trans }}</h2>
+                <h2>{{ 'setup.site.behavior_title'|trans }}</h2>
+                <p class="studio-muted">{{ 'setup.site.behavior_text'|trans }}</p>
                 {% include '@backend/partials/forms/_dynamic_fields.html.twig' with {fields: setup_site_settings_form.fields} only %}
             </section>
         {% elseif setup_step == 'database' %}
@@ -208,7 +209,8 @@
             </section>
 
             <section class="studio-panel">
-                <h2>{{ 'setup.form.app_secret.label'|trans }}</h2>
+                <h2>{{ 'setup.app_secret.title'|trans }}</h2>
+                <p class="studio-muted">{{ 'setup.app_secret.text'|trans }}</p>
                 {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'app_secret', label: 'setup.form.app_secret.label'|trans, value: setup_display_values.app_secret, help: 'setup.form.app_secret.help'|trans, attributes: {autocomplete: 'off', minlength: 12}, errors: setup_errors.app_secret|default([])} only %}
             </section>
         {% elseif setup_step == 'review' %}
@@ -271,11 +273,13 @@
                 {% if setup_previous_step %}
                     <a class="studio-setup-nav-button is-back" href="{{ path('backend_setup_step', {step: setup_previous_step}) }}" aria-label="{{ 'setup.navigation.back'|trans }}" title="{{ 'setup.navigation.back'|trans }}">
                         <span class="ti ti-arrow-left" aria-hidden="true"></span>
+                        <span class="studio-visually-hidden">{{ 'setup.navigation.back'|trans }}</span>
                     </a>
                 {% endif %}
                 {% if setup_step != 'result' %}
-                    <button class="studio-setup-nav-button is-next" type="submit" aria-label="{{ (setup_step == 'review' ? 'setup.form.apply' : 'setup.navigation.next')|trans }}" title="{{ (setup_step == 'review' ? 'setup.form.apply' : 'setup.navigation.next')|trans }}">
+                    <button class="studio-setup-nav-button is-next" type="submit" {% if setup_step == 'review' %}name="_setup_action" value="apply"{% endif %} aria-label="{{ (setup_step == 'review' ? 'setup.form.apply' : 'setup.navigation.next')|trans }}" title="{{ (setup_step == 'review' ? 'setup.form.apply' : 'setup.navigation.next')|trans }}">
                         <span class="ti {{ setup_step == 'review' ? 'ti-check' : 'ti-arrow-right' }}" aria-hidden="true"></span>
+                        <span class="studio-visually-hidden">{{ (setup_step == 'review' ? 'setup.form.apply' : 'setup.navigation.next')|trans }}</span>
                     </button>
                 {% endif %}
             </div>

@@ -13,9 +13,9 @@ setup:
     text: 'Wähle die Standardsprache für deine neue Webseite. Weitere Sprachen kannst du später im Adminbereich ergänzen.'
   step_intro:
     language: 'Beginne mit der Sprache der Webseite und einer kurzen Umgebungsprüfung.'
-    site: 'Lege die öffentlichen Grundeinstellungen fest und wähle das Startverhalten für Registrierung, Lokalisierung und Statistiken.'
+    site: 'Lege die öffentlichen Grundeinstellungen fest und wähle, welche Funktionen die neue Webseite direkt nutzen soll.'
     database: 'Wähle, wo Studio seine Daten speichert. SQLite ist für kleine Installationen geeignet; Server-Datenbanken sind für geteilte oder größere Seiten besser.'
-    admin: 'Erstelle das erste Administratorkonto. Dieses Konto erhält Owner-Rechte und kann die Seite fertig konfigurieren.'
+    admin: 'Erstelle das erste Administratorkonto. Dieses Konto erhält Eigentümer-Rechte und kann die Seite fertig konfigurieren.'
     review: 'Prüfe die Werte, bevor Setup Dateien schreibt, Migrationen ausführt und die Datenbank befüllt.'
     result: 'Prüfe das Setup-Ergebnis.'
   navigation:
@@ -95,7 +95,9 @@ setup:
   site:
     title: 'Grundeinstellungen'
     text: 'Diese Werte werden als erste gespeicherte Konfiguration der Seite übernommen. Du kannst sie später im Adminbereich anpassen.'
-    settings_title: 'Startverhalten'
+    settings_title: 'Website-Funktionen'
+    behavior_title: 'Website-Funktionen'
+    behavior_text: 'Aktiviere nur die Funktionen, die deine Seite direkt nach dem Setup verwenden soll.'
   database:
     title: 'Datenbankverbindung'
     text: 'Teste die Verbindung, bevor du fortfährst. Das optionale Präfix wird mit einem abschließenden Unterstrich gespeichert, wenn es nicht leer ist.'
@@ -105,7 +107,10 @@ setup:
     test_invalid: 'Vervollständige gültige Datenbankeinstellungen, bevor du die Verbindung testest.'
   admin:
     title: 'Administratorkonto'
-    text: 'Dieses erste Konto wird als Administrator mit Owner-Rechten erstellt. Nutze eine E-Mail-Adresse, auf die du Zugriff hast.'
+    text: 'Dieses erste Konto wird als Administrator mit Eigentümer-Rechten erstellt. Nutze eine E-Mail-Adresse, auf die du Zugriff hast.'
+  app_secret:
+    title: 'Hash-Salt'
+    text: 'Dieser Wert schützt Passwörter, API-Keys und andere sensible Daten.'
   form:
     language:
       label: 'Sprache der Webseite'
@@ -118,11 +123,11 @@ setup:
     username_change_enabled:
       label: 'Benutzernamenänderungen erlauben'
     route_prefixes_enabled:
-      label: 'Sprach-Präfixe in URLs nutzen'
+      label: 'Mehrsprachigkeit aktivieren'
     statistics_enabled:
       label: 'Zugriffsstatistiken aktivieren'
     statistics_respect_dnt:
-      label: 'Do Not Track respektieren'
+      label: 'Do-Not-Track bei Websitebesuchern respektieren'
     database_driver:
       label: 'Datenbanktreiber'
       options:
@@ -157,8 +162,8 @@ setup:
     admin_email:
       label: 'Admin-E-Mail'
     app_secret:
-      label: 'Hash-Salt'
-      help: 'Leer lassen, um einen sicheren Wert zu erzeugen. Eine spätere Änderung wird nicht empfohlen, weil dadurch Passwort-Hashes und API-Keys ungültig werden.'
+      label: 'Kennwort für sensible Daten'
+      help: 'Leer lassen, damit Setup automatisch einen sicheren Wert erzeugt. Eine spätere Änderung wird nicht empfohlen, weil dadurch Passwort-Hashes und API-Keys ungültig werden.'
     dry_run:
       label: 'Nur Dry-Run'
       help: 'Zeigt die geplanten Setup-Schritte, ohne Dateien zu schreiben, Migrationen auszuführen oder Daten anzulegen.'

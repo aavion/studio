@@ -14,6 +14,7 @@ use App\Setup\SetupPreflightChecker;
 use App\Setup\SetupRunner;
 use App\Setup\SetupSiteSettings;
 use App\Setup\SetupWebInputFactory;
+use App\View\SystemPackageMetadataProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,6 +38,7 @@ final class SetupController extends AbstractController
         private readonly SetupDatabaseConnectionFactory $databaseConnectionFactory,
         private readonly SetupRunner $setupRunner,
         private readonly SetupSiteSettings $siteSettings,
+        private readonly SystemPackageMetadataProvider $systemPackageMetadata,
         private readonly LiveOperationStarter $liveOperationStarter,
         private readonly LiveOperationHttpResponder $liveOperationResponder,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
@@ -135,6 +137,7 @@ final class SetupController extends AbstractController
             'setup_database_test' => $databaseTest,
             'setup_previous_step' => $this->previousStep($step),
             'setup_next_step' => $this->nextStep($step),
+            'setup_footer_copyright' => $this->footerCopyright(),
         ]);
     }
 
@@ -394,5 +397,23 @@ final class SetupController extends AbstractController
         }
 
         return self::STEPS[$index - 1];
+    }
+
+    private function footerCopyright(): string
+    {
+        $configured = (string) ($_SERVER['APP_FOOTER_COPYRIGHT'] ?? $_ENV['APP_FOOTER_COPYRIGHT'] ?? '');
+
+        if ('' !== trim($configured)) {
+            return trim($configured);
+        }
+
+        $metadata = $this->systemPackageMetadata->metadata();
+        $name = trim((string) ($metadata['name'] ?? 'Studio'));
+        $version = trim((string) ($metadata['version'] ?? ''));
+        $homepage = trim((string) ($metadata['homepage'] ?? ''));
+        $label = '' !== $name ? $name : 'Studio';
+        $linkedName = '' !== $homepage ? sprintf('[%s](%s)', $label, $homepage) : $label;
+
+        return trim(sprintf('Powered by %s %s', $linkedName, $version));
     }
 }

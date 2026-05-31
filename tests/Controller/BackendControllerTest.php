@@ -130,6 +130,8 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorExists('form#setup-wizard[data-controller="setup-wizard operation-overlay"]');
             self::assertSelectorExists('form#setup-wizard[data-action="submit->operation-overlay#submit"]');
             self::assertSelectorExists('form#setup-wizard[data-operation-overlay-enabled-value="true"]');
+            self::assertSelectorExists('form#setup-wizard input[name="_setup_action"][value=""]');
+            self::assertSelectorExists('form#setup-wizard button[name="_setup_action"][value="apply"]');
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
         }
@@ -160,6 +162,9 @@ final class BackendControllerTest extends WebTestCase
                 'action_log' => null,
             ]);
             $crawler = $client->request('GET', '/setup/admin');
+
+            self::assertSelectorExists('input[name="admin_email"][value=""]');
+
             $form = $crawler->selectButton('Continue')->form([
                 'admin_username' => 'admin',
                 'admin_password' => 'short',

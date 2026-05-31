@@ -9,6 +9,9 @@
             <div class="studio-setup-content">
                 {% block setup_body %}{% endblock %}
             </div>
+            <footer class="studio-shell-footer">
+                {{ setup_footer_copyright|default('')|studio_markdown('basic')|raw }}
+            </footer>
         </section>
     </main>
     {% include '@backend/operations/action-log-overlay.html.twig' %}

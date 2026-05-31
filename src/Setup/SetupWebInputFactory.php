@@ -44,7 +44,7 @@ final readonly class SetupWebInputFactory
             'database_password' => $this->databaseUrlPart($databaseUrl, 'pass') ?? '',
             'database_prefix' => $this->databasePrefixInputValue($this->defaultDatabasePrefix()),
             'admin_username' => 'admin',
-            'admin_email' => $this->adminEmailFromDefaultUri($defaultUri),
+            'admin_email' => '',
             'admin_password' => '',
             'admin_password_confirm' => '',
             'app_secret' => '',
@@ -331,17 +331,6 @@ final readonly class SetupWebInputFactory
             'pgsql', 'postgres', 'postgresql' => DatabaseDriver::PostgreSql,
             default => DatabaseDriver::SQLite,
         };
-    }
-
-    private function adminEmailFromDefaultUri(string $defaultUri): string
-    {
-        $host = parse_url($defaultUri, PHP_URL_HOST);
-
-        if (!is_string($host) || '' === $host || !EmailAddress::isValid('admin@'.$host)) {
-            $host = 'localhost.local';
-        }
-
-        return EmailAddress::normalize('admin@'.$host);
     }
 
     private function databaseUrlPart(string $databaseUrl, string $part): ?string
