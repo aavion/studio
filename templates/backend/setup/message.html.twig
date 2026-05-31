@@ -5,7 +5,6 @@
 {% block setup_body %}
     {% include '@backend/setup/partials/_step-header.html.twig' with {
         title: 'setup.message.title'|trans,
-        step: 'setup.dashboard.status'|trans,
     } only %}
 
     {% include '@backend/partials/feedback/_message.html.twig' with {message: message} only %}

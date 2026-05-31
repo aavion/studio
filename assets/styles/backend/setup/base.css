@@ -19,7 +19,9 @@
 .studio-shell-footer {
     display: flex;
     justify-content: flex-end;
-    padding: 0 1rem 1rem;
+    width: min(100%, 820px);
+    margin: 0 auto;
+    padding: 0.625rem 1rem 0;
     color: var(--color-muted);
     font-size: var(--studio-text-xs);
     font-weight: 400;
