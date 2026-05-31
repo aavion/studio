@@ -39,6 +39,7 @@
         {% endif %}
         data-turbo="false"
     >
+        <input type="hidden" name="_form_id" value="setup-wizard-{{ setup_step }}">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token('setup-wizard') }}">
         {% include '@backend/partials/forms/_errors.html.twig' with {errors: setup_errors.__form|default([])} only %}
 
@@ -59,6 +60,7 @@
                     options: language_options,
                     required: true,
                     errors: setup_errors.language|default([]),
+                    attributes: {'data-action': 'change->setup-wizard#submitOnChange'},
                 } only %}
             </section>
         {% elseif setup_step == 'preflight' %}

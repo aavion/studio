@@ -11,6 +11,11 @@ export default class extends Controller {
         this.updateDatabaseFields();
     }
 
+    submitOnChange(event) {
+        event.preventDefault();
+        this.element.requestSubmit();
+    }
+
     updateDatabaseFields() {
         if (!this.hasDriverTarget) {
             return;

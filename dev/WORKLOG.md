@@ -67,7 +67,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-05-31
-- Started `feat-setup-wizard`: split setup into a dedicated DB-free wizard controller with preserved step state, preflight checks, driver-aware database fields, modular initial settings, first OWNER account input, review/result screens, and shared runner execution; focused setup lint/container/PHPUnit checks are green.
+- Started `feat-setup-wizard`: split setup into a dedicated DB-free wizard controller with preserved step state, preflight checks, driver-aware database fields, modular initial settings, first OWNER account input, review/result screens, live-language switching, and shared runner/LiveOperation execution; focused setup lint/container/PHPUnit checks are green.
 - Started the isolated `improve-asset-rebuild` branch and hardened package-aware rebuilds so package mirrors, package registries, runtime translation catalogues/metadata, and production AssetMapper compiles preserve the previous generated state when a rebuild step fails.
 - Completed the final user-management review hardening pass: elevated deleted-account reactivation now requires admin approval, ACL/account-link stale-state paths are guarded, registration/default-group settings validate cleanly, stale token groups are logged without blocking users, and the branch is ready to merge unless a later review round finds new issues.
 - Kept user state markers atomic with Doctrine mutations and extended ACL group delete exposure warnings to menu links, avoiding duplicate menu warnings when the linked content item is already listed.
