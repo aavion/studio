@@ -35,8 +35,7 @@ final class SetupDefaultSeedTest extends TestCase
         $seed = new SetupDefaultSeed();
         $input = $this->input(siteTitle: 'Seeded Studio');
 
-        self::assertSame(['registered', 'editor', 'manager', 'admin'], array_column($seed->aclGroups(), 'identifier'));
-        self::assertSame('admin', $seed->adminGroupIdentifier());
+        self::assertSame([], $seed->aclGroups());
         self::assertSame('/home', $seed->homePath());
         self::assertSame('static_page', $seed->contentSchema()['identifier']);
         self::assertSame(['title', 'subtitle', 'body', 'seo_title'], array_column($seed->contentSchemaVersion()['definition']['fields'], 'identifier'));

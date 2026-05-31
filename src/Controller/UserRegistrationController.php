@@ -265,8 +265,14 @@ final class UserRegistrationController extends AbstractController
 
     private function defaultRegistrationGroup(): ?AclGroup
     {
+        $identifier = $this->userFlowConfig->defaultAclGroupIdentifier();
+
+        if (null === $identifier) {
+            return null;
+        }
+
         $group = $this->entityManager->getRepository(AclGroup::class)->findOneBy([
-            'identifier' => $this->userFlowConfig->defaultAclGroupIdentifier(),
+            'identifier' => $identifier,
         ]);
 
         return $group instanceof AclGroup && $group->minRole() <= AccessLevel::USER ? $group : null;

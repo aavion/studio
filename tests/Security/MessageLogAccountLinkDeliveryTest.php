@@ -26,7 +26,7 @@ final class MessageLogAccountLinkDeliveryTest extends TestCase
             hash('sha256', 'plain-account-token'),
             AccountTokenType::Registration,
             'User@Example.Test',
-            ['registered'],
+            ['launch_team'],
         );
 
         $delivery->deliver($token, AccountMailFlow::RegistrationLink, 'plain-account-token', '/user/invitation/plain-account-token', 'de');
@@ -54,7 +54,7 @@ final class MessageLogAccountLinkDeliveryTest extends TestCase
             hash('sha256', 'plain-account-token'),
             AccountTokenType::Registration,
             'User@Example.Test',
-            ['registered'],
+            ['launch_team'],
         );
 
         $delivery->notify($token, AccountMailFlow::RegistrationApprovalRequested, 'admin@example.test', 'en');

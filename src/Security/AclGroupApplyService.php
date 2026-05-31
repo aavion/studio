@@ -35,18 +35,18 @@ final readonly class AclGroupApplyService
         $group = $this->entityManager->find(AclGroup::class, $groupUid);
 
         if (!$group instanceof AclGroup) {
-            return WorkflowResult::invalid([$this->message('acl.group.not_found', ['group_uid' => $groupUid])]);
+            return WorkflowResult::invalid([$this->message(MessageKey::ACL_GROUP_APPLY_NOT_FOUND, ['%group%' => $groupUid], ['group_uid' => $groupUid])]);
         }
 
         if ($group->isLocked()) {
-            return WorkflowResult::blocked([$this->message('acl.group.locked', ['group_uid' => $groupUid])]);
+            return WorkflowResult::blocked([$this->message(MessageKey::ACL_GROUP_APPLY_LOCKED, ['%group%' => $group->identifier()], ['group_uid' => $groupUid, 'group' => $group->identifier()])]);
         }
 
         try {
             return match ($action) {
                 self::ACTION_UPDATE => $this->update($group, $payload),
                 self::ACTION_DELETE => $this->delete($group),
-                default => WorkflowResult::invalid([$this->message('acl.group.action_invalid', ['group_uid' => $groupUid, 'action' => $action])]),
+                default => WorkflowResult::invalid([$this->message(MessageKey::ACL_GROUP_APPLY_ACTION_INVALID, ['%group%' => $group->identifier(), '%action%' => $action], ['group_uid' => $groupUid, 'group' => $group->identifier(), 'action' => $action])]),
             };
         } catch (Throwable $error) {
             return WorkflowResult::failed([
@@ -76,7 +76,7 @@ final readonly class AclGroupApplyService
         $minRole = (int) ($payload['min_role'] ?? -1);
 
         if ('' === $nameEn || null !== $this->policy->validateGroupUpdateSystem($group, $minRole)) {
-            return WorkflowResult::blocked([$this->message('acl.group.update_blocked', ['group' => $group->identifier()])]);
+            return WorkflowResult::blocked([$this->message(MessageKey::ACL_GROUP_APPLY_UPDATE_BLOCKED, ['%group%' => $group->identifier()], ['group_uid' => $group->uid(), 'group' => $group->identifier()])]);
         }
 
         $impact = $this->impactService->impact($group);
@@ -109,7 +109,7 @@ final readonly class AclGroupApplyService
     private function delete(AclGroup $group): WorkflowResult
     {
         if (null !== $this->policy->validateGroupDeleteSystem($group)) {
-            return WorkflowResult::blocked([$this->message('acl.group.delete_blocked', ['group' => $group->identifier()])]);
+            return WorkflowResult::blocked([$this->message(MessageKey::ACL_GROUP_APPLY_DELETE_BLOCKED, ['%group%' => $group->identifier()], ['group_uid' => $group->uid(), 'group' => $group->identifier()])]);
         }
 
         $impact = $this->impactService->removeReferences($group);
@@ -138,15 +138,16 @@ final readonly class AclGroupApplyService
     }
 
     /**
-     * @param array<string, mixed> $context
+     * @param array<string, string> $parameters
+     * @param array<string, mixed>  $context
      */
-    private function message(string $code, array $context): Message
+    private function message(string $translationKey, array $parameters, array $context): Message
     {
         return Message::warning(
             MessageCode::ACL_GROUP_APPLY_BLOCKED,
-            MessageKey::ACL_GROUP_APPLY_BLOCKED,
-            ['%group%' => (string) ($context['group'] ?? $context['group_uid'] ?? 'unknown')],
-            ['reason' => $code, ...$context],
+            $translationKey,
+            $parameters,
+            $context,
         );
     }
 

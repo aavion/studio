@@ -216,7 +216,12 @@ message:
   acl:
     group_updated: 'ACL group "%group%" was updated. Affected users: %users%, account links: %account_tokens%, content items: %content_items%, schema versions: %content_schema_versions%, menu items: %site_menu_items%.'
     group_deleted: 'ACL group "%group%" was deleted and references were cleaned. Affected users: %users%, account links: %account_tokens%, content items: %content_items%, schema versions: %content_schema_versions%, menu items: %site_menu_items%.'
-    group_apply_blocked: 'ACL group "%group%" could not be applied.'
+    group_apply:
+      not_found: 'ACL group "%group%" no longer exists.'
+      locked: 'ACL group "%group%" is locked and cannot be changed.'
+      action_invalid: 'ACL group "%group%" cannot apply unknown action "%action%".'
+      update_blocked: 'ACL group "%group%" cannot be updated with the submitted values.'
+      delete_blocked: 'ACL group "%group%" cannot be deleted while protected references still require it.'
   account_mail:
     stub_queued: 'Account mail flow %flow% for %email% was queued through the message-log stub.'
   state:

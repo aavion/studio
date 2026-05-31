@@ -23,7 +23,7 @@ final readonly class SetupDefaultSeed
             ['key' => 'localization.default_language', 'value' => $input->language(), 'type' => ConfigValueType::String],
             ['key' => 'localization.route_prefixes_enabled', 'value' => false, 'type' => ConfigValueType::Boolean],
             ['key' => 'content.home_path', 'value' => '/home', 'type' => ConfigValueType::String],
-            ['key' => UserFlowConfig::DEFAULT_ACL_GROUP_KEY, 'value' => 'registered', 'type' => ConfigValueType::String],
+            ['key' => UserFlowConfig::DEFAULT_ACL_GROUP_KEY, 'value' => '', 'type' => ConfigValueType::String],
             ['key' => UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, 'value' => false, 'type' => ConfigValueType::Boolean],
             ['key' => UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'value' => UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, 'type' => ConfigValueType::Integer],
             ['key' => UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, 'value' => '', 'type' => ConfigValueType::String],
@@ -58,17 +58,7 @@ final readonly class SetupDefaultSeed
      */
     public function aclGroups(): array
     {
-        return [
-            ['uid' => '00000000-0000-0000-0000-000000000102', 'identifier' => 'registered', 'name' => ['en' => 'Registered', 'de' => 'Registriert'], 'min_role' => AccessLevel::USER, 'locked' => true],
-            ['uid' => '00000000-0000-0000-0000-000000000103', 'identifier' => 'editor', 'name' => ['en' => 'Editor', 'de' => 'Editor'], 'min_role' => AccessLevel::AUTHOR, 'locked' => false],
-            ['uid' => '00000000-0000-0000-0000-000000000104', 'identifier' => 'manager', 'name' => ['en' => 'Manager', 'de' => 'Manager'], 'min_role' => AccessLevel::MANAGER, 'locked' => false],
-            ['uid' => '00000000-0000-0000-0000-000000000105', 'identifier' => 'admin', 'name' => ['en' => 'Admin', 'de' => 'Admin'], 'min_role' => AccessLevel::ADMIN, 'locked' => true],
-        ];
-    }
-
-    public function adminGroupIdentifier(): string
-    {
-        return 'admin';
+        return [];
     }
 
     public function homePath(): string

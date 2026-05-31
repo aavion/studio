@@ -70,8 +70,6 @@ final readonly class SetupDatabaseSeeder
         $this->upsertStateMarker($connection, StateSubjectType::USER_ACCOUNT, $userUid, StateMarkerKey::PASSWORD_CHANGED, $now, 'setup');
         $this->upsertStateMarker($connection, StateSubjectType::USER_ACCOUNT, $userUid, StateMarkerKey::STATUS_CHANGED, $now, 'setup', 'active');
 
-        $this->ensureUserGroup($connection, $userUid, (string) $connection->fetchOne('SELECT uid FROM acl_group WHERE identifier = ?', [$this->defaultSeed->adminGroupIdentifier()]));
-
         return ['admin_username' => $input->adminUsername(), 'admin_email' => $input->adminEmail()];
     }
 

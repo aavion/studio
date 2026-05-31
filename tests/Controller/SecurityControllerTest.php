@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Core\Config\Config;
-use App\Entity\AclGroup;
 use App\Entity\UserAccount;
 use App\Security\UserAccountStatus;
 use App\Security\UserRole;
@@ -216,12 +215,6 @@ final class SecurityControllerTest extends WebTestCase
     ): UserAccount
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $group = $entityManager->getRepository(AclGroup::class)->findOneBy([
-            'identifier' => $this->seededGroupIdentifier($level),
-        ]);
-
-        self::assertInstanceOf(AclGroup::class, $group);
-
         $existingUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
 
         if ($existingUser instanceof UserAccount) {
@@ -241,20 +234,10 @@ final class SecurityControllerTest extends WebTestCase
             role: UserRole::fromAccessLevel($level),
         );
         $user->changePassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, $password));
-        $user->addGroup($group);
         $entityManager->persist($user);
         $entityManager->flush();
 
         return $user;
-    }
-
-    private function seededGroupIdentifier(int $level): string
-    {
-        return match (true) {
-            $level >= 8 => 'admin',
-            $level >= 3 => 'editor',
-            default => 'registered',
-        };
     }
 
     private function testUserUid(string $username): string

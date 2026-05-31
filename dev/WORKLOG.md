@@ -71,6 +71,7 @@
 - Extended `bin/lint` with optional file/directory targets for focused type-based checks and kept project validation, Symfony container checks, Twig/YAML linting, translation comparisons, and Tailwind-aware full-suite behavior aligned.
 - Made `bin/lint` release-safe by embedding the translation source catalogue comparison instead of depending on `.codex/` helper scripts.
 - Post-checked review readiness by adding Symfony firewall access-control rules, account-flow GET token-type 404s, existing-account invite upgrades without downgrades, profile email validation, and shared ACL helper services for group membership/reactivation handling.
+- Removed role-like default ACL context groups from setup/test seeds, made registration default groups optional by default, and renamed group-focused tests to semantic context groups.
 - Updated bin/composer to the latest version (2.10.0) and did a small Update to the root README-file.
 ### 2026-05-29
 - Requested a full audit because of the massive ammount of review findings. Instructions will follow.

@@ -86,16 +86,16 @@ final class AccessResolverTest extends TestCase
 
     public function testItBuildsActorsFromUserAccounts(): void
     {
-        $editorGroup = new AclGroup('11111111-1111-1111-1111-111111111111', 'editor', ['en' => 'Editor'], AccessLevel::AUTHOR);
+        $contentAuthorGroup = new AclGroup('11111111-1111-1111-1111-111111111111', 'content_authors', ['en' => 'Content authors'], AccessLevel::AUTHOR);
         $projectGroup = new AclGroup('22222222-2222-2222-2222-222222222222', 'project_team', ['en' => 'Project'], AccessLevel::PUBLIC);
         $user = new UserAccount('33333333-3333-3333-3333-333333333333', 'dominik', 'dom@example.test', 'hash', role: UserRole::Author);
         $user->addGroup($projectGroup);
-        $user->addGroup($editorGroup);
+        $user->addGroup($contentAuthorGroup);
 
         $actor = AccessActor::fromUserAccount($user);
 
         self::assertSame(AccessLevel::AUTHOR, $actor->accessLevel());
-        self::assertSame(['editor', 'project_team'], $actor->groupIdentifiers());
+        self::assertSame(['content_authors', 'project_team'], $actor->groupIdentifiers());
         self::assertTrue($actor->hasGroupIdentifier('project_team'));
     }
 

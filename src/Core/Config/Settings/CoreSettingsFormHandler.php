@@ -67,15 +67,21 @@ final readonly class CoreSettingsFormHandler
 
         if (!is_string($identifier)) {
             return new FormSubmissionResult($result->values(), [
-                UserFlowConfig::DEFAULT_ACL_GROUP_KEY => ['admin.settings.form.errors.default_acl_group'],
+                UserFlowConfig::DEFAULT_ACL_GROUP_KEY => ['admin.settings.form.errors.default_acl_group_unavailable'],
             ]);
+        }
+
+        $identifier = trim($identifier);
+
+        if ('' === $identifier) {
+            return null;
         }
 
         $group = $this->entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => $identifier]);
 
         if (!$group instanceof AclGroup || $group->minRole() > AccessLevel::USER) {
             return new FormSubmissionResult($result->values(), [
-                UserFlowConfig::DEFAULT_ACL_GROUP_KEY => ['admin.settings.form.errors.default_acl_group'],
+                UserFlowConfig::DEFAULT_ACL_GROUP_KEY => ['admin.settings.form.errors.default_acl_group_unavailable'],
             ]);
         }
 

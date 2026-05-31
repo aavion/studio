@@ -48,7 +48,7 @@ final class TestDatabaseSeedTest extends TestCase
             ->query("SELECT g.identifier FROM acl_group g INNER JOIN user_acl_group ug ON ug.group_uid = g.uid INNER JOIN user_account u ON u.uid = ug.user_uid WHERE u.username = 'admin' ORDER BY g.min_role")
             ->fetchAll(PDO::FETCH_COLUMN);
 
-        self::assertSame([$seed->adminGroupIdentifier()], $adminGroups);
+        self::assertSame([], $adminGroups);
 
         $defaultAclGroup = $this->pdo
             ->query("SELECT value FROM config_entry WHERE config_key = 'user.default_acl_group'")

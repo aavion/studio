@@ -502,7 +502,7 @@ final class UserControllerTest extends WebTestCase
         [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
             AccountTokenType::Invitation,
             'invitee@example.test',
-            ['registered'],
+            [],
         );
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->persist($token);
@@ -521,7 +521,7 @@ final class UserControllerTest extends WebTestCase
         [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
             AccountTokenType::Invitation,
             'expired-invitee@example.test',
-            ['registered'],
+            [],
             ttl: '-1 hour',
         );
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -697,13 +697,14 @@ final class UserControllerTest extends WebTestCase
     public function testInvitationAcceptanceRejectsGroupsAboveTokenRoleWithMessage(): void
     {
         $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $group = $this->createGroup('content_editors', AccessLevel::AUTHOR);
         [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
             AccountTokenType::Invitation,
             'low-role-group-invitee@example.test',
-            ['editor'],
+            [$group->identifier()],
             role: UserRole::User,
         );
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->persist($token);
         $entityManager->flush();
 
@@ -719,19 +720,21 @@ final class UserControllerTest extends WebTestCase
         self::assertNull($entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'lowrolegroup']));
 
         $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->remove($entityManager->find(AclGroup::class, $group->uid()));
         $entityManager->flush();
     }
 
     public function testInvitationAcceptanceAppliesTokenRoleAndRoleGroupFloor(): void
     {
         $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $group = $this->createGroup('content_authors', AccessLevel::AUTHOR);
         [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
             AccountTokenType::Invitation,
             'author-invitee@example.test',
-            ['editor'],
+            [$group->identifier()],
             role: UserRole::Author,
         );
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->persist($token);
         $entityManager->flush();
 
@@ -749,10 +752,11 @@ final class UserControllerTest extends WebTestCase
 
         self::assertInstanceOf(UserAccount::class, $user);
         self::assertSame(UserRole::Author, $user->role());
-        self::assertSame(['editor'], $this->userGroupIdentifiers($user));
+        self::assertSame(['content_authors'], $this->userGroupIdentifiers($user));
 
         $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
         $entityManager->remove($user);
+        $entityManager->remove($entityManager->find(AclGroup::class, $group->uid()));
         $entityManager->flush();
     }
 
@@ -828,7 +832,7 @@ final class UserControllerTest extends WebTestCase
             self::assertInstanceOf(AccountToken::class, $token);
             self::assertSame($deletedUser->uid(), $token->user()?->uid());
             self::assertSame(UserRole::Admin, $token->role());
-            self::assertSame(['admin'], $token->groupIdentifiers());
+            self::assertSame([], $token->groupIdentifiers());
             $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
             self::assertStringContainsString('account.registration.link', $messageLog);
             self::assertStringContainsString('https://example.test/user/invitation/', $messageLog);
@@ -874,7 +878,7 @@ final class UserControllerTest extends WebTestCase
             $entityManager->remove($token);
         } finally {
             $config->set('user.registration.mode', 'disabled');
-            $config->set('user.default_acl_group', 'registered');
+            $config->set('user.default_acl_group', '');
             $managedGroup = $entityManager->find(AclGroup::class, $group->uid());
 
             if ($managedGroup instanceof AclGroup) {
@@ -915,7 +919,7 @@ final class UserControllerTest extends WebTestCase
         } finally {
             $config->set('site.url', (string) $originalSiteUrl);
             $config->set('user.registration.mode', 'disabled');
-            $config->set('user.default_acl_group', 'registered');
+            $config->set('user.default_acl_group', '');
             $entityManager->flush();
         }
     }
@@ -978,7 +982,7 @@ final class UserControllerTest extends WebTestCase
         [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
             AccountTokenType::Registration,
             $deletedUser->email(),
-            ['registered'],
+            [],
             $deletedUser,
         );
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -1002,7 +1006,7 @@ final class UserControllerTest extends WebTestCase
         self::assertInstanceOf(UserAccount::class, $reactivatedUser);
         self::assertSame('reactivatedaccept', $reactivatedUser->username());
         self::assertSame(UserAccountStatus::Active, $reactivatedUser->status());
-        self::assertSame(['registered'], $this->userGroupIdentifiers($reactivatedUser));
+        self::assertSame([], $this->userGroupIdentifiers($reactivatedUser));
         self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($reactivatedUser, 'new-password-value'));
         self::assertInstanceOf(AccountToken::class, $usedToken);
         self::assertSame(AccountTokenStatus::Used, $usedToken->status());
@@ -1391,12 +1395,6 @@ final class UserControllerTest extends WebTestCase
     private function createUserWithLevel(int $level, string $username, string $password): UserAccount
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $group = $entityManager->getRepository(AclGroup::class)->findOneBy([
-            'identifier' => $this->seededGroupIdentifier($level),
-        ]);
-
-        self::assertInstanceOf(AclGroup::class, $group);
-
         $existingUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
 
         if ($existingUser instanceof UserAccount) {
@@ -1416,7 +1414,6 @@ final class UserControllerTest extends WebTestCase
             role: UserRole::fromAccessLevel($level),
         );
         $user->changePassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, $password));
-        $user->addGroup($group);
         $entityManager->persist($user);
         $entityManager->flush();
 
@@ -1442,14 +1439,26 @@ final class UserControllerTest extends WebTestCase
         return $apiKey;
     }
 
-    private function seededGroupIdentifier(int $level): string
+    private function createGroup(string $identifier, int $minRole): AclGroup
     {
-        return match (true) {
-            $level >= 8 => 'admin',
-            $level >= 6 => 'manager',
-            $level >= 3 => 'editor',
-            default => 'registered',
-        };
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $existingGroup = $entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => $identifier]);
+
+        if ($existingGroup instanceof AclGroup) {
+            $existingGroup->changeMinRole($minRole);
+
+            return $existingGroup;
+        }
+
+        $group = new AclGroup(
+            '62000000-0000-0000-0000-'.substr(md5($identifier), 0, 12),
+            $identifier,
+            ['en' => ucfirst(str_replace('_', ' ', $identifier))],
+            $minRole,
+        );
+        $entityManager->persist($group);
+
+        return $group;
     }
 
     /**

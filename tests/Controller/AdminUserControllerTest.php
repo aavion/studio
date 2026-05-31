@@ -57,9 +57,9 @@ final class AdminUserControllerTest extends WebTestCase
         $oldUser = $this->createUser('olddeleteduser', UserAccountStatus::Active);
         $recentUser = $this->createUser('recentdeleteduser', UserAccountStatus::Active);
         $activeUser = $this->createUser('stillactiveuser', UserAccountStatus::Active);
-        $oldUser->addGroup($this->registeredGroup());
-        $recentUser->addGroup($this->registeredGroup());
-        $activeUser->addGroup($this->registeredGroup());
+        $oldUser->addGroup($this->contextUserGroup());
+        $recentUser->addGroup($this->contextUserGroup());
+        $activeUser->addGroup($this->contextUserGroup());
         $staleApiKey = $this->createApiKey($oldUser, 'oldgone');
         $entityManager->flush();
         $this->markDeletedAt($oldUser, 'cleanup-admin', '2026-05-01 10:00:00');
@@ -147,8 +147,8 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $activatedUser = $this->createUser('deletedactivate', UserAccountStatus::Active);
         $deactivatedUser = $this->createUser('deleteddeactivate', UserAccountStatus::Active);
-        $activatedUser->addGroup($this->registeredGroup());
-        $deactivatedUser->addGroup($this->registeredGroup());
+        $activatedUser->addGroup($this->contextUserGroup());
+        $deactivatedUser->addGroup($this->contextUserGroup());
         $entityManager->flush();
         $this->markDeletedAt($activatedUser, 'status-admin', '2026-05-10 10:00:00');
         $this->markDeletedAt($deactivatedUser, 'status-admin', '2026-05-10 10:00:00');
@@ -169,7 +169,7 @@ final class AdminUserControllerTest extends WebTestCase
 
             self::assertInstanceOf(UserAccount::class, $restoredUser);
             self::assertSame(UserAccountStatus::Active, $restoredUser->status());
-            self::assertSame(['registered'], $this->userGroupIdentifiers($restoredUser));
+            self::assertSame(['qa_members'], $this->userGroupIdentifiers($restoredUser));
             $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
             self::assertStringContainsString('account.restored', $messageLog);
             self::assertStringContainsString('"username":"deletedactivate"', $messageLog);
@@ -184,7 +184,7 @@ final class AdminUserControllerTest extends WebTestCase
 
             self::assertInstanceOf(UserAccount::class, $inactiveUser);
             self::assertSame(UserAccountStatus::Inactive, $inactiveUser->status());
-            self::assertSame(['registered'], $this->userGroupIdentifiers($inactiveUser));
+            self::assertSame(['qa_members'], $this->userGroupIdentifiers($inactiveUser));
         } finally {
             foreach ([$activatedUser, $deactivatedUser] as $user) {
                 $managedUser = $entityManager->find(UserAccount::class, $user->uid());
@@ -248,11 +248,11 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $visibleUser = $this->createUser('filtervisible', UserAccountStatus::Inactive);
         $hiddenUser = $this->createUser('filterhidden', UserAccountStatus::Active);
-        $visibleUser->addGroup($this->registeredGroup());
-        $hiddenUser->addGroup($this->registeredGroup());
+        $visibleUser->addGroup($this->contextUserGroup());
+        $hiddenUser->addGroup($this->contextUserGroup());
         $entityManager->flush();
 
-        $client->request('GET', '/admin/users?q=filtervisible&status=inactive&group=registered&sort=email&direction=desc&per_page=25');
+        $client->request('GET', '/admin/users?q=filtervisible&status=inactive&group=qa_members&sort=email&direction=desc&per_page=25');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('input[name="q"][value="filtervisible"]');
@@ -295,6 +295,7 @@ final class AdminUserControllerTest extends WebTestCase
         $originalSiteUrl = $config->get('site.url', 'http://localhost');
         $config->set('site.url', 'https://example.test');
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+        $this->contextUserGroup();
 
         foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
@@ -317,7 +318,7 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertInstanceOf(AccountToken::class, $token);
         self::assertSame(AccountTokenStatus::Pending, $token->status());
         self::assertSame(UserRole::User, $token->role());
-        self::assertSame(['registered'], $token->groupIdentifiers());
+        self::assertSame(['qa_members'], $token->groupIdentifiers());
         $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
         self::assertStringContainsString('https://example.test/user/invitation/', $messageLog);
         $entityManager->remove($token);
@@ -332,6 +333,7 @@ final class AdminUserControllerTest extends WebTestCase
         $config = self::getContainer()->get(Config::class);
         $originalSiteUrl = $config->get('site.url', 'http://localhost');
         $config->set('site.url', 'not-a-url');
+        $this->contextUserGroup();
 
         try {
             $crawler = $client->request('GET', '/admin/users');
@@ -360,6 +362,7 @@ final class AdminUserControllerTest extends WebTestCase
         $client = self::createClient();
         $admin = $this->adminUser();
         $client->loginUser($admin);
+        $this->contextUserGroup();
         $crawler = $client->request('GET', '/admin/users');
         $form = $crawler->selectButton('Create invitation')->form([
             'email' => $admin->email(),
@@ -380,7 +383,7 @@ final class AdminUserControllerTest extends WebTestCase
         $unchangedAdmin = $entityManager->find(UserAccount::class, $admin->uid());
 
         self::assertInstanceOf(UserAccount::class, $unchangedAdmin);
-        self::assertSame(['admin'], $this->userGroupIdentifiers($unchangedAdmin));
+        self::assertSame([], $this->userGroupIdentifiers($unchangedAdmin));
     }
 
     public function testAdminInvitationUpdatesExistingAccountWithoutDowngrade(): void
@@ -389,7 +392,7 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $user = $this->createUser('existinginvitee', UserAccountStatus::Active);
         $user->changeRole(UserRole::Author);
-        $user->addGroup($this->registeredGroup());
+        $user->addGroup($this->contextUserGroup());
         $group = $this->createGroup('existing_invite_group', AccessLevel::USER);
         $entityManager->flush();
 
@@ -409,7 +412,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         self::assertInstanceOf(UserAccount::class, $updatedUser);
         self::assertSame(UserRole::Author, $updatedUser->role());
-        self::assertSame(['existing_invite_group', 'registered'], $this->userGroupIdentifiers($updatedUser));
+        self::assertSame(['existing_invite_group', 'qa_members'], $this->userGroupIdentifiers($updatedUser));
         self::assertNull($entityManager->getRepository(AccountToken::class)->findOneBy([
             'email' => $user->email(),
             'type' => AccountTokenType::Invitation,
@@ -475,7 +478,7 @@ final class AdminUserControllerTest extends WebTestCase
             '_csrf_token' => (string) $crawler->filter('form[action="/admin/users/invitations"] input[name="_csrf_token"]')->attr('value'),
             'email' => $deletedOwner->email(),
             'role' => UserRole::User->value,
-            'groups' => ['registered'],
+            'groups' => ['qa_members'],
         ]);
 
         self::assertResponseRedirects('/admin/users');
@@ -527,10 +530,11 @@ final class AdminUserControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $client->loginUser($this->adminUser());
+        $this->contextUserGroup();
         [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
             AccountTokenType::Invitation,
             'reissue-admin-flow@example.test',
-            ['registered'],
+            ['qa_members'],
             ttl: '-1 hour',
         );
         $originalHash = $token->tokenHash();
@@ -670,7 +674,7 @@ final class AdminUserControllerTest extends WebTestCase
         [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
             AccountTokenType::Registration,
             $deletedOwner->email(),
-            ['registered'],
+            ['qa_members'],
             $deletedOwner,
             status: AccountTokenStatus::PendingApproval,
         );
@@ -768,8 +772,8 @@ final class AdminUserControllerTest extends WebTestCase
         $client->loginUser($this->adminUser());
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $issuer = self::getContainer()->get(AccountTokenIssuer::class);
-        [$registration] = $issuer->issue(AccountTokenType::Registration, 'approval-review@example.test', ['registered'], status: AccountTokenStatus::PendingApproval);
-        [$invitation] = $issuer->issue(AccountTokenType::Invitation, 'expired-invite-review@example.test', ['registered'], ttl: '-1 hour');
+        [$registration] = $issuer->issue(AccountTokenType::Registration, 'approval-review@example.test', ['qa_members'], status: AccountTokenStatus::PendingApproval);
+        [$invitation] = $issuer->issue(AccountTokenType::Invitation, 'expired-invite-review@example.test', ['qa_members'], ttl: '-1 hour');
         [$passwordReset] = $issuer->issue(AccountTokenType::PasswordReset, $this->adminUser()->email(), [], $this->adminUser());
 
         foreach ([$registration, $invitation, $passwordReset] as $token) {
@@ -800,8 +804,8 @@ final class AdminUserControllerTest extends WebTestCase
         $client->loginUser($this->adminUser());
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $issuer = self::getContainer()->get(AccountTokenIssuer::class);
-        [$visible] = $issuer->issue(AccountTokenType::Registration, 'visible-review-filter@example.test', ['registered'], status: AccountTokenStatus::PendingApproval);
-        [$hidden] = $issuer->issue(AccountTokenType::Invitation, 'hidden-review-filter@example.test', ['registered']);
+        [$visible] = $issuer->issue(AccountTokenType::Registration, 'visible-review-filter@example.test', ['qa_members'], status: AccountTokenStatus::PendingApproval);
+        [$hidden] = $issuer->issue(AccountTokenType::Invitation, 'hidden-review-filter@example.test', ['qa_members']);
         $entityManager->persist($visible);
         $entityManager->persist($hidden);
         $entityManager->flush();
@@ -964,7 +968,7 @@ final class AdminUserControllerTest extends WebTestCase
         $client->loginUser($this->adminUser());
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $user = $this->createUser('statuslock', UserAccountStatus::Active);
-        $user->addGroup($this->registeredGroup());
+        $user->addGroup($this->contextUserGroup());
         $apiKey = $this->createApiKey($user, 'lockkey');
         [$resetToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
             AccountTokenType::PasswordReset,
@@ -1359,7 +1363,7 @@ final class AdminUserControllerTest extends WebTestCase
         $target = $this->createUser('visibleassigned', UserAccountStatus::Active);
         $actor->changeRole(UserRole::Admin);
         $actor->addGroup($peerGroup);
-        $target->addGroup($this->registeredGroup());
+        $target->addGroup($this->contextUserGroup());
         $entityManager->flush();
 
         $client->loginUser($actor);
@@ -1388,7 +1392,7 @@ final class AdminUserControllerTest extends WebTestCase
         $client->loginUser($this->adminUser());
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $user = $this->createUser('nogroupremove', UserAccountStatus::Active);
-        $user->addGroup($this->registeredGroup());
+        $user->addGroup($this->contextUserGroup());
         $entityManager->flush();
 
         $crawler = $client->request('GET', '/admin/users/'.$user->uid());
@@ -1420,7 +1424,7 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $publicGroup = $this->createGroup('public_only', AccessLevel::PUBLIC);
         $user = $this->createUser('publiconlyuser', UserAccountStatus::Active);
-        $user->addGroup($this->registeredGroup());
+        $user->addGroup($this->contextUserGroup());
         $entityManager->flush();
 
         $crawler = $client->request('GET', '/admin/users/'.$user->uid());
@@ -1498,7 +1502,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         self::assertInstanceOf(UserAccount::class, $unchangedAdmin);
         self::assertSame(AccessLevel::OWNER, $unchangedAdmin->accessLevel());
-        self::assertSame(['admin'], $this->userGroupIdentifiers($unchangedAdmin));
+        self::assertSame([], $this->userGroupIdentifiers($unchangedAdmin));
     }
 
     public function testGroupDeleteRequiresReviewAndCleansAclReferences(): void
@@ -1508,7 +1512,7 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $group = $this->createGroup('review_cleanup', AccessLevel::MANAGER);
         $user = $this->createUser('groupcleanup', UserAccountStatus::Active);
-        $user->addGroup($this->registeredGroup());
+        $user->addGroup($this->contextUserGroup());
         $user->addGroup($group);
         [$token] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
             AccountTokenType::Invitation,
@@ -1578,7 +1582,7 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertNull($deletedGroup);
         self::assertInstanceOf(UserAccount::class, $updatedUser);
         self::assertSame(AccessLevel::USER, $updatedUser->accessLevel());
-        self::assertSame(['registered'], $this->userGroupIdentifiers($updatedUser));
+        self::assertSame(['qa_members'], $this->userGroupIdentifiers($updatedUser));
         self::assertInstanceOf(AccountToken::class, $updatedToken);
         self::assertSame([], $updatedToken->groupIdentifiers());
         self::assertInstanceOf(ContentItem::class, $updatedContent);
@@ -1671,7 +1675,7 @@ final class AdminUserControllerTest extends WebTestCase
         $client->loginUser($this->adminUser());
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $config = self::getContainer()->get(Config::class);
-        $originalDefaultGroup = $config->get('user.default_acl_group', 'registered');
+        $originalDefaultGroup = $config->get('user.default_acl_group', '');
         $group = $this->createGroup('default_delete_guard', AccessLevel::USER);
         $entityManager->flush();
         $config->set('user.default_acl_group', 'default_delete_guard', ConfigValueType::String, modifiedBy: 'test');
@@ -1704,7 +1708,7 @@ final class AdminUserControllerTest extends WebTestCase
         $client->loginUser($this->adminUser());
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $config = self::getContainer()->get(Config::class);
-        $originalDefaultGroup = $config->get('user.default_acl_group', 'registered');
+        $originalDefaultGroup = $config->get('user.default_acl_group', '');
         $group = $this->createGroup('default_level_guard', AccessLevel::USER);
         $entityManager->flush();
         $config->set('user.default_acl_group', 'default_level_guard', ConfigValueType::String, modifiedBy: 'test');
@@ -1873,13 +1877,10 @@ final class AdminUserControllerTest extends WebTestCase
         return $group;
     }
 
-    private function registeredGroup(): AclGroup
+    private function contextUserGroup(): AclGroup
     {
-        $group = self::getContainer()->get(EntityManagerInterface::class)
-            ->getRepository(AclGroup::class)
-            ->findOneBy(['identifier' => 'registered']);
-
-        self::assertInstanceOf(AclGroup::class, $group);
+        $group = $this->createGroup('qa_members', AccessLevel::USER);
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
 
         return $group;
     }

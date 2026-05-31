@@ -16,7 +16,6 @@ use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
 use App\Core\Workflow\WorkflowResult;
-use App\Entity\AclGroup;
 use App\Entity\ExtensionPackage;
 use App\Entity\UserAccount;
 use App\Security\UserFlowConfig;
@@ -859,7 +858,7 @@ final class BackendControllerTest extends WebTestCase
         $client = self::createClient();
         $client->loginUser($this->createUserWithLevel(8));
         $config = self::getContainer()->get(Config::class);
-        $originalDefaultGroup = $config->get('user.default_acl_group', 'registered');
+        $originalDefaultGroup = $config->get('user.default_acl_group', '');
 
         $crawler = $client->request('GET', '/admin/settings/users');
         $form = $crawler->selectButton('Save settings')->form([
@@ -874,8 +873,8 @@ final class BackendControllerTest extends WebTestCase
         $client->submit($form);
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-backend-form-errors', 'Choose an existing ACL group assignable to the User role.');
-        self::assertSame($originalDefaultGroup, $config->get('user.default_acl_group', 'registered'));
+        self::assertSelectorTextContains('.studio-backend-form-errors', 'Enter an existing ACL group with minimum role User or lower, or leave the field empty.');
+        self::assertSame($originalDefaultGroup, $config->get('user.default_acl_group', ''));
     }
 
     public function testAdminStaticViewInjectionsRenderThroughBackendRegistry(): void
@@ -930,12 +929,6 @@ final class BackendControllerTest extends WebTestCase
     private function createUserWithLevel(int $level): UserAccount
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $group = $entityManager->getRepository(AclGroup::class)->findOneBy([
-            'identifier' => $level >= 8 ? 'admin' : 'editor',
-        ]);
-
-        self::assertInstanceOf(AclGroup::class, $group);
-
         $existingUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'testuser'.$level]);
 
         if ($existingUser instanceof UserAccount) {
@@ -952,7 +945,6 @@ final class BackendControllerTest extends WebTestCase
             'hash',
             role: UserRole::fromAccessLevel($level),
         );
-        $user->addGroup($group);
         $entityManager->persist($user);
         $entityManager->flush();
 

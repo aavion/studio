@@ -62,11 +62,11 @@ final readonly class UserFlowConfig
         ], true) ? $mode : self::REGISTRATION_DISABLED;
     }
 
-    public function defaultAclGroupIdentifier(): string
+    public function defaultAclGroupIdentifier(): ?string
     {
-        $identifier = $this->config->get(self::DEFAULT_ACL_GROUP_KEY, 'registered');
+        $identifier = $this->config->get(self::DEFAULT_ACL_GROUP_KEY, '');
 
-        return is_string($identifier) && '' !== trim($identifier) ? trim($identifier) : 'registered';
+        return is_string($identifier) && '' !== trim($identifier) ? trim($identifier) : null;
     }
 
     public function accountLinkTtl(): string

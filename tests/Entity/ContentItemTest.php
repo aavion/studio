@@ -68,7 +68,7 @@ final class ContentItemTest extends TestCase
         $content->setAvailableLanguages(['en', 'de', 'en']);
         $content->setAvailableVariants(['default', 'compact']);
         $content->setVisibility(ContentVisibility::Private);
-        $content->setAclRestrictions(['Administrators', 'Editors']);
+        $content->setAclRestrictions(['launch_team', 'project_reviewers']);
 
         self::assertSame('22222222-2222-2222-2222-222222222222', $content->parentUid());
         self::assertSame(20, $content->sortOrder());
@@ -77,7 +77,7 @@ final class ContentItemTest extends TestCase
         self::assertSame(['en', 'de'], $content->availableLanguages());
         self::assertSame(['default', 'compact'], $content->availableVariants());
         self::assertSame(ContentVisibility::Private, $content->visibility());
-        self::assertSame(['Administrators', 'Editors'], $content->aclRestrictions());
+        self::assertSame(['launch_team', 'project_reviewers'], $content->aclRestrictions());
     }
 
     public function testItAllowsTheVirtualSystemParent(): void
@@ -137,14 +137,14 @@ final class ContentItemTest extends TestCase
 
         $content->setViewRule(AccessLevel::AUTHOR, ['project_team']);
         $content->setEditRule(AccessLevel::MANAGER);
-        $content->setManageRule(null, ['admins']);
+        $content->setManageRule(null, ['release_board']);
 
         self::assertSame(AccessLevel::AUTHOR, $content->viewMinLevel());
         self::assertSame(['project_team'], $content->viewGroupIdentifiers());
         self::assertSame(AccessLevel::MANAGER, $content->editMinLevel());
         self::assertNull($content->editGroupIdentifiers());
         self::assertNull($content->manageMinLevel());
-        self::assertSame(['admins'], $content->manageGroupIdentifiers());
+        self::assertSame(['release_board'], $content->manageGroupIdentifiers());
     }
 
     public function testItRejectsInvalidAccessGroupIdentifiers(): void

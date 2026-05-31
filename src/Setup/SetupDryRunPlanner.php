@@ -55,7 +55,7 @@ final readonly class SetupDryRunPlanner
                 'admin_username' => $input->adminUsername(),
                 'admin_email' => $input->adminEmail(),
                 'admin_password' => '[hidden]',
-                'groups' => [$this->defaultSeed->adminGroupIdentifier()],
+                'groups' => [],
             ], ActionLogStatus::Skipped],
             ['seed_initial_content', fn (): array => [
                 'dry_run' => true,

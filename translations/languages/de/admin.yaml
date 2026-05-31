@@ -289,8 +289,8 @@ admin:
         target_higher_access: 'Nur Owner können Benutzer auf der eigenen oder einer höheren Rollenstufe bearbeiten.'
         role_too_high: 'Nur Owner können Rollen auf der eigenen oder einer höheren Rollenstufe zuweisen.'
         role_too_low: 'Aktive Benutzerkonten müssen mindestens die Benutzer-Rolle behalten.'
-        group_level_too_high: 'Nur Owner können Gruppen auf der eigenen oder einer höheren Rollenstufe zuweisen.'
-        group_role_too_low: 'Die gewählte Rolle liegt unter der Mindestrolle einer gewählten Gruppe.'
+        group_min_role_too_high: 'Nur Owner können ACL-Gruppen zuweisen, deren Mindestrolle auf der eigenen oder einer höheren Rollenstufe liegt.'
+        group_role_too_low: 'Die Account-Rolle muss die Mindestrolle jeder gewählten Gruppe erfüllen.'
         group_invalid: 'Wähle nur existierende ACL-Gruppen.'
         self_lockout: 'Diese Änderung würde deinen eigenen Admin-Zugriff entfernen.'
         last_owner: 'Es muss mindestens ein aktiver Owner-Account verbleiben.'
@@ -440,7 +440,7 @@ admin:
     form:
       invalid: 'Die Gruppe konnte nicht gespeichert werden.'
       higher_access: 'Nur Owner können ACL-Gruppen auf der eigenen oder einer höheren Rollenstufe verwalten.'
-      default_registration_group: 'Die Standard-Registrierungsgruppe muss verfügbar bleiben.'
+      default_acl_group_delete_blocked: 'Diese ACL-Gruppe ist als Registrierungsstandard konfiguriert und muss verfügbar bleiben.'
   scheduler:
     title: 'Scheduler'
     foundation_title: 'Scheduler-Operations-Fundament'
@@ -642,7 +642,7 @@ admin:
         pattern: 'Der gesendete Wert entspricht nicht dem erwarteten Format.'
         required: 'Dieses Feld ist erforderlich.'
         save_failed: 'Die Einstellungen konnten nicht gespeichert werden.'
-        default_acl_group: 'Wähle eine bestehende ACL-Gruppe, die der Benutzer-Rolle zugewiesen werden darf.'
+        default_acl_group_unavailable: 'Trage eine bestehende ACL-Gruppe mit Mindestrolle User oder niedriger ein oder lasse das Feld leer.'
     fields:
       site_title:
         label: 'Seitentitel'
@@ -659,7 +659,7 @@ admin:
       registration_mode:
         label: 'Registrierungsmodus'
       default_acl_group:
-        label: 'Standard-ACL-Gruppe'
+        label: 'Standard-ACL-Gruppe für Registrierungen'
       username_change_enabled:
         label: 'Nutzer dürfen ihren Username ändern'
       account_link_ttl_hours:

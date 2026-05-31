@@ -131,7 +131,7 @@ final readonly class AdminUserAccessPolicy
     public function validateGroupDeleteSystem(AclGroup $group): ?string
     {
         if ($this->isDefaultRegistrationGroup($group)) {
-            return 'admin.groups.form.default_registration_group';
+            return 'admin.groups.form.default_acl_group_delete_blocked';
         }
 
         return null;
@@ -190,7 +190,7 @@ final readonly class AdminUserAccessPolicy
 
         foreach ($this->groupsForIdentifiers($groupIdentifiers) as $group) {
             if ($this->isRestrictedAccessLevel($actor, $group->minRole())) {
-                return 'admin.users.form.errors.group_level_too_high';
+                return 'admin.users.form.errors.group_min_role_too_high';
             }
 
             if ($role->accessLevel() < $group->minRole()) {

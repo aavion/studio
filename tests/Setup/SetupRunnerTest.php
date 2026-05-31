@@ -101,7 +101,7 @@ final class SetupRunnerTest extends TestCase
             'password_changed' => null,
             'status_changed' => 'active',
         ], $stateMarkers);
-        self::assertSame([$seed->adminGroupIdentifier()], $groups);
+        self::assertSame([], $groups);
         $homeContent = $seed->homeContentItem();
         $homeRevision = $seed->homeContentRevision();
         $schema = $seed->contentSchema();
@@ -167,8 +167,7 @@ final class SetupRunnerTest extends TestCase
             'Placeholder Studio',
             json_decode((string) $pdo->query("SELECT value FROM config_entry WHERE config_key = 'site.title'")->fetchColumn(), true, flags: JSON_THROW_ON_ERROR),
         );
-        $seed = new SetupDefaultSeed();
-        self::assertSame(1, (int) $pdo->query(sprintf("SELECT COUNT(*) FROM acl_group WHERE identifier = '%s'", $seed->adminGroupIdentifier()))->fetchColumn());
+        self::assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM acl_group')->fetchColumn());
     }
 
     public function testItStopsWhenDefaultSettingsCannotBeWritten(): void
@@ -195,46 +194,6 @@ final class SetupRunnerTest extends TestCase
             'config.write_failed',
             $result->context()['action_log']['entries'][4]['issues'][0]['code'],
         );
-    }
-
-    public function testItPreservesExistingAclGroupPrimaryKeysWhenSetupIsRerun(): void
-    {
-        $databasePath = $this->root.'/var/setup.db';
-        $this->createSchema($databasePath);
-        $pdo = new PDO('sqlite:'.$databasePath);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $seed = new SetupDefaultSeed();
-        $adminGroup = $this->seedAclGroup($seed->adminGroupIdentifier());
-        $existingAdminGroupUid = '99999999-0000-0000-0000-000000000105';
-        $existingAdminUserUid = '99999999-0000-0000-0000-000000000201';
-        $pdo->prepare('INSERT INTO acl_group (uid, identifier, name, min_role, locked, metadata) VALUES (?, ?, ?, ?, ?, ?)')
-            ->execute([$existingAdminGroupUid, $adminGroup['identifier'], '{"en":"Legacy Admin"}', 8, 0, '{}']);
-        $pdo->prepare('INSERT INTO user_account (uid, username, email, password_hash, profile, settings, status, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-            ->execute([$existingAdminUserUid, 'legacy-admin', 'legacy-admin@example.test', password_hash('legacy-secret', PASSWORD_DEFAULT), '{}', '{}', 'active', 'owner']);
-        $pdo->prepare('INSERT INTO user_acl_group (user_uid, group_uid) VALUES (?, ?)')
-            ->execute([$existingAdminUserUid, $existingAdminGroupUid]);
-
-        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), new RecordingSetupCommandExecutor());
-
-        $result = $runner->run(new SetupInput(
-            appEnv: 'test',
-            language: 'en',
-            siteTitle: 'Example Studio',
-            defaultUri: 'https://example.test',
-            databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
-            adminUsername: 'admin',
-            adminPassword: 'secret-password',
-            adminEmail: 'admin@example.test',
-            appSecret: 'test-secret',
-        ));
-
-        self::assertTrue($result->isSuccess());
-        self::assertSame($existingAdminGroupUid, $pdo->query(sprintf("SELECT uid FROM acl_group WHERE identifier = '%s'", $adminGroup['identifier']))->fetchColumn());
-        self::assertSame($adminGroup['min_role'], (int) $pdo->query(sprintf("SELECT min_role FROM acl_group WHERE identifier = '%s'", $adminGroup['identifier']))->fetchColumn());
-        self::assertSame($adminGroup['locked'] ? 1 : 0, (int) $pdo->query(sprintf("SELECT locked FROM acl_group WHERE identifier = '%s'", $adminGroup['identifier']))->fetchColumn());
-        self::assertSame(1, (int) $pdo->query("SELECT COUNT(*) FROM user_acl_group WHERE user_uid = '$existingAdminUserUid' AND group_uid = '$existingAdminGroupUid'")->fetchColumn());
-        self::assertSame(1, (int) $pdo->query("SELECT COUNT(*) FROM state_marker WHERE subject_type = 'acl_group' AND subject_uid = '$existingAdminGroupUid'")->fetchColumn());
     }
 
     public function testItStopsOnCommandFailureAndReturnsActionLogContext(): void
@@ -487,20 +446,6 @@ final class SetupRunnerTest extends TestCase
         ), $this->root);
 
         self::assertSame('mysql://studio%20user:secret%2Fpass@db.example.test:3307/studio%20db', $url);
-    }
-
-    /**
-     * @return array{uid: string, identifier: string, name: array<string, string>, min_role: int, locked: bool}
-     */
-    private function seedAclGroup(string $identifier): array
-    {
-        foreach ((new SetupDefaultSeed())->aclGroups() as $group) {
-            if ($identifier === $group['identifier']) {
-                return $group;
-            }
-        }
-
-        self::fail(sprintf('Default ACL group "%s" is not defined.', $identifier));
     }
 
     /**

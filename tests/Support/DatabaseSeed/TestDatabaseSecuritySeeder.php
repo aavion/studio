@@ -52,21 +52,6 @@ final class TestDatabaseSecuritySeeder
         $writer->seedStateMarker('00000000-0000-0000-0000-000000000902', 'user_account', '00000000-0000-0000-0000-000000000201', 'password_changed', 'test_seed');
         $writer->seedStateMarker('00000000-0000-0000-0000-000000000903', 'user_account', '00000000-0000-0000-0000-000000000201', 'status_changed', 'test_seed', 'active');
 
-        $writer->insert('user_acl_group', [
-            'user_uid' => '00000000-0000-0000-0000-000000000201',
-            'group_uid' => self::defaultSeedGroupUid((new SetupDefaultSeed())->adminGroupIdentifier()),
-        ]);
-    }
-
-    private static function defaultSeedGroupUid(string $identifier): string
-    {
-        foreach ((new SetupDefaultSeed())->aclGroups() as $group) {
-            if ($identifier === $group['identifier']) {
-                return $group['uid'];
-            }
-        }
-
-        throw new \LogicException(sprintf('Default ACL group "%s" is not defined.', $identifier));
     }
 
     private static function seedApiKeys(TestDatabaseSeedWriter $writer): void

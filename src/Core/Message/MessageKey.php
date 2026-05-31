@@ -189,7 +189,11 @@ final class MessageKey
     public const CONFIG_VALUE_INVALID = 'message.config.value_invalid';
     public const ACL_GROUP_UPDATED = 'message.acl.group_updated';
     public const ACL_GROUP_DELETED = 'message.acl.group_deleted';
-    public const ACL_GROUP_APPLY_BLOCKED = 'message.acl.group_apply_blocked';
+    public const ACL_GROUP_APPLY_NOT_FOUND = 'message.acl.group_apply.not_found';
+    public const ACL_GROUP_APPLY_LOCKED = 'message.acl.group_apply.locked';
+    public const ACL_GROUP_APPLY_ACTION_INVALID = 'message.acl.group_apply.action_invalid';
+    public const ACL_GROUP_APPLY_UPDATE_BLOCKED = 'message.acl.group_apply.update_blocked';
+    public const ACL_GROUP_APPLY_DELETE_BLOCKED = 'message.acl.group_apply.delete_blocked';
     public const USERNAME_INVALID = 'message.user.username.invalid';
     public const USER_EMAIL_INVALID = 'message.user.email.invalid';
     public const USER_EMAIL_DUPLICATE = 'message.user.email.duplicate';

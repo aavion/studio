@@ -216,7 +216,12 @@ message:
   acl:
     group_updated: 'ACL-Gruppe "%group%" wurde aktualisiert. Betroffene Nutzer: %users%, Account-Links: %account_tokens%, Inhalte: %content_items%, Schema-Versionen: %content_schema_versions%, Menüeinträge: %site_menu_items%.'
     group_deleted: 'ACL-Gruppe "%group%" wurde gelöscht und Referenzen wurden bereinigt. Betroffene Nutzer: %users%, Account-Links: %account_tokens%, Inhalte: %content_items%, Schema-Versionen: %content_schema_versions%, Menüeinträge: %site_menu_items%.'
-    group_apply_blocked: 'ACL-Gruppe "%group%" konnte nicht angewendet werden.'
+    group_apply:
+      not_found: 'ACL-Gruppe "%group%" existiert nicht mehr.'
+      locked: 'ACL-Gruppe "%group%" ist gesperrt und kann nicht geändert werden.'
+      action_invalid: 'Für ACL-Gruppe "%group%" kann die unbekannte Aktion "%action%" nicht angewendet werden.'
+      update_blocked: 'ACL-Gruppe "%group%" kann mit den gesendeten Werten nicht aktualisiert werden.'
+      delete_blocked: 'ACL-Gruppe "%group%" kann nicht gelöscht werden, solange geschützte Referenzen sie benötigen.'
   account_mail:
     stub_queued: 'Account-Mail-Flow %flow% für %email% wurde über den Message-Log-Stub eingereiht.'
   state:
