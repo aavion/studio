@@ -132,6 +132,29 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertSame(SchedulerTaskRunStatus::Success, $runs[0]->status());
     }
 
+    public function testItTimestampsEachDueTaskWhenItStarts(): void
+    {
+        $this->synchronizer(new TestMultipleSchedulerTaskProvider())->synchronize();
+
+        foreach (['system.first_task' => '-2 minutes', 'system.second_task' => '-1 minute'] as $identifier => $dueAt) {
+            $task = $this->entityManager->find(SchedulerTask::class, $identifier);
+            self::assertInstanceOf(SchedulerTask::class, $task);
+            $task->activate('* * * * *');
+            $task->seedNextDue(new \DateTimeImmutable($dueAt));
+        }
+        $this->entityManager->flush();
+
+        $this->runner(new TestDelayedSchedulerTaskExecutor(), new TestMultipleSchedulerTaskProvider())->run();
+        $runs = $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy([], ['startedAt' => 'ASC']);
+
+        self::assertCount(2, $runs);
+        self::assertGreaterThan(
+            (float) $runs[0]->startedAt()->format('U.u'),
+            (float) $runs[1]->startedAt()->format('U.u'),
+        );
+        self::assertLessThan(100, $runs[1]->durationMs());
+    }
+
     public function testItDisablesTaskAfterThreeFailedRuns(): void
     {
         $this->synchronizer()->synchronize();
@@ -238,6 +261,19 @@ final class SchedulerRunnerTest extends KernelTestCase
         );
     }
 
+    public function testTaskDefinitionsRejectInvalidDefaultCronExpressions(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        SchedulerTaskDefinition::command(
+            'system.bad_cron',
+            'admin.scheduler.tasks.bad.label',
+            'admin.scheduler.tasks.bad.description',
+            'studio:test',
+            'not a cron',
+        );
+    }
+
     private function synchronizer(?SchedulerTaskProviderInterface $provider = null): SchedulerTaskSynchronizer
     {
         return new SchedulerTaskSynchronizer(
@@ -278,6 +314,29 @@ final readonly class TestSchedulerTaskProvider implements SchedulerTaskProviderI
     }
 }
 
+final readonly class TestMultipleSchedulerTaskProvider implements SchedulerTaskProviderInterface
+{
+    public function schedulerTasks(): array
+    {
+        return [
+            SchedulerTaskDefinition::command(
+                'system.first_task',
+                'admin.scheduler.tasks.test.label',
+                'admin.scheduler.tasks.test.description',
+                'studio:test',
+                '* * * * *',
+            ),
+            SchedulerTaskDefinition::command(
+                'system.second_task',
+                'admin.scheduler.tasks.test.label',
+                'admin.scheduler.tasks.test.description',
+                'studio:test',
+                '* * * * *',
+            ),
+        ];
+    }
+}
+
 final readonly class TestSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
 {
     public function __construct(private bool $success)
@@ -294,6 +353,23 @@ final readonly class TestSchedulerTaskExecutor implements SchedulerTaskExecutorI
         return $this->success
             ? SchedulerTaskExecution::success(['test' => true])
             : SchedulerTaskExecution::failed(['test' => false]);
+    }
+}
+
+final readonly class TestDelayedSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
+{
+    public function supports(SchedulerTask $task): bool
+    {
+        return true;
+    }
+
+    public function execute(SchedulerTask $task): SchedulerTaskExecution
+    {
+        if ('system.first_task' === $task->identifier()) {
+            usleep(150000);
+        }
+
+        return SchedulerTaskExecution::success(['test' => true]);
     }
 }
 

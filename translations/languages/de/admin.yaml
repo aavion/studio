@@ -461,9 +461,6 @@ admin:
       package_discovery:
         label: 'Paket-Discovery'
         description: 'Findet Pakete und aktualisiert die Paket-Registry.'
-      package_asset_sync:
-        label: 'Paket-Asset-Sync'
-        description: 'Spiegelt Assets aktiver Pakete und baut generierte Paket-Asset-Registries neu.'
       statistics_snapshot:
         label: 'Statistik-Snapshot'
         description: 'Aktualisiert den gespeicherten Zugriffsstatistik-Snapshot, wenn Statistiken aktiviert sind.'

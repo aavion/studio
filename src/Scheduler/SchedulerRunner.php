@@ -56,7 +56,7 @@ final readonly class SchedulerRunner
             $softBudgetMs = $this->softBudgetMs(count($dueTasks));
 
             foreach ($dueTasks as $task) {
-                $results[] = $this->runTask($task, $now, $softBudgetMs);
+                $results[] = $this->runTask($task, $softBudgetMs);
             }
 
             $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
@@ -130,14 +130,15 @@ final readonly class SchedulerRunner
     /**
      * @return array<string, mixed>
      */
-    private function runTask(SchedulerTask $task, DateTimeImmutable $now, ?int $softBudgetMs): array
+    private function runTask(SchedulerTask $task, ?int $softBudgetMs): array
     {
-        $run = new SchedulerTaskRun($this->uuidFactory->v4(), $task, $now, [
+        $startedAt = new DateTimeImmutable();
+        $run = new SchedulerTaskRun($this->uuidFactory->v4(), $task, $startedAt, [
             'task' => $task->identifier(),
             'source' => $task->source(),
             'type' => $task->type()->value,
         ]);
-        $task->markAttempt($now);
+        $task->markAttempt($startedAt);
         $this->entityManager->persist($run);
         $this->entityManager->flush();
 

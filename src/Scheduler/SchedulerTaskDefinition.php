@@ -34,6 +34,10 @@ final readonly class SchedulerTaskDefinition
         if ('' === trim($defaultCronExpression) || strlen($defaultCronExpression) > 120) {
             throw new InvalidArgumentException('Scheduler task cron expression must not be empty.');
         }
+
+        if (!SchedulerCron::isValid($defaultCronExpression)) {
+            throw new InvalidArgumentException(sprintf('Scheduler task cron expression "%s" is invalid.', $defaultCronExpression));
+        }
     }
 
     public static function command(

@@ -27,13 +27,6 @@ final readonly class CoreSchedulerTaskProvider implements SchedulerTaskProviderI
                 '0 */6 * * *',
             ),
             SchedulerTaskDefinition::command(
-                'system.package_asset_sync',
-                'admin.scheduler.tasks.package_asset_sync.label',
-                'admin.scheduler.tasks.package_asset_sync.description',
-                'studio:packages:assets:sync',
-                '15 */6 * * *',
-            ),
-            SchedulerTaskDefinition::command(
                 'system.statistics_snapshot',
                 'admin.scheduler.tasks.statistics_snapshot.label',
                 'admin.scheduler.tasks.statistics_snapshot.description',

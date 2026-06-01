@@ -9,7 +9,11 @@ use App\Entity\SchedulerTask;
 
 final readonly class CommandSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
 {
-    public function __construct(private string $projectDir, private string $environment)
+    public function __construct(
+        private string $projectDir,
+        private string $environment,
+        private SchedulerCommandTargetParser $targetParser = new SchedulerCommandTargetParser(),
+    )
     {
     }
 
@@ -20,8 +24,7 @@ final readonly class CommandSchedulerTaskExecutor implements SchedulerTaskExecut
 
     public function execute(SchedulerTask $task): SchedulerTaskExecution
     {
-        $parts = preg_split('/\s+/', trim($task->target())) ?: [];
-        $parts = array_values(array_filter($parts, static fn (string $part): bool => '' !== $part));
+        $parts = $this->targetParser->parse($task->target());
         $command = [$this->phpBinary(), $this->projectDir.'/bin/console', ...$parts];
 
         $result = (new RunCommandAction($command, $this->projectDir, [
