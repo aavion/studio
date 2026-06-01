@@ -451,6 +451,7 @@ admin:
     actions:
       run_now: 'Run now'
       run_now_started: 'Scheduler run completed with status %status%.'
+      run_now_inactive: 'Activate this job before running it manually.'
     tasks:
       title: 'Registered jobs'
       empty: 'No scheduler jobs are registered.'
@@ -490,10 +491,12 @@ admin:
       title: 'Job settings'
       enabled: 'Run this job automatically'
       cron_expression: 'Cron expression'
+      confirm_package_action_queue: 'I understand that this package job can run an ActionQueue.'
       saved: 'Scheduler job saved.'
       errors:
         invalid_csrf: 'The scheduler form expired. Please try again.'
         cron_invalid: 'Enter a valid cron expression.'
+        package_action_queue_confirmation_required: 'Confirm the package ActionQueue warning before enabling this job.'
     runs:
       title: 'Recent runs'
       empty: 'This job has not run yet.'

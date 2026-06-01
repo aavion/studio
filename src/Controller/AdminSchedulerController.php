@@ -10,6 +10,8 @@ use App\Entity\SchedulerTaskRun;
 use App\Scheduler\SchedulerCron;
 use App\Scheduler\SchedulerSettings;
 use App\Scheduler\SchedulerRunner;
+use App\Scheduler\SchedulerTaskStatus;
+use App\Scheduler\SchedulerTaskType;
 use App\Scheduler\SchedulerTaskSynchronizer;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
@@ -44,10 +46,17 @@ final class AdminSchedulerController extends AbstractController
             return $this->redirectToRoute('backend_admin_scheduler_detail', ['identifier' => $identifier]);
         }
 
-        if (!$this->registeredTask($identifier) instanceof SchedulerTask) {
+        $task = $this->registeredTask($identifier);
+        if (!$task instanceof SchedulerTask) {
             return $this->httpError->render(Response::HTTP_NOT_FOUND, $request, context: [
                 'task' => $identifier,
             ]);
+        }
+
+        if (SchedulerTaskStatus::Active !== $task->status()) {
+            $this->addFlash('error', ['translation_key' => 'admin.scheduler.actions.run_now_inactive', 'parameters' => []]);
+
+            return $this->redirectToRoute('backend_admin_scheduler_detail', ['identifier' => $identifier]);
         }
 
         $result = $this->runner->run($identifier, true)->toArray();
@@ -123,7 +132,14 @@ final class AdminSchedulerController extends AbstractController
             return;
         }
 
-        if ('1' === $request->request->get('enabled')) {
+        $enabled = '1' === $request->request->get('enabled');
+        if ($enabled && !$task->trusted() && SchedulerTaskType::ActionQueue === $task->type() && '1' !== $request->request->get('confirm_package_action_queue')) {
+            $this->addFlash('error', ['translation_key' => 'admin.scheduler.form.errors.package_action_queue_confirmation_required', 'parameters' => []]);
+
+            return;
+        }
+
+        if ($enabled) {
             $task->activate($cronExpression);
         } else {
             $task->deactivate();

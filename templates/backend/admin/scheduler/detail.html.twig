@@ -63,6 +63,12 @@
                 <span>{{ 'admin.scheduler.form.cron_expression'|trans }}</span>
                 <input type="text" name="cron_expression" value="{{ task.cronExpression }}" required>
             </label>
+            {% if task.type.value == 'action_queue' and not task.trusted %}
+                <label class="studio-form-field">
+                    <span>{{ 'admin.scheduler.form.confirm_package_action_queue'|trans }}</span>
+                    <input type="checkbox" name="confirm_package_action_queue" value="1">
+                </label>
+            {% endif %}
             <button class="studio-backend-button studio-button-primary" type="submit">{{ 'ui.actions.save'|trans }}</button>
         </form>
     </section>

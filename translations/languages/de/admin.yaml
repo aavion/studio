@@ -451,6 +451,7 @@ admin:
     actions:
       run_now: 'Jetzt ausführen'
       run_now_started: 'Scheduler-Lauf mit Status %status% abgeschlossen.'
+      run_now_inactive: 'Aktiviere diesen Job, bevor du ihn manuell ausführst.'
     tasks:
       title: 'Registrierte Jobs'
       empty: 'Es sind keine Scheduler-Jobs registriert.'
@@ -490,10 +491,12 @@ admin:
       title: 'Job-Einstellungen'
       enabled: 'Diesen Job automatisch ausführen'
       cron_expression: 'Cron-Ausdruck'
+      confirm_package_action_queue: 'Ich verstehe, dass dieser Paket-Job eine ActionQueue ausführen kann.'
       saved: 'Scheduler-Job gespeichert.'
       errors:
         invalid_csrf: 'Das Scheduler-Formular ist abgelaufen. Bitte versuche es erneut.'
         cron_invalid: 'Gib einen gültigen Cron-Ausdruck ein.'
+        package_action_queue_confirmation_required: 'Bestätige den Paket-ActionQueue-Hinweis, bevor du diesen Job aktivierst.'
     runs:
       title: 'Letzte Läufe'
       empty: 'Dieser Job wurde noch nicht ausgeführt.'
