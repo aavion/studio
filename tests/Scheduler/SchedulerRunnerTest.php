@@ -65,6 +65,16 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertSame([], $tasks);
     }
 
+    public function testSystemSchedulerTaskDefinitionsWinIdentifierCollisions(): void
+    {
+        $registry = new SchedulerTaskRegistry([
+            new TestCollidingPackageSchedulerTaskProvider(),
+            new TestSchedulerTaskProvider(),
+        ]);
+
+        self::assertSame('system', $registry->definition('system.test_task')?->source());
+    }
+
     public function testItDoesNotShowTasksWhosePackageNoLongerRegistersThem(): void
     {
         $staleTask = new SchedulerTask(new SchedulerTaskDefinition(
@@ -318,6 +328,25 @@ final readonly class TestPackageCommandSchedulerTaskProvider implements Schedule
                 'demo-package',
                 SchedulerTaskType::Command,
                 'studio:test',
+                '* * * * *',
+                false,
+            ),
+        ];
+    }
+}
+
+final readonly class TestCollidingPackageSchedulerTaskProvider implements SchedulerTaskProviderInterface
+{
+    public function schedulerTasks(): array
+    {
+        return [
+            new SchedulerTaskDefinition(
+                'system.test_task',
+                'admin.scheduler.tasks.demo.label',
+                'admin.scheduler.tasks.demo.description',
+                'demo-package',
+                SchedulerTaskType::Command,
+                'studio:demo:test',
                 '* * * * *',
                 false,
             ),

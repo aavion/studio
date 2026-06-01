@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Scheduler;
 
-use InvalidArgumentException;
-
 final readonly class SchedulerTaskRegistry
 {
     /**
@@ -25,7 +23,11 @@ final readonly class SchedulerTaskRegistry
         foreach ($this->providers as $provider) {
             foreach ($provider->schedulerTasks() as $definition) {
                 if (isset($definitions[$definition->identifier()])) {
-                    throw new InvalidArgumentException(sprintf('Duplicate scheduler task identifier "%s".', $definition->identifier()));
+                    if ('system' === $definition->source() && 'system' !== $definitions[$definition->identifier()]->source()) {
+                        $definitions[$definition->identifier()] = $definition;
+                    }
+
+                    continue;
                 }
 
                 $definitions[$definition->identifier()] = $definition;
