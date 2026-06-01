@@ -33,6 +33,20 @@ final readonly class CoreSchedulerTaskProvider implements SchedulerTaskProviderI
                 'studio:packages:assets:sync',
                 '15 */6 * * *',
             ),
+            SchedulerTaskDefinition::command(
+                'system.statistics_snapshot',
+                'admin.scheduler.tasks.statistics_snapshot.label',
+                'admin.scheduler.tasks.statistics_snapshot.description',
+                'studio:statistics:snapshot',
+                '*/15 * * * *',
+            ),
+            SchedulerTaskDefinition::command(
+                'system.cache_clear',
+                'admin.scheduler.tasks.cache_clear.label',
+                'admin.scheduler.tasks.cache_clear.description',
+                'cache:clear',
+                '0 4 * * *',
+            ),
         ];
     }
 }

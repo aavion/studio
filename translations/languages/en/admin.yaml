@@ -464,6 +464,12 @@ admin:
       package_asset_sync:
         label: 'Package asset sync'
         description: 'Mirrors active package assets and rebuilds generated package asset registries.'
+      statistics_snapshot:
+        label: 'Statistics snapshot'
+        description: 'Refreshes the stored access statistics snapshot when statistics are enabled.'
+      cache_clear:
+        label: 'Cache clear'
+        description: 'Clears and warms the Symfony application cache.'
     table:
       job: 'Job'
       source: 'Source'
