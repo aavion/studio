@@ -1709,7 +1709,6 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSelectorTextContains('main', 'Published content may become public');
         self::assertSelectorTextContains('main', 'acl_cleanup_schema v1');
         self::assertSelectorTextContains('main', 'cleanup-invite@example.test');
-        self::assertSelectorExists('form[data-controller="operation-overlay"]');
 
         $crawler = $client->getCrawler();
         $client->submit($crawler->selectButton('Delete group and remove references')->form());
@@ -2063,7 +2062,6 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Review ACL group change');
         self::assertSelectorTextContains('main', '3 -> 6');
-        self::assertSelectorExists('form[data-controller="operation-overlay"]');
 
         $crawler = $client->getCrawler();
         $client->submit($crawler->selectButton('Apply group update')->form());

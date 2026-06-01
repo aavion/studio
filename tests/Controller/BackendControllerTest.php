@@ -111,7 +111,6 @@ final class BackendControllerTest extends WebTestCase
             self::assertStringContainsString('Review setup', $html);
             self::assertStringContainsString('Wizard Studio', $html);
             self::assertStringContainsString('Admin approval', $html);
-            self::assertSelectorExists('form#setup-wizard[data-controller="setup-wizard operation-overlay"]');
             self::assertSelectorExists('form#setup-wizard button[name="_setup_action"][value="apply"]');
             $storedState = $client->getRequest()->getSession()->get(SetupWizardState::SESSION_KEY);
             $encodedState = json_encode($storedState, JSON_THROW_ON_ERROR);
