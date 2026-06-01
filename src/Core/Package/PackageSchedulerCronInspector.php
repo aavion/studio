@@ -361,6 +361,7 @@ final readonly class PackageSchedulerCronInspector
      */
     private function callArguments(string $contents): array
     {
+        $contents = $this->withoutPhpComments($contents);
         $arguments = [];
         $start = 0;
         $depth = 0;
@@ -418,6 +419,29 @@ final readonly class PackageSchedulerCronInspector
         }
 
         return $arguments;
+    }
+
+    private function withoutPhpComments(string $contents): string
+    {
+        $stripped = '';
+        foreach (token_get_all('<?php '.$contents) as $token) {
+            if (is_array($token)) {
+                if (T_OPEN_TAG === $token[0]) {
+                    continue;
+                }
+
+                if (in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                    continue;
+                }
+
+                $stripped .= $token[1];
+                continue;
+            }
+
+            $stripped .= $token;
+        }
+
+        return $stripped;
     }
 
     /**

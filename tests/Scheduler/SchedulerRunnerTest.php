@@ -375,6 +375,37 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertNull($task->nextDueAt());
     }
 
+    public function testDefinitionSyncDeactivatesChangedUntrustedActionQueues(): void
+    {
+        $task = new SchedulerTask(new SchedulerTaskDefinition(
+            'demo.sync_task',
+            'admin.scheduler.tasks.sync.label',
+            'admin.scheduler.tasks.sync.description',
+            'demo-package',
+            SchedulerTaskType::ActionQueue,
+            'demo.old_queue',
+            '* * * * *',
+            false,
+        ));
+        $task->activate('* * * * *');
+
+        $task->syncDefinition(new SchedulerTaskDefinition(
+            'demo.sync_task',
+            'admin.scheduler.tasks.sync.label',
+            'admin.scheduler.tasks.sync.description',
+            'demo-package',
+            SchedulerTaskType::ActionQueue,
+            'demo.new_queue',
+            '* * * * *',
+            false,
+        ), new \DateTimeImmutable());
+
+        self::assertSame(SchedulerTaskStatus::Inactive, $task->status());
+        self::assertSame('demo.new_queue', $task->target());
+        self::assertSame(0, $task->failureCount());
+        self::assertNull($task->nextDueAt());
+    }
+
     public function testTaskDefinitionsRejectInvalidTranslationKeys(): void
     {
         $this->expectException(\InvalidArgumentException::class);

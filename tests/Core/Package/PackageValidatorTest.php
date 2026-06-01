@@ -322,6 +322,30 @@ PHP);
         self::assertTrue($result->isSuccess());
     }
 
+    public function testItIgnoresSchedulerCommentsInsideCallArguments(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        // Example only, with comma: defaultCronExpression: 'not a cron',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        '*/10 * * * *',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
     public function testItIgnoresUnrelatedSchedulerTaskDefinitionClasses(): void
     {
         $this->writeFile('src/SchedulerTasks.php', <<<'PHP'

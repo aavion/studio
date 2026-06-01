@@ -89,7 +89,12 @@ class SchedulerTask
         $usesPreviousDefaultCron = $this->cronExpression === $this->defaultCronExpression;
         $requiresActionQueueConfirmation = SchedulerTaskType::ActionQueue === $definition->type()
             && !$definition->trusted()
-            && (SchedulerTaskType::ActionQueue !== $this->type || $this->trusted);
+            && (
+                SchedulerTaskType::ActionQueue !== $this->type
+                || $this->trusted
+                || $this->target !== $definition->target()
+                || $this->source !== $definition->source()
+            );
         $changed = $this->labelKey !== $definition->labelKey()
             || $this->descriptionKey !== $definition->descriptionKey()
             || $this->source !== $definition->source()
