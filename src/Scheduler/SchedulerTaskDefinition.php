@@ -38,6 +38,8 @@ final readonly class SchedulerTaskDefinition
         if (!SchedulerCron::isValid($defaultCronExpression)) {
             throw new InvalidArgumentException(sprintf('Scheduler task cron expression "%s" is invalid.', $defaultCronExpression));
         }
+
+        $this->assertJsonEncodable($metadata, 'Scheduler task metadata');
     }
 
     public static function command(
@@ -98,6 +100,18 @@ final readonly class SchedulerTaskDefinition
     public function metadata(): array
     {
         return $this->metadata;
+    }
+
+    /**
+     * @param array<string, mixed> $value
+     */
+    private function assertJsonEncodable(array $value, string $label): void
+    {
+        try {
+            json_encode($value, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $error) {
+            throw new InvalidArgumentException(sprintf('%s must be JSON-encodable.', $label), previous: $error);
+        }
     }
 
     public static function isValidIdentifier(string $identifier): bool

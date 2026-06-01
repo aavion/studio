@@ -207,14 +207,14 @@ final class InitCommand
     {
         $requiredVersion = $this->readMinimumPhpVersion();
         if (null === $requiredVersion) {
-            $this->reporter->warning('Could not determine a minimum PHP version from composer.json.');
+            $this->reporter->warning('Could not determine a minimum PHP version from Composer requirements.');
 
             return;
         }
 
         if (version_compare(PHP_VERSION, $requiredVersion, '<')) {
             $this->reporter->failure(sprintf(
-                'PHP %s or newer is required by composer.json, current version is %s.',
+                'PHP %s or newer is required by Composer requirements, current version is %s.',
                 $requiredVersion,
                 PHP_VERSION,
             ));
@@ -222,7 +222,7 @@ final class InitCommand
             return;
         }
 
-        $this->reporter->success(sprintf('PHP version satisfies composer.json requirement >=%s.', $requiredVersion));
+        $this->reporter->success(sprintf('PHP version satisfies Composer requirement >=%s.', $requiredVersion));
     }
 
     private function checkRequiredPhpExtensions(): void
@@ -421,29 +421,118 @@ final class InitCommand
     private function readRequiredPhpExtensions(): array
     {
         $composer = $this->readComposerJson();
-        $requires = $composer['require'] ?? [];
         $extensions = [];
 
-        foreach ($requires as $package => $constraint) {
-            if (str_starts_with($package, 'ext-')) {
-                $extensions[] = substr($package, 4);
+        foreach ($this->phpExtensionRequirements($composer['require'] ?? []) as $extension) {
+            $extensions[] = $extension;
+        }
+
+        $lock = $this->readComposerLock();
+        foreach (($lock['packages'] ?? []) as $package) {
+            if (is_array($package)) {
+                foreach ($this->phpExtensionRequirements($package['require'] ?? []) as $extension) {
+                    $extensions[] = $extension;
+                }
             }
         }
 
         sort($extensions);
 
-        return $extensions;
+        return array_values(array_unique($extensions));
     }
 
     private function readMinimumPhpVersion(): ?string
     {
+        $versions = [];
         $composer = $this->readComposerJson();
-        $constraint = $composer['require']['php'] ?? null;
-        if (!is_string($constraint) || !preg_match('/>=\s*([0-9]+(?:\.[0-9]+){1,2})/', $constraint, $matches)) {
-            return null;
+        $versions[] = $composer['require']['php'] ?? null;
+
+        $lock = $this->readComposerLock();
+        $versions[] = $lock['platform']['php'] ?? null;
+        foreach (($lock['packages'] ?? []) as $package) {
+            if (is_array($package)) {
+                $versions[] = $package['require']['php'] ?? null;
+            }
         }
 
-        return $matches[1];
+        $minimum = null;
+        foreach ($versions as $constraint) {
+            if (!is_string($constraint)) {
+                continue;
+            }
+
+            $candidate = $this->minimumVersionFromConstraint($constraint);
+            if (null !== $candidate && (null === $minimum || version_compare($candidate, $minimum, '>'))) {
+                $minimum = $candidate;
+            }
+        }
+
+        return $minimum;
+    }
+
+    /**
+     * @param mixed $requirements
+     *
+     * @return list<string>
+     */
+    private function phpExtensionRequirements(mixed $requirements): array
+    {
+        if (!is_array($requirements)) {
+            return [];
+        }
+
+        $extensions = [];
+        foreach ($requirements as $package => $constraint) {
+            if (is_string($package) && str_starts_with($package, 'ext-')) {
+                $extensions[] = substr($package, 4);
+            }
+        }
+
+        return $extensions;
+    }
+
+    private function minimumVersionFromConstraint(string $constraint): ?string
+    {
+        $alternatives = preg_split('/\s*\|\|?\s*/', $constraint) ?: [$constraint];
+        $minimum = null;
+
+        foreach ($alternatives as $alternative) {
+            $candidate = $this->minimumVersionFromConstraintAlternative($alternative);
+            if (null !== $candidate && (null === $minimum || version_compare($candidate, $minimum, '<'))) {
+                $minimum = $candidate;
+            }
+        }
+
+        return $minimum;
+    }
+
+    private function minimumVersionFromConstraintAlternative(string $constraint): ?string
+    {
+        $minimum = null;
+        if (preg_match_all('/(?:>=|\^|~)\s*v?([0-9]+(?:\.[0-9]+){1,2})/', $constraint, $matches)) {
+            foreach ($matches[1] as $version) {
+                $version = $this->normalizeVersion($version);
+                if (null === $minimum || version_compare($version, $minimum, '>')) {
+                    $minimum = $version;
+                }
+            }
+        }
+
+        if (null === $minimum && preg_match('/^\s*v?([0-9]+(?:\.[0-9]+){1,2})(?:\s|$|-)/', $constraint, $match)) {
+            $minimum = $this->normalizeVersion($match[1]);
+        }
+
+        return $minimum;
+    }
+
+    private function normalizeVersion(string $version): string
+    {
+        $parts = explode('.', $version);
+        while (count($parts) < 3) {
+            $parts[] = '0';
+        }
+
+        return implode('.', array_slice($parts, 0, 3));
     }
 
     /**
@@ -462,6 +551,29 @@ final class InitCommand
         $decoded = json_decode($contents, true);
         if (!is_array($decoded)) {
             $this->reporter->failure('composer.json is not valid JSON.');
+
+            return [];
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function readComposerLock(): array
+    {
+        $path = $this->projectDir.'/composer.lock';
+        $contents = file_get_contents($path);
+        if (false === $contents) {
+            $this->reporter->failure('Unable to read composer.lock.');
+
+            return [];
+        }
+
+        $decoded = json_decode($contents, true);
+        if (!is_array($decoded)) {
+            $this->reporter->failure('composer.lock is not valid JSON.');
 
             return [];
         }

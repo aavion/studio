@@ -19,6 +19,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 final class AdminSchedulerController extends AbstractController
 {
@@ -80,7 +81,7 @@ final class AdminSchedulerController extends AbstractController
         return $this->render('@backend/admin/scheduler/index.html.twig', [
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
             'tasks' => $tasks,
-            'cron_run_url' => $request->getSchemeAndHttpHost().'/cron/run',
+            'cron_run_url' => $this->generateUrl('scheduler_cron_run', [], UrlGeneratorInterface::ABSOLUTE_URL),
             'get_auth_enabled' => $this->settings->getAuthEnabled(),
         ]);
     }
@@ -110,7 +111,7 @@ final class AdminSchedulerController extends AbstractController
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
             'task' => $task,
             'runs' => $this->recentRuns($task),
-            'cron_run_url' => $request->getSchemeAndHttpHost().'/cron/run?job='.rawurlencode($task->identifier()),
+            'cron_run_url' => $this->generateUrl('scheduler_cron_run', ['job' => $task->identifier()], UrlGeneratorInterface::ABSOLUTE_URL),
         ]);
     }
 

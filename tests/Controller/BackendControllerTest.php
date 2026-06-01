@@ -33,6 +33,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Routing\RouterInterface;
 
 final class BackendControllerTest extends WebTestCase
 {
@@ -927,6 +929,22 @@ final class BackendControllerTest extends WebTestCase
         } finally {
             $this->removeSchedulerTasks();
         }
+    }
+
+    public function testSchedulerCronRouteGenerationIncludesBasePath(): void
+    {
+        self::bootKernel();
+
+        $router = self::getContainer()->get(RouterInterface::class);
+        $context = $router->getContext();
+        $context->setScheme('https');
+        $context->setHost('example.test');
+        $context->setBaseUrl('/studio');
+
+        self::assertSame(
+            'https://example.test/studio/cron/run',
+            $router->generate('scheduler_cron_run', [], UrlGeneratorInterface::ABSOLUTE_URL),
+        );
     }
 
     public function testAdminSettingsFormsPersistCoreSettings(): void

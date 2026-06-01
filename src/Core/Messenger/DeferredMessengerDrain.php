@@ -49,25 +49,29 @@ final readonly class DeferredMessengerDrain
             return false;
         }
 
-        $started = false;
+        $messengerStarted = null;
 
         if ($drainMessenger) {
-            $started = $this->startDetached($this->messengerCommand(), $this->outputPath(), $this->pidPath())
-                || $started;
+            $messengerStarted = $this->startDetached($this->messengerCommand(), $this->outputPath(), $this->pidPath());
+            if (!$messengerStarted) {
+                $this->clearCooldownLock();
+
+                return false;
+            }
         }
 
+        $schedulerStarted = null;
         if ($runScheduler) {
-            $started = $this->startDetached($this->schedulerCommand(), $this->schedulerOutputPath(), $this->schedulerPidPath())
-                || $started;
+            $schedulerStarted = $this->startDetached($this->schedulerCommand(), $this->schedulerOutputPath(), $this->schedulerPidPath());
         }
 
-        if (!$started) {
+        if (true !== $messengerStarted && true !== $schedulerStarted) {
             $this->clearCooldownLock();
 
             return false;
         }
 
-        return true;
+        return true === $messengerStarted || true === $schedulerStarted;
     }
 
     private function hasPendingMessages(): bool

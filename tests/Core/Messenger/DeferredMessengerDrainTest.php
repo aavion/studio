@@ -131,6 +131,63 @@ final class DeferredMessengerDrainTest extends TestCase
         $this->removeDirectory($projectDir);
     }
 
+    public function testSchedulerStartDoesNotMaskMessengerStartFailure(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('messenger-drain-messenger-failure');
+        $connection = $this->connectionWithMessengerTable();
+        $starter = new RecordingDeferredMessengerStarter(false);
+        $logger = new RecordingMessageLogger();
+        $settings = $this->schedulerSettings($connection, true);
+        $this->insertMessage($connection, 'default');
+
+        $drain = new DeferredMessengerDrain(
+            $connection,
+            $starter,
+            $projectDir,
+            'test',
+            transportDsn: 'doctrine://default?auto_setup=0',
+            schedulerSettings: $settings,
+            messageLogger: $logger,
+        );
+
+        self::assertFalse($drain->drainPendingMessages());
+        self::assertCount(1, $starter->starts);
+        self::assertContains('messenger:consume', $starter->starts[0]['command']);
+        self::assertCount(1, $logger->messages);
+        self::assertSame('messenger.deferred_process_start_failed', $logger->messages[0]->code());
+
+        $this->removeDirectory($projectDir);
+    }
+
+    public function testMessengerStartSucceedsEvenWhenSchedulerStartFails(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('messenger-drain-scheduler-start-failure');
+        $connection = $this->connectionWithMessengerTable();
+        $starter = new RecordingDeferredMessengerStarter(failCommandsContaining: 'bin/scheduler');
+        $logger = new RecordingMessageLogger();
+        $settings = $this->schedulerSettings($connection, true);
+        $this->insertMessage($connection, 'default');
+
+        $drain = new DeferredMessengerDrain(
+            $connection,
+            $starter,
+            $projectDir,
+            'test',
+            transportDsn: 'doctrine://default?auto_setup=0',
+            schedulerSettings: $settings,
+            messageLogger: $logger,
+        );
+
+        self::assertTrue($drain->drainPendingMessages());
+        self::assertCount(2, $starter->starts);
+        self::assertContains('messenger:consume', $starter->starts[0]['command']);
+        self::assertStringEndsWith('/bin/scheduler', $starter->starts[1]['command'][0]);
+        self::assertCount(1, $logger->messages);
+        self::assertSame('messenger.deferred_process_start_failed', $logger->messages[0]->code());
+
+        $this->removeDirectory($projectDir);
+    }
+
     public function testItUsesConfiguredDoctrineQueueNameForPendingCheck(): void
     {
         $projectDir = $this->createTemporaryDirectory('messenger-drain-queue-name');
@@ -218,7 +275,7 @@ final class RecordingDeferredMessengerStarter implements DeferredMessengerDrainS
      */
     public array $starts = [];
 
-    public function __construct(private bool $success = true)
+    public function __construct(private bool $success = true, private ?string $failCommandsContaining = null)
     {
     }
 
@@ -230,6 +287,10 @@ final class RecordingDeferredMessengerStarter implements DeferredMessengerDrainS
             'output_path' => $outputPath,
             'pid_path' => $pidPath,
         ];
+
+        if (null !== $this->failCommandsContaining && str_contains(implode(' ', $command), $this->failCommandsContaining)) {
+            return false;
+        }
 
         return $this->success;
     }

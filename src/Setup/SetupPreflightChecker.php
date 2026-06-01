@@ -15,6 +15,8 @@ final readonly class SetupPreflightChecker
      */
     public function check(string $projectDir, string $environment, bool $autoHeal = false, ?array $server = null): array
     {
+        $requiredExtensions = $this->requiredPhpExtensions($projectDir);
+        $optionalExtensions = array_values(array_diff($this->databaseDriverExtensions(), $requiredExtensions));
         $checks = [
             $this->webroot($projectDir, $server ?? $_SERVER),
             $this->phpVersion($projectDir),
@@ -24,13 +26,8 @@ final readonly class SetupPreflightChecker
             $this->directoryWritable($projectDir.'/translations/runtime', 'runtime_translations_writable', true, $autoHeal),
             $this->directoryWritable($projectDir.'/public', 'public_writable', true, $autoHeal),
             $this->cliRunnerAvailable(),
-            $this->phpExtension('ctype', true),
-            $this->phpExtension('fileinfo', true),
-            $this->phpExtension('iconv', true),
-            $this->phpExtension('intl', true),
-            $this->phpExtension('pdo_sqlite', true),
-            $this->phpExtension('pdo_mysql', false),
-            $this->phpExtension('pdo_pgsql', false),
+            ...array_map(fn (string $extension): array => $this->phpExtension($extension, true), $requiredExtensions),
+            ...array_map(fn (string $extension): array => $this->phpExtension($extension, false), $optionalExtensions),
         ];
         $failedRequired = array_filter($checks, static fn (array $check): bool => true === $check['required'] && 'ok' !== $check['status']);
 
@@ -159,6 +156,65 @@ final readonly class SetupPreflightChecker
     private function phpExtension(string $extension, bool $required): array
     {
         return $this->checkRow('extension_'.$extension, extension_loaded($extension) ? 'ok' : 'missing', $required, false, extension_loaded($extension) ? 'present' : 'missing');
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function requiredPhpExtensions(string $projectDir): array
+    {
+        $composer = $this->readJsonFile($projectDir.'/composer.json');
+        $required = [];
+
+        foreach ($this->phpExtensionRequirements($composer['require'] ?? []) as $extension) {
+            $required[] = $extension;
+        }
+
+        $lock = $this->readJsonFile($projectDir.'/composer.lock');
+        foreach (($lock['packages'] ?? []) as $package) {
+            if (is_array($package)) {
+                foreach ($this->phpExtensionRequirements($package['require'] ?? []) as $extension) {
+                    $required[] = $extension;
+                }
+            }
+        }
+
+        sort($required);
+
+        return array_values(array_unique($required));
+    }
+
+    /**
+     * @param mixed $requirements
+     *
+     * @return list<string>
+     */
+    private function phpExtensionRequirements(mixed $requirements): array
+    {
+        if (!is_array($requirements)) {
+            return [];
+        }
+
+        $extensions = [];
+        foreach ($requirements as $name => $constraint) {
+            if (is_string($name) && str_starts_with($name, 'ext-')) {
+                $extensions[] = substr($name, strlen('ext-'));
+            }
+        }
+
+        return $extensions;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function databaseDriverExtensions(): array
+    {
+        return [
+            'pdo_sqlite',
+            'pdo_mysql',
+            'pdo_pgsql',
+        ];
     }
 
     /**
@@ -365,21 +421,97 @@ final readonly class SetupPreflightChecker
 
     private function minimumPhpVersion(string $projectDir): ?string
     {
-        $contents = @file_get_contents($projectDir.'/composer.json');
+        $versions = [];
+
+        $composer = $this->readJsonFile($projectDir.'/composer.json');
+        if (null !== $composer) {
+            $versions[] = $composer['require']['php'] ?? null;
+        }
+
+        $lock = $this->readJsonFile($projectDir.'/composer.lock');
+        if (null !== $lock) {
+            $versions[] = $lock['platform']['php'] ?? null;
+
+            foreach (['packages', 'packages-dev'] as $section) {
+                foreach (($lock[$section] ?? []) as $package) {
+                    if (is_array($package)) {
+                        $versions[] = $package['require']['php'] ?? null;
+                    }
+                }
+            }
+        }
+
+        $minimum = null;
+        foreach ($versions as $constraint) {
+            if (!is_string($constraint)) {
+                continue;
+            }
+
+            $candidate = $this->minimumVersionFromConstraint($constraint);
+            if (null !== $candidate && (null === $minimum || version_compare($candidate, $minimum, '>'))) {
+                $minimum = $candidate;
+            }
+        }
+
+        return $minimum;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function readJsonFile(string $path): ?array
+    {
+        $contents = @file_get_contents($path);
         if (false === $contents) {
             return null;
         }
 
-        $composer = json_decode($contents, true);
-        if (!is_array($composer)) {
-            return null;
+        $decoded = json_decode($contents, true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    private function minimumVersionFromConstraint(string $constraint): ?string
+    {
+        $alternatives = preg_split('/\s*\|\|?\s*/', $constraint) ?: [$constraint];
+        $minimum = null;
+
+        foreach ($alternatives as $alternative) {
+            $candidate = $this->minimumVersionFromConstraintAlternative($alternative);
+            if (null !== $candidate && (null === $minimum || version_compare($candidate, $minimum, '<'))) {
+                $minimum = $candidate;
+            }
         }
 
-        $constraint = $composer['require']['php'] ?? null;
-        if (!is_string($constraint) || !preg_match('/>=\s*([0-9]+(?:\.[0-9]+){1,2})/', $constraint, $matches)) {
-            return null;
+        return $minimum;
+    }
+
+    private function minimumVersionFromConstraintAlternative(string $constraint): ?string
+    {
+        $minimum = null;
+        if (preg_match_all('/(?:>=|\^|~)\s*v?([0-9]+(?:\.[0-9]+){1,2})/', $constraint, $matches)) {
+            foreach ($matches[1] as $version) {
+                $version = $this->normalizeVersion($version);
+                if (null === $minimum || version_compare($version, $minimum, '>')) {
+                    $minimum = $version;
+                }
+            }
         }
 
-        return $matches[1];
+        if (null === $minimum && preg_match('/^\s*v?([0-9]+(?:\.[0-9]+){1,2})(?:\s|$|-)/', $constraint, $match)) {
+            $minimum = $this->normalizeVersion($match[1]);
+        }
+
+        return $minimum;
+    }
+
+    private function normalizeVersion(string $version): string
+    {
+        $parts = explode('.', $version);
+        while (count($parts) < 3) {
+            $parts[] = '0';
+        }
+
+        return implode('.', array_slice($parts, 0, 3));
     }
 }

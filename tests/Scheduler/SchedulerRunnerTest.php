@@ -371,6 +371,23 @@ final class SchedulerRunnerTest extends KernelTestCase
         );
     }
 
+    public function testTaskDefinitionsRejectInvalidMetadata(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        new SchedulerTaskDefinition(
+            'system.bad_metadata',
+            'admin.scheduler.tasks.bad.label',
+            'admin.scheduler.tasks.bad.description',
+            'system',
+            SchedulerTaskType::Command,
+            'studio:test',
+            '* * * * *',
+            true,
+            ['resource' => fopen('php://memory', 'r')],
+        );
+    }
+
     private function synchronizer(?SchedulerTaskProviderInterface $provider = null): SchedulerTaskSynchronizer
     {
         return new SchedulerTaskSynchronizer(

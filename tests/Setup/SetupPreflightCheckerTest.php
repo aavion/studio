@@ -61,6 +61,58 @@ final class SetupPreflightCheckerTest extends TestCase
         self::assertContains('writable_paths', $detailKeys);
     }
 
+    public function testItUsesHighestPhpRequirementFromComposerFiles(): void
+    {
+        file_put_contents($this->root.'/composer.json', json_encode([
+            'require' => [
+                'php' => '>=8.4',
+            ],
+        ], JSON_THROW_ON_ERROR));
+        file_put_contents($this->root.'/composer.lock', json_encode([
+            'platform' => [
+                'php' => '>=8.4',
+            ],
+            'packages' => [
+                [
+                    'name' => 'example/package',
+                    'require' => [
+                        'php' => '>=99.1.2',
+                    ],
+                ],
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $php = array_values(array_filter($result['checks'], static fn (array $check): bool => 'php_version' === $check['key']))[0] ?? null;
+
+        self::assertSame('failed', $php['status'] ?? null);
+        self::assertSame('99.1.2', $php['value_parameters']['%required%'] ?? null);
+    }
+
+    public function testItUsesRequiredPhpExtensionsFromComposerJson(): void
+    {
+        file_put_contents($this->root.'/composer.json', json_encode([
+            'require' => [
+                'php' => '>=8.4',
+                'ext-definitely_missing_for_studio_tests' => '*',
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $extension = array_values(array_filter(
+            $result['checks'],
+            static fn (array $check): bool => 'extension_definitely_missing_for_studio_tests' === $check['key'],
+        ))[0] ?? null;
+
+        self::assertFalse($result['ok']);
+        self::assertSame('missing', $extension['status'] ?? null);
+        self::assertTrue($extension['required'] ?? false);
+    }
+
     public function testItAutoHealsBundledComposerExecutableBit(): void
     {
         mkdir($this->root.'/bin', 0775, true);

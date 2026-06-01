@@ -56,6 +56,24 @@ final class SchedulerRunCommand extends Command
             }
         }
 
-        return in_array($payload['status'], ['completed', 'locked'], true) ? Command::SUCCESS : Command::FAILURE;
+        if (!in_array($payload['status'], ['completed', 'locked'], true)) {
+            return Command::FAILURE;
+        }
+
+        if (null !== $job && [] === $payload['tasks']) {
+            return Command::FAILURE;
+        }
+
+        foreach ($payload['tasks'] as $task) {
+            if (($task['status'] ?? null) === 'failed') {
+                return Command::FAILURE;
+            }
+
+            if (null !== $job && ($task['status'] ?? null) !== 'success') {
+                return Command::FAILURE;
+            }
+        }
+
+        return Command::SUCCESS;
     }
 }
