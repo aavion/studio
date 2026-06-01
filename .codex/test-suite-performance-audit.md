@@ -30,7 +30,7 @@ Measured after clean setup on 2026-06-01:
   - Some low-value DOM/CSS assertions are trimmed.
   - `LiveOperationQueueFactoryTest` is consolidated from many small kernel boots into two behavior tests.
 - After the current working slice:
-  - `php bin/phpunit`: `791 tests`, `4876 assertions`, `39.879s`, peak `121 MB`.
+  - `php bin/phpunit`: `791 tests`, `4876 assertions`, `38.837s`, peak `121 MB`.
   - Short setup-password validation is covered at factory level instead of through an additional browser/controller flow.
   - Password-meter and API-key toggle selectors are no longer treated as backend behavior.
   - Duplicate anonymous user-route login fallback checks are consolidated into one browser test.
@@ -101,5 +101,6 @@ Measured from `php bin/phpunit --log-junit var/test-suite-audit.xml` after the c
 - Consolidated the setup landing smoke test into the selected-language/preflight flow to remove one duplicate `/setup` browser test while preserving CSRF, form, heading, language, and navigation checks.
 - Trimmed package/theme backend assertions that coupled tests to theme-card classes, hero media markup, markdown emphasis tags, and Stimulus wiring while keeping route, lifecycle, action, metadata, and unsafe-link behavior.
 - Removed direct `operation-overlay` Stimulus wiring assertions where the same review form is immediately submitted and verified through the backend result.
+- Added centralized `PackageZipInstallerTest` teardown cleanup for temporary package directories, upload roots, and package rows so failed assertions cannot leak filesystem/database state into later tests.
 - Re-measured with JUnit. High assertion counts mostly come from fast key/enum coverage, while runtime remains concentrated in kernel/controller setup flows and package ZIP integration.
 - Repaired local `vendor/` after iCloud conflict-copy directories caused missing package files; use `composer install --no-scripts --optimize-autoloader` if this happens again during the audit.

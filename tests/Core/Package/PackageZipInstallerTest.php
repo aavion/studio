@@ -16,6 +16,26 @@ use ZipArchive;
 
 final class PackageZipInstallerTest extends KernelTestCase
 {
+    private const TEST_PACKAGE_SLUGS = [
+        'zip-install-apply',
+        'zip-install-dependent',
+        'zip-install-dependent-addon',
+        'zip-install-review',
+        'zip-install-rollback',
+        'zip-install-symlink',
+    ];
+
+    private const TEST_INSTALL_IDS = [
+        'aaaaaaaaaaaaaaaaaaaaaaaa',
+        'bbbbbbbbbbbbbbbbbbbbbbbb',
+        'cccccccccccccccccccccccc',
+        'dddddddddddddddddddddddd',
+        'eeeeeeeeeeeeeeeeeeeeeeee',
+        'ffffffffffffffffffffffff',
+        '777777777777777777777777',
+        '999999999999999999999999',
+    ];
+
     private string $projectDir;
     private EntityManagerInterface $entityManager;
 
@@ -25,10 +45,24 @@ final class PackageZipInstallerTest extends KernelTestCase
         $this->projectDir = (string) self::getContainer()->getParameter('kernel.project_dir');
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
 
-        foreach (['zip-install-rollback', 'zip-install-dependent', 'zip-install-dependent-addon', 'zip-install-symlink'] as $slug) {
+        foreach (self::TEST_PACKAGE_SLUGS as $slug) {
             $this->removePath($this->projectDir.'/packages/'.$slug);
             $this->deletePackageRow($slug);
         }
+    }
+
+    protected function tearDown(): void
+    {
+        foreach (self::TEST_PACKAGE_SLUGS as $slug) {
+            $this->removePath($this->projectDir.'/packages/'.$slug);
+            $this->deletePackageRow($slug);
+        }
+
+        foreach (self::TEST_INSTALL_IDS as $installId) {
+            $this->removePath($this->installRoot($installId));
+        }
+
+        parent::tearDown();
     }
 
     public function testItVerifiesZipAndReturnsReviewContinuation(): void
