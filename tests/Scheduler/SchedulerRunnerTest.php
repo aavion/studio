@@ -97,6 +97,37 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertSame(SchedulerTaskStatus::Faulty, $updated->status());
     }
 
+    public function testItReportsActiveNotDueTasksAsSkipped(): void
+    {
+        $this->synchronizer()->synchronize();
+        $task = $this->entityManager->find(SchedulerTask::class, 'system.test_task');
+        self::assertInstanceOf(SchedulerTask::class, $task);
+        $task->activate('0 0 1 1 *');
+        $this->entityManager->flush();
+
+        $payload = $this->runner(new TestSchedulerTaskExecutor(true))->run()->toArray();
+
+        self::assertSame('completed', $payload['status']);
+        self::assertSame('system.test_task', $payload['tasks'][0]['identifier']);
+        self::assertSame('skipped', $payload['tasks'][0]['status']);
+    }
+
+    public function testInvalidCronExpressionFailsTaskWithoutCrashingRunner(): void
+    {
+        $this->synchronizer()->synchronize();
+        $task = $this->entityManager->find(SchedulerTask::class, 'system.test_task');
+        self::assertInstanceOf(SchedulerTask::class, $task);
+        $task->activate('not a cron');
+        $this->entityManager->flush();
+
+        $payload = $this->runner(new TestSchedulerTaskExecutor(true))->run('system.test_task', true)->toArray();
+
+        self::assertSame('completed', $payload['status']);
+        self::assertSame('failed', $payload['tasks'][0]['status']);
+        self::assertSame('faulty', $payload['tasks'][0]['task_status']);
+        self::assertSame(1, $payload['tasks'][0]['failure_count']);
+    }
+
     private function synchronizer(): SchedulerTaskSynchronizer
     {
         return new SchedulerTaskSynchronizer(new SchedulerTaskRegistry([new TestSchedulerTaskProvider()]), $this->entityManager);

@@ -76,6 +76,8 @@ message:
       status_blocked: 'Package dependency "%package%" cannot be used while it is "%status%".'
       cycle: 'Circular package dependency detected: %cycle%.'
       resolved: 'Package "%package%" resolved %count% dependency item(s).'
+    scheduler:
+      cron_invalid: 'Package "%package%" declares an invalid scheduler cron expression.'
   translation:
     aggregate_completed: 'Translation aggregation merged %files% file(s) for %locales% locale(s) from core and %packages% active package(s).'
     aggregate_failed: 'Translation aggregation could not write "%path%".'
@@ -313,3 +315,5 @@ message:
     run_completed: 'Scheduler run completed.'
     task_failed: 'Scheduler task "%task%" failed.'
     task_disabled: 'Scheduler task "%task%" was disabled after repeated failures.'
+    task_invalid_cron_disabled: 'Scheduler task "%task%" was disabled because its cron expression is invalid.'
+    task_soft_budget_exceeded: 'Scheduler task "%task%" exceeded its soft execution budget.'

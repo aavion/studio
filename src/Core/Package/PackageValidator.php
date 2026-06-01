@@ -17,6 +17,7 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Workflow\WorkflowResult;
+use App\Scheduler\SchedulerCron;
 use Symfony\Component\Yaml\Yaml;
 use Throwable;
 
@@ -32,6 +33,7 @@ final class PackageValidator
         private readonly FileInventoryScanner $fileInventoryScanner = new FileInventoryScanner(),
         private readonly PackageTemplatePathValidator $templatePathValidator = new PackageTemplatePathValidator(),
         private readonly PackageDependencyParser $dependencyParser = new PackageDependencyParser(),
+        private readonly PackageSchedulerCronInspector $schedulerCronInspector = new PackageSchedulerCronInspector(),
     ) {
     }
 
@@ -74,6 +76,7 @@ final class PackageValidator
         $inspection = $this->inspect($candidate->directory(), $spec->inventoryDepth());
 
         array_push($issues, ...$this->templatePathValidator->validate($candidate, $inspection->templateFiles()));
+        array_push($issues, ...$this->validateSchedulerCronSyntax($candidate, $inspection->phpFiles()));
 
         if ($spec->lintPhpFiles()) {
             array_push($issues, ...$this->lintFiles($candidate, $inspection->phpFiles(), $this->phpLinter, MessageCode::PACKAGE_PHP_SYNTAX_ERROR, MessageKey::PACKAGE_PHP_SYNTAX_ERROR));
@@ -189,6 +192,51 @@ final class PackageValidator
                 MessageLevel::Error,
             ),
         ];
+    }
+
+    /**
+     * @param list<string> $files
+     *
+     * @return list<Message>
+     */
+    private function validateSchedulerCronSyntax(PackageCandidate $candidate, array $files): array
+    {
+        $issues = [];
+
+        foreach ($files as $file) {
+            $path = $candidate->directory().DIRECTORY_SEPARATOR.$file;
+            $contents = file_get_contents($path);
+
+            if (false === $contents) {
+                $issues[] = $this->unreadableFileIssue($candidate, $file, $path);
+                continue;
+            }
+
+            foreach ($this->schedulerCronInspector->expressions($contents) as $expression) {
+                if (!SchedulerCron::isValid($expression)) {
+                    $issues[] = $this->schedulerCronIssue($candidate, $file, $path, $expression);
+                }
+            }
+        }
+
+        return $issues;
+    }
+
+    private function schedulerCronIssue(PackageCandidate $candidate, string $file, string $path, string $value): Message
+    {
+        return Message::create(
+            MessageCode::PACKAGE_SCHEDULER_CRON_INVALID,
+            MessageKey::PACKAGE_SCHEDULER_CRON_INVALID,
+            ['%package%' => trim((string) $candidate->manifest()->get('PACKAGE_SLUG', ''))],
+            [
+                'source' => $candidate->source()->name(),
+                'package' => $candidate->directory(),
+                'path' => $path,
+                'file' => $file,
+                'value' => $value,
+            ],
+            MessageLevel::Error,
+        );
     }
 
     /**

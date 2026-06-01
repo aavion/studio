@@ -77,6 +77,7 @@ final class MessageKey
     public const PACKAGE_SETTING_VALUE_INVALID = 'message.package.setting.value_invalid';
     public const PACKAGE_DEPENDENCY_MISSING = 'message.package.dependency.missing';
     public const PACKAGE_DEPENDENCY_INVALID = 'message.package.dependency.invalid';
+    public const PACKAGE_SCHEDULER_CRON_INVALID = 'message.package.scheduler.cron_invalid';
     public const PACKAGE_DEPENDENCY_VERSION_UNSATISFIED = 'message.package.dependency.version_unsatisfied';
     public const PACKAGE_DEPENDENCY_STATUS_BLOCKED = 'message.package.dependency.status_blocked';
     public const PACKAGE_DEPENDENCY_CYCLE = 'message.package.dependency.cycle';
@@ -252,4 +253,6 @@ final class MessageKey
     public const SCHEDULER_RUN_COMPLETED = 'message.scheduler.run_completed';
     public const SCHEDULER_TASK_FAILED = 'message.scheduler.task_failed';
     public const SCHEDULER_TASK_DISABLED = 'message.scheduler.task_disabled';
+    public const SCHEDULER_TASK_INVALID_CRON_DISABLED = 'message.scheduler.task_invalid_cron_disabled';
+    public const SCHEDULER_TASK_SOFT_BUDGET_EXCEEDED = 'message.scheduler.task_soft_budget_exceeded';
 }

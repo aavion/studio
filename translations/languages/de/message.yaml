@@ -76,6 +76,8 @@ message:
       status_blocked: 'Paket-Abhängigkeit "%package%" kann nicht genutzt werden, solange sie "%status%" ist.'
       cycle: 'Zirkuläre Paket-Abhängigkeit erkannt: %cycle%.'
       resolved: 'Paket "%package%" hat %count% Abhängigkeits-Eintrag(e) aufgelöst.'
+    scheduler:
+      cron_invalid: 'Paket "%package%" deklariert einen ungültigen Scheduler-Cron-Ausdruck.'
   translation:
     aggregate_completed: 'Translation-Aggregation hat %files% Datei(en) für %locales% Locale(s) aus Core und %packages% aktiven Paket(en) zusammengeführt.'
     aggregate_failed: 'Translation-Aggregation konnte "%path%" nicht schreiben.'
@@ -313,3 +315,5 @@ message:
     run_completed: 'Scheduler-Lauf abgeschlossen.'
     task_failed: 'Scheduler-Task "%task%" ist fehlgeschlagen.'
     task_disabled: 'Scheduler-Task "%task%" wurde nach wiederholten Fehlern deaktiviert.'
+    task_invalid_cron_disabled: 'Scheduler-Task "%task%" wurde deaktiviert, weil sein Cron-Ausdruck ungültig ist.'
+    task_soft_budget_exceeded: 'Scheduler-Task "%task%" hat sein weiches Ausführungsbudget überschritten.'

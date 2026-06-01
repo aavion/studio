@@ -9,9 +9,16 @@
 {% endblock %}
 
 {% block admin_body %}
+    {% set run_now_action %}
+        <form method="post" action="{{ path('backend_admin_scheduler_run', {identifier: task.identifier}) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('scheduler-task-run-' ~ task.identifier) }}">
+            <button class="studio-backend-button studio-button-secondary" type="submit">{{ 'admin.scheduler.actions.run_now'|trans }}</button>
+        </form>
+    {% endset %}
     {% include '@backend/admin/partials/_page-header.html.twig' with {
         eyebrow: 'admin.scheduler.title'|trans,
         title: task.labelKey|trans,
+        actions: run_now_action,
     } only %}
 
     <section class="studio-panel">

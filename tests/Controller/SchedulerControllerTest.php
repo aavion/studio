@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Core\Config\Config;
+use App\Core\Config\ConfigValueType;
+use App\Scheduler\SchedulerLockFactory;
+use App\Scheduler\SchedulerSettings;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class SchedulerControllerTest extends WebTestCase
@@ -38,5 +42,62 @@ final class SchedulerControllerTest extends WebTestCase
         ]);
 
         self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testCronRunRejectsRevokedApiKey(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/cron/run', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer test_seed_revoked_key',
+        ]);
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testCronRunGetAuthFallbackIsDisabledByDefault(): void
+    {
+        $client = self::createClient();
+        self::getContainer()->get(Config::class)->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, false, ConfigValueType::Boolean);
+
+        $client->request('GET', '/cron/run?auth=test_seed_read_only_key');
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testCronRunGetAuthFallbackWorksWhenEnabled(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, true, ConfigValueType::Boolean);
+
+        try {
+            $client->request('GET', '/cron/run?auth=test_seed_read_only_key');
+
+            self::assertResponseIsSuccessful();
+            $payload = json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+            self::assertSame('completed', $payload['status']);
+            self::assertSame('seedro', $payload['auth']['api_key_prefix']);
+        } finally {
+            $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, false, ConfigValueType::Boolean);
+        }
+    }
+
+    public function testCronRunReportsLockContentionAsRetryableServiceUnavailable(): void
+    {
+        $client = self::createClient();
+        $lock = self::getContainer()->get(SchedulerLockFactory::class)->acquire('run');
+        self::assertNotNull($lock);
+
+        try {
+            $client->request('GET', '/cron/run', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_only_key',
+            ]);
+
+            self::assertResponseStatusCodeSame(503);
+            self::assertSame('60', $client->getResponse()->headers->get('Retry-After'));
+            self::assertSame('locked', json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['status']);
+        } finally {
+            $lock->release();
+        }
     }
 }

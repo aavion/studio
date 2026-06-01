@@ -150,6 +150,32 @@ final class PackageValidatorTest extends TestCase
         self::assertSame('PACKAGE_DEPENDENCIES', $result->firstIssue()?->context()['key']);
     }
 
+    public function testItRejectsInvalidSchedulerTaskCronExpressions(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        'not a cron',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.scheduler.cron_invalid', $result->firstIssue()?->code());
+        self::assertSame('src/SchedulerTasks.php', $result->firstIssue()?->context()['file']);
+        self::assertSame('not a cron', $result->firstIssue()?->context()['value']);
+    }
+
     public function testItLimitsInventoryDepth(): void
     {
         $this->writeFile('one/two/three/file.txt', 'nested');

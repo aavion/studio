@@ -9,6 +9,7 @@ use App\Entity\SchedulerTask;
 use App\Entity\SchedulerTaskRun;
 use App\Scheduler\SchedulerCron;
 use App\Scheduler\SchedulerSettings;
+use App\Scheduler\SchedulerRunner;
 use App\Scheduler\SchedulerTaskSynchronizer;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
@@ -24,8 +25,38 @@ final class AdminSchedulerController extends AbstractController
         private readonly SchedulerTaskSynchronizer $synchronizer,
         private readonly EntityManagerInterface $entityManager,
         private readonly SchedulerSettings $settings,
+        private readonly SchedulerRunner $runner,
         private readonly HttpErrorRenderer $httpError,
     ) {
+    }
+
+    #[Route('/admin/scheduler/{identifier}/run', name: 'backend_admin_scheduler_run', requirements: ['identifier' => '[A-Za-z0-9_.:-]+'], priority: 10, methods: ['POST'])]
+    public function runNow(Request $request, string $identifier): Response
+    {
+        if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
+            return $response;
+        }
+
+        $token = $request->request->get('_csrf_token');
+        if (!is_string($token) || !$this->isCsrfTokenValid('scheduler-task-run-'.$identifier, $token)) {
+            $this->addFlash('error', ['translation_key' => 'admin.scheduler.form.errors.invalid_csrf', 'parameters' => []]);
+
+            return $this->redirectToRoute('backend_admin_scheduler_detail', ['identifier' => $identifier]);
+        }
+
+        $this->synchronizer->synchronize();
+        if (!$this->entityManager->find(SchedulerTask::class, $identifier) instanceof SchedulerTask) {
+            return $this->httpError->render(Response::HTTP_NOT_FOUND, $request, context: [
+                'task' => $identifier,
+            ]);
+        }
+
+        $result = $this->runner->run($identifier, true)->toArray();
+        $this->addFlash('success', ['translation_key' => 'admin.scheduler.actions.run_now_started', 'parameters' => [
+            '%status%' => $result['status'],
+        ]]);
+
+        return $this->redirectToRoute('backend_admin_scheduler_detail', ['identifier' => $identifier]);
     }
 
     #[Route('/admin/scheduler', name: 'backend_admin_scheduler', priority: 10, methods: ['GET'])]

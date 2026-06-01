@@ -34,7 +34,10 @@ final readonly class SchedulerTaskSynchronizer
                 $task->syncDefinition($definition, $now);
             }
 
-            $task->seedNextDue(SchedulerCron::nextRun($task->cronExpression(), $now));
+            $nextRun = SchedulerCron::nextRunOrNull($task->cronExpression(), $now);
+            if (null !== $nextRun) {
+                $task->seedNextDue($nextRun);
+            }
             $tasks[] = $task;
         }
 

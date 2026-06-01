@@ -48,7 +48,16 @@ final class SchedulerController extends AbstractController
         $payload['auth'] = [
             'api_key_prefix' => $apiKey->prefix(),
         ];
+        $statusCode = match ($payload['status']) {
+            'disabled' => JsonResponse::HTTP_FORBIDDEN,
+            'locked' => JsonResponse::HTTP_SERVICE_UNAVAILABLE,
+            default => JsonResponse::HTTP_OK,
+        };
+        $response = new JsonResponse($payload, $statusCode);
+        if ('locked' === $payload['status']) {
+            $response->headers->set('Retry-After', '60');
+        }
 
-        return new JsonResponse($payload, 'disabled' === $payload['status'] ? JsonResponse::HTTP_FORBIDDEN : JsonResponse::HTTP_OK);
+        return $response;
     }
 }

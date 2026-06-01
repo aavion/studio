@@ -52,10 +52,11 @@ final readonly class SchedulerRunner
         try {
             $tasks = $this->synchronizer->synchronize();
             $dueTasks = $this->dueTasks($tasks, $now, $jobIdentifier, $force);
-            $results = [];
+            $results = $this->skippedTaskResults($tasks, $dueTasks, $jobIdentifier, $force);
+            $softBudgetMs = $this->softBudgetMs(count($dueTasks));
 
             foreach ($dueTasks as $task) {
-                $results[] = $this->runTask($task, $now);
+                $results[] = $this->runTask($task, $now, $softBudgetMs);
             }
 
             $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
@@ -129,7 +130,7 @@ final readonly class SchedulerRunner
     /**
      * @return array<string, mixed>
      */
-    private function runTask(SchedulerTask $task, DateTimeImmutable $now): array
+    private function runTask(SchedulerTask $task, DateTimeImmutable $now, ?int $softBudgetMs): array
     {
         $run = new SchedulerTaskRun($this->uuidFactory->v4(), $task, $now, [
             'task' => $task->identifier(),
@@ -139,6 +140,19 @@ final readonly class SchedulerRunner
         $task->markAttempt($now);
         $this->entityManager->persist($run);
         $this->entityManager->flush();
+
+        if (!SchedulerCron::isValid($task->cronExpression())) {
+            $finishedAt = new DateTimeImmutable();
+            $task->markFailure($finishedAt, 1);
+            $run->finish(SchedulerTaskRunStatus::Failed, $finishedAt, [
+                'reason' => 'invalid_cron',
+                'cron_expression' => $task->cronExpression(),
+            ]);
+            $this->entityManager->flush();
+            $this->logInvalidCronDisabled($task, $run);
+
+            return $this->taskResult($task, $run);
+        }
 
         try {
             $executor = $this->executorFor($task);
@@ -156,6 +170,7 @@ final readonly class SchedulerRunner
             }
 
             $this->entityManager->flush();
+            $this->logSoftBudgetIfExceeded($task, $run, $softBudgetMs);
 
             return $this->taskResult($task, $run);
         } catch (Throwable $error) {
@@ -166,6 +181,7 @@ final readonly class SchedulerRunner
                 'message' => $error->getMessage(),
             ]);
             $this->entityManager->flush();
+            $this->logSoftBudgetIfExceeded($task, $run, $softBudgetMs);
             $this->logTaskFailure($task, $run, [
                 Message::exception(MessageCode::SCHEDULER_TASK_FAILED, MessageKey::SCHEDULER_TASK_FAILED, [
                     '%task%' => $task->identifier(),
@@ -189,6 +205,90 @@ final readonly class SchedulerRunner
         }
 
         throw new \RuntimeException(sprintf('No scheduler executor supports task "%s".', $task->identifier()));
+    }
+
+    /**
+     * @param list<SchedulerTask> $tasks
+     * @param list<SchedulerTask> $dueTasks
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function skippedTaskResults(array $tasks, array $dueTasks, ?string $jobIdentifier, bool $force): array
+    {
+        if ($force) {
+            return [];
+        }
+
+        $dueIdentifiers = array_fill_keys(array_map(static fn (SchedulerTask $task): string => $task->identifier(), $dueTasks), true);
+        $results = [];
+
+        foreach ($tasks as $task) {
+            if (null !== $jobIdentifier && $task->identifier() !== $jobIdentifier) {
+                continue;
+            }
+
+            if (!$this->isRunnable($task) || isset($dueIdentifiers[$task->identifier()])) {
+                continue;
+            }
+
+            $results[] = [
+                'identifier' => $task->identifier(),
+                'source' => $task->source(),
+                'status' => SchedulerTaskRunStatus::Skipped->value,
+                'task_status' => $task->status()->value,
+                'failure_count' => $task->failureCount(),
+                'duration_ms' => null,
+                'next_due_at' => $task->nextDueAt()?->format(DATE_ATOM),
+            ];
+        }
+
+        return $results;
+    }
+
+    private function softBudgetMs(int $dueTaskCount): ?int
+    {
+        if ($dueTaskCount <= 0) {
+            return null;
+        }
+
+        $limit = (int) ini_get('max_execution_time');
+
+        return $limit > 0 ? max(1, (int) floor($limit * 1000 / $dueTaskCount)) : null;
+    }
+
+    private function logSoftBudgetIfExceeded(SchedulerTask $task, SchedulerTaskRun $run, ?int $softBudgetMs): void
+    {
+        $durationMs = $run->durationMs();
+
+        if (null === $softBudgetMs || null === $durationMs || $durationMs <= $softBudgetMs) {
+            return;
+        }
+
+        $this->messageLogger->log(Message::info(
+            MessageCode::SCHEDULER_TASK_SOFT_BUDGET_EXCEEDED,
+            MessageKey::SCHEDULER_TASK_SOFT_BUDGET_EXCEEDED,
+            ['%task%' => $task->identifier()],
+            [
+                'task' => $task->identifier(),
+                'run' => $run->uid(),
+                'duration_ms' => $durationMs,
+                'soft_budget_ms' => $softBudgetMs,
+            ],
+        ));
+    }
+
+    private function logInvalidCronDisabled(SchedulerTask $task, SchedulerTaskRun $run): void
+    {
+        $this->messageLogger->log(Message::exception(
+            MessageCode::SCHEDULER_TASK_INVALID_CRON_DISABLED,
+            MessageKey::SCHEDULER_TASK_INVALID_CRON_DISABLED,
+            ['%task%' => $task->identifier()],
+            [
+                'task' => $task->identifier(),
+                'run' => $run->uid(),
+                'cron_expression' => $task->cronExpression(),
+            ],
+        ));
     }
 
     /**

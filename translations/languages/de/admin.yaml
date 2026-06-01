@@ -448,6 +448,9 @@ admin:
       api_key_placeholder: 'api-key'
       get_enabled: 'GET-Authentifizierung ist aktiviert. Eingeschränkte Scheduler können %url% aufrufen.'
       job_hint: 'Ergänze ?job={job_id}, um einen registrierten Job sofort auszuführen. Die Job-ID steht in der Tabelle.'
+    actions:
+      run_now: 'Jetzt ausführen'
+      run_now_started: 'Scheduler-Lauf mit Status %status% abgeschlossen.'
     tasks:
       title: 'Registrierte Jobs'
       empty: 'Es sind keine Scheduler-Jobs registriert.'

@@ -448,6 +448,9 @@ admin:
       api_key_placeholder: 'api-key'
       get_enabled: 'GET authentication is enabled. Constrained schedulers may call %url%.'
       job_hint: 'Add ?job={job_id} to run one registered job immediately. The job identifier is shown in the table.'
+    actions:
+      run_now: 'Run now'
+      run_now_started: 'Scheduler run completed with status %status%.'
     tasks:
       title: 'Registered jobs'
       empty: 'No scheduler jobs are registered.'
