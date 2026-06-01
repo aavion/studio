@@ -716,6 +716,10 @@ final class RecordingSetupCommandExecutor implements SetupCommandExecutorInterfa
             return $this->failure;
         }
 
+        if (in_array('--version', $command, true) && (in_array('composer', $command, true) || str_ends_with($command[1] ?? '', '/bin/composer'))) {
+            return new SetupCommandResult(0, 'Composer version test');
+        }
+
         if (in_array('dump-env', $command, true)) {
             file_put_contents($cwd.'/.env.local.php', '<?php'.PHP_EOL.PHP_EOL.'return '.var_export($environment, true).';'.PHP_EOL);
         }
