@@ -41,12 +41,12 @@ Measured from `php bin/phpunit --log-junit var/test-suite-audit.xml` after the c
 
 | Rank | Class/Test | Time | Decision |
 | --- | --- | ---: | --- |
-| 1 | `PackageZipInstallerTest::testItRestoresActiveReverseDependentsAfterSuccessfulOverwrite` | ~5.0s | Keep for now; expensive but covers ZIP staging, overwrite, discovery, deactivation, and reactivation integration. |
-| 2 | `AdminUserControllerTest` | ~7.1s total | Audit for DOM/style trimming only; most tests cover security and lifecycle regressions. |
-| 3 | `BackendControllerTest` setup flows | ~10.6s total | Candidate for moving validation-only checks into `SetupWebInputFactoryTest`; keep one route walk and one no-JS fallback. |
-| 4 | `UserControllerTest` | ~4.0s total | Audit for DOM/style trimming; keep token, enumeration, recovery, and profile persistence coverage. |
-| 5 | `SetupPasswordResetRunnerTest` | ~2.35s total | Likely keep; verifies prefixed DB recovery behavior. |
-| 6 | `SetupRunnerTest` | ~2.22s total | Likely keep; expensive but setup integration is high-risk. |
+| 1 | `BackendControllerTest` | ~9.4s total | Keep setup and backend registry integration; trim only UI-detail assertions. |
+| 2 | `AdminUserControllerTest` | ~8.3s total | Keep for now; most tests cover ACL/security/lifecycle regressions. |
+| 3 | `PackageZipInstallerTest::testItRestoresActiveReverseDependentsAfterSuccessfulOverwrite` | ~4.2s | Keep for now; expensive but covers ZIP staging, overwrite, discovery, deactivation, and reactivation integration. |
+| 4 | `UserControllerTest` | ~3.4s total | Audit for DOM/style trimming; keep token, enumeration, recovery, and profile persistence coverage. |
+| 5 | `SetupPasswordResetRunnerTest` | ~2.3s total | Keep; verifies prefixed DB recovery behavior. |
+| 6 | `SetupRunnerTest` | ~2.1s total | Keep; expensive but setup integration is high-risk. |
 
 ## Audit Rules
 
@@ -81,6 +81,8 @@ Measured from `php bin/phpunit --log-junit var/test-suite-audit.xml` after the c
 - [ ] `AdminUserControllerTest`: trim list/table assertions to behavior markers and persistence checks.
 - [x] `UserControllerTest`: trim password-meter and API-key toggle CSS assertions where a route/form behavior assertion exists.
 - [ ] `ViewTwigExtensionTest`: consider whether granular partial rendering belongs in a smaller Twig/template smoke test or should remain as integration coverage.
+- [ ] Investigate whether setup wizard controller tests can share more prepared wizard state without losing route/security coverage.
+- [ ] Consider a future package-installer fixture strategy for overwrite/dependency flows; avoid weakening the current integration test casually.
 - [ ] Re-measure after every meaningful slice with JUnit and record changes below.
 
 ## Audit Log
@@ -95,4 +97,5 @@ Measured from `php bin/phpunit --log-junit var/test-suite-audit.xml` after the c
 - Trimmed `UserControllerTest` assertions for password-meter widgets and API-key toggle CSS while keeping token rendering, password-change, API-key persistence, and revocation behavior.
 - Consolidated duplicate anonymous `/user` login-fallback checks into one browser test with two requests.
 - Trimmed `BackendControllerTest` assertions for active navigation and password-meter UI details where route success, forms, operation rows, and static-view injection behavior already define the test contract.
+- Re-measured with JUnit. High assertion counts mostly come from fast key/enum coverage, while runtime remains concentrated in kernel/controller setup flows and package ZIP integration.
 - Repaired local `vendor/` after iCloud conflict-copy directories caused missing package files; use `composer install --no-scripts --optimize-autoloader` if this happens again during the audit.
