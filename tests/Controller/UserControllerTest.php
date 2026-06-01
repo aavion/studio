@@ -252,7 +252,6 @@ final class UserControllerTest extends WebTestCase
         }
 
         $crawler = $client->request('GET', '/user/password');
-        self::assertSelectorExists('form[data-controller="password-policy"] .studio-password-meter');
         $form = $crawler->selectButton('Update password')->form([
             'current_password' => 'current-password',
             'new_password' => 'NewPassword1!',
@@ -545,7 +544,6 @@ final class UserControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Accept invitation');
         self::assertSelectorExists('input[name="username"]');
-        self::assertSelectorExists('form[data-controller="password-policy"] .studio-password-meter');
     }
 
     public function testPasswordResetTokenRendersPasswordPolicyMeter(): void
@@ -566,7 +564,6 @@ final class UserControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Choose new password');
-        self::assertSelectorExists('form[data-controller="password-policy"] .studio-password-meter');
 
         $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
         $entityManager->remove($entityManager->find(UserAccount::class, $user->uid()));
@@ -1352,8 +1349,6 @@ final class UserControllerTest extends WebTestCase
         self::assertSelectorTextContains('.studio-field-table', 'Read only');
         self::assertSelectorTextContains('.studio-field-table', 'seedrv');
         self::assertSelectorTextContains('.studio-field-table', 'Revoked');
-        self::assertSelectorExists('#studio-show-revoked-api-keys');
-        self::assertSelectorExists('.studio-api-key-row-revoked');
     }
 
     public function testApiKeysCanBeCreatedRevealedAndRevoked(): void

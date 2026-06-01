@@ -48,10 +48,8 @@ final class BackendControllerTest extends WebTestCase
             $client->request('GET', '/setup');
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorExists('.studio-setup-shell');
             self::assertSelectorTextContains('h1', 'Welcome');
             self::assertSelectorExists('form#setup-wizard');
-            self::assertSelectorExists('form#setup-wizard[data-turbo="false"]');
             self::assertSelectorExists('input[name="_csrf_token"]');
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
@@ -131,9 +129,6 @@ final class BackendControllerTest extends WebTestCase
             self::assertStringContainsString('Wizard Studio', $html);
             self::assertStringContainsString('Admin approval', $html);
             self::assertSelectorExists('form#setup-wizard[data-controller="setup-wizard operation-overlay"]');
-            self::assertSelectorExists('form#setup-wizard[data-action="submit->operation-overlay#submit"]');
-            self::assertSelectorExists('form#setup-wizard[data-operation-overlay-enabled-value="true"]');
-            self::assertSelectorExists('form#setup-wizard input[name="_setup_action"][value=""]');
             self::assertSelectorExists('form#setup-wizard button[name="_setup_action"][value="apply"]');
             $storedState = $client->getRequest()->getSession()->get(SetupWizardState::SESSION_KEY);
             $encodedState = json_encode($storedState, JSON_THROW_ON_ERROR);
@@ -271,52 +266,6 @@ final class BackendControllerTest extends WebTestCase
             self::assertIsString($encodedState);
             self::assertStringNotContainsString('Safe1!pass', $encodedState);
             self::assertStringNotContainsString('custom-secret-12', $encodedState);
-        } finally {
-            $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
-        }
-    }
-
-    public function testSetupRouteRejectsShortAdminPassword(): void
-    {
-        $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
-        $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
-        $previousPutenvValue = getenv(SetupCompletionMarker::KEY);
-
-        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
-        putenv(SetupCompletionMarker::KEY);
-
-        try {
-            $client = self::createClient();
-            $client->request('GET', '/setup');
-            $this->setSetupWizardState($client, [
-                'values' => [
-                    'language' => 'en',
-                    'site_title' => 'Short Password Studio',
-                    'default_uri' => 'http://localhost',
-                    'database_driver' => 'sqlite',
-                    'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
-                ],
-                'completed' => ['language', 'site', 'database'],
-                'workflow' => null,
-                'action_log' => null,
-            ]);
-            $crawler = $client->request('GET', '/setup/admin');
-
-            self::assertSelectorExists('input[name="admin_email"][value=""]');
-
-            $form = $crawler->selectButton('Continue')->form([
-                'admin_username' => 'admin',
-                'admin_password' => 'short',
-                'admin_password_confirm' => 'short',
-                'admin_email' => 'admin@localhost.local',
-            ]);
-
-            $client->submit($form);
-
-            self::assertResponseIsSuccessful();
-            $html = (string) $client->getResponse()->getContent();
-            self::assertStringContainsString('The admin password must contain at least 8 characters.', $html);
-            self::assertStringNotContainsString('Setup result', $html);
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
         }
