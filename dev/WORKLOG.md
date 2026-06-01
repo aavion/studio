@@ -66,6 +66,9 @@
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
+### 2026-06-01
+- Addressed setup review hardening: rollback now restores pre-existing env files instead of deleting unrelated config, CLI database prefixes normalize like the web wizard, setup live-operation secrets are encrypted before persistence, review-required live-operation continuations survive reload, and Composer install/update prepares ignored package registry stubs before asset scripts.
+
 ### 2026-05-31
 - Built `feat-setup-wizard`: a DB-free, step-gated setup wizard with preserved input state, live language switching, field-level validation, driver-aware database input, optional table prefixing, site/default settings, OWNER account creation, review/apply flow, LiveOperation execution, rollback cleanup, and setup completion marking only after successful apply.
 - Hardened setup runtime boundaries: normal app services stay off Doctrine before setup completion, `/api/live/*` remains available for JSON polling, DB test/apply are the only pre-completion DB opt-ins, stale browser operation state is ignored, setup prefers bundled Composer when needed, and failure paths report message-backed errors instead of invisible request work.

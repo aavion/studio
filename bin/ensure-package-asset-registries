@@ -1,0 +1,26 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use App\Core\Package\PackageAssetFilesystem;
+use App\Core\Package\PackageAssetRegistryWriter;
+
+$projectDir = dirname(__DIR__);
+$autoload = $projectDir.'/vendor/autoload.php';
+
+if (!is_file($autoload)) {
+    fwrite(STDERR, "Composer autoload file is missing. Run bin/init or composer install first.\n");
+
+    exit(1);
+}
+
+require $autoload;
+
+try {
+    (new PackageAssetRegistryWriter(new PackageAssetFilesystem($projectDir)))->ensureRegistryFilesExist();
+} catch (Throwable $throwable) {
+    fwrite(STDERR, 'Package asset registry files could not be prepared: '.$throwable->getMessage().PHP_EOL);
+
+    exit(1);
+}

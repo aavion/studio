@@ -112,9 +112,11 @@
             "tailwind:build": "symfony-cmd"
         },
         "post-install-cmd": [
+            "@php bin/ensure-package-asset-registries",
             "@auto-scripts"
         ],
         "post-update-cmd": [
+            "@php bin/ensure-package-asset-registries",
             "@auto-scripts"
         ]
     }
