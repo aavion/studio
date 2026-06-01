@@ -77,14 +77,14 @@ Measured from `php bin/phpunit --log-junit var/test-suite-audit.xml` after the c
 
 ## Candidate Backlog
 
-- [ ] `BackendControllerTest`: move validation-only setup cases into `SetupWebInputFactoryTest` where possible.
+- [x] `BackendControllerTest`: move validation-only setup cases into `SetupWebInputFactoryTest` where possible.
 - [x] `BackendControllerTest`: review package/detail lifecycle assertions for CSS-heavy checks.
-- [ ] `AdminUserControllerTest`: trim list/table assertions to behavior markers and persistence checks.
+- [x] `AdminUserControllerTest`: trim list/table assertions to behavior markers and persistence checks.
 - [x] `UserControllerTest`: trim password-meter and API-key toggle CSS assertions where a route/form behavior assertion exists.
-- [ ] `ViewTwigExtensionTest`: consider whether granular partial rendering belongs in a smaller Twig/template smoke test or should remain as integration coverage.
-- [ ] Investigate whether setup wizard controller tests can share more prepared wizard state without losing route/security coverage.
+- [x] `ViewTwigExtensionTest`: consider whether granular partial rendering belongs in a smaller Twig/template smoke test or should remain as integration coverage.
+- [x] Investigate whether setup wizard controller tests can share more prepared wizard state without losing route/security coverage.
 - [ ] Consider a future package-installer fixture strategy for overwrite/dependency flows; avoid weakening the current integration test casually.
-- [ ] Re-measure after every meaningful slice with JUnit and record changes below.
+- [x] Re-measure after every meaningful slice with JUnit and record changes below.
 
 ## Audit Log
 
@@ -103,4 +103,5 @@ Measured from `php bin/phpunit --log-junit var/test-suite-audit.xml` after the c
 - Removed direct `operation-overlay` Stimulus wiring assertions where the same review form is immediately submitted and verified through the backend result.
 - Added centralized `PackageZipInstallerTest` teardown cleanup for temporary package directories, upload roots, and package rows so failed assertions cannot leak filesystem/database state into later tests.
 - Re-measured with JUnit. High assertion counts mostly come from fast key/enum coverage, while runtime remains concentrated in kernel/controller setup flows and package ZIP integration.
+- Reviewed remaining backlog before PR. `AdminUserControllerTest` is mostly ACL/security lifecycle coverage, `ViewTwigExtensionTest` is fast namespace/provider smoke coverage, and additional setup-controller consolidation would risk losing route/session/security behavior for little measurable gain.
 - Repaired local `vendor/` after iCloud conflict-copy directories caused missing package files; use `composer install --no-scripts --optimize-autoloader` if this happens again during the audit.
