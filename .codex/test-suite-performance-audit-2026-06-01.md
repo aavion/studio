@@ -1,9 +1,9 @@
 # Test Suite Performance Audit
 
-> **Status**: Active  
+> **Status**: Closed / deferred  
 > **Updated**: 2026-06-01  
 > **Branch**: `audit-test-suite-performance`  
-> **Purpose:** Preserve the test-suite audit plan, measurements, decisions, and continuation notes for agents.
+> **Purpose:** Preserve the completed test-suite audit plan, measurements, decisions, and deferred continuation notes for agents.
 
 ## Resume Instructions
 

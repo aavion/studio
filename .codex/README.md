@@ -12,7 +12,7 @@
 - Info: [Framework Version Recap](framework-version-recap.md)
 - Info: [Grav Plugin Inspiration Notes](grav-plugin-inspiration-notes.md)
 - Info: [Symfony Documentation Notes](symfony-docs-notes.md)
-- Audit: [Test Suite Performance Audit](test-suite-performance-audit.md)
+- Audit: [Test Suite Performance Audit 2026-06-01](test-suite-performance-audit-2026-06-01.md)
 - Tool: [Render Symfony Output](render.php)
 - Tool: [Compare Translation Keys](compare_translations.php)
 - Tool: [Global Project Lint](../bin/lint)
