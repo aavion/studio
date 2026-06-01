@@ -1,0 +1,68 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.scheduler.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'ui.admin.area'|trans,
+        title: 'admin.scheduler.title'|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.scheduler.trigger.title'|trans }}</h2>
+        <p class="studio-muted">{{ 'admin.scheduler.trigger.text'|trans }}</p>
+        <pre class="studio-code-block"><code>GET {{ cron_run_url }}
+Authorization: Bearer {{ 'admin.scheduler.trigger.api_key_placeholder'|trans }}</code></pre>
+        {% if get_auth_enabled %}
+            <p class="studio-muted">{{ 'admin.scheduler.trigger.get_enabled'|trans({'%url%': cron_run_url ~ '?auth=...'}) }}</p>
+        {% endif %}
+        <p class="studio-muted">{{ 'admin.scheduler.trigger.job_hint'|trans }}</p>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.scheduler.tasks.title'|trans }}</h2>
+        <details class="studio-muted">
+            <summary>{{ 'admin.scheduler.legend.summary'|trans }}</summary>
+            <p>{{ 'admin.scheduler.legend.text'|trans }}</p>
+            <p><code>*/15 * * * *</code> {{ 'admin.scheduler.legend.every_15_minutes'|trans }}</p>
+            <p><code>0 3 * * *</code> {{ 'admin.scheduler.legend.daily_at_3'|trans }}</p>
+        </details>
+        {% if tasks|length > 0 %}
+            <table class="studio-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.scheduler.table.job'|trans }}</th>
+                        <th scope="col">{{ 'admin.scheduler.table.source'|trans }}</th>
+                        <th scope="col">{{ 'admin.scheduler.table.interval'|trans }}</th>
+                        <th scope="col">{{ 'admin.scheduler.table.last_success'|trans }}</th>
+                        <th scope="col">{{ 'admin.scheduler.table.status'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                        <tr>
+                            <th scope="row">
+                                <a href="{{ path('backend_admin_scheduler_detail', {identifier: task.identifier}) }}">{{ task.labelKey|trans }}</a>
+                                <div class="studio-muted">{{ task.identifier }}</div>
+                            </th>
+                            <td>
+                                <a href="{{ task.source == 'system' ? path('backend_admin_index') : path('backend_admin_package_detail', {packageName: task.source}) }}">{{ task.source }}</a>
+                            </td>
+                            <td><code>{{ task.cronExpression }}</code></td>
+                            <td>{{ task.lastSuccessAt ? task.lastSuccessAt|date('Y-m-d H:i') : 'ui.common.never'|trans }}</td>
+                            <td><span class="studio-badge studio-badge-neutral">{{ ('admin.scheduler.status.' ~ task.status.value)|trans }}</span></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="studio-muted">{{ 'admin.scheduler.tasks.empty'|trans }}</p>
+        {% endif %}
+    </section>
+{% endblock %}

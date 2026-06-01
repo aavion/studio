@@ -80,7 +80,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 BackendArea::Admin,
                 'scheduler',
                 'admin.navigation.scheduler',
-                '@backend/admin/section.html.twig',
+                '@backend/admin/scheduler/index.html.twig',
                 50,
                 minimumAccessLevel: AccessLevel::ADMIN,
                 context: [

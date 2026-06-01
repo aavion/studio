@@ -7,7 +7,12 @@ namespace App\Core\Package;
 use App\Core\Package\Settings\PackageSettingDefinition;
 use App\Core\Package\Settings\PackageSettingProviderInterface;
 use App\Core\Package\Settings\PackageSettings;
+use App\Core\Operation\ActionQueue;
 use App\Entity\ExtensionPackage;
+use App\Scheduler\SchedulerActionQueueProviderInterface;
+use App\Scheduler\SchedulerCallableProviderInterface;
+use App\Scheduler\SchedulerTaskDefinition;
+use App\Scheduler\SchedulerTaskProviderInterface;
 use App\View\Injection\ConfigurableStaticViewInjectionSet;
 use App\View\Injection\DynamicViewInjection;
 use App\View\Injection\DynamicViewInjectionProviderInterface;
@@ -15,7 +20,7 @@ use App\View\Injection\StaticViewInjection;
 use App\View\Injection\StaticViewInjectionProviderInterface;
 use InvalidArgumentException;
 
-final class PackageRuntimeContributionRegistry implements StaticViewInjectionProviderInterface, DynamicViewInjectionProviderInterface, PackageSettingProviderInterface
+final class PackageRuntimeContributionRegistry implements StaticViewInjectionProviderInterface, DynamicViewInjectionProviderInterface, PackageSettingProviderInterface, SchedulerTaskProviderInterface, SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface
 {
     public function __construct(private ?PackageSettings $packageSettingsStore = null)
     {
@@ -40,6 +45,21 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
      * @var list<PackageSettingDefinition>
      */
     private array $packageSettingDefinitions = [];
+
+    /**
+     * @var list<SchedulerTaskDefinition>
+     */
+    private array $schedulerTaskDefinitions = [];
+
+    /**
+     * @var list<SchedulerCallableProviderInterface>
+     */
+    private array $schedulerCallableProviders = [];
+
+    /**
+     * @var list<SchedulerActionQueueProviderInterface>
+     */
+    private array $schedulerActionQueueProviders = [];
 
     public function add(ExtensionPackage $package, mixed $contribution): void
     {
@@ -78,6 +98,12 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
             return;
         }
 
+        if ($contribution instanceof SchedulerTaskDefinition) {
+            $this->addSchedulerTaskDefinition($package, $contribution);
+
+            return;
+        }
+
         $providerHandled = false;
 
         if ($contribution instanceof StaticViewInjectionProviderInterface) {
@@ -101,6 +127,24 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
                 $this->addToRegistry($package, $definition);
             }
 
+            $providerHandled = true;
+        }
+
+        if ($contribution instanceof SchedulerTaskProviderInterface) {
+            foreach ($contribution->schedulerTasks() as $definition) {
+                $this->addToRegistry($package, $definition);
+            }
+
+            $providerHandled = true;
+        }
+
+        if ($contribution instanceof SchedulerCallableProviderInterface) {
+            $this->schedulerCallableProviders[] = $contribution;
+            $providerHandled = true;
+        }
+
+        if ($contribution instanceof SchedulerActionQueueProviderInterface) {
+            $this->schedulerActionQueueProviders[] = $contribution;
             $providerHandled = true;
         }
 
@@ -128,6 +172,30 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
         $this->configurableStaticViewInjectionSets = $registry->configurableStaticViewInjectionSets;
         $this->dynamicViewInjections = $registry->dynamicViewInjections;
         $this->packageSettingDefinitions = $registry->packageSettingDefinitions;
+        $this->schedulerTaskDefinitions = $registry->schedulerTaskDefinitions;
+        $this->schedulerCallableProviders = $registry->schedulerCallableProviders;
+        $this->schedulerActionQueueProviders = $registry->schedulerActionQueueProviders;
+    }
+
+    private function addSchedulerTaskDefinition(ExtensionPackage $package, SchedulerTaskDefinition $definition): void
+    {
+        if ($definition->source() !== $package->packageName()) {
+            throw new InvalidArgumentException(sprintf(
+                'Scheduler task "%s" returned by package "%s" must use the package name as source.',
+                $definition->identifier(),
+                $package->packageName(),
+            ));
+        }
+
+        if ($definition->trusted()) {
+            throw new InvalidArgumentException(sprintf(
+                'Scheduler task "%s" returned by package "%s" must not be trusted.',
+                $definition->identifier(),
+                $package->packageName(),
+            ));
+        }
+
+        $this->schedulerTaskDefinitions[] = $definition;
     }
 
     public function staticViewInjections(): array
@@ -154,5 +222,34 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
     public function packageSettings(): array
     {
         return $this->packageSettingDefinitions;
+    }
+
+    public function schedulerTasks(): array
+    {
+        return $this->schedulerTaskDefinitions;
+    }
+
+    public function schedulerCallable(string $target): ?callable
+    {
+        foreach ($this->schedulerCallableProviders as $provider) {
+            $callable = $provider->schedulerCallable($target);
+            if (null !== $callable) {
+                return $callable;
+            }
+        }
+
+        return null;
+    }
+
+    public function schedulerActionQueue(string $target): ?ActionQueue
+    {
+        foreach ($this->schedulerActionQueueProviders as $provider) {
+            $queue = $provider->schedulerActionQueue($target);
+            if (null !== $queue) {
+                return $queue;
+            }
+        }
+
+        return null;
     }
 }

@@ -76,6 +76,8 @@ message:
       status_blocked: 'Paket-Abhängigkeit "%package%" kann nicht genutzt werden, solange sie "%status%" ist.'
       cycle: 'Zirkuläre Paket-Abhängigkeit erkannt: %cycle%.'
       resolved: 'Paket "%package%" hat %count% Abhängigkeits-Eintrag(e) aufgelöst.'
+    scheduler:
+      cron_invalid: 'Paket "%package%" deklariert einen ungültigen Scheduler-Cron-Ausdruck.'
   translation:
     aggregate_completed: 'Translation-Aggregation hat %files% Datei(en) für %locales% Locale(s) aus Core und %packages% aktiven Paket(en) zusammengeführt.'
     aggregate_failed: 'Translation-Aggregation konnte "%path%" nicht schreiben.'
@@ -219,6 +221,8 @@ message:
     read_failed: 'Konfigurations-Key "%key%" konnte nicht gelesen werden.'
     write_failed: 'Konfigurations-Key "%key%" konnte nicht geschrieben werden.'
     value_invalid: 'Konfigurations-Key "%key%" enthält einen ungültigen gespeicherten Wert.'
+  messenger:
+    deferred_process_start_failed: 'Ein verzögerter Hintergrundprozess konnte nicht gestartet werden.'
   acl:
     group_updated: 'ACL-Gruppe "%group%" wurde aktualisiert. Betroffene Nutzer: %users%, Account-Links: %account_tokens%, Inhalte: %content_items%, Schema-Versionen: %content_schema_versions%, Menüeinträge: %site_menu_items%.'
     group_deleted: 'ACL-Gruppe "%group%" wurde gelöscht und Referenzen wurden bereinigt. Betroffene Nutzer: %users%, Account-Links: %account_tokens%, Inhalte: %content_items%, Schema-Versionen: %content_schema_versions%, Menüeinträge: %site_menu_items%.'
@@ -309,3 +313,10 @@ message:
       version_invalid: 'Content-Schema-Version %version% muss positiv sein.'
       required_field_missing: 'Content-Schema fehlt das erforderliche Feld "%field_identifier%".'
       field_duplicate: 'Content-Schema-Feld "%field_identifier%" ist doppelt vorhanden.'
+  scheduler:
+    run_completed: 'Scheduler-Lauf abgeschlossen.'
+    run_failed: 'Scheduler-Lauf ist vor der Task-Ausführung fehlgeschlagen.'
+    task_failed: 'Scheduler-Task "%task%" ist fehlgeschlagen.'
+    task_disabled: 'Scheduler-Task "%task%" wurde nach wiederholten Fehlern deaktiviert.'
+    task_invalid_cron_disabled: 'Scheduler-Task "%task%" wurde deaktiviert, weil sein Cron-Ausdruck ungültig ist.'
+    task_soft_budget_exceeded: 'Scheduler-Task "%task%" hat sein weiches Ausführungsbudget überschritten.'

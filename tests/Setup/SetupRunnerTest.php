@@ -409,6 +409,7 @@ final class SetupRunnerTest extends TestCase
         $databasePath = $this->root.'/var/setup.db';
         $this->createSchema($databasePath);
         touch($this->root.'/bin/composer');
+        chmod($this->root.'/bin/composer', 0755);
         $executor = new RecordingSetupCommandExecutor(failureAt: 1, failure: new SetupCommandResult(1));
         $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
 
@@ -713,6 +714,10 @@ final class RecordingSetupCommandExecutor implements SetupCommandExecutorInterfa
 
         if (null !== $this->failure && $this->failureAt === count($this->commands)) {
             return $this->failure;
+        }
+
+        if (in_array('--version', $command, true) && (in_array('composer', $command, true) || str_ends_with($command[1] ?? '', '/bin/composer'))) {
+            return new SetupCommandResult(0, 'Composer version test');
         }
 
         if (in_array('dump-env', $command, true)) {

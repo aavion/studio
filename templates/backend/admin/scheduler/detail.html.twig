@@ -1,0 +1,107 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ task.labelKey|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% set run_now_action = '' %}
+    {% if task.status.value == 'active' %}
+        {% set run_now_action %}
+            <form method="post" action="{{ path('backend_admin_scheduler_run', {identifier: task.identifier}) }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('scheduler-task-run-' ~ task.identifier) }}">
+                <button class="studio-backend-button studio-button-secondary" type="submit">{{ 'admin.scheduler.actions.run_now'|trans }}</button>
+            </form>
+        {% endset %}
+    {% endif %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.scheduler.title'|trans,
+        title: task.labelKey|trans,
+        actions: run_now_action,
+    } only %}
+
+    <section class="studio-panel">
+        <p class="studio-muted">{{ task.descriptionKey|trans }}</p>
+        <dl class="studio-stat-list">
+            <div><dt>{{ 'admin.scheduler.detail.identifier'|trans }}</dt><dd><code>{{ task.identifier }}</code></dd></div>
+            <div>
+                <dt>{{ 'admin.scheduler.detail.source'|trans }}</dt>
+                <dd>
+                    <a href="{{ task.source == 'system' ? path('backend_admin_index') : path('backend_admin_package_detail', {packageName: task.source}) }}">{{ task.source }}</a>
+                </dd>
+            </div>
+            <div><dt>{{ 'admin.scheduler.detail.type'|trans }}</dt><dd>{{ task.type.value }}</dd></div>
+            <div><dt>{{ 'admin.scheduler.detail.target'|trans }}</dt><dd><code>{{ task.target }}</code></dd></div>
+            <div><dt>{{ 'admin.scheduler.detail.default_interval'|trans }}</dt><dd><code>{{ task.defaultCronExpression }}</code></dd></div>
+            <div><dt>{{ 'admin.scheduler.detail.next_due'|trans }}</dt><dd>{{ task.nextDueAt ? task.nextDueAt|date('Y-m-d H:i') : 'ui.common.never'|trans }}</dd></div>
+            <div><dt>{{ 'admin.scheduler.detail.last_attempt'|trans }}</dt><dd>{{ task.lastAttemptAt ? task.lastAttemptAt|date('Y-m-d H:i') : 'ui.common.never'|trans }}</dd></div>
+            <div><dt>{{ 'admin.scheduler.detail.last_success'|trans }}</dt><dd>{{ task.lastSuccessAt ? task.lastSuccessAt|date('Y-m-d H:i') : 'ui.common.never'|trans }}</dd></div>
+            <div><dt>{{ 'admin.scheduler.detail.failure_count'|trans }}</dt><dd>{{ task.failureCount }}</dd></div>
+            <div><dt>{{ 'admin.scheduler.detail.run_url'|trans }}</dt><dd><code>{{ cron_run_url }}</code></dd></div>
+        </dl>
+        {% if task.type.value == 'action_queue' and not task.trusted %}
+            <p class="studio-muted">{{ 'admin.scheduler.detail.package_action_queue_warning'|trans }}</p>
+        {% endif %}
+        {% if task.status.value != 'active' %}
+            <p class="studio-muted">{{ 'admin.scheduler.detail.run_now_inactive'|trans }}</p>
+        {% endif %}
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.scheduler.form.title'|trans }}</h2>
+        <form method="post" class="studio-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('scheduler-task-' ~ task.identifier) }}">
+            <label class="studio-form-field">
+                <span>{{ 'admin.scheduler.form.enabled'|trans }}</span>
+                <input type="checkbox" name="enabled" value="1" {{ task.status.value == 'active' ? 'checked' }}>
+            </label>
+            <label class="studio-form-field">
+                <span>{{ 'admin.scheduler.form.cron_expression'|trans }}</span>
+                <input type="text" name="cron_expression" value="{{ task.cronExpression }}" required>
+            </label>
+            <details class="studio-muted">
+                <summary>{{ 'admin.scheduler.legend.summary'|trans }}</summary>
+                <p>{{ 'admin.scheduler.legend.text'|trans }}</p>
+                <p><code>*/15 * * * *</code> {{ 'admin.scheduler.legend.every_15_minutes'|trans }}</p>
+                <p><code>0 3 * * *</code> {{ 'admin.scheduler.legend.daily_at_3'|trans }}</p>
+            </details>
+            {% if task.type.value == 'action_queue' and not task.trusted %}
+                <label class="studio-form-field">
+                    <span>{{ 'admin.scheduler.form.confirm_package_action_queue'|trans }}</span>
+                    <input type="checkbox" name="confirm_package_action_queue" value="1">
+                </label>
+            {% endif %}
+            <button class="studio-backend-button studio-button-primary" type="submit">{{ 'ui.actions.save'|trans }}</button>
+        </form>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.scheduler.runs.title'|trans }}</h2>
+        {% if runs|length > 0 %}
+            <table class="studio-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.scheduler.runs.started_at'|trans }}</th>
+                        <th scope="col">{{ 'admin.scheduler.runs.status'|trans }}</th>
+                        <th scope="col">{{ 'admin.scheduler.runs.duration'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for run in runs %}
+                        <tr>
+                            <td>{{ run.startedAt|date('Y-m-d H:i:s') }}</td>
+                            <td>{{ ('admin.scheduler.run_status.' ~ run.status.value)|trans }}</td>
+                            <td>{{ run.durationMs is not null ? run.durationMs ~ ' ms' : 'ui.common.pending'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="studio-muted">{{ 'admin.scheduler.runs.empty'|trans }}</p>
+        {% endif %}
+    </section>
+{% endblock %}

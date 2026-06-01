@@ -18,6 +18,11 @@ ui:
     submit: 'Submit'
     yes: 'Yes'
     no: 'No'
+  actions:
+    save: 'Save'
+  common:
+    never: 'Never'
+    pending: 'Pending'
   empty_state:
     title: 'Nothing to show'
   user:

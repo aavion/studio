@@ -18,6 +18,11 @@ ui:
     submit: 'Absenden'
     yes: 'Ja'
     no: 'Nein'
+  actions:
+    save: 'Speichern'
+  common:
+    never: 'Nie'
+    pending: 'Ausstehend'
   empty_state:
     title: 'Nichts anzuzeigen'
   user:

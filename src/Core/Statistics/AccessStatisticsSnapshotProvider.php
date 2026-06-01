@@ -25,14 +25,28 @@ final readonly class AccessStatisticsSnapshotProvider
      */
     public function snapshot(mixed $window = AccessStatisticsWindow::DEFAULT): array
     {
+        return $this->snapshotWithStorageStatus($window)['snapshot'];
+    }
+
+    /**
+     * @return array{snapshot: array<string, mixed>, stored: bool}
+     */
+    public function snapshotWithStorageStatus(mixed $window = AccessStatisticsWindow::DEFAULT): array
+    {
         if (null !== $this->policy && !$this->policy->isDisplayEnabled()) {
-            return $this->disabledSnapshot($this->window->normalize($window));
+            return [
+                'snapshot' => $this->disabledSnapshot($this->window->normalize($window)),
+                'stored' => true,
+            ];
         }
 
         $snapshot = $this->aggregator->snapshot($this->window->normalize($window));
 
         if ($this->store->saveLatest($snapshot)) {
-            return $this->store->latest() ?? $snapshot;
+            return [
+                'snapshot' => $this->store->latest() ?? $snapshot,
+                'stored' => true,
+            ];
         }
 
         $this->messageReporter?->report(Message::warning(
@@ -47,7 +61,10 @@ final readonly class AccessStatisticsSnapshotProvider
             'operation' => 'statistics.snapshot.store',
         ]);
 
-        return $snapshot;
+        return [
+            'snapshot' => $snapshot,
+            'stored' => false,
+        ];
     }
 
     /**

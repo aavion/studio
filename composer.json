@@ -18,7 +18,7 @@
         "sort-packages": true
     },
     "require": {
-        "php": ">=8.4",
+        "php": ">=8.4.1",
         "ext-ctype": "*",
         "ext-fileinfo": "*",
         "ext-iconv": "*",
@@ -28,6 +28,7 @@
         "doctrine/doctrine-bundle": "^3.2.2",
         "doctrine/doctrine-migrations-bundle": "^4.0",
         "doctrine/orm": "^3.6.7",
+        "dragonmantank/cron-expression": "^3.6",
         "geoip2/geoip2": "^3.3",
         "justinrainbow/json-schema": "^6.8.2",
         "league/commonmark": "^2.8.2",
@@ -56,6 +57,7 @@
         "symfony/property-access": "8.1.*",
         "symfony/property-info": "8.1.*",
         "symfony/runtime": "8.1.*",
+        "symfony/scheduler": "8.1.*",
         "symfony/security-bundle": "8.1.*",
         "symfony/serializer": "8.1.*",
         "symfony/stimulus-bundle": "^3.1",

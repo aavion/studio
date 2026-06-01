@@ -76,6 +76,8 @@ message:
       status_blocked: 'Package dependency "%package%" cannot be used while it is "%status%".'
       cycle: 'Circular package dependency detected: %cycle%.'
       resolved: 'Package "%package%" resolved %count% dependency item(s).'
+    scheduler:
+      cron_invalid: 'Package "%package%" declares an invalid scheduler cron expression.'
   translation:
     aggregate_completed: 'Translation aggregation merged %files% file(s) for %locales% locale(s) from core and %packages% active package(s).'
     aggregate_failed: 'Translation aggregation could not write "%path%".'
@@ -219,6 +221,8 @@ message:
     read_failed: 'Configuration key "%key%" could not be read.'
     write_failed: 'Configuration key "%key%" could not be written.'
     value_invalid: 'Configuration key "%key%" contains an invalid stored value.'
+  messenger:
+    deferred_process_start_failed: 'A deferred background process could not be started.'
   acl:
     group_updated: 'ACL group "%group%" was updated. Affected users: %users%, account links: %account_tokens%, content items: %content_items%, schema versions: %content_schema_versions%, menu items: %site_menu_items%.'
     group_deleted: 'ACL group "%group%" was deleted and references were cleaned. Affected users: %users%, account links: %account_tokens%, content items: %content_items%, schema versions: %content_schema_versions%, menu items: %site_menu_items%.'
@@ -309,3 +313,10 @@ message:
       version_invalid: 'Content schema version %version% must be positive.'
       required_field_missing: 'Content schema is missing required field "%field_identifier%".'
       field_duplicate: 'Content schema field "%field_identifier%" is duplicated.'
+  scheduler:
+    run_completed: 'Scheduler run completed.'
+    run_failed: 'Scheduler run failed before task execution.'
+    task_failed: 'Scheduler task "%task%" failed.'
+    task_disabled: 'Scheduler task "%task%" was disabled after repeated failures.'
+    task_invalid_cron_disabled: 'Scheduler task "%task%" was disabled because its cron expression is invalid.'
+    task_soft_budget_exceeded: 'Scheduler task "%task%" exceeded its soft execution budget.'

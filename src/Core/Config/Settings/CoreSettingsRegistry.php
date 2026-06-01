@@ -92,12 +92,10 @@ final readonly class CoreSettingsRegistry
             ], validation: ['required' => true], sortOrder: 10),
             new CoreSettingDefinition('packages', 'packages.auto_updates.enabled', 'admin.settings.fields.package_auto_updates.label', false, ConfigValueType::Boolean, sortOrder: 20),
 
-            new CoreSettingDefinition('scheduler', 'scheduler.enabled', 'admin.settings.fields.scheduler_enabled.label', false, ConfigValueType::Boolean, sortOrder: 10),
-            new CoreSettingDefinition('scheduler', 'scheduler.default_interval', 'admin.settings.fields.scheduler_default_interval.label', 'hourly', ConfigValueType::String, FormInputType::Select, options: [
-                'hourly' => 'admin.settings.options.interval.hourly',
-                'daily' => 'admin.settings.options.interval.daily',
-                'weekly' => 'admin.settings.options.interval.weekly',
-            ], validation: ['required' => true], sortOrder: 20),
+            new CoreSettingDefinition('scheduler', 'scheduler.enabled', 'admin.settings.fields.scheduler_enabled.label', true, ConfigValueType::Boolean, sortOrder: 10),
+            new CoreSettingDefinition('scheduler', 'scheduler.get_auth_enabled', 'admin.settings.fields.scheduler_get_auth_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_get_auth_enabled.help', sortOrder: 20),
+            new CoreSettingDefinition('scheduler', 'scheduler.package_action_queues_enabled', 'admin.settings.fields.scheduler_package_action_queues_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_package_action_queues_enabled.help', sortOrder: 30),
+            new CoreSettingDefinition('scheduler', 'scheduler.web_trigger_enabled', 'admin.settings.fields.scheduler_web_trigger_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_web_trigger_enabled.help', sortOrder: 40),
         ];
     }
 

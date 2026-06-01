@@ -150,6 +150,419 @@ final class PackageValidatorTest extends TestCase
         self::assertSame('PACKAGE_DEPENDENCIES', $result->firstIssue()?->context()['key']);
     }
 
+    public function testItRejectsInvalidSchedulerTaskCronExpressions(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        'not a cron',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.scheduler.cron_invalid', $result->firstIssue()?->code());
+        self::assertSame('src/SchedulerTasks.php', $result->firstIssue()?->context()['file']);
+        self::assertSame('not a cron', $result->firstIssue()?->context()['value']);
+    }
+
+    public function testItRejectsInvalidSchedulerTaskCronExpressionsThroughImportAliases(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition as Task;
+
+return [
+    Task::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        'not a cron',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.scheduler.cron_invalid', $result->firstIssue()?->code());
+        self::assertSame('not a cron', $result->firstIssue()?->context()['value']);
+    }
+
+    public function testItRejectsInvalidSchedulerTaskCronExpressionsThroughGroupedImportAliases(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\{SchedulerTaskDefinition as Task};
+
+return [
+    Task::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        'not a cron',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.scheduler.cron_invalid', $result->firstIssue()?->code());
+        self::assertSame('not a cron', $result->firstIssue()?->context()['value']);
+    }
+
+    public function testItIgnoresSchedulerExamplesInsideComments(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+// Example only: SchedulerTaskDefinition::command('demo.bad', 'label', 'description', 'studio:bad', 'not a cron');
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        '*/10 * * * *',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItIgnoresSchedulerExamplesInsideStrings(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+$documentation = "Example only: SchedulerTaskDefinition::command('demo.bad', 'label', 'description', 'studio:bad', 'not a cron')";
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        '*/10 * * * *',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItReadsNamedSchedulerCronArgumentWithoutFalsePositives(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+return [
+    SchedulerTaskDefinition::command(
+        command: 'studio:demo:cleanup',
+        identifier: 'demo.cleanup',
+        labelKey: 'pkg.demo.cleanup.label',
+        descriptionKey: 'pkg.demo.cleanup.description',
+        defaultCronExpression: '*/10 * * * *',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItReadsNamedSchedulerCronArgumentAtTopLevelOnly(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+return [
+    SchedulerTaskDefinition::command(
+        command: 'studio:demo --label="defaultCronExpression: \'not a cron\'"',
+        identifier: 'demo.cleanup',
+        labelKey: 'pkg.demo.cleanup.label',
+        descriptionKey: 'pkg.demo.cleanup.description',
+        defaultCronExpression: '*/10 * * * *',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItIgnoresSchedulerCommentsInsideCallArguments(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        // Example only, with comma: defaultCronExpression: 'not a cron',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        '*/10 * * * *',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItIgnoresUnrelatedSchedulerTaskDefinitionClasses(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use Vendor\SchedulerTaskDefinition;
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        'not a cron',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItReadsFullyQualifiedSchedulerTaskDefinitions(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+return [
+    \App\Scheduler\SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        'not a cron',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.scheduler.cron_invalid', $result->firstIssue()?->code());
+    }
+
+    public function testItReadsSchedulerDefinitionsThroughNamespaceAliases(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler as Scheduler;
+
+return [
+    Scheduler\SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        'not a cron',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.scheduler.cron_invalid', $result->firstIssue()?->code());
+    }
+
+    public function testItReadsSchedulerDefinitionsThroughRootNamespaceAliases(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App as Studio;
+
+return [
+    Studio\Scheduler\SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        'not a cron',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.scheduler.cron_invalid', $result->firstIssue()?->code());
+    }
+
+    public function testItAcceptsPackageSchedulerProviderWithLiteralCronExpression(): void
+    {
+        $this->writeFile('src/DemoSchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+use App\Scheduler\SchedulerTaskProviderInterface;
+
+final class DemoSchedulerTasks implements SchedulerTaskProviderInterface
+{
+    public function schedulerTasks(): array
+    {
+        return [
+            SchedulerTaskDefinition::command(
+                'demo.cleanup',
+                'pkg.demo.cleanup.label',
+                'pkg.demo.cleanup.description',
+                'studio:demo:cleanup',
+                '*/15 * * * *',
+                'demo-module',
+                false,
+            ),
+        ];
+    }
+}
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItAcceptsPackageSchedulerProviderWithShortPackageSource(): void
+    {
+        $this->writeFile('src/DemoSchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+use App\Scheduler\SchedulerTaskProviderInterface;
+
+final class DemoSchedulerTasks implements SchedulerTaskProviderInterface
+{
+    public function schedulerTasks(): array
+    {
+        return [
+            SchedulerTaskDefinition::command(
+                'demo.cleanup',
+                'pkg.demo.cleanup.label',
+                'pkg.demo.cleanup.description',
+                'studio:demo:cleanup',
+                '*/15 * * * *',
+                'ai',
+                false,
+            ),
+        ];
+    }
+}
+PHP);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'ai']),
+            PackageSpec::create(),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItReadsSchedulerCronByArgumentPosition(): void
+    {
+        $this->writeFile('src/DemoSchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+final class TaskIds
+{
+    public const CLEANUP = 'demo.cleanup';
+}
+
+return [
+    SchedulerTaskDefinition::command(
+        TaskIds::CLEANUP,
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo cleanup',
+        '*/15 * * * *',
+        'demo-module',
+        false,
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItRejectsSchedulerTaskRegistrationsWithoutLiteralDefaultCron(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+$cron = '*/10 * * * *';
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        $cron,
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.scheduler.cron_invalid', $result->firstIssue()?->code());
+        self::assertSame('', $result->firstIssue()?->context()['value']);
+    }
+
     public function testItLimitsInventoryDepth(): void
     {
         $this->writeFile('one/two/three/file.txt', 'nested');

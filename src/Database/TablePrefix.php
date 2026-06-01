@@ -25,6 +25,8 @@ final readonly class TablePrefix
         'extension_package',
         'messenger_messages',
         'package_setting_entry',
+        'scheduler_task',
+        'scheduler_task_run',
         'site_menu',
         'site_menu_item',
         'state_marker',

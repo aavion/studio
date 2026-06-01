@@ -30,6 +30,11 @@ final readonly class DeferredMessengerDrainSubscriber implements EventSubscriber
             return;
         }
 
+        $request = $event->getRequest();
+        if ('scheduler_cron_run' === $request->attributes->get('_route') || str_starts_with($request->getPathInfo(), '/cron/run')) {
+            return;
+        }
+
         $this->drain->drainPendingMessages();
     }
 }

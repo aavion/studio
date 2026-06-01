@@ -61,6 +61,143 @@ final class SetupPreflightCheckerTest extends TestCase
         self::assertContains('writable_paths', $detailKeys);
     }
 
+    public function testItUsesHighestPhpRequirementFromComposerFiles(): void
+    {
+        file_put_contents($this->root.'/composer.json', json_encode([
+            'require' => [
+                'php' => '>=8.4',
+            ],
+        ], JSON_THROW_ON_ERROR));
+        file_put_contents($this->root.'/composer.lock', json_encode([
+            'platform' => [
+                'php' => '>=8.4',
+            ],
+            'packages' => [
+                [
+                    'name' => 'example/package',
+                    'require' => [
+                        'php' => '>=99.1.2',
+                    ],
+                ],
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $php = array_values(array_filter($result['checks'], static fn (array $check): bool => 'php_version' === $check['key']))[0] ?? null;
+
+        self::assertSame('failed', $php['status'] ?? null);
+        self::assertSame('99.1.2', $php['value_parameters']['%required%'] ?? null);
+    }
+
+    public function testItUsesRequiredPhpExtensionsFromComposerJson(): void
+    {
+        file_put_contents($this->root.'/composer.json', json_encode([
+            'require' => [
+                'php' => '>=8.4',
+                'ext-definitely_missing_for_studio_tests' => '*',
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $extension = array_values(array_filter(
+            $result['checks'],
+            static fn (array $check): bool => 'extension_definitely_missing_for_studio_tests' === $check['key'],
+        ))[0] ?? null;
+
+        self::assertFalse($result['ok']);
+        self::assertSame('missing', $extension['status'] ?? null);
+        self::assertTrue($extension['required'] ?? false);
+    }
+
+    public function testItAutoHealsBundledComposerExecutableBit(): void
+    {
+        mkdir($this->root.'/bin', 0775, true);
+        file_put_contents($this->root.'/bin/composer', "#!/usr/bin/env php\n<?php echo \"Composer version test\";\n");
+        chmod($this->root.'/bin/composer', 0644);
+
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', autoHeal: true, server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $composer = array_values(array_filter($result['checks'], static fn (array $check): bool => 'composer_binary' === $check['key']))[0] ?? null;
+
+        self::assertSame('ok', $composer['status'] ?? null);
+        self::assertTrue(is_executable($this->root.'/bin/composer'));
+    }
+
+    public function testItAcceptsReadableBundledComposerWithoutExecutableBit(): void
+    {
+        mkdir($this->root.'/bin', 0775, true);
+        file_put_contents($this->root.'/bin/composer', "#!/usr/bin/env php\n<?php echo \"Composer version test\";\n");
+        chmod($this->root.'/bin/composer', 0644);
+
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $composer = array_values(array_filter($result['checks'], static fn (array $check): bool => 'composer_binary' === $check['key']))[0] ?? null;
+
+        self::assertSame('ok', $composer['status'] ?? null);
+        self::assertFalse(is_executable($this->root.'/bin/composer'));
+    }
+
+    public function testItAutoHealsCorruptWritableBundledComposer(): void
+    {
+        mkdir($this->root.'/bin', 0775, true);
+        file_put_contents($this->root.'/bin/composer', 'broken');
+        chmod($this->root.'/bin/composer', 0644);
+        $toolBin = $this->root.'/tools';
+        mkdir($toolBin, 0775, true);
+        file_put_contents($toolBin.'/curl', <<<'SH'
+#!/bin/sh
+if [ "$1" = "--version" ]; then
+    echo "curl test"
+    exit 0
+fi
+while [ "$#" -gt 0 ]; do
+    if [ "$1" = "-o" ]; then
+        shift
+        printf '%s\n' '<?php echo "Composer version repaired";' > "$1"
+        exit 0
+    fi
+    shift
+done
+exit 1
+SH);
+        chmod($toolBin.'/curl', 0755);
+        $previousPath = getenv('PATH');
+        $previousServerPath = $_SERVER['PATH'] ?? null;
+        $previousEnvPath = $_ENV['PATH'] ?? null;
+        putenv('PATH='.$toolBin);
+        $_SERVER['PATH'] = $toolBin;
+        $_ENV['PATH'] = $toolBin;
+
+        try {
+            $result = (new SetupPreflightChecker())->check($this->root, 'test', autoHeal: true, server: [
+                'DOCUMENT_ROOT' => $this->root.'/public',
+            ]);
+        } finally {
+            false === $previousPath ? putenv('PATH') : putenv('PATH='.$previousPath);
+            if (null === $previousServerPath) {
+                unset($_SERVER['PATH']);
+            } else {
+                $_SERVER['PATH'] = $previousServerPath;
+            }
+            if (null === $previousEnvPath) {
+                unset($_ENV['PATH']);
+            } else {
+                $_ENV['PATH'] = $previousEnvPath;
+            }
+        }
+
+        $composer = array_values(array_filter($result['checks'], static fn (array $check): bool => 'composer_binary' === $check['key']))[0] ?? null;
+
+        self::assertSame('ok', $composer['status'] ?? null);
+        self::assertStringContainsString('Composer version repaired', file_get_contents($this->root.'/bin/composer') ?: '');
+    }
+
     private function removeDirectory(string $path): void
     {
         if (!is_dir($path)) {

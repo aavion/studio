@@ -111,6 +111,7 @@ final readonly class AccessLogger implements AccessLoggerInterface
     {
         $normalized = strtolower((string) preg_replace('/[^a-zA-Z0-9]+/', '_', $key));
 
-        return 1 === preg_match('/(?:password|secret|token|credential|authorization|cookie|hmac|encrypted|api_key|private_key|code|signature|signed|session|csrf|nonce|reset|invite)/', $normalized);
+        return 'auth' === $normalized
+            || 1 === preg_match('/(?:password|secret|token|credential|authorization|cookie|hmac|encrypted|api_key|private_key|code|signature|signed|session|csrf|nonce|reset|invite)/', $normalized);
     }
 }

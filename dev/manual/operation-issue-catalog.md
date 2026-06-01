@@ -70,6 +70,7 @@ Validation rules:
 | `package.lifecycle.runtime_failure` | Package was marked faulty after a runtime failure. | `package`, `faulty` |
 | `package.lifecycle.php_load_failed` | Active package PHP loader failed and the package was marked faulty. | `package`, `path`, `loader`, `exception`, `message` |
 | `package.dependency.invalid` | Package dependency declaration could not be parsed. | `package`, `value` |
+| `package.scheduler.cron_invalid` | Package scheduler registration declares an invalid cron expression. | `source`, `package`, `file`, `path`, `value` |
 | `package.dependency.cycle` | Package activation or installer preflight found a circular hard dependency. | `package`, `cycle` |
 | `package.copy_plan_created` | Package copy plan was created successfully. | `source`, `package`, `target_root`, `target_prefix`, `files` |
 | `filesystem.source_missing` | Filesystem copy source is missing. | `source`, `target` |

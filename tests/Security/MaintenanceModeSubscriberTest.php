@@ -43,7 +43,7 @@ final class MaintenanceModeSubscriberTest extends TestCase
     {
         $subscriber = $this->subscriber(true);
 
-        foreach (['/admin', '/admin/content', '/user/login', '/de/user/login', '/assets/app.css', '/build/app.js'] as $path) {
+        foreach (['/admin', '/admin/content', '/user/login', '/de/user/login', '/cron/run', '/assets/app.css', '/build/app.js'] as $path) {
             $subscriber->onKernelRequest($this->event($path));
             self::addToAssertionCount(1);
         }

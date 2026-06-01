@@ -16,6 +16,7 @@ final readonly class ContentRouteGuard
         'admin',
         'editor',
         'setup',
+        'cron',
         ContentSystemRoute::PREFIX,
         'user',
         'api',

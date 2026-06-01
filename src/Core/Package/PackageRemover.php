@@ -12,6 +12,8 @@ use App\Core\Operation\Filesystem\RemovePathAction;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
+use App\Entity\SchedulerTask;
+use App\Entity\SchedulerTaskRun;
 use Doctrine\ORM\EntityManagerInterface;
 use Throwable;
 
@@ -203,6 +205,14 @@ final readonly class PackageRemover
             ], $cleanup->messages()), 'package.purge', ['package' => $packageName]);
         }
 
+        foreach ($this->entityManager->getRepository(SchedulerTask::class)->findBy(['source' => $packageName]) as $task) {
+            if ($task instanceof SchedulerTask) {
+                foreach ($this->entityManager->getRepository(SchedulerTaskRun::class)->findBy(['task' => $task]) as $run) {
+                    $this->entityManager->remove($run);
+                }
+                $this->entityManager->remove($task);
+            }
+        }
         $this->entityManager->remove($package);
         $this->entityManager->flush();
 

@@ -440,8 +440,86 @@ admin:
       default_acl_group_role_blocked: 'Die Registrierungsstandardgruppe darf keine Rolle über User voraussetzen.'
   scheduler:
     title: 'Scheduler'
-    foundation_title: 'Scheduler-Operations-Fundament'
-    foundation_text: 'Geplante Jobs, Queue-Trigger, Intervalle und Ausführungsdiagnostik docken hier an.'
+    foundation_title: 'Scheduler-Operationen'
+    foundation_text: 'Geplante Jobs, Queue-Trigger, Intervalle und Ausführungsdiagnostik.'
+    trigger:
+      title: 'Scheduler auslösen'
+      text: 'Rufe diesen Endpunkt über einen Cronjob, Hosting-Scheduler oder Uptime-Monitor auf. Nutze einen API-Key als Bearer-Token.'
+      api_key_placeholder: 'api-key'
+      get_enabled: 'GET-Authentifizierung ist aktiviert. Eingeschränkte Scheduler können %url% aufrufen.'
+      job_hint: 'Ergänze ?job={job_id}, um einen registrierten Job sofort auszuführen. Die Job-ID steht in der Tabelle.'
+    actions:
+      run_now: 'Jetzt ausführen'
+      run_now_started: 'Scheduler-Lauf mit Status %status% abgeschlossen.'
+      run_now_failed: 'Der Scheduler-Lauf wurde abgeschlossen, aber der ausgewählte Job ist fehlgeschlagen.'
+      run_now_inactive: 'Aktiviere diesen Job, bevor du ihn manuell ausführst.'
+      run_now_locked: 'Der Scheduler läuft bereits. Versuche es erneut, sobald der aktuelle Lauf abgeschlossen ist.'
+      run_now_skipped: 'Der Scheduler-Lauf wurde abgeschlossen, aber der ausgewählte Job wurde übersprungen.'
+      run_now_unavailable: 'Der Scheduler hat den ausgewählten Job nicht ausgeführt. Aktueller Status: %status%.'
+    tasks:
+      title: 'Registrierte Jobs'
+      empty: 'Es sind keine Scheduler-Jobs registriert.'
+      live_operation_cleanup:
+        label: 'Live-Operation-Cleanup'
+        description: 'Entfernt abgelaufene Live-Operation-State-Dateien.'
+      package_discovery:
+        label: 'Paket-Discovery'
+        description: 'Findet Pakete und aktualisiert die Paket-Registry.'
+      statistics_snapshot:
+        label: 'Statistik-Snapshot'
+        description: 'Aktualisiert den gespeicherten Zugriffsstatistik-Snapshot, wenn Statistiken aktiviert sind.'
+      cache_clear:
+        label: 'Cache leeren'
+        description: 'Leert und wärmt den Symfony-Anwendungscache.'
+    table:
+      job: 'Job'
+      source: 'Quelle'
+      interval: 'Intervall'
+      last_success: 'Letzter erfolgreicher Lauf'
+      status: 'Status'
+    status:
+      active: 'Aktiv'
+      inactive: 'Inaktiv'
+      faulty: 'Fehlerhaft'
+    legend:
+      summary: 'Cron-Syntax'
+      text: 'Nutze fünf Felder: Minute, Stunde, Tag im Monat, Monat, Wochentag. Ein Stern steht für jeden Wert; */15 bedeutet alle 15 Einheiten.'
+      every_15_minutes: 'läuft alle 15 Minuten.'
+      daily_at_3: 'läuft täglich um 03:00 Uhr.'
+    detail:
+      identifier: 'Identifier'
+      source: 'Quelle'
+      type: 'Typ'
+      target: 'Ziel'
+      default_interval: 'Standardintervall'
+      next_due: 'Nächster fälliger Lauf'
+      last_attempt: 'Letzter Versuch'
+      last_success: 'Letzter erfolgreicher Lauf'
+      failure_count: 'Fehler in Folge'
+      run_url: 'Direkte Ausführungs-URL'
+      run_now_inactive: 'Aktiviere diesen Job, bevor du ihn manuell ausführst.'
+      package_action_queue_warning: 'Dieser Paket-Job kann eine ActionQueue ausführen und wird über die Scheduler-Einstellung für Paket-ActionQueues gesteuert.'
+    form:
+      title: 'Job-Einstellungen'
+      enabled: 'Diesen Job automatisch ausführen'
+      cron_expression: 'Cron-Ausdruck'
+      confirm_package_action_queue: 'Ich verstehe, dass dieser Paket-Job eine ActionQueue ausführen kann.'
+      saved: 'Scheduler-Job gespeichert.'
+      errors:
+        invalid_csrf: 'Das Scheduler-Formular ist abgelaufen. Bitte versuche es erneut.'
+        cron_invalid: 'Gib einen gültigen Cron-Ausdruck ein.'
+        package_action_queue_confirmation_required: 'Bestätige den Paket-ActionQueue-Hinweis, bevor du diesen Job aktivierst.'
+    runs:
+      title: 'Letzte Läufe'
+      empty: 'Dieser Job wurde noch nicht ausgeführt.'
+      started_at: 'Gestartet'
+      status: 'Status'
+      duration: 'Dauer'
+    run_status:
+      running: 'Läuft'
+      success: 'Erfolgreich'
+      failed: 'Fehlgeschlagen'
+      skipped: 'Übersprungen'
   backups:
     title: 'Backup und Restore'
     foundation_title: 'Backup- und Restore-Fundament'
@@ -703,8 +781,15 @@ admin:
         label: 'Automatische Paket-Updates erlauben'
       scheduler_enabled:
         label: 'Scheduler aktivieren'
-      scheduler_default_interval:
-        label: 'Standard-Scheduler-Intervall'
+      scheduler_get_auth_enabled:
+        label: 'GET-Authentifizierung für /cron/run erlauben'
+        help: 'Bearer-Authentifizierung bleibt bevorzugt. Aktiviere GET-Authentifizierung nur für Hosting-Scheduler, die keine Header senden können.'
+      scheduler_package_action_queues_enabled:
+        label: 'Scheduler-Action-Queues aus Paketen erlauben'
+        help: 'Action-Queues aus Paketen können Datei- oder Prozessoperationen ausführen. Core-Scheduler-Queues gelten separat als vertrauenswürdig.'
+      scheduler_web_trigger_enabled:
+        label: 'Scheduler durch Seitenaufrufe starten'
+        help: 'Startet nach geeigneten Seitenaufrufen höchstens einmal pro Minute einen losgelösten Scheduler-Lauf. Nutze einen echten Cronjob, wenn verfügbar.'
     options:
       dashboard:
         system_status: 'Systemstatus'

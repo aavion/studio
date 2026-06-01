@@ -79,6 +79,7 @@ final class MessageCode
     public const PACKAGE_DISCOVERY_QUEUED = 'package.discovery_queued';
     public const PACKAGE_DISCOVERY_QUEUE_FAILED = 'package.discovery_queue_failed';
     public const PACKAGE_DISCOVERY_COMPLETED = 'package.discovery_completed';
+    public const MESSENGER_DEFERRED_PROCESS_START_FAILED = 'messenger.deferred_process_start_failed';
     public const PACKAGE_VALIDATION_COMPLETED = 'package.validation_completed';
     public const PACKAGE_COPY_PLAN_CREATED = 'package.copy_plan_created';
     public const PACKAGE_REGISTRY_SYNC_COMPLETED = 'package.registry.sync_completed';
@@ -111,6 +112,7 @@ final class MessageCode
     public const PACKAGE_SETTING_VALUE_INVALID = 'package.setting.value_invalid';
     public const PACKAGE_DEPENDENCY_MISSING = 'package.dependency.missing';
     public const PACKAGE_DEPENDENCY_INVALID = 'package.dependency.invalid';
+    public const PACKAGE_SCHEDULER_CRON_INVALID = 'package.scheduler.cron_invalid';
     public const PACKAGE_DEPENDENCY_VERSION_UNSATISFIED = 'package.dependency.version_unsatisfied';
     public const PACKAGE_DEPENDENCY_STATUS_BLOCKED = 'package.dependency.status_blocked';
     public const PACKAGE_DEPENDENCY_CYCLE = 'package.dependency.cycle';
@@ -169,4 +171,10 @@ final class MessageCode
     public const SETUP_PROMPT_PASSWORD_RESET_CONTINUE = 'setup.prompt.password_reset_continue';
     public const SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD = 'setup.prompt.password_reset_new_password';
     public const SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD = 'setup.prompt.password_reset_confirm_password';
+    public const SCHEDULER_RUN_COMPLETED = 'scheduler.run_completed';
+    public const SCHEDULER_RUN_FAILED = 'scheduler.run_failed';
+    public const SCHEDULER_TASK_FAILED = 'scheduler.task_failed';
+    public const SCHEDULER_TASK_DISABLED = 'scheduler.task_disabled';
+    public const SCHEDULER_TASK_INVALID_CRON_DISABLED = 'scheduler.task_invalid_cron_disabled';
+    public const SCHEDULER_TASK_SOFT_BUDGET_EXCEEDED = 'scheduler.task_soft_budget_exceeded';
 }

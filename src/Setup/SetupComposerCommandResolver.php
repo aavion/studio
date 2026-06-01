@@ -19,6 +19,7 @@ final readonly class SetupComposerCommandResolver
         $bundledComposer = $projectDir.'/bin/composer';
         if (
             is_file($bundledComposer)
+            && is_readable($bundledComposer)
             && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir, $commandExecutor, $environment)
         ) {
             return [PHP_BINARY, $bundledComposer];
@@ -38,7 +39,7 @@ final readonly class SetupComposerCommandResolver
     {
         $bundledComposer = $projectDir.'/bin/composer';
 
-        return is_file($bundledComposer) ? [PHP_BINARY, $bundledComposer] : ['composer'];
+        return is_file($bundledComposer) && is_readable($bundledComposer) ? [PHP_BINARY, $bundledComposer] : ['composer'];
     }
 
     /**
@@ -52,7 +53,10 @@ final readonly class SetupComposerCommandResolver
         array $environment,
     ): bool {
         try {
-            return $commandExecutor->run($command, $projectDir, $environment)->isSuccessful();
+            $result = $commandExecutor->run($command, $projectDir, $environment);
+
+            return $result->isSuccessful()
+                && str_contains($result->output().$result->errorOutput(), 'Composer');
         } catch (\Throwable) {
             return false;
         }
