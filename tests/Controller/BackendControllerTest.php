@@ -19,7 +19,9 @@ use App\Core\Package\PackageScope;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\AclGroup;
 use App\Entity\ExtensionPackage;
+use App\Entity\SchedulerTask;
 use App\Entity\UserAccount;
+use App\Scheduler\SchedulerTaskStatus;
 use App\Security\UserFlowConfig;
 use App\Security\UserRole;
 use App\Setup\SetupCompletionMarker;
@@ -885,6 +887,47 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('input[name="scheduler.package_action_queues_enabled"]');
     }
 
+    public function testAdminSchedulerListsEditsAndRunsRegisteredJobs(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+
+        try {
+            $crawler = $client->request('GET', '/admin/scheduler');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Scheduler');
+            self::assertStringContainsString('Live operation cleanup', (string) $client->getResponse()->getContent());
+            self::assertStringContainsString('Cron syntax', (string) $client->getResponse()->getContent());
+
+            $crawler = $client->request('GET', '/admin/scheduler/system.live_operation_cleanup');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Live operation cleanup');
+            self::assertStringContainsString('Cron syntax', (string) $client->getResponse()->getContent());
+            self::assertStringContainsString('Activate this job before running it manually.', (string) $client->getResponse()->getContent());
+
+            $form = $crawler->filter('form.studio-form')->form([
+                'cron_expression' => '*/10 * * * *',
+            ]);
+            $form['enabled']->tick();
+            $client->submit($form);
+            self::assertResponseRedirects('/admin/scheduler/system.live_operation_cleanup');
+
+            $this->assertSchedulerTaskStatus('system.live_operation_cleanup', SchedulerTaskStatus::Active, '*/10 * * * *');
+
+            $crawler = $client->followRedirect();
+            $client->submit($crawler->selectButton('Run now')->form());
+            self::assertResponseRedirects('/admin/scheduler/system.live_operation_cleanup');
+
+            $client->followRedirect();
+            self::assertResponseIsSuccessful();
+            self::assertStringContainsString('Scheduler run completed with status completed.', (string) $client->getResponse()->getContent());
+        } finally {
+            $this->removeSchedulerTasks();
+        }
+    }
+
     public function testAdminSettingsFormsPersistCoreSettings(): void
     {
         $client = self::createClient();
@@ -1139,6 +1182,24 @@ final class BackendControllerTest extends WebTestCase
 
         $entityManager->remove($package);
         $entityManager->flush();
+    }
+
+    private function assertSchedulerTaskStatus(string $identifier, SchedulerTaskStatus $status, string $cronExpression): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $task = $entityManager->find(SchedulerTask::class, $identifier);
+
+        self::assertInstanceOf(SchedulerTask::class, $task);
+        self::assertSame($status, $task->status());
+        self::assertSame($cronExpression, $task->cronExpression());
+    }
+
+    private function removeSchedulerTasks(): void
+    {
+        $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
+        $connection->executeStatement("DELETE FROM scheduler_task_run WHERE task_identifier LIKE 'system.%'");
+        $connection->executeStatement("DELETE FROM scheduler_task WHERE source = 'system'");
     }
 
     /**
