@@ -338,14 +338,12 @@ final readonly class SetupWebInputFactory
 
     private function isValidDatabaseUrl(string $databaseUrl, DatabaseDriver $driver): bool
     {
-        $scheme = parse_url($databaseUrl, PHP_URL_SCHEME);
-
         if (DatabaseDriver::SQLite === $driver) {
-            return 'sqlite' === $scheme
-                && str_starts_with($databaseUrl, 'sqlite:///')
+            return str_starts_with($databaseUrl, 'sqlite:///')
                 && '' !== trim((string) preg_replace('#^sqlite:///#', '', $databaseUrl));
         }
 
+        $scheme = parse_url($databaseUrl, PHP_URL_SCHEME);
         $host = parse_url($databaseUrl, PHP_URL_HOST);
         $allowedSchemes = DatabaseDriver::MySql === $driver
             ? ['mysql', 'mariadb']

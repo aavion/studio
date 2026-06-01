@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Operations;
 
+use App\Database\TablePrefix;
 use App\Tests\Support\FilesystemTestHelper;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Schema\Schema;
@@ -103,6 +104,65 @@ final class SqliteMigrationTest extends TestCase
             self::assertContains('studio_pk_user_account', $userIndexes);
             self::assertContains('studio_fk_user_acl_group_user', $userGroupForeignKeys);
             self::assertContains('studio_fk_user_acl_group_group', $userGroupForeignKeys);
+        } finally {
+            if (null === $previousServerPrefix) {
+                unset($_SERVER['APP_DATABASE_PREFIX']);
+            } else {
+                $_SERVER['APP_DATABASE_PREFIX'] = $previousServerPrefix;
+            }
+
+            if (null === $previousEnvPrefix) {
+                unset($_ENV['APP_DATABASE_PREFIX']);
+            } else {
+                $_ENV['APP_DATABASE_PREFIX'] = $previousEnvPrefix;
+            }
+        }
+    }
+
+    public function testPrefixedMigrationsUsePrefixedNamesWhenReverting(): void
+    {
+        require_once dirname(__DIR__, 2).'/migrations/Version20260531000000.php';
+
+        $previousServerPrefix = $_SERVER['APP_DATABASE_PREFIX'] ?? null;
+        $previousEnvPrefix = $_ENV['APP_DATABASE_PREFIX'] ?? null;
+        $_SERVER['APP_DATABASE_PREFIX'] = $_ENV['APP_DATABASE_PREFIX'] = 'studio_';
+
+        try {
+            $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+            $schema = new Schema();
+            $migration = new Version20260531000000($connection, new NullLogger());
+
+            foreach (TablePrefix::TABLES as $tableName) {
+                $table = $schema->createTable('studio_'.$tableName);
+                $table->addColumn('uid', 'string', ['length' => 36]);
+
+                if ('content_item' === $tableName) {
+                    $table->addColumn('active_revision_uid', 'string', ['length' => 36, 'notnull' => false]);
+                }
+
+                if ('content_schema' === $tableName) {
+                    $table->addColumn('active_version_uid', 'string', ['length' => 36, 'notnull' => false]);
+                }
+            }
+
+            $schema->getTable('studio_content_item')->addForeignKeyConstraint(
+                'studio_content_revision',
+                ['active_revision_uid'],
+                ['uid'],
+                ['onDelete' => 'SET NULL'],
+                'studio_fk_content_item_active_revision',
+            );
+            $schema->getTable('studio_content_schema')->addForeignKeyConstraint(
+                'studio_content_schema_version',
+                ['active_version_uid'],
+                ['uid'],
+                ['onDelete' => 'SET NULL'],
+                'studio_fk_content_schema_active_version',
+            );
+
+            $migration->down($schema);
+
+            self::assertSame([], $schema->getTables());
         } finally {
             if (null === $previousServerPrefix) {
                 unset($_SERVER['APP_DATABASE_PREFIX']);

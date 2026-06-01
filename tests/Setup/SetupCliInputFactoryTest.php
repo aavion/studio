@@ -196,6 +196,36 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertSame('', $input->adminPassword());
     }
 
+    public function testItRejectsExplicitDatabaseUrlDriverMismatches(): void
+    {
+        $factory = new SetupCliInputFactory(
+            dirname(__DIR__, 2),
+            extensionAvailability: [
+                'pdo_sqlite' => true,
+                'pdo_mysql' => true,
+                'pdo_pgsql' => true,
+            ],
+            input: $this->stream(''),
+            output: $this->stream(''),
+            interactive: false,
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('does not match selected database driver "mysql"');
+
+        $factory->create([
+            'env' => 'test',
+            'language' => 'en',
+            'site-title' => 'Mismatched DB Studio',
+            'url' => 'https://option.example.test',
+            'db-driver' => 'mysql',
+            'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+            'admin-username' => 'owner',
+            'admin-password' => 'Safe1!pass',
+            'admin-email' => 'owner@example.test',
+        ]);
+    }
+
     public function testItPromptsInteractivelyInSelectedLanguage(): void
     {
         $inputStream = $this->stream(implode("\n", [

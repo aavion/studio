@@ -180,9 +180,22 @@ final class SetupCliInputFactory
         $defaultDriver = $this->driverFromDatabaseUrl($databaseUrl);
         $default = $this->databaseDriverAvailable($defaultDriver) ? $defaultDriver->value : $availableDrivers[0]->value;
         $value = $this->option($options, 'db-driver', $default);
+        $selectedDriver = $this->databaseDriverFromValue($value);
 
         if (isset($options['database-url']) && !isset($options['db-driver'])) {
             return $this->requireAvailableDatabaseDriver($this->driverFromDatabaseUrl($databaseUrl));
+        }
+
+        if (isset($options['database-url']) && isset($options['db-driver']) && null !== $databaseUrl) {
+            $urlDriver = $this->driverFromDatabaseUrl($databaseUrl);
+
+            if ($selectedDriver !== $urlDriver) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Database URL scheme "%s" does not match selected database driver "%s".',
+                    (string) parse_url($databaseUrl, PHP_URL_SCHEME),
+                    $selectedDriver->value,
+                ));
+            }
         }
 
         if ($interactive && !isset($options['db-driver'])) {
@@ -192,14 +205,20 @@ final class SetupCliInputFactory
                 array_map(static fn (DatabaseDriver $driver): string => $driver->value, $availableDrivers),
                 $default,
             );
+            $selectedDriver = $this->databaseDriverFromValue($value);
         }
 
-        return $this->requireAvailableDatabaseDriver(match ($value) {
+        return $this->requireAvailableDatabaseDriver($selectedDriver);
+    }
+
+    private function databaseDriverFromValue(?string $value): DatabaseDriver
+    {
+        return match ($value) {
             'mysql', 'mariadb' => DatabaseDriver::MySql,
             'postgres', 'pgsql', 'postgresql' => DatabaseDriver::PostgreSql,
             'sqlite', null => DatabaseDriver::SQLite,
             default => throw new \InvalidArgumentException(sprintf('Unsupported database driver "%s".', $value)),
-        });
+        };
     }
 
     /**

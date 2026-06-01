@@ -329,27 +329,31 @@ final class Version20260531000000 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-        $schema->getTable('content_item')->removeForeignKey('fk_content_item_active_revision');
-        $schema->getTable('content_schema')->removeForeignKey('fk_content_schema_active_version');
+        $schema->getTable($this->tableName('content_item'))->removeForeignKey($this->schemaObjectName('fk_content_item_active_revision'));
+        $schema->getTable($this->tableName('content_schema'))->removeForeignKey($this->schemaObjectName('fk_content_schema_active_version'));
 
-        $schema->dropTable('content_field_value');
-        $schema->dropTable('content_revision');
-        $schema->dropTable('content_item');
-        $schema->dropTable('content_schema_version');
-        $schema->dropTable('content_schema');
-        $schema->dropTable('site_menu_item');
-        $schema->dropTable('site_menu');
-        $schema->dropTable('extension_package');
-        $schema->dropTable('api_key');
-        $schema->dropTable('account_token');
-        $schema->dropTable('user_acl_group');
-        $schema->dropTable('user_account');
-        $schema->dropTable('acl_group');
-        $schema->dropTable('package_setting_entry');
-        $schema->dropTable('config_entry');
-        $schema->dropTable('access_statistic_event');
-        $schema->dropTable('state_marker');
-        $schema->dropTable('messenger_messages');
+        foreach ([
+            'content_field_value',
+            'content_revision',
+            'content_item',
+            'content_schema_version',
+            'content_schema',
+            'site_menu_item',
+            'site_menu',
+            'extension_package',
+            'api_key',
+            'account_token',
+            'user_acl_group',
+            'user_account',
+            'acl_group',
+            'package_setting_entry',
+            'config_entry',
+            'access_statistic_event',
+            'state_marker',
+            'messenger_messages',
+        ] as $table) {
+            $schema->dropTable($this->tableName($table));
+        }
     }
 
     private function addPrimaryKey(Table $table, string $firstColumn, string ...$otherColumns): void
@@ -393,5 +397,10 @@ final class Version20260531000000 extends AbstractMigration
         }
 
         return substr($prefixed, 0, 54).'_'.substr(sha1($prefixed), 0, 8);
+    }
+
+    private function tableName(string $name): string
+    {
+        return TablePrefix::apply($name);
     }
 }
