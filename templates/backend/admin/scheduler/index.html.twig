@@ -45,7 +45,9 @@ Authorization: Bearer {{ 'admin.scheduler.trigger.api_key_placeholder'|trans }}<
                                 <a href="{{ path('backend_admin_scheduler_detail', {identifier: task.identifier}) }}">{{ task.labelKey|trans }}</a>
                                 <div class="studio-muted">{{ task.identifier }}</div>
                             </th>
-                            <td>{{ task.source }}</td>
+                            <td>
+                                <a href="{{ task.source == 'system' ? path('backend_admin_index') : path('backend_admin_package_detail', {packageName: task.source}) }}">{{ task.source }}</a>
+                            </td>
                             <td><code>{{ task.cronExpression }}</code></td>
                             <td>{{ task.lastSuccessAt ? task.lastSuccessAt|date('Y-m-d H:i') : 'ui.common.never'|trans }}</td>
                             <td><span class="studio-badge studio-badge-neutral">{{ ('admin.scheduler.status.' ~ task.status.value)|trans }}</span></td>

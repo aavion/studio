@@ -18,7 +18,12 @@
         <p class="studio-muted">{{ task.descriptionKey|trans }}</p>
         <dl class="studio-stat-list">
             <div><dt>{{ 'admin.scheduler.detail.identifier'|trans }}</dt><dd><code>{{ task.identifier }}</code></dd></div>
-            <div><dt>{{ 'admin.scheduler.detail.source'|trans }}</dt><dd>{{ task.source }}</dd></div>
+            <div>
+                <dt>{{ 'admin.scheduler.detail.source'|trans }}</dt>
+                <dd>
+                    <a href="{{ task.source == 'system' ? path('backend_admin_index') : path('backend_admin_package_detail', {packageName: task.source}) }}">{{ task.source }}</a>
+                </dd>
+            </div>
             <div><dt>{{ 'admin.scheduler.detail.type'|trans }}</dt><dd>{{ task.type.value }}</dd></div>
             <div><dt>{{ 'admin.scheduler.detail.target'|trans }}</dt><dd><code>{{ task.target }}</code></dd></div>
             <div><dt>{{ 'admin.scheduler.detail.run_url'|trans }}</dt><dd><code>{{ cron_run_url }}</code></dd></div>
