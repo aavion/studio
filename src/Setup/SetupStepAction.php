@@ -69,8 +69,10 @@ final readonly class SetupStepAction implements OperationActionInterface
                     ...($this->failureCallback)($throwable),
                 ];
             }
+            $messages = $this->messagesFromContext($context);
+            unset($context['_messages']);
 
-            return WorkflowResult::failed([$this->failureMessage($throwable)], $context);
+            return WorkflowResult::failed([$this->failureMessage($throwable)], $context, messages: $messages);
         }
     }
 

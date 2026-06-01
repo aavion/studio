@@ -94,7 +94,9 @@ final class SetupRunner
             } catch (Throwable $throwable) {
                 $issue = $this->failureMessage($name, $throwable);
                 $context = $this->rollback($input, $databaseUrl, $rollbackSnapshot);
-                $log = $log->add($entry->finish(ActionLogStatus::Failed, [$issue], $context));
+                $messages = $this->messagesFromContext($context);
+                unset($context['_messages']);
+                $log = $log->add($entry->finish(ActionLogStatus::Failed, [$issue], $context, messages: $messages));
 
                 return $this->report(WorkflowResult::failed([$issue], [
                     'halt_on_error' => true,

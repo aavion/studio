@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Database\TablePrefix;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
@@ -29,15 +32,46 @@ final readonly class SetupRollbacker
 
         $environmentFiles = $this->restoreEnvironmentFiles($projectDir, $input->appEnv(), $environmentSnapshot);
 
-        return [
-            'rollback' => [
-                'env_files_removed' => $environmentFiles['removed'],
-                'env_files_restored' => $environmentFiles['restored'],
-                'env_files_restore_errors' => $environmentFiles['errors'],
-                'sqlite_files_removed' => [],
-                'database_tables_removed' => $this->removeDatabaseTables($projectDir, $input, $databaseUrl),
-            ],
+        $databaseTables = $this->removeDatabaseTables($projectDir, $input, $databaseUrl);
+        $rollback = [
+            'env_files_removed' => $environmentFiles['removed'],
+            'env_files_restored' => $environmentFiles['restored'],
+            'env_files_restore_errors' => $environmentFiles['errors'],
+            'sqlite_files_removed' => [],
+            'database_tables_removed' => $databaseTables,
         ];
+
+        return [
+            'rollback' => $rollback,
+            '_messages' => [$this->rollbackMessage($rollback)],
+        ];
+    }
+
+    /**
+     * @param array{env_files_removed: list<string>, env_files_restored: list<string>, env_files_restore_errors: list<array{file: string, error: string}>, sqlite_files_removed: list<string>, database_tables_removed: array{tables: list<string>, error?: string}} $rollback
+     */
+    private function rollbackMessage(array $rollback): Message
+    {
+        $errors = count($rollback['env_files_restore_errors']) + (isset($rollback['database_tables_removed']['error']) ? 1 : 0);
+        $parameters = [
+            '%env_removed%' => (string) count($rollback['env_files_removed']),
+            '%env_restored%' => (string) count($rollback['env_files_restored']),
+            '%tables_removed%' => (string) count($rollback['database_tables_removed']['tables']),
+            '%errors%' => (string) $errors,
+        ];
+        $context = [
+            'rollback' => $rollback,
+            'env_removed' => $rollback['env_files_removed'],
+            'env_restored' => $rollback['env_files_restored'],
+            'database_tables_removed' => $rollback['database_tables_removed']['tables'],
+            'rollback_error_count' => $errors,
+        ];
+
+        if ($errors > 0) {
+            return Message::warning(MessageCode::SETUP_ROLLBACK_COMPLETED, MessageKey::SETUP_ROLLBACK_COMPLETED, $parameters, $context);
+        }
+
+        return Message::info(MessageCode::SETUP_ROLLBACK_COMPLETED, MessageKey::SETUP_ROLLBACK_COMPLETED, $parameters, $context);
     }
 
     /**

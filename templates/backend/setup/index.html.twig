@@ -334,12 +334,25 @@
                     {% endfor %}
                 </ul>
             {% endif %}
+            {% if setup_workflow.messages|default([])|length > 0 %}
+                <ul class="studio-muted">
+                    {% for message in setup_workflow.messages %}
+                        <li>{{ message.translation_key|trans(message.parameters|default({})) }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
             {% if setup_action_log.entries|default([])|length > 0 %}
                 <ol class="studio-action-log-list">
                     {% for entry in setup_action_log.entries %}
                         <li>
                             <strong>{{ ('setup.steps.' ~ entry.name)|trans }}</strong>
                             <span class="studio-badge studio-badge-neutral">{{ ('setup.action_log.status.' ~ entry.status)|trans }}</span>
+                            {% for issue in entry.issues|default([]) %}
+                                <p class="studio-backend-form-errors">{{ issue.translation_key|trans(issue.parameters|default({})) }}</p>
+                            {% endfor %}
+                            {% for message in entry.messages|default([]) %}
+                                <p class="studio-muted">{{ message.translation_key|trans(message.parameters|default({})) }}</p>
+                            {% endfor %}
                         </li>
                     {% endfor %}
                 </ol>

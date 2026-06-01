@@ -150,6 +150,7 @@ final class MessageKey
     public const SETUP_ENVIRONMENT_FILE_WRITE_FAILED = 'message.setup.environment_file_write_failed';
     public const SETUP_LANGUAGE_SELECTED = 'message.setup.language_selected';
     public const SETUP_AVAILABLE_LANGUAGES = 'message.setup.available_languages';
+    public const SETUP_ROLLBACK_COMPLETED = 'message.setup.rollback_completed';
     public const SETUP_DRY_RUN = 'message.setup.dry_run';
     public const SETUP_OUTPUT_SUCCESS = 'message.setup.output.success';
     public const SETUP_OUTPUT_FAILED = 'message.setup.output.failed';

@@ -302,6 +302,7 @@ final class SetupRunnerTest extends TestCase
         self::assertSame(['.env.test.local', '.env.local.php'], $result->context()['rollback']['env_files_removed']);
         self::assertSame([], $result->context()['rollback']['sqlite_files_removed']);
         self::assertContains('config_entry', $result->context()['rollback']['database_tables_removed']['tables']);
+        self::assertSame('setup.rollback_completed', $result->context()['action_log']['entries'][7]['messages'][0]['code']);
 
         $pdo = new PDO('sqlite:'.$databasePath);
         self::assertSame([], $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('config_entry', 'user_account')")->fetchAll(PDO::FETCH_COLUMN));

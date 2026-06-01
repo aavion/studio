@@ -142,6 +142,7 @@ final class MessageCode
     public const SETUP_ENVIRONMENT_FILE_WRITE_FAILED = 'setup.environment_file_write_failed';
     public const SETUP_LANGUAGE_SELECTED = 'setup.language_selected';
     public const SETUP_AVAILABLE_LANGUAGES = 'setup.available_languages';
+    public const SETUP_ROLLBACK_COMPLETED = 'setup.rollback_completed';
     public const SETUP_DRY_RUN = 'setup.dry_run';
     public const SETUP_PROMPT_LANGUAGE = 'setup.prompt.language';
     public const SETUP_PROMPT_SITE_TITLE = 'setup.prompt.site_title';
