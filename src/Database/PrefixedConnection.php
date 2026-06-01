@@ -58,7 +58,7 @@ final class PrefixedConnection extends Connection
 
     private function prefixTableExpression(string $table): string
     {
-        $prefix = TablePrefix::fromEnvironment();
+        $prefix = $this->prefix();
 
         if ('' === $prefix) {
             return $table;
@@ -92,7 +92,7 @@ final class PrefixedConnection extends Connection
 
     private function prefixSql(string $sql): string
     {
-        $prefix = TablePrefix::fromEnvironment();
+        $prefix = $this->prefix();
 
         if ('' === $prefix) {
             return $sql;
@@ -110,5 +110,13 @@ final class PrefixedConnection extends Connection
         }
 
         return $sql;
+    }
+
+    private function prefix(): string
+    {
+        $params = $this->getParams();
+        $prefix = $params['studio_database_prefix'] ?? null;
+
+        return is_string($prefix) ? TablePrefix::normalize($prefix) : TablePrefix::fromEnvironment();
     }
 }

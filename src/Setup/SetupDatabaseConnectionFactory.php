@@ -10,13 +10,19 @@ use Doctrine\DBAL\DriverManager;
 
 final readonly class SetupDatabaseConnectionFactory
 {
-    public function create(string $projectDir, string $databaseUrl, ?string $appEnv = null): Connection
+    public function create(string $projectDir, string $databaseUrl, ?string $appEnv = null, ?string $databasePrefix = null): Connection
     {
-        return DriverManager::getConnection($this->connectionParameters($this->resolveSymfonyPlaceholders(
+        $parameters = $this->connectionParameters($this->resolveSymfonyPlaceholders(
             $databaseUrl,
             $projectDir,
             $appEnv,
-        )));
+        ));
+
+        if (null !== $databasePrefix) {
+            $parameters['studio_database_prefix'] = $databasePrefix;
+        }
+
+        return DriverManager::getConnection($parameters);
     }
 
     /**

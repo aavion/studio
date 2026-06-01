@@ -47,14 +47,14 @@ final class SetupRunner
             return $this->report($prepare, $input);
         }
 
-        [$appSecret, $databaseUrl, $environment, $rollbackSnapshot] = $prepare;
+        [$appSecret, $databaseUrl, $environment, $rollbackSnapshot, $tableSnapshot] = $prepare;
         $actions = [];
 
         foreach ($this->steps($input, $appSecret, $databaseUrl, $environment) as [$name, $callback]) {
             $actions[] = new SetupStepAction(
                 $name,
                 $callback,
-                fn (Throwable $_): array => $this->rollback($input, $databaseUrl, $rollbackSnapshot),
+                fn (Throwable $_): array => $this->rollback($input, $databaseUrl, $rollbackSnapshot, $tableSnapshot),
             );
         }
 
@@ -79,7 +79,7 @@ final class SetupRunner
             return $this->report($prepare, $input);
         }
 
-        [$appSecret, $databaseUrl, $environment, $rollbackSnapshot] = $prepare;
+        [$appSecret, $databaseUrl, $environment, $rollbackSnapshot, $tableSnapshot] = $prepare;
 
         foreach ($this->steps($input, $appSecret, $databaseUrl, $environment) as $step) {
             [$name, $callback] = $step;
@@ -93,7 +93,7 @@ final class SetupRunner
                 $log = $log->add($entry->finish($status, context: $context, messages: $messages));
             } catch (Throwable $throwable) {
                 $issue = $this->failureMessage($name, $throwable);
-                $context = $this->rollback($input, $databaseUrl, $rollbackSnapshot);
+                $context = $this->rollback($input, $databaseUrl, $rollbackSnapshot, $tableSnapshot);
                 $messages = $this->messagesFromContext($context);
                 unset($context['_messages']);
                 $log = $log->add($entry->finish(ActionLogStatus::Failed, [$issue], $context, messages: $messages));
@@ -119,7 +119,7 @@ final class SetupRunner
     }
 
     /**
-     * @return array{0: string, 1: string, 2: array<string, string>, 3: SetupEnvironmentSnapshot}|WorkflowResult<ActionLog>
+     * @return array{0: string, 1: string, 2: array<string, string>, 3: SetupEnvironmentSnapshot, 4: SetupDatabaseTableSnapshot}|WorkflowResult<ActionLog>
      */
     private function prepare(SetupInput $input, ActionLog $log): array|WorkflowResult
     {
@@ -142,6 +142,7 @@ final class SetupRunner
                 $databaseUrl,
                 $this->environment($input, $appSecret, $databaseUrl),
                 SetupEnvironmentSnapshot::capture($this->projectDir, $input->appEnv()),
+                SetupDatabaseTableSnapshot::capture($this->projectDir, $databaseUrl, $input->appEnv(), $input->databasePrefix()),
             ];
         } catch (Throwable $throwable) {
             $issue = $this->failureMessage('prepare_setup', $throwable);
@@ -498,8 +499,13 @@ final class SetupRunner
     /**
      * @return array<string, mixed>
      */
-    private function rollback(SetupInput $input, string $databaseUrl, SetupEnvironmentSnapshot $environmentSnapshot): array
+    private function rollback(
+        SetupInput $input,
+        string $databaseUrl,
+        SetupEnvironmentSnapshot $environmentSnapshot,
+        SetupDatabaseTableSnapshot $tableSnapshot,
+    ): array
     {
-        return $this->rollbacker->rollback($this->projectDir, $input, $databaseUrl, $environmentSnapshot);
+        return $this->rollbacker->rollback($this->projectDir, $input, $databaseUrl, $environmentSnapshot, $tableSnapshot);
     }
 }

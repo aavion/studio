@@ -6,6 +6,8 @@ namespace App\Database;
 
 final readonly class TablePrefix
 {
+    public const MIGRATION_TABLE = 'doctrine_migration_versions';
+
     /**
      * @var list<string>
      */
@@ -20,7 +22,6 @@ final readonly class TablePrefix
         'content_revision',
         'content_schema',
         'content_schema_version',
-        'doctrine_migration_versions',
         'extension_package',
         'messenger_messages',
         'package_setting_entry',
@@ -34,6 +35,17 @@ final readonly class TablePrefix
     public static function fromEnvironment(): string
     {
         $prefix = trim((string) ($_SERVER['APP_DATABASE_PREFIX'] ?? $_ENV['APP_DATABASE_PREFIX'] ?? ''));
+
+        return self::normalize($prefix);
+    }
+
+    public static function normalize(?string $prefix): string
+    {
+        $prefix = trim((string) $prefix);
+
+        if ('' === $prefix) {
+            return '';
+        }
 
         return 1 === preg_match('/^[a-z][a-z0-9_]*_$/', $prefix) ? $prefix : '';
     }

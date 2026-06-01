@@ -24,7 +24,13 @@ final readonly class SetupRollbacker
     /**
      * @return array<string, mixed>
      */
-    public function rollback(string $projectDir, SetupInput $input, string $databaseUrl, ?SetupEnvironmentSnapshot $environmentSnapshot = null): array
+    public function rollback(
+        string $projectDir,
+        SetupInput $input,
+        string $databaseUrl,
+        ?SetupEnvironmentSnapshot $environmentSnapshot = null,
+        ?SetupDatabaseTableSnapshot $tableSnapshot = null,
+    ): array
     {
         if ($input->dryRun()) {
             return ['rollback' => ['skipped' => 'dry_run']];
@@ -32,12 +38,14 @@ final readonly class SetupRollbacker
 
         $environmentFiles = $this->restoreEnvironmentFiles($projectDir, $input->appEnv(), $environmentSnapshot);
 
-        $databaseTables = $this->removeDatabaseTables($projectDir, $input, $databaseUrl);
+        $tableSnapshot ??= SetupDatabaseTableSnapshot::capture($projectDir, $databaseUrl, $input->appEnv(), $input->databasePrefix());
+        $databaseTables = $this->removeDatabaseTables($projectDir, $input, $databaseUrl, $tableSnapshot);
         $rollback = [
             'env_files_removed' => $environmentFiles['removed'],
             'env_files_restored' => $environmentFiles['restored'],
             'env_files_restore_errors' => $environmentFiles['errors'],
             'sqlite_files_removed' => [],
+            'database_table_snapshot_error' => $tableSnapshot->error(),
             'database_tables_removed' => $databaseTables,
         ];
 
@@ -48,11 +56,13 @@ final readonly class SetupRollbacker
     }
 
     /**
-     * @param array{env_files_removed: list<string>, env_files_restored: list<string>, env_files_restore_errors: list<array{file: string, error: string}>, sqlite_files_removed: list<string>, database_tables_removed: array{tables: list<string>, error?: string}} $rollback
+     * @param array{env_files_removed: list<string>, env_files_restored: list<string>, env_files_restore_errors: list<array{file: string, error: string}>, sqlite_files_removed: list<string>, database_table_snapshot_error: string|null, database_tables_removed: array{tables: list<string>, skipped?: list<string>, error?: string}} $rollback
      */
     private function rollbackMessage(array $rollback): Message
     {
-        $errors = count($rollback['env_files_restore_errors']) + (isset($rollback['database_tables_removed']['error']) ? 1 : 0);
+        $errors = count($rollback['env_files_restore_errors'])
+            + (isset($rollback['database_tables_removed']['error']) ? 1 : 0)
+            + (null !== $rollback['database_table_snapshot_error'] ? 1 : 0);
         $parameters = [
             '%env_removed%' => (string) count($rollback['env_files_removed']),
             '%env_restored%' => (string) count($rollback['env_files_restored']),
@@ -104,20 +114,33 @@ final readonly class SetupRollbacker
     }
 
     /**
-     * @return array{tables: list<string>, error?: string}
+     * @return array{tables: list<string>, skipped?: list<string>, error?: string}
      */
-    private function removeDatabaseTables(string $projectDir, SetupInput $input, string $databaseUrl): array
+    private function removeDatabaseTables(
+        string $projectDir,
+        SetupInput $input,
+        string $databaseUrl,
+        SetupDatabaseTableSnapshot $tableSnapshot,
+    ): array
     {
+        if (!$tableSnapshot->reliable()) {
+            return [
+                'tables' => [],
+                'skipped' => $this->rollbackTables($input),
+                'error' => 'Setup table snapshot is unavailable; table rollback was skipped.',
+            ];
+        }
+
         $connection = null;
 
         try {
-            $connection = $this->connectionFactory->create($projectDir, $databaseUrl, $input->appEnv());
+            $connection = $this->connectionFactory->create($projectDir, $databaseUrl, $input->appEnv(), $input->databasePrefix());
             $platform = $connection->getDatabasePlatform();
 
             return match (true) {
-                $platform instanceof AbstractMySQLPlatform => ['tables' => $this->dropMySqlTables($connection, $input)],
-                $platform instanceof PostgreSQLPlatform => ['tables' => $this->dropPostgreSqlTables($connection, $input)],
-                $platform instanceof SQLitePlatform => ['tables' => $this->dropSqliteTables($connection, $input)],
+                $platform instanceof AbstractMySQLPlatform => $this->dropMySqlTables($connection, $input, $tableSnapshot),
+                $platform instanceof PostgreSQLPlatform => $this->dropPostgreSqlTables($connection, $input, $tableSnapshot),
+                $platform instanceof SQLitePlatform => $this->dropSqliteTables($connection, $input, $tableSnapshot),
                 default => ['tables' => [], 'error' => sprintf('Unsupported rollback database platform "%s".', $platform::class)],
             };
         } catch (Throwable $throwable) {
@@ -128,15 +151,22 @@ final readonly class SetupRollbacker
     }
 
     /**
-     * @return list<string>
+     * @return array{tables: list<string>, skipped: list<string>}
      */
-    private function dropMySqlTables(Connection $connection, SetupInput $input): array
+    private function dropMySqlTables(Connection $connection, SetupInput $input, SetupDatabaseTableSnapshot $snapshot): array
     {
         $removed = [];
+        $skipped = [];
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS=0');
 
         try {
             foreach ($this->rollbackTables($input) as $table) {
+                if ($snapshot->existed($table)) {
+                    $skipped[] = $table;
+
+                    continue;
+                }
+
                 $connection->executeStatement(sprintf(
                     'DROP TABLE IF EXISTS %s',
                     $connection->getDatabasePlatform()->quoteSingleIdentifier($table),
@@ -147,17 +177,24 @@ final readonly class SetupRollbacker
             $connection->executeStatement('SET FOREIGN_KEY_CHECKS=1');
         }
 
-        return $removed;
+        return ['tables' => $removed, 'skipped' => $skipped];
     }
 
     /**
-     * @return list<string>
+     * @return array{tables: list<string>, skipped: list<string>}
      */
-    private function dropPostgreSqlTables(Connection $connection, SetupInput $input): array
+    private function dropPostgreSqlTables(Connection $connection, SetupInput $input, SetupDatabaseTableSnapshot $snapshot): array
     {
         $removed = [];
+        $skipped = [];
 
         foreach ($this->rollbackTables($input) as $table) {
+            if ($snapshot->existed($table)) {
+                $skipped[] = $table;
+
+                continue;
+            }
+
             $connection->executeStatement(sprintf(
                 'DROP TABLE IF EXISTS %s CASCADE',
                 $connection->getDatabasePlatform()->quoteSingleIdentifier($table),
@@ -165,19 +202,26 @@ final readonly class SetupRollbacker
             $removed[] = $table;
         }
 
-        return $removed;
+        return ['tables' => $removed, 'skipped' => $skipped];
     }
 
     /**
-     * @return list<string>
+     * @return array{tables: list<string>, skipped: list<string>}
      */
-    private function dropSqliteTables(Connection $connection, SetupInput $input): array
+    private function dropSqliteTables(Connection $connection, SetupInput $input, SetupDatabaseTableSnapshot $snapshot): array
     {
         $removed = [];
+        $skipped = [];
         $connection->executeStatement('PRAGMA foreign_keys=OFF');
 
         try {
             foreach ($this->rollbackTables($input) as $table) {
+                if ($snapshot->existed($table)) {
+                    $skipped[] = $table;
+
+                    continue;
+                }
+
                 $connection->executeStatement(sprintf(
                     'DROP TABLE IF EXISTS %s',
                     $connection->getDatabasePlatform()->quoteSingleIdentifier($table),
@@ -188,7 +232,7 @@ final readonly class SetupRollbacker
             $connection->executeStatement('PRAGMA foreign_keys=ON');
         }
 
-        return $removed;
+        return ['tables' => $removed, 'skipped' => $skipped];
     }
 
     /**
@@ -198,10 +242,13 @@ final readonly class SetupRollbacker
     {
         $prefix = $input->databasePrefix() ?? '';
 
-        return array_values(array_unique(array_map(
+        $tables = array_map(
             static fn (string $table): string => TablePrefix::apply($table, $prefix),
             array_reverse(TablePrefix::TABLES),
-        )));
+        );
+        $tables[] = TablePrefix::MIGRATION_TABLE;
+
+        return array_values(array_unique($tables));
     }
 
 }

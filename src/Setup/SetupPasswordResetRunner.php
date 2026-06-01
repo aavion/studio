@@ -17,6 +17,7 @@ use App\Core\State\StateSubjectType;
 use App\Core\Workflow\WorkflowResult;
 use App\Security\PasswordPolicy;
 use Doctrine\DBAL\Connection;
+use Throwable;
 
 final readonly class SetupPasswordResetRunner
 {
@@ -28,13 +29,17 @@ final readonly class SetupPasswordResetRunner
     {
     }
 
-    public function findUser(string $projectDir, string $databaseUrl, string $username): ?SetupPasswordResetUser
+    public function findUser(string $projectDir, string $databaseUrl, string $username, ?string $databasePrefix = null): ?SetupPasswordResetUser
     {
-        $connection = $this->connectionFactory->create($projectDir, $databaseUrl);
-        $row = $connection->fetchAssociative(
-            'SELECT uid, username, email, status FROM user_account WHERE username = ?',
-            [$username],
-        );
+        try {
+            $connection = $this->connectionFactory->create($projectDir, $databaseUrl, databasePrefix: $databasePrefix);
+            $row = $connection->fetchAssociative(
+                'SELECT uid, username, email, status FROM user_account WHERE username = ?',
+                [$username],
+            );
+        } catch (Throwable) {
+            return null;
+        }
 
         if (!is_array($row)) {
             return null;
@@ -51,11 +56,18 @@ final readonly class SetupPasswordResetRunner
     /**
      * @return WorkflowResult<ActionLog>
      */
-    public function reset(string $projectDir, string $databaseUrl, string $username, string $newPassword, string $actor = 'setup_cli'): WorkflowResult
+    public function reset(
+        string $projectDir,
+        string $databaseUrl,
+        string $username,
+        string $newPassword,
+        string $actor = 'setup_cli',
+        ?string $databasePrefix = null,
+    ): WorkflowResult
     {
         $entry = ActionLogEntry::pending('reset_user_password')->start();
         $log = ActionLog::create();
-        $user = $this->findUser($projectDir, $databaseUrl, $username);
+        $user = $this->findUser($projectDir, $databaseUrl, $username, $databasePrefix);
 
         if (!$user instanceof SetupPasswordResetUser) {
             $issue = Message::create(
@@ -82,7 +94,7 @@ final readonly class SetupPasswordResetRunner
         }
 
         $now = gmdate('Y-m-d H:i:s');
-        $connection = $this->connectionFactory->create($projectDir, $databaseUrl);
+        $connection = $this->connectionFactory->create($projectDir, $databaseUrl, databasePrefix: $databasePrefix);
         $connection->update('user_account', [
             'password_hash' => password_hash($newPassword, PASSWORD_DEFAULT),
         ], ['uid' => $user->uid()]);

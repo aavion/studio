@@ -49,4 +49,21 @@ final class PrefixedConnectionTest extends TestCase
         self::assertSame('studio_user_account', $connection->fetchOne("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'studio_user_account'"));
         self::assertFalse($connection->fetchOne("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'user_account'"));
     }
+
+    public function testItLeavesDoctrineMigrationMetadataUnprefixed(): void
+    {
+        $connection = DriverManager::getConnection([
+            'driver' => 'pdo_sqlite',
+            'memory' => true,
+            'wrapperClass' => PrefixedConnection::class,
+        ]);
+
+        $connection->executeStatement('CREATE TABLE doctrine_migration_versions (version VARCHAR(191) NOT NULL PRIMARY KEY)');
+
+        self::assertSame(
+            'doctrine_migration_versions',
+            $connection->fetchOne("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'doctrine_migration_versions'"),
+        );
+        self::assertFalse($connection->fetchOne("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'studio_doctrine_migration_versions'"));
+    }
 }

@@ -227,6 +227,7 @@ function handlePasswordReset(string $projectDir, array $options, string $usernam
     $databaseUrl = is_string($options['database-url'] ?? null) && '' !== $options['database-url']
         ? $options['database-url']
         : (string) ($_SERVER['DATABASE_URL'] ?? $_ENV['DATABASE_URL'] ?? '');
+    $databasePrefix = setupDatabasePrefix($options);
 
     if ('' === trim($username)) {
         echo '[ERROR] --reset-password requires a username.'.PHP_EOL;
@@ -241,7 +242,7 @@ function handlePasswordReset(string $projectDir, array $options, string $usernam
     }
 
     $runner = new SetupPasswordResetRunner(workflowResultMessageReporter($projectDir, $environment));
-    $user = $runner->findUser($projectDir, $databaseUrl, $username);
+    $user = $runner->findUser($projectDir, $databaseUrl, $username, $databasePrefix);
 
     if (null === $user) {
         echo '[ERROR] '.$translator->translate($projectDir, $language, MessageKey::SETUP_PASSWORD_RESET_USER_NOT_FOUND, [
@@ -289,7 +290,7 @@ function handlePasswordReset(string $projectDir, array $options, string $usernam
         return 1;
     }
 
-    $result = $runner->reset($projectDir, $databaseUrl, $user->username(), $newPassword);
+    $result = $runner->reset($projectDir, $databaseUrl, $user->username(), $newPassword, databasePrefix: $databasePrefix);
 
     echo sprintf(
         '[%s] %s',
@@ -317,4 +318,17 @@ function handlePasswordReset(string $projectDir, array $options, string $usernam
     }
 
     return $result->isSuccess() ? 0 : 1;
+}
+
+/**
+ * @param array<string, string|false> $options
+ */
+function setupDatabasePrefix(array $options): ?string
+{
+    $prefix = is_string($options['db-prefix'] ?? null)
+        ? $options['db-prefix']
+        : (string) ($_SERVER['APP_DATABASE_PREFIX'] ?? $_ENV['APP_DATABASE_PREFIX'] ?? '');
+    $prefix = trim($prefix);
+
+    return '' === $prefix ? null : rtrim($prefix, '_').'_';
 }

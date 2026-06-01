@@ -277,8 +277,17 @@ final class SetupRunnerTest extends TestCase
     public function testItRollsBackGeneratedFilesAndSqliteTablesWhenFinalCacheClearFails(): void
     {
         $databasePath = $this->root.'/var/setup.db';
-        $this->createSchema($databasePath);
-        $executor = new RecordingSetupCommandExecutor(failureAt: 4, failure: new SetupCommandResult(1, '', 'cache clear failed'));
+        $executor = new RecordingSetupCommandExecutor(
+            failureAt: 4,
+            failure: new SetupCommandResult(1, '', 'cache clear failed'),
+            onRun: function (array $command) use ($databasePath): void {
+                if (in_array('doctrine:migrations:migrate', $command, true)) {
+                    $this->createSchema($databasePath);
+                    $pdo = new PDO('sqlite:'.$databasePath);
+                    $pdo->exec('CREATE TABLE doctrine_migration_versions (version VARCHAR(191) NOT NULL PRIMARY KEY)');
+                }
+            },
+        );
         $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
 
         $result = $runner->run(new SetupInput(
@@ -302,10 +311,42 @@ final class SetupRunnerTest extends TestCase
         self::assertSame(['.env.test.local', '.env.local.php'], $result->context()['rollback']['env_files_removed']);
         self::assertSame([], $result->context()['rollback']['sqlite_files_removed']);
         self::assertContains('config_entry', $result->context()['rollback']['database_tables_removed']['tables']);
+        self::assertContains('doctrine_migration_versions', $result->context()['rollback']['database_tables_removed']['tables']);
         self::assertSame('setup.rollback_completed', $result->context()['action_log']['entries'][7]['messages'][0]['code']);
 
         $pdo = new PDO('sqlite:'.$databasePath);
-        self::assertSame([], $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('config_entry', 'user_account')")->fetchAll(PDO::FETCH_COLUMN));
+        self::assertSame([], $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('config_entry', 'user_account', 'doctrine_migration_versions')")->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    public function testItDoesNotDropPreExistingTablesWhenRollbackRuns(): void
+    {
+        $databasePath = $this->root.'/var/existing-setup.db';
+        $this->createSchema($databasePath);
+        $executor = new RecordingSetupCommandExecutor(failureAt: 4, failure: new SetupCommandResult(1, '', 'cache clear failed'));
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Example Studio',
+            defaultUri: 'https://example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///'.$databasePath,
+            adminUsername: 'admin',
+            adminPassword: 'Secret1!password',
+            adminEmail: 'admin@example.test',
+            appSecret: 'test-secret-12',
+        ));
+
+        self::assertFalse($result->isSuccess());
+        self::assertNotContains('config_entry', $result->context()['rollback']['database_tables_removed']['tables']);
+        self::assertContains('config_entry', $result->context()['rollback']['database_tables_removed']['skipped']);
+
+        $pdo = new PDO('sqlite:'.$databasePath);
+        self::assertSame(
+            ['config_entry', 'user_account'],
+            $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('config_entry', 'user_account') ORDER BY name")->fetchAll(PDO::FETCH_COLUMN),
+        );
     }
 
     public function testItRestoresPreExistingEnvironmentFilesWhenRollbackRuns(): void
@@ -610,6 +651,7 @@ final class RecordingSetupCommandExecutor implements SetupCommandExecutorInterfa
     public function __construct(
         private readonly ?int $failureAt = null,
         private readonly ?SetupCommandResult $failure = null,
+        private readonly mixed $onRun = null,
     )
     {
     }
@@ -617,6 +659,9 @@ final class RecordingSetupCommandExecutor implements SetupCommandExecutorInterfa
     public function run(array $command, string $cwd, array $environment = []): SetupCommandResult
     {
         $this->commands[] = $command;
+        if (is_callable($this->onRun)) {
+            ($this->onRun)($command, $cwd, $environment);
+        }
 
         if (null !== $this->failure && $this->failureAt === count($this->commands)) {
             return $this->failure;
