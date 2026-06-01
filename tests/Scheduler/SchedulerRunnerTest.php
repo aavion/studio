@@ -24,6 +24,7 @@ use App\Scheduler\SchedulerTaskRegistry;
 use App\Scheduler\SchedulerTaskRunStatus;
 use App\Scheduler\SchedulerTaskStatus;
 use App\Scheduler\SchedulerTaskSynchronizer;
+use App\Scheduler\SchedulerTaskType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -55,6 +56,49 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertSame('system.test_task', $tasks[0]->identifier());
         self::assertSame(SchedulerTaskStatus::Inactive, $tasks[0]->status());
         self::assertNotNull($tasks[0]->nextDueAt());
+    }
+
+    public function testItHidesUntrustedPackageActionQueuesWhenDisabled(): void
+    {
+        $tasks = $this->synchronizer(new TestPackageActionQueueSchedulerTaskProvider())->synchronize();
+
+        self::assertSame([], $tasks);
+    }
+
+    public function testItDoesNotShowTasksWhosePackageNoLongerRegistersThem(): void
+    {
+        $staleTask = new SchedulerTask(new SchedulerTaskDefinition(
+            'demo.stale_task',
+            'admin.scheduler.tasks.demo.label',
+            'admin.scheduler.tasks.demo.description',
+            'demo-package',
+            SchedulerTaskType::Command,
+            'studio:test',
+            '* * * * *',
+            false,
+        ));
+        $staleTask->activate('* * * * *');
+        $this->entityManager->persist($staleTask);
+        $this->entityManager->flush();
+
+        $tasks = $this->synchronizer()->synchronize();
+
+        self::assertSame(['system.test_task'], array_map(static fn (SchedulerTask $task): string => $task->identifier(), $tasks));
+    }
+
+    public function testItDoesNotRunActiveDueTasksFromInactivePackages(): void
+    {
+        $this->synchronizer(new TestPackageCommandSchedulerTaskProvider())->synchronize();
+        $task = $this->entityManager->find(SchedulerTask::class, 'demo.command');
+        self::assertInstanceOf(SchedulerTask::class, $task);
+        $task->activate('* * * * *');
+        $this->entityManager->flush();
+
+        $payload = $this->runner(new TestSchedulerTaskExecutor(true), new TestPackageCommandSchedulerTaskProvider())->run()->toArray();
+
+        self::assertSame('completed', $payload['status']);
+        self::assertSame([], $payload['tasks']);
+        self::assertSame([], $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy(['task' => $task]));
     }
 
     public function testItRunsForcedActiveTaskAndStoresRunHistory(): void
@@ -184,16 +228,20 @@ final class SchedulerRunnerTest extends KernelTestCase
         );
     }
 
-    private function synchronizer(): SchedulerTaskSynchronizer
+    private function synchronizer(?SchedulerTaskProviderInterface $provider = null): SchedulerTaskSynchronizer
     {
-        return new SchedulerTaskSynchronizer(new SchedulerTaskRegistry([new TestSchedulerTaskProvider()]), $this->entityManager);
+        return new SchedulerTaskSynchronizer(
+            new SchedulerTaskRegistry([$provider ?? new TestSchedulerTaskProvider()]),
+            $this->entityManager,
+            new SchedulerSettings(new Config($this->entityManager->getConnection())),
+        );
     }
 
-    private function runner(SchedulerTaskExecutorInterface $executor): SchedulerRunner
+    private function runner(SchedulerTaskExecutorInterface $executor, ?SchedulerTaskProviderInterface $provider = null): SchedulerRunner
     {
         return new SchedulerRunner(
             new SchedulerSettings(new Config($this->entityManager->getConnection())),
-            $this->synchronizer(),
+            $this->synchronizer($provider),
             $this->entityManager,
             [$executor],
             new SchedulerLockFactory(sys_get_temp_dir().'/studio-scheduler-test-'.bin2hex(random_bytes(4)), 'test'),
@@ -236,6 +284,44 @@ final readonly class TestSchedulerTaskExecutor implements SchedulerTaskExecutorI
         return $this->success
             ? SchedulerTaskExecution::success(['test' => true])
             : SchedulerTaskExecution::failed(['test' => false]);
+    }
+}
+
+final readonly class TestPackageActionQueueSchedulerTaskProvider implements SchedulerTaskProviderInterface
+{
+    public function schedulerTasks(): array
+    {
+        return [
+            new SchedulerTaskDefinition(
+                'demo.action_queue',
+                'admin.scheduler.tasks.demo.label',
+                'admin.scheduler.tasks.demo.description',
+                'demo-package',
+                SchedulerTaskType::ActionQueue,
+                'demo.queue',
+                '* * * * *',
+                false,
+            ),
+        ];
+    }
+}
+
+final readonly class TestPackageCommandSchedulerTaskProvider implements SchedulerTaskProviderInterface
+{
+    public function schedulerTasks(): array
+    {
+        return [
+            new SchedulerTaskDefinition(
+                'demo.command',
+                'admin.scheduler.tasks.demo.label',
+                'admin.scheduler.tasks.demo.description',
+                'demo-package',
+                SchedulerTaskType::Command,
+                'studio:test',
+                '* * * * *',
+                false,
+            ),
+        ];
     }
 }
 

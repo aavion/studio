@@ -152,6 +152,11 @@ class SchedulerTask
         return $this->cronExpression;
     }
 
+    public function defaultCronExpression(): string
+    {
+        return $this->defaultCronExpression;
+    }
+
     public function status(): SchedulerTaskStatus
     {
         return $this->status;

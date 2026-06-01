@@ -9,12 +9,15 @@
 {% endblock %}
 
 {% block admin_body %}
-    {% set run_now_action %}
-        <form method="post" action="{{ path('backend_admin_scheduler_run', {identifier: task.identifier}) }}">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('scheduler-task-run-' ~ task.identifier) }}">
-            <button class="studio-backend-button studio-button-secondary" type="submit">{{ 'admin.scheduler.actions.run_now'|trans }}</button>
-        </form>
-    {% endset %}
+    {% set run_now_action = '' %}
+    {% if task.status.value == 'active' %}
+        {% set run_now_action %}
+            <form method="post" action="{{ path('backend_admin_scheduler_run', {identifier: task.identifier}) }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('scheduler-task-run-' ~ task.identifier) }}">
+                <button class="studio-backend-button studio-button-secondary" type="submit">{{ 'admin.scheduler.actions.run_now'|trans }}</button>
+            </form>
+        {% endset %}
+    {% endif %}
     {% include '@backend/admin/partials/_page-header.html.twig' with {
         eyebrow: 'admin.scheduler.title'|trans,
         title: task.labelKey|trans,
@@ -33,8 +36,19 @@
             </div>
             <div><dt>{{ 'admin.scheduler.detail.type'|trans }}</dt><dd>{{ task.type.value }}</dd></div>
             <div><dt>{{ 'admin.scheduler.detail.target'|trans }}</dt><dd><code>{{ task.target }}</code></dd></div>
+            <div><dt>{{ 'admin.scheduler.detail.default_interval'|trans }}</dt><dd><code>{{ task.defaultCronExpression }}</code></dd></div>
+            <div><dt>{{ 'admin.scheduler.detail.next_due'|trans }}</dt><dd>{{ task.nextDueAt ? task.nextDueAt|date('Y-m-d H:i') : 'ui.common.never'|trans }}</dd></div>
+            <div><dt>{{ 'admin.scheduler.detail.last_attempt'|trans }}</dt><dd>{{ task.lastAttemptAt ? task.lastAttemptAt|date('Y-m-d H:i') : 'ui.common.never'|trans }}</dd></div>
+            <div><dt>{{ 'admin.scheduler.detail.last_success'|trans }}</dt><dd>{{ task.lastSuccessAt ? task.lastSuccessAt|date('Y-m-d H:i') : 'ui.common.never'|trans }}</dd></div>
+            <div><dt>{{ 'admin.scheduler.detail.failure_count'|trans }}</dt><dd>{{ task.failureCount }}</dd></div>
             <div><dt>{{ 'admin.scheduler.detail.run_url'|trans }}</dt><dd><code>{{ cron_run_url }}</code></dd></div>
         </dl>
+        {% if task.type.value == 'action_queue' and not task.trusted %}
+            <p class="studio-muted">{{ 'admin.scheduler.detail.package_action_queue_warning'|trans }}</p>
+        {% endif %}
+        {% if task.status.value != 'active' %}
+            <p class="studio-muted">{{ 'admin.scheduler.detail.run_now_inactive'|trans }}</p>
+        {% endif %}
     </section>
 
     <section class="studio-panel">

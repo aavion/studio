@@ -13,6 +13,7 @@ final readonly class SchedulerTaskSynchronizer
     public function __construct(
         private SchedulerTaskRegistry $registry,
         private EntityManagerInterface $entityManager,
+        private SchedulerSettings $settings,
     ) {
     }
 
@@ -25,6 +26,10 @@ final readonly class SchedulerTaskSynchronizer
         $tasks = [];
 
         foreach ($this->registry->definitions() as $definition) {
+            if (!$this->isVisibleDefinition($definition)) {
+                continue;
+            }
+
             $task = $this->entityManager->find(SchedulerTask::class, $definition->identifier());
 
             if (!$task instanceof SchedulerTask) {
@@ -44,5 +49,12 @@ final readonly class SchedulerTaskSynchronizer
         $this->entityManager->flush();
 
         return $tasks;
+    }
+
+    private function isVisibleDefinition(SchedulerTaskDefinition $definition): bool
+    {
+        return $definition->trusted()
+            || SchedulerTaskType::ActionQueue !== $definition->type()
+            || $this->settings->packageActionQueuesEnabled();
     }
 }
