@@ -30,28 +30,52 @@ final readonly class SetupEnvironmentSnapshot
     }
 
     /**
-     * @return array{removed: list<string>, restored: list<string>}
+     * @return array{removed: list<string>, restored: list<string>, errors: list<array{file: string, error: string}>}
      */
     public function restore(): array
     {
         $removed = [];
         $restored = [];
+        $errors = [];
 
         foreach ($this->files as $path => $state) {
-            if ($state['exists']) {
-                file_put_contents($path, (string) $state['contents'], LOCK_EX);
-                $restored[] = basename($path);
+            try {
+                if ($state['exists']) {
+                    if (false === @file_put_contents($path, (string) $state['contents'], LOCK_EX)) {
+                        $errors[] = [
+                            'file' => basename($path),
+                            'error' => 'Unable to restore environment file.',
+                        ];
 
-                continue;
-            }
+                        continue;
+                    }
 
-            if (is_file($path) && !is_link($path)) {
-                unlink($path);
-                $removed[] = basename($path);
+                    $restored[] = basename($path);
+
+                    continue;
+                }
+
+                if (is_file($path) && !is_link($path)) {
+                    if (!@unlink($path)) {
+                        $errors[] = [
+                            'file' => basename($path),
+                            'error' => 'Unable to remove generated environment file.',
+                        ];
+
+                        continue;
+                    }
+
+                    $removed[] = basename($path);
+                }
+            } catch (\Throwable $throwable) {
+                $errors[] = [
+                    'file' => basename($path),
+                    'error' => $throwable->getMessage(),
+                ];
             }
         }
 
-        return ['removed' => $removed, 'restored' => $restored];
+        return ['removed' => $removed, 'restored' => $restored, 'errors' => $errors];
     }
 
     private static function environmentPath(string $projectDir, string $environment): string

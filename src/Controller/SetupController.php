@@ -16,6 +16,7 @@ use App\Setup\SetupPreflightChecker;
 use App\Setup\SetupRunner;
 use App\Setup\SetupSiteSettings;
 use App\Setup\SetupWebInputFactory;
+use App\Setup\SetupWizardState;
 use App\View\Http\HttpErrorRenderer;
 use App\View\SystemPackageMetadataProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,7 +30,6 @@ use Throwable;
 
 final class SetupController extends AbstractController
 {
-    private const SESSION_KEY = '_studio_setup_wizard';
     private const STEPS = ['language', 'site', 'database', 'admin', 'review'];
 
     public function __construct(
@@ -57,6 +57,8 @@ final class SetupController extends AbstractController
     public function __invoke(Request $request, string $step = 'language'): Response
     {
         if ($this->completionMarker->isComplete($this->projectDir, $this->environment)) {
+            $this->clearState($request);
+
             return $this->httpError->notFound($request);
         }
 
@@ -64,6 +66,7 @@ final class SetupController extends AbstractController
         $this->applyLocale($request, $state);
         $errors = [];
         $databaseTest = null;
+        $clearWizardState = false;
 
         if ($request->isMethod('POST')) {
             if (!$this->csrfTokenManager->isTokenValid(new CsrfToken('setup-wizard', (string) $request->request->get('_csrf_token', '')))) {
@@ -110,6 +113,7 @@ final class SetupController extends AbstractController
                         $state['workflow'] = $result->toArray();
                         $state['action_log'] = $result->value() instanceof ActionLog ? $result->value()->toArray() : ($result->context()['action_log'] ?? null);
                         $state['completed'] = self::STEPS;
+                        $clearWizardState = $result->isSuccess();
                         $step = 'result';
                     }
                 } else {
@@ -117,7 +121,11 @@ final class SetupController extends AbstractController
                 }
             }
 
-            $this->saveState($request, $state);
+            if ($clearWizardState) {
+                $this->clearState($request);
+            } else {
+                $this->saveState($request, $state);
+            }
         }
 
         if (!$this->stepReachable($step, $state)) {
@@ -178,10 +186,6 @@ final class SetupController extends AbstractController
             ['values' => $values, 'trigger' => 'setup_wizard'],
             'Setup apply',
         );
-
-        if ($result->isSuccess()) {
-            $request->getSession()->remove(self::SESSION_KEY);
-        }
 
         return $this->liveOperationResponder->render($result);
     }
@@ -307,7 +311,7 @@ final class SetupController extends AbstractController
     private function state(Request $request): array
     {
         $session = $request->getSession();
-        $state = $session->get(self::SESSION_KEY, []);
+        $state = $session->get(SetupWizardState::SESSION_KEY, []);
 
         if (!is_array($state)) {
             $state = [];
@@ -328,7 +332,14 @@ final class SetupController extends AbstractController
      */
     private function saveState(Request $request, array $state): void
     {
-        $request->getSession()->set(self::SESSION_KEY, $this->protectState($state));
+        $request->getSession()->set(SetupWizardState::SESSION_KEY, $this->protectState($state));
+    }
+
+    private function clearState(Request $request): void
+    {
+        if ($request->hasSession()) {
+            $request->getSession()->remove(SetupWizardState::SESSION_KEY);
+        }
     }
 
     /**

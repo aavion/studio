@@ -23,6 +23,7 @@ use App\Entity\UserAccount;
 use App\Security\UserFlowConfig;
 use App\Security\UserRole;
 use App\Setup\SetupCompletionMarker;
+use App\Setup\SetupWizardState;
 use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
 use App\View\Injection\StaticViewInjection;
 use App\View\Injection\ViewSurface;
@@ -134,7 +135,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorExists('form#setup-wizard[data-operation-overlay-enabled-value="true"]');
             self::assertSelectorExists('form#setup-wizard input[name="_setup_action"][value=""]');
             self::assertSelectorExists('form#setup-wizard button[name="_setup_action"][value="apply"]');
-            $storedState = $client->getRequest()->getSession()->get('_studio_setup_wizard');
+            $storedState = $client->getRequest()->getSession()->get(SetupWizardState::SESSION_KEY);
             $encodedState = json_encode($storedState, JSON_THROW_ON_ERROR);
             self::assertIsArray($storedState);
             self::assertIsString($encodedState);
@@ -186,7 +187,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertResponseHeaderSame('content-type', 'text/html; charset=UTF-8');
             self::assertSelectorTextContains('h1', 'Setup result');
             self::assertSelectorTextContains('.studio-panel', 'Setup completed');
-            $storedState = $client->getRequest()->getSession()->get('_studio_setup_wizard');
+            $storedState = $client->getRequest()->getSession()->get(SetupWizardState::SESSION_KEY);
             $encodedState = json_encode($storedState, JSON_THROW_ON_ERROR);
             self::assertIsString($encodedState);
             self::assertStringNotContainsString('Safe1!pass', $encodedState);
@@ -1198,7 +1199,7 @@ final class BackendControllerTest extends WebTestCase
     private function setSetupWizardState(KernelBrowser $client, array $state): void
     {
         $session = $client->getRequest()->getSession();
-        $session->set('_studio_setup_wizard', $state);
+        $session->set(SetupWizardState::SESSION_KEY, $state);
         $session->save();
     }
 }

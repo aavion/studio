@@ -33,6 +33,7 @@ final readonly class SetupRollbacker
             'rollback' => [
                 'env_files_removed' => $environmentFiles['removed'],
                 'env_files_restored' => $environmentFiles['restored'],
+                'env_files_restore_errors' => $environmentFiles['errors'],
                 'sqlite_files_removed' => [],
                 'database_tables_removed' => $this->removeDatabaseTables($projectDir, $input, $databaseUrl),
             ],
@@ -40,7 +41,7 @@ final readonly class SetupRollbacker
     }
 
     /**
-     * @return array{removed: list<string>, restored: list<string>}
+     * @return array{removed: list<string>, restored: list<string>, errors: list<array{file: string, error: string}>}
      */
     private function restoreEnvironmentFiles(string $projectDir, string $environment, ?SetupEnvironmentSnapshot $snapshot): array
     {
@@ -48,7 +49,7 @@ final readonly class SetupRollbacker
             return $snapshot->restore();
         }
 
-        return ['removed' => $this->removeEnvironmentFiles($projectDir, $environment), 'restored' => []];
+        return ['removed' => $this->removeEnvironmentFiles($projectDir, $environment), 'restored' => [], 'errors' => []];
     }
 
     /**

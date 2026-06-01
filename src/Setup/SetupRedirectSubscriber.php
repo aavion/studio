@@ -35,6 +35,10 @@ final readonly class SetupRedirectSubscriber implements EventSubscriberInterface
         }
 
         if ($this->completionMarker->isComplete($this->projectDir, $this->environment)) {
+            if ($event->getRequest()->hasSession()) {
+                $event->getRequest()->getSession()->remove(SetupWizardState::SESSION_KEY);
+            }
+
             return;
         }
 
