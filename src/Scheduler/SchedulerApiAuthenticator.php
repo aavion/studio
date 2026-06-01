@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Scheduler;
 
+use App\Core\Access\AccessLevel;
 use App\Entity\ApiKey;
-use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
+use App\Security\UserAccountStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -42,7 +43,7 @@ final readonly class SchedulerApiAuthenticator
             'hmacHash' => $this->apiKeyVault->hmac($token),
         ]);
 
-        if (!$apiKey instanceof ApiKey || !in_array($apiKey->status(), [ApiKeyStatus::ReadOnly, ApiKeyStatus::ReadWrite], true)) {
+        if (!$apiKey instanceof ApiKey || !$apiKey->status()->allowsWrite() || !$this->apiKeyUserCanTriggerScheduler($apiKey)) {
             return null;
         }
 
@@ -82,5 +83,13 @@ final readonly class SchedulerApiAuthenticator
     {
         return strlen($token) <= self::MAX_PLAIN_TOKEN_LENGTH
             && 1 === preg_match('/^[^\s\x00-\x1F\x7F]+$/', $token);
+    }
+
+    private function apiKeyUserCanTriggerScheduler(ApiKey $apiKey): bool
+    {
+        $user = $apiKey->user();
+
+        return UserAccountStatus::Active === $user->status()
+            && $user->accessLevel() >= AccessLevel::ADMIN;
     }
 }

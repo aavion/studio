@@ -8,6 +8,7 @@ use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Scheduler\SchedulerLockFactory;
 use App\Scheduler\SchedulerSettings;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class SchedulerControllerTest extends WebTestCase
@@ -21,24 +22,52 @@ final class SchedulerControllerTest extends WebTestCase
         self::assertSame('unauthorized', json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['status']);
     }
 
-    public function testCronRunAcceptsReadOnlyBearerApiKey(): void
+    public function testCronRunAcceptsReadWriteBearerApiKey(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/cron/run', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('completed', $payload['status']);
+        self::assertSame('seedrw', $payload['auth']['api_key_prefix']);
+    }
+
+    public function testCronRunRejectsReadOnlyApiKey(): void
     {
         $client = self::createClient();
         $client->request('GET', '/cron/run', server: [
             'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_only_key',
         ]);
 
-        self::assertResponseIsSuccessful();
-        $payload = json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertSame('completed', $payload['status']);
-        self::assertSame('seedro', $payload['auth']['api_key_prefix']);
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testCronRunRejectsReadWriteApiKeyOwnedByNonAdmin(): void
+    {
+        $client = self::createClient();
+        $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
+
+        try {
+            $connection->update('user_account', ['role' => 'user'], ['uid' => '00000000-0000-0000-0000-000000000201']);
+
+            $client->request('GET', '/cron/run', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
+            ]);
+
+            self::assertResponseStatusCodeSame(401);
+        } finally {
+            $connection->update('user_account', ['role' => 'owner'], ['uid' => '00000000-0000-0000-0000-000000000201']);
+        }
     }
 
     public function testCronRunRejectsUnknownJobIdentifier(): void
     {
         $client = self::createClient();
         $client->request('GET', '/cron/run?job=system.missing', server: [
-            'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_only_key',
+            'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
         ]);
 
         self::assertResponseStatusCodeSame(404);
@@ -48,7 +77,7 @@ final class SchedulerControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $client->request('GET', '/cron/run?job='.str_repeat('x', 512), server: [
-            'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_only_key',
+            'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
         ]);
 
         self::assertResponseStatusCodeSame(404);
@@ -81,7 +110,7 @@ final class SchedulerControllerTest extends WebTestCase
         $client = self::createClient();
         self::getContainer()->get(Config::class)->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, false, ConfigValueType::Boolean);
 
-        $client->request('GET', '/cron/run?auth=test_seed_read_only_key');
+        $client->request('GET', '/cron/run?auth=test_seed_read_write_key');
 
         self::assertResponseStatusCodeSame(401);
     }
@@ -93,12 +122,12 @@ final class SchedulerControllerTest extends WebTestCase
         $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, true, ConfigValueType::Boolean);
 
         try {
-            $client->request('GET', '/cron/run?auth=test_seed_read_only_key');
+            $client->request('GET', '/cron/run?auth=test_seed_read_write_key');
 
             self::assertResponseIsSuccessful();
             $payload = json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
             self::assertSame('completed', $payload['status']);
-            self::assertSame('seedro', $payload['auth']['api_key_prefix']);
+            self::assertSame('seedrw', $payload['auth']['api_key_prefix']);
         } finally {
             $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, false, ConfigValueType::Boolean);
         }
@@ -112,7 +141,7 @@ final class SchedulerControllerTest extends WebTestCase
 
         try {
             $client->request('GET', '/cron/run', server: [
-                'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_only_key',
+                'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
             ]);
 
             self::assertResponseStatusCodeSame(503);
