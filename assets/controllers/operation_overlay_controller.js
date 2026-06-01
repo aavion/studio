@@ -6,6 +6,8 @@ export default class extends Controller {
         redirectOnSuccess: String,
     };
 
+    static storedOperationMaxAgeMs = 60 * 60 * 1000;
+
     connect() {
         const stored = this.storedOperation();
 
@@ -33,10 +35,10 @@ export default class extends Controller {
             return;
         }
 
-        await this.startOperation();
+        await this.startOperation(event.submitter || null);
     }
 
-    async startOperation() {
+    async startOperation(submitter = null) {
         if (this.starting) {
             return;
         }
@@ -46,6 +48,15 @@ export default class extends Controller {
         this.reset();
 
         const formData = new FormData(this.element);
+        if (submitter?.name) {
+            formData.set(submitter.name, submitter.value || '');
+        }
+        if (!formData.get('_setup_action')) {
+            const applyButton = this.element.querySelector('button[name="_setup_action"][value="apply"]');
+            if (applyButton) {
+                formData.set('_setup_action', 'apply');
+            }
+        }
         formData.set('_operation_live', '1');
 
         try {
@@ -57,7 +68,7 @@ export default class extends Controller {
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             });
-            const payload = await response.json();
+            const payload = await this.readJson(response);
 
             if (!response.ok || !payload.success || !payload.value?.status_url) {
                 this.clearStoredOperation();
@@ -66,7 +77,7 @@ export default class extends Controller {
                 return;
             }
 
-            this.storeOperation(payload.value.status_url, 0);
+            this.storeOperation(payload.value.status_url, 0, null, 'queued');
             await this.poll(payload.value.status_url);
         } catch (error) {
             this.clearStoredOperation();
@@ -104,9 +115,9 @@ export default class extends Controller {
                     return;
                 }
 
-                const payload = await response.json();
+                const payload = await this.readJson(response);
                 cursor = Number(payload.cursor || cursor);
-                this.storeOperation(statusUrl, cursor, payload.continue_url || null);
+                this.storeOperation(statusUrl, cursor, payload.continue_url || null, payload.status || null);
                 this.render(payload);
 
                 if (['success', 'requires_review', 'failed'].includes(payload.status)) {
@@ -123,35 +134,13 @@ export default class extends Controller {
     }
 
     render(payload) {
-        this.summaryElement.textContent = `${payload.label} - ${this.statusLabel(payload.status)} (${payload.progress?.index || 0}/${payload.progress?.total || 0})`;
+        if (!['success', 'requires_review', 'failed'].includes(payload.status)) {
+            this.setSummary(this.label('waiting'), 'running');
+        }
         this.emptyElement?.remove();
 
         for (const entry of payload.entries || []) {
-            const item = document.createElement('li');
-            item.className = 'studio-action-log-entry';
-
-            const title = document.createElement('strong');
-            title.textContent = `[${entry.index}/${entry.total}] ${entry.name}`;
-            item.append(title);
-
-            const status = document.createElement('span');
-            status.className = `studio-badge studio-badge-${this.tone(entry.status)}`;
-            status.textContent = this.statusLabel(entry.status);
-            item.append(status);
-
-            for (const issue of entry.issues || []) {
-                const message = document.createElement('p');
-                message.textContent = issue.message || issue.translation_key || issue.code;
-                item.append(message);
-            }
-
-            for (const entryMessage of entry.messages || []) {
-                const message = document.createElement('p');
-                message.textContent = entryMessage.message || entryMessage.translation_key || entryMessage.code;
-                item.append(message);
-            }
-
-            this.listElement.append(item);
+            this.renderEntry(entry);
         }
 
         if (!this.resultRendered && ['success', 'requires_review', 'failed'].includes(payload.status) && payload.result?.issues?.length) {
@@ -169,6 +158,42 @@ export default class extends Controller {
             this.listElement.append(item);
             this.resultRendered = true;
         }
+
+        this.scrollLogToEnd();
+    }
+
+    renderEntry(entry) {
+        const key = this.entryKey(entry);
+        const item = this.stepElements.get(key) || document.createElement('li');
+        item.className = 'studio-action-log-entry';
+        item.dataset.operationEntryKey = key;
+        item.replaceChildren();
+
+        const title = document.createElement('strong');
+        title.textContent = `[${entry.index}/${entry.total}] ${this.actionLabel(entry.name)}`;
+        item.append(title);
+
+        const status = document.createElement('span');
+        status.className = `studio-badge studio-badge-${this.tone(entry.status)}`;
+        status.textContent = this.statusLabel(entry.status);
+        item.append(status);
+
+        for (const issue of entry.issues || []) {
+            const message = document.createElement('p');
+            message.textContent = issue.message || issue.translation_key || issue.code;
+            item.append(message);
+        }
+
+        for (const entryMessage of entry.messages || []) {
+            const message = document.createElement('p');
+            message.textContent = entryMessage.message || entryMessage.translation_key || entryMessage.code;
+            item.append(message);
+        }
+
+        if (!this.stepElements.has(key)) {
+            this.listElement.append(item);
+            this.stepElements.set(key, item);
+        }
     }
 
     open() {
@@ -181,6 +206,7 @@ export default class extends Controller {
         this.refreshButton.onclick = this.refresh;
         this.cancelButton.onclick = this.cancel;
         this.closeButton.onclick = this.close;
+        this.closeIconButton.onclick = this.close;
     }
 
     ok = () => {
@@ -204,7 +230,6 @@ export default class extends Controller {
             return;
         }
 
-        this.clearStoredOperation();
         this.reset();
 
         try {
@@ -215,7 +240,7 @@ export default class extends Controller {
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             });
-            const payload = await response.json();
+            const payload = await this.readJson(response);
 
             if (!response.ok || !payload.success || !payload.value?.status_url) {
                 this.fail(payload.issues?.[0]?.message || payload.issues?.[0]?.translation_key || this.label('startError'));
@@ -223,7 +248,7 @@ export default class extends Controller {
                 return;
             }
 
-            this.storeOperation(payload.value.status_url, 0);
+            this.storeOperation(payload.value.status_url, 0, null, 'queued');
             await this.poll(payload.value.status_url);
         } catch (error) {
             this.fail(error instanceof Error ? error.message : this.label('requestError'));
@@ -259,10 +284,11 @@ export default class extends Controller {
     };
 
     reset() {
-        this.summaryElement.textContent = this.label('starting');
+        this.setSummary(this.label('starting'), 'running');
         this.listElement.replaceChildren();
         this.spinnerElement.hidden = false;
         this.resultRendered = false;
+        this.stepElements = new Map();
         this.hideButtons();
     }
 
@@ -271,9 +297,12 @@ export default class extends Controller {
         this.finishedStatus = status;
         this.polling = false;
         this.spinnerElement.hidden = true;
-        this.summaryElement.textContent = status === 'success'
-            ? this.label('completed')
-            : (status === 'requires_review' ? this.label('requiresReview') : this.label('failed'));
+        this.setSummary(
+            status === 'success'
+                ? this.label('completed')
+                : (status === 'requires_review' ? this.label('requiresReview') : this.label('failed')),
+            status === 'success' ? 'success' : (status === 'requires_review' ? 'warning' : 'error'),
+        );
         this.hideButtons();
 
         if (status === 'success') {
@@ -298,17 +327,17 @@ export default class extends Controller {
     fail(message, refreshable = false) {
         this.polling = false;
         this.spinnerElement.hidden = true;
-        this.summaryElement.textContent = message;
+        this.setSummary(message, 'error');
         this.hideButtons();
 
         if (refreshable) {
             this.refreshButton.hidden = false;
-            this.closeButton.hidden = false;
+            this.showCloseControls();
 
             return;
         }
 
-        this.closeButton.hidden = false;
+        this.showCloseControls();
     }
 
     hideButtons() {
@@ -318,10 +347,26 @@ export default class extends Controller {
         this.refreshButton.hidden = true;
         this.cancelButton.hidden = true;
         this.closeButton.hidden = true;
+        this.closeIconButton.hidden = true;
+    }
+
+    showCloseControls() {
+        this.closeButton.hidden = false;
+        this.closeIconButton.hidden = false;
     }
 
     sleep(ms) {
         return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    async readJson(response) {
+        const contentType = response.headers.get('content-type') || '';
+
+        if (!contentType.includes('application/json')) {
+            throw new Error(this.label('requestError'));
+        }
+
+        return response.json();
     }
 
     tone(status) {
@@ -356,18 +401,27 @@ export default class extends Controller {
         try {
             const raw = window.sessionStorage.getItem(this.storageKey());
 
-            return raw ? JSON.parse(raw) : null;
+            const stored = raw ? JSON.parse(raw) : null;
+
+            if (!stored || this.storedOperationExpired(stored) || this.storedOperationTerminal(stored)) {
+                this.clearStoredOperation();
+
+                return null;
+            }
+
+            return stored;
         } catch {
             return null;
         }
     }
 
-    storeOperation(statusUrl, cursor, continueUrl = null) {
+    storeOperation(statusUrl, cursor, continueUrl = null, status = null) {
         try {
             window.sessionStorage.setItem(this.storageKey(), JSON.stringify({
                 statusUrl,
                 cursor,
                 continueUrl,
+                status,
                 updatedAt: new Date().toISOString(),
             }));
         } catch {
@@ -381,6 +435,16 @@ export default class extends Controller {
         } catch {
             // Session storage can be unavailable in hardened browser contexts.
         }
+    }
+
+    storedOperationExpired(stored) {
+        const updatedAt = Date.parse(stored.updatedAt || '');
+
+        return Number.isNaN(updatedAt) || Date.now() - updatedAt > this.constructor.storedOperationMaxAgeMs;
+    }
+
+    storedOperationTerminal(stored) {
+        return ['success', 'failed'].includes(stored.status) || (stored.status === 'requires_review' && !stored.continueUrl);
     }
 
     get rootElement() {
@@ -423,6 +487,10 @@ export default class extends Controller {
         return this.rootElement.querySelector('[data-operation-overlay-close]');
     }
 
+    get closeIconButton() {
+        return this.rootElement.querySelector('[data-operation-overlay-close-icon]');
+    }
+
     get spinnerElement() {
         return this.rootElement.querySelector('[data-operation-overlay-spinner]');
     }
@@ -439,5 +507,52 @@ export default class extends Controller {
         const normalized = String(status).replace(/[^a-zA-Z0-9]+(.)/g, (_, character) => character.toUpperCase());
 
         return this.rootElement.dataset[`labelStatus${normalized.charAt(0).toUpperCase()}${normalized.slice(1)}`] || String(status);
+    }
+
+    entryKey(entry) {
+        return `${entry.index || 0}:${entry.total || 0}:${entry.name || ''}`;
+    }
+
+    actionLabel(name) {
+        const labels = this.actionLabels();
+
+        if (labels[name]) {
+            return labels[name];
+        }
+
+        return String(name || this.label('entry'))
+            .replace(/[_-]+/g, ' ')
+            .replace(/\b\w/g, (character) => character.toUpperCase());
+    }
+
+    actionLabels() {
+        if (this.cachedActionLabels) {
+            return this.cachedActionLabels;
+        }
+
+        try {
+            this.cachedActionLabels = JSON.parse(this.rootElement.dataset.actionLabels || '{}');
+        } catch {
+            this.cachedActionLabels = {};
+        }
+
+        return this.cachedActionLabels;
+    }
+
+    scrollLogToEnd() {
+        const target = this.logScrollElement || this.listElement;
+        target.scrollTop = target.scrollHeight;
+        window.requestAnimationFrame(() => {
+            target.scrollTop = target.scrollHeight;
+        });
+    }
+
+    get logScrollElement() {
+        return this.rootElement.querySelector('[data-operation-overlay-scroll]');
+    }
+
+    setSummary(message, state = 'neutral') {
+        this.summaryElement.textContent = message;
+        this.summaryElement.dataset.operationState = state;
     }
 }

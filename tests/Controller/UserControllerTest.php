@@ -252,10 +252,11 @@ final class UserControllerTest extends WebTestCase
         }
 
         $crawler = $client->request('GET', '/user/password');
+        self::assertSelectorExists('form[data-controller="password-policy"] .studio-password-meter');
         $form = $crawler->selectButton('Update password')->form([
             'current_password' => 'current-password',
-            'new_password' => 'new-password-value',
-            'confirm_password' => 'new-password-value',
+            'new_password' => 'NewPassword1!',
+            'confirm_password' => 'NewPassword1!',
         ]);
 
         $client->submit($form);
@@ -266,11 +267,11 @@ final class UserControllerTest extends WebTestCase
 
         self::assertInstanceOf(UserAccount::class, $updatedUser);
         self::assertFalse(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($updatedUser, 'current-password'));
-        self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($updatedUser, 'new-password-value'));
+        self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($updatedUser, 'NewPassword1!'));
         $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
         self::assertStringContainsString('auth.password_change_success', $auditLog);
         self::assertStringContainsString('"result_status":"success"', $auditLog);
-        self::assertStringNotContainsString('new-password-value', $auditLog);
+        self::assertStringNotContainsString('NewPassword1!', $auditLog);
         $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
         self::assertStringContainsString('account.password.changed', $messageLog);
         self::assertStringContainsString('/user/security-review/', $messageLog);
@@ -305,8 +306,8 @@ final class UserControllerTest extends WebTestCase
             $crawler = $client->request('GET', '/user/password');
             $client->submit($crawler->selectButton('Update password')->form([
                 'current_password' => 'current-password',
-                'new_password' => 'new-password-value',
-                'confirm_password' => 'new-password-value',
+                'new_password' => 'NewPassword1!',
+                'confirm_password' => 'NewPassword1!',
             ]));
 
             self::assertResponseIsSuccessful();
@@ -509,7 +510,7 @@ final class UserControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('.studio-form-errors', 'The current password is not correct.');
-        self::assertSelectorTextContains('.studio-form-errors', 'The new password must contain at least 12 characters.');
+        self::assertSelectorTextContains('.studio-form-errors', 'The new password must contain at least 8 characters.');
         self::assertSelectorTextContains('.studio-form-errors', 'The new passwords do not match.');
         $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
         self::assertStringContainsString('auth.password_change_failed', $auditLog);
@@ -544,6 +545,32 @@ final class UserControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Accept invitation');
         self::assertSelectorExists('input[name="username"]');
+        self::assertSelectorExists('form[data-controller="password-policy"] .studio-password-meter');
+    }
+
+    public function testPasswordResetTokenRendersPasswordPolicyMeter(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'resetmeter', 'current-password');
+        [$token, $plainToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::PasswordReset,
+            $user->email(),
+            [],
+            $user,
+        );
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        $client->request('GET', '/user/reset-password/'.$plainToken);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Choose new password');
+        self::assertSelectorExists('form[data-controller="password-policy"] .studio-password-meter');
+
+        $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
+        $entityManager->remove($entityManager->find(UserAccount::class, $user->uid()));
+        $entityManager->flush();
     }
 
     public function testExpiredInvitationTokenCannotBeAccepted(): void
@@ -678,8 +705,8 @@ final class UserControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/user/invitation/'.$plainToken);
         $client->submit($crawler->selectButton('Create account')->form([
             'username' => 'missinggroupinvitee',
-            'password' => 'current-password',
-            'confirm_password' => 'current-password',
+            'password' => 'Invite1!Pass',
+            'confirm_password' => 'Invite1!Pass',
         ]));
 
         self::assertResponseIsSuccessful();
@@ -721,8 +748,8 @@ final class UserControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/user/invitation/'.$plainToken);
         $client->submit($crawler->selectButton('Create account')->form([
             'username' => 'claimednewuser',
-            'password' => 'current-password',
-            'confirm_password' => 'current-password',
+            'password' => 'Invite1!Pass',
+            'confirm_password' => 'Invite1!Pass',
         ]));
 
         self::assertResponseIsSuccessful();
@@ -751,8 +778,8 @@ final class UserControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/user/invitation/'.$plainToken);
         $client->submit($crawler->selectButton('Create account')->form([
             'username' => 'lowrolegroup',
-            'password' => 'current-password',
-            'confirm_password' => 'current-password',
+            'password' => 'Invite1!Pass',
+            'confirm_password' => 'Invite1!Pass',
         ]));
 
         self::assertResponseIsSuccessful();
@@ -781,8 +808,8 @@ final class UserControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/user/invitation/'.$plainToken);
         $client->submit($crawler->selectButton('Create account')->form([
             'username' => 'authorinvitee',
-            'password' => 'current-password',
-            'confirm_password' => 'current-password',
+            'password' => 'Invite1!Pass',
+            'confirm_password' => 'Invite1!Pass',
         ]));
 
         self::assertResponseIsSuccessful();
@@ -1120,8 +1147,8 @@ final class UserControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/user/invitation/'.$plainToken);
         $client->submit($crawler->selectButton('Create account')->form([
             'username' => 'reactivatedaccept',
-            'password' => 'new-password-value',
-            'confirm_password' => 'new-password-value',
+            'password' => 'NewPassword1!',
+            'confirm_password' => 'NewPassword1!',
         ]));
 
         self::assertResponseIsSuccessful();
@@ -1135,7 +1162,7 @@ final class UserControllerTest extends WebTestCase
         self::assertSame('reactivatedaccept', $reactivatedUser->username());
         self::assertSame(UserAccountStatus::Active, $reactivatedUser->status());
         self::assertSame([], $this->userGroupIdentifiers($reactivatedUser));
-        self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($reactivatedUser, 'new-password-value'));
+        self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($reactivatedUser, 'NewPassword1!'));
         self::assertInstanceOf(AccountToken::class, $usedToken);
         self::assertSame(AccountTokenStatus::Used, $usedToken->status());
         self::assertSame($deletedUid, $usedToken->user()?->uid());

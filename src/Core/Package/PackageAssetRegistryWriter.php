@@ -24,6 +24,17 @@ final readonly class PackageAssetRegistryWriter
     ) {
     }
 
+    public function ensureRegistryFilesExist(): void
+    {
+        foreach (self::CSS_REGISTRIES as $bucket => $path) {
+            $this->ensureRegistryFile($path, $this->registryBuilder->buildCssRegistry([], $bucket));
+        }
+
+        foreach (self::JAVASCRIPT_REGISTRIES as $bucket => $path) {
+            $this->ensureRegistryFile($path, $this->registryBuilder->buildJavaScriptRegistry([], $bucket));
+        }
+    }
+
     /**
      * @param list<PackageAssetContribution> $contributions
      */
@@ -82,6 +93,25 @@ final readonly class PackageAssetRegistryWriter
                 throw new \RuntimeException(sprintf('Target file "%s" exists as a directory.', $path));
             }
         }
+    }
+
+    private function ensureRegistryFile(string $path, string $contents): void
+    {
+        $absolutePath = $this->filesystem->absolutePath($path);
+
+        if (is_link($absolutePath)) {
+            throw new \RuntimeException(sprintf('Target file "%s" must not be a symlink.', $path));
+        }
+
+        if (is_dir($absolutePath)) {
+            throw new \RuntimeException(sprintf('Target file "%s" exists as a directory.', $path));
+        }
+
+        if (is_file($absolutePath)) {
+            return;
+        }
+
+        $this->filesystem->writeFile($path, $contents);
     }
 
     /**

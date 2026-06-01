@@ -11,6 +11,8 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
 use App\Core\Statistics\AccessStatisticsRecorderInterface;
+use App\Database\DatabaseReadyState;
+use App\Setup\SetupCompletionMarker;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
@@ -43,6 +45,43 @@ final class AccessLogSubscriberTest extends TestCase
         self::assertCount(1, $reporter->records);
         self::assertSame(MessageKey::ACCESS_LOG_FAILED, $reporter->records[0]['message']->translationKey());
         self::assertSame('access.log', $reporter->records[0]['context']['operation']);
+    }
+
+    public function testItLogsSetupRequestsWhileDatabaseIsNotReady(): void
+    {
+        $accessLogger = new RecordingAccessLogger();
+        $statisticsRecorder = new RecordingAccessStatisticsRecorder();
+        $request = Request::create('/setup/admin');
+        $response = new Response('OK', 200);
+
+        (new AccessLogSubscriber(
+            $accessLogger,
+            $statisticsRecorder,
+            new AccessRequestMetadata(),
+            null,
+            new DatabaseReadyState(new SetupCompletionMarker(), sys_get_temp_dir().'/missing-studio-project', 'test'),
+        ))->onKernelResponse(new ResponseEvent(
+            new AccessSubscriberTestKernel(),
+            $request,
+            HttpKernelInterface::MAIN_REQUEST,
+            $response,
+        ));
+
+        self::assertSame(['/setup/admin'], $accessLogger->paths);
+        self::assertSame([], $statisticsRecorder->records);
+    }
+}
+
+final class RecordingAccessLogger implements AccessLoggerInterface
+{
+    /**
+     * @var list<string>
+     */
+    public array $paths = [];
+
+    public function log(Request $request, Response $response): void
+    {
+        $this->paths[] = $request->getPathInfo();
     }
 }
 

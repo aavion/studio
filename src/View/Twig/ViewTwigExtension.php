@@ -22,9 +22,11 @@ use App\Form\FormBuilder;
 use App\Navigation\NavigationBuilder;
 use App\View\MarkdownRenderer;
 use App\View\PackageMacroRegistry;
+use App\View\SystemPackageMetadataProvider;
 use App\View\ViewContextProvider;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Throwable;
 use Twig\Extension\AbstractExtension;
 use Twig\Extension\GlobalsInterface;
 use Twig\Markup;
@@ -37,6 +39,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         private readonly ViewContextProvider $contextProvider,
         private readonly PackageMacroRegistry $macroRegistry,
         private readonly MarkdownRenderer $markdownRenderer,
+        private readonly SystemPackageMetadataProvider $systemPackageMetadata,
         private readonly PublicEventHookRegistry $eventHookRegistry,
         private readonly NavigationBuilder $navigationBuilder,
         private readonly Config $config,
@@ -79,6 +82,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
             new TwigFunction('studio_navigation', $this->navigation(...)),
             new TwigFunction('studio_core_settings_form', $this->coreSettingsForm(...)),
             new TwigFunction('studio_backend_actions', $this->backendActions(...)),
+            new TwigFunction('studio_footer_copyright', $this->footerCopyright(...)),
             new TwigFunction('studio_extension_packages', $this->extensionPackages(...)),
             new TwigFunction('studio_themes', $this->themes(...)),
             new TwigFunction('studio_package_setting', $this->packageSetting(...)),
@@ -203,6 +207,23 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         return $this->packageSettings->get($packageName, $key, $default);
     }
 
+    public function footerCopyright(string $area = 'frontend'): string
+    {
+        $default = $this->defaultFooterCopyright();
+
+        if ('frontend' !== $area) {
+            return $default;
+        }
+
+        try {
+            $configured = $this->config->get('site.footer_copyright', '');
+        } catch (Throwable) {
+            return $default;
+        }
+
+        return is_string($configured) && '' !== trim($configured) ? trim($configured) : $default;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -305,6 +326,18 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
         $user = $this->security->getUser();
 
         return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
+    }
+
+    private function defaultFooterCopyright(): string
+    {
+        $metadata = $this->systemPackageMetadata->metadata();
+        $name = trim((string) ($metadata['name'] ?? 'Studio'));
+        $version = trim((string) ($metadata['version'] ?? ''));
+        $homepage = trim((string) ($metadata['homepage'] ?? ''));
+        $label = '' !== $name ? $name : 'Studio';
+        $linkedName = '' !== $homepage ? sprintf('[%s](%s)', $label, $homepage) : $label;
+
+        return trim(sprintf('Powered by %s %s', $linkedName, $version));
     }
 
     /**

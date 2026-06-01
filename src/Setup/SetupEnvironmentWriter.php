@@ -20,6 +20,7 @@ final readonly class SetupEnvironmentWriter
             'APP_SECRET' => $appSecret,
             'DEFAULT_URI' => $input->defaultUri(),
             'DATABASE_URL' => $databaseUrl,
+            'APP_DATABASE_PREFIX' => $input->databasePrefix() ?? '',
         ];
         $contents = '';
 

@@ -27,7 +27,10 @@ final class LiveOperationController extends AbstractController
     public function status(Request $request, string $operationId): Response
     {
         $token = (string) $request->query->get('token', '');
-        $cursor = max(0, $request->query->getInt('cursor', 0));
+        $cursorValue = $request->query->get('cursor', 0);
+        $cursor = is_scalar($cursorValue) && false !== filter_var((string) $cursorValue, FILTER_VALIDATE_INT)
+            ? max(0, (int) $cursorValue)
+            : 0;
         $payload = $this->runStore->pollingPayload($operationId, $token, $cursor);
 
         if (null === $payload) {

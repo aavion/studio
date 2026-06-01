@@ -142,6 +142,7 @@ final class MessageCode
     public const SETUP_ENVIRONMENT_FILE_WRITE_FAILED = 'setup.environment_file_write_failed';
     public const SETUP_LANGUAGE_SELECTED = 'setup.language_selected';
     public const SETUP_AVAILABLE_LANGUAGES = 'setup.available_languages';
+    public const SETUP_ROLLBACK_COMPLETED = 'setup.rollback_completed';
     public const SETUP_DRY_RUN = 'setup.dry_run';
     public const SETUP_PROMPT_LANGUAGE = 'setup.prompt.language';
     public const SETUP_PROMPT_SITE_TITLE = 'setup.prompt.site_title';
@@ -161,6 +162,10 @@ final class MessageCode
     public const SETUP_PROMPT_INVALID_CHOICE = 'setup.prompt.invalid_choice';
     public const SETUP_PROMPT_PASSWORD_MISMATCH = 'setup.prompt.password_mismatch';
     public const SETUP_ADMIN_PASSWORD_TOO_SHORT = 'setup.admin_password.too_short';
+    public const SETUP_ADMIN_PASSWORD_COMPLEXITY = 'setup.admin_password.complexity';
+    public const SETUP_ADMIN_PASSWORD_REPEATED = 'setup.admin_password.repeated';
+    public const SETUP_ADMIN_PASSWORD_PERSONAL = 'setup.admin_password.personal';
+    public const SETUP_APP_SECRET_TOO_SHORT = 'setup.app_secret.too_short';
     public const SETUP_PROMPT_PASSWORD_RESET_CONTINUE = 'setup.prompt.password_reset_continue';
     public const SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD = 'setup.prompt.password_reset_new_password';
     public const SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD = 'setup.prompt.password_reset_confirm_password';

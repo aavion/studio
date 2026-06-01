@@ -1,6 +1,8 @@
 ui:
   app:
-    name: 'aavion Studio'
+    name: 'Studio'
+  alert:
+    close: 'Close notification'
   navigation:
     skip_to_content: 'Skip to content'
   frontend:
@@ -108,16 +110,25 @@ ui:
       placeholder: 'Update the password for your account.'
       current_password: 'Current password'
       new_password: 'New password'
-      new_password_help: 'Use at least 12 characters.'
+      new_password_help: 'Use at least 8 characters, at least three character types, and no username or email name.'
       confirm_password: 'Confirm new password'
       submit: 'Update password'
       success: 'Your password was updated.'
       errors:
         invalid_csrf: 'The password form expired. Please try again.'
         current_password: 'The current password is not correct.'
-        new_password_length: 'The new password must contain at least 12 characters.'
+        new_password_length: 'The new password must contain at least 8 characters.'
+        new_password_complexity: 'The new password must use at least three character types.'
+        new_password_repeated: 'The new password must not repeat the same character more than three times in a row.'
+        new_password_personal: 'The new password must not contain your username or email name.'
         password_mismatch: 'The new passwords do not match.'
         delivery_failed: 'The password-change security email could not be created. Please try again later.'
+      policy:
+        length: 'At least 8 characters'
+        classes: 'At least three of four character types'
+        personal: 'No username or email name'
+        repeated: 'No character repeated more than three times'
+        match: 'Password fields match'
     api_keys:
       title: 'API keys'
       subtitle: 'Only API keys assigned to your account are shown here.'
@@ -202,3 +213,8 @@ ui:
       visitor_id: 'Visitor ID'
       requested_path: 'Requested path'
       resolved_route: 'Resolved route'
+    debug:
+      summary: 'Debug trace'
+      exception: 'Exception'
+      message: 'Message'
+      location: 'Location'

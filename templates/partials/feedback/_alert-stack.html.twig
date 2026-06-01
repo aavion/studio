@@ -1,0 +1,23 @@
+{% if alerts|default([]) is not empty %}
+    <div class="studio-alert-stack" data-controller="alert-stack" data-alert-stack-dismiss-delay-value="{{ dismiss_delay|default(8000) }}">
+        {% for alert in alerts %}
+            {% set raw_level = alert.level|default('info') %}
+            {% set level = {notice: 'info', danger: 'error'}[raw_level]|default(raw_level) %}
+            {% set level = level in ['debug', 'info', 'success', 'warning', 'error', 'exception'] ? level : 'info' %}
+            {% set persistent = alert.persistent|default(false) %}
+            <section
+                class="studio-alert studio-alert-{{ level }}"
+                role="{{ level in ['error', 'exception'] ? 'alert' : 'status' }}"
+                data-alert-stack-target="alert"
+                data-alert-persistent="{{ persistent ? 'true' : 'false' }}"
+            >
+                <div class="studio-alert-content">
+                    {{ alert.message }}
+                </div>
+                <button class="studio-alert-close" type="button" data-action="alert-stack#close" aria-label="{{ 'ui.alert.close'|trans }}">
+                    <span class="ti ti-x" aria-hidden="true"></span>
+                </button>
+            </section>
+        {% endfor %}
+    </div>
+{% endif %}

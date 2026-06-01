@@ -16,16 +16,16 @@ final readonly class SetupComposerCommandResolver
         SetupCommandExecutorInterface $commandExecutor,
         array $environment,
     ): array {
-        if ($commandExecutor->run(['composer', '--version'], $projectDir, $environment)->isSuccessful()) {
-            return ['composer'];
-        }
-
         $bundledComposer = $projectDir.'/bin/composer';
         if (
             is_file($bundledComposer)
-            && $commandExecutor->run([PHP_BINARY, $bundledComposer, '--version'], $projectDir, $environment)->isSuccessful()
+            && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir, $commandExecutor, $environment)
         ) {
             return [PHP_BINARY, $bundledComposer];
+        }
+
+        if ($this->commandWorks(['composer', '--version'], $projectDir, $commandExecutor, $environment)) {
+            return ['composer'];
         }
 
         throw new SetupStepFailedException('Composer is unavailable. Install Composer or restore bin/composer.');
@@ -39,5 +39,22 @@ final readonly class SetupComposerCommandResolver
         $bundledComposer = $projectDir.'/bin/composer';
 
         return is_file($bundledComposer) ? [PHP_BINARY, $bundledComposer] : ['composer'];
+    }
+
+    /**
+     * @param list<string> $command
+     * @param array<string, string> $environment
+     */
+    private function commandWorks(
+        array $command,
+        string $projectDir,
+        SetupCommandExecutorInterface $commandExecutor,
+        array $environment,
+    ): bool {
+        try {
+            return $commandExecutor->run($command, $projectDir, $environment)->isSuccessful();
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

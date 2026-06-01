@@ -26,7 +26,7 @@ final class SetupCliInputFactoryTest extends TestCase
             'url' => 'https://option.example.test',
             'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
             'admin-username' => 'owner',
-            'admin-password' => 'owner-secret',
+            'admin-password' => 'Safe1!pass',
             'admin-email' => 'owner@example.test',
             'app-secret' => 'app-secret',
             'dry-run' => false,
@@ -38,6 +38,99 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertSame(DatabaseDriver::SQLite, $input->databaseDriver());
         self::assertSame('sqlite:///%kernel.project_dir%/var/data_test.db', $input->databaseUrl());
         self::assertTrue($input->dryRun());
+    }
+
+    public function testItNormalizesDatabasePrefixFromCliOptions(): void
+    {
+        $factory = new SetupCliInputFactory(
+            dirname(__DIR__, 2),
+            input: $this->stream(''),
+            output: $this->stream(''),
+            interactive: false,
+        );
+
+        $input = $factory->create([
+            'env' => 'test',
+            'language' => 'en',
+            'site-title' => 'Prefixed Studio',
+            'url' => 'https://option.example.test',
+            'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+            'db-prefix' => 'studio',
+            'admin-username' => 'owner',
+            'admin-password' => 'Safe1!pass',
+            'admin-email' => 'owner@example.test',
+        ]);
+
+        self::assertSame('studio_', $input->databasePrefix());
+    }
+
+    public function testItNormalizesDatabasePrefixFromEnvironmentDefaults(): void
+    {
+        $previous = $_SERVER['APP_DATABASE_PREFIX'] ?? null;
+        $_SERVER['APP_DATABASE_PREFIX'] = 'envstudio';
+
+        try {
+            $factory = new SetupCliInputFactory(
+                dirname(__DIR__, 2),
+                input: $this->stream(''),
+                output: $this->stream(''),
+                interactive: false,
+            );
+
+            $input = $factory->create([
+                'env' => 'test',
+                'language' => 'en',
+                'site-title' => 'Prefixed Studio',
+                'url' => 'https://option.example.test',
+                'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+                'admin-username' => 'owner',
+                'admin-password' => 'Safe1!pass',
+                'admin-email' => 'owner@example.test',
+            ]);
+        } finally {
+            if (null === $previous) {
+                unset($_SERVER['APP_DATABASE_PREFIX']);
+            } else {
+                $_SERVER['APP_DATABASE_PREFIX'] = $previous;
+            }
+        }
+
+        self::assertSame('envstudio_', $input->databasePrefix());
+    }
+
+    public function testItKeepsExplicitEmptyDatabasePrefixEmpty(): void
+    {
+        $previous = $_SERVER['APP_DATABASE_PREFIX'] ?? null;
+        $_SERVER['APP_DATABASE_PREFIX'] = 'envstudio';
+
+        $factory = new SetupCliInputFactory(
+            dirname(__DIR__, 2),
+            input: $this->stream(''),
+            output: $this->stream(''),
+            interactive: false,
+        );
+
+        try {
+            $input = $factory->create([
+                'env' => 'test',
+                'language' => 'en',
+                'site-title' => 'Unprefixed Studio',
+                'url' => 'https://option.example.test',
+                'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+                'db-prefix' => '',
+                'admin-username' => 'owner',
+                'admin-password' => 'Safe1!pass',
+                'admin-email' => 'owner@example.test',
+            ]);
+        } finally {
+            if (null === $previous) {
+                unset($_SERVER['APP_DATABASE_PREFIX']);
+            } else {
+                $_SERVER['APP_DATABASE_PREFIX'] = $previous;
+            }
+        }
+
+        self::assertNull($input->databasePrefix());
     }
 
     public function testItRejectsInvalidAdminUsernameWithoutDatabase(): void
@@ -59,7 +152,7 @@ final class SetupCliInputFactoryTest extends TestCase
             'url' => 'https://option.example.test',
             'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
             'admin-username' => 'admin.name',
-            'admin-password' => 'owner-secret',
+            'admin-password' => 'Safe1!pass',
             'admin-email' => 'owner@example.test',
         ]);
     }
@@ -103,6 +196,36 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertSame('', $input->adminPassword());
     }
 
+    public function testItRejectsExplicitDatabaseUrlDriverMismatches(): void
+    {
+        $factory = new SetupCliInputFactory(
+            dirname(__DIR__, 2),
+            extensionAvailability: [
+                'pdo_sqlite' => true,
+                'pdo_mysql' => true,
+                'pdo_pgsql' => true,
+            ],
+            input: $this->stream(''),
+            output: $this->stream(''),
+            interactive: false,
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('does not match selected database driver "mysql"');
+
+        $factory->create([
+            'env' => 'test',
+            'language' => 'en',
+            'site-title' => 'Mismatched DB Studio',
+            'url' => 'https://option.example.test',
+            'db-driver' => 'mysql',
+            'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+            'admin-username' => 'owner',
+            'admin-password' => 'Safe1!pass',
+            'admin-email' => 'owner@example.test',
+        ]);
+    }
+
     public function testItPromptsInteractivelyInSelectedLanguage(): void
     {
         $inputStream = $this->stream(implode("\n", [
@@ -116,8 +239,8 @@ final class SetupCliInputFactoryTest extends TestCase
             'studio_user',
             'db-secret',
             'owner',
-            'owner-secret',
-            'owner-secret',
+            'Safe1!pass',
+            'Safe1!pass',
             'owner@example.test',
             'app-secret',
             '',
@@ -142,6 +265,35 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertStringContainsString('Seitentitel', $output);
         self::assertStringContainsString('Datenbank-Treiber', $output);
         self::assertStringContainsString('Admin-Passwort bestätigen', $output);
+    }
+
+    public function testItRejectsUnavailableDatabaseDriverOptions(): void
+    {
+        $factory = new SetupCliInputFactory(
+            dirname(__DIR__, 2),
+            extensionAvailability: [
+                'pdo_sqlite' => true,
+                'pdo_mysql' => false,
+                'pdo_pgsql' => false,
+            ],
+            input: $this->stream(''),
+            output: $this->stream(''),
+            interactive: false,
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Database driver "mysql" requires PHP extension "pdo_mysql".');
+
+        $factory->create([
+            'env' => 'test',
+            'language' => 'en',
+            'site-title' => 'Unavailable DB Studio',
+            'url' => 'https://option.example.test',
+            'db-driver' => 'mysql',
+            'admin-username' => 'owner',
+            'admin-password' => 'Safe1!pass',
+            'admin-email' => 'owner@example.test',
+        ]);
     }
 
     /**

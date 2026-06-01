@@ -4,18 +4,25 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Database\PrefixedConnection;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 
 final readonly class SetupDatabaseConnectionFactory
 {
-    public function create(string $projectDir, string $databaseUrl, ?string $appEnv = null): Connection
+    public function create(string $projectDir, string $databaseUrl, ?string $appEnv = null, ?string $databasePrefix = null): Connection
     {
-        return DriverManager::getConnection($this->connectionParameters($this->resolveSymfonyPlaceholders(
+        $parameters = $this->connectionParameters($this->resolveSymfonyPlaceholders(
             $databaseUrl,
             $projectDir,
             $appEnv,
-        )));
+        ));
+
+        if (null !== $databasePrefix) {
+            $parameters['studio_database_prefix'] = $databasePrefix;
+        }
+
+        return DriverManager::getConnection($parameters);
     }
 
     /**
@@ -24,13 +31,20 @@ final readonly class SetupDatabaseConnectionFactory
     private function connectionParameters(string $databaseUrl): array
     {
         if (str_starts_with($databaseUrl, 'sqlite:///')) {
-            return ['driver' => 'pdo_sqlite', 'path' => preg_replace('#^sqlite:///#', '/', $databaseUrl)];
+            return [
+                'driver' => 'pdo_sqlite',
+                'path' => preg_replace('#^sqlite:///#', '/', $databaseUrl),
+                'wrapperClass' => PrefixedConnection::class,
+                'studio_allow_unready_database' => true,
+            ];
         }
 
         $scheme = (string) parse_url($databaseUrl, PHP_URL_SCHEME);
 
         return [
             'url' => $databaseUrl,
+            'wrapperClass' => PrefixedConnection::class,
+            'studio_allow_unready_database' => true,
             'driver' => match ($scheme) {
                 'mysql', 'mariadb' => 'pdo_mysql',
                 'pgsql', 'postgres', 'postgresql' => 'pdo_pgsql',

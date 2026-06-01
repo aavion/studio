@@ -4,11 +4,25 @@
 
 {% block body %}
     <main class="studio-backend-shell">
-        <section class="studio-setup-shell">
-            {% include '@backend/partials/layout/_topbar.html.twig' with {area_key: 'ui.setup.area'} only %}
-            <div class="studio-setup-content">
-                {% block setup_body %}{% endblock %}
-            </div>
-        </section>
+        <div class="studio-setup-frame">
+            <header class="studio-setup-chrome" aria-label="{{ 'setup.chrome.label'|trans }}">
+                {% include '@root/partials/brand/_brand.html.twig' with {
+                    class: 'studio-brand studio-setup-logo',
+                    href: path('backend_setup_index'),
+                    name: setup_app_name|default('Studio'),
+                } only %}
+                <span class="studio-setup-menu-stub">
+                    <span class="ti ti-wand" aria-hidden="true"></span>
+                    {{ 'setup.chrome.stub'|trans }}
+                </span>
+            </header>
+            <section class="studio-setup-shell">
+                <div class="studio-setup-content">
+                    {% block setup_body %}{% endblock %}
+                </div>
+            </section>
+            {% include '@root/partials/layout/_system-footer.html.twig' with {area: 'backend'} only %}
+        </div>
     </main>
+    {% include '@backend/operations/action-log-overlay.html.twig' %}
 {% endblock %}

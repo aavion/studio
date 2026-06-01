@@ -22,10 +22,13 @@ final readonly class SetupInput
         private ?string $databaseName = null,
         private ?string $databaseUser = null,
         private ?string $databasePassword = null,
+        private ?string $databasePrefix = null,
         private string $adminUsername = 'admin',
-        private string $adminPassword = 'admin-password',
+        private string $adminPassword = 'Safe1!pass',
         private ?string $adminEmail = null,
         private ?string $appSecret = null,
+        /** @var array<string, mixed> */
+        private array $siteSettings = [],
         private bool $dryRun = false,
     ) {
         if ('' === trim($this->appEnv)) {
@@ -51,6 +54,10 @@ final readonly class SetupInput
         if (null !== $this->adminEmail && !EmailAddress::isValid($this->adminEmail)) {
             throw new InvalidArgumentException('Setup admin email must be valid.');
         }
+
+        if (null !== $this->databasePrefix && '' !== $this->databasePrefix && 1 !== preg_match('/^[a-z][a-z0-9_]*$/', $this->databasePrefix)) {
+            throw new InvalidArgumentException('Setup database prefix must start with a lowercase letter and contain lowercase letters, digits, or underscores.');
+        }
     }
 
     public static function withDefaults(
@@ -64,7 +71,7 @@ final readonly class SetupInput
         return new self(
             appEnv: $appEnv,
             language: $language,
-            siteTitle: 'aavion Studio',
+            siteTitle: 'Studio',
             defaultUri: $defaultUri,
             databaseDriver: self::driverFromDatabaseUrl($databaseUrl),
             databaseUrl: $databaseUrl,
@@ -127,6 +134,11 @@ final readonly class SetupInput
         return $this->databasePassword;
     }
 
+    public function databasePrefix(): ?string
+    {
+        return $this->databasePrefix;
+    }
+
     public function adminUsername(): string
     {
         return $this->adminUsername;
@@ -145,6 +157,14 @@ final readonly class SetupInput
     public function appSecret(): ?string
     {
         return $this->appSecret;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function siteSettings(): array
+    {
+        return $this->siteSettings;
     }
 
     public function dryRun(): bool

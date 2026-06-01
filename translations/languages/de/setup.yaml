@@ -8,15 +8,181 @@ setup:
     status: 'Ersteinrichtung'
     foundation_title: 'Setup-Routine'
     foundation_text: 'Führt dieselbe Setup-Routine aus wie die CLI. Lass den Dry-Run aktiv, um die geplanten Schritte ohne Datei- oder Datenbankänderungen zu prüfen.'
+  landing:
+    title: 'Willkommen zu %app_name%'
+    text: 'Dein neues Projekt wartet auf dich. Wähle eine Sprache, um fortzufahren:'
+  header:
+    eyebrow: '%app_name% Setup-Wizard'
+  chrome:
+    label: 'Setup-Navigation'
+    stub: 'Setup-Wizard'
+  step_title:
+    language: 'Willkommen'
+    site: 'Grundeinstellungen'
+    database: 'Datenbankverbindung'
+    admin: 'Administratorkonto'
+    review: 'Setup prüfen'
+    result: 'Setup-Ergebnis'
+  step_intro:
+    language: 'Beginne mit der Sprache der Webseite und einer kurzen Umgebungsprüfung.'
+    site: 'Lege die öffentlichen Grundeinstellungen fest und wähle, welche Funktionen die neue Webseite direkt nutzen soll.'
+    database: 'Wähle, wo Studio seine Daten speichert. SQLite ist für kleine Installationen geeignet; Server-Datenbanken sind für geteilte oder größere Seiten besser.'
+    admin: 'Erstelle das erste Administratorkonto. Dieses Konto erhält Eigentümer-Rechte und kann die Seite fertig konfigurieren.'
+    review: 'Prüfe die Werte, bevor Setup Dateien schreibt, Migrationen ausführt und die Datenbank befüllt.'
+    result: 'Prüfe das Setup-Ergebnis.'
+  navigation:
+    label: 'Setup-Schritte'
+    back: 'Zurück'
+    next: 'Weiter'
   message:
     title: 'Setup-Route'
+  preflight:
+    title: 'Vorabprüfung'
+    text: 'Setup prüft die wichtigsten Voraussetzungen, bevor Datenbankdetails abgefragt werden.'
+    auto_heal: 'Reparieren'
+    auto_heal_hint: 'Setup kann versuchen, die markierten Datei- und Verzeichnisprüfungen automatisch zu reparieren.'
+    show_ready_checks: '%count% fertige Prüfungen anzeigen'
+    show_details: 'Details anzeigen'
+    summary:
+      ok: 'Alles Nötige für das Setup ist bereit.'
+      healable: 'Setup kann in dieser Umgebung aktuell nicht ausgeführt werden.'
+      failed: 'Einige Prüfungen benötigen eine Server- oder PHP-Konfigurationsänderung, bevor das Setup fortfahren kann.'
+    errors:
+      required: 'Behebe die erforderlichen Prüfungen, bevor du fortfährst.'
+      auto_heal_failed: 'Die automatische Reparatur konnte nicht alle erforderlichen Prüfungen beheben.'
+    status:
+      ok: 'OK'
+      failed: 'FEHLER'
+      missing: 'Fehlt'
+      optional: 'Optional'
+    values:
+      executable: 'ausführbar'
+      not_detected: 'nicht erkannt'
+      not_writable: 'nicht beschreibbar'
+      path: '%path%'
+      php_version: 'PHP %version%'
+      php_version_requirement: 'PHP %version% (erforderlich: %required% oder neuer)'
+      present: 'vorhanden'
+      missing: 'nicht vorhanden'
+      unavailable: 'nicht verfügbar'
+      writable: 'beschreibbar'
+      composer_system: 'System-Composer verfügbar'
+      composer_bundled: 'bin/composer-Fallback aktiv'
+      extensions_all_present: 'Alle %count% erforderlichen Erweiterungen sind vorhanden'
+      optional_extensions_all_present: 'Alle %count% optionalen Datenbank-Erweiterungen sind vorhanden'
+      extensions_missing: 'Fehlt: %extensions%'
+      writable_paths_ok: '%count% beschreibbare Pfade sind bereit'
+      writable_paths_unavailable: '%paths_count% Pfade nicht beschreibbar'
+      writable_paths_blocked: '%paths_count% Pfade benötigen Rechteanpassung'
+    checks:
+      webroot_public:
+        label: 'Public-Webroot'
+        help: 'Der Webserver zeigt auf public/.'
+        instruction: 'Setze den Document Root des Webservers auf das public/-Verzeichnis des Projekts und lade das Setup neu.'
+      var_writable:
+        label: 'Runtime-Verzeichnis'
+        help: 'Setup kann das Runtime-Verzeichnis erstellen oder reparieren.'
+        instruction: 'Mache var/ für den Webserver-Benutzer beschreibbar.'
+      environment_writable:
+        label: 'Environment-Override'
+        help: 'Setup kann die lokale Environment-Override-Datei erstellen.'
+        instruction: 'Mache das Projekt-Root ausreichend beschreibbar, damit die lokale Environment-Override-Datei erstellt oder aktualisiert werden kann.'
+      runtime_translations_writable:
+        label: 'Runtime-Übersetzungen'
+        help: 'Setup kann das generierte Übersetzungsverzeichnis erstellen.'
+        instruction: 'Mache translations/runtime beschreibbar, damit generierte Kataloge aktualisiert werden können.'
+      public_writable:
+        label: 'Public-Asset-Verzeichnis'
+        help: 'Setup kann das Public-Asset-Verzeichnis erstellen.'
+        instruction: 'Mache public/ beschreibbar, während Setup generierte Assets vorbereitet.'
+      required_extensions:
+        label: 'Erforderliche Erweiterungen'
+        help: 'Alle erforderlichen PHP-Erweiterungen sind vorhanden.'
+        instruction: 'Installiere oder aktiviere diese erforderlichen PHP-Erweiterungen: %extensions%'
+      optional_database_extensions:
+        label: 'Datenbank-Erweiterungen'
+        help: 'Optionale Datenbank-Erweiterungen sind verfügbar, wenn ihr Treiber gewählt wird.'
+        instruction: 'Installiere diese Erweiterungen, wenn du MySQL/MariaDB oder PostgreSQL verwenden möchtest: %extensions%'
+      writable_paths:
+        label: 'Beschreibbare Pfade'
+        help: 'Diese Pfade sind aktuell nicht beschreibbar: %paths%'
+        instruction: 'Mache diese Pfade für den Webserver-Benutzer beschreibbar und lade die Prüfung danach neu: %paths%'
+      php_version:
+        label: 'PHP-Version'
+        help: 'Die aktuelle PHP-Laufzeit erfüllt die Projektanforderung.'
+        instruction: 'Führe Setup mit einer von composer.json unterstützten PHP-Version aus.'
+      composer_binary:
+        label: 'Composer'
+        help: 'Setup kann PHP-Abhängigkeiten installieren und aktualisieren.'
+        instruction: 'Installiere Composer global oder stelle den gebündelten bin/composer-Fallback wieder her.'
+      cli_runner:
+        label: 'CLI-Runner'
+        help: 'Setup kann PHP-CLI-Subprozesse für länger laufende Arbeiten starten.'
+        instruction: 'Aktiviere PHP-CLI-Subprozesse oder führe Setup in einer Umgebung aus, die Hintergrundbefehle erlaubt.'
+      extension_ctype:
+        label: 'PHP-Erweiterung ctype'
+        help: 'Wird von Symfony und Validierungsroutinen benötigt.'
+        instruction: 'Installiere oder aktiviere die PHP-Erweiterung ctype.'
+      extension_fileinfo:
+        label: 'PHP-Erweiterung fileinfo'
+        help: 'Wird für sichere Datei- und Upload-Verarbeitung benötigt.'
+        instruction: 'Installiere oder aktiviere die PHP-Erweiterung fileinfo.'
+      extension_iconv:
+        label: 'PHP-Erweiterung iconv'
+        help: 'Wird für Textnormalisierung benötigt.'
+        instruction: 'Installiere oder aktiviere die PHP-Erweiterung iconv.'
+      extension_intl:
+        label: 'PHP-Erweiterung intl'
+        help: 'Wird für lokalisierte Formatierung und Übersetzungen benötigt.'
+        instruction: 'Installiere oder aktiviere die PHP-Erweiterung intl.'
+      extension_pdo_sqlite:
+        label: 'PHP-Erweiterung pdo_sqlite'
+        help: 'Wird für das standardmäßige SQLite-Setup-Profil benötigt.'
+        instruction: 'Installiere oder aktiviere die PHP-Erweiterung pdo_sqlite, oder konfiguriere später einen anderen Datenbanktreiber.'
+      extension_pdo_mysql:
+        label: 'PHP-Erweiterung pdo_mysql'
+        help: 'Installiere diese Erweiterung, wenn du MySQL oder MariaDB verwendest.'
+        instruction: 'Installiere diese Erweiterung, wenn du MySQL oder MariaDB verwendest.'
+      extension_pdo_pgsql:
+        label: 'PHP-Erweiterung pdo_pgsql'
+        help: 'Installiere diese Erweiterung, wenn du PostgreSQL verwendest.'
+        instruction: 'Installiere diese Erweiterung, wenn du PostgreSQL verwendest.'
+  site:
+    title: 'Grundeinstellungen'
+    text: 'Diese Werte werden als erste gespeicherte Konfiguration der Seite übernommen. Du kannst sie später im Adminbereich anpassen.'
+    settings_title: 'Website-Funktionen'
+    behavior_title: 'Website-Funktionen'
+    behavior_text: 'Aktiviere nur die Funktionen, die deine Seite direkt nach dem Setup verwenden soll.'
+  database:
+    title: 'Datenbankverbindung'
+    text: 'Teste die Verbindung, bevor du fortfährst. Das optionale Präfix wird mit einem abschließenden Unterstrich gespeichert, wenn es nicht leer ist.'
+    test_connection: 'Verbindung testen'
+    test_success: 'Die Datenbankverbindung funktioniert.'
+    test_failed: 'Die Datenbankverbindung ist fehlgeschlagen. Prüfe die Verbindungsdaten und versuche es erneut.'
+    test_invalid: 'Vervollständige gültige Datenbankeinstellungen, bevor du die Verbindung testest.'
+  admin:
+    title: 'Administratorkonto'
+    text: 'Dieses erste Konto wird als Administrator mit Eigentümer-Rechten erstellt. Nutze eine E-Mail-Adresse, auf die du Zugriff hast.'
+  app_secret:
+    title: 'Hash-Salt'
+    text: 'Dieser Wert schützt Passwörter, API-Keys und andere sensible Daten.'
   form:
     language:
-      label: 'Installer-Sprache'
+      label: 'Sprache der Webseite'
     site_title:
       label: 'Seitentitel'
     default_uri:
       label: 'Website-URL'
+    registration_mode:
+      label: 'Benutzerregistrierung'
+    username_change_enabled:
+      label: 'Benutzernamenänderungen erlauben'
+    route_prefixes_enabled:
+      label: 'Mehrsprachigkeit aktivieren'
+    statistics_enabled:
+      label: 'Zugriffsstatistiken aktivieren'
+    statistics_respect_dnt:
+      label: 'Do-Not-Track bei Websitebesuchern respektieren'
     database_driver:
       label: 'Datenbanktreiber'
       options:
@@ -26,34 +192,69 @@ setup:
     database_url:
       label: 'Datenbank-URL'
       help: 'Leer lassen, damit Setup eine URL aus den Standardwerten des gewählten Treibers erzeugt.'
+      sqlite_help: 'Der Standardpfad für SQLite wird empfohlen. Ändere ihn nur, wenn die Datenbank bewusst an einem anderen Ort liegen soll.'
+    database_host:
+      label: 'Datenbankhost'
+    database_port:
+      label: 'Datenbankport'
+    database_name:
+      label: 'Datenbankname'
+    database_user:
+      label: 'Datenbankbenutzer'
+    database_password:
+      label: 'Datenbankpasswort'
+    database_prefix:
+      label: 'Tabellenpräfix'
+      help: 'Optionales Präfix für gemeinsam genutzte Datenbankschemas. Das Formular hängt vor dem Speichern einen Unterstrich an; leer lassen für kein Präfix.'
     admin_username:
       label: 'Admin-Benutzername'
     admin_password:
       label: 'Admin-Passwort'
-      help: 'Nutze mindestens 12 Zeichen.'
+      help: 'Nutze mindestens 8 Zeichen und erfülle die Passwort-Policy.'
+      keep_help: 'Leer lassen, um das bereits in dieser Setup-Sitzung eingegebene Passwort zu behalten.'
     admin_password_confirm:
       label: 'Admin-Passwort bestätigen'
     admin_email:
       label: 'Admin-E-Mail'
     app_secret:
-      label: 'APP_SECRET'
-      help: 'Leer lassen, um einen sicheren Wert zu erzeugen.'
+      label: 'Kennwort für sensible Daten'
+      help: 'Leer lassen, damit Setup automatisch einen sicheren Wert erzeugt. Eine spätere Änderung wird nicht empfohlen, weil dadurch Passwort-Hashes und API-Keys ungültig werden.'
     dry_run:
       label: 'Nur Dry-Run'
       help: 'Zeigt die geplanten Setup-Schritte, ohne Dateien zu schreiben, Migrationen auszuführen oder Daten anzulegen.'
     submit: 'Setup ausführen'
+    apply: 'Setup anwenden'
     errors:
       choice: 'Wähle eine der verfügbaren Optionen.'
+      database_prefix: 'Nutze ein kleingeschriebenes Präfix, das mit einem Buchstaben beginnt und nur Kleinbuchstaben, Ziffern und Unterstriche enthält.'
+      database_url: 'Gib eine unterstützte Datenbank-URL ein, zum Beispiel sqlite:///var/data.db, mysql://user:pass@host/db oder postgresql://user:pass@host/db.'
       email: 'Gib eine gültige E-Mail-Adresse ein.'
       invalid: 'Die gesendeten Setup-Daten konnten nicht verwendet werden.'
       invalid_csrf: 'Das Setup-Formular ist abgelaufen. Bitte versuche es erneut.'
       password_mismatch: 'Die Passwortbestätigung stimmt nicht überein.'
-      password_length: 'Das Admin-Passwort muss mindestens 12 Zeichen enthalten.'
+      password_length: 'Das Admin-Passwort muss mindestens 8 Zeichen enthalten.'
+      password_complexity: 'Das Admin-Passwort muss mindestens drei Zeichentypen verwenden.'
+      password_repeated: 'Das Admin-Passwort darf dasselbe Zeichen nicht mehr als dreimal direkt hintereinander enthalten.'
+      password_personal: 'Das Admin-Passwort darf Admin-Username oder E-Mail-Name nicht enthalten.'
+      app_secret_length: 'Der Hash-Salt muss mindestens 12 Zeichen enthalten, wenn er gesetzt wird.'
+      port: 'Gib einen Port zwischen 1 und 65535 ein.'
       username: 'Der Admin-Username muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
       required: 'Dieses Feld ist erforderlich.'
+      url: 'Gib eine gültige URL ein.'
+  review:
+    title: 'Setup prüfen'
+    text: 'Setup schreibt jetzt den Environment-Override, führt Migrationen aus, legt Standarddaten an, startet Paket-Discovery, baut Assets neu und sperrt die Setup-Route erst nach Erfolg.'
+    none: 'Keine'
+    enabled: 'Aktiviert'
+    disabled: 'Deaktiviert'
   result:
     success_title: 'Setup-Ergebnis'
+    success_text: 'Setup wurde erfolgreich abgeschlossen. Die Setup-Route ist jetzt gesperrt.'
     failed_title: 'Setup fehlgeschlagen'
+    failed_text: 'Setup wurde nicht abgeschlossen. Prüfe das Log, passe den betroffenen Schritt an und starte Setup erneut.'
+    back_to_database: 'Datenbank bearbeiten'
+    back_to_review: 'Zur Prüfung'
+    go_home: 'Zur Startseite'
   action_log:
     status:
       success: 'Erfolgreich'
@@ -63,11 +264,21 @@ setup:
       pending: 'Ausstehend'
       running: 'Läuft'
   steps:
+    language: 'Start'
+    preflight: 'Vorabprüfung'
+    site: 'Grundeinstellungen'
+    database: 'Datenbank'
+    admin: 'Administratorkonto'
+    review: 'Prüfung'
+    result: 'Ergebnis'
     select_language: 'Sprache auswählen'
     write_environment: 'Environment schreiben'
     dump_environment: 'Environment dumpen'
     run_migrations: 'Migrationen ausführen'
     seed_default_settings: 'Standard-Einstellungen anlegen'
     seed_admin_user: 'Admin-Benutzer anlegen'
+    seed_initial_content: 'Startinhalt anlegen'
     mark_setup_completed: 'Setup als abgeschlossen markieren'
     clear_cache: 'Cache leeren'
+    run_package_discovery: 'Paket-Discovery ausführen'
+    run_asset_rebuild: 'Assets neu bauen'

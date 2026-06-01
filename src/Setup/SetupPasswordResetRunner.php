@@ -15,24 +15,31 @@ use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateSubjectType;
 use App\Core\Workflow\WorkflowResult;
+use App\Security\PasswordPolicy;
 use Doctrine\DBAL\Connection;
+use Throwable;
 
 final readonly class SetupPasswordResetRunner
 {
     public function __construct(
         private WorkflowResultMessageReporterInterface $messageReporter,
         private SetupDatabaseConnectionFactory $connectionFactory = new SetupDatabaseConnectionFactory(),
+        private PasswordPolicy $passwordPolicy = new PasswordPolicy(),
     )
     {
     }
 
-    public function findUser(string $projectDir, string $databaseUrl, string $username): ?SetupPasswordResetUser
+    public function findUser(string $projectDir, string $databaseUrl, string $username, ?string $databasePrefix = null): ?SetupPasswordResetUser
     {
-        $connection = $this->connectionFactory->create($projectDir, $databaseUrl);
-        $row = $connection->fetchAssociative(
-            'SELECT uid, username, email, status FROM user_account WHERE username = ?',
-            [$username],
-        );
+        try {
+            $connection = $this->connectionFactory->create($projectDir, $databaseUrl, databasePrefix: $databasePrefix);
+            $row = $connection->fetchAssociative(
+                'SELECT uid, username, email, status FROM user_account WHERE username = ?',
+                [$username],
+            );
+        } catch (Throwable) {
+            return null;
+        }
 
         if (!is_array($row)) {
             return null;
@@ -49,11 +56,18 @@ final readonly class SetupPasswordResetRunner
     /**
      * @return WorkflowResult<ActionLog>
      */
-    public function reset(string $projectDir, string $databaseUrl, string $username, string $newPassword, string $actor = 'setup_cli'): WorkflowResult
+    public function reset(
+        string $projectDir,
+        string $databaseUrl,
+        string $username,
+        string $newPassword,
+        string $actor = 'setup_cli',
+        ?string $databasePrefix = null,
+    ): WorkflowResult
     {
         $entry = ActionLogEntry::pending('reset_user_password')->start();
         $log = ActionLog::create();
-        $user = $this->findUser($projectDir, $databaseUrl, $username);
+        $user = $this->findUser($projectDir, $databaseUrl, $username, $databasePrefix);
 
         if (!$user instanceof SetupPasswordResetUser) {
             $issue = Message::create(
@@ -70,8 +84,17 @@ final readonly class SetupPasswordResetRunner
             ]), $username, $actor);
         }
 
+        $passwordIssues = $this->passwordIssues($newPassword, $user);
+
+        if ([] !== $passwordIssues) {
+            return $this->report(WorkflowResult::invalid($passwordIssues, [
+                'halt_on_error' => true,
+                'action_log' => $log->add($entry->finish(ActionLogStatus::Failed, $passwordIssues))->toArray(),
+            ]), $username, $actor);
+        }
+
         $now = gmdate('Y-m-d H:i:s');
-        $connection = $this->connectionFactory->create($projectDir, $databaseUrl);
+        $connection = $this->connectionFactory->create($projectDir, $databaseUrl, databasePrefix: $databasePrefix);
         $connection->update('user_account', [
             'password_hash' => password_hash($newPassword, PASSWORD_DEFAULT),
         ], ['uid' => $user->uid()]);
@@ -95,6 +118,34 @@ final readonly class SetupPasswordResetRunner
             'username' => $username,
             'actor' => $actor,
         ]);
+    }
+
+    /**
+     * @return list<Message>
+     */
+    private function passwordIssues(string $newPassword, SetupPasswordResetUser $user): array
+    {
+        return array_map(
+            fn (string $violation): Message => $this->passwordIssue($violation),
+            $this->passwordPolicy->violationCodes($newPassword, $user->username(), $user->email()),
+        );
+    }
+
+    private function passwordIssue(string $violation): Message
+    {
+        [$code, $key] = match ($violation) {
+            PasswordPolicy::VIOLATION_COMPLEXITY => [MessageCode::SETUP_ADMIN_PASSWORD_COMPLEXITY, MessageKey::SETUP_ADMIN_PASSWORD_COMPLEXITY],
+            PasswordPolicy::VIOLATION_REPEATED => [MessageCode::SETUP_ADMIN_PASSWORD_REPEATED, MessageKey::SETUP_ADMIN_PASSWORD_REPEATED],
+            PasswordPolicy::VIOLATION_PERSONAL => [MessageCode::SETUP_ADMIN_PASSWORD_PERSONAL, MessageKey::SETUP_ADMIN_PASSWORD_PERSONAL],
+            default => [MessageCode::SETUP_ADMIN_PASSWORD_TOO_SHORT, MessageKey::SETUP_ADMIN_PASSWORD_TOO_SHORT],
+        };
+
+        return Message::error(
+            $code,
+            $key,
+            ['%min_length%' => PasswordPolicy::MIN_LENGTH],
+            ['field' => 'password', 'min_length' => PasswordPolicy::MIN_LENGTH, 'violation' => $violation],
+        );
     }
 
     private function upsertStateMarker(Connection $connection, string $userUid, string $markerKey, string $markerAt, string $markerBy, ?string $markerValue = null): void

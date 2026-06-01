@@ -46,6 +46,7 @@ final class SetupScriptTest extends TestCase
         self::assertStringContainsString('no-interaction', $contents);
         self::assertStringContainsString('json_encode', $contents);
         self::assertStringContainsString('workflowResultMessageReporter($projectDir, $environment)', $contents);
+        self::assertStringContainsString('loadTargetEnvironment($projectDir', $contents);
     }
 
     public function testSetupScriptLocalizesHumanOutput(): void
@@ -71,7 +72,7 @@ final class SetupScriptTest extends TestCase
             '--site-title='.escapeshellarg('Dry Studio'),
             '--url=https://dry.example.test',
             '--db-driver=sqlite',
-            '--admin-password='.escapeshellarg('admin-password'),
+            '--admin-password='.escapeshellarg('Safe1!pass'),
         ]);
 
         exec($command, $output, $exitCode);

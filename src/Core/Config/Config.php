@@ -10,6 +10,7 @@ use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
 use App\Core\Validation\Identifier;
+use App\Database\DatabaseReadyState;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use JsonException;
@@ -20,12 +21,16 @@ final readonly class Config
     public function __construct(
         private Connection $connection,
         private ?MessageReporterInterface $messageReporter = null,
-    )
-    {
+        private ?DatabaseReadyState $databaseReadyState = null,
+    ) {
     }
 
     public function get(string $key, mixed $default = null): mixed
     {
+        if (!$this->databaseIsReady()) {
+            return $default;
+        }
+
         if (!$this->validateKey($key, 'config.get')) {
             return $default;
         }
@@ -68,6 +73,10 @@ final readonly class Config
         bool $sensitive = false,
         ?string $modifiedBy = null,
     ): bool {
+        if (!$this->databaseIsReady()) {
+            return false;
+        }
+
         if (!$this->validateKey($key, 'config.set')) {
             return false;
         }
@@ -107,6 +116,11 @@ final readonly class Config
             is_string($value) => ConfigValueType::String,
             default => ConfigValueType::Json,
         };
+    }
+
+    private function databaseIsReady(): bool
+    {
+        return null === $this->databaseReadyState || $this->databaseReadyState->isReady();
     }
 
     private function validateKey(string $key, string $operation): bool

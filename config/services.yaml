@@ -75,7 +75,7 @@ services:
             - '../src/Kernel.php'
 
     App\Setup\SetupCommandExecutorInterface:
-        alias: App\Setup\ProcOpenSetupCommandExecutor
+        alias: App\Setup\ProcessSetupCommandExecutor
 
     App\Setup\SetupRunner:
         arguments:
@@ -87,6 +87,11 @@ services:
             $environment: '%kernel.environment%'
 
     App\Setup\SetupWebInputFactory:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
+    App\Controller\SetupController:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
@@ -131,6 +136,11 @@ services:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
             $validationSpec: null
+
+    App\Database\DatabaseReadyState:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
 
     App\Core\Package\PackageDiscoveryRunner:
         arguments:
@@ -227,6 +237,10 @@ services:
             $secret: '%kernel.secret%'
 
     App\Security\ApiKeyVault:
+        arguments:
+            $secret: '%kernel.secret%'
+
+    App\Setup\SetupLiveOperationPayloadProtector:
         arguments:
             $secret: '%kernel.secret%'
 

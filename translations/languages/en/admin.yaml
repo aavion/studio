@@ -652,6 +652,9 @@ admin:
         label: 'Use language route prefixes'
       home_path:
         label: 'Home path'
+      footer_copyright:
+        label: 'Footer copyright'
+        help: 'Optional Markdown text for the public site footer. Leave empty to show the system default.'
       dashboard_widgets:
         label: 'Dashboard widgets'
       registration_mode:

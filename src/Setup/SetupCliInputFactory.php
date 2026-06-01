@@ -6,6 +6,7 @@ namespace App\Setup;
 
 use App\Core\Message\MessageKey;
 use App\Core\Validation\EmailAddress;
+use App\View\SystemPackageMetadataProvider;
 
 final class SetupCliInputFactory
 {
@@ -21,6 +22,8 @@ final class SetupCliInputFactory
         private readonly string $projectDir,
         private readonly SetupLanguageCatalog $languageCatalog = new SetupLanguageCatalog(),
         SetupMessageTranslator $translator = new SetupMessageTranslator(),
+        private readonly SetupSiteSettings $siteSettings = new SetupSiteSettings(),
+        private readonly ?array $extensionAvailability = null,
         mixed $input = null,
         mixed $output = null,
         private readonly ?bool $interactive = null,
@@ -38,7 +41,7 @@ final class SetupCliInputFactory
         $interactive = $this->prompter->isInteractive($options);
         $databaseUrl = $this->initialDatabaseUrl($options);
         $language = $this->language($options, $interactive);
-        $siteTitle = $this->prompter->value($options, 'site-title', 'aavion Studio', $interactive, $language, MessageKey::SETUP_PROMPT_SITE_TITLE);
+        $siteTitle = $this->prompter->value($options, 'site-title', $this->appName(), $interactive, $language, MessageKey::SETUP_PROMPT_SITE_TITLE);
         $defaultUri = $this->prompter->value($options, 'url', $this->environment('DEFAULT_URI', 'http://localhost'), $interactive, $language, MessageKey::SETUP_PROMPT_DEFAULT_URI);
         $databaseDriver = $this->databaseDriver($options, $databaseUrl, $interactive, $language);
         $parts = $this->databaseParts($options, $databaseUrl, $databaseDriver, $interactive, $language);
@@ -55,6 +58,7 @@ final class SetupCliInputFactory
             databaseName: $parts['database_name'],
             databaseUser: $parts['database_user'],
             databasePassword: $parts['database_password'],
+            databasePrefix: $this->normalizePrefix($this->databasePrefixOption($options)),
             adminUsername: $this->prompter->value($options, 'admin-username', 'admin', $interactive, $language, MessageKey::SETUP_PROMPT_ADMIN_USERNAME),
             adminPassword: $this->prompter->confirmedValue(
                 $options,
@@ -67,8 +71,40 @@ final class SetupCliInputFactory
             ),
             adminEmail: $this->prompter->value($options, 'admin-email', self::adminEmailFromDefaultUri($defaultUri), $interactive, $language, MessageKey::SETUP_PROMPT_ADMIN_EMAIL),
             appSecret: $this->prompter->value($options, 'app-secret', '', $interactive, $language, MessageKey::SETUP_PROMPT_APP_SECRET) ?: null,
+            siteSettings: $this->siteSettings($options),
             dryRun: array_key_exists('dry-run', $options),
         );
+    }
+
+    private function appName(): string
+    {
+        return (new SystemPackageMetadataProvider($this->projectDir))->metadata()['name'];
+    }
+
+    /**
+     * @param array<string, string|false> $options
+     *
+     * @return array<string, mixed>
+     */
+    private function siteSettings(array $options): array
+    {
+        $values = $this->siteSettings->defaults();
+
+        if (($mode = $this->option($options, 'registration-mode')) !== null) {
+            $values['registration_mode'] = $mode;
+        }
+
+        foreach ([
+            'username-change-enabled' => 'username_change_enabled',
+            'statistics-enabled' => 'statistics_enabled',
+            'statistics-respect-dnt' => 'statistics_respect_dnt',
+        ] as $option => $name) {
+            if (array_key_exists($option, $options)) {
+                $values[$name] = $this->boolOption($options[$option]);
+            }
+        }
+
+        return $this->siteSettings->configMap($values);
     }
 
     /**
@@ -136,23 +172,108 @@ final class SetupCliInputFactory
      */
     private function databaseDriver(array $options, ?string $databaseUrl, bool $interactive, string $language): DatabaseDriver
     {
-        $default = $this->driverFromDatabaseUrl($databaseUrl)->value;
+        $availableDrivers = $this->availableDatabaseDrivers();
+        if ([] === $availableDrivers) {
+            throw new \InvalidArgumentException('No supported database PDO driver is available.');
+        }
+
+        $defaultDriver = $this->driverFromDatabaseUrl($databaseUrl);
+        $default = $this->databaseDriverAvailable($defaultDriver) ? $defaultDriver->value : $availableDrivers[0]->value;
         $value = $this->option($options, 'db-driver', $default);
+        $selectedDriver = $this->databaseDriverFromValue($value);
 
         if (isset($options['database-url']) && !isset($options['db-driver'])) {
-            return $this->driverFromDatabaseUrl($databaseUrl);
+            return $this->requireAvailableDatabaseDriver($this->driverFromDatabaseUrl($databaseUrl));
+        }
+
+        if (isset($options['database-url']) && isset($options['db-driver']) && null !== $databaseUrl) {
+            $urlDriver = $this->driverFromDatabaseUrl($databaseUrl);
+
+            if ($selectedDriver !== $urlDriver) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Database URL scheme "%s" does not match selected database driver "%s".',
+                    (string) parse_url($databaseUrl, PHP_URL_SCHEME),
+                    $selectedDriver->value,
+                ));
+            }
         }
 
         if ($interactive && !isset($options['db-driver'])) {
-            $value = $this->prompter->choice($language, MessageKey::SETUP_PROMPT_DATABASE_DRIVER, ['sqlite', 'mysql', 'postgresql'], $default);
+            $value = $this->prompter->choice(
+                $language,
+                MessageKey::SETUP_PROMPT_DATABASE_DRIVER,
+                array_map(static fn (DatabaseDriver $driver): string => $driver->value, $availableDrivers),
+                $default,
+            );
+            $selectedDriver = $this->databaseDriverFromValue($value);
         }
 
+        return $this->requireAvailableDatabaseDriver($selectedDriver);
+    }
+
+    private function databaseDriverFromValue(?string $value): DatabaseDriver
+    {
         return match ($value) {
             'mysql', 'mariadb' => DatabaseDriver::MySql,
             'postgres', 'pgsql', 'postgresql' => DatabaseDriver::PostgreSql,
             'sqlite', null => DatabaseDriver::SQLite,
             default => throw new \InvalidArgumentException(sprintf('Unsupported database driver "%s".', $value)),
         };
+    }
+
+    /**
+     * @return list<DatabaseDriver>
+     */
+    private function availableDatabaseDrivers(): array
+    {
+        return array_values(array_filter(
+            [DatabaseDriver::SQLite, DatabaseDriver::MySql, DatabaseDriver::PostgreSql],
+            $this->databaseDriverAvailable(...),
+        ));
+    }
+
+    private function requireAvailableDatabaseDriver(DatabaseDriver $driver): DatabaseDriver
+    {
+        if ($this->databaseDriverAvailable($driver)) {
+            return $driver;
+        }
+
+        throw new \InvalidArgumentException(sprintf(
+            'Database driver "%s" requires PHP extension "%s".',
+            $driver->value,
+            $this->databaseDriverExtension($driver),
+        ));
+    }
+
+    private function databaseDriverAvailable(DatabaseDriver $driver): bool
+    {
+        return $this->extensionLoaded($this->databaseDriverExtension($driver));
+    }
+
+    private function databaseDriverExtension(DatabaseDriver $driver): string
+    {
+        return match ($driver) {
+            DatabaseDriver::SQLite => 'pdo_sqlite',
+            DatabaseDriver::MySql => 'pdo_mysql',
+            DatabaseDriver::PostgreSql => 'pdo_pgsql',
+        };
+    }
+
+    /**
+     * @param array<string, string|false> $options
+     */
+    private function databasePrefixOption(array $options): ?string
+    {
+        if (array_key_exists('db-prefix', $options)) {
+            return is_string($options['db-prefix']) ? $options['db-prefix'] : '';
+        }
+
+        return $this->environment('APP_DATABASE_PREFIX');
+    }
+
+    private function extensionLoaded(string $extension): bool
+    {
+        return $this->extensionAvailability[$extension] ?? extension_loaded($extension);
     }
 
     /**
@@ -236,6 +357,22 @@ final class SetupCliInputFactory
         $value = $options[$name] ?? null;
 
         return is_string($value) && '' !== $value ? $value : $default;
+    }
+
+    private function normalizePrefix(?string $prefix): ?string
+    {
+        $prefix = trim((string) $prefix);
+
+        return '' === $prefix ? null : rtrim($prefix, '_').'_';
+    }
+
+    private function boolOption(string|false $value): bool
+    {
+        if (false === $value) {
+            return true;
+        }
+
+        return in_array(strtolower($value), ['1', 'true', 'yes', 'on', 'enabled'], true);
     }
 
     private function environment(string $key, ?string $default = null): string

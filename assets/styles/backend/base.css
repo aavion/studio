@@ -1,23 +1,25 @@
 .studio-backend {
     background:
-        linear-gradient(180deg, #eef2ff 0, transparent 18rem),
-        var(--color-surface);
+        radial-gradient(circle at 74% -8rem, color-mix(in srgb, var(--color-brand-accent) 22%, transparent) 0, transparent 24rem),
+        linear-gradient(135deg, color-mix(in srgb, var(--color-primary-action) 24%, transparent) 0, transparent 28rem),
+        linear-gradient(180deg, var(--color-brand-canvas) 0, var(--color-brand-canvas-mid) 42rem, var(--color-brand-canvas-soft) 100%);
+    color: var(--color-ink);
 }
 
 .studio-backend-shell {
+    @apply mx-auto;
+
     width: min(100% - 2rem, var(--studio-container-wide));
-    margin: 0 auto;
     padding: clamp(1rem, 3vw, 2rem) 0;
 }
 
 .studio-backend-topbar {
-    display: flex;
+    @apply flex items-center justify-between;
+
     min-height: 3.25rem;
-    align-items: center;
-    justify-content: space-between;
     padding: 0.75rem 1rem;
     border-bottom: var(--studio-border);
-    background: var(--color-paper);
+    background: color-mix(in srgb, var(--color-paper) 96%, var(--color-primary-soft));
 }
 
 .studio-backend-area {
@@ -27,20 +29,20 @@
 }
 
 .studio-backend-sidebar {
-    display: grid;
-    align-content: start;
-    gap: 0.5rem;
+    @apply grid content-start gap-2;
+
     padding: 1rem;
 }
 
 .studio-backend-page-header {
-    display: grid;
+    @apply grid;
+
     gap: 0.35rem;
 }
 
 .studio-backend-page-header h1,
 .studio-backend-page-header p {
-    margin: 0;
+    @apply m-0;
 }
 
 .studio-backend-page-header h1 {
@@ -55,8 +57,8 @@
 }
 
 .studio-backend-panel {
-    display: grid;
-    gap: 1rem;
+    @apply grid gap-4;
+
     padding: 1rem;
     border: var(--studio-border);
     border-radius: var(--studio-radius);
@@ -64,70 +66,25 @@
 }
 
 .studio-backend-nav {
-    display: grid;
+    @apply grid m-0 p-0;
+
     gap: 0.25rem;
-    margin: 0;
-    padding: 0;
     list-style: none;
 }
 
 .studio-backend-nav a {
-    display: flex;
+    @apply flex items-center no-underline;
+
     min-height: 2.25rem;
-    align-items: center;
     padding: 0.45rem 0.6rem;
     border-radius: var(--studio-radius);
     color: var(--color-gray-700);
     font-size: var(--studio-text-sm);
     font-weight: 750;
-    text-decoration: none;
 }
 
 .studio-backend-nav a[aria-current="page"],
 .studio-backend-nav a:hover {
     background: var(--color-primary-soft);
     color: var(--color-primary-strong);
-}
-
-.studio-action-log-overlay {
-    display: grid;
-    gap: 1rem;
-    padding: 1rem;
-    border: var(--studio-border);
-    border-radius: var(--studio-radius);
-    background: var(--color-paper);
-}
-
-.studio-action-log-header h2,
-.studio-action-log-header p {
-    margin: 0;
-}
-
-.studio-action-log-header {
-    display: grid;
-    gap: 0.25rem;
-}
-
-.studio-action-log-header p {
-    color: var(--color-muted);
-}
-
-.studio-action-log-list {
-    display: grid;
-    gap: 0.75rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.studio-action-log-entry,
-.studio-action-log-summary {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem;
-    border: var(--studio-border);
-    border-radius: var(--studio-radius);
-    background: var(--color-gray-50);
 }

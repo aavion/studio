@@ -12,6 +12,6 @@
             {% block frontend_body %}{% endblock %}
         </main>
 
-        {% include '@frontend/partials/layout/_footer.html.twig' %}
+        {% include '@root/partials/layout/_system-footer.html.twig' with {area: 'frontend'} only %}
     </div>
 {% endblock %}

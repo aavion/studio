@@ -1,0 +1,20 @@
+@theme {
+    --color-brand-primary: #5170ff;
+    --color-brand-primary-action: #3154e8;
+    --color-brand-primary-soft: #eef2ff;
+    --color-brand-primary-strong: #243fd0;
+
+    --color-brand-accent: #ff9f43;
+    --color-brand-accent-soft: #fff1dc;
+    --color-brand-accent-strong: #c75b12;
+
+    --color-brand-canvas: #0f172a;
+    --color-brand-canvas-mid: #111827;
+    --color-brand-canvas-soft: #172033;
+    --color-brand-panel-dark: #1e293b;
+}
+
+:root {
+    --color-studio-primary: var(--color-brand-primary);
+    --color-studio-accent: var(--color-brand-accent);
+}

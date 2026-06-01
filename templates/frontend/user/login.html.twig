@@ -48,6 +48,5 @@
             ]) %}
         {% endif %}
         {% include '@frontend/partials/actions/_button-group.html.twig' with {actions: login_actions} only %}
-        {% include '@frontend/error-pages/partials/_debug.html.twig' with {http_error: http_error|default(null)} only %}
     </section>
 {% endblock %}

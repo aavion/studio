@@ -45,8 +45,8 @@ final readonly class DatabaseUrlFactory
     {
         $host = $input->databaseHost() ?? '127.0.0.1';
         $port = $input->databasePort() ?? $defaultPort;
-        $name = $input->databaseName() ?? 'studio';
-        $user = rawurlencode($input->databaseUser() ?? 'studio');
+        $name = $input->databaseName() ?? 'app';
+        $user = rawurlencode($input->databaseUser() ?? 'app');
         $password = rawurlencode($input->databasePassword() ?? '');
 
         return sprintf('%s://%s:%s@%s:%d/%s', $scheme, $user, $password, $host, $port, rawurlencode($name));

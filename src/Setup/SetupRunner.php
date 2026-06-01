@@ -10,8 +10,11 @@ use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Operation\ActionQueue;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Workflow\WorkflowResult;
+use App\Database\DatabaseReadyState;
+use App\Security\PasswordPolicy;
 use Throwable;
 
 final class SetupRunner
@@ -19,7 +22,7 @@ final class SetupRunner
     public function __construct(
         private readonly string $projectDir,
         private readonly WorkflowResultMessageReporterInterface $messageReporter,
-        private readonly SetupCommandExecutorInterface $commandExecutor = new ProcOpenSetupCommandExecutor(),
+        private readonly SetupCommandExecutorInterface $commandExecutor = new ProcessSetupCommandExecutor(),
         private readonly DatabaseUrlFactory $databaseUrlFactory = new DatabaseUrlFactory(),
         private readonly SetupEnvironmentWriter $environmentWriter = new SetupEnvironmentWriter(),
         private readonly SetupDatabaseSeeder $databaseSeeder = new SetupDatabaseSeeder(),
@@ -29,7 +32,39 @@ final class SetupRunner
         private readonly SetupComposerCommandResolver $composerCommandResolver = new SetupComposerCommandResolver(),
         private readonly SetupDryRunPlanner $dryRunPlanner = new SetupDryRunPlanner(),
         private readonly SetupPasswordPolicy $passwordPolicy = new SetupPasswordPolicy(),
+        private readonly SetupRollbacker $rollbacker = new SetupRollbacker(),
     ) {
+    }
+
+    /**
+     * @return WorkflowResult<ActionQueue>
+     */
+    public function queue(SetupInput $input): WorkflowResult
+    {
+        $prepare = $this->prepare($input, ActionLog::create());
+
+        if ($prepare instanceof WorkflowResult) {
+            return $this->report($prepare, $input);
+        }
+
+        [$appSecret, $databaseUrl, $environment, $rollbackSnapshot, $tableSnapshot] = $prepare;
+        $actions = [];
+
+        foreach ($this->steps($input, $appSecret, $databaseUrl, $environment) as [$name, $callback]) {
+            $actions[] = new SetupStepAction(
+                $name,
+                $callback,
+                fn (Throwable $_): array => $this->rollback($input, $databaseUrl, $rollbackSnapshot, $tableSnapshot),
+            );
+        }
+
+        return WorkflowResult::success(ActionQueue::create('setup apply', $actions, context: [
+            'dry_run' => $input->dryRun(),
+            'app_env' => $input->appEnv(),
+            'language' => $input->language(),
+            'default_uri' => $input->defaultUri(),
+            'database_driver' => $input->databaseDriver()->value,
+        ]));
     }
 
     /**
@@ -44,7 +79,7 @@ final class SetupRunner
             return $this->report($prepare, $input);
         }
 
-        [$appSecret, $databaseUrl, $environment] = $prepare;
+        [$appSecret, $databaseUrl, $environment, $rollbackSnapshot, $tableSnapshot] = $prepare;
 
         foreach ($this->steps($input, $appSecret, $databaseUrl, $environment) as $step) {
             [$name, $callback] = $step;
@@ -58,12 +93,16 @@ final class SetupRunner
                 $log = $log->add($entry->finish($status, context: $context, messages: $messages));
             } catch (Throwable $throwable) {
                 $issue = $this->failureMessage($name, $throwable);
-                $log = $log->add($entry->finish(ActionLogStatus::Failed, [$issue]));
+                $context = $this->rollback($input, $databaseUrl, $rollbackSnapshot, $tableSnapshot);
+                $messages = $this->messagesFromContext($context);
+                unset($context['_messages']);
+                $log = $log->add($entry->finish(ActionLogStatus::Failed, [$issue], $context, messages: $messages));
 
                 return $this->report(WorkflowResult::failed([$issue], [
                     'halt_on_error' => true,
                     'failed_step' => $name,
                     'action_log' => $log->toArray(),
+                    ...$context,
                 ]), $input);
             }
         }
@@ -80,7 +119,7 @@ final class SetupRunner
     }
 
     /**
-     * @return array{0: string, 1: string, 2: array<string, string>}|WorkflowResult<ActionLog>
+     * @return array{0: string, 1: string, 2: array<string, string>, 3: SetupEnvironmentSnapshot, 4: SetupDatabaseTableSnapshot|null}|WorkflowResult<ActionLog>
      */
     private function prepare(SetupInput $input, ActionLog $log): array|WorkflowResult
     {
@@ -98,7 +137,13 @@ final class SetupRunner
             $appSecret = $this->appSecret($input);
             $databaseUrl = $this->databaseUrlFactory->create($input, $this->projectDir);
 
-            return [$appSecret, $databaseUrl, $this->environment($input, $appSecret, $databaseUrl)];
+            return [
+                $appSecret,
+                $databaseUrl,
+                $this->environment($input, $appSecret, $databaseUrl),
+                SetupEnvironmentSnapshot::capture($this->projectDir, $input->appEnv()),
+                $input->dryRun() ? null : SetupDatabaseTableSnapshot::capture($this->projectDir, $databaseUrl, $input->appEnv(), $input->databasePrefix()),
+            ];
         } catch (Throwable $throwable) {
             $issue = $this->failureMessage('prepare_setup', $throwable);
 
@@ -115,18 +160,38 @@ final class SetupRunner
      */
     private function validate(SetupInput $input): array
     {
-        if ($this->passwordPolicy->isValidAdminPassword($input->adminPassword())) {
-            return [];
+        $issues = array_map(
+            fn (string $violation): Message => $this->adminPasswordMessage($violation),
+            $this->passwordPolicy->violationCodes($input->adminPassword(), $input->adminUsername(), $input->adminEmail()),
+        );
+
+        if (null !== $input->appSecret() && strlen($input->appSecret()) < SetupWebInputFactory::MIN_APP_SECRET_LENGTH) {
+            $issues[] = Message::error(
+                MessageCode::SETUP_APP_SECRET_TOO_SHORT,
+                MessageKey::SETUP_APP_SECRET_TOO_SHORT,
+                ['%min_length%' => SetupWebInputFactory::MIN_APP_SECRET_LENGTH],
+                ['field' => 'app_secret', 'min_length' => SetupWebInputFactory::MIN_APP_SECRET_LENGTH],
+            );
         }
 
-        return [
-            Message::error(
-                MessageCode::SETUP_ADMIN_PASSWORD_TOO_SHORT,
-                MessageKey::SETUP_ADMIN_PASSWORD_TOO_SHORT,
-                ['%min_length%' => SetupPasswordPolicy::MIN_ADMIN_PASSWORD_LENGTH],
-                ['field' => 'admin_password', 'min_length' => SetupPasswordPolicy::MIN_ADMIN_PASSWORD_LENGTH],
-            ),
-        ];
+        return $issues;
+    }
+
+    private function adminPasswordMessage(string $violation): Message
+    {
+        [$code, $key] = match ($violation) {
+            PasswordPolicy::VIOLATION_COMPLEXITY => [MessageCode::SETUP_ADMIN_PASSWORD_COMPLEXITY, MessageKey::SETUP_ADMIN_PASSWORD_COMPLEXITY],
+            PasswordPolicy::VIOLATION_REPEATED => [MessageCode::SETUP_ADMIN_PASSWORD_REPEATED, MessageKey::SETUP_ADMIN_PASSWORD_REPEATED],
+            PasswordPolicy::VIOLATION_PERSONAL => [MessageCode::SETUP_ADMIN_PASSWORD_PERSONAL, MessageKey::SETUP_ADMIN_PASSWORD_PERSONAL],
+            default => [MessageCode::SETUP_ADMIN_PASSWORD_TOO_SHORT, MessageKey::SETUP_ADMIN_PASSWORD_TOO_SHORT],
+        };
+
+        return Message::error(
+            $code,
+            $key,
+            ['%min_length%' => SetupPasswordPolicy::MIN_ADMIN_PASSWORD_LENGTH],
+            ['field' => 'admin_password', 'min_length' => SetupPasswordPolicy::MIN_ADMIN_PASSWORD_LENGTH, 'violation' => $violation],
+        );
     }
 
     /**
@@ -154,9 +219,9 @@ final class SetupRunner
             ['write_environment', fn (): array => $this->environmentWriter->write($this->projectDir, $input, $appSecret, $databaseUrl)],
             ['dump_environment', fn (): array => $this->dumpEnvironment($input, $environment)],
             ['run_migrations', fn (): array => $this->runMigrations($input, $environment)],
-            ['seed_default_settings', fn (): array => $this->databaseSeeder->seedDefaultSettings($this->projectDir, $input, $databaseUrl)],
-            ['seed_admin_user', fn (): array => $this->databaseSeeder->seedAdminUser($this->projectDir, $input, $databaseUrl)],
-            ['seed_initial_content', fn (): array => $this->databaseSeeder->seedInitialContent($this->projectDir, $input, $databaseUrl)],
+            ['seed_default_settings', fn (): array => $this->withDatabaseEnvironment($environment, fn (): array => $this->databaseSeeder->seedDefaultSettings($this->projectDir, $input, $databaseUrl))],
+            ['seed_admin_user', fn (): array => $this->withDatabaseEnvironment($environment, fn (): array => $this->databaseSeeder->seedAdminUser($this->projectDir, $input, $databaseUrl))],
+            ['seed_initial_content', fn (): array => $this->withDatabaseEnvironment($environment, fn (): array => $this->databaseSeeder->seedInitialContent($this->projectDir, $input, $databaseUrl))],
             ['clear_cache', fn (): array => $this->clearCache($input, $environment)],
             ['run_package_discovery', fn (): array => $this->runPackageDiscovery($input, $environment)],
             ['run_asset_rebuild', fn (): array => $this->runAssetRebuild($input, $environment)],
@@ -190,7 +255,7 @@ final class SetupRunner
     private function runMigrations(SetupInput $input, array $environment): array
     {
         $command = $this->migrationCommand($input);
-        $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
+        $result = $this->commandExecutor->run($command, $this->projectDir, $this->databaseCommandEnvironment($environment));
 
         if (!$result->isSuccessful()) {
             throw new SetupStepFailedException($this->commandError($result));
@@ -207,7 +272,7 @@ final class SetupRunner
     private function clearCache(SetupInput $input, array $environment): array
     {
         $command = $this->cacheClearCommand($input);
-        $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
+        $result = $this->commandExecutor->run($command, $this->projectDir, $this->databaseCommandEnvironment($environment));
 
         if (!$result->isSuccessful()) {
             throw new SetupStepFailedException($this->commandError($result));
@@ -231,7 +296,7 @@ final class SetupRunner
             '--trigger=setup',
             '--env='.$input->appEnv(),
         ];
-        $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
+        $result = $this->commandExecutor->run($command, $this->projectDir, $this->databaseCommandEnvironment($environment));
 
         if (!$result->isSuccessful()) {
             throw new SetupStepFailedException($this->commandError($result));
@@ -254,7 +319,7 @@ final class SetupRunner
             '--trigger=setup',
             '--env='.$input->appEnv(),
         ];
-        $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
+        $result = $this->commandExecutor->run($command, $this->projectDir, $this->databaseCommandEnvironment($environment));
 
         if (!$result->isSuccessful()) {
             throw new SetupStepFailedException($this->commandError($result));
@@ -300,9 +365,72 @@ final class SetupRunner
             'APP_SECRET' => $appSecret,
             'DEFAULT_URI' => $input->defaultUri(),
             'DATABASE_URL' => $databaseUrl,
+            'APP_DATABASE_PREFIX' => $input->databasePrefix() ?? '',
             'APP_DEBUG' => '0',
             'SHELL_VERBOSITY' => '-1',
         ];
+    }
+
+    /**
+     * @param array<string, string> $environment
+     *
+     * @return array<string, string>
+     */
+    private function databaseCommandEnvironment(array $environment): array
+    {
+        return [
+            ...$environment,
+            DatabaseReadyState::ALLOW_UNREADY_KEY => '1',
+        ];
+    }
+
+    /**
+     * @param array<string, string> $environment
+     * @param callable(): array<string, mixed> $callback
+     *
+     * @return array<string, mixed>
+     */
+    private function withDatabaseEnvironment(array $environment, callable $callback): array
+    {
+        $environment = $this->databaseCommandEnvironment($environment);
+        $previous = [];
+
+        foreach ($environment as $name => $value) {
+            $previous[$name] = [
+                'server_exists' => array_key_exists($name, $_SERVER),
+                'server_value' => $_SERVER[$name] ?? null,
+                'env_exists' => array_key_exists($name, $_ENV),
+                'env_value' => $_ENV[$name] ?? null,
+                'process_value' => getenv($name),
+            ];
+            $_SERVER[$name] = $value;
+            $_ENV[$name] = $value;
+            putenv($name.'='.$value);
+        }
+
+        try {
+            return $callback();
+        } finally {
+            foreach ($previous as $name => $state) {
+                if ($state['server_exists']) {
+                    $_SERVER[$name] = $state['server_value'];
+                } else {
+                    unset($_SERVER[$name]);
+                }
+
+                if ($state['env_exists']) {
+                    $_ENV[$name] = $state['env_value'];
+                } else {
+                    unset($_ENV[$name]);
+                }
+
+                if (false === $state['process_value']) {
+                    putenv($name);
+                } else {
+                    putenv($name.'='.$state['process_value']);
+                }
+            }
+        }
     }
 
     private function commandError(SetupCommandResult $result): string
@@ -366,5 +494,18 @@ final class SetupRunner
             'dry_run' => $input->dryRun(),
             'language' => $input->language(),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function rollback(
+        SetupInput $input,
+        string $databaseUrl,
+        SetupEnvironmentSnapshot $environmentSnapshot,
+        ?SetupDatabaseTableSnapshot $tableSnapshot,
+    ): array
+    {
+        return $this->rollbacker->rollback($this->projectDir, $input, $databaseUrl, $environmentSnapshot, $tableSnapshot);
     }
 }

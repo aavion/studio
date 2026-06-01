@@ -4,6 +4,8 @@
 declare(strict_types=1);
 
 use App\Localization\CoreTranslationBootstrapper;
+use App\Core\Package\PackageAssetFilesystem;
+use App\Core\Package\PackageAssetRegistryWriter;
 use Symfony\Component\Dotenv\Dotenv;
 
 final class InitReporter
@@ -149,6 +151,7 @@ final class InitCommand
         }
 
         $console = [PHP_BINARY, $this->projectDir.'/bin/console'];
+        $this->ensurePackageAssetRegistries();
         $this->runSymfonyAssetSetup($console);
 
         if ($this->reporter->hasFailures()) {
@@ -177,6 +180,16 @@ final class InitCommand
         $this->runRequiredCommand([...$console, 'assets:install', 'public'], 'Bundle assets are installed.');
         $this->runRequiredCommand([...$console, 'importmap:install'], 'Importmap packages are installed.');
         $this->runRequiredCommand([...$console, 'tailwind:build'], 'Tailwind CSS is built.');
+    }
+
+    private function ensurePackageAssetRegistries(): void
+    {
+        try {
+            (new PackageAssetRegistryWriter(new PackageAssetFilesystem($this->projectDir)))->ensureRegistryFilesExist();
+            $this->reporter->success('Package asset registry files exist for Tailwind and AssetMapper.');
+        } catch (Throwable $throwable) {
+            $this->reporter->failure('Package asset registry files could not be prepared: '.$throwable->getMessage());
+        }
     }
 
     private function checkCliRuntime(): void

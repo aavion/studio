@@ -10,6 +10,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
+use App\Database\DatabaseReadyState;
 use DateInterval;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -30,11 +31,16 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
         private GeoIpResolverInterface $geoIpResolver,
         private ?AccessStatisticsPolicy $policy = null,
         private ?MessageReporterInterface $messageReporter = null,
+        private ?DatabaseReadyState $databaseReadyState = null,
     ) {
     }
 
     public function record(Request $request, Response $response): void
     {
+        if (null !== $this->databaseReadyState && !$this->databaseReadyState->isReady()) {
+            return;
+        }
+
         try {
             if (null !== $this->policy && !$this->policy->isRecordingEnabled($request)) {
                 return;

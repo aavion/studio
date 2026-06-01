@@ -1,7 +1,7 @@
 ui:
   operations:
     action_log:
-      title: 'Action log'
+      title: 'Run action'
       subtitle: 'Follow the steps of this operation.'
       summary: 'Summary'
       result: 'Result'
@@ -17,9 +17,10 @@ ui:
         close: 'Close'
       states:
         starting: 'Starting operation...'
-        completed: 'Operation completed.'
+        waiting: 'Please wait...'
+        completed: 'Successfully completed.'
         requires_review: 'Confirmation required.'
-        failed: 'Operation failed.'
+        failed: 'Errors occurred.'
         start_error: 'Operation could not be started.'
         status_error: 'Operation status could not be loaded.'
         request_error: 'Operation request failed.'

@@ -29,6 +29,42 @@ final class PackageDispatcherTest extends TestCase
         self::assertSame('messenger_storage_unavailable', $result->issues()[0]->context()['reason']);
     }
 
+    public function testDiscoveryDispatchRecognizesPrefixedMessengerStorage(): void
+    {
+        $messageBus = new RecordingMessageBus();
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE studio_messenger_messages (id INTEGER PRIMARY KEY AUTOINCREMENT)');
+        $previousServer = $_SERVER['APP_DATABASE_PREFIX'] ?? null;
+        $previousEnv = $_ENV['APP_DATABASE_PREFIX'] ?? null;
+        $_SERVER['APP_DATABASE_PREFIX'] = 'studio_';
+        $_ENV['APP_DATABASE_PREFIX'] = 'studio_';
+
+        try {
+            $dispatcher = new PackageDiscoveryDispatcher(
+                $messageBus,
+                new NullWorkflowResultMessageReporter(),
+                $connection,
+            );
+
+            $result = $dispatcher->dispatch('cache_warmup');
+        } finally {
+            if (null === $previousServer) {
+                unset($_SERVER['APP_DATABASE_PREFIX']);
+            } else {
+                $_SERVER['APP_DATABASE_PREFIX'] = $previousServer;
+            }
+
+            if (null === $previousEnv) {
+                unset($_ENV['APP_DATABASE_PREFIX']);
+            } else {
+                $_ENV['APP_DATABASE_PREFIX'] = $previousEnv;
+            }
+        }
+
+        self::assertTrue($result->isSuccess());
+        self::assertCount(1, $messageBus->messages());
+    }
+
     public function testAssetRebuildDispatchSkipsMessengerWhenStorageIsMissing(): void
     {
         $messageBus = new RecordingMessageBus();
@@ -43,5 +79,41 @@ final class PackageDispatcherTest extends TestCase
         self::assertFalse($result->isSuccess());
         self::assertSame([], $messageBus->messages());
         self::assertSame('messenger_storage_unavailable', $result->issues()[0]->context()['reason']);
+    }
+
+    public function testAssetRebuildDispatchRecognizesPrefixedMessengerStorage(): void
+    {
+        $messageBus = new RecordingMessageBus();
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE studio_messenger_messages (id INTEGER PRIMARY KEY AUTOINCREMENT)');
+        $previousServer = $_SERVER['APP_DATABASE_PREFIX'] ?? null;
+        $previousEnv = $_ENV['APP_DATABASE_PREFIX'] ?? null;
+        $_SERVER['APP_DATABASE_PREFIX'] = 'studio_';
+        $_ENV['APP_DATABASE_PREFIX'] = 'studio_';
+
+        try {
+            $dispatcher = new PackageAssetRebuildDispatcher(
+                $messageBus,
+                new NullWorkflowResultMessageReporter(),
+                $connection,
+            );
+
+            $result = $dispatcher->dispatch('test', 'cache_warmup');
+        } finally {
+            if (null === $previousServer) {
+                unset($_SERVER['APP_DATABASE_PREFIX']);
+            } else {
+                $_SERVER['APP_DATABASE_PREFIX'] = $previousServer;
+            }
+
+            if (null === $previousEnv) {
+                unset($_ENV['APP_DATABASE_PREFIX']);
+            } else {
+                $_ENV['APP_DATABASE_PREFIX'] = $previousEnv;
+            }
+        }
+
+        self::assertTrue($result->isSuccess());
+        self::assertCount(1, $messageBus->messages());
     }
 }

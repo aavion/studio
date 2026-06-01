@@ -9,6 +9,7 @@
     data-label-start-error="{{ 'ui.operations.action_log.states.start_error'|trans }}"
     data-label-status-error="{{ 'ui.operations.action_log.states.status_error'|trans }}"
     data-label-request-error="{{ 'ui.operations.action_log.states.request_error'|trans }}"
+    data-label-waiting="{{ 'ui.operations.action_log.states.waiting'|trans }}"
     data-label-result="{{ 'ui.operations.action_log.result'|trans }}"
     data-label-ok="{{ 'ui.operations.action_log.actions.ok'|trans }}"
     data-label-continue="{{ 'ui.operations.action_log.actions.continue'|trans }}"
@@ -24,26 +25,43 @@
     data-label-status-warning="{{ 'ui.operations.action_log.statuses.warning'|trans }}"
     data-label-status-skipped="{{ 'ui.operations.action_log.statuses.skipped'|trans }}"
     data-label-status-failed="{{ 'ui.operations.action_log.statuses.failed'|trans }}"
+    data-action-labels="{{ {
+        select_language: 'setup.steps.select_language'|trans,
+        write_environment: 'setup.steps.write_environment'|trans,
+        dump_environment: 'setup.steps.dump_environment'|trans,
+        run_migrations: 'setup.steps.run_migrations'|trans,
+        seed_default_settings: 'setup.steps.seed_default_settings'|trans,
+        seed_admin_user: 'setup.steps.seed_admin_user'|trans,
+        seed_initial_content: 'setup.steps.seed_initial_content'|trans,
+        clear_cache: 'setup.steps.clear_cache'|trans,
+        run_package_discovery: 'setup.steps.run_package_discovery'|trans,
+        run_asset_rebuild: 'setup.steps.run_asset_rebuild'|trans,
+        mark_setup_completed: 'setup.steps.mark_setup_completed'|trans,
+    }|json_encode|e('html_attr') }}"
     hidden
 >
     <div class="studio-action-log-panel" role="dialog" aria-modal="true">
         <header class="studio-action-log-header">
             <div>
                 <h2 id="studio-action-log-heading">{{ 'ui.operations.action_log.title'|trans }}</h2>
-                <p data-operation-overlay-subtitle>{{ 'ui.operations.action_log.subtitle'|trans }}</p>
             </div>
+            <button class="studio-action-log-close" type="button" data-operation-overlay-close-icon hidden aria-label="{{ 'ui.operations.action_log.actions.close'|trans }}">
+                <span aria-hidden="true">×</span>
+            </button>
             <span class="studio-action-log-spinner" data-operation-overlay-spinner aria-hidden="true"></span>
         </header>
 
         {% include '@backend/operations/partials/_action-log-summary.html.twig' with {summary: summary|default({})} only %}
 
-        <ol class="studio-action-log-list" data-operation-overlay-list>
-            {% for entry in entries|default([]) %}
-                {% include '@backend/operations/partials/_action-log-entry.html.twig' with {entry: entry} only %}
-            {% else %}
-                <li class="studio-muted" data-operation-overlay-empty>{{ 'ui.operations.action_log.empty'|trans }}</li>
-            {% endfor %}
-        </ol>
+        <div class="studio-action-log-scroll" data-operation-overlay-scroll>
+            <ol class="studio-action-log-list" data-operation-overlay-list>
+                {% for entry in entries|default([]) %}
+                    {% include '@backend/operations/partials/_action-log-entry.html.twig' with {entry: entry} only %}
+                {% else %}
+                    <li class="studio-muted" data-operation-overlay-empty>{{ 'ui.operations.action_log.empty'|trans }}</li>
+                {% endfor %}
+            </ol>
+        </div>
 
         <footer class="studio-action-log-footer">
             <button class="studio-backend-button studio-button-success" type="button" data-operation-overlay-ok hidden>

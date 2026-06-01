@@ -652,6 +652,9 @@ admin:
         label: 'Sprachpräfixe in Routen verwenden'
       home_path:
         label: 'Startseiten-Pfad'
+      footer_copyright:
+        label: 'Footer-Copyright'
+        help: 'Optionaler Markdown-Text für den Footer der öffentlichen Website. Leer lassen, um den Systemstandard zu verwenden.'
       dashboard_widgets:
         label: 'Dashboard-Widgets'
       registration_mode:

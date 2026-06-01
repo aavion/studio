@@ -47,7 +47,7 @@ opcache.validate_timestamps=0
 ```
 
 After restarting/reloading your webserver, call `opcache_reset()` once to activate these settings.
-The default values shipped with OpCache won't work with aavion Studio (or any other Symfony based project).
+The default values shipped with OpCache won't work with Studio (or any other Symfony based project).
 
 To also improve realpath-cache performance, also change these parameters in `php.ini`:
 ```ini

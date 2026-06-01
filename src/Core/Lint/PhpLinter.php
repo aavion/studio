@@ -6,6 +6,7 @@ namespace App\Core\Lint;
 
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use Symfony\Component\Process\Process;
 
 final class PhpLinter implements LinterInterface
 {
@@ -23,19 +24,18 @@ final class PhpLinter implements LinterInterface
             ]);
         }
 
-        $command = [PHP_BINARY, '-l', $temporaryPath];
-        $output = [];
-        $exitCode = 1;
-
-        exec(implode(' ', array_map('escapeshellarg', $command)).' 2>&1', $output, $exitCode);
+        $process = new Process([PHP_BINARY, '-l', $temporaryPath], timeout: 10.0);
+        $process->run();
         unlink($temporaryPath);
 
-        if (0 !== $exitCode) {
+        if (!$process->isSuccessful()) {
+            $output = trim($process->getOutput().PHP_EOL.$process->getErrorOutput());
+
             return LintResult::invalid([
                 LintIssue::create(
                     MessageCode::LINT_PHP_SYNTAX_ERROR,
                     MessageKey::LINT_PHP_SYNTAX_ERROR,
-                    details: ['error' => implode(PHP_EOL, $output), 'output' => implode(PHP_EOL, $output), 'path' => $path],
+                    details: ['error' => $output, 'output' => $output, 'path' => $path],
                 ),
             ]);
         }

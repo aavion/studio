@@ -109,6 +109,29 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
         self::assertSame('Delete ACL group and clean references', $result->value()?->actions()[0]->label());
     }
 
+    public function testItCreatesSetupApplyQueue(): void
+    {
+        self::bootKernel();
+        $factory = self::getContainer()->get(LiveOperationQueueFactory::class);
+
+        $result = $factory->create(LiveOperationQueueFactory::SETUP_APPLY, [
+            'values' => [
+                'language' => 'en',
+                'admin_username' => 'admin',
+                'admin_password' => 'VerySecure1!',
+                'admin_password_confirm' => 'VerySecure1!',
+                'admin_email' => 'admin@example.test',
+            ],
+            'trigger' => 'setup_wizard',
+        ]);
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('setup apply', $result->value()?->name());
+        self::assertSame('setup_wizard', $result->value()?->context()['trigger']);
+        self::assertGreaterThan(1, count($result->value()?->actions() ?? []));
+        self::assertSame('select_language', $result->value()?->actions()[0]->label());
+    }
+
     public function testItRejectsInvalidAclGroupApplyPayload(): void
     {
         self::bootKernel();

@@ -11,6 +11,7 @@
         {% if required|default(false) %}required{% endif %}
         {% if disabled|default(false) %}disabled{% endif %}
         {% if autocomplete|default(null) %}autocomplete="{{ autocomplete }}"{% endif %}
+        {{ studio_html_attributes(attributes|default({})) }}
     >
 {% endset %}
 {% include '@frontend/partials/forms/_field.html.twig' with {

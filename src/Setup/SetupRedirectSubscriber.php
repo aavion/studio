@@ -35,6 +35,10 @@ final readonly class SetupRedirectSubscriber implements EventSubscriberInterface
         }
 
         if ($this->completionMarker->isComplete($this->projectDir, $this->environment)) {
+            if ($event->getRequest()->hasSession()) {
+                $event->getRequest()->getSession()->remove(SetupWizardState::SESSION_KEY);
+            }
+
             return;
         }
 
@@ -49,7 +53,7 @@ final readonly class SetupRedirectSubscriber implements EventSubscriberInterface
 
     private function isBypassPath(string $path): bool
     {
-        foreach (['/setup', '/_profiler', '/_wdt', '/assets', '/build'] as $prefix) {
+        foreach (['/setup', '/api/live', '/_profiler', '/_wdt', '/assets', '/build'] as $prefix) {
             if ($path === $prefix || str_starts_with($path, $prefix.'/')) {
                 return true;
             }

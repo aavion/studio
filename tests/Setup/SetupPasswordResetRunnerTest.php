@@ -39,7 +39,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
         self::assertSame('00000000-0000-0000-0000-000000000201', $user->uid());
         self::assertSame('admin@example.test', $user->email());
 
-        $result = $runner->reset($this->root, $databaseUrl, 'admin', 'new-password', 'test');
+        $result = $runner->reset($this->root, $databaseUrl, 'admin', 'NewPassword1!', 'test');
 
         self::assertTrue($result->isSuccess());
         self::assertInstanceOf(ActionLog::class, $result->value());
@@ -53,7 +53,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
             ->fetchColumn();
 
         self::assertIsArray($row);
-        self::assertTrue(password_verify('new-password', (string) $row['password_hash']));
+        self::assertTrue(password_verify('NewPassword1!', (string) $row['password_hash']));
         self::assertSame('test', $marker);
     }
 
@@ -61,19 +61,53 @@ final class SetupPasswordResetRunnerTest extends TestCase
     {
         $runner = new SetupPasswordResetRunner(new NullWorkflowResultMessageReporter());
 
-        $result = $runner->reset($this->root, 'sqlite:///'.$this->databasePath, 'missing', 'new-password');
+        $result = $runner->reset($this->root, 'sqlite:///'.$this->databasePath, 'missing', 'NewPassword1!');
 
         self::assertFalse($result->isSuccess());
         self::assertTrue($result->context()['halt_on_error']);
     }
 
-    private function createSchema(): void
+    public function testItHonorsDatabasePrefixWhenFindingAndResettingPasswords(): void
     {
-        $pdo = new PDO('sqlite:'.$this->databasePath);
+        $databasePath = $this->root.'/var/prefixed-reset.db';
+        $this->createSchema($databasePath, 'studio_');
+        $runner = new SetupPasswordResetRunner(new NullWorkflowResultMessageReporter());
+        $databaseUrl = 'sqlite:///'.$databasePath;
+
+        $user = $runner->findUser($this->root, $databaseUrl, 'admin', 'studio_');
+        $result = $runner->reset($this->root, $databaseUrl, 'admin', 'NewPassword1!', 'test', 'studio_');
+
+        self::assertNotNull($user);
+        self::assertTrue($result->isSuccess());
+
+        $pdo = new PDO('sqlite:'.$databasePath);
+        $row = $pdo
+            ->query("SELECT password_hash FROM studio_user_account WHERE username = 'admin'")
+            ->fetch(PDO::FETCH_ASSOC);
+
+        self::assertIsArray($row);
+        self::assertTrue(password_verify('NewPassword1!', (string) $row['password_hash']));
+    }
+
+    public function testItReturnsInvalidResultForPrefixedUsersWithoutDatabasePrefix(): void
+    {
+        $databasePath = $this->root.'/var/prefixed-missing-reset.db';
+        $this->createSchema($databasePath, 'studio_');
+        $runner = new SetupPasswordResetRunner(new NullWorkflowResultMessageReporter());
+
+        $result = $runner->reset($this->root, 'sqlite:///'.$databasePath, 'admin', 'NewPassword1!');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('E_INVALID_ARGUMENT', $result->firstIssue()?->code());
+    }
+
+    private function createSchema(?string $databasePath = null, string $prefix = ''): void
+    {
+        $pdo = new PDO('sqlite:'.($databasePath ?? $this->databasePath));
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->exec('CREATE TABLE state_marker (uid VARCHAR(36) NOT NULL PRIMARY KEY, subject_type VARCHAR(80) NOT NULL, subject_uid VARCHAR(36) NOT NULL, marker_key VARCHAR(80) NOT NULL, marker_at DATETIME NOT NULL, marker_by VARCHAR(180) DEFAULT NULL, marker_value VARCHAR(255) DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(subject_type, subject_uid, marker_key))');
-        $pdo->exec('CREATE TABLE user_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(180) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, profile CLOB NOT NULL, settings CLOB NOT NULL, status VARCHAR(32) NOT NULL)');
-        $statement = $pdo->prepare('INSERT INTO user_account (uid, username, email, password_hash, profile, settings, status) VALUES (:uid, :username, :email, :password_hash, :profile, :settings, :status)');
+        $pdo->exec(sprintf('CREATE TABLE %sstate_marker (uid VARCHAR(36) NOT NULL PRIMARY KEY, subject_type VARCHAR(80) NOT NULL, subject_uid VARCHAR(36) NOT NULL, marker_key VARCHAR(80) NOT NULL, marker_at DATETIME NOT NULL, marker_by VARCHAR(180) DEFAULT NULL, marker_value VARCHAR(255) DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(subject_type, subject_uid, marker_key))', $prefix));
+        $pdo->exec(sprintf('CREATE TABLE %suser_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(180) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, profile CLOB NOT NULL, settings CLOB NOT NULL, status VARCHAR(32) NOT NULL)', $prefix));
+        $statement = $pdo->prepare(sprintf('INSERT INTO %suser_account (uid, username, email, password_hash, profile, settings, status) VALUES (:uid, :username, :email, :password_hash, :profile, :settings, :status)', $prefix));
         $statement->execute([
             'uid' => '00000000-0000-0000-0000-000000000201',
             'username' => 'admin',

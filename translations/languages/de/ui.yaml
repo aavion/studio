@@ -1,6 +1,8 @@
 ui:
   app:
-    name: 'aavion Studio'
+    name: 'Studio'
+  alert:
+    close: 'Benachrichtigung schließen'
   navigation:
     skip_to_content: 'Zum Inhalt springen'
   frontend:
@@ -108,16 +110,25 @@ ui:
       placeholder: 'Aktualisiere das Passwort für deinen Account.'
       current_password: 'Aktuelles Passwort'
       new_password: 'Neues Passwort'
-      new_password_help: 'Nutze mindestens 12 Zeichen.'
+      new_password_help: 'Nutze mindestens 8 Zeichen, mindestens drei Zeichentypen und keinen Username oder E-Mail-Namen.'
       confirm_password: 'Neues Passwort bestätigen'
       submit: 'Passwort aktualisieren'
       success: 'Dein Passwort wurde aktualisiert.'
       errors:
         invalid_csrf: 'Das Passwortformular ist abgelaufen. Bitte versuche es erneut.'
         current_password: 'Das aktuelle Passwort ist nicht korrekt.'
-        new_password_length: 'Das neue Passwort muss mindestens 12 Zeichen enthalten.'
+        new_password_length: 'Das neue Passwort muss mindestens 8 Zeichen enthalten.'
+        new_password_complexity: 'Das neue Passwort muss mindestens drei Zeichentypen verwenden.'
+        new_password_repeated: 'Das neue Passwort darf dasselbe Zeichen nicht mehr als dreimal direkt hintereinander enthalten.'
+        new_password_personal: 'Das neue Passwort darf deinen Username oder E-Mail-Namen nicht enthalten.'
         password_mismatch: 'Die neuen Passwörter stimmen nicht überein.'
         delivery_failed: 'Die Sicherheits-E-Mail zur Passwortänderung konnte nicht erstellt werden. Bitte versuche es später erneut.'
+      policy:
+        length: 'Mindestens 8 Zeichen'
+        classes: 'Mindestens drei von vier Zeichentypen'
+        personal: 'Kein Username oder E-Mail-Name'
+        repeated: 'Kein Zeichen mehr als dreimal direkt hintereinander'
+        match: 'Beide Passwort-Felder sind identisch'
     api_keys:
       title: 'API-Keys'
       subtitle: 'Hier werden nur API-Keys angezeigt, die deinem Account zugeordnet sind.'
@@ -202,3 +213,8 @@ ui:
       visitor_id: 'Visitor-ID'
       requested_path: 'Angefragter Pfad'
       resolved_route: 'Aufgelöste Route'
+    debug:
+      summary: 'Debug-Trace'
+      exception: 'Exception'
+      message: 'Meldung'
+      location: 'Fundstelle'

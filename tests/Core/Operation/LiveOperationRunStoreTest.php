@@ -12,6 +12,7 @@ use App\Core\Message\MessageKey;
 use App\Core\Log\OperationLoggerInterface;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Workflow\WorkflowResult;
+use App\Setup\SetupLiveOperationPayloadProtector;
 use App\Tests\Support\FilesystemTestHelper;
 use PHPUnit\Framework\TestCase;
 
@@ -61,6 +62,39 @@ final class LiveOperationRunStoreTest extends TestCase
         self::assertSame('backend.cache_clear', $logger->states[0]['operation']);
         self::assertSame('success', $logger->states[0]['status']);
         self::assertSame(['token' => 'hidden'], $logger->states[0]['payload']);
+    }
+
+    public function testItCanStoreProtectedSetupPayloadsWithoutPlainSecrets(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('live-operation-protected-setup');
+        $store = new LiveOperationRunStore($projectDir, 'test');
+        $protector = new SetupLiveOperationPayloadProtector('runtime-secret');
+        $payload = $protector->protect([
+            'values' => [
+                'admin_password' => 'Secret1!password',
+                'admin_password_confirm' => 'Secret1!password',
+                'database_password' => 'db-secret',
+                'app_secret' => 'custom-app-secret',
+            ],
+        ]);
+
+        $run = $store->create('setup.apply', $payload, 'Setup apply');
+        $state = $store->read($run['operation_id']);
+        $encoded = json_encode($state, JSON_THROW_ON_ERROR);
+
+        self::assertIsArray($state);
+        self::assertIsString($encoded);
+        self::assertStringNotContainsString('Secret1!password', $encoded);
+        self::assertStringNotContainsString('db-secret', $encoded);
+        self::assertStringNotContainsString('custom-app-secret', $encoded);
+        self::assertSame([
+            'values' => [
+                'admin_password' => 'Secret1!password',
+                'admin_password_confirm' => 'Secret1!password',
+                'database_password' => 'db-secret',
+                'app_secret' => 'custom-app-secret',
+            ],
+        ], $protector->unprotect(is_array($state['payload'] ?? null) ? $state['payload'] : []));
     }
 
     public function testItFiltersEntriesByCursor(): void

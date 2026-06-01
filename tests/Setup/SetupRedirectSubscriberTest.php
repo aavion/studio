@@ -6,9 +6,12 @@ namespace App\Tests\Setup;
 
 use App\Setup\SetupCompletionMarker;
 use App\Setup\SetupRedirectSubscriber;
+use App\Setup\SetupWizardState;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
@@ -47,7 +50,7 @@ final class SetupRedirectSubscriberTest extends TestCase
     {
         $subscriber = $this->subscriber();
 
-        foreach (['/setup', '/setup/recovery', '/assets/app.css', '/build/app.js', '/_profiler', '/_wdt/token', '/favicon.ico'] as $path) {
+        foreach (['/setup', '/setup/recovery', '/api/live/operations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '/api/live/future-poll', '/assets/app.css', '/build/app.js', '/_profiler', '/_wdt/token', '/favicon.ico'] as $path) {
             $event = $this->event($path);
             $subscriber->onKernelRequest($event);
 
@@ -63,6 +66,25 @@ final class SetupRedirectSubscriberTest extends TestCase
         $this->subscriber()->onKernelRequest($event);
 
         self::assertFalse($event->hasResponse());
+    }
+
+    public function testItClearsWizardStateAfterSetupCompletion(): void
+    {
+        $_SERVER[SetupCompletionMarker::KEY] = '1';
+        $request = Request::create('/admin');
+        $session = new Session(new MockArraySessionStorage());
+        $session->set(SetupWizardState::SESSION_KEY, ['values' => ['admin_username' => 'admin']]);
+        $request->setSession($session);
+        $event = new RequestEvent(
+            $this->createStub(HttpKernelInterface::class),
+            $request,
+            HttpKernelInterface::MAIN_REQUEST,
+        );
+
+        $this->subscriber()->onKernelRequest($event);
+
+        self::assertFalse($event->hasResponse());
+        self::assertFalse($session->has(SetupWizardState::SESSION_KEY));
     }
 
     private function subscriber(): SetupRedirectSubscriber

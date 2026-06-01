@@ -150,6 +150,7 @@ final class MessageKey
     public const SETUP_ENVIRONMENT_FILE_WRITE_FAILED = 'message.setup.environment_file_write_failed';
     public const SETUP_LANGUAGE_SELECTED = 'message.setup.language_selected';
     public const SETUP_AVAILABLE_LANGUAGES = 'message.setup.available_languages';
+    public const SETUP_ROLLBACK_COMPLETED = 'message.setup.rollback_completed';
     public const SETUP_DRY_RUN = 'message.setup.dry_run';
     public const SETUP_OUTPUT_SUCCESS = 'message.setup.output.success';
     public const SETUP_OUTPUT_FAILED = 'message.setup.output.failed';
@@ -171,6 +172,10 @@ final class MessageKey
     public const SETUP_PROMPT_INVALID_CHOICE = 'message.setup.prompt.invalid_choice';
     public const SETUP_PROMPT_PASSWORD_MISMATCH = 'message.setup.prompt.password_mismatch';
     public const SETUP_ADMIN_PASSWORD_TOO_SHORT = 'message.setup.admin_password.too_short';
+    public const SETUP_ADMIN_PASSWORD_COMPLEXITY = 'message.setup.admin_password.complexity';
+    public const SETUP_ADMIN_PASSWORD_REPEATED = 'message.setup.admin_password.repeated';
+    public const SETUP_ADMIN_PASSWORD_PERSONAL = 'message.setup.admin_password.personal';
+    public const SETUP_APP_SECRET_TOO_SHORT = 'message.setup.app_secret.too_short';
     public const SETUP_PROMPT_PASSWORD_RESET_CONTINUE = 'message.setup.prompt.password_reset_continue';
     public const SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD = 'message.setup.prompt.password_reset_new_password';
     public const SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD = 'message.setup.prompt.password_reset_confirm_password';

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Setup;
 
-use App\Setup\ProcOpenSetupCommandExecutor;
+use App\Setup\ProcessSetupCommandExecutor;
 use PHPUnit\Framework\TestCase;
 
-final class ProcOpenSetupCommandExecutorTest extends TestCase
+final class ProcessSetupCommandExecutorTest extends TestCase
 {
     private string $root;
 
@@ -28,7 +28,7 @@ final class ProcOpenSetupCommandExecutorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = sys_get_temp_dir().'/studio-setup-proc-open-test-'.bin2hex(random_bytes(6));
+        $this->root = sys_get_temp_dir().'/studio-setup-process-test-'.bin2hex(random_bytes(6));
         mkdir($this->root.'/var', 0777, true);
         $this->backupEnvironmentValue('COMPOSER_HOME');
     }
@@ -61,7 +61,7 @@ final class ProcOpenSetupCommandExecutorTest extends TestCase
     public function testItProvidesLocalComposerHomeWhenComposerHomeIsMissing(): void
     {
         $this->unsetEnvironmentValue('COMPOSER_HOME');
-        $executor = new ProcOpenSetupCommandExecutor();
+        $executor = new ProcessSetupCommandExecutor();
 
         $result = $executor->run([PHP_BINARY, '-r', 'echo getenv("COMPOSER_HOME");'], $this->root);
 
@@ -74,7 +74,7 @@ final class ProcOpenSetupCommandExecutorTest extends TestCase
     {
         $customComposerHome = $this->root.'/custom-composer-home';
         mkdir($customComposerHome);
-        $executor = new ProcOpenSetupCommandExecutor();
+        $executor = new ProcessSetupCommandExecutor();
 
         $result = $executor->run(
             [PHP_BINARY, '-r', 'echo getenv("COMPOSER_HOME");'],
