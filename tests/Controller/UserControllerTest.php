@@ -26,19 +26,13 @@ final class UserControllerTest extends WebTestCase
     public function testProtectedUserRoutesRenderLoginForAnonymousUsers(): void
     {
         $client = self::createClient();
-        $client->request('GET', '/user/profile');
 
-        self::assertResponseStatusCodeSame(401);
-        self::assertSelectorTextContains('h1', 'Sign in');
-    }
+        foreach (['/user/profile', '/user'] as $path) {
+            $client->request('GET', $path);
 
-    public function testUserIndexRendersLoginForAnonymousUsers(): void
-    {
-        $client = self::createClient();
-        $client->request('GET', '/user');
-
-        self::assertResponseStatusCodeSame(401);
-        self::assertSelectorTextContains('h1', 'Sign in');
+            self::assertResponseStatusCodeSame(401);
+            self::assertSelectorTextContains('h1', 'Sign in');
+        }
     }
 
     public function testUserIndexRedirectsAuthenticatedUsersToProfile(): void

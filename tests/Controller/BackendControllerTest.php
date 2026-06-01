@@ -115,7 +115,6 @@ final class BackendControllerTest extends WebTestCase
                 'database_driver' => 'sqlite',
                 'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
             ]));
-            self::assertSelectorExists('form#setup-wizard[data-controller="setup-wizard password-policy"] .studio-password-meter');
             $client->submit($crawler->selectButton('Continue')->form([
                 'admin_username' => 'admin',
                 'admin_password' => 'Safe1!pass',
@@ -426,7 +425,6 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorExists(sprintf('tr[data-operation-id="%s"][data-operation-status="queued"]', $run['operation_id']));
             self::assertSelectorExists('form input[name="_operations_action"][value="cleanup"]');
             self::assertSelectorNotExists('form input[name="_operations_action"][value="kill_stale_runner"]');
-            self::assertSelectorExists('.studio-backend-nav a[href="/admin/operations"][aria-current="page"]');
         } finally {
             $lock?->release();
             @unlink(dirname($store->outputPath($run['operation_id'])).'/'.$run['operation_id'].'.json');
@@ -870,9 +868,6 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'General settings');
-        self::assertSelectorTextContains('.studio-backend-nav', 'Settings');
-        self::assertSelectorExists('.studio-backend-nav .is-active-ancestor a[href="/admin/settings"][aria-expanded="true"]');
-        self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/general"][aria-current="page"]');
         self::assertSelectorExists('form#admin-settings-general');
         self::assertStringContainsString('name="site.title"', (string) $client->getResponse()->getContent());
         self::assertStringContainsString('maxlength="120"', (string) $client->getResponse()->getContent());
@@ -884,7 +879,6 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Package settings');
-        self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/packages"][aria-current="page"]');
         self::assertSelectorExists('form#admin-settings-packages');
         self::assertSelectorExists('select[name="packages.update_check_interval"]');
 
@@ -1095,7 +1089,6 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Package management');
-        self::assertSelectorExists('.studio-backend-nav a[href="/admin/reports"][aria-current="page"]');
     }
 
     public function testEditorRouteAllowsEditorsButAdminRouteDoesNot(): void

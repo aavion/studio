@@ -30,9 +30,10 @@ Measured after clean setup on 2026-06-01:
   - Some low-value DOM/CSS assertions are trimmed.
   - `LiveOperationQueueFactoryTest` is consolidated from many small kernel boots into two behavior tests.
 - After the current working slice:
-  - `php bin/phpunit`: `793 tests`, `4894 assertions`, `36.945s`, peak `121 MB`.
+  - `php bin/phpunit`: `792 tests`, `4886 assertions`, `37.168s`, peak `121 MB`.
   - Short setup-password validation is covered at factory level instead of through an additional browser/controller flow.
   - Password-meter and API-key toggle selectors are no longer treated as backend behavior.
+  - Duplicate anonymous user-route login fallback checks are consolidated into one browser test.
 
 ## Hotspots
 
@@ -76,7 +77,7 @@ Measured from `php bin/phpunit --log-junit var/test-suite-audit.xml` after the c
 ## Candidate Backlog
 
 - [ ] `BackendControllerTest`: move validation-only setup cases into `SetupWebInputFactoryTest` where possible.
-- [ ] `BackendControllerTest`: review package/detail lifecycle assertions for CSS-heavy checks.
+- [x] `BackendControllerTest`: review package/detail lifecycle assertions for CSS-heavy checks.
 - [ ] `AdminUserControllerTest`: trim list/table assertions to behavior markers and persistence checks.
 - [x] `UserControllerTest`: trim password-meter and API-key toggle CSS assertions where a route/form behavior assertion exists.
 - [ ] `ViewTwigExtensionTest`: consider whether granular partial rendering belongs in a smaller Twig/template smoke test or should remain as integration coverage.
@@ -92,4 +93,6 @@ Measured from `php bin/phpunit --log-junit var/test-suite-audit.xml` after the c
 - Consolidated `LiveOperationQueueFactoryTest` to reduce repeated kernel boots while preserving supported/invalid operation coverage.
 - Moved short setup admin-password validation from a full controller/browser flow to `SetupWebInputFactoryTest`; kept route-walk and no-JS setup flows for integration coverage.
 - Trimmed `UserControllerTest` assertions for password-meter widgets and API-key toggle CSS while keeping token rendering, password-change, API-key persistence, and revocation behavior.
+- Consolidated duplicate anonymous `/user` login-fallback checks into one browser test with two requests.
+- Trimmed `BackendControllerTest` assertions for active navigation and password-meter UI details where route success, forms, operation rows, and static-view injection behavior already define the test contract.
 - Repaired local `vendor/` after iCloud conflict-copy directories caused missing package files; use `composer install --no-scripts --optimize-autoloader` if this happens again during the audit.
