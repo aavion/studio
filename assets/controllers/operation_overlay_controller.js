@@ -449,7 +449,7 @@ export default class extends Controller {
             return true;
         }
 
-        return ['success', 'requires_review', 'failed'].includes(stored.status);
+        return ['success', 'failed'].includes(stored.status) || (stored.status === 'requires_review' && !stored.continueUrl);
     }
 
     get rootElement() {

@@ -10,6 +10,7 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Setup\SetupRunner;
+use App\Setup\SetupLiveOperationPayloadProtector;
 use App\Setup\SetupWebInputFactory;
 
 final readonly class SetupApplyLiveOperationProvider implements LiveOperationQueueProviderInterface
@@ -17,6 +18,7 @@ final readonly class SetupApplyLiveOperationProvider implements LiveOperationQue
     public function __construct(
         private SetupWebInputFactory $inputFactory,
         private SetupRunner $setupRunner,
+        private SetupLiveOperationPayloadProtector $payloadProtector,
     ) {
     }
 
@@ -27,6 +29,7 @@ final readonly class SetupApplyLiveOperationProvider implements LiveOperationQue
 
     public function create(array $payload = []): WorkflowResult
     {
+        $payload = $this->payloadProtector->unprotect($payload);
         $values = is_array($payload['values'] ?? null) ? $payload['values'] : [];
         $input = $this->inputFactory->create($values);
 

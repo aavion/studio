@@ -8,6 +8,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Workflow\WorkflowResult;
+use App\Setup\SetupLiveOperationPayloadProtector;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Process\Process;
 use Throwable;
@@ -17,6 +18,7 @@ final readonly class LiveOperationStarter
     public function __construct(
         private KernelInterface $kernel,
         private LiveOperationRunStore $runStore,
+        private SetupLiveOperationPayloadProtector $setupPayloadProtector,
     ) {
     }
 
@@ -30,6 +32,10 @@ final readonly class LiveOperationStarter
         $run = null;
 
         try {
+            if (LiveOperationQueueFactory::SETUP_APPLY === $operation) {
+                $payload = $this->setupPayloadProtector->protect($payload);
+            }
+
             $run = $this->runStore->create($operation, $payload, $label);
             $this->startProcess($run['operation_id'], $run['token']);
         } catch (Throwable $error) {

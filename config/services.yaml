@@ -240,6 +240,10 @@ services:
         arguments:
             $secret: '%kernel.secret%'
 
+    App\Setup\SetupLiveOperationPayloadProtector:
+        arguments:
+            $secret: '%kernel.secret%'
+
     App\Security\AppSecretRotationGuard:
         arguments:
             $secret: '%kernel.secret%'
