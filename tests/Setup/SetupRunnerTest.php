@@ -409,6 +409,7 @@ final class SetupRunnerTest extends TestCase
         $databasePath = $this->root.'/var/setup.db';
         $this->createSchema($databasePath);
         touch($this->root.'/bin/composer');
+        chmod($this->root.'/bin/composer', 0755);
         $executor = new RecordingSetupCommandExecutor(failureAt: 1, failure: new SetupCommandResult(1));
         $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
 
