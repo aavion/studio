@@ -371,6 +371,21 @@ final class SchedulerRunnerTest extends KernelTestCase
         );
     }
 
+    public function testTaskDefinitionsAcceptShortPackageSources(): void
+    {
+        $definition = SchedulerTaskDefinition::command(
+            'ai.cleanup',
+            'admin.scheduler.tasks.test.label',
+            'admin.scheduler.tasks.test.description',
+            'studio:test',
+            '* * * * *',
+            'ai',
+            false,
+        );
+
+        self::assertSame('ai', $definition->source());
+    }
+
     public function testTaskDefinitionsRejectInvalidMetadata(): void
     {
         $this->expectException(\InvalidArgumentException::class);

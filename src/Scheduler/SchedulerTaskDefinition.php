@@ -23,7 +23,7 @@ final readonly class SchedulerTaskDefinition
         private array $metadata = [],
     ) {
         $this->assertToken($identifier, 'Scheduler task identifier');
-        $this->assertToken($source, 'Scheduler task source');
+        $this->assertSource($source);
         $this->assertTranslationKey($labelKey, 'Scheduler task label key');
         $this->assertTranslationKey($descriptionKey, 'Scheduler task description key');
 
@@ -123,6 +123,13 @@ final readonly class SchedulerTaskDefinition
     {
         if (!self::isValidIdentifier($value)) {
             throw new InvalidArgumentException(sprintf('%s "%s" is invalid.', $label, $value));
+        }
+    }
+
+    private function assertSource(string $value): void
+    {
+        if (strlen($value) > 120 || 1 !== preg_match('/^[a-z0-9][a-z0-9_.-]*$/', $value)) {
+            throw new InvalidArgumentException(sprintf('Scheduler task source "%s" is invalid.', $value));
         }
     }
 

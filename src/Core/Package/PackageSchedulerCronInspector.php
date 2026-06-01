@@ -34,8 +34,7 @@ final readonly class PackageSchedulerCronInspector
                 continue;
             }
 
-            $strings = $this->literalStrings($body);
-            $arguments[] = $strings[4] ?? null;
+            $arguments[] = $this->literalStringArgument($this->positionalArguments($body)[4] ?? null);
         }
 
         foreach ($this->callBodiesAt($contents, $this->newDefinitionCallOffsets($contents)) as $body) {
@@ -44,8 +43,7 @@ final readonly class PackageSchedulerCronInspector
                 continue;
             }
 
-            $strings = $this->literalStrings($body);
-            $arguments[] = $strings[5] ?? null;
+            $arguments[] = $this->literalStringArgument($this->positionalArguments($body)[6] ?? null);
         }
 
         return array_values(array_unique($arguments));
@@ -304,19 +302,87 @@ final readonly class PackageSchedulerCronInspector
     /**
      * @return list<string>
      */
-    private function literalStrings(string $contents): array
+    private function positionalArguments(string $contents): array
     {
-        $strings = [];
+        $arguments = [];
+        $start = 0;
+        $depth = 0;
+        $quote = null;
+        $escaped = false;
+        $length = strlen($contents);
 
-        foreach (token_get_all('<?php '.$contents) as $token) {
-            if (!is_array($token) || T_CONSTANT_ENCAPSED_STRING !== $token[0]) {
+        for ($index = 0; $index < $length; ++$index) {
+            $char = $contents[$index];
+
+            if (null !== $quote) {
+                if ($escaped) {
+                    $escaped = false;
+                    continue;
+                }
+
+                if ('\\' === $char) {
+                    $escaped = true;
+                    continue;
+                }
+
+                if ($char === $quote) {
+                    $quote = null;
+                }
+
                 continue;
             }
 
-            $literal = $token[1];
-            $strings[] = stripcslashes(substr($literal, 1, -1));
+            if ('\'' === $char || '"' === $char) {
+                $quote = $char;
+                continue;
+            }
+
+            if (in_array($char, ['(', '[', '{'], true)) {
+                ++$depth;
+                continue;
+            }
+
+            if (in_array($char, [')', ']', '}'], true)) {
+                $depth = max(0, $depth - 1);
+                continue;
+            }
+
+            if (',' !== $char || 0 !== $depth) {
+                continue;
+            }
+
+            $arguments[] = trim(substr($contents, $start, $index - $start));
+            $start = $index + 1;
         }
 
-        return $strings;
+        $last = trim(substr($contents, $start));
+        if ('' !== $last) {
+            $arguments[] = $last;
+        }
+
+        return array_values(array_filter(
+            $arguments,
+            static fn (string $argument): bool => 1 !== preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*\s*:(?!:)/', $argument),
+        ));
+    }
+
+    private function literalStringArgument(?string $contents): ?string
+    {
+        if (null === $contents) {
+            return null;
+        }
+
+        $tokens = array_values(array_filter(
+            token_get_all('<?php '.$contents),
+            static fn (array|string $token): bool => !is_array($token) || !in_array($token[0], [T_OPEN_TAG, T_WHITESPACE], true),
+        ));
+
+        if (1 !== count($tokens) || !is_array($tokens[0]) || T_CONSTANT_ENCAPSED_STRING !== $tokens[0][0]) {
+            return null;
+        }
+
+        $literal = $tokens[0][1];
+
+        return stripcslashes(substr($literal, 1, -1));
     }
 }
