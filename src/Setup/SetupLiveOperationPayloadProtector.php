@@ -7,7 +7,8 @@ namespace App\Setup;
 final readonly class SetupLiveOperationPayloadProtector
 {
     private const VERSION = 'v1';
-    private const MARKER = '_setup_payload_protected';
+    public const MARKER = '_setup_payload_protected';
+    public const SECRETS = '_setup_payload_secrets';
     private const SECRET_FIELDS = [
         'admin_password',
         'admin_password_confirm',
@@ -53,7 +54,7 @@ final readonly class SetupLiveOperationPayloadProtector
             ...$payload,
             'values' => $values,
             self::MARKER => true,
-            '_setup_payload_secrets' => $secrets,
+            self::SECRETS => $secrets,
         ];
     }
 
@@ -69,7 +70,7 @@ final readonly class SetupLiveOperationPayloadProtector
         }
 
         $values = is_array($payload['values'] ?? null) ? $payload['values'] : [];
-        $secrets = is_array($payload['_setup_payload_secrets'] ?? null) ? $payload['_setup_payload_secrets'] : [];
+        $secrets = is_array($payload[self::SECRETS] ?? null) ? $payload[self::SECRETS] : [];
 
         foreach ($secrets as $field => $encrypted) {
             if (!is_string($field) || !in_array($field, self::SECRET_FIELDS, true) || !is_string($encrypted)) {
@@ -79,7 +80,7 @@ final readonly class SetupLiveOperationPayloadProtector
             $values[$field] = $this->decrypt($encrypted);
         }
 
-        unset($payload[self::MARKER], $payload['_setup_payload_secrets']);
+        unset($payload[self::MARKER], $payload[self::SECRETS]);
         $payload['values'] = $values;
 
         return $payload;

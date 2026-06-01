@@ -10,6 +10,7 @@ use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Workflow\WorkflowResult;
+use App\Database\TablePrefix;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Throwable;
@@ -101,7 +102,7 @@ final readonly class PackageAssetRebuildDispatcher
         }
 
         try {
-            return in_array('messenger_messages', $this->connection->createSchemaManager()->listTableNames(), true);
+            return in_array(TablePrefix::apply('messenger_messages'), $this->connection->createSchemaManager()->listTableNames(), true);
         } catch (Throwable) {
             return false;
         }

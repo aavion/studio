@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Core\ActionLog\ActionLog;
 use App\Core\Operation\Live\LiveOperationHttpResponder;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationStarter;
 use App\Setup\DatabaseUrlFactory;
 use App\Setup\SetupCompletionMarker;
 use App\Setup\SetupDatabaseConnectionFactory;
+use App\Setup\SetupLiveOperationPayloadProtector;
 use App\Setup\SetupPreflightChecker;
+use App\Setup\SetupRunner;
 use App\Setup\SetupSiteSettings;
 use App\Setup\SetupWebInputFactory;
 use App\View\Http\HttpErrorRenderer;
@@ -22,6 +25,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\Translation\LocaleSwitcher;
+use Throwable;
 
 final class SetupController extends AbstractController
 {
@@ -37,6 +41,8 @@ final class SetupController extends AbstractController
         private readonly DatabaseUrlFactory $databaseUrlFactory,
         private readonly SetupDatabaseConnectionFactory $databaseConnectionFactory,
         private readonly SetupSiteSettings $siteSettings,
+        private readonly SetupLiveOperationPayloadProtector $payloadProtector,
+        private readonly SetupRunner $setupRunner,
         private readonly LiveOperationStarter $liveOperationStarter,
         private readonly LiveOperationHttpResponder $liveOperationResponder,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
@@ -94,9 +100,17 @@ final class SetupController extends AbstractController
                             ]], 'errors' => $errors], Response::HTTP_BAD_REQUEST);
                         }
                     } else {
-                        $this->saveState($request, $state);
+                        if ($this->wantsLiveOperation($request)) {
+                            $this->saveState($request, $state);
 
-                        return $this->startSetupLiveOperation($input->values());
+                            return $this->startSetupLiveOperation($request, $input->values());
+                        }
+
+                        $result = $this->setupRunner->run($input->input());
+                        $state['workflow'] = $result->toArray();
+                        $state['action_log'] = $result->value() instanceof ActionLog ? $result->value()->toArray() : ($result->context()['action_log'] ?? null);
+                        $state['completed'] = self::STEPS;
+                        $step = 'result';
                     }
                 } else {
                     [$state, $step, $errors] = $this->advance($request, $state, $step);
@@ -157,13 +171,19 @@ final class SetupController extends AbstractController
     /**
      * @param array<string, mixed> $values
      */
-    private function startSetupLiveOperation(array $values): Response
+    private function startSetupLiveOperation(Request $request, array $values): Response
     {
-        return $this->liveOperationResponder->render($this->liveOperationStarter->start(
+        $result = $this->liveOperationStarter->start(
             LiveOperationQueueFactory::SETUP_APPLY,
             ['values' => $values, 'trigger' => 'setup_wizard'],
             'Setup apply',
-        ));
+        );
+
+        if ($result->isSuccess()) {
+            $request->getSession()->remove(self::SESSION_KEY);
+        }
+
+        return $this->liveOperationResponder->render($result);
     }
 
     private function wantsLiveOperation(Request $request): bool
@@ -293,12 +313,14 @@ final class SetupController extends AbstractController
             $state = [];
         }
 
-        return [
+        $normalized = [
             'values' => array_replace($this->inputFactory->defaults(), is_array($state['values'] ?? null) ? $state['values'] : []),
             'completed' => array_values(array_filter(is_array($state['completed'] ?? null) ? $state['completed'] : [], 'is_string')),
             'workflow' => is_array($state['workflow'] ?? null) ? $state['workflow'] : null,
             'action_log' => is_array($state['action_log'] ?? null) ? $state['action_log'] : null,
         ];
+
+        return $this->unprotectState($normalized, $state);
     }
 
     /**
@@ -306,7 +328,58 @@ final class SetupController extends AbstractController
      */
     private function saveState(Request $request, array $state): void
     {
-        $request->getSession()->set(self::SESSION_KEY, $state);
+        $request->getSession()->set(self::SESSION_KEY, $this->protectState($state));
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     *
+     * @return array<string, mixed>
+     */
+    private function protectState(array $state): array
+    {
+        $payload = $this->payloadProtector->protect(['values' => is_array($state['values'] ?? null) ? $state['values'] : []]);
+        $state['values'] = $payload['values'] ?? [];
+
+        if (true === ($payload[SetupLiveOperationPayloadProtector::MARKER] ?? false)) {
+            $state[SetupLiveOperationPayloadProtector::MARKER] = true;
+            $state[SetupLiveOperationPayloadProtector::SECRETS] = $payload[SetupLiveOperationPayloadProtector::SECRETS] ?? [];
+        } else {
+            unset($state[SetupLiveOperationPayloadProtector::MARKER], $state[SetupLiveOperationPayloadProtector::SECRETS]);
+        }
+
+        return $state;
+    }
+
+    /**
+     * @param array<string, mixed> $normalized
+     * @param array<string, mixed> $stored
+     *
+     * @return array<string, mixed>
+     */
+    private function unprotectState(array $normalized, array $stored): array
+    {
+        $payload = ['values' => $normalized['values']];
+
+        if (true === ($stored[SetupLiveOperationPayloadProtector::MARKER] ?? false)) {
+            $payload[SetupLiveOperationPayloadProtector::MARKER] = true;
+            $payload[SetupLiveOperationPayloadProtector::SECRETS] = $stored[SetupLiveOperationPayloadProtector::SECRETS] ?? [];
+        }
+
+        try {
+            $payload = $this->payloadProtector->unprotect($payload);
+            $normalized['values'] = is_array($payload['values'] ?? null) ? $payload['values'] : $normalized['values'];
+        } catch (Throwable) {
+            foreach (['admin_password', 'admin_password_confirm', 'database_password', 'database_url', 'app_secret'] as $field) {
+                if ('database_url' === $field && 'sqlite' !== (string) ($normalized['values']['database_driver'] ?? '')) {
+                    continue;
+                }
+
+                $normalized['values'][$field] = '';
+            }
+        }
+
+        return $normalized;
     }
 
     /**
