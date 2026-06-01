@@ -307,13 +307,14 @@ final readonly class PackageSchedulerCronInspector
         }
 
         $prefix = trim($match[1], " \t\n\r\0\x0B\\");
-        if ('App\\Scheduler' !== $prefix) {
+        if (!in_array($prefix, ['App', 'App\\Scheduler'], true)) {
             return [];
         }
 
         $names = [];
         foreach (explode(',', $match[2]) as $import) {
-            $name = $this->importedDefinitionName('App\\Scheduler\\'.trim($import));
+            $base = 'App' === $prefix ? 'App\\' : 'App\\Scheduler\\';
+            $name = $this->importedDefinitionName($base.trim($import));
             if (null !== $name) {
                 $names[] = $name;
             }
@@ -331,13 +332,21 @@ final readonly class PackageSchedulerCronInspector
 
         $parts = preg_split('/\s+as\s+/i', $import);
         $class = ltrim(trim($parts[0] ?? ''), '\\');
-        if ('App\\Scheduler\\SchedulerTaskDefinition' !== $class) {
-            return null;
-        }
-
         $alias = trim($parts[1] ?? '');
 
-        return '' !== $alias ? $alias : 'SchedulerTaskDefinition';
+        if ('App\\Scheduler\\SchedulerTaskDefinition' === $class) {
+            return '' !== $alias ? $alias : 'SchedulerTaskDefinition';
+        }
+
+        if ('App\\Scheduler' === $class) {
+            return ('' !== $alias ? $alias : 'Scheduler').'\\SchedulerTaskDefinition';
+        }
+
+        if ('App' === $class) {
+            return ('' !== $alias ? $alias : 'App').'\\Scheduler\\SchedulerTaskDefinition';
+        }
+
+        return null;
     }
 
     private function cronArgument(string $contents, int $position): ?string

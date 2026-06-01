@@ -46,7 +46,18 @@ final class AccessStatisticsSnapshotCommand extends Command
             ]);
         }
 
-        $snapshot = $this->snapshotProvider->snapshot($window);
+        $snapshotResult = $this->snapshotProvider->snapshotWithStorageStatus($window);
+        $snapshot = $snapshotResult['snapshot'];
+
+        if (!$snapshotResult['stored']) {
+            return $this->writeResult($output, (bool) $input->getOption('json'), [
+                'status' => 'failed',
+                'reason' => 'snapshot_store_failed',
+                'window' => $snapshot['window'] ?? $window,
+                'total_requests' => $snapshot['total_requests'] ?? 0,
+                'generated_at' => $snapshot['generated_at'] ?? null,
+            ]);
+        }
 
         return $this->writeResult($output, (bool) $input->getOption('json'), [
             'status' => 'success',
@@ -61,16 +72,24 @@ final class AccessStatisticsSnapshotCommand extends Command
      */
     private function writeResult(OutputInterface $output, bool $json, array $payload): int
     {
+        $exitCode = 'failed' === $payload['status'] ? Command::FAILURE : Command::SUCCESS;
+
         if ($json) {
             $output->writeln(json_encode($payload, JSON_THROW_ON_ERROR));
 
-            return Command::SUCCESS;
+            return $exitCode;
         }
 
         if ('skipped' === $payload['status']) {
             $output->writeln(sprintf('Statistics snapshot skipped for "%s": statistics are disabled.', $payload['window']));
 
-            return Command::SUCCESS;
+            return $exitCode;
+        }
+
+        if ('failed' === $payload['status']) {
+            $output->writeln(sprintf('Statistics snapshot failed for "%s": %s.', $payload['window'], $payload['reason'] ?? 'unknown'));
+
+            return $exitCode;
         }
 
         $output->writeln(sprintf(
@@ -79,6 +98,6 @@ final class AccessStatisticsSnapshotCommand extends Command
             $payload['total_requests'],
         ));
 
-        return Command::SUCCESS;
+        return $exitCode;
     }
 }

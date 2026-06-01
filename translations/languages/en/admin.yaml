@@ -451,7 +451,11 @@ admin:
     actions:
       run_now: 'Run now'
       run_now_started: 'Scheduler run completed with status %status%.'
+      run_now_failed: 'The scheduler run completed, but the selected job failed.'
       run_now_inactive: 'Activate this job before running it manually.'
+      run_now_locked: 'The scheduler is already running. Try again after the current run finishes.'
+      run_now_skipped: 'The scheduler run completed, but the selected job was skipped.'
+      run_now_unavailable: 'The scheduler did not run the selected job. Current status: %status%.'
     tasks:
       title: 'Registered jobs'
       empty: 'No scheduler jobs are registered.'

@@ -451,7 +451,11 @@ admin:
     actions:
       run_now: 'Jetzt ausführen'
       run_now_started: 'Scheduler-Lauf mit Status %status% abgeschlossen.'
+      run_now_failed: 'Der Scheduler-Lauf wurde abgeschlossen, aber der ausgewählte Job ist fehlgeschlagen.'
       run_now_inactive: 'Aktiviere diesen Job, bevor du ihn manuell ausführst.'
+      run_now_locked: 'Der Scheduler läuft bereits. Versuche es erneut, sobald der aktuelle Lauf abgeschlossen ist.'
+      run_now_skipped: 'Der Scheduler-Lauf wurde abgeschlossen, aber der ausgewählte Job wurde übersprungen.'
+      run_now_unavailable: 'Der Scheduler hat den ausgewählten Job nicht ausgeführt. Aktueller Status: %status%.'
     tasks:
       title: 'Registrierte Jobs'
       empty: 'Es sind keine Scheduler-Jobs registriert.'

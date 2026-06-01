@@ -21,6 +21,7 @@ use App\Entity\AclGroup;
 use App\Entity\ExtensionPackage;
 use App\Entity\SchedulerTask;
 use App\Entity\UserAccount;
+use App\Scheduler\SchedulerTaskDefinition;
 use App\Scheduler\SchedulerTaskStatus;
 use App\Security\UserFlowConfig;
 use App\Security\UserRole;
@@ -926,6 +927,42 @@ final class BackendControllerTest extends WebTestCase
             $client->followRedirect();
             self::assertResponseIsSuccessful();
             self::assertStringContainsString('Scheduler run completed with status completed.', (string) $client->getResponse()->getContent());
+        } finally {
+            $this->removeSchedulerTasks();
+        }
+    }
+
+    public function testAdminSchedulerRunNowSurfacesFailedTaskResults(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUserWithLevel(8));
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $definition = SchedulerTaskDefinition::command(
+            'system.live_operation_cleanup',
+            'admin.scheduler.tasks.live_operation_cleanup.label',
+            'admin.scheduler.tasks.live_operation_cleanup.description',
+            'studio:operations:cleanup',
+            '*/15 * * * *',
+        );
+        $task = $entityManager->find(SchedulerTask::class, 'system.live_operation_cleanup') ?? new SchedulerTask($definition);
+        $task->syncDefinition($definition, new \DateTimeImmutable());
+        $task->activate('not a cron');
+        $entityManager->persist($task);
+        $entityManager->flush();
+
+        try {
+            $crawler = $client->request('GET', '/admin/scheduler/system.live_operation_cleanup');
+            self::assertResponseIsSuccessful();
+
+            $client->submit($crawler->selectButton('Run now')->form());
+            self::assertResponseRedirects('/admin/scheduler/system.live_operation_cleanup');
+
+            $client->followRedirect();
+            self::assertResponseIsSuccessful();
+            self::assertStringContainsString(
+                'The scheduler run completed, but the selected job failed.',
+                (string) $client->getResponse()->getContent(),
+            );
         } finally {
             $this->removeSchedulerTasks();
         }

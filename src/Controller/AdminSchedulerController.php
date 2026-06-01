@@ -60,10 +60,7 @@ final class AdminSchedulerController extends AbstractController
             return $this->redirectToRoute('backend_admin_scheduler_detail', ['identifier' => $identifier]);
         }
 
-        $result = $this->runner->run($identifier, true)->toArray();
-        $this->addFlash('success', ['translation_key' => 'admin.scheduler.actions.run_now_started', 'parameters' => [
-            '%status%' => $result['status'],
-        ]]);
+        $this->flashRunNowResult($this->runner->run($identifier, true)->toArray());
 
         return $this->redirectToRoute('backend_admin_scheduler_detail', ['identifier' => $identifier]);
     }
@@ -113,6 +110,53 @@ final class AdminSchedulerController extends AbstractController
             'runs' => $this->recentRuns($task),
             'cron_run_url' => $this->generateUrl('scheduler_cron_run', ['job' => $task->identifier()], UrlGeneratorInterface::ABSOLUTE_URL),
         ]);
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     */
+    private function flashRunNowResult(array $result): void
+    {
+        $status = is_string($result['status'] ?? null) ? $result['status'] : 'unknown';
+
+        if ('locked' === $status) {
+            $this->addFlash('warning', ['translation_key' => 'admin.scheduler.actions.run_now_locked', 'parameters' => []]);
+
+            return;
+        }
+
+        if ('completed' !== $status) {
+            $this->addFlash('warning', ['translation_key' => 'admin.scheduler.actions.run_now_unavailable', 'parameters' => [
+                '%status%' => $status,
+            ]]);
+
+            return;
+        }
+
+        $taskStatuses = array_values(array_filter(array_map(
+            static fn (mixed $task): ?string => is_array($task) && is_string($task['status'] ?? null) ? $task['status'] : null,
+            is_array($result['tasks'] ?? null) ? $result['tasks'] : [],
+        )));
+
+        if (in_array('failed', $taskStatuses, true)) {
+            $this->addFlash('error', ['translation_key' => 'admin.scheduler.actions.run_now_failed', 'parameters' => [
+                '%status%' => $status,
+            ]]);
+
+            return;
+        }
+
+        if ([] === $taskStatuses || in_array('skipped', $taskStatuses, true)) {
+            $this->addFlash('warning', ['translation_key' => 'admin.scheduler.actions.run_now_skipped', 'parameters' => [
+                '%status%' => $status,
+            ]]);
+
+            return;
+        }
+
+        $this->addFlash('success', ['translation_key' => 'admin.scheduler.actions.run_now_started', 'parameters' => [
+            '%status%' => $status,
+        ]]);
     }
 
     private function handleUpdate(Request $request, SchedulerTask $task): void
