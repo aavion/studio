@@ -874,6 +874,15 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('select[name="security.captcha.provider"]');
         self::assertSelectorExists(sprintf('input[name="%s"]', ConfigAuditLogPolicy::ENABLED_KEY));
         self::assertSelectorExists(sprintf('input[name="%s[]"]', ConfigAuditLogPolicy::EVENTS_KEY));
+
+        $client->request('GET', '/admin/settings/scheduler');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Scheduler settings');
+        self::assertSelectorExists('form#admin-settings-scheduler');
+        self::assertSelectorExists('input[name="scheduler.enabled"]');
+        self::assertSelectorExists('input[name="scheduler.get_auth_enabled"]');
+        self::assertSelectorExists('input[name="scheduler.package_action_queues_enabled"]');
     }
 
     public function testAdminSettingsFormsPersistCoreSettings(): void

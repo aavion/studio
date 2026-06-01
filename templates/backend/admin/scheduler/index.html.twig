@@ -27,6 +27,12 @@ Authorization: Bearer {{ 'admin.scheduler.trigger.api_key_placeholder'|trans }}<
 
     <section class="studio-panel">
         <h2>{{ 'admin.scheduler.tasks.title'|trans }}</h2>
+        <details class="studio-muted">
+            <summary>{{ 'admin.scheduler.legend.summary'|trans }}</summary>
+            <p>{{ 'admin.scheduler.legend.text'|trans }}</p>
+            <p><code>*/15 * * * *</code> {{ 'admin.scheduler.legend.every_15_minutes'|trans }}</p>
+            <p><code>0 3 * * *</code> {{ 'admin.scheduler.legend.daily_at_3'|trans }}</p>
+        </details>
         {% if tasks|length > 0 %}
             <table class="studio-table">
                 <thead>

@@ -199,6 +199,38 @@ PHP);
         self::assertTrue($result->isSuccess());
     }
 
+    public function testItAcceptsPackageSchedulerProviderWithLiteralCronExpression(): void
+    {
+        $this->writeFile('src/DemoSchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+use App\Scheduler\SchedulerTaskProviderInterface;
+
+final class DemoSchedulerTasks implements SchedulerTaskProviderInterface
+{
+    public function schedulerTasks(): array
+    {
+        return [
+            SchedulerTaskDefinition::command(
+                'demo.cleanup',
+                'pkg.demo.cleanup.label',
+                'pkg.demo.cleanup.description',
+                'studio:demo:cleanup',
+                '*/15 * * * *',
+                'demo-module',
+                false,
+            ),
+        ];
+    }
+}
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
     public function testItRejectsSchedulerTaskRegistrationsWithoutLiteralDefaultCron(): void
     {
         $this->writeFile('src/SchedulerTasks.php', <<<'PHP'

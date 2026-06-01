@@ -13,6 +13,17 @@ use App\Core\Package\PackageDependencyResolver;
 use App\Core\Package\PackageLifecycleAssetRebuilderInterface;
 use App\Core\Message\Message;
 use App\Core\Workflow\WorkflowResult;
+use App\Core\Config\Config;
+use App\Core\Package\ActivePackageProvider;
+use App\Core\Package\PackagePhpLoader;
+use App\Core\Package\PackageRuntimeContributionRegistry;
+use App\Entity\SchedulerTask;
+use App\Scheduler\SchedulerSettings;
+use App\Scheduler\SchedulerTaskRegistry;
+use App\Scheduler\SchedulerTaskStatus;
+use App\Scheduler\SchedulerTaskSynchronizer;
+use App\Scheduler\SchedulerTaskType;
+use App\Tests\Support\FilesystemTestHelper;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
 use App\View\SystemPackageMetadataProvider;
 use Doctrine\DBAL\Connection;
@@ -21,9 +32,12 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class PackageActivatorTest extends KernelTestCase
 {
+    use FilesystemTestHelper;
+
     private Connection $connection;
     private EntityManagerInterface $entityManager;
     private FakePackageLifecycleAssetRebuilder $assetRebuilder;
+    private ?string $temporaryProjectDir = null;
 
     protected function setUp(): void
     {
@@ -39,6 +53,11 @@ final class PackageActivatorTest extends KernelTestCase
     {
         if ($this->connection->isTransactionActive()) {
             $this->connection->rollBack();
+        }
+
+        if (null !== $this->temporaryProjectDir) {
+            $this->removeDirectory($this->temporaryProjectDir);
+            $this->temporaryProjectDir = null;
         }
 
         parent::tearDown();
@@ -58,6 +77,65 @@ final class PackageActivatorTest extends KernelTestCase
             'action' => 'activated',
             'status' => 'active',
         ]], $result->value()['changes']);
+    }
+
+    public function testActivatedPackageSchedulerTaskCanBeRegisteredAndEnabled(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('studio-package-scheduler');
+        $this->insertPackage('demo-module', ['module'], 'inactive');
+        $this->writeTestFile($this->temporaryProjectDir, 'packages/demo-module/package.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo-module.cleanup',
+        'pkg.demo_module.scheduler.cleanup.label',
+        'pkg.demo_module.scheduler.cleanup.description',
+        'studio:demo:cleanup',
+        '*/20 * * * *',
+        'demo-module',
+        false,
+    ),
+];
+PHP);
+
+        self::assertTrue($this->activator()->activate('demo-module', 'test', rebuildAssets: false)->isSuccess());
+
+        $runtimeContributions = new PackageRuntimeContributionRegistry();
+        $loadResult = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->temporaryProjectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $runtimeContributions,
+        ))->loadActivePackages();
+        self::assertTrue($loadResult->isSuccess());
+
+        $tasks = (new SchedulerTaskSynchronizer(
+            new SchedulerTaskRegistry([$runtimeContributions]),
+            $this->entityManager,
+            new SchedulerSettings(new Config($this->connection)),
+        ))->synchronize();
+
+        self::assertCount(1, $tasks);
+        self::assertSame('demo-module.cleanup', $tasks[0]->identifier());
+        self::assertSame('demo-module', $tasks[0]->source());
+        self::assertSame(SchedulerTaskType::Command, $tasks[0]->type());
+        self::assertSame('*/20 * * * *', $tasks[0]->cronExpression());
+        self::assertFalse($tasks[0]->trusted());
+
+        $task = $this->entityManager->find(SchedulerTask::class, 'demo-module.cleanup');
+        self::assertInstanceOf(SchedulerTask::class, $task);
+        $task->activate('*/10 * * * *');
+        $this->entityManager->flush();
+
+        $this->entityManager->clear();
+        $enabledTask = $this->entityManager->find(SchedulerTask::class, 'demo-module.cleanup');
+        self::assertInstanceOf(SchedulerTask::class, $enabledTask);
+        self::assertSame(SchedulerTaskStatus::Active, $enabledTask->status());
+        self::assertSame('*/10 * * * *', $enabledTask->cronExpression());
     }
 
     public function testItDeactivatesConflictingSingleActiveScopes(): void

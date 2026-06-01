@@ -474,6 +474,11 @@ admin:
       active: 'Aktiv'
       inactive: 'Inaktiv'
       faulty: 'Fehlerhaft'
+    legend:
+      summary: 'Cron-Syntax'
+      text: 'Nutze fünf Felder: Minute, Stunde, Tag im Monat, Monat, Wochentag. Ein Stern steht für jeden Wert; */15 bedeutet alle 15 Einheiten.'
+      every_15_minutes: 'läuft alle 15 Minuten.'
+      daily_at_3: 'läuft täglich um 03:00 Uhr.'
     detail:
       identifier: 'Identifier'
       source: 'Quelle'
