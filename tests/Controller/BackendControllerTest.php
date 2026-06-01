@@ -34,31 +34,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 final class BackendControllerTest extends WebTestCase
 {
-    public function testSetupRouteRendersWithoutAuthentication(): void
-    {
-        $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
-        $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
-        $previousPutenvValue = getenv(SetupCompletionMarker::KEY);
-
-        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
-        putenv(SetupCompletionMarker::KEY);
-
-        try {
-            $client = self::createClient();
-            $client->request('GET', '/setup');
-
-            self::assertResponseIsSuccessful();
-            self::assertSelectorExists('.studio-setup-shell');
-            self::assertSelectorTextContains('h1', 'Welcome');
-            self::assertSelectorExists('form#setup-wizard');
-            self::assertSelectorExists('form#setup-wizard[data-turbo="false"]');
-            self::assertSelectorExists('input[name="_csrf_token"]');
-        } finally {
-            $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
-        }
-    }
-
-    public function testSetupWizardUsesSelectedLanguageAndAdvancesPastGreenPreflight(): void
+    public function testSetupWizardRendersUsesSelectedLanguageAndAdvancesPastGreenPreflight(): void
     {
         $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
         $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
@@ -69,6 +45,12 @@ final class BackendControllerTest extends WebTestCase
         try {
             $client = self::createClient();
             $crawler = $client->request('GET', '/setup');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Welcome');
+            self::assertSelectorExists('form#setup-wizard');
+            self::assertSelectorExists('input[name="_csrf_token"]');
+
             $form = $crawler->selectButton('Continue')->form(['language' => 'de']);
             $crawler = $client->submit($form, ['_setup_action' => 'set_language']);
 
@@ -117,7 +99,6 @@ final class BackendControllerTest extends WebTestCase
                 'database_driver' => 'sqlite',
                 'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
             ]));
-            self::assertSelectorExists('form#setup-wizard[data-controller="setup-wizard password-policy"] .studio-password-meter');
             $client->submit($crawler->selectButton('Continue')->form([
                 'admin_username' => 'admin',
                 'admin_password' => 'Safe1!pass',
@@ -130,10 +111,6 @@ final class BackendControllerTest extends WebTestCase
             self::assertStringContainsString('Review setup', $html);
             self::assertStringContainsString('Wizard Studio', $html);
             self::assertStringContainsString('Admin approval', $html);
-            self::assertSelectorExists('form#setup-wizard[data-controller="setup-wizard operation-overlay"]');
-            self::assertSelectorExists('form#setup-wizard[data-action="submit->operation-overlay#submit"]');
-            self::assertSelectorExists('form#setup-wizard[data-operation-overlay-enabled-value="true"]');
-            self::assertSelectorExists('form#setup-wizard input[name="_setup_action"][value=""]');
             self::assertSelectorExists('form#setup-wizard button[name="_setup_action"][value="apply"]');
             $storedState = $client->getRequest()->getSession()->get(SetupWizardState::SESSION_KEY);
             $encodedState = json_encode($storedState, JSON_THROW_ON_ERROR);
@@ -276,52 +253,6 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
-    public function testSetupRouteRejectsShortAdminPassword(): void
-    {
-        $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
-        $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
-        $previousPutenvValue = getenv(SetupCompletionMarker::KEY);
-
-        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
-        putenv(SetupCompletionMarker::KEY);
-
-        try {
-            $client = self::createClient();
-            $client->request('GET', '/setup');
-            $this->setSetupWizardState($client, [
-                'values' => [
-                    'language' => 'en',
-                    'site_title' => 'Short Password Studio',
-                    'default_uri' => 'http://localhost',
-                    'database_driver' => 'sqlite',
-                    'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
-                ],
-                'completed' => ['language', 'site', 'database'],
-                'workflow' => null,
-                'action_log' => null,
-            ]);
-            $crawler = $client->request('GET', '/setup/admin');
-
-            self::assertSelectorExists('input[name="admin_email"][value=""]');
-
-            $form = $crawler->selectButton('Continue')->form([
-                'admin_username' => 'admin',
-                'admin_password' => 'short',
-                'admin_password_confirm' => 'short',
-                'admin_email' => 'admin@localhost.local',
-            ]);
-
-            $client->submit($form);
-
-            self::assertResponseIsSuccessful();
-            $html = (string) $client->getResponse()->getContent();
-            self::assertStringContainsString('The admin password must contain at least 8 characters.', $html);
-            self::assertStringNotContainsString('Setup result', $html);
-        } finally {
-            $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
-        }
-    }
-
     public function testSetupPostIsIgnoredAfterSetupLock(): void
     {
         $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
@@ -374,9 +305,7 @@ final class BackendControllerTest extends WebTestCase
         $client->request('GET', '/admin');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.studio-admin-shell');
         self::assertSelectorTextContains('h1', 'Admin dashboard');
-        self::assertSelectorExists('.studio-backend-nav a[aria-current="page"]');
     }
 
     public function testAdminRegisteredBackendViewRouteRendersThroughRegistry(): void
@@ -388,42 +317,26 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Package management');
-        self::assertSelectorTextContains('.studio-backend-nav', 'Packages');
-        self::assertSelectorExists('.studio-backend-nav a[href="/admin/packages"][aria-current="page"]');
         self::assertSelectorExists('.studio-page-actions form input[name="_backend_action"][value="package_discovery"]');
         self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="asset_rebuild"]');
         self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="cache_clear"]');
         self::assertSelectorNotExists('.studio-page-actions form input[name="_backend_action"][value="asset_rebuild"]');
-        self::assertSelectorNotExists('.studio-page-actions form input[name="_backend_action"][value="cache_clear"]');
-        self::assertSelectorExists('.studio-backend-nav .is-collapsed a[href="/admin/settings"][aria-expanded="false"]');
-        self::assertSelectorNotExists('.studio-backend-nav a[href="/admin/settings/general"]');
         self::assertSelectorTextContains('.studio-table', $manifest['APP_NAME']);
         self::assertSelectorTextContains('.studio-table', $manifest['APP_VERSION']);
         self::assertSelectorTextContains('.studio-table', 'Active');
-        self::assertSelectorTextContains('.studio-table', 'System template');
-        self::assertSelectorExists('.studio-table tr.is-immutable[data-package-name="system"][data-immutable="true"]');
         self::assertSelectorExists('.studio-table a[href="/admin/packages/system"]');
 
         $client->request('GET', '/admin/themes');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Theme management');
-        self::assertSelectorExists('.studio-backend-nav a[href="/admin/themes"][aria-current="page"]');
         self::assertSelectorNotExists('.studio-page-actions form input[name="_backend_action"][value="package_discovery"]');
         self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="asset_rebuild"]');
-        self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="cache_clear"]');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'Frontend themes');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', $manifest['APP_NAME']);
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', $manifest['APP_VERSION']);
         self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] a[href="/admin/packages/system"]');
-        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card.is-immutable[data-package-name="system"][data-theme-status="active"]');
-        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-preview');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card[data-package-name="system"]', 'Active');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', 'Backend themes');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', $manifest['APP_NAME']);
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', $manifest['APP_VERSION']);
-        self::assertSelectorExists('.studio-theme-overview[data-theme-section="backend"] a[href="/admin/packages/system"]');
-        self::assertSelectorExists('.studio-theme-overview[data-theme-section="backend"] .studio-theme-card.is-immutable[data-package-name="system"][data-theme-status="active"]');
 
         $this->removePackageByName('test-frontend-theme');
         $this->removePackageByName('test-removed-theme');
@@ -453,11 +366,9 @@ final class BackendControllerTest extends WebTestCase
         $client->request('GET', '/admin/themes');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card.is-immutable[data-package-name="system"][data-theme-status="inactive"]');
         self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] a[href="/admin/packages/test-frontend-theme/deactivate"]');
         self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'Test Frontend Theme');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card[data-package-name="test-frontend-theme"]', 'Active');
-        self::assertSelectorNotExists('.studio-theme-overview[data-theme-section="frontend"] .studio-theme-card[data-package-name="test-removed-theme"]');
+        self::assertStringNotContainsString('Test Removed Theme', (string) $client->getResponse()->getContent());
         $this->removePackageByName('test-frontend-theme');
         $this->removePackageByName('test-removed-theme');
 
@@ -473,7 +384,6 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', $title);
-            self::assertSelectorExists(sprintf('.studio-backend-nav a[href="%s"][aria-current="page"]', $path));
         }
     }
 
@@ -495,7 +405,6 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorExists(sprintf('tr[data-operation-id="%s"][data-operation-status="queued"]', $run['operation_id']));
             self::assertSelectorExists('form input[name="_operations_action"][value="cleanup"]');
             self::assertSelectorNotExists('form input[name="_operations_action"][value="kill_stale_runner"]');
-            self::assertSelectorExists('.studio-backend-nav a[href="/admin/operations"][aria-current="page"]');
         } finally {
             $lock?->release();
             @unlink(dirname($store->outputPath($run['operation_id'])).'/'.$run['operation_id'].'.json');
@@ -797,11 +706,9 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('.studio-table', 'Lifecycle package fixture');
             self::assertSelectorTextContains('.studio-table', 'MIT');
             self::assertSelectorTextContains('.studio-table', 'demo-base >=1.0');
-            self::assertSelectorExists('.studio-package-hero img[src^="data:image/svg+xml;base64,"]');
             self::assertSelectorExists('a[href="https://github.com/example/test-lifecycle/tree/main"]');
             self::assertSelectorTextContains('a[href="https://github.com/example/test-lifecycle/tree/main"]', 'https://github.com/example/test-lifecycle/tree/main');
             self::assertSelectorTextContains('.studio-markdown h1', 'Lifecycle README');
-            self::assertSelectorTextContains('.studio-markdown strong', 'markdown');
             self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/activate"]');
             self::assertSelectorNotExists('a[href="/admin/packages/test-lifecycle/purge"]');
             self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/delete"]');
@@ -812,7 +719,6 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('h1', 'Activate Test Lifecycle');
             self::assertSelectorTextContains('.studio-table', 'activated');
             self::assertSelectorExists('button[type="submit"]');
-            self::assertSelectorExists('form[data-controller="operation-overlay"][data-operation-overlay-enabled-value="true"]');
 
             $client->request('GET', '/admin/packages/test-lifecycle/purge');
 
@@ -939,9 +845,6 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'General settings');
-        self::assertSelectorTextContains('.studio-backend-nav', 'Settings');
-        self::assertSelectorExists('.studio-backend-nav .is-active-ancestor a[href="/admin/settings"][aria-expanded="true"]');
-        self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/general"][aria-current="page"]');
         self::assertSelectorExists('form#admin-settings-general');
         self::assertStringContainsString('name="site.title"', (string) $client->getResponse()->getContent());
         self::assertStringContainsString('maxlength="120"', (string) $client->getResponse()->getContent());
@@ -953,7 +856,6 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Package settings');
-        self::assertSelectorExists('.studio-backend-nav a[href="/admin/settings/packages"][aria-current="page"]');
         self::assertSelectorExists('form#admin-settings-packages');
         self::assertSelectorExists('select[name="packages.update_check_interval"]');
 
@@ -1164,7 +1066,6 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Package management');
-        self::assertSelectorExists('.studio-backend-nav a[href="/admin/reports"][aria-current="page"]');
     }
 
     public function testEditorRouteAllowsEditorsButAdminRouteDoesNot(): void

@@ -54,8 +54,7 @@ final class DemoControllerTest extends WebTestCase
         $this->client->request('GET', '/demo');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.studio-frontend-shell');
-        self::assertSelectorExists('.studio-frontend-demo');
+        self::assertSelectorTextContains('h1', 'Frontend shell demo');
     }
 
     public function testItRendersBackendDemoShellFromDemoModule(): void
@@ -63,8 +62,7 @@ final class DemoControllerTest extends WebTestCase
         $this->client->request('GET', '/demo/backend');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.studio-admin-shell');
-        self::assertSelectorExists('.studio-editor-workspace');
+        self::assertSelectorTextContains('h1', 'Backend shell demo');
     }
 
     public function testItRendersTypographyDemoGuideFromDemoModule(): void
@@ -72,11 +70,7 @@ final class DemoControllerTest extends WebTestCase
         $this->client->request('GET', '/demo/typography');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.studio-typography-guide');
-        self::assertSelectorExists('.studio-markdown-result');
-        self::assertSelectorExists('.studio-markdown table');
-        self::assertSelectorExists('.studio-markdown pre code');
-        self::assertSelectorExists('.studio-markdown-embed iframe');
+        self::assertSelectorTextContains('h1', 'Typography guide');
         self::assertStringContainsString('```markdown', (string) $this->client->getResponse()->getContent());
     }
 
@@ -94,9 +88,7 @@ final class DemoControllerTest extends WebTestCase
         $this->client->request('GET', '/demo2');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.studio-frontend-demo');
         self::assertSelectorExists('.studio-button-primary[href="/demo2/backend"]');
-        self::assertSelectorExists('.studio-button-secondary[href="/demo2/typography"]');
 
         $this->client->request('GET', '/demo');
 

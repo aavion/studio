@@ -308,6 +308,30 @@ final class SetupWebInputFactoryTest extends TestCase
         self::assertSame(['setup.form.errors.app_secret_length'], $result->errors()['app_secret']);
     }
 
+    public function testItRejectsShortAdminPasswords(): void
+    {
+        $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test');
+
+        $result = $factory->create([
+            'language' => 'en',
+            'site_title' => 'Short Password Studio',
+            'default_uri' => 'http://localhost',
+            'registration_mode' => 'disabled',
+            'username_change_enabled' => false,
+            'statistics_enabled' => true,
+            'statistics_respect_dnt' => true,
+            'database_driver' => 'sqlite',
+            'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+            'admin_username' => 'admin',
+            'admin_password' => 'short',
+            'admin_password_confirm' => 'short',
+            'admin_email' => 'admin@localhost.local',
+        ]);
+
+        self::assertFalse($result->isValid());
+        self::assertContains('setup.form.errors.password_length', $result->errors()['admin_password']);
+    }
+
     private function setEnvironmentValue(string $name, string $value): void
     {
         if (!array_key_exists($name, $this->serverBackup)) {
