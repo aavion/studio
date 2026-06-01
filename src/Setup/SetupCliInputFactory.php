@@ -58,7 +58,7 @@ final class SetupCliInputFactory
             databaseName: $parts['database_name'],
             databaseUser: $parts['database_user'],
             databasePassword: $parts['database_password'],
-            databasePrefix: $this->option($options, 'db-prefix', $this->environment('APP_DATABASE_PREFIX')) ?: null,
+            databasePrefix: $this->normalizePrefix($this->option($options, 'db-prefix', $this->environment('APP_DATABASE_PREFIX'))),
             adminUsername: $this->prompter->value($options, 'admin-username', 'admin', $interactive, $language, MessageKey::SETUP_PROMPT_ADMIN_USERNAME),
             adminPassword: $this->prompter->confirmedValue(
                 $options,
@@ -326,6 +326,13 @@ final class SetupCliInputFactory
         $value = $options[$name] ?? null;
 
         return is_string($value) && '' !== $value ? $value : $default;
+    }
+
+    private function normalizePrefix(?string $prefix): ?string
+    {
+        $prefix = trim((string) $prefix);
+
+        return '' === $prefix ? null : rtrim($prefix, '_').'_';
     }
 
     private function boolOption(string|false $value): bool

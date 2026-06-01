@@ -21,19 +21,34 @@ final readonly class SetupRollbacker
     /**
      * @return array<string, mixed>
      */
-    public function rollback(string $projectDir, SetupInput $input, string $databaseUrl): array
+    public function rollback(string $projectDir, SetupInput $input, string $databaseUrl, ?SetupEnvironmentSnapshot $environmentSnapshot = null): array
     {
         if ($input->dryRun()) {
             return ['rollback' => ['skipped' => 'dry_run']];
         }
 
+        $environmentFiles = $this->restoreEnvironmentFiles($projectDir, $input->appEnv(), $environmentSnapshot);
+
         return [
             'rollback' => [
-                'env_files_removed' => $this->removeEnvironmentFiles($projectDir, $input->appEnv()),
+                'env_files_removed' => $environmentFiles['removed'],
+                'env_files_restored' => $environmentFiles['restored'],
                 'sqlite_files_removed' => [],
                 'database_tables_removed' => $this->removeDatabaseTables($projectDir, $input, $databaseUrl),
             ],
         ];
+    }
+
+    /**
+     * @return array{removed: list<string>, restored: list<string>}
+     */
+    private function restoreEnvironmentFiles(string $projectDir, string $environment, ?SetupEnvironmentSnapshot $snapshot): array
+    {
+        if (null !== $snapshot) {
+            return $snapshot->restore();
+        }
+
+        return ['removed' => $this->removeEnvironmentFiles($projectDir, $environment), 'restored' => []];
     }
 
     /**

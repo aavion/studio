@@ -40,6 +40,88 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertTrue($input->dryRun());
     }
 
+    public function testItNormalizesDatabasePrefixFromCliOptions(): void
+    {
+        $factory = new SetupCliInputFactory(
+            dirname(__DIR__, 2),
+            input: $this->stream(''),
+            output: $this->stream(''),
+            interactive: false,
+        );
+
+        $input = $factory->create([
+            'env' => 'test',
+            'language' => 'en',
+            'site-title' => 'Prefixed Studio',
+            'url' => 'https://option.example.test',
+            'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+            'db-prefix' => 'studio',
+            'admin-username' => 'owner',
+            'admin-password' => 'Safe1!pass',
+            'admin-email' => 'owner@example.test',
+        ]);
+
+        self::assertSame('studio_', $input->databasePrefix());
+    }
+
+    public function testItNormalizesDatabasePrefixFromEnvironmentDefaults(): void
+    {
+        $previous = $_SERVER['APP_DATABASE_PREFIX'] ?? null;
+        $_SERVER['APP_DATABASE_PREFIX'] = 'envstudio';
+
+        try {
+            $factory = new SetupCliInputFactory(
+                dirname(__DIR__, 2),
+                input: $this->stream(''),
+                output: $this->stream(''),
+                interactive: false,
+            );
+
+            $input = $factory->create([
+                'env' => 'test',
+                'language' => 'en',
+                'site-title' => 'Prefixed Studio',
+                'url' => 'https://option.example.test',
+                'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+                'admin-username' => 'owner',
+                'admin-password' => 'Safe1!pass',
+                'admin-email' => 'owner@example.test',
+            ]);
+        } finally {
+            if (null === $previous) {
+                unset($_SERVER['APP_DATABASE_PREFIX']);
+            } else {
+                $_SERVER['APP_DATABASE_PREFIX'] = $previous;
+            }
+        }
+
+        self::assertSame('envstudio_', $input->databasePrefix());
+    }
+
+    public function testItKeepsExplicitEmptyDatabasePrefixEmpty(): void
+    {
+        $factory = new SetupCliInputFactory(
+            dirname(__DIR__, 2),
+            input: $this->stream(''),
+            output: $this->stream(''),
+            interactive: false,
+        );
+
+        $input = $factory->create([
+            'env' => 'test',
+            'language' => 'en',
+            'site-title' => 'Unprefixed Studio',
+            'url' => 'https://option.example.test',
+            'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+            'db-prefix' => '',
+            'admin-username' => 'owner',
+            'admin-password' => 'Safe1!pass',
+            'admin-email' => 'owner@example.test',
+        ]);
+
+        self::assertNull($input->databasePrefix());
+    }
+
     public function testItRejectsInvalidAdminUsernameWithoutDatabase(): void
     {
         $factory = new SetupCliInputFactory(

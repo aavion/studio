@@ -307,6 +307,35 @@ final class SetupRunnerTest extends TestCase
         self::assertSame([], $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('config_entry', 'user_account')")->fetchAll(PDO::FETCH_COLUMN));
     }
 
+    public function testItRestoresPreExistingEnvironmentFilesWhenRollbackRuns(): void
+    {
+        $databasePath = $this->root.'/var/setup.db';
+        $this->createSchema($databasePath);
+        file_put_contents($this->root.'/.env.test.local', "EXISTING_SECRET='keep-me'\nDEFAULT_URI='https://old.example.test'\n");
+        file_put_contents($this->root.'/.env.local.php', "<?php\n\nreturn ['EXISTING_SECRET' => 'keep-me'];\n");
+        $executor = new RecordingSetupCommandExecutor(failureAt: 4, failure: new SetupCommandResult(1, '', 'cache clear failed'));
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Example Studio',
+            defaultUri: 'https://example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///'.$databasePath,
+            adminUsername: 'admin',
+            adminPassword: 'Secret1!password',
+            adminEmail: 'admin@example.test',
+            appSecret: 'test-secret-12',
+        ));
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame([], $result->context()['rollback']['env_files_removed']);
+        self::assertSame(['.env.test.local', '.env.local.php'], $result->context()['rollback']['env_files_restored']);
+        self::assertSame("EXISTING_SECRET='keep-me'\nDEFAULT_URI='https://old.example.test'\n", file_get_contents($this->root.'/.env.test.local'));
+        self::assertSame("<?php\n\nreturn ['EXISTING_SECRET' => 'keep-me'];\n", file_get_contents($this->root.'/.env.local.php'));
+    }
+
     public function testItStopsWhenEnvironmentOverridesCannotBeWritten(): void
     {
         mkdir($this->root.'/.env.test.local');
