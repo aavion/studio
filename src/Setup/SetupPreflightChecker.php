@@ -132,7 +132,7 @@ final readonly class SetupPreflightChecker
             @chmod($bundledComposer, 0755);
         }
 
-        if (is_file($bundledComposer) && is_executable($bundledComposer) && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir)) {
+        if (is_file($bundledComposer) && is_readable($bundledComposer) && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir)) {
             return $this->checkRow('composer_binary', 'ok', true, false, 'composer_bundled');
         }
 
@@ -141,7 +141,7 @@ final readonly class SetupPreflightChecker
         }
 
         if (is_file($bundledComposer)) {
-            $works = is_executable($bundledComposer) && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir);
+            $works = is_readable($bundledComposer) && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir);
 
             return $this->checkRow('composer_binary', $works ? 'ok' : 'failed', true, !$works && is_writable($bundledComposer), $works ? 'composer_bundled' : 'composer_not_executable');
         }

@@ -9,6 +9,7 @@ use App\Core\Id\UuidFactory;
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
 use App\Core\Package\ActivePackageProviderInterface;
+use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
 use App\Entity\ExtensionPackage;
 use App\Entity\SchedulerTask;
@@ -130,6 +131,49 @@ final class SchedulerRunnerTest extends KernelTestCase
         $runs = $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy(['task' => $updated]);
         self::assertCount(1, $runs);
         self::assertSame(SchedulerTaskRunStatus::Success, $runs[0]->status());
+    }
+
+    public function testItReportsForcedInactiveTaskAsSkipped(): void
+    {
+        $this->synchronizer()->synchronize();
+
+        $payload = $this->runner(new TestSchedulerTaskExecutor(true))->run('system.test_task', true)->toArray();
+
+        self::assertSame('completed', $payload['status']);
+        self::assertSame('system.test_task', $payload['tasks'][0]['identifier']);
+        self::assertSame('skipped', $payload['tasks'][0]['status']);
+        self::assertSame('inactive', $payload['tasks'][0]['task_status']);
+        self::assertSame('not_runnable', $payload['tasks'][0]['reason']);
+    }
+
+    public function testItRechecksTaskEligibilityBeforeExecutingStaleDueTasks(): void
+    {
+        $activePackages = new MutableActivePackageProvider(['demo-package']);
+        $this->synchronizer(new TestMixedSchedulerTaskProvider())->synchronize();
+
+        foreach (['system.first_task' => '-2 minutes', 'demo.command' => '-1 minute'] as $identifier => $dueAt) {
+            $task = $this->entityManager->find(SchedulerTask::class, $identifier);
+            self::assertInstanceOf(SchedulerTask::class, $task);
+            $task->activate('* * * * *');
+            $task->seedNextDue(new \DateTimeImmutable($dueAt));
+        }
+        $this->entityManager->flush();
+
+        $payload = $this->runner(
+            new TestPackageDeactivatingSchedulerTaskExecutor($activePackages),
+            new TestMixedSchedulerTaskProvider(),
+            $activePackages,
+        )->run()->toArray();
+
+        self::assertSame('completed', $payload['status']);
+        self::assertSame('system.first_task', $payload['tasks'][0]['identifier']);
+        self::assertSame('success', $payload['tasks'][0]['status']);
+        self::assertSame('demo.command', $payload['tasks'][1]['identifier']);
+        self::assertSame('skipped', $payload['tasks'][1]['status']);
+        self::assertSame('not_runnable', $payload['tasks'][1]['reason']);
+        self::assertSame([], $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy([
+            'task' => $this->entityManager->find(SchedulerTask::class, 'demo.command'),
+        ]));
     }
 
     public function testItTimestampsEachDueTaskWhenItStarts(): void
@@ -283,7 +327,11 @@ final class SchedulerRunnerTest extends KernelTestCase
         );
     }
 
-    private function runner(SchedulerTaskExecutorInterface $executor, ?SchedulerTaskProviderInterface $provider = null): SchedulerRunner
+    private function runner(
+        SchedulerTaskExecutorInterface $executor,
+        ?SchedulerTaskProviderInterface $provider = null,
+        ?ActivePackageProviderInterface $activePackageProvider = null,
+    ): SchedulerRunner
     {
         return new SchedulerRunner(
             new SchedulerSettings(new Config($this->entityManager->getConnection())),
@@ -293,7 +341,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             new SchedulerLockFactory(sys_get_temp_dir().'/studio-scheduler-test-'.bin2hex(random_bytes(4)), 'test'),
             new UuidFactory(),
             new TestSchedulerMessageLogger(),
-            new TestActivePackageProvider(),
+            $activePackageProvider ?? new TestActivePackageProvider(),
         );
     }
 }
@@ -337,6 +385,32 @@ final readonly class TestMultipleSchedulerTaskProvider implements SchedulerTaskP
     }
 }
 
+final readonly class TestMixedSchedulerTaskProvider implements SchedulerTaskProviderInterface
+{
+    public function schedulerTasks(): array
+    {
+        return [
+            SchedulerTaskDefinition::command(
+                'system.first_task',
+                'admin.scheduler.tasks.test.label',
+                'admin.scheduler.tasks.test.description',
+                'studio:test',
+                '* * * * *',
+            ),
+            new SchedulerTaskDefinition(
+                'demo.command',
+                'admin.scheduler.tasks.demo.label',
+                'admin.scheduler.tasks.demo.description',
+                'demo-package',
+                SchedulerTaskType::Command,
+                'studio:test',
+                '* * * * *',
+                false,
+            ),
+        ];
+    }
+}
+
 final readonly class TestSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
 {
     public function __construct(private bool $success)
@@ -367,6 +441,27 @@ final readonly class TestDelayedSchedulerTaskExecutor implements SchedulerTaskEx
     {
         if ('system.first_task' === $task->identifier()) {
             usleep(150000);
+        }
+
+        return SchedulerTaskExecution::success(['test' => true]);
+    }
+}
+
+final readonly class TestPackageDeactivatingSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
+{
+    public function __construct(private MutableActivePackageProvider $activePackageProvider)
+    {
+    }
+
+    public function supports(SchedulerTask $task): bool
+    {
+        return true;
+    }
+
+    public function execute(SchedulerTask $task): SchedulerTaskExecution
+    {
+        if ('system.first_task' === $task->identifier()) {
+            $this->activePackageProvider->deactivate('demo-package');
         }
 
         return SchedulerTaskExecution::success(['test' => true]);
@@ -451,5 +546,59 @@ final readonly class TestActivePackageProvider implements ActivePackageProviderI
     public function package(string $packageName): ?ExtensionPackage
     {
         return null;
+    }
+}
+
+final class MutableActivePackageProvider implements ActivePackageProviderInterface
+{
+    /**
+     * @param list<string> $packageNames
+     */
+    public function __construct(private array $packageNames)
+    {
+    }
+
+    public function deactivate(string $packageName): void
+    {
+        $this->packageNames = array_values(array_filter(
+            $this->packageNames,
+            static fn (string $activePackage): bool => $activePackage !== $packageName,
+        ));
+    }
+
+    public function packages(?PackageScope $scope = null): array
+    {
+        return array_map(static fn (string $packageName): ExtensionPackage => new ExtensionPackage(
+            self::uuidFor($packageName),
+            [PackageScope::Module],
+            $packageName,
+            'packages/'.str_replace('.', '-', $packageName),
+            ExtensionPackageStatus::Active,
+        ), $this->packageNames);
+    }
+
+    public function package(string $packageName): ?ExtensionPackage
+    {
+        foreach ($this->packages() as $package) {
+            if ($package->packageName() === $packageName) {
+                return $package;
+            }
+        }
+
+        return null;
+    }
+
+    private static function uuidFor(string $value): string
+    {
+        $hash = md5($value);
+
+        return sprintf(
+            '%s-%s-%s-%s-%s',
+            substr($hash, 0, 8),
+            substr($hash, 8, 4),
+            substr($hash, 12, 4),
+            substr($hash, 16, 4),
+            substr($hash, 20, 12),
+        );
     }
 }

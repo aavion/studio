@@ -56,6 +56,12 @@ final readonly class SchedulerRunner
             $softBudgetMs = $this->softBudgetMs(count($dueTasks));
 
             foreach ($dueTasks as $task) {
+                if (!$this->isRunnable($task)) {
+                    $results[] = $this->skippedTaskResult($task, 'not_runnable');
+
+                    continue;
+                }
+
                 $results[] = $this->runTask($task, $softBudgetMs);
             }
 
@@ -96,7 +102,7 @@ final readonly class SchedulerRunner
                 continue;
             }
 
-            if (!$this->isRunnable($task)) {
+            if (!$force && !$this->isRunnable($task)) {
                 continue;
             }
 
@@ -232,18 +238,27 @@ final readonly class SchedulerRunner
                 continue;
             }
 
-            $results[] = [
-                'identifier' => $task->identifier(),
-                'source' => $task->source(),
-                'status' => SchedulerTaskRunStatus::Skipped->value,
-                'task_status' => $task->status()->value,
-                'failure_count' => $task->failureCount(),
-                'duration_ms' => null,
-                'next_due_at' => $task->nextDueAt()?->format(DATE_ATOM),
-            ];
+            $results[] = $this->skippedTaskResult($task);
         }
 
         return $results;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function skippedTaskResult(SchedulerTask $task, ?string $reason = null): array
+    {
+        return [
+            'identifier' => $task->identifier(),
+            'source' => $task->source(),
+            'status' => SchedulerTaskRunStatus::Skipped->value,
+            'task_status' => $task->status()->value,
+            'failure_count' => $task->failureCount(),
+            'duration_ms' => null,
+            'next_due_at' => $task->nextDueAt()?->format(DATE_ATOM),
+            ...($reason ? ['reason' => $reason] : []),
+        ];
     }
 
     private function softBudgetMs(int $dueTaskCount): ?int

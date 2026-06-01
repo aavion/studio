@@ -76,6 +76,21 @@ final class SetupPreflightCheckerTest extends TestCase
         self::assertTrue(is_executable($this->root.'/bin/composer'));
     }
 
+    public function testItAcceptsReadableBundledComposerWithoutExecutableBit(): void
+    {
+        mkdir($this->root.'/bin', 0775, true);
+        file_put_contents($this->root.'/bin/composer', "#!/usr/bin/env php\n<?php echo \"Composer version test\";\n");
+        chmod($this->root.'/bin/composer', 0644);
+
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $composer = array_values(array_filter($result['checks'], static fn (array $check): bool => 'composer_binary' === $check['key']))[0] ?? null;
+
+        self::assertSame('ok', $composer['status'] ?? null);
+        self::assertFalse(is_executable($this->root.'/bin/composer'));
+    }
+
     private function removeDirectory(string $path): void
     {
         if (!is_dir($path)) {
