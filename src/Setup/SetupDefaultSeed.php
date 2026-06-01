@@ -9,6 +9,7 @@ use App\Core\Config\ConfigValueType;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Content\Routing\ContentRouteLocalization;
 use App\Core\Statistics\AccessStatisticsPolicy;
+use App\Scheduler\SchedulerSettings;
 use App\Security\UserFlowConfig;
 
 final readonly class SetupDefaultSeed
@@ -38,6 +39,9 @@ final readonly class SetupDefaultSeed
             ['key' => ConfigAuditLogPolicy::EVENTS_KEY, 'value' => ConfigAuditLogPolicy::DEFAULT_CATEGORIES, 'type' => ConfigValueType::Json],
             ['key' => AccessStatisticsPolicy::ENABLED_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, true), 'type' => ConfigValueType::Boolean],
+            ['key' => SchedulerSettings::ENABLED_KEY, 'value' => true, 'type' => ConfigValueType::Boolean],
+            ['key' => SchedulerSettings::GET_AUTH_ENABLED_KEY, 'value' => false, 'type' => ConfigValueType::Boolean],
+            ['key' => SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY, 'value' => false, 'type' => ConfigValueType::Boolean],
         ];
     }
 

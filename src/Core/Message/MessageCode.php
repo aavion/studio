@@ -169,4 +169,7 @@ final class MessageCode
     public const SETUP_PROMPT_PASSWORD_RESET_CONTINUE = 'setup.prompt.password_reset_continue';
     public const SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD = 'setup.prompt.password_reset_new_password';
     public const SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD = 'setup.prompt.password_reset_confirm_password';
+    public const SCHEDULER_RUN_COMPLETED = 'scheduler.run_completed';
+    public const SCHEDULER_TASK_FAILED = 'scheduler.task_failed';
+    public const SCHEDULER_TASK_DISABLED = 'scheduler.task_disabled';
 }

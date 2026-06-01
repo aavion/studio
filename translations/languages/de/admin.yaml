@@ -440,8 +440,61 @@ admin:
       default_acl_group_role_blocked: 'Die Registrierungsstandardgruppe darf keine Rolle über User voraussetzen.'
   scheduler:
     title: 'Scheduler'
-    foundation_title: 'Scheduler-Operations-Fundament'
-    foundation_text: 'Geplante Jobs, Queue-Trigger, Intervalle und Ausführungsdiagnostik docken hier an.'
+    foundation_title: 'Scheduler-Operationen'
+    foundation_text: 'Geplante Jobs, Queue-Trigger, Intervalle und Ausführungsdiagnostik.'
+    trigger:
+      title: 'Scheduler auslösen'
+      text: 'Rufe diesen Endpunkt über einen Cronjob, Hosting-Scheduler oder Uptime-Monitor auf. Nutze einen API-Key als Bearer-Token.'
+      api_key_placeholder: 'api-key'
+      get_enabled: 'GET-Authentifizierung ist aktiviert. Eingeschränkte Scheduler können %url% aufrufen.'
+      job_hint: 'Ergänze ?job={job_id}, um einen registrierten Job sofort auszuführen. Die Job-ID steht in der Tabelle.'
+    tasks:
+      title: 'Registrierte Jobs'
+      empty: 'Es sind keine Scheduler-Jobs registriert.'
+      live_operation_cleanup:
+        label: 'Live-Operation-Cleanup'
+        description: 'Entfernt abgelaufene Live-Operation-State-Dateien.'
+      package_discovery:
+        label: 'Paket-Discovery'
+        description: 'Findet Pakete und aktualisiert die Paket-Registry.'
+      package_asset_sync:
+        label: 'Paket-Asset-Sync'
+        description: 'Spiegelt Assets aktiver Pakete und baut generierte Paket-Asset-Registries neu.'
+    table:
+      job: 'Job'
+      source: 'Quelle'
+      interval: 'Intervall'
+      last_success: 'Letzter erfolgreicher Lauf'
+      status: 'Status'
+    status:
+      active: 'Aktiv'
+      inactive: 'Inaktiv'
+      faulty: 'Fehlerhaft'
+    detail:
+      identifier: 'Identifier'
+      source: 'Quelle'
+      type: 'Typ'
+      target: 'Ziel'
+      run_url: 'Direkte Ausführungs-URL'
+    form:
+      title: 'Job-Einstellungen'
+      enabled: 'Diesen Job automatisch ausführen'
+      cron_expression: 'Cron-Ausdruck'
+      saved: 'Scheduler-Job gespeichert.'
+      errors:
+        invalid_csrf: 'Das Scheduler-Formular ist abgelaufen. Bitte versuche es erneut.'
+        cron_invalid: 'Gib einen gültigen Cron-Ausdruck ein.'
+    runs:
+      title: 'Letzte Läufe'
+      empty: 'Dieser Job wurde noch nicht ausgeführt.'
+      started_at: 'Gestartet'
+      status: 'Status'
+      duration: 'Dauer'
+    run_status:
+      running: 'Läuft'
+      success: 'Erfolgreich'
+      failed: 'Fehlgeschlagen'
+      skipped: 'Übersprungen'
   backups:
     title: 'Backup und Restore'
     foundation_title: 'Backup- und Restore-Fundament'
@@ -703,8 +756,12 @@ admin:
         label: 'Automatische Paket-Updates erlauben'
       scheduler_enabled:
         label: 'Scheduler aktivieren'
-      scheduler_default_interval:
-        label: 'Standard-Scheduler-Intervall'
+      scheduler_get_auth_enabled:
+        label: 'GET-Authentifizierung für /cron/run erlauben'
+        help: 'Bearer-Authentifizierung bleibt bevorzugt. Aktiviere GET-Authentifizierung nur für Hosting-Scheduler, die keine Header senden können.'
+      scheduler_package_action_queues_enabled:
+        label: 'Scheduler-Action-Queues aus Paketen erlauben'
+        help: 'Action-Queues aus Paketen können Datei- oder Prozessoperationen ausführen. Core-Scheduler-Queues gelten separat als vertrauenswürdig.'
     options:
       dashboard:
         system_status: 'Systemstatus'

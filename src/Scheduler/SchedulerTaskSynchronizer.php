@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Scheduler;
+
+use App\Entity\SchedulerTask;
+use DateTimeImmutable;
+use Doctrine\ORM\EntityManagerInterface;
+
+final readonly class SchedulerTaskSynchronizer
+{
+    public function __construct(
+        private SchedulerTaskRegistry $registry,
+        private EntityManagerInterface $entityManager,
+    ) {
+    }
+
+    /**
+     * @return list<SchedulerTask>
+     */
+    public function synchronize(): array
+    {
+        $now = new DateTimeImmutable();
+        $tasks = [];
+
+        foreach ($this->registry->definitions() as $definition) {
+            $task = $this->entityManager->find(SchedulerTask::class, $definition->identifier());
+
+            if (!$task instanceof SchedulerTask) {
+                $task = new SchedulerTask($definition, $now);
+                $this->entityManager->persist($task);
+            } else {
+                $task->syncDefinition($definition, $now);
+            }
+
+            $task->seedNextDue(SchedulerCron::nextRun($task->cronExpression(), $now));
+            $tasks[] = $task;
+        }
+
+        $this->entityManager->flush();
+
+        return $tasks;
+    }
+}

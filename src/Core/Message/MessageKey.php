@@ -249,4 +249,7 @@ final class MessageKey
     public const CONTENT_SCHEMA_VERSION_INVALID = 'message.content.schema.version_invalid';
     public const CONTENT_SCHEMA_REQUIRED_FIELD_MISSING = 'message.content.schema.required_field_missing';
     public const CONTENT_SCHEMA_FIELD_DUPLICATE = 'message.content.schema.field_duplicate';
+    public const SCHEDULER_RUN_COMPLETED = 'message.scheduler.run_completed';
+    public const SCHEDULER_TASK_FAILED = 'message.scheduler.task_failed';
+    public const SCHEDULER_TASK_DISABLED = 'message.scheduler.task_disabled';
 }

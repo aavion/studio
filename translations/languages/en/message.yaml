@@ -309,3 +309,7 @@ message:
       version_invalid: 'Content schema version %version% must be positive.'
       required_field_missing: 'Content schema is missing required field "%field_identifier%".'
       field_duplicate: 'Content schema field "%field_identifier%" is duplicated.'
+  scheduler:
+    run_completed: 'Scheduler run completed.'
+    task_failed: 'Scheduler task "%task%" failed.'
+    task_disabled: 'Scheduler task "%task%" was disabled after repeated failures.'

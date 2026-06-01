@@ -440,8 +440,61 @@ admin:
       default_acl_group_role_blocked: 'The registration default group cannot require a role above User.'
   scheduler:
     title: 'Scheduler'
-    foundation_title: 'Scheduler operations foundation'
-    foundation_text: 'Scheduled jobs, queue triggers, intervals, and execution diagnostics will attach here.'
+    foundation_title: 'Scheduler operations'
+    foundation_text: 'Scheduled jobs, queue triggers, intervals, and execution diagnostics.'
+    trigger:
+      title: 'Triggering the scheduler'
+      text: 'Call this endpoint from a cron job, hosting scheduler, or uptime monitor. Use an API key as a Bearer token.'
+      api_key_placeholder: 'api-key'
+      get_enabled: 'GET authentication is enabled. Constrained schedulers may call %url%.'
+      job_hint: 'Add ?job={job_id} to run one registered job immediately. The job identifier is shown in the table.'
+    tasks:
+      title: 'Registered jobs'
+      empty: 'No scheduler jobs are registered.'
+      live_operation_cleanup:
+        label: 'Live operation cleanup'
+        description: 'Removes expired live-operation state files.'
+      package_discovery:
+        label: 'Package discovery'
+        description: 'Discovers packages and updates the package registry.'
+      package_asset_sync:
+        label: 'Package asset sync'
+        description: 'Mirrors active package assets and rebuilds generated package asset registries.'
+    table:
+      job: 'Job'
+      source: 'Source'
+      interval: 'Interval'
+      last_success: 'Last successful run'
+      status: 'Status'
+    status:
+      active: 'Active'
+      inactive: 'Inactive'
+      faulty: 'Faulty'
+    detail:
+      identifier: 'Identifier'
+      source: 'Source'
+      type: 'Type'
+      target: 'Target'
+      run_url: 'Direct run URL'
+    form:
+      title: 'Job settings'
+      enabled: 'Run this job automatically'
+      cron_expression: 'Cron expression'
+      saved: 'Scheduler job saved.'
+      errors:
+        invalid_csrf: 'The scheduler form expired. Please try again.'
+        cron_invalid: 'Enter a valid cron expression.'
+    runs:
+      title: 'Recent runs'
+      empty: 'This job has not run yet.'
+      started_at: 'Started'
+      status: 'Status'
+      duration: 'Duration'
+    run_status:
+      running: 'Running'
+      success: 'Successful'
+      failed: 'Failed'
+      skipped: 'Skipped'
   backups:
     title: 'Backup and restore'
     foundation_title: 'Backup and restore foundation'
@@ -703,8 +756,12 @@ admin:
         label: 'Allow automatic package updates'
       scheduler_enabled:
         label: 'Enable scheduler'
-      scheduler_default_interval:
-        label: 'Default scheduler interval'
+      scheduler_get_auth_enabled:
+        label: 'Allow GET authentication for /cron/run'
+        help: 'Bearer authentication remains preferred. Enable GET authentication only for hosting schedulers that cannot send headers.'
+      scheduler_package_action_queues_enabled:
+        label: 'Allow package scheduler action queues'
+        help: 'Package action queues may run filesystem or process operations. Core scheduler queues are trusted separately.'
     options:
       dashboard:
         system_status: 'System status'

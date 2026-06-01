@@ -50,6 +50,40 @@ final class Version20260531000000 extends AbstractMigration
         $this->addPrimaryKey($packageSetting, 'package_name', 'setting_key');
         $this->addIndex($packageSetting, ['package_name'], 'idx_package_setting_package');
 
+        $schedulerTask = $schema->createTable('scheduler_task');
+        $schedulerTask->addColumn('identifier', 'string', ['length' => 160]);
+        $schedulerTask->addColumn('label_key', 'string', ['length' => 160]);
+        $schedulerTask->addColumn('description_key', 'string', ['length' => 160]);
+        $schedulerTask->addColumn('source', 'string', ['length' => 160]);
+        $schedulerTask->addColumn('type', 'string', ['length' => 255]);
+        $schedulerTask->addColumn('target', 'string', ['length' => 255]);
+        $schedulerTask->addColumn('cron_expression', 'string', ['length' => 120]);
+        $schedulerTask->addColumn('default_cron_expression', 'string', ['length' => 120]);
+        $schedulerTask->addColumn('status', 'string', ['length' => 255]);
+        $schedulerTask->addColumn('trusted', 'boolean');
+        $schedulerTask->addColumn('next_due_at', 'datetime_immutable', ['notnull' => false]);
+        $schedulerTask->addColumn('last_attempt_at', 'datetime_immutable', ['notnull' => false]);
+        $schedulerTask->addColumn('last_success_at', 'datetime_immutable', ['notnull' => false]);
+        $schedulerTask->addColumn('failure_count', 'integer');
+        $schedulerTask->addColumn('metadata', 'json');
+        $schedulerTask->addColumn('modified_at', 'datetime_immutable');
+        $this->addPrimaryKey($schedulerTask, 'identifier');
+        $this->addIndex($schedulerTask, ['status', 'next_due_at'], 'idx_scheduler_task_status_due');
+        $this->addIndex($schedulerTask, ['source'], 'idx_scheduler_task_source');
+
+        $schedulerTaskRun = $schema->createTable('scheduler_task_run');
+        $schedulerTaskRun->addColumn('uid', 'string', ['length' => 36]);
+        $schedulerTaskRun->addColumn('task_identifier', 'string', ['length' => 160]);
+        $schedulerTaskRun->addColumn('status', 'string', ['length' => 255]);
+        $schedulerTaskRun->addColumn('started_at', 'datetime_immutable');
+        $schedulerTaskRun->addColumn('finished_at', 'datetime_immutable', ['notnull' => false]);
+        $schedulerTaskRun->addColumn('duration_ms', 'integer', ['notnull' => false]);
+        $schedulerTaskRun->addColumn('context', 'json');
+        $this->addPrimaryKey($schedulerTaskRun, 'uid');
+        $this->addIndex($schedulerTaskRun, ['task_identifier', 'started_at'], 'idx_scheduler_task_run_task_started');
+        $this->addIndex($schedulerTaskRun, ['status'], 'idx_scheduler_task_run_status');
+        $schedulerTaskRun->addForeignKeyConstraint('scheduler_task', ['task_identifier'], ['identifier'], ['onDelete' => 'CASCADE'], $this->schemaObjectName('fk_scheduler_task_run_task'));
+
         $stateMarker = $schema->createTable('state_marker');
         $stateMarker->addColumn('uid', 'string', ['length' => 36]);
         $stateMarker->addColumn('subject_type', 'string', ['length' => 80]);
@@ -346,6 +380,8 @@ final class Version20260531000000 extends AbstractMigration
             'user_acl_group',
             'user_account',
             'acl_group',
+            'scheduler_task_run',
+            'scheduler_task',
             'package_setting_entry',
             'config_entry',
             'access_statistic_event',

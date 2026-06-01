@@ -35,6 +35,18 @@ services:
         App\Core\Operation\Live\LiveOperationQueueProviderInterface:
             tags:
                 - { name: 'studio.live_operation_queue_provider', priority: 0 }
+        App\Scheduler\SchedulerTaskProviderInterface:
+            tags:
+                - { name: 'studio.scheduler_task_provider', priority: 0 }
+        App\Scheduler\SchedulerTaskExecutorInterface:
+            tags:
+                - { name: 'studio.scheduler_task_executor', priority: 0 }
+        App\Scheduler\SchedulerActionQueueProviderInterface:
+            tags:
+                - { name: 'studio.scheduler_action_queue_provider', priority: 0 }
+        App\Scheduler\SchedulerCallableProviderInterface:
+            tags:
+                - { name: 'studio.scheduler_callable_provider', priority: 0 }
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -113,6 +125,32 @@ services:
     App\Core\Package\Settings\PackageSettingRegistry:
         arguments:
             $providers: !tagged_iterator { tag: studio.package_setting_provider }
+
+    App\Scheduler\SchedulerTaskRegistry:
+        arguments:
+            $providers: !tagged_iterator { tag: studio.scheduler_task_provider }
+
+    App\Scheduler\SchedulerRunner:
+        arguments:
+            $executors: !tagged_iterator { tag: studio.scheduler_task_executor }
+
+    App\Scheduler\SchedulerLockFactory:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
+    App\Scheduler\CommandSchedulerTaskExecutor:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
+    App\Scheduler\ActionQueueSchedulerTaskExecutor:
+        arguments:
+            $providers: !tagged_iterator { tag: studio.scheduler_action_queue_provider }
+
+    App\Scheduler\CallableSchedulerTaskExecutor:
+        arguments:
+            $providers: !tagged_iterator { tag: studio.scheduler_callable_provider }
 
     App\Localization\TranslationLanguageCatalog:
         arguments:
