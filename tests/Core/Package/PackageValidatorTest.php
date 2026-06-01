@@ -176,6 +176,56 @@ PHP);
         self::assertSame('not a cron', $result->firstIssue()?->context()['value']);
     }
 
+    public function testItReadsNamedSchedulerCronArgumentWithoutFalsePositives(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+return [
+    SchedulerTaskDefinition::command(
+        command: 'studio:demo:cleanup',
+        identifier: 'demo.cleanup',
+        labelKey: 'pkg.demo.cleanup.label',
+        descriptionKey: 'pkg.demo.cleanup.description',
+        defaultCronExpression: '*/10 * * * *',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItRejectsSchedulerTaskRegistrationsWithoutLiteralDefaultCron(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+$cron = '*/10 * * * *';
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        $cron,
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.scheduler.cron_invalid', $result->firstIssue()?->code());
+        self::assertSame('', $result->firstIssue()?->context()['value']);
+    }
+
     public function testItLimitsInventoryDepth(): void
     {
         $this->writeFile('one/two/three/file.txt', 'nested');

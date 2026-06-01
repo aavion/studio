@@ -24,16 +24,14 @@ final readonly class SchedulerTaskDefinition
     ) {
         $this->assertToken($identifier, 'Scheduler task identifier');
         $this->assertToken($source, 'Scheduler task source');
+        $this->assertTranslationKey($labelKey, 'Scheduler task label key');
+        $this->assertTranslationKey($descriptionKey, 'Scheduler task description key');
 
-        if ('' === trim($labelKey) || '' === trim($descriptionKey)) {
-            throw new InvalidArgumentException('Scheduler task translation keys must not be empty.');
-        }
-
-        if ('' === trim($target)) {
+        if ('' === trim($target) || strlen($target) > 255) {
             throw new InvalidArgumentException('Scheduler task target must not be empty.');
         }
 
-        if ('' === trim($defaultCronExpression)) {
+        if ('' === trim($defaultCronExpression) || strlen($defaultCronExpression) > 120) {
             throw new InvalidArgumentException('Scheduler task cron expression must not be empty.');
         }
     }
@@ -98,9 +96,21 @@ final readonly class SchedulerTaskDefinition
         return $this->metadata;
     }
 
+    public static function isValidIdentifier(string $identifier): bool
+    {
+        return 1 === preg_match('/^[a-z0-9][a-z0-9_.:-]{2,159}$/', $identifier);
+    }
+
     private function assertToken(string $value, string $label): void
     {
-        if (1 !== preg_match('/^[a-z0-9][a-z0-9_.:-]{2,159}$/', $value)) {
+        if (!self::isValidIdentifier($value)) {
+            throw new InvalidArgumentException(sprintf('%s "%s" is invalid.', $label, $value));
+        }
+    }
+
+    private function assertTranslationKey(string $value, string $label): void
+    {
+        if (strlen($value) > 160 || 1 !== preg_match('/^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$/', $value)) {
             throw new InvalidArgumentException(sprintf('%s "%s" is invalid.', $label, $value));
         }
     }

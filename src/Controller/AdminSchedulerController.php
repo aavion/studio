@@ -44,8 +44,7 @@ final class AdminSchedulerController extends AbstractController
             return $this->redirectToRoute('backend_admin_scheduler_detail', ['identifier' => $identifier]);
         }
 
-        $this->synchronizer->synchronize();
-        if (!$this->entityManager->find(SchedulerTask::class, $identifier) instanceof SchedulerTask) {
+        if (!$this->registeredTask($identifier) instanceof SchedulerTask) {
             return $this->httpError->render(Response::HTTP_NOT_FOUND, $request, context: [
                 'task' => $identifier,
             ]);
@@ -84,8 +83,7 @@ final class AdminSchedulerController extends AbstractController
             return $response;
         }
 
-        $this->synchronizer->synchronize();
-        $task = $this->entityManager->find(SchedulerTask::class, $identifier);
+        $task = $this->registeredTask($identifier);
 
         if (!$task instanceof SchedulerTask) {
             return $this->httpError->render(Response::HTTP_NOT_FOUND, $request, context: [
@@ -145,5 +143,16 @@ final class AdminSchedulerController extends AbstractController
             ['startedAt' => 'DESC'],
             20,
         );
+    }
+
+    private function registeredTask(string $identifier): ?SchedulerTask
+    {
+        foreach ($this->synchronizer->synchronize() as $task) {
+            if ($task->identifier() === $identifier) {
+                return $task;
+            }
+        }
+
+        return null;
     }
 }

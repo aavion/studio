@@ -11,33 +11,44 @@ final readonly class PackageSchedulerCronInspector
      */
     public function expressions(string $contents): array
     {
+        return array_values(array_filter(
+            $this->cronArguments($contents),
+            static fn (?string $expression): bool => null !== $expression,
+        ));
+    }
+
+    /**
+     * @return list<string|null>
+     */
+    public function cronArguments(string $contents): array
+    {
         if (!str_contains($contents, 'SchedulerTaskDefinition')) {
             return [];
         }
 
-        $expressions = [];
+        $arguments = [];
 
         foreach ($this->callBodies($contents, 'SchedulerTaskDefinition::command') as $body) {
-            $strings = $this->literalStrings($body);
-            if (isset($strings[4])) {
-                $expressions[] = $strings[4];
-            }
             if (null !== ($namedExpression = $this->namedStringArgument($body, 'defaultCronExpression'))) {
-                $expressions[] = $namedExpression;
+                $arguments[] = $namedExpression;
+                continue;
             }
+
+            $strings = $this->literalStrings($body);
+            $arguments[] = $strings[4] ?? null;
         }
 
         foreach ($this->callBodies($contents, 'new SchedulerTaskDefinition') as $body) {
-            $strings = $this->literalStrings($body);
-            if (isset($strings[5])) {
-                $expressions[] = $strings[5];
-            }
             if (null !== ($namedExpression = $this->namedStringArgument($body, 'defaultCronExpression'))) {
-                $expressions[] = $namedExpression;
+                $arguments[] = $namedExpression;
+                continue;
             }
+
+            $strings = $this->literalStrings($body);
+            $arguments[] = $strings[5] ?? null;
         }
 
-        return array_values(array_unique($expressions));
+        return array_values(array_unique($arguments));
     }
 
     /**

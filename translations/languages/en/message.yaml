@@ -313,6 +313,7 @@ message:
       field_duplicate: 'Content schema field "%field_identifier%" is duplicated.'
   scheduler:
     run_completed: 'Scheduler run completed.'
+    run_failed: 'Scheduler run failed before task execution.'
     task_failed: 'Scheduler task "%task%" failed.'
     task_disabled: 'Scheduler task "%task%" was disabled after repeated failures.'
     task_invalid_cron_disabled: 'Scheduler task "%task%" was disabled because its cron expression is invalid.'

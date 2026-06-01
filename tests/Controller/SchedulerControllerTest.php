@@ -44,6 +44,17 @@ final class SchedulerControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
+    public function testCronRunRejectsMalformedJobIdentifierBeforeRegistryLookup(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/cron/run?job='.str_repeat('x', 512), server: [
+            'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_only_key',
+        ]);
+
+        self::assertResponseStatusCodeSame(404);
+        self::assertSame('invalid', json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['job']);
+    }
+
     public function testCronRunRejectsRevokedApiKey(): void
     {
         $client = self::createClient();
@@ -52,6 +63,17 @@ final class SchedulerControllerTest extends WebTestCase
         ]);
 
         self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testCronRunRejectsOversizedApiKeyWithoutReflectingIt(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/cron/run', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.str_repeat('a', 512).'.secret',
+        ]);
+
+        self::assertResponseStatusCodeSame(401);
+        self::assertSame(str_repeat('a', 16).'…', json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['auth']);
     }
 
     public function testCronRunGetAuthFallbackIsDisabledByDefault(): void

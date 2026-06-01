@@ -313,6 +313,7 @@ message:
       field_duplicate: 'Content-Schema-Feld "%field_identifier%" ist doppelt vorhanden.'
   scheduler:
     run_completed: 'Scheduler-Lauf abgeschlossen.'
+    run_failed: 'Scheduler-Lauf ist vor der Task-Ausführung fehlgeschlagen.'
     task_failed: 'Scheduler-Task "%task%" ist fehlgeschlagen.'
     task_disabled: 'Scheduler-Task "%task%" wurde nach wiederholten Fehlern deaktiviert.'
     task_invalid_cron_disabled: 'Scheduler-Task "%task%" wurde deaktiviert, weil sein Cron-Ausdruck ungültig ist.'

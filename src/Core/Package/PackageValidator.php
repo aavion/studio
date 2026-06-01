@@ -212,9 +212,9 @@ final class PackageValidator
                 continue;
             }
 
-            foreach ($this->schedulerCronInspector->expressions($contents) as $expression) {
-                if (!SchedulerCron::isValid($expression)) {
-                    $issues[] = $this->schedulerCronIssue($candidate, $file, $path, $expression);
+            foreach ($this->schedulerCronInspector->cronArguments($contents) as $expression) {
+                if (null === $expression || !SchedulerCron::isValid($expression)) {
+                    $issues[] = $this->schedulerCronIssue($candidate, $file, $path, $expression ?? '');
                 }
             }
         }

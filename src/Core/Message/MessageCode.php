@@ -171,6 +171,7 @@ final class MessageCode
     public const SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD = 'setup.prompt.password_reset_new_password';
     public const SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD = 'setup.prompt.password_reset_confirm_password';
     public const SCHEDULER_RUN_COMPLETED = 'scheduler.run_completed';
+    public const SCHEDULER_RUN_FAILED = 'scheduler.run_failed';
     public const SCHEDULER_TASK_FAILED = 'scheduler.task_failed';
     public const SCHEDULER_TASK_DISABLED = 'scheduler.task_disabled';
     public const SCHEDULER_TASK_INVALID_CRON_DISABLED = 'scheduler.task_invalid_cron_disabled';

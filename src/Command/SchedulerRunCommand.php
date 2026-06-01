@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Scheduler\SchedulerRunner;
+use App\Scheduler\SchedulerTaskDefinition;
 use App\Scheduler\SchedulerTaskRegistry;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -37,7 +38,7 @@ final class SchedulerRunCommand extends Command
         $job = $input->getOption('job');
         $job = is_string($job) && '' !== trim($job) ? trim($job) : null;
 
-        if (null !== $job && null === $this->registry->definition($job)) {
+        if (null !== $job && (!SchedulerTaskDefinition::isValidIdentifier($job) || null === $this->registry->definition($job))) {
             $output->writeln(sprintf('Unknown scheduler job "%s".', $job));
 
             return Command::FAILURE;

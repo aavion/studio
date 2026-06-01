@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\Request;
 
 final readonly class SchedulerApiAuthenticator
 {
+    private const MAX_PLAIN_TOKEN_LENGTH = 128;
+
     public function __construct(
         private ApiKeyVault $apiKeyVault,
         private EntityManagerInterface $entityManager,
@@ -29,6 +31,10 @@ final readonly class SchedulerApiAuthenticator
         }
 
         if (null === $token) {
+            return null;
+        }
+
+        if (!$this->isAcceptablePlainToken($token)) {
             return null;
         }
 
@@ -57,7 +63,7 @@ final readonly class SchedulerApiAuthenticator
 
         $prefix = explode('.', $token, 2)[0] ?: substr($token, 0, 4);
 
-        return $prefix.'…';
+        return substr($prefix, 0, 16).'…';
     }
 
     private function bearerToken(Request $request): ?string
@@ -70,5 +76,11 @@ final readonly class SchedulerApiAuthenticator
         $token = trim($matches[1]);
 
         return '' === $token ? null : $token;
+    }
+
+    private function isAcceptablePlainToken(string $token): bool
+    {
+        return strlen($token) <= self::MAX_PLAIN_TOKEN_LENGTH
+            && 1 === preg_match('/^[^\s\x00-\x1F\x7F]+$/', $token);
     }
 }

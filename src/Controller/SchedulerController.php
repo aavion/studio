@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Core\Log\MessageLoggerInterface;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Scheduler\SchedulerApiAuthenticator;
 use App\Scheduler\SchedulerRunner;
+use App\Scheduler\SchedulerTaskDefinition;
 use App\Scheduler\SchedulerTaskRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
+use Throwable;
 
 final class SchedulerController extends AbstractController
 {
@@ -18,11 +24,32 @@ final class SchedulerController extends AbstractController
         private readonly SchedulerApiAuthenticator $authenticator,
         private readonly SchedulerRunner $runner,
         private readonly SchedulerTaskRegistry $registry,
+        private readonly MessageLoggerInterface $messageLogger,
     ) {
     }
 
     #[Route('/cron/run', name: 'scheduler_cron_run', methods: ['GET', 'POST'])]
     public function run(Request $request): JsonResponse
+    {
+        try {
+            return $this->runScheduler($request);
+        } catch (Throwable $error) {
+            $job = $request->query->get('job');
+            $this->messageLogger->log(Message::exception(
+                MessageCode::SCHEDULER_RUN_FAILED,
+                MessageKey::SCHEDULER_RUN_FAILED,
+                context: [
+                    'exception' => $error::class,
+                    'message' => $error->getMessage(),
+                    'job' => is_string($job) ? substr($job, 0, 160) : null,
+                ],
+            ));
+
+            return new JsonResponse(['status' => 'unavailable'], JsonResponse::HTTP_SERVICE_UNAVAILABLE);
+        }
+    }
+
+    private function runScheduler(Request $request): JsonResponse
     {
         $apiKey = $this->authenticator->authenticate($request);
 
@@ -36,10 +63,10 @@ final class SchedulerController extends AbstractController
         $job = $request->query->get('job');
         $job = is_string($job) && '' !== trim($job) ? trim($job) : null;
 
-        if (null !== $job && null === $this->registry->definition($job)) {
+        if (null !== $job && (!SchedulerTaskDefinition::isValidIdentifier($job) || null === $this->registry->definition($job))) {
             return new JsonResponse([
                 'status' => 'not_found',
-                'job' => $job,
+                'job' => SchedulerTaskDefinition::isValidIdentifier($job) ? $job : 'invalid',
             ], JsonResponse::HTTP_NOT_FOUND);
         }
 

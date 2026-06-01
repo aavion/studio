@@ -128,6 +128,62 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertSame(1, $payload['tasks'][0]['failure_count']);
     }
 
+    public function testActivatingTaskResetsFailureStateAndDueTime(): void
+    {
+        $task = new SchedulerTask(SchedulerTaskDefinition::command(
+            'system.failed_task',
+            'admin.scheduler.tasks.failed.label',
+            'admin.scheduler.tasks.failed.description',
+            'studio:test',
+            '* * * * *',
+        ));
+        $now = new \DateTimeImmutable();
+        $task->markFailure($now, 1);
+
+        $task->activate('0 * * * *');
+
+        self::assertSame(SchedulerTaskStatus::Active, $task->status());
+        self::assertSame(0, $task->failureCount());
+        self::assertNull($task->nextDueAt());
+        self::assertSame('0 * * * *', $task->cronExpression());
+    }
+
+    public function testDefinitionSyncKeepsUnmodifiedCronOnDefaultChanges(): void
+    {
+        $task = new SchedulerTask(SchedulerTaskDefinition::command(
+            'system.sync_task',
+            'admin.scheduler.tasks.sync.label',
+            'admin.scheduler.tasks.sync.description',
+            'studio:test',
+            '* * * * *',
+        ));
+        $task->seedNextDue(new \DateTimeImmutable('+1 hour'));
+
+        $task->syncDefinition(SchedulerTaskDefinition::command(
+            'system.sync_task',
+            'admin.scheduler.tasks.sync.label',
+            'admin.scheduler.tasks.sync.description',
+            'studio:test',
+            '*/5 * * * *',
+        ), new \DateTimeImmutable());
+
+        self::assertSame('*/5 * * * *', $task->cronExpression());
+        self::assertNull($task->nextDueAt());
+    }
+
+    public function testTaskDefinitionsRejectInvalidTranslationKeys(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        SchedulerTaskDefinition::command(
+            'system.bad_task',
+            '<script>alert(1)</script>',
+            'admin.scheduler.tasks.bad.description',
+            'studio:test',
+            '* * * * *',
+        );
+    }
+
     private function synchronizer(): SchedulerTaskSynchronizer
     {
         return new SchedulerTaskSynchronizer(new SchedulerTaskRegistry([new TestSchedulerTaskProvider()]), $this->entityManager);

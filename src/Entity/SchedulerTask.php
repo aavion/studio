@@ -86,6 +86,7 @@ class SchedulerTask
 
     public function syncDefinition(SchedulerTaskDefinition $definition, DateTimeImmutable $now): bool
     {
+        $usesPreviousDefaultCron = $this->cronExpression === $this->defaultCronExpression;
         $changed = $this->labelKey !== $definition->labelKey()
             || $this->descriptionKey !== $definition->descriptionKey()
             || $this->source !== $definition->source()
@@ -104,6 +105,10 @@ class SchedulerTask
         $this->source = $definition->source();
         $this->type = $definition->type();
         $this->target = $definition->target();
+        if ($usesPreviousDefaultCron) {
+            $this->cronExpression = $definition->defaultCronExpression();
+            $this->nextDueAt = null;
+        }
         $this->defaultCronExpression = $definition->defaultCronExpression();
         $this->trusted = $definition->trusted();
         $this->metadata = $definition->metadata();
@@ -184,6 +189,8 @@ class SchedulerTask
         }
 
         $this->status = SchedulerTaskStatus::Active;
+        $this->failureCount = 0;
+        $this->nextDueAt = null;
         $this->modifiedAt = new DateTimeImmutable();
     }
 
