@@ -167,7 +167,7 @@ final class SetupController extends AbstractController
      */
     private function mergeSubmittedValues(array $current, array $submitted): array
     {
-        foreach (['admin_password', 'admin_password_confirm', 'database_password'] as $secretField) {
+        foreach (['admin_password', 'admin_password_confirm'] as $secretField) {
             if (array_key_exists($secretField, $submitted) && '' === trim((string) $submitted[$secretField]) && '' !== trim((string) ($current[$secretField] ?? ''))) {
                 unset($submitted[$secretField]);
             }

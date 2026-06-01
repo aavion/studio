@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Tests\Operations;
 
 use App\Tests\Support\FilesystemTestHelper;
+use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Schema\Schema;
+use DoctrineMigrations\Version20260531000000;
 use PDO;
 use PDOException;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 final class SqliteMigrationTest extends TestCase
 {
@@ -67,6 +71,50 @@ final class SqliteMigrationTest extends TestCase
             self::fail('Duplicate root content slugs must be rejected.');
         } catch (PDOException $exception) {
             self::assertStringContainsString('UNIQUE', strtoupper($exception->getMessage()));
+        }
+    }
+
+    public function testPrefixedMigrationsUsePrefixedSchemaObjectNames(): void
+    {
+        require_once dirname(__DIR__, 2).'/migrations/Version20260531000000.php';
+
+        $previousServerPrefix = $_SERVER['APP_DATABASE_PREFIX'] ?? null;
+        $previousEnvPrefix = $_ENV['APP_DATABASE_PREFIX'] ?? null;
+        $_SERVER['APP_DATABASE_PREFIX'] = $_ENV['APP_DATABASE_PREFIX'] = 'studio_';
+
+        try {
+            $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+            $schema = new Schema();
+            $migration = new Version20260531000000($connection, new NullLogger());
+
+            $migration->up($schema);
+
+            $userIndexes = array_map(
+                static fn ($index): string => $index->getName(),
+                $schema->getTable('user_account')->getIndexes(),
+            );
+            $userGroupForeignKeys = array_map(
+                static fn ($foreignKey): string => $foreignKey->getName(),
+                $schema->getTable('user_acl_group')->getForeignKeys(),
+            );
+
+            self::assertContains('studio_uniq_user_account_username', $userIndexes);
+            self::assertContains('studio_uniq_user_account_email', $userIndexes);
+            self::assertContains('studio_pk_user_account', $userIndexes);
+            self::assertContains('studio_fk_user_acl_group_user', $userGroupForeignKeys);
+            self::assertContains('studio_fk_user_acl_group_group', $userGroupForeignKeys);
+        } finally {
+            if (null === $previousServerPrefix) {
+                unset($_SERVER['APP_DATABASE_PREFIX']);
+            } else {
+                $_SERVER['APP_DATABASE_PREFIX'] = $previousServerPrefix;
+            }
+
+            if (null === $previousEnvPrefix) {
+                unset($_ENV['APP_DATABASE_PREFIX']);
+            } else {
+                $_ENV['APP_DATABASE_PREFIX'] = $previousEnvPrefix;
+            }
         }
     }
 

@@ -100,6 +100,9 @@ final class SetupCliInputFactoryTest extends TestCase
 
     public function testItKeepsExplicitEmptyDatabasePrefixEmpty(): void
     {
+        $previous = $_SERVER['APP_DATABASE_PREFIX'] ?? null;
+        $_SERVER['APP_DATABASE_PREFIX'] = 'envstudio';
+
         $factory = new SetupCliInputFactory(
             dirname(__DIR__, 2),
             input: $this->stream(''),
@@ -107,17 +110,25 @@ final class SetupCliInputFactoryTest extends TestCase
             interactive: false,
         );
 
-        $input = $factory->create([
-            'env' => 'test',
-            'language' => 'en',
-            'site-title' => 'Unprefixed Studio',
-            'url' => 'https://option.example.test',
-            'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
-            'db-prefix' => '',
-            'admin-username' => 'owner',
-            'admin-password' => 'Safe1!pass',
-            'admin-email' => 'owner@example.test',
-        ]);
+        try {
+            $input = $factory->create([
+                'env' => 'test',
+                'language' => 'en',
+                'site-title' => 'Unprefixed Studio',
+                'url' => 'https://option.example.test',
+                'database-url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+                'db-prefix' => '',
+                'admin-username' => 'owner',
+                'admin-password' => 'Safe1!pass',
+                'admin-email' => 'owner@example.test',
+            ]);
+        } finally {
+            if (null === $previous) {
+                unset($_SERVER['APP_DATABASE_PREFIX']);
+            } else {
+                $_SERVER['APP_DATABASE_PREFIX'] = $previous;
+            }
+        }
 
         self::assertNull($input->databasePrefix());
     }

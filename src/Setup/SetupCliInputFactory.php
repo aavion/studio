@@ -58,7 +58,7 @@ final class SetupCliInputFactory
             databaseName: $parts['database_name'],
             databaseUser: $parts['database_user'],
             databasePassword: $parts['database_password'],
-            databasePrefix: $this->normalizePrefix($this->option($options, 'db-prefix', $this->environment('APP_DATABASE_PREFIX'))),
+            databasePrefix: $this->normalizePrefix($this->databasePrefixOption($options)),
             adminUsername: $this->prompter->value($options, 'admin-username', 'admin', $interactive, $language, MessageKey::SETUP_PROMPT_ADMIN_USERNAME),
             adminPassword: $this->prompter->confirmedValue(
                 $options,
@@ -238,6 +238,18 @@ final class SetupCliInputFactory
             DatabaseDriver::MySql => 'pdo_mysql',
             DatabaseDriver::PostgreSql => 'pdo_pgsql',
         };
+    }
+
+    /**
+     * @param array<string, string|false> $options
+     */
+    private function databasePrefixOption(array $options): ?string
+    {
+        if (array_key_exists('db-prefix', $options)) {
+            return is_string($options['db-prefix']) ? $options['db-prefix'] : '';
+        }
+
+        return $this->environment('APP_DATABASE_PREFIX');
     }
 
     private function extensionLoaded(string $extension): bool

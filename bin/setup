@@ -55,6 +55,10 @@ $options = getopt('', [
     'json',
 ]);
 
+if (is_string($options['env'] ?? null) && '' !== trim($options['env'])) {
+    loadTargetEnvironment($projectDir, trim($options['env']));
+}
+
 $resetUsername = resetPasswordUsername($_SERVER['argv'] ?? [], $options);
 
 if (null !== $resetUsername) {
@@ -325,10 +329,22 @@ function handlePasswordReset(string $projectDir, array $options, string $usernam
  */
 function setupDatabasePrefix(array $options): ?string
 {
-    $prefix = is_string($options['db-prefix'] ?? null)
-        ? $options['db-prefix']
+    $prefix = array_key_exists('db-prefix', $options)
+        ? (is_string($options['db-prefix']) ? $options['db-prefix'] : '')
         : (string) ($_SERVER['APP_DATABASE_PREFIX'] ?? $_ENV['APP_DATABASE_PREFIX'] ?? '');
     $prefix = trim($prefix);
 
     return '' === $prefix ? null : rtrim($prefix, '_').'_';
+}
+
+function loadTargetEnvironment(string $projectDir, string $environment): void
+{
+    $_SERVER['APP_ENV'] = $_ENV['APP_ENV'] = $environment;
+    unset($_SERVER['APP_DATABASE_PREFIX'], $_ENV['APP_DATABASE_PREFIX']);
+    putenv('APP_ENV='.$environment);
+    putenv('APP_DATABASE_PREFIX');
+
+    if (is_file($projectDir.'/.env')) {
+        (new Dotenv())->loadEnv($projectDir.'/.env', 'APP_ENV', $environment, ['test'], true);
+    }
 }
