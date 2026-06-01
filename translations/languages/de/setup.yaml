@@ -67,7 +67,8 @@ setup:
       unavailable: 'nicht verfügbar'
       writable: 'beschreibbar'
       composer_system: 'System-Composer verfügbar'
-      composer_bundled: 'bin/composer-Fallback aktiv'
+      composer_bundled: 'bin/composer verfügbar'
+      composer_not_executable: 'bin/composer ist nicht ausführbar'
       extensions_all_present: 'Alle %count% erforderlichen Erweiterungen sind vorhanden'
       optional_extensions_all_present: 'Alle %count% optionalen Datenbank-Erweiterungen sind vorhanden'
       extensions_missing: 'Fehlt: %extensions%'
@@ -114,7 +115,7 @@ setup:
       composer_binary:
         label: 'Composer'
         help: 'Setup kann PHP-Abhängigkeiten installieren und aktualisieren.'
-        instruction: 'Installiere Composer global oder stelle den gebündelten bin/composer-Fallback wieder her.'
+        instruction: 'Installiere Composer global oder stelle bin/composer wieder her.'
       cli_runner:
         label: 'CLI-Runner'
         help: 'Setup kann PHP-CLI-Subprozesse für länger laufende Arbeiten starten.'

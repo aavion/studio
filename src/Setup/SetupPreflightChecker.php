@@ -18,7 +18,7 @@ final readonly class SetupPreflightChecker
         $checks = [
             $this->webroot($projectDir, $server ?? $_SERVER),
             $this->phpVersion($projectDir),
-            $this->composerBinary($projectDir),
+            $this->composerBinary($projectDir, $autoHeal),
             $this->directoryWritable($projectDir.'/var', 'var_writable', true, $autoHeal),
             $this->fileWritable($projectDir.'/.env.'.$environment.'.local', 'environment_writable', true, $autoHeal),
             $this->directoryWritable($projectDir.'/translations/runtime', 'runtime_translations_writable', true, $autoHeal),
@@ -125,18 +125,32 @@ final readonly class SetupPreflightChecker
     /**
      * @return array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}
      */
-    private function composerBinary(string $projectDir): array
+    private function composerBinary(string $projectDir, bool $autoHeal): array
     {
+        $bundledComposer = $projectDir.'/bin/composer';
+        if ($autoHeal && is_file($bundledComposer) && !is_executable($bundledComposer) && is_writable($bundledComposer)) {
+            @chmod($bundledComposer, 0755);
+        }
+
+        if (is_file($bundledComposer) && is_executable($bundledComposer) && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir)) {
+            return $this->checkRow('composer_binary', 'ok', true, false, 'composer_bundled');
+        }
+
         if ($this->commandWorks(['composer', '--version'], $projectDir)) {
             return $this->checkRow('composer_binary', 'ok', true, false, 'composer_system');
         }
 
-        $bundledComposer = $projectDir.'/bin/composer';
-        if (is_file($bundledComposer) && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir)) {
+        if (is_file($bundledComposer)) {
+            $works = is_executable($bundledComposer) && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir);
+
+            return $this->checkRow('composer_binary', $works ? 'ok' : 'failed', true, !$works && is_writable($bundledComposer), $works ? 'composer_bundled' : 'composer_not_executable');
+        }
+
+        if ($autoHeal && $this->canDownloadBundledComposer($projectDir) && $this->downloadBundledComposer($bundledComposer, $projectDir)) {
             return $this->checkRow('composer_binary', 'ok', true, false, 'composer_bundled');
         }
 
-        return $this->checkRow('composer_binary', 'failed', true, false, 'unavailable');
+        return $this->checkRow('composer_binary', 'failed', true, $this->canDownloadBundledComposer($projectDir), 'unavailable');
     }
 
     /**
@@ -304,6 +318,49 @@ final readonly class SetupPreflightChecker
         }
 
         return $process->isSuccessful();
+    }
+
+    private function canDownloadBundledComposer(string $projectDir): bool
+    {
+        return is_dir($projectDir.'/bin')
+            && is_writable($projectDir.'/bin')
+            && $this->commandWorks(['curl', '--version'], $projectDir);
+    }
+
+    private function downloadBundledComposer(string $target, string $projectDir): bool
+    {
+        $temporary = $target.'.tmp-'.bin2hex(random_bytes(4));
+
+        try {
+            $process = new Process([
+                'curl',
+                '-fsSL',
+                'https://getcomposer.org/download/latest-stable/composer.phar',
+                '-o',
+                $temporary,
+            ], $projectDir, timeout: 30.0);
+            $process->run();
+
+            if (!$process->isSuccessful() || !is_file($temporary)) {
+                @unlink($temporary);
+
+                return false;
+            }
+
+            @chmod($temporary, 0755);
+
+            if (!@rename($temporary, $target)) {
+                @unlink($temporary);
+
+                return false;
+            }
+
+            return is_executable($target) && $this->commandWorks([PHP_BINARY, $target, '--version'], $projectDir);
+        } catch (\Throwable) {
+            @unlink($temporary);
+
+            return false;
+        }
     }
 
     private function minimumPhpVersion(string $projectDir): ?string

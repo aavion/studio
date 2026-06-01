@@ -19,6 +19,7 @@ final readonly class SetupComposerCommandResolver
         $bundledComposer = $projectDir.'/bin/composer';
         if (
             is_file($bundledComposer)
+            && is_executable($bundledComposer)
             && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir, $commandExecutor, $environment)
         ) {
             return [PHP_BINARY, $bundledComposer];
@@ -38,7 +39,7 @@ final readonly class SetupComposerCommandResolver
     {
         $bundledComposer = $projectDir.'/bin/composer';
 
-        return is_file($bundledComposer) ? [PHP_BINARY, $bundledComposer] : ['composer'];
+        return is_file($bundledComposer) && is_executable($bundledComposer) ? [PHP_BINARY, $bundledComposer] : ['composer'];
     }
 
     /**
