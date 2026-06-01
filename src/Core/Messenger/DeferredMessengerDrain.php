@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Core\Messenger;
 
+use App\Core\Log\MessageLoggerInterface;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Scheduler\SchedulerSettings;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
@@ -13,7 +18,7 @@ use Throwable;
 final readonly class DeferredMessengerDrain
 {
     private const DEFAULT_TRANSPORT = 'async';
-    private const DEFAULT_COOLDOWN_SECONDS = 300;
+    private const DEFAULT_COOLDOWN_SECONDS = 60;
     private const DEFAULT_MESSAGE_LIMIT = 25;
     private const DEFAULT_TIME_LIMIT_SECONDS = 60;
 
@@ -25,12 +30,18 @@ final readonly class DeferredMessengerDrain
         private string $transportName = self::DEFAULT_TRANSPORT,
         private ?string $transportDsn = null,
         private int $cooldownSeconds = self::DEFAULT_COOLDOWN_SECONDS,
+        private ?SchedulerSettings $schedulerSettings = null,
+        private ?MessageLoggerInterface $messageLogger = null,
     ) {
     }
 
     public function drainPendingMessages(): bool
     {
-        if (!$this->hasPendingMessages()) {
+        $drainMessenger = $this->hasPendingMessages();
+        $runScheduler = $this->schedulerSettings?->enabled() === true
+            && $this->schedulerSettings->webTriggerEnabled();
+
+        if (!$drainMessenger && !$runScheduler) {
             return false;
         }
 
@@ -38,7 +49,19 @@ final readonly class DeferredMessengerDrain
             return false;
         }
 
-        if (!$this->starter->start($this->command(), $this->projectDir(), $this->outputPath(), $this->pidPath())) {
+        $started = false;
+
+        if ($drainMessenger) {
+            $started = $this->startDetached($this->messengerCommand(), $this->outputPath(), $this->pidPath())
+                || $started;
+        }
+
+        if ($runScheduler) {
+            $started = $this->startDetached($this->schedulerCommand(), $this->schedulerOutputPath(), $this->schedulerPidPath())
+                || $started;
+        }
+
+        if (!$started) {
             $this->clearCooldownLock();
 
             return false;
@@ -134,9 +157,32 @@ final readonly class DeferredMessengerDrain
     }
 
     /**
+     * @param list<string> $command
+     */
+    private function startDetached(array $command, string $outputPath, string $pidPath): bool
+    {
+        if ($this->starter->start($command, $this->projectDir(), $outputPath, $pidPath)) {
+            return true;
+        }
+
+        $this->messageLogger?->log(Message::error(
+            MessageCode::MESSENGER_DEFERRED_PROCESS_START_FAILED,
+            MessageKey::MESSENGER_DEFERRED_PROCESS_START_FAILED,
+            [],
+            [
+                'command' => $command,
+                'output_path' => $outputPath,
+                'pid_path' => $pidPath,
+            ],
+        ));
+
+        return false;
+    }
+
+    /**
      * @return list<string>
      */
-    private function command(): array
+    private function messengerCommand(): array
     {
         return [
             PHP_BINARY,
@@ -146,6 +192,19 @@ final readonly class DeferredMessengerDrain
             '--limit='.self::DEFAULT_MESSAGE_LIMIT,
             '--time-limit='.self::DEFAULT_TIME_LIMIT_SECONDS,
             '--memory-limit=128M',
+            '--env='.$this->safeEnvironment(),
+            '--no-interaction',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function schedulerCommand(): array
+    {
+        return [
+            $this->projectDir().'/bin/scheduler',
+            '--json',
             '--env='.$this->safeEnvironment(),
             '--no-interaction',
         ];
@@ -181,6 +240,24 @@ final readonly class DeferredMessengerDrain
             .DIRECTORY_SEPARATOR.'cache'
             .DIRECTORY_SEPARATOR.$this->safeEnvironment()
             .DIRECTORY_SEPARATOR.'studio-messenger-drain.pid';
+    }
+
+    private function schedulerOutputPath(): string
+    {
+        return $this->projectDir()
+            .DIRECTORY_SEPARATOR.'var'
+            .DIRECTORY_SEPARATOR.'log'
+            .DIRECTORY_SEPARATOR.$this->safeEnvironment()
+            .DIRECTORY_SEPARATOR.'scheduler-web-trigger.log';
+    }
+
+    private function schedulerPidPath(): string
+    {
+        return $this->projectDir()
+            .DIRECTORY_SEPARATOR.'var'
+            .DIRECTORY_SEPARATOR.'cache'
+            .DIRECTORY_SEPARATOR.$this->safeEnvironment()
+            .DIRECTORY_SEPARATOR.'studio-scheduler-web-trigger.pid';
     }
 
     private function safeEnvironment(): string

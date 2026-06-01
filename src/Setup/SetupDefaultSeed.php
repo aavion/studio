@@ -42,6 +42,7 @@ final readonly class SetupDefaultSeed
             ['key' => SchedulerSettings::ENABLED_KEY, 'value' => true, 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::GET_AUTH_ENABLED_KEY, 'value' => false, 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY, 'value' => false, 'type' => ConfigValueType::Boolean],
+            ['key' => SchedulerSettings::WEB_TRIGGER_ENABLED_KEY, 'value' => false, 'type' => ConfigValueType::Boolean],
         ];
     }
 

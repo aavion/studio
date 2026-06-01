@@ -783,6 +783,9 @@ admin:
       scheduler_package_action_queues_enabled:
         label: 'Scheduler-Action-Queues aus Paketen erlauben'
         help: 'Action-Queues aus Paketen können Datei- oder Prozessoperationen ausführen. Core-Scheduler-Queues gelten separat als vertrauenswürdig.'
+      scheduler_web_trigger_enabled:
+        label: 'Scheduler durch Seitenaufrufe starten'
+        help: 'Startet nach geeigneten Seitenaufrufen höchstens einmal pro Minute einen losgelösten Scheduler-Lauf. Nutze einen echten Cronjob, wenn verfügbar.'
     options:
       dashboard:
         system_status: 'Systemstatus'

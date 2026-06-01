@@ -79,6 +79,7 @@ final class MessageCode
     public const PACKAGE_DISCOVERY_QUEUED = 'package.discovery_queued';
     public const PACKAGE_DISCOVERY_QUEUE_FAILED = 'package.discovery_queue_failed';
     public const PACKAGE_DISCOVERY_COMPLETED = 'package.discovery_completed';
+    public const MESSENGER_DEFERRED_PROCESS_START_FAILED = 'messenger.deferred_process_start_failed';
     public const PACKAGE_VALIDATION_COMPLETED = 'package.validation_completed';
     public const PACKAGE_COPY_PLAN_CREATED = 'package.copy_plan_created';
     public const PACKAGE_REGISTRY_SYNC_COMPLETED = 'package.registry.sync_completed';

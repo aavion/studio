@@ -221,6 +221,8 @@ message:
     read_failed: 'Konfigurations-Key "%key%" konnte nicht gelesen werden.'
     write_failed: 'Konfigurations-Key "%key%" konnte nicht geschrieben werden.'
     value_invalid: 'Konfigurations-Key "%key%" enthält einen ungültigen gespeicherten Wert.'
+  messenger:
+    deferred_process_start_failed: 'Ein verzögerter Hintergrundprozess konnte nicht gestartet werden.'
   acl:
     group_updated: 'ACL-Gruppe "%group%" wurde aktualisiert. Betroffene Nutzer: %users%, Account-Links: %account_tokens%, Inhalte: %content_items%, Schema-Versionen: %content_schema_versions%, Menüeinträge: %site_menu_items%.'
     group_deleted: 'ACL-Gruppe "%group%" wurde gelöscht und Referenzen wurden bereinigt. Betroffene Nutzer: %users%, Account-Links: %account_tokens%, Inhalte: %content_items%, Schema-Versionen: %content_schema_versions%, Menüeinträge: %site_menu_items%.'

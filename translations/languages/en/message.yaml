@@ -221,6 +221,8 @@ message:
     read_failed: 'Configuration key "%key%" could not be read.'
     write_failed: 'Configuration key "%key%" could not be written.'
     value_invalid: 'Configuration key "%key%" contains an invalid stored value.'
+  messenger:
+    deferred_process_start_failed: 'A deferred background process could not be started.'
   acl:
     group_updated: 'ACL group "%group%" was updated. Affected users: %users%, account links: %account_tokens%, content items: %content_items%, schema versions: %content_schema_versions%, menu items: %site_menu_items%.'
     group_deleted: 'ACL group "%group%" was deleted and references were cleaned. Affected users: %users%, account links: %account_tokens%, content items: %content_items%, schema versions: %content_schema_versions%, menu items: %site_menu_items%.'

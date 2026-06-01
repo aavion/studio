@@ -45,6 +45,7 @@ final class MessageKey
     public const PACKAGE_DISCOVERY_QUEUED = 'message.package.discovery_queued';
     public const PACKAGE_DISCOVERY_QUEUE_FAILED = 'message.package.discovery_queue_failed';
     public const PACKAGE_DISCOVERY_COMPLETED = 'message.package.discovery_completed';
+    public const MESSENGER_DEFERRED_PROCESS_START_FAILED = 'message.messenger.deferred_process_start_failed';
     public const PACKAGE_VALIDATION_COMPLETED = 'message.package.validation_completed';
     public const PACKAGE_COPY_PLAN_CREATED = 'message.package.copy_plan_created';
     public const PACKAGE_REGISTRY_SYNC_COMPLETED = 'message.package.registry.sync_completed';

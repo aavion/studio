@@ -783,6 +783,9 @@ admin:
       scheduler_package_action_queues_enabled:
         label: 'Allow package scheduler action queues'
         help: 'Package action queues may run filesystem or process operations. Core scheduler queues are trusted separately.'
+      scheduler_web_trigger_enabled:
+        label: 'Run scheduler from web traffic'
+        help: 'Starts a detached scheduler run after eligible page requests at most once per minute. Use a real cron job when available.'
     options:
       dashboard:
         system_status: 'System status'

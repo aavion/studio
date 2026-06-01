@@ -885,6 +885,7 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('input[name="scheduler.enabled"]');
         self::assertSelectorExists('input[name="scheduler.get_auth_enabled"]');
         self::assertSelectorExists('input[name="scheduler.package_action_queues_enabled"]');
+        self::assertSelectorExists('input[name="scheduler.web_trigger_enabled"]');
     }
 
     public function testAdminSchedulerListsEditsAndRunsRegisteredJobs(): void

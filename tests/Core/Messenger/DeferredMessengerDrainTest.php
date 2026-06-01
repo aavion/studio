@@ -6,6 +6,11 @@ namespace App\Tests\Core\Messenger;
 
 use App\Core\Messenger\DeferredMessengerDrain;
 use App\Core\Messenger\DeferredMessengerDrainStarterInterface;
+use App\Core\Config\Config;
+use App\Core\Config\ConfigValueType;
+use App\Core\Log\MessageLoggerInterface;
+use App\Core\Message\Message;
+use App\Scheduler\SchedulerSettings;
 use App\Tests\Support\FilesystemTestHelper;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -66,6 +71,66 @@ final class DeferredMessengerDrainTest extends TestCase
         $this->removeDirectory($projectDir);
     }
 
+    public function testItStartsDetachedSchedulerWhenWebTriggerIsEnabled(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('messenger-drain-scheduler');
+        $connection = $this->connectionWithMessengerTable();
+        $starter = new RecordingDeferredMessengerStarter();
+        $settings = $this->schedulerSettings($connection, true);
+
+        $drain = new DeferredMessengerDrain($connection, $starter, $projectDir, 'test', schedulerSettings: $settings);
+
+        self::assertTrue($drain->drainPendingMessages());
+        self::assertCount(1, $starter->starts);
+        self::assertStringEndsWith('/bin/scheduler', $starter->starts[0]['command'][0]);
+        self::assertContains('--json', $starter->starts[0]['command']);
+        self::assertContains('--env=test', $starter->starts[0]['command']);
+        self::assertStringEndsWith('/var/log/test/scheduler-web-trigger.log', $starter->starts[0]['output_path']);
+        self::assertStringEndsWith('/var/cache/test/studio-scheduler-web-trigger.pid', $starter->starts[0]['pid_path']);
+
+        $this->removeDirectory($projectDir);
+    }
+
+    public function testItUsesSharedCooldownForWebTriggeredScheduler(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('messenger-drain-scheduler-lock');
+        $connection = $this->connectionWithMessengerTable();
+        $starter = new RecordingDeferredMessengerStarter();
+        $settings = $this->schedulerSettings($connection, true);
+
+        $drain = new DeferredMessengerDrain($connection, $starter, $projectDir, 'test', cooldownSeconds: 60, schedulerSettings: $settings);
+
+        self::assertTrue($drain->drainPendingMessages());
+        self::assertFalse($drain->drainPendingMessages());
+        self::assertCount(1, $starter->starts);
+
+        $this->removeDirectory($projectDir);
+    }
+
+    public function testItLogsDispatchFailureWhenDetachedStartFails(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('messenger-drain-scheduler-failure');
+        $connection = $this->connectionWithMessengerTable();
+        $starter = new RecordingDeferredMessengerStarter(false);
+        $logger = new RecordingMessageLogger();
+        $settings = $this->schedulerSettings($connection, true);
+
+        $drain = new DeferredMessengerDrain(
+            $connection,
+            $starter,
+            $projectDir,
+            'test',
+            schedulerSettings: $settings,
+            messageLogger: $logger,
+        );
+
+        self::assertFalse($drain->drainPendingMessages());
+        self::assertCount(1, $logger->messages);
+        self::assertSame('messenger.deferred_process_start_failed', $logger->messages[0]->code());
+
+        $this->removeDirectory($projectDir);
+    }
+
     public function testItUsesConfiguredDoctrineQueueNameForPendingCheck(): void
     {
         $projectDir = $this->createTemporaryDirectory('messenger-drain-queue-name');
@@ -110,8 +175,27 @@ final class DeferredMessengerDrainTest extends TestCase
                 delivered_at DATETIME DEFAULT NULL
             )
             SQL);
+        $connection->executeStatement(<<<SQL
+            CREATE TABLE config_entry (
+                config_key VARCHAR(190) NOT NULL PRIMARY KEY,
+                value TEXT NOT NULL,
+                value_type VARCHAR(32) NOT NULL,
+                sensitive BOOLEAN NOT NULL DEFAULT 0,
+                modified_at DATETIME NOT NULL,
+                modified_by VARCHAR(190) DEFAULT NULL
+            )
+            SQL);
 
         return $connection;
+    }
+
+    private function schedulerSettings(Connection $connection, bool $webTriggerEnabled): SchedulerSettings
+    {
+        $config = new Config($connection);
+        $config->set(SchedulerSettings::ENABLED_KEY, true, ConfigValueType::Boolean);
+        $config->set(SchedulerSettings::WEB_TRIGGER_ENABLED_KEY, $webTriggerEnabled, ConfigValueType::Boolean);
+
+        return new SchedulerSettings($config);
     }
 
     private function insertMessage(Connection $connection, string $queue): void
@@ -134,6 +218,10 @@ final class RecordingDeferredMessengerStarter implements DeferredMessengerDrainS
      */
     public array $starts = [];
 
+    public function __construct(private bool $success = true)
+    {
+    }
+
     public function start(array $command, string $cwd, string $outputPath, string $pidPath): bool
     {
         $this->starts[] = [
@@ -143,6 +231,28 @@ final class RecordingDeferredMessengerStarter implements DeferredMessengerDrainS
             'pid_path' => $pidPath,
         ];
 
-        return true;
+        return $this->success;
+    }
+}
+
+final class RecordingMessageLogger implements MessageLoggerInterface
+{
+    /**
+     * @var list<Message>
+     */
+    public array $messages = [];
+
+    public function log(Message $message, array $context = []): void
+    {
+        $this->messages[] = $message;
+    }
+
+    public function logBatch(iterable $records): void
+    {
+        foreach ($records as $record) {
+            if ($record instanceof Message) {
+                $this->messages[] = $record;
+            }
+        }
     }
 }
