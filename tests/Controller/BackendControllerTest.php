@@ -147,6 +147,44 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
+    public function testSetupDatabaseStepDoesNotRequireServerFieldsForInitialSqliteRender(): void
+    {
+        $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
+        $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
+        $previousPutenvValue = getenv(SetupCompletionMarker::KEY);
+
+        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
+        putenv(SetupCompletionMarker::KEY);
+
+        try {
+            $client = self::createClient();
+            $client->request('GET', '/setup');
+            $this->setSetupWizardState($client, [
+                'values' => [
+                    'language' => 'en',
+                    'site_title' => 'Wizard Studio',
+                    'default_uri' => 'http://localhost',
+                    'database_driver' => 'sqlite',
+                    'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+                ],
+                'completed' => ['language', 'site'],
+                'workflow' => null,
+                'action_log' => null,
+            ]);
+            $client->request('GET', '/setup/database');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('select[name="database_driver"] option[value="sqlite"][selected]');
+            self::assertSelectorExists('input[name="database_port"]');
+            self::assertSelectorNotExists('input[name="database_host"][required]');
+            self::assertSelectorNotExists('input[name="database_port"][required]');
+            self::assertSelectorNotExists('input[name="database_name"][required]');
+            self::assertSelectorNotExists('input[name="database_user"][required]');
+        } finally {
+            $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
+        }
+    }
+
     public function testSetupApplyWithoutJavaScriptRendersHtmlResultFallback(): void
     {
         $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;

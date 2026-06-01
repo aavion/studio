@@ -6,7 +6,7 @@ export default class extends Controller {
         redirectOnSuccess: String,
     };
 
-    static storedOperationMaxAgeMs = 10 * 60 * 1000;
+    static storedOperationMaxAgeMs = 60 * 60 * 1000;
 
     connect() {
         const stored = this.storedOperation();
@@ -230,7 +230,6 @@ export default class extends Controller {
             return;
         }
 
-        this.clearStoredOperation();
         this.reset();
 
         try {
@@ -249,7 +248,7 @@ export default class extends Controller {
                 return;
             }
 
-            this.storeOperation(payload.value.status_url, 0);
+            this.storeOperation(payload.value.status_url, 0, null, 'queued');
             await this.poll(payload.value.status_url);
         } catch (error) {
             this.fail(error instanceof Error ? error.message : this.label('requestError'));
@@ -445,10 +444,6 @@ export default class extends Controller {
     }
 
     storedOperationTerminal(stored) {
-        if (!stored.status) {
-            return true;
-        }
-
         return ['success', 'failed'].includes(stored.status) || (stored.status === 'requires_review' && !stored.continueUrl);
     }
 

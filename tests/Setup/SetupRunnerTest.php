@@ -483,6 +483,30 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('mark_setup_completed', $entries[10]['name']);
     }
 
+    public function testDryRunDoesNotCreateMissingSqliteDatabaseDuringPreparation(): void
+    {
+        $databasePath = $this->root.'/var/missing-dry-run.db';
+        $executor = new RecordingSetupCommandExecutor();
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'de',
+            siteTitle: 'Dry Studio',
+            defaultUri: 'https://dry.example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///'.$databasePath,
+            adminUsername: 'admin',
+            adminPassword: 'Secret1!password',
+            adminEmail: 'admin@example.test',
+            dryRun: true,
+        ));
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame([], $executor->commands);
+        self::assertFileDoesNotExist($databasePath);
+    }
+
     public function testDryRunMasksDatabasePasswordsInActionLogContext(): void
     {
         $executor = new RecordingSetupCommandExecutor();

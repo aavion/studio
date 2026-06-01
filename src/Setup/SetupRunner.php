@@ -119,7 +119,7 @@ final class SetupRunner
     }
 
     /**
-     * @return array{0: string, 1: string, 2: array<string, string>, 3: SetupEnvironmentSnapshot, 4: SetupDatabaseTableSnapshot}|WorkflowResult<ActionLog>
+     * @return array{0: string, 1: string, 2: array<string, string>, 3: SetupEnvironmentSnapshot, 4: SetupDatabaseTableSnapshot|null}|WorkflowResult<ActionLog>
      */
     private function prepare(SetupInput $input, ActionLog $log): array|WorkflowResult
     {
@@ -142,7 +142,7 @@ final class SetupRunner
                 $databaseUrl,
                 $this->environment($input, $appSecret, $databaseUrl),
                 SetupEnvironmentSnapshot::capture($this->projectDir, $input->appEnv()),
-                SetupDatabaseTableSnapshot::capture($this->projectDir, $databaseUrl, $input->appEnv(), $input->databasePrefix()),
+                $input->dryRun() ? null : SetupDatabaseTableSnapshot::capture($this->projectDir, $databaseUrl, $input->appEnv(), $input->databasePrefix()),
             ];
         } catch (Throwable $throwable) {
             $issue = $this->failureMessage('prepare_setup', $throwable);
