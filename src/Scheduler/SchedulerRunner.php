@@ -10,7 +10,6 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Package\ActivePackageProviderInterface;
-use App\Core\Package\PackagePhpLoader;
 use App\Entity\SchedulerTask;
 use App\Entity\SchedulerTaskRun;
 use DateTimeImmutable;
@@ -33,7 +32,6 @@ final readonly class SchedulerRunner
         private UuidFactory $uuidFactory,
         private MessageLoggerInterface $messageLogger,
         private ActivePackageProviderInterface $activePackageProvider,
-        private ?PackagePhpLoader $packagePhpLoader = null,
     ) {
     }
 
@@ -45,8 +43,6 @@ final readonly class SchedulerRunner
         if (!$this->settings->enabled()) {
             return new SchedulerRunResult('disabled', context: ['reason' => 'scheduler_disabled']);
         }
-
-        $this->packagePhpLoader?->loadActivePackages();
 
         $lock = $this->lockFactory->acquire('run');
         if (null === $lock) {

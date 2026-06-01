@@ -267,6 +267,40 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         self::assertSame('faulty', $this->packageStatus('broken-module'));
     }
 
+    public function testPackagePhpLoaderRejectsElevatedSchedulerContributions(): void
+    {
+        $this->insertPackage('scheduler-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'packages/scheduler-module/package.php', <<<'PHP'
+            <?php
+
+            use App\Scheduler\SchedulerTaskDefinition;
+
+            return SchedulerTaskDefinition::command(
+                'scheduler-module.cleanup',
+                'pkg.scheduler_module.cleanup.label',
+                'pkg.scheduler_module.cleanup.description',
+                'studio:demo:cleanup',
+                '*/15 * * * *',
+                'system',
+                true,
+            );
+            PHP);
+        $registry = new PackageRuntimeContributionRegistry();
+
+        $result = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActivePackages();
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame([], $registry->schedulerTasks());
+        self::assertSame('faulty', $this->packageStatus('scheduler-module'));
+    }
+
     public function testPackagePhpLoaderConvertsRuntimeProviderFailuresIntoFaults(): void
     {
         $this->insertPackage('broken-provider-module', ['module'], 'active');

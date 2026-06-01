@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Core\Package\PackagePhpLoader;
 use App\Scheduler\SchedulerRunner;
 use App\Scheduler\SchedulerTaskDefinition;
 use App\Scheduler\SchedulerTaskRegistry;
@@ -23,7 +22,6 @@ final class SchedulerRunCommand extends Command
     public function __construct(
         private readonly SchedulerRunner $runner,
         private readonly SchedulerTaskRegistry $registry,
-        private readonly ?PackagePhpLoader $packagePhpLoader = null,
     ) {
         parent::__construct();
     }
@@ -39,8 +37,6 @@ final class SchedulerRunCommand extends Command
     {
         $job = $input->getOption('job');
         $job = is_string($job) && '' !== trim($job) ? trim($job) : null;
-
-        $this->packagePhpLoader?->loadActivePackages();
 
         if (null !== $job && (!SchedulerTaskDefinition::isValidIdentifier($job) || null === $this->registry->definition($job))) {
             $output->writeln(sprintf('Unknown scheduler job "%s".', $job));

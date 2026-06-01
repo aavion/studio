@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Scheduler;
 
+use App\Core\Package\PackagePhpLoader;
+
 final readonly class SchedulerTaskRegistry
 {
     /**
      * @param iterable<SchedulerTaskProviderInterface> $providers
      */
-    public function __construct(private iterable $providers)
+    public function __construct(
+        private iterable $providers,
+        private ?PackagePhpLoader $packagePhpLoader = null,
+    )
     {
     }
 
@@ -18,6 +23,8 @@ final readonly class SchedulerTaskRegistry
      */
     public function definitions(): array
     {
+        $this->packagePhpLoader?->loadActivePackages();
+
         $definitions = [];
 
         foreach ($this->providers as $provider) {
