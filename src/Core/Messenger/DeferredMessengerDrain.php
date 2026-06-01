@@ -207,6 +207,7 @@ final readonly class DeferredMessengerDrain
     private function schedulerCommand(): array
     {
         return [
+            PHP_BINARY,
             $this->projectDir().'/bin/scheduler',
             '--json',
             '--env='.$this->safeEnvironment(),

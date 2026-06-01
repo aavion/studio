@@ -87,7 +87,8 @@ final class DeferredMessengerDrainTest extends TestCase
 
         self::assertTrue($drain->drainPendingMessages());
         self::assertCount(1, $starter->starts);
-        self::assertStringEndsWith('/bin/scheduler', $starter->starts[0]['command'][0]);
+        self::assertSame(PHP_BINARY, $starter->starts[0]['command'][0]);
+        self::assertStringEndsWith('/bin/scheduler', $starter->starts[0]['command'][1]);
         self::assertContains('--json', $starter->starts[0]['command']);
         self::assertContains('--env=test', $starter->starts[0]['command']);
         self::assertStringEndsWith('/var/log/test/scheduler-web-trigger.log', $starter->starts[0]['output_path']);
@@ -212,7 +213,8 @@ final class DeferredMessengerDrainTest extends TestCase
         self::assertTrue($drain->drainPendingMessages());
         self::assertCount(2, $starter->starts);
         self::assertContains('messenger:consume', $starter->starts[0]['command']);
-        self::assertStringEndsWith('/bin/scheduler', $starter->starts[1]['command'][0]);
+        self::assertSame(PHP_BINARY, $starter->starts[1]['command'][0]);
+        self::assertStringEndsWith('/bin/scheduler', $starter->starts[1]['command'][1]);
         self::assertCount(1, $logger->messages);
         self::assertSame('messenger.deferred_process_start_failed', $logger->messages[0]->code());
 

@@ -129,18 +129,25 @@ final readonly class SetupPreflightChecker
             @chmod($bundledComposer, 0755);
         }
 
-        if (is_file($bundledComposer) && is_readable($bundledComposer) && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir)) {
+        if (is_file($bundledComposer) && is_readable($bundledComposer) && $this->composerCommandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir)) {
             return $this->checkRow('composer_binary', 'ok', true, false, 'composer_bundled');
         }
 
-        if ($this->commandWorks(['composer', '--version'], $projectDir)) {
-            return $this->checkRow('composer_binary', 'ok', true, false, 'composer_system');
+        if (is_file($bundledComposer)) {
+            $works = is_readable($bundledComposer) && $this->composerCommandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir);
+            if (!$works && $autoHeal && is_writable($bundledComposer) && $this->downloadBundledComposer($bundledComposer, $projectDir)) {
+                return $this->checkRow('composer_binary', 'ok', true, false, 'composer_bundled');
+            }
+
+            if (!$works && $this->composerCommandWorks(['composer', '--version'], $projectDir)) {
+                return $this->checkRow('composer_binary', 'ok', true, false, 'composer_system');
+            }
+
+            return $this->checkRow('composer_binary', $works ? 'ok' : 'failed', true, !$works && is_writable($bundledComposer) && $this->canDownloadBundledComposer($projectDir), $works ? 'composer_bundled' : 'composer_not_executable');
         }
 
-        if (is_file($bundledComposer)) {
-            $works = is_readable($bundledComposer) && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir);
-
-            return $this->checkRow('composer_binary', $works ? 'ok' : 'failed', true, !$works && is_writable($bundledComposer), $works ? 'composer_bundled' : 'composer_not_executable');
+        if ($this->composerCommandWorks(['composer', '--version'], $projectDir)) {
+            return $this->checkRow('composer_binary', 'ok', true, false, 'composer_system');
         }
 
         if ($autoHeal && $this->canDownloadBundledComposer($projectDir) && $this->downloadBundledComposer($bundledComposer, $projectDir)) {
@@ -367,7 +374,7 @@ final readonly class SetupPreflightChecker
     private function commandWorks(array $command, ?string $workingDirectory): bool
     {
         try {
-            $process = new Process($command, $workingDirectory, timeout: 5.0);
+            $process = new Process($command, $workingDirectory, $this->processEnvironment(), timeout: 5.0);
             $process->run();
         } catch (\Throwable) {
             return false;
@@ -394,7 +401,7 @@ final readonly class SetupPreflightChecker
                 'https://getcomposer.org/download/latest-stable/composer.phar',
                 '-o',
                 $temporary,
-            ], $projectDir, timeout: 30.0);
+            ], $projectDir, $this->processEnvironment(), timeout: 30.0);
             $process->run();
 
             if (!$process->isSuccessful() || !is_file($temporary)) {
@@ -411,12 +418,38 @@ final readonly class SetupPreflightChecker
                 return false;
             }
 
-            return is_executable($target) && $this->commandWorks([PHP_BINARY, $target, '--version'], $projectDir);
+            return is_executable($target) && $this->composerCommandWorks([PHP_BINARY, $target, '--version'], $projectDir);
         } catch (\Throwable) {
             @unlink($temporary);
 
             return false;
         }
+    }
+
+    /**
+     * @param list<string> $command
+     */
+    private function composerCommandWorks(array $command, ?string $workingDirectory): bool
+    {
+        try {
+            $process = new Process($command, $workingDirectory, $this->processEnvironment(), timeout: 5.0);
+            $process->run();
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return $process->isSuccessful()
+            && str_contains($process->getOutput().$process->getErrorOutput(), 'Composer');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function processEnvironment(): array
+    {
+        $path = $_SERVER['PATH'] ?? $_ENV['PATH'] ?? getenv('PATH');
+
+        return is_string($path) && '' !== $path ? ['PATH' => $path] : [];
     }
 
     private function minimumPhpVersion(string $projectDir): ?string

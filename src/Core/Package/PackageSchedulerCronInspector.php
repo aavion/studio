@@ -29,21 +29,11 @@ final readonly class PackageSchedulerCronInspector
         $arguments = [];
 
         foreach ($this->callBodiesAt($contents, $this->staticCommandCallOffsets($contents)) as $body) {
-            if (null !== ($namedExpression = $this->namedStringArgument($body, 'defaultCronExpression'))) {
-                $arguments[] = $namedExpression;
-                continue;
-            }
-
-            $arguments[] = $this->literalStringArgument($this->positionalArguments($body)[4] ?? null);
+            $arguments[] = $this->cronArgument($body, 4);
         }
 
         foreach ($this->callBodiesAt($contents, $this->newDefinitionCallOffsets($contents)) as $body) {
-            if (null !== ($namedExpression = $this->namedStringArgument($body, 'defaultCronExpression'))) {
-                $arguments[] = $namedExpression;
-                continue;
-            }
-
-            $arguments[] = $this->literalStringArgument($this->positionalArguments($body)[6] ?? null);
+            $arguments[] = $this->cronArgument($body, 6);
         }
 
         return array_values(array_unique($arguments));
@@ -235,7 +225,7 @@ final readonly class PackageSchedulerCronInspector
      */
     private function definitionNames(array $tokens): array
     {
-        $names = ['SchedulerTaskDefinition' => true];
+        $names = [];
         $count = count($tokens);
 
         for ($index = 0; $index < $count; ++$index) {
@@ -243,34 +233,26 @@ final readonly class PackageSchedulerCronInspector
                 continue;
             }
 
-            for ($cursor = $index + 1; $cursor < $count; ++$cursor) {
-                if (in_array($tokens[$cursor]['type'], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
-                    continue;
-                }
+            $next = $this->nextSignificantToken($tokens, $index);
+            if (null === $next || in_array($tokens[$next]['type'], [T_FUNCTION, T_CONST], true)) {
+                continue;
+            }
 
+            $statement = '';
+            for ($cursor = $index + 1; $cursor < $count; ++$cursor) {
                 if (';' === $tokens[$cursor]['text']) {
                     break;
                 }
 
-                if (!$this->tokenEndsWith($tokens[$cursor], 'SchedulerTaskDefinition')) {
+                if (in_array($tokens[$cursor]['type'], [T_COMMENT, T_DOC_COMMENT], true)) {
                     continue;
                 }
 
-                $names['SchedulerTaskDefinition'] = true;
-                for ($aliasCursor = $cursor + 1; $aliasCursor < $count; ++$aliasCursor) {
-                    if (in_array($tokens[$aliasCursor]['type'], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
-                        continue;
-                    }
+                $statement .= $tokens[$cursor]['text'];
+            }
 
-                    if (T_AS === $tokens[$aliasCursor]['type']) {
-                        $aliasIndex = $this->nextSignificantToken($tokens, $aliasCursor);
-                        if (null !== $aliasIndex && T_STRING === $tokens[$aliasIndex]['type']) {
-                            $names[$tokens[$aliasIndex]['text']] = true;
-                        }
-                    }
-
-                    break;
-                }
+            foreach ($this->importedDefinitionNames($statement) as $name) {
+                $names[$name] = true;
             }
         }
 
@@ -287,22 +269,97 @@ final readonly class PackageSchedulerCronInspector
             return true;
         }
 
-        return $this->tokenEndsWith($token, 'SchedulerTaskDefinition');
-    }
-
-    private function namedStringArgument(string $contents, string $name): ?string
-    {
-        if (1 !== preg_match('/\b'.preg_quote($name, '/').'\s*:\s*([\'"])((?:\\\\.|(?!\1).)*)\1/s', $contents, $match)) {
-            return null;
-        }
-
-        return stripcslashes($match[2]);
+        return in_array(ltrim($token['text'], '\\'), ['App\\Scheduler\\SchedulerTaskDefinition'], true);
     }
 
     /**
      * @return list<string>
      */
-    private function positionalArguments(string $contents): array
+    private function importedDefinitionNames(string $statement): array
+    {
+        $statement = trim(preg_replace('/\s+/', ' ', $statement) ?? $statement);
+        if ('' === $statement) {
+            return [];
+        }
+
+        if (str_contains($statement, '{')) {
+            return $this->groupedImportedDefinitionNames($statement);
+        }
+
+        $names = [];
+        foreach (explode(',', $statement) as $import) {
+            $name = $this->importedDefinitionName($import);
+            if (null !== $name) {
+                $names[] = $name;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function groupedImportedDefinitionNames(string $statement): array
+    {
+        if (1 !== preg_match('/^(.+?)\{(.+)\}$/s', $statement, $match)) {
+            return [];
+        }
+
+        $prefix = trim($match[1], " \t\n\r\0\x0B\\");
+        if ('App\\Scheduler' !== $prefix) {
+            return [];
+        }
+
+        $names = [];
+        foreach (explode(',', $match[2]) as $import) {
+            $name = $this->importedDefinitionName('App\\Scheduler\\'.trim($import));
+            if (null !== $name) {
+                $names[] = $name;
+            }
+        }
+
+        return $names;
+    }
+
+    private function importedDefinitionName(string $import): ?string
+    {
+        $import = trim($import);
+        if ('' === $import) {
+            return null;
+        }
+
+        $parts = preg_split('/\s+as\s+/i', $import);
+        $class = ltrim(trim($parts[0] ?? ''), '\\');
+        if ('App\\Scheduler\\SchedulerTaskDefinition' !== $class) {
+            return null;
+        }
+
+        $alias = trim($parts[1] ?? '');
+
+        return '' !== $alias ? $alias : 'SchedulerTaskDefinition';
+    }
+
+    private function cronArgument(string $contents, int $position): ?string
+    {
+        $positional = [];
+        foreach ($this->callArguments($contents) as $argument) {
+            if (($argument['name'] ?? null) === 'defaultCronExpression') {
+                return $this->literalStringArgument($argument['value']);
+            }
+
+            if (!isset($argument['name'])) {
+                $positional[] = $argument['value'];
+            }
+        }
+
+        return $this->literalStringArgument($positional[$position] ?? null);
+    }
+
+    /**
+     * @return list<array{name?: string, value: string}>
+     */
+    private function callArguments(string $contents): array
     {
         $arguments = [];
         $start = 0;
@@ -351,19 +408,35 @@ final readonly class PackageSchedulerCronInspector
                 continue;
             }
 
-            $arguments[] = trim(substr($contents, $start, $index - $start));
+            $this->appendCallArgument($arguments, substr($contents, $start, $index - $start));
             $start = $index + 1;
         }
 
         $last = trim(substr($contents, $start));
         if ('' !== $last) {
-            $arguments[] = $last;
+            $this->appendCallArgument($arguments, $last);
         }
 
-        return array_values(array_filter(
-            $arguments,
-            static fn (string $argument): bool => 1 !== preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*\s*:(?!:)/', $argument),
-        ));
+        return $arguments;
+    }
+
+    /**
+     * @param list<array{name?: string, value: string}> $arguments
+     */
+    private function appendCallArgument(array &$arguments, string $argument): void
+    {
+        $argument = trim($argument);
+        if ('' === $argument) {
+            return;
+        }
+
+        if (1 === preg_match('/^([a-zA-Z_][a-zA-Z0-9_]*)\s*:(?!:)\s*(.+)$/s', $argument, $match)) {
+            $arguments[] = ['name' => $match[1], 'value' => trim($match[2])];
+
+            return;
+        }
+
+        $arguments[] = ['value' => $argument];
     }
 
     private function literalStringArgument(?string $contents): ?string

@@ -299,6 +299,74 @@ PHP);
         self::assertTrue($result->isSuccess());
     }
 
+    public function testItReadsNamedSchedulerCronArgumentAtTopLevelOnly(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+return [
+    SchedulerTaskDefinition::command(
+        command: 'studio:demo --label="defaultCronExpression: \'not a cron\'"',
+        identifier: 'demo.cleanup',
+        labelKey: 'pkg.demo.cleanup.label',
+        descriptionKey: 'pkg.demo.cleanup.description',
+        defaultCronExpression: '*/10 * * * *',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItIgnoresUnrelatedSchedulerTaskDefinitionClasses(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use Vendor\SchedulerTaskDefinition;
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        'not a cron',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItReadsFullyQualifiedSchedulerTaskDefinitions(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+return [
+    \App\Scheduler\SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        'not a cron',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.scheduler.cron_invalid', $result->firstIssue()?->code());
+    }
+
     public function testItAcceptsPackageSchedulerProviderWithLiteralCronExpression(): void
     {
         $this->writeFile('src/DemoSchedulerTasks.php', <<<'PHP'

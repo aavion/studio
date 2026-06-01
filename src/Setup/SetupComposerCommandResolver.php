@@ -53,7 +53,10 @@ final readonly class SetupComposerCommandResolver
         array $environment,
     ): bool {
         try {
-            return $commandExecutor->run($command, $projectDir, $environment)->isSuccessful();
+            $result = $commandExecutor->run($command, $projectDir, $environment);
+
+            return $result->isSuccessful()
+                && str_contains($result->output().$result->errorOutput(), 'Composer');
         } catch (\Throwable) {
             return false;
         }
