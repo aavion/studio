@@ -66,6 +66,35 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertSame([], $tasks);
     }
 
+    public function testItReportsForcedPackageActionQueueTaskAsSkippedWhenPolicyBlocksIt(): void
+    {
+        $task = new SchedulerTask(new SchedulerTaskDefinition(
+            'demo.action_queue',
+            'admin.scheduler.tasks.demo.label',
+            'admin.scheduler.tasks.demo.description',
+            'demo-package',
+            SchedulerTaskType::ActionQueue,
+            'demo.queue',
+            '* * * * *',
+            false,
+        ));
+        $task->activate('* * * * *');
+        $this->entityManager->persist($task);
+        $this->entityManager->flush();
+
+        $payload = $this->runner(
+            new TestSchedulerTaskExecutor(true),
+            new TestPackageActionQueueSchedulerTaskProvider(),
+            new MutableActivePackageProvider(['demo-package']),
+        )->run('demo.action_queue', true)->toArray();
+
+        self::assertSame('completed', $payload['status']);
+        self::assertSame('demo.action_queue', $payload['tasks'][0]['identifier']);
+        self::assertSame('skipped', $payload['tasks'][0]['status']);
+        self::assertSame('active', $payload['tasks'][0]['task_status']);
+        self::assertSame('not_runnable', $payload['tasks'][0]['reason']);
+    }
+
     public function testSystemSchedulerTaskDefinitionsWinIdentifierCollisions(): void
     {
         $registry = new SchedulerTaskRegistry([
@@ -131,6 +160,30 @@ final class SchedulerRunnerTest extends KernelTestCase
         $runs = $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy(['task' => $updated]);
         self::assertCount(1, $runs);
         self::assertSame(SchedulerTaskRunStatus::Success, $runs[0]->status());
+    }
+
+    public function testItReplacesInvalidRunContextAfterFlushFailure(): void
+    {
+        $this->synchronizer()->synchronize();
+        $task = $this->entityManager->find(SchedulerTask::class, 'system.test_task');
+        self::assertInstanceOf(SchedulerTask::class, $task);
+        $task->activate('* * * * *');
+        $this->entityManager->flush();
+
+        $payload = $this->runner(new TestInvalidContextSchedulerTaskExecutor())->run('system.test_task', true)->toArray();
+        $updated = $this->entityManager->find(SchedulerTask::class, 'system.test_task');
+        self::assertInstanceOf(SchedulerTask::class, $updated);
+
+        self::assertSame('completed', $payload['status']);
+        self::assertSame('failed', $payload['tasks'][0]['status']);
+        self::assertSame('active', $payload['tasks'][0]['task_status']);
+        self::assertSame(1, $updated->failureCount());
+
+        $runs = $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy(['task' => $updated]);
+        self::assertCount(1, $runs);
+        self::assertSame(SchedulerTaskRunStatus::Failed, $runs[0]->status());
+        self::assertArrayHasKey('exception', $runs[0]->context());
+        self::assertArrayNotHasKey('resource', $runs[0]->context());
     }
 
     public function testItReportsForcedInactiveTaskAsSkipped(): void
@@ -444,6 +497,19 @@ final readonly class TestDelayedSchedulerTaskExecutor implements SchedulerTaskEx
         }
 
         return SchedulerTaskExecution::success(['test' => true]);
+    }
+}
+
+final readonly class TestInvalidContextSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
+{
+    public function supports(SchedulerTask $task): bool
+    {
+        return true;
+    }
+
+    public function execute(SchedulerTask $task): SchedulerTaskExecution
+    {
+        return SchedulerTaskExecution::success(['resource' => fopen('php://memory', 'r')]);
     }
 }
 

@@ -20,13 +20,13 @@ final readonly class SchedulerTaskSynchronizer
     /**
      * @return list<SchedulerTask>
      */
-    public function synchronize(): array
+    public function synchronize(?string $includeIdentifier = null): array
     {
         $now = new DateTimeImmutable();
         $tasks = [];
 
         foreach ($this->registry->definitions() as $definition) {
-            if (!$this->isVisibleDefinition($definition)) {
+            if ($definition->identifier() !== $includeIdentifier && !$this->isVisibleDefinition($definition)) {
                 continue;
             }
 

@@ -28,7 +28,7 @@ final readonly class PackageSchedulerCronInspector
 
         $arguments = [];
 
-        foreach ($this->callBodies($contents, 'SchedulerTaskDefinition::command') as $body) {
+        foreach ($this->callBodiesAt($contents, $this->staticCommandCallOffsets($contents)) as $body) {
             if (null !== ($namedExpression = $this->namedStringArgument($body, 'defaultCronExpression'))) {
                 $arguments[] = $namedExpression;
                 continue;
@@ -38,7 +38,7 @@ final readonly class PackageSchedulerCronInspector
             $arguments[] = $strings[4] ?? null;
         }
 
-        foreach ($this->callBodies($contents, 'new SchedulerTaskDefinition') as $body) {
+        foreach ($this->callBodiesAt($contents, $this->newDefinitionCallOffsets($contents)) as $body) {
             if (null !== ($namedExpression = $this->namedStringArgument($body, 'defaultCronExpression'))) {
                 $arguments[] = $namedExpression;
                 continue;
@@ -52,17 +52,74 @@ final readonly class PackageSchedulerCronInspector
     }
 
     /**
+     * @return list<int>
+     */
+    private function staticCommandCallOffsets(string $contents): array
+    {
+        $tokens = $this->tokensWithOffsets($contents);
+        $offsets = [];
+        $count = count($tokens);
+
+        for ($index = 0; $index < $count; ++$index) {
+            $token = $tokens[$index];
+            if (!$this->tokenEndsWith($token, 'SchedulerTaskDefinition')) {
+                continue;
+            }
+
+            $next = $this->nextSignificantToken($tokens, $index);
+            $method = null !== $next ? $this->nextSignificantToken($tokens, $next) : null;
+
+            if (
+                null === $next
+                || null === $method
+                || T_DOUBLE_COLON !== $tokens[$next]['type']
+                || !$this->tokenEquals($tokens[$method], 'command')
+            ) {
+                continue;
+            }
+
+            $offsets[] = $tokens[$method]['offset'] + strlen($tokens[$method]['text']);
+        }
+
+        return $offsets;
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function newDefinitionCallOffsets(string $contents): array
+    {
+        $tokens = $this->tokensWithOffsets($contents);
+        $offsets = [];
+        $count = count($tokens);
+
+        for ($index = 0; $index < $count; ++$index) {
+            if (T_NEW !== $tokens[$index]['type']) {
+                continue;
+            }
+
+            $class = $this->nextSignificantToken($tokens, $index);
+            if (null === $class || !$this->tokenEndsWith($tokens[$class], 'SchedulerTaskDefinition')) {
+                continue;
+            }
+
+            $offsets[] = $tokens[$class]['offset'] + strlen($tokens[$class]['text']);
+        }
+
+        return $offsets;
+    }
+
+    /**
      * @return list<string>
      */
-    private function callBodies(string $contents, string $needle): array
+    private function callBodiesAt(string $contents, array $offsets): array
     {
         $bodies = [];
-        $offset = 0;
 
-        while (false !== ($position = strpos($contents, $needle, $offset))) {
-            $open = strpos($contents, '(', $position + strlen($needle));
+        foreach ($offsets as $offset) {
+            $open = strpos($contents, '(', $offset);
             if (false === $open) {
-                break;
+                continue;
             }
 
             $depth = 0;
@@ -108,15 +165,67 @@ final readonly class PackageSchedulerCronInspector
                 --$depth;
                 if (0 === $depth) {
                     $bodies[] = substr($contents, $open + 1, $index - $open - 1);
-                    $offset = $index + 1;
                     continue 2;
                 }
             }
-
-            $offset = $open + 1;
         }
 
         return $bodies;
+    }
+
+    /**
+     * @return list<array{type: int|string, text: string, offset: int}>
+     */
+    private function tokensWithOffsets(string $contents): array
+    {
+        $tokens = [];
+        $offset = 0;
+
+        foreach (token_get_all($contents) as $token) {
+            if (is_array($token)) {
+                $text = $token[1];
+                $tokens[] = ['type' => $token[0], 'text' => $text, 'offset' => $offset];
+                $offset += strlen($text);
+                continue;
+            }
+
+            $tokens[] = ['type' => $token, 'text' => $token, 'offset' => $offset];
+            $offset += strlen($token);
+        }
+
+        return $tokens;
+    }
+
+    /**
+     * @param list<array{type: int|string, text: string, offset: int}> $tokens
+     */
+    private function nextSignificantToken(array $tokens, int $index): ?int
+    {
+        for ($next = $index + 1, $count = count($tokens); $next < $count; ++$next) {
+            if (in_array($tokens[$next]['type'], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            return $next;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array{type: int|string, text: string, offset: int} $token
+     */
+    private function tokenEquals(array $token, string $text): bool
+    {
+        return $token['text'] === $text;
+    }
+
+    /**
+     * @param array{type: int|string, text: string, offset: int} $token
+     */
+    private function tokenEndsWith(array $token, string $text): bool
+    {
+        return $token['text'] === $text || str_ends_with($token['text'], '\\'.$text);
     }
 
     private function namedStringArgument(string $contents, string $name): ?string

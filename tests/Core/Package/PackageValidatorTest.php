@@ -176,6 +176,56 @@ PHP);
         self::assertSame('not a cron', $result->firstIssue()?->context()['value']);
     }
 
+    public function testItIgnoresSchedulerExamplesInsideComments(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+// Example only: SchedulerTaskDefinition::command('demo.bad', 'label', 'description', 'studio:bad', 'not a cron');
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        '*/10 * * * *',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItIgnoresSchedulerExamplesInsideStrings(): void
+    {
+        $this->writeFile('src/SchedulerTasks.php', <<<'PHP'
+<?php
+
+use App\Scheduler\SchedulerTaskDefinition;
+
+$documentation = "Example only: SchedulerTaskDefinition::command('demo.bad', 'label', 'description', 'studio:bad', 'not a cron')";
+
+return [
+    SchedulerTaskDefinition::command(
+        'demo.cleanup',
+        'pkg.demo.cleanup.label',
+        'pkg.demo.cleanup.description',
+        'studio:demo:cleanup',
+        '*/10 * * * *',
+    ),
+];
+PHP);
+
+        $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
+
+        self::assertTrue($result->isSuccess());
+    }
+
     public function testItReadsNamedSchedulerCronArgumentWithoutFalsePositives(): void
     {
         $this->writeFile('src/SchedulerTasks.php', <<<'PHP'

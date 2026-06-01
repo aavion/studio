@@ -50,7 +50,7 @@ final readonly class SchedulerRunner
         }
 
         try {
-            $tasks = $this->synchronizer->synchronize();
+            $tasks = $this->synchronizer->synchronize($force ? $jobIdentifier : null);
             $dueTasks = $this->dueTasks($tasks, $now, $jobIdentifier, $force);
             $results = $this->skippedTaskResults($tasks, $dueTasks, $jobIdentifier, $force);
             $softBudgetMs = $this->softBudgetMs(count($dueTasks));
@@ -164,15 +164,16 @@ final readonly class SchedulerRunner
         try {
             $executor = $this->executorFor($task);
             $execution = $executor->execute($task);
+            $executionContext = $this->validatedContext($execution->context());
             $finishedAt = new DateTimeImmutable();
 
             if ($execution->isSuccess()) {
                 $nextRun = SchedulerCron::nextRun($task->cronExpression(), $finishedAt);
                 $task->markSuccess($finishedAt, $nextRun);
-                $run->finish(SchedulerTaskRunStatus::Success, $finishedAt, $execution->context());
+                $run->finish(SchedulerTaskRunStatus::Success, $finishedAt, $executionContext);
             } else {
                 $task->markFailure($finishedAt, self::DISABLE_AFTER_FAILURES);
-                $run->finish(SchedulerTaskRunStatus::Failed, $finishedAt, $execution->context());
+                $run->finish(SchedulerTaskRunStatus::Failed, $finishedAt, $executionContext);
                 $this->logTaskFailure($task, $run, $execution->messages());
             }
 
@@ -186,7 +187,7 @@ final readonly class SchedulerRunner
             $run->finish(SchedulerTaskRunStatus::Failed, $finishedAt, [
                 'exception' => $error::class,
                 'message' => $error->getMessage(),
-            ]);
+            ], true);
             $this->entityManager->flush();
             $this->logSoftBudgetIfExceeded($task, $run, $softBudgetMs);
             $this->logTaskFailure($task, $run, [
@@ -212,6 +213,22 @@ final readonly class SchedulerRunner
         }
 
         throw new \RuntimeException(sprintf('No scheduler executor supports task "%s".', $task->identifier()));
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     *
+     * @return array<string, mixed>
+     */
+    private function validatedContext(array $context): array
+    {
+        try {
+            json_encode($context, JSON_THROW_ON_ERROR);
+        } catch (Throwable $error) {
+            throw new \InvalidArgumentException('Scheduler task context must be JSON-encodable.', previous: $error);
+        }
+
+        return $context;
     }
 
     /**

@@ -93,12 +93,12 @@ class SchedulerTaskRun
     /**
      * @param array<string, mixed> $context
      */
-    public function finish(SchedulerTaskRunStatus $status, DateTimeImmutable $finishedAt, array $context = []): void
+    public function finish(SchedulerTaskRunStatus $status, DateTimeImmutable $finishedAt, array $context = [], bool $replaceContext = false): void
     {
         $this->status = $status;
         $this->finishedAt = $finishedAt;
         $this->durationMs = max(0, (int) round(((float) $finishedAt->format('U.u') - (float) $this->startedAt->format('U.u')) * 1000));
-        $this->context = [
+        $this->context = $replaceContext ? $context : [
             ...$this->context,
             ...$context,
         ];
