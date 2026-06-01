@@ -22,6 +22,15 @@ final class PublicContentErrorPageTest extends WebTestCase
         self::assertSelectorNotExists('.studio-error-reference dd:nth-of-type(2)');
     }
 
+    public function testItReturnsForbiddenForReservedCronPrefix(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/cron');
+
+        self::assertResponseStatusCodeSame(403);
+        self::assertSelectorNotExists('form[action="/user/login"]');
+    }
+
     public function testItRendersSystemErrorContentBeforeTemplateFallback(): void
     {
         $client = self::createClient();
