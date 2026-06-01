@@ -503,7 +503,7 @@ final class SetupRunner
         SetupInput $input,
         string $databaseUrl,
         SetupEnvironmentSnapshot $environmentSnapshot,
-        SetupDatabaseTableSnapshot $tableSnapshot,
+        ?SetupDatabaseTableSnapshot $tableSnapshot,
     ): array
     {
         return $this->rollbacker->rollback($this->projectDir, $input, $databaseUrl, $environmentSnapshot, $tableSnapshot);

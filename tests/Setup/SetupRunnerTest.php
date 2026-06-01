@@ -582,6 +582,30 @@ final class SetupRunnerTest extends TestCase
         );
     }
 
+    public function testDryRunRollbackHandlesStepFailuresAfterPreparation(): void
+    {
+        $executor = new RecordingSetupCommandExecutor();
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'fr',
+            siteTitle: 'Dry Studio',
+            defaultUri: 'https://dry.example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///'.$this->root.'/var/missing-dry-run.db',
+            adminUsername: 'admin',
+            adminPassword: 'Secret1!password',
+            adminEmail: 'admin@example.test',
+            dryRun: true,
+        ));
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('select_language', $result->context()['failed_step']);
+        self::assertSame(['skipped' => 'dry_run'], $result->context()['rollback']);
+        self::assertSame([], $executor->commands);
+    }
+
     public function testLanguageCatalogDiscoversTranslationCatalogues(): void
     {
         $catalog = new SetupLanguageCatalog();

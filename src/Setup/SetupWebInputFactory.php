@@ -271,7 +271,7 @@ final readonly class SetupWebInputFactory
             $errors['database_port'][] = 'setup.form.errors.port';
         }
 
-        if ('' !== trim((string) $values['database_url']) && !$this->isValidDatabaseUrl((string) $values['database_url'])) {
+        if ('' !== trim((string) $values['database_url']) && !$this->isValidDatabaseUrl((string) $values['database_url'], $driver)) {
             $errors['database_url'][] = 'setup.form.errors.database_url';
         }
 
@@ -336,17 +336,23 @@ final readonly class SetupWebInputFactory
         return '' === $prefix ? '' : rtrim($prefix, '_').'_';
     }
 
-    private function isValidDatabaseUrl(string $databaseUrl): bool
+    private function isValidDatabaseUrl(string $databaseUrl, DatabaseDriver $driver): bool
     {
-        if (str_starts_with($databaseUrl, 'sqlite:///')) {
-            return '' !== trim((string) preg_replace('#^sqlite:///#', '', $databaseUrl));
+        $scheme = parse_url($databaseUrl, PHP_URL_SCHEME);
+
+        if (DatabaseDriver::SQLite === $driver) {
+            return 'sqlite' === $scheme
+                && str_starts_with($databaseUrl, 'sqlite:///')
+                && '' !== trim((string) preg_replace('#^sqlite:///#', '', $databaseUrl));
         }
 
-        $scheme = parse_url($databaseUrl, PHP_URL_SCHEME);
         $host = parse_url($databaseUrl, PHP_URL_HOST);
+        $allowedSchemes = DatabaseDriver::MySql === $driver
+            ? ['mysql', 'mariadb']
+            : ['pgsql', 'postgres', 'postgresql'];
 
         return is_string($scheme)
-            && in_array($scheme, ['mysql', 'mariadb', 'pgsql', 'postgres', 'postgresql'], true)
+            && in_array($scheme, $allowedSchemes, true)
             && is_string($host)
             && '' !== trim($host);
     }

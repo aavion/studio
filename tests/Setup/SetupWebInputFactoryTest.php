@@ -259,6 +259,30 @@ final class SetupWebInputFactoryTest extends TestCase
         self::assertSame(['setup.form.errors.database_url'], $result->errors()['database_url']);
     }
 
+    public function testItRejectsServerDatabaseUrlsForSqliteDriver(): void
+    {
+        $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test');
+
+        $result = $factory->create([
+            'language' => 'en',
+            'site_title' => 'Broken DB Studio',
+            'default_uri' => 'http://localhost',
+            'registration_mode' => 'disabled',
+            'username_change_enabled' => false,
+            'statistics_enabled' => true,
+            'statistics_respect_dnt' => true,
+            'database_driver' => 'sqlite',
+            'database_url' => 'mysql://studio:secret@example.test/studio',
+            'admin_username' => 'admin',
+            'admin_password' => 'Safe1!pass',
+            'admin_password_confirm' => 'Safe1!pass',
+            'admin_email' => 'admin@localhost.local',
+        ]);
+
+        self::assertFalse($result->isValid());
+        self::assertSame(['setup.form.errors.database_url'], $result->errors()['database_url']);
+    }
+
     public function testItRejectsShortAppSecret(): void
     {
         $factory = new SetupWebInputFactory(dirname(__DIR__, 2), 'test');
