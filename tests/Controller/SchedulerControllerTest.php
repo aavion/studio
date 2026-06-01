@@ -6,8 +6,10 @@ namespace App\Tests\Controller;
 
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Entity\SchedulerTask;
 use App\Scheduler\SchedulerLockFactory;
 use App\Scheduler\SchedulerSettings;
+use App\Scheduler\SchedulerTaskDefinition;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -150,5 +152,73 @@ final class SchedulerControllerTest extends WebTestCase
         } finally {
             $lock->release();
         }
+    }
+
+    public function testCronRunReturnsServerErrorWhenForcedTaskFails(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $definition = SchedulerTaskDefinition::command(
+            'system.live_operation_cleanup',
+            'admin.scheduler.tasks.live_operation_cleanup.label',
+            'admin.scheduler.tasks.live_operation_cleanup.description',
+            'studio:operations:cleanup',
+            '*/15 * * * *',
+        );
+        $task = $entityManager->find(SchedulerTask::class, 'system.live_operation_cleanup') ?? new SchedulerTask($definition);
+        $task->syncDefinition($definition, new \DateTimeImmutable());
+        $task->activate('not a cron');
+        $entityManager->persist($task);
+        $entityManager->flush();
+
+        try {
+            $client->request('GET', '/cron/run?job=system.live_operation_cleanup', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
+            ]);
+
+            self::assertResponseStatusCodeSame(500);
+            $payload = json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+            self::assertSame('completed', $payload['status']);
+            self::assertSame('failed', $payload['tasks'][0]['status']);
+        } finally {
+            $this->removeSchedulerTask($entityManager, 'system.live_operation_cleanup');
+        }
+    }
+
+    public function testCronRunReturnsConflictWhenForcedTaskIsSkipped(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $definition = SchedulerTaskDefinition::command(
+            'system.live_operation_cleanup',
+            'admin.scheduler.tasks.live_operation_cleanup.label',
+            'admin.scheduler.tasks.live_operation_cleanup.description',
+            'studio:operations:cleanup',
+            '*/15 * * * *',
+        );
+        $task = $entityManager->find(SchedulerTask::class, 'system.live_operation_cleanup') ?? new SchedulerTask($definition);
+        $task->syncDefinition($definition, new \DateTimeImmutable());
+        $entityManager->persist($task);
+        $entityManager->flush();
+
+        try {
+            $client->request('GET', '/cron/run?job=system.live_operation_cleanup', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
+            ]);
+
+            self::assertResponseStatusCodeSame(409);
+            $payload = json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+            self::assertSame('completed', $payload['status']);
+            self::assertSame('skipped', $payload['tasks'][0]['status']);
+        } finally {
+            $this->removeSchedulerTask($entityManager, 'system.live_operation_cleanup');
+        }
+    }
+
+    private function removeSchedulerTask(EntityManagerInterface $entityManager, string $identifier): void
+    {
+        $connection = $entityManager->getConnection();
+        $connection->delete('scheduler_task_run', ['task_identifier' => $identifier]);
+        $connection->delete('scheduler_task', ['identifier' => $identifier]);
     }
 }

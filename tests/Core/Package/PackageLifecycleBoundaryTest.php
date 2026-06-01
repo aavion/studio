@@ -301,6 +301,67 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         self::assertSame('faulty', $this->packageStatus('scheduler-module'));
     }
 
+    public function testPackagePhpLoaderKeepsSchedulerExecutionProviders(): void
+    {
+        $this->insertPackage('scheduler-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'packages/scheduler-module/package.php', <<<'PHP'
+            <?php
+
+            use App\Core\Operation\ActionQueue;
+            use App\Scheduler\SchedulerActionQueueProviderInterface;
+            use App\Scheduler\SchedulerCallableProviderInterface;
+            use App\Scheduler\SchedulerTaskDefinition;
+            use App\Scheduler\SchedulerTaskExecution;
+            use App\Scheduler\SchedulerTaskProviderInterface;
+
+            return new class implements SchedulerTaskProviderInterface, SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface {
+                public function schedulerTasks(): array
+                {
+                    return [
+                        new SchedulerTaskDefinition(
+                            'scheduler-module.cleanup',
+                            'pkg.scheduler_module.cleanup.label',
+                            'pkg.scheduler_module.cleanup.description',
+                            'scheduler-module',
+                            \App\Scheduler\SchedulerTaskType::Callable,
+                            'scheduler-module.cleanup',
+                            '*/15 * * * *',
+                            false,
+                        ),
+                    ];
+                }
+
+                public function schedulerCallable(string $target): ?callable
+                {
+                    return 'scheduler-module.cleanup' === $target
+                        ? static fn (): SchedulerTaskExecution => SchedulerTaskExecution::success(['package_callable' => true])
+                        : null;
+                }
+
+                public function schedulerActionQueue(string $target): ?ActionQueue
+                {
+                    return 'scheduler-module.queue' === $target ? ActionQueue::create('scheduler-module.queue') : null;
+                }
+            };
+            PHP);
+        $registry = new PackageRuntimeContributionRegistry();
+
+        $result = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActivePackages();
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('scheduler-module.cleanup', $registry->schedulerTasks()[0]->identifier());
+        self::assertNotNull($registry->schedulerCallable('scheduler-module.cleanup'));
+        self::assertNull($registry->schedulerCallable('scheduler-module.missing'));
+        self::assertSame('scheduler-module.queue', $registry->schedulerActionQueue('scheduler-module.queue')?->name());
+        self::assertNull($registry->schedulerActionQueue('scheduler-module.missing'));
+    }
+
     public function testPackagePhpLoaderConvertsRuntimeProviderFailuresIntoFaults(): void
     {
         $this->insertPackage('broken-provider-module', ['module'], 'active');

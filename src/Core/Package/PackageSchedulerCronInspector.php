@@ -57,12 +57,13 @@ final readonly class PackageSchedulerCronInspector
     private function staticCommandCallOffsets(string $contents): array
     {
         $tokens = $this->tokensWithOffsets($contents);
+        $definitionNames = $this->definitionNames($tokens);
         $offsets = [];
         $count = count($tokens);
 
         for ($index = 0; $index < $count; ++$index) {
             $token = $tokens[$index];
-            if (!$this->tokenEndsWith($token, 'SchedulerTaskDefinition')) {
+            if (!$this->isDefinitionToken($token, $definitionNames)) {
                 continue;
             }
 
@@ -90,6 +91,7 @@ final readonly class PackageSchedulerCronInspector
     private function newDefinitionCallOffsets(string $contents): array
     {
         $tokens = $this->tokensWithOffsets($contents);
+        $definitionNames = $this->definitionNames($tokens);
         $offsets = [];
         $count = count($tokens);
 
@@ -99,7 +101,7 @@ final readonly class PackageSchedulerCronInspector
             }
 
             $class = $this->nextSignificantToken($tokens, $index);
-            if (null === $class || !$this->tokenEndsWith($tokens[$class], 'SchedulerTaskDefinition')) {
+            if (null === $class || !$this->isDefinitionToken($tokens[$class], $definitionNames)) {
                 continue;
             }
 
@@ -226,6 +228,68 @@ final readonly class PackageSchedulerCronInspector
     private function tokenEndsWith(array $token, string $text): bool
     {
         return $token['text'] === $text || str_ends_with($token['text'], '\\'.$text);
+    }
+
+    /**
+     * @param list<array{type: int|string, text: string, offset: int}> $tokens
+     *
+     * @return array<string, true>
+     */
+    private function definitionNames(array $tokens): array
+    {
+        $names = ['SchedulerTaskDefinition' => true];
+        $count = count($tokens);
+
+        for ($index = 0; $index < $count; ++$index) {
+            if (T_USE !== $tokens[$index]['type']) {
+                continue;
+            }
+
+            for ($cursor = $index + 1; $cursor < $count; ++$cursor) {
+                if (in_array($tokens[$cursor]['type'], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                    continue;
+                }
+
+                if (';' === $tokens[$cursor]['text']) {
+                    break;
+                }
+
+                if (!$this->tokenEndsWith($tokens[$cursor], 'SchedulerTaskDefinition')) {
+                    continue;
+                }
+
+                $names['SchedulerTaskDefinition'] = true;
+                for ($aliasCursor = $cursor + 1; $aliasCursor < $count; ++$aliasCursor) {
+                    if (in_array($tokens[$aliasCursor]['type'], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                        continue;
+                    }
+
+                    if (T_AS === $tokens[$aliasCursor]['type']) {
+                        $aliasIndex = $this->nextSignificantToken($tokens, $aliasCursor);
+                        if (null !== $aliasIndex && T_STRING === $tokens[$aliasIndex]['type']) {
+                            $names[$tokens[$aliasIndex]['text']] = true;
+                        }
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * @param array{type: int|string, text: string, offset: int} $token
+     * @param array<string, true> $definitionNames
+     */
+    private function isDefinitionToken(array $token, array $definitionNames): bool
+    {
+        if (isset($definitionNames[$token['text']])) {
+            return true;
+        }
+
+        return $this->tokenEndsWith($token, 'SchedulerTaskDefinition');
     }
 
     private function namedStringArgument(string $contents, string $name): ?string

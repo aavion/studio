@@ -78,13 +78,44 @@ final class SchedulerController extends AbstractController
         $statusCode = match ($payload['status']) {
             'disabled' => JsonResponse::HTTP_FORBIDDEN,
             'locked' => JsonResponse::HTTP_SERVICE_UNAVAILABLE,
-            default => JsonResponse::HTTP_OK,
+            default => $this->hasFailedTask($payload) ? JsonResponse::HTTP_INTERNAL_SERVER_ERROR : JsonResponse::HTTP_OK,
         };
+        if (JsonResponse::HTTP_OK === $statusCode && null !== $job && $this->hasNonSuccessfulTask($payload)) {
+            $statusCode = JsonResponse::HTTP_CONFLICT;
+        }
         $response = new JsonResponse($payload, $statusCode);
         if ('locked' === $payload['status']) {
             $response->headers->set('Retry-After', '60');
         }
 
         return $response;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function hasFailedTask(array $payload): bool
+    {
+        foreach (($payload['tasks'] ?? []) as $task) {
+            if (is_array($task) && 'failed' === ($task['status'] ?? null)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function hasNonSuccessfulTask(array $payload): bool
+    {
+        foreach (($payload['tasks'] ?? []) as $task) {
+            if (is_array($task) && 'success' !== ($task['status'] ?? null)) {
+                return true;
+            }
+        }
+
+        return [] === ($payload['tasks'] ?? []);
     }
 }

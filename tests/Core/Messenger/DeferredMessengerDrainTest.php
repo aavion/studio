@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Messenger;
 
 use App\Core\Messenger\DeferredMessengerDrain;
+use App\Core\Messenger\DeferredMessengerDrainSubscriber;
 use App\Core\Messenger\DeferredMessengerDrainStarterInterface;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
@@ -16,6 +17,10 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Event\TerminateEvent;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 final class DeferredMessengerDrainTest extends TestCase
 {
@@ -103,6 +108,32 @@ final class DeferredMessengerDrainTest extends TestCase
         self::assertTrue($drain->drainPendingMessages());
         self::assertFalse($drain->drainPendingMessages());
         self::assertCount(1, $starter->starts);
+
+        $this->removeDirectory($projectDir);
+    }
+
+    public function testSubscriberSkipsSchedulerCronRequests(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('messenger-drain-scheduler-route');
+        $connection = $this->connectionWithMessengerTable();
+        $starter = new RecordingDeferredMessengerStarter();
+        $settings = $this->schedulerSettings($connection, true);
+        $drain = new DeferredMessengerDrain($connection, $starter, $projectDir, 'test', schedulerSettings: $settings);
+        $request = Request::create('/cron/run');
+        $request->attributes->set('_route', 'scheduler_cron_run');
+
+        (new DeferredMessengerDrainSubscriber($drain))->onKernelTerminate(new TerminateEvent(
+            new class implements HttpKernelInterface {
+                public function handle(Request $request, int $type = self::MAIN_REQUEST, bool $catch = true): Response
+                {
+                    return new Response();
+                }
+            },
+            $request,
+            new Response(),
+        ));
+
+        self::assertSame([], $starter->starts);
 
         $this->removeDirectory($projectDir);
     }
