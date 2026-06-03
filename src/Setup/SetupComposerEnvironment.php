@@ -24,6 +24,7 @@ final readonly class SetupComposerEnvironment
         $composerEnvironment['COMPOSER_HOME'] = $projectDir.'/var/composer-home';
         $composerEnvironment['COMPOSER_CACHE_DIR'] = $projectDir.'/var/composer-cache';
         $composerEnvironment['COMPOSER_NO_INTERACTION'] = '1';
+        $composerEnvironment['SHELL_VERBOSITY'] = '0';
 
         return $composerEnvironment;
     }

@@ -76,9 +76,11 @@ final class SetupRunnerTest extends TestCase
         self::assertSame($root.'/var/composer-home', $composerEnvironments[0]['COMPOSER_HOME'] ?? null);
         self::assertSame($root.'/var/composer-cache', $composerEnvironments[0]['COMPOSER_CACHE_DIR'] ?? null);
         self::assertSame($root.'/var', $composerEnvironments[0]['HOME'] ?? null);
+        self::assertSame('0', $composerEnvironments[0]['SHELL_VERBOSITY'] ?? null);
         self::assertSame($root.'/var/composer-home', $composerEnvironments[1]['COMPOSER_HOME'] ?? null);
         self::assertSame($root.'/var/composer-cache', $composerEnvironments[1]['COMPOSER_CACHE_DIR'] ?? null);
         self::assertSame($root.'/var', $composerEnvironments[1]['HOME'] ?? null);
+        self::assertSame('0', $composerEnvironments[1]['SHELL_VERBOSITY'] ?? null);
         self::assertSame([
             ['composer', '--version'],
             ['composer', 'dump-env', 'test'],

@@ -126,11 +126,13 @@ final class SetupComposerCommandResolverTest extends TestCase
                 'COMPOSER_CACHE_DIR' => '/bad/composer-cache',
                 'HOME' => '/bad/home',
                 'PATH' => '/usr/bin',
+                'SHELL_VERBOSITY' => '-1',
             ]);
 
             self::assertSame($root.'/var/composer-home', $executor->environments[0]['COMPOSER_HOME'] ?? null);
             self::assertSame($root.'/var/composer-cache', $executor->environments[0]['COMPOSER_CACHE_DIR'] ?? null);
             self::assertSame($root.'/var', $executor->environments[0]['HOME'] ?? null);
+            self::assertSame('0', $executor->environments[0]['SHELL_VERBOSITY'] ?? null);
             self::assertSame('/usr/bin', $executor->environments[0]['PATH'] ?? null);
             self::assertSame('test', $executor->environments[0]['APP_ENV'] ?? null);
         } finally {
