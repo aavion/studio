@@ -14,6 +14,7 @@ use App\Core\Operation\OperationExecutor;
 use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Package\PackageAssetRebuildDispatcher;
 use App\Core\Package\PackageDiscoveryRunner;
+use App\Core\Process\PhpCliBinaryResolver;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpKernel\KernelInterface;
 
@@ -29,6 +30,7 @@ final readonly class BackendActions
         private PackageAssetRebuildDispatcher $assetRebuildDispatcher,
         private OperationExecutor $operationExecutor,
         private LiveOperationStarter $liveOperationStarter,
+        private PhpCliBinaryResolver $phpCliBinaryResolver,
     ) {
     }
 
@@ -128,7 +130,7 @@ final readonly class BackendActions
     {
         $queue = ActionQueue::create('backend cache clear', [
             new RunCommandAction([
-                PHP_BINARY,
+                ...$this->phpCliCommandPrefix(),
                 $this->kernel->getProjectDir().'/bin/console',
                 'cache:clear',
                 '--env='.$this->kernel->getEnvironment(),
@@ -150,5 +152,15 @@ final readonly class BackendActions
                 context: ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
             ),
         ]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function phpCliCommandPrefix(): array
+    {
+        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
+
+        return $resolution->isAvailable() ? $resolution->commandPrefix() : ['php'];
     }
 }

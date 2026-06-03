@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Process\PhpCliBinaryResolver;
 use Symfony\Component\Process\Process;
 
 final readonly class SetupPreflightChecker
 {
+    public function __construct(private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver())
+    {
+    }
+
     /**
      * @param array<string, mixed>|null $server
      *
@@ -129,12 +134,17 @@ final readonly class SetupPreflightChecker
             @chmod($bundledComposer, 0755);
         }
 
-        if (is_file($bundledComposer) && is_readable($bundledComposer) && $this->composerCommandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir)) {
+        $phpCli = $this->phpCliBinaryResolver->resolve($projectDir);
+        $phpCommand = $phpCli->commandPrefix();
+
+        if ($phpCli->isAvailable() && is_file($bundledComposer) && is_readable($bundledComposer) && $this->composerCommandWorks([...$phpCommand, $bundledComposer, '--version'], $projectDir)) {
             return $this->checkRow('composer_binary', 'ok', true, false, 'composer_bundled');
         }
 
         if (is_file($bundledComposer)) {
-            $works = is_readable($bundledComposer) && $this->composerCommandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir);
+            $works = $phpCli->isAvailable()
+                && is_readable($bundledComposer)
+                && $this->composerCommandWorks([...$phpCommand, $bundledComposer, '--version'], $projectDir);
             if (!$works && $autoHeal && is_writable($bundledComposer) && $this->downloadBundledComposer($bundledComposer, $projectDir)) {
                 return $this->checkRow('composer_binary', 'ok', true, false, 'composer_bundled');
             }
@@ -143,7 +153,13 @@ final readonly class SetupPreflightChecker
                 return $this->checkRow('composer_binary', 'ok', true, false, 'composer_system');
             }
 
-            return $this->checkRow('composer_binary', $works ? 'ok' : 'failed', true, !$works && is_writable($bundledComposer) && $this->canDownloadBundledComposer($projectDir), $works ? 'composer_bundled' : 'composer_not_executable');
+            return $this->checkRow(
+                'composer_binary',
+                $works ? 'ok' : 'failed',
+                true,
+                !$works && is_writable($bundledComposer) && $this->canDownloadBundledComposer($projectDir),
+                $works ? 'composer_bundled' : ($phpCli->isAvailable() ? 'composer_not_executable' : $phpCli->reason()),
+            );
         }
 
         if ($this->composerCommandWorks(['composer', '--version'], $projectDir)) {
@@ -229,9 +245,15 @@ final readonly class SetupPreflightChecker
      */
     private function cliRunnerAvailable(): array
     {
-        $available = $this->commandWorks([PHP_BINARY, '-r', 'exit(0);'], null);
+        $resolution = $this->phpCliBinaryResolver->resolve();
 
-        return $this->checkRow('cli_runner', $available ? 'ok' : 'failed', true, false, $available ? 'executable' : 'unavailable');
+        return $this->checkRow(
+            'cli_runner',
+            $resolution->isAvailable() ? 'ok' : 'failed',
+            true,
+            false,
+            $resolution->isAvailable() ? 'executable' : $resolution->reason(),
+        );
     }
 
     /**
@@ -418,7 +440,11 @@ final readonly class SetupPreflightChecker
                 return false;
             }
 
-            return is_executable($target) && $this->composerCommandWorks([PHP_BINARY, $target, '--version'], $projectDir);
+            $phpCli = $this->phpCliBinaryResolver->resolve($projectDir);
+
+            return is_executable($target)
+                && $phpCli->isAvailable()
+                && $this->composerCommandWorks([...$phpCli->commandPrefix(), $target, '--version'], $projectDir);
         } catch (\Throwable) {
             @unlink($temporary);
 

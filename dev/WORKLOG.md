@@ -66,6 +66,9 @@
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
+### 2026-06-03
+- Started `feat-php-cli-resolver`: added a shared PHP CLI resolver for web-hosted setup and background processes, with subprocess diagnostics for disabled process functions, server-config-blocked CLI, and unresolved PHP binaries; wired setup preflight, setup runner, Composer phar execution, live operations, Messenger drain, scheduler command execution, and asset/backend command queues to use the resolved PHP CLI command prefix.
+
 ### 2026-06-01
 - Updated tailwind-binary to v4.3.0 and composer dependencies
 - Started `feat-scheduler`: aligned the Scheduler draft with `/cron/run`, API-key triggering, `job={job_id}` direct runs, cron expressions, Symfony Scheduler/Messenger integration, DB-backed task/run state, package task policy, admin UI expectations, and failure/logging behavior; added `symfony/scheduler` plus cron-expression support, built the first runner/endpoint/Admin-view foundation, then hardened run-now, lock/GET-auth behavior, soft-budget diagnostics, cron validation, public endpoint failure handling, stale task direct access, task default/reactivation state, package-provided task registration via the central scheduler registry, compact cron syntax help, CLI command coverage, focused Admin scheduler UI coverage, stricter cron API-key authorization, core maintenance tasks for statistics snapshots/cache/package discovery/cache clearing, opt-in web-traffic triggering through the post-response Messenger drain, and review-reported operational edges around forced runs, package policy/provider retention, metadata encoding, CLI/web failure status, route-generated cron URLs, detached drain failures, scheduler-route drain skips, aliased cron validation, and setup PHP/extension preflight checks.

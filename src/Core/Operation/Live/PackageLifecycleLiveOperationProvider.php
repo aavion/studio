@@ -9,12 +9,16 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\Process\RunCommandAction;
+use App\Core\Process\PhpCliBinaryResolver;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 final readonly class PackageLifecycleLiveOperationProvider implements LiveOperationQueueProviderInterface
 {
-    public function __construct(private KernelInterface $kernel)
+    public function __construct(
+        private KernelInterface $kernel,
+        private PhpCliBinaryResolver $phpCliBinaryResolver,
+    )
     {
     }
 
@@ -48,7 +52,7 @@ final readonly class PackageLifecycleLiveOperationProvider implements LiveOperat
 
         return WorkflowResult::success(ActionQueue::create('package lifecycle', [
             new RunCommandAction([
-                PHP_BINARY,
+                ...$this->phpCliCommandPrefix(),
                 $this->kernel->getProjectDir().'/bin/console',
                 'studio:packages:lifecycle',
                 trim($packageName),
@@ -63,6 +67,16 @@ final readonly class PackageLifecycleLiveOperationProvider implements LiveOperat
             'environment' => $environment,
             'trigger' => $this->trigger($payload),
         ]));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function phpCliCommandPrefix(): array
+    {
+        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
+
+        return $resolution->isAvailable() ? $resolution->commandPrefix() : ['php'];
     }
 
     /**

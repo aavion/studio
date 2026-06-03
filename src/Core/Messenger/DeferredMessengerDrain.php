@@ -8,6 +8,7 @@ use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Process\PhpCliBinaryResolver;
 use App\Scheduler\SchedulerSettings;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -32,6 +33,7 @@ final readonly class DeferredMessengerDrain
         private int $cooldownSeconds = self::DEFAULT_COOLDOWN_SECONDS,
         private ?SchedulerSettings $schedulerSettings = null,
         private ?MessageLoggerInterface $messageLogger = null,
+        private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver(),
     ) {
     }
 
@@ -189,7 +191,7 @@ final readonly class DeferredMessengerDrain
     private function messengerCommand(): array
     {
         return [
-            PHP_BINARY,
+            ...$this->phpCliCommandPrefix(),
             $this->projectDir().'/bin/console',
             'messenger:consume',
             $this->transportName,
@@ -207,7 +209,7 @@ final readonly class DeferredMessengerDrain
     private function schedulerCommand(): array
     {
         return [
-            PHP_BINARY,
+            ...$this->phpCliCommandPrefix(),
             $this->projectDir().'/bin/scheduler',
             '--json',
             '--env='.$this->safeEnvironment(),
@@ -268,5 +270,15 @@ final readonly class DeferredMessengerDrain
     private function safeEnvironment(): string
     {
         return preg_replace('/[^a-zA-Z0-9_.-]/', '_', $this->environment) ?: 'prod';
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function phpCliCommandPrefix(): array
+    {
+        $resolution = $this->phpCliBinaryResolver->resolve($this->projectDir());
+
+        return $resolution->isAvailable() ? $resolution->commandPrefix() : ['php'];
     }
 }

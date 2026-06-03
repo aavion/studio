@@ -10,6 +10,7 @@ use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Package\PackageAssetSyncAction;
 use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageAssetSyncer;
+use App\Core\Process\PhpCliBinaryResolver;
 use App\Core\Translation\TranslationAggregateAction;
 use App\Core\Translation\TranslationCatalogueAggregator;
 
@@ -19,6 +20,7 @@ final readonly class AssetRebuildQueueFactory
         private string $projectDir,
         private PackageAssetSyncer $packageAssetSyncer,
         private TranslationCatalogueAggregator $translationCatalogueAggregator,
+        private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver(),
     ) {
     }
 
@@ -54,11 +56,21 @@ final readonly class AssetRebuildQueueFactory
     private function consoleCommand(string $command, string $environment, ?float $timeout = 120.0): RunCommandAction
     {
         return new RunCommandAction([
-            PHP_BINARY,
+            ...$this->phpCliCommandPrefix(),
             $this->projectDir.'/bin/console',
             $command,
             '--env='.$environment,
             '--no-interaction',
         ], $this->projectDir, timeout: $timeout);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function phpCliCommandPrefix(): array
+    {
+        $resolution = $this->phpCliBinaryResolver->resolve($this->projectDir);
+
+        return $resolution->isAvailable() ? $resolution->commandPrefix() : ['php'];
     }
 }

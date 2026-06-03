@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Scheduler;
 
 use App\Core\Operation\Process\RunCommandAction;
+use App\Core\Process\PhpCliBinaryResolver;
 use App\Entity\SchedulerTask;
 
 final readonly class CommandSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
@@ -13,6 +14,7 @@ final readonly class CommandSchedulerTaskExecutor implements SchedulerTaskExecut
         private string $projectDir,
         private string $environment,
         private SchedulerCommandTargetParser $targetParser = new SchedulerCommandTargetParser(),
+        private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver(),
     )
     {
     }
@@ -25,7 +27,7 @@ final readonly class CommandSchedulerTaskExecutor implements SchedulerTaskExecut
     public function execute(SchedulerTask $task): SchedulerTaskExecution
     {
         $parts = $this->targetParser->parse($task->target());
-        $command = [$this->phpBinary(), $this->projectDir.'/bin/console', ...$parts];
+        $command = [...$this->phpCliCommandPrefix(), $this->projectDir.'/bin/console', ...$parts];
 
         $result = (new RunCommandAction($command, $this->projectDir, [
             'APP_ENV' => $this->environment,
@@ -39,10 +41,15 @@ final readonly class CommandSchedulerTaskExecutor implements SchedulerTaskExecut
             ]);
     }
 
-    private function phpBinary(): string
+    /**
+     * @return list<string>
+     */
+    private function phpCliCommandPrefix(): array
     {
-        $binary = PHP_BINARY;
+        $resolution = $this->phpCliBinaryResolver->resolve($this->projectDir, [
+            'APP_ENV' => $this->environment,
+        ]);
 
-        return '' !== $binary ? $binary : 'php';
+        return $resolution->isAvailable() ? $resolution->commandPrefix() : ['php'];
     }
 }

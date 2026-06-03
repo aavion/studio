@@ -12,6 +12,7 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Operation\ActionQueue;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Process\PhpCliBinaryResolver;
 use App\Core\Workflow\WorkflowResult;
 use App\Database\DatabaseReadyState;
 use App\Security\PasswordPolicy;
@@ -33,6 +34,7 @@ final class SetupRunner
         private readonly SetupDryRunPlanner $dryRunPlanner = new SetupDryRunPlanner(),
         private readonly SetupPasswordPolicy $passwordPolicy = new SetupPasswordPolicy(),
         private readonly SetupRollbacker $rollbacker = new SetupRollbacker(),
+        private readonly PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver(),
     ) {
     }
 
@@ -289,7 +291,7 @@ final class SetupRunner
     private function runPackageDiscovery(SetupInput $input, array $environment): array
     {
         $command = [
-            PHP_BINARY,
+            ...$this->phpCliCommandPrefix($environment),
             $this->projectDir.'/bin/console',
             'studio:packages:discover',
             '--run-now',
@@ -313,7 +315,7 @@ final class SetupRunner
     private function runAssetRebuild(SetupInput $input, array $environment): array
     {
         $command = [
-            PHP_BINARY,
+            ...$this->phpCliCommandPrefix($environment),
             $this->projectDir.'/bin/console',
             'studio:assets:rebuild',
             '--trigger=setup',
@@ -334,7 +336,7 @@ final class SetupRunner
     private function migrationCommand(SetupInput $input): array
     {
         return [
-            PHP_BINARY,
+            ...$this->phpCliCommandPrefix(),
             $this->projectDir.'/bin/console',
             'doctrine:migrations:migrate',
             '--no-interaction',
@@ -348,11 +350,27 @@ final class SetupRunner
     private function cacheClearCommand(SetupInput $input): array
     {
         return [
-            PHP_BINARY,
+            ...$this->phpCliCommandPrefix(),
             $this->projectDir.'/bin/console',
             'cache:clear',
             '--env='.$input->appEnv(),
         ];
+    }
+
+    /**
+     * @param array<string, string> $environment
+     *
+     * @return list<string>
+     */
+    private function phpCliCommandPrefix(array $environment = []): array
+    {
+        $resolution = $this->phpCliBinaryResolver->resolve($this->projectDir, $environment);
+
+        if (!$resolution->isAvailable()) {
+            throw new SetupStepFailedException('PHP CLI binary could not be resolved.');
+        }
+
+        return $resolution->commandPrefix();
     }
 
     /**

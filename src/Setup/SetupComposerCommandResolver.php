@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Process\PhpCliBinaryResolver;
+
 final readonly class SetupComposerCommandResolver
 {
+    public function __construct(private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver())
+    {
+    }
+
     /**
      * @param array<string, string> $environment
      *
@@ -17,12 +23,17 @@ final readonly class SetupComposerCommandResolver
         array $environment,
     ): array {
         $bundledComposer = $projectDir.'/bin/composer';
+        $phpCli = $this->phpCliBinaryResolver->resolve($projectDir, $environment);
+        $phpCommand = $phpCli->commandPrefix();
+
         if (
-            is_file($bundledComposer)
+            $phpCli->isAvailable()
+            && [] !== $phpCommand
+            && is_file($bundledComposer)
             && is_readable($bundledComposer)
-            && $this->commandWorks([PHP_BINARY, $bundledComposer, '--version'], $projectDir, $commandExecutor, $environment)
+            && $this->commandWorks([...$phpCommand, $bundledComposer, '--version'], $projectDir, $commandExecutor, $environment)
         ) {
-            return [PHP_BINARY, $bundledComposer];
+            return [...$phpCommand, $bundledComposer];
         }
 
         if ($this->commandWorks(['composer', '--version'], $projectDir, $commandExecutor, $environment)) {
@@ -38,8 +49,12 @@ final readonly class SetupComposerCommandResolver
     public function plannedCommand(string $projectDir): array
     {
         $bundledComposer = $projectDir.'/bin/composer';
+        $phpCli = $this->phpCliBinaryResolver->resolve($projectDir);
+        $phpCommand = $phpCli->commandPrefix();
 
-        return is_file($bundledComposer) && is_readable($bundledComposer) ? [PHP_BINARY, $bundledComposer] : ['composer'];
+        return $phpCli->isAvailable() && is_file($bundledComposer) && is_readable($bundledComposer)
+            ? [...$phpCommand, $bundledComposer]
+            : ['composer'];
     }
 
     /**

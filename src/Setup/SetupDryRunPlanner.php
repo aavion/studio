@@ -8,6 +8,7 @@ use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Process\PhpCliBinaryResolver;
 
 final readonly class SetupDryRunPlanner
 {
@@ -15,6 +16,7 @@ final readonly class SetupDryRunPlanner
         private SetupComposerCommandResolver $composerCommandResolver = new SetupComposerCommandResolver(),
         private SetupSensitiveValueMasker $sensitiveValueMasker = new SetupSensitiveValueMasker(),
         private SetupDefaultSeed $defaultSeed = new SetupDefaultSeed(),
+        private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver(),
     ) {
     }
 
@@ -25,6 +27,9 @@ final readonly class SetupDryRunPlanner
      */
     public function steps(string $projectDir, SetupInput $input, string $appSecret, string $databaseUrl, array $migrationCommand): array
     {
+        $phpCli = $this->phpCliBinaryResolver->resolve($projectDir);
+        $phpCommand = $phpCli->isAvailable() ? $phpCli->commandPrefix() : ['php'];
+
         return [
             ['write_environment', fn (): array => [
                 '_messages' => [
@@ -66,15 +71,15 @@ final readonly class SetupDryRunPlanner
             ], ActionLogStatus::Skipped],
             ['clear_cache', fn (): array => [
                 'dry_run' => true,
-                'command' => [PHP_BINARY, $projectDir.'/bin/console', 'cache:clear', '--env='.$input->appEnv()],
+                'command' => [...$phpCommand, $projectDir.'/bin/console', 'cache:clear', '--env='.$input->appEnv()],
             ], ActionLogStatus::Skipped],
             ['run_package_discovery', fn (): array => [
                 'dry_run' => true,
-                'command' => [PHP_BINARY, $projectDir.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env='.$input->appEnv()],
+                'command' => [...$phpCommand, $projectDir.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env='.$input->appEnv()],
             ], ActionLogStatus::Skipped],
             ['run_asset_rebuild', fn (): array => [
                 'dry_run' => true,
-                'command' => [PHP_BINARY, $projectDir.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env='.$input->appEnv()],
+                'command' => [...$phpCommand, $projectDir.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env='.$input->appEnv()],
             ], ActionLogStatus::Skipped],
             ['mark_setup_completed', fn (): array => [
                 'dry_run' => true,

@@ -6,12 +6,16 @@ namespace App\Core\Operation\Live;
 
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\Process\RunCommandAction;
+use App\Core\Process\PhpCliBinaryResolver;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 final readonly class PackageDiscoveryLiveOperationProvider implements LiveOperationQueueProviderInterface
 {
-    public function __construct(private KernelInterface $kernel)
+    public function __construct(
+        private KernelInterface $kernel,
+        private PhpCliBinaryResolver $phpCliBinaryResolver,
+    )
     {
     }
 
@@ -32,7 +36,7 @@ final readonly class PackageDiscoveryLiveOperationProvider implements LiveOperat
 
         return WorkflowResult::success(ActionQueue::create('package discovery', [
             new RunCommandAction([
-                PHP_BINARY,
+                ...$this->phpCliCommandPrefix(),
                 $this->kernel->getProjectDir().'/bin/console',
                 'studio:packages:discover',
                 '--run-now',
@@ -44,6 +48,16 @@ final readonly class PackageDiscoveryLiveOperationProvider implements LiveOperat
             'environment' => $environment,
             'trigger' => $trigger,
         ]));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function phpCliCommandPrefix(): array
+    {
+        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
+
+        return $resolution->isAvailable() ? $resolution->commandPrefix() : ['php'];
     }
 
     /**

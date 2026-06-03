@@ -7,6 +7,7 @@ namespace App\Core\Operation\Live;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Process\PhpCliBinaryResolver;
 use App\Core\Workflow\WorkflowResult;
 use App\Setup\SetupLiveOperationPayloadProtector;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -19,6 +20,7 @@ final readonly class LiveOperationStarter
         private KernelInterface $kernel,
         private LiveOperationRunStore $runStore,
         private SetupLiveOperationPayloadProtector $setupPayloadProtector,
+        private PhpCliBinaryResolver $phpCliBinaryResolver,
     ) {
     }
 
@@ -74,7 +76,7 @@ final readonly class LiveOperationStarter
     private function startProcess(string $operationId, string $token): void
     {
         $command = [
-            PHP_BINARY,
+            ...$this->phpCliCommandPrefix(),
             $this->kernel->getProjectDir().'/bin/console',
             'studio:operations:run',
             $operationId,
@@ -95,5 +97,19 @@ final readonly class LiveOperationStarter
         if (!$process->isSuccessful()) {
             throw new \RuntimeException('Live operation runner could not be started.');
         }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function phpCliCommandPrefix(): array
+    {
+        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
+
+        if (!$resolution->isAvailable()) {
+            throw new \RuntimeException('PHP CLI binary could not be resolved.');
+        }
+
+        return $resolution->commandPrefix();
     }
 }
