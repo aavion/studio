@@ -42,10 +42,15 @@ final class SetupRunnerTest extends TestCase
         $databasePath = $this->root.'/var/setup.db';
         $this->createSchema($databasePath);
         $composerEnvironments = [];
+        $assetRebuildEnvironment = null;
         $root = $this->root;
-        $executor = new RecordingSetupCommandExecutor(onRun: static function (array $command, string $_cwd, array $environment) use (&$composerEnvironments): void {
+        $executor = new RecordingSetupCommandExecutor(onRun: static function (array $command, string $_cwd, array $environment) use (&$composerEnvironments, &$assetRebuildEnvironment): void {
             if (in_array('--version', $command, true) || in_array('dump-env', $command, true)) {
                 $composerEnvironments[] = $environment;
+            }
+
+            if (in_array('studio:assets:rebuild', $command, true)) {
+                $assetRebuildEnvironment = $environment;
             }
         });
         $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
@@ -81,6 +86,7 @@ final class SetupRunnerTest extends TestCase
         self::assertSame($root.'/var/composer-cache', $composerEnvironments[1]['COMPOSER_CACHE_DIR'] ?? null);
         self::assertSame($root.'/var', $composerEnvironments[1]['HOME'] ?? null);
         self::assertSame('0', $composerEnvironments[1]['SHELL_VERBOSITY'] ?? null);
+        self::assertSame('0', $assetRebuildEnvironment['SHELL_VERBOSITY'] ?? null);
         self::assertSame([
             ['composer', '--version'],
             ['composer', 'dump-env', 'test'],

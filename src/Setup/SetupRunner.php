@@ -315,6 +315,10 @@ final class SetupRunner
      */
     private function runAssetRebuild(SetupInput $input, array $environment): array
     {
+        $environment = [
+            ...$environment,
+            'SHELL_VERBOSITY' => '0',
+        ];
         $command = [
             ...$this->phpCliCommandPrefix($environment),
             $this->projectDir.'/bin/console',
