@@ -7,6 +7,7 @@ namespace App\Setup;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Process\CliProcessEnvironment;
 use Symfony\Component\Process\Process;
 
 final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutorInterface
@@ -42,6 +43,9 @@ final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutor
             ...$this->scalarEnvironment(getenv()),
             ...$this->scalarEnvironment($_SERVER),
             ...$this->scalarEnvironment($_ENV),
+        ];
+        $processEnvironment = [
+            ...CliProcessEnvironment::removeWebContextFrom($processEnvironment),
             ...$environment,
         ];
 

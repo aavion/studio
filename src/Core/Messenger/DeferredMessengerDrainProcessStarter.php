@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Messenger;
 
+use App\Core\Process\CliProcessEnvironment;
 use Symfony\Component\Process\Process;
 
 final readonly class DeferredMessengerDrainProcessStarter implements DeferredMessengerDrainStarterInterface
@@ -24,7 +25,7 @@ final readonly class DeferredMessengerDrainProcessStarter implements DeferredMes
         $shellCommand = implode(' ', array_map('escapeshellarg', $command))
             .' > '.escapeshellarg($outputPath).' 2>&1 & echo $! > '.escapeshellarg($pidPath);
 
-        $process = Process::fromShellCommandline($shellCommand, $cwd, timeout: 5.0);
+        $process = Process::fromShellCommandline($shellCommand, $cwd, CliProcessEnvironment::withoutWebContext(), timeout: 5.0);
         $process->run();
 
         return $process->isSuccessful();

@@ -142,10 +142,14 @@ final readonly class PhpCliBinaryResolver
      */
     private function processEnvironment(array $environment): array
     {
-        return [
+        $inheritedEnvironment = [
             ...$this->scalarEnvironment(getenv()),
             ...$this->scalarEnvironment($_SERVER),
             ...$this->scalarEnvironment($_ENV),
+        ];
+
+        return [
+            ...CliProcessEnvironment::removeWebContextFrom($inheritedEnvironment),
             ...$environment,
         ];
     }

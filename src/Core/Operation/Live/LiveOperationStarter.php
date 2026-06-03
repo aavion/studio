@@ -7,6 +7,7 @@ namespace App\Core\Operation\Live;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Process\CliProcessEnvironment;
 use App\Core\Process\PhpCliBinaryResolver;
 use App\Core\Workflow\WorkflowResult;
 use App\Setup\SetupLiveOperationPayloadProtector;
@@ -91,7 +92,12 @@ final readonly class LiveOperationStarter
 
         // Symfony Process stops async children on destruction, so we only use it
         // to ask the shell to detach the actual runner.
-        $process = Process::fromShellCommandline($shellCommand, $this->kernel->getProjectDir(), timeout: 5.0);
+        $process = Process::fromShellCommandline(
+            $shellCommand,
+            $this->kernel->getProjectDir(),
+            CliProcessEnvironment::withoutWebContext(['APP_ENV' => $this->kernel->getEnvironment()]),
+            timeout: 5.0,
+        );
         $process->run();
 
         if (!$process->isSuccessful()) {

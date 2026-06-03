@@ -32,6 +32,7 @@ final class ProcessSetupCommandExecutorTest extends TestCase
         mkdir($this->root.'/var', 0777, true);
         $this->backupEnvironmentValue('COMPOSER_HOME');
         $this->backupEnvironmentValue('DATABASE_URL');
+        $this->backupEnvironmentValue('HTTP_HOST');
     }
 
     protected function tearDown(): void
@@ -98,6 +99,22 @@ final class ProcessSetupCommandExecutorTest extends TestCase
             [PHP_BINARY, '-r', 'echo getenv("DATABASE_URL") === false ? "unset" : getenv("DATABASE_URL");'],
             $this->root,
             ['DATABASE_URL' => false],
+        );
+
+        self::assertTrue($result->isSuccessful(), $result->errorOutput());
+        self::assertSame('unset', $result->output());
+    }
+
+    public function testItDoesNotPassInheritedWebContextToSetupCommands(): void
+    {
+        putenv('HTTP_HOST=example.test');
+        $_SERVER['HTTP_HOST'] = 'example.test';
+        $_ENV['HTTP_HOST'] = 'example.test';
+        $executor = new ProcessSetupCommandExecutor();
+
+        $result = $executor->run(
+            [PHP_BINARY, '-r', 'echo getenv("HTTP_HOST") === false ? "unset" : getenv("HTTP_HOST");'],
+            $this->root,
         );
 
         self::assertTrue($result->isSuccessful(), $result->errorOutput());
