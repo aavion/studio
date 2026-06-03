@@ -67,7 +67,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-03
-- Started `feat-php-cli-resolver`: added a shared PHP CLI resolver for web-hosted setup and background processes, with explicit preflight diagnostics for safe mode, disabled process functions, server-config-blocked CLI, and unresolved PHP binaries; wired setup preflight, setup runner, Composer phar execution, live operations, Messenger drain, scheduler command execution, and asset/backend command queues to use the resolved PHP CLI command prefix, failing command queues with a Message instead of falling back to an unverified `php` binary.
+- Started `feat-php-cli-resolver`: added a shared PHP CLI resolver for web-hosted setup and background processes, with explicit preflight diagnostics for safe mode, disabled process functions, server-config-blocked CLI, and unresolved PHP binaries; wired setup preflight, setup runner, Composer phar execution, live operations, Messenger drain, scheduler command execution, and asset/backend command queues to use the resolved PHP CLI command prefix, failing command queues with a Message instead of falling back to an unverified `php` binary; hardened CLI output assertions against terminal-width wrapping.
 
 ### 2026-06-01
 - Updated tailwind-binary to v4.3.0 and composer dependencies
