@@ -129,6 +129,49 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
+    public function testSetupSiteStepPrefillsDefaultUriFromHttpHost(): void
+    {
+        $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
+        $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
+        $previousPutenvValue = getenv(SetupCompletionMarker::KEY);
+
+        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
+        putenv(SetupCompletionMarker::KEY);
+
+        try {
+            $client = self::createClient();
+            $server = [
+                'HTTP_HOST' => 'studio.example.test:8443',
+                'HTTPS' => 'on',
+            ];
+            $client->request('GET', '/setup', server: $server);
+            $this->setSetupWizardState($client, [
+                'values' => ['language' => 'en'],
+                'completed' => ['language'],
+                'workflow' => null,
+                'action_log' => null,
+            ]);
+
+            $crawler = $client->request('GET', '/setup/site', server: $server);
+
+            self::assertResponseIsSuccessful();
+            self::assertSame('https://studio.example.test:8443', $crawler->filter('input[name="default_uri"]')->attr('value'));
+
+            $this->setSetupWizardState($client, [
+                'values' => ['language' => 'en', 'default_uri' => 'https://configured.example.test'],
+                'completed' => ['language'],
+                'workflow' => null,
+                'action_log' => null,
+            ]);
+            $crawler = $client->request('GET', '/setup/site', server: $server);
+
+            self::assertResponseIsSuccessful();
+            self::assertSame('https://configured.example.test', $crawler->filter('input[name="default_uri"]')->attr('value'));
+        } finally {
+            $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
+        }
+    }
+
     public function testSetupDatabaseStepDoesNotRequireServerFieldsForInitialSqliteRender(): void
     {
         $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
