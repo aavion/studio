@@ -86,6 +86,9 @@ final class RunCommandActionTest extends TestCase
         self::assertSame(WorkflowStatus::Failed, $execution->result()->status());
         self::assertSame('process.command_failed', $execution->result()->firstIssue()?->code());
         self::assertSame(7, $execution->result()->firstIssue()?->context()['exit_code']);
+        self::assertIsString($execution->result()->firstIssue()?->context()['exit_code_text']);
+        self::assertFalse($execution->result()->firstIssue()?->context()['signaled']);
+        self::assertNull($execution->result()->firstIssue()?->context()['term_signal']);
         self::assertSame('nope', $execution->actionLog()->entries()[0]->context()['error_excerpt']);
     }
 

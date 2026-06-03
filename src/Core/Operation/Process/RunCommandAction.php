@@ -95,6 +95,9 @@ final readonly class RunCommandAction implements OperationActionInterface
             'label' => $this->label(),
             'cwd' => $this->cwd,
             'exit_code' => $process->getExitCode(),
+            'exit_code_text' => $process->getExitCodeText(),
+            'signaled' => $process->hasBeenSignaled(),
+            'term_signal' => $process->hasBeenSignaled() ? $process->getTermSignal() : null,
             'output_excerpt' => $this->excerpt($process->getOutput()),
             'error_excerpt' => $this->excerpt($process->getErrorOutput()),
         ];

@@ -25,6 +25,8 @@ final class AssetRebuildQueueFactoryTest extends TestCase
 
     protected function tearDown(): void
     {
+        unset($_SERVER['APP_DEBUG'], $_ENV['APP_DEBUG']);
+        putenv('APP_DEBUG');
         $this->removeDirectory($this->root);
     }
 
@@ -62,6 +64,17 @@ final class AssetRebuildQueueFactoryTest extends TestCase
         self::assertStringContainsString('cache:clear', $actions[7]->label());
         self::assertTrue($queue->context()['production_compile']);
         self::assertSame('setup', $queue->context()['trigger']);
+    }
+
+    public function testItRunsTailwindVerbosityInDebugMode(): void
+    {
+        $_SERVER['APP_DEBUG'] = '1';
+
+        $queue = $this->factory()->create('dev', []);
+        $actions = $queue->actions();
+
+        self::assertStringContainsString('tailwind:build', $actions[4]->label());
+        self::assertStringContainsString('-vvv', $actions[4]->label());
     }
 
     private function factory(): AssetRebuildQueueFactory

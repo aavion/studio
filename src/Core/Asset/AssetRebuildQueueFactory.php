@@ -66,12 +66,24 @@ final readonly class AssetRebuildQueueFactory
             ]);
         }
 
-        return new RunCommandAction([
+        $consoleCommand = [
             ...$resolution->commandPrefix(),
             $this->projectDir.'/bin/console',
             $command,
             '--env='.$environment,
             '--no-interaction',
-        ], $this->projectDir, timeout: $timeout);
+        ];
+        if ('tailwind:build' === $command && $this->debugEnabled()) {
+            $consoleCommand[] = '-vvv';
+        }
+
+        return new RunCommandAction($consoleCommand, $this->projectDir, timeout: $timeout);
+    }
+
+    private function debugEnabled(): bool
+    {
+        $debug = $_SERVER['APP_DEBUG'] ?? $_ENV['APP_DEBUG'] ?? getenv('APP_DEBUG');
+
+        return is_scalar($debug) && in_array(strtolower((string) $debug), ['1', 'true', 'on', 'yes'], true);
     }
 }
