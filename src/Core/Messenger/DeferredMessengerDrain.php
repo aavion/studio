@@ -8,6 +8,7 @@ use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Process\PhpCliBinaryResolver;
 use App\Scheduler\SchedulerSettings;
 use DateTimeImmutable;
@@ -47,6 +48,19 @@ final readonly class DeferredMessengerDrain
             return false;
         }
 
+        $phpCliResolution = $this->phpCliBinaryResolver->resolve($this->projectDir());
+        if (!$phpCliResolution->isAvailable()) {
+            $this->messageLogger?->log(PhpCliUnavailableAction::message('deferred messenger drain', $phpCliResolution->reason(), [
+                'drain_messenger' => $drainMessenger,
+                'run_scheduler' => $runScheduler,
+                'environment' => $this->safeEnvironment(),
+            ]));
+
+            return false;
+        }
+
+        $phpCliCommandPrefix = $phpCliResolution->commandPrefix();
+
         if (!$this->acquireCooldownLock()) {
             return false;
         }
@@ -54,7 +68,7 @@ final readonly class DeferredMessengerDrain
         $messengerStarted = null;
 
         if ($drainMessenger) {
-            $messengerStarted = $this->startDetached($this->messengerCommand(), $this->outputPath(), $this->pidPath());
+            $messengerStarted = $this->startDetached($this->messengerCommand($phpCliCommandPrefix), $this->outputPath(), $this->pidPath());
             if (!$messengerStarted) {
                 $this->clearCooldownLock();
 
@@ -64,7 +78,7 @@ final readonly class DeferredMessengerDrain
 
         $schedulerStarted = null;
         if ($runScheduler) {
-            $schedulerStarted = $this->startDetached($this->schedulerCommand(), $this->schedulerOutputPath(), $this->schedulerPidPath());
+            $schedulerStarted = $this->startDetached($this->schedulerCommand($phpCliCommandPrefix), $this->schedulerOutputPath(), $this->schedulerPidPath());
         }
 
         if (true !== $messengerStarted && true !== $schedulerStarted) {
@@ -188,10 +202,10 @@ final readonly class DeferredMessengerDrain
     /**
      * @return list<string>
      */
-    private function messengerCommand(): array
+    private function messengerCommand(array $phpCliCommandPrefix): array
     {
         return [
-            ...$this->phpCliCommandPrefix(),
+            ...$phpCliCommandPrefix,
             $this->projectDir().'/bin/console',
             'messenger:consume',
             $this->transportName,
@@ -206,10 +220,10 @@ final readonly class DeferredMessengerDrain
     /**
      * @return list<string>
      */
-    private function schedulerCommand(): array
+    private function schedulerCommand(array $phpCliCommandPrefix): array
     {
         return [
-            ...$this->phpCliCommandPrefix(),
+            ...$phpCliCommandPrefix,
             $this->projectDir().'/bin/scheduler',
             '--json',
             '--env='.$this->safeEnvironment(),
@@ -272,13 +286,4 @@ final readonly class DeferredMessengerDrain
         return preg_replace('/[^a-zA-Z0-9_.-]/', '_', $this->environment) ?: 'prod';
     }
 
-    /**
-     * @return list<string>
-     */
-    private function phpCliCommandPrefix(): array
-    {
-        $resolution = $this->phpCliBinaryResolver->resolve($this->projectDir());
-
-        return $resolution->isAvailable() ? $resolution->commandPrefix() : ['php'];
-    }
 }

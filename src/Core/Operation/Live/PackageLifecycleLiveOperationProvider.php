@@ -8,6 +8,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Operation\ActionQueue;
+use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Process\PhpCliBinaryResolver;
 use App\Core\Workflow\WorkflowResult;
@@ -49,10 +50,30 @@ final readonly class PackageLifecycleLiveOperationProvider implements LiveOperat
         }
 
         $environment = $this->environment($payload);
+        $trigger = $this->trigger($payload);
+        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
+
+        if (!$resolution->isAvailable()) {
+            return WorkflowResult::failed([
+                PhpCliUnavailableAction::message('studio:packages:lifecycle', $resolution->reason(), [
+                    'operation' => $this->operation(),
+                    'package' => trim($packageName),
+                    'action' => trim($action),
+                    'environment' => $environment,
+                    'trigger' => $trigger,
+                ]),
+            ], [
+                'operation' => $this->operation(),
+                'package' => trim($packageName),
+                'action' => trim($action),
+                'environment' => $environment,
+                'trigger' => $trigger,
+            ]);
+        }
 
         return WorkflowResult::success(ActionQueue::create('package lifecycle', [
             new RunCommandAction([
-                ...$this->phpCliCommandPrefix(),
+                ...$resolution->commandPrefix(),
                 $this->kernel->getProjectDir().'/bin/console',
                 'studio:packages:lifecycle',
                 trim($packageName),
@@ -65,18 +86,8 @@ final readonly class PackageLifecycleLiveOperationProvider implements LiveOperat
             'package' => trim($packageName),
             'action' => trim($action),
             'environment' => $environment,
-            'trigger' => $this->trigger($payload),
+            'trigger' => $trigger,
         ]));
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function phpCliCommandPrefix(): array
-    {
-        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
-
-        return $resolution->isAvailable() ? $resolution->commandPrefix() : ['php'];
     }
 
     /**

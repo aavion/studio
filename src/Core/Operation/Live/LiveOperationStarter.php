@@ -107,7 +107,7 @@ final readonly class LiveOperationStarter
         $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
 
         if (!$resolution->isAvailable()) {
-            throw new \RuntimeException('PHP CLI binary could not be resolved.');
+            throw new \RuntimeException('PHP CLI binary could not be resolved: '.$resolution->reason().'.');
         }
 
         return $resolution->commandPrefix();

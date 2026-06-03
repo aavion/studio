@@ -28,7 +28,7 @@ final readonly class SetupDryRunPlanner
     public function steps(string $projectDir, SetupInput $input, string $appSecret, string $databaseUrl, array $migrationCommand): array
     {
         $phpCli = $this->phpCliBinaryResolver->resolve($projectDir);
-        $phpCommand = $phpCli->isAvailable() ? $phpCli->commandPrefix() : ['php'];
+        $phpCommand = $phpCli->isAvailable() ? $phpCli->commandPrefix() : ['php-cli-unavailable:'.$phpCli->reason()];
 
         return [
             ['write_environment', fn (): array => [

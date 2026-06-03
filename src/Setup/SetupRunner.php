@@ -367,7 +367,7 @@ final class SetupRunner
         $resolution = $this->phpCliBinaryResolver->resolve($this->projectDir, $environment);
 
         if (!$resolution->isAvailable()) {
-            throw new SetupStepFailedException('PHP CLI binary could not be resolved.');
+            throw new SetupStepFailedException('PHP CLI binary could not be resolved: '.$resolution->reason().'.');
         }
 
         return $resolution->commandPrefix();

@@ -155,6 +155,7 @@ message:
   process:
     command_failed: 'Schritt "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
     command_completed: 'Schritt "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'
+    php_cli_unavailable: 'PHP-CLI ist für Schritt "%command%" nicht verfügbar. Prüfe die Setup-Vorabprüfung oder die PHP-Konfiguration des Servers.'
   access:
     granted: 'Zugriff für "%capability%" erlaubt.'
     denied: 'Zugriff für "%capability%" verweigert: erforderlich ist Level %required_level%; Actor hat Level %actor_level%.'

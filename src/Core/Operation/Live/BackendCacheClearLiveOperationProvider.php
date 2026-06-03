@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Operation\Live;
 
 use App\Core\Operation\ActionQueue;
+use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Process\PhpCliBinaryResolver;
 use App\Core\Workflow\WorkflowResult;
@@ -32,10 +33,24 @@ final readonly class BackendCacheClearLiveOperationProvider implements LiveOpera
     public function create(array $payload = []): WorkflowResult
     {
         $environment = $this->environment($payload);
+        $trigger = $this->trigger($payload);
+        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
+
+        if (!$resolution->isAvailable()) {
+            return WorkflowResult::failed([
+                PhpCliUnavailableAction::message('cache:clear', $resolution->reason(), [
+                    'environment' => $environment,
+                    'trigger' => $trigger,
+                ]),
+            ], [
+                'environment' => $environment,
+                'trigger' => $trigger,
+            ]);
+        }
 
         return WorkflowResult::success(ActionQueue::create('backend cache clear', [
             new RunCommandAction([
-                ...$this->phpCliCommandPrefix(),
+                ...$resolution->commandPrefix(),
                 $this->kernel->getProjectDir().'/bin/console',
                 'cache:clear',
                 '--env='.$environment,
@@ -43,18 +58,8 @@ final readonly class BackendCacheClearLiveOperationProvider implements LiveOpera
             ], $this->kernel->getProjectDir(), timeout: 300.0),
         ], context: [
             'environment' => $environment,
-            'trigger' => $this->trigger($payload),
+            'trigger' => $trigger,
         ]));
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function phpCliCommandPrefix(): array
-    {
-        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
-
-        return $resolution->isAvailable() ? $resolution->commandPrefix() : ['php'];
     }
 
     /**

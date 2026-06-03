@@ -11,6 +11,7 @@ use App\Core\Operation\ActionQueue;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationStarter;
 use App\Core\Operation\OperationExecutor;
+use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Package\PackageAssetRebuildDispatcher;
 use App\Core\Package\PackageDiscoveryRunner;
@@ -128,9 +129,23 @@ final readonly class BackendActions
      */
     private function clearCache(): WorkflowResult
     {
+        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
+
+        if (!$resolution->isAvailable()) {
+            return WorkflowResult::failed([
+                PhpCliUnavailableAction::message('cache:clear', $resolution->reason(), [
+                    'environment' => $this->kernel->getEnvironment(),
+                    'trigger' => 'admin_ui',
+                ]),
+            ], [
+                'environment' => $this->kernel->getEnvironment(),
+                'trigger' => 'admin_ui',
+            ]);
+        }
+
         $queue = ActionQueue::create('backend cache clear', [
             new RunCommandAction([
-                ...$this->phpCliCommandPrefix(),
+                ...$resolution->commandPrefix(),
                 $this->kernel->getProjectDir().'/bin/console',
                 'cache:clear',
                 '--env='.$this->kernel->getEnvironment(),
@@ -152,15 +167,5 @@ final readonly class BackendActions
                 context: ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
             ),
         ]);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function phpCliCommandPrefix(): array
-    {
-        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
-
-        return $resolution->isAvailable() ? $resolution->commandPrefix() : ['php'];
     }
 }

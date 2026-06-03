@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Asset;
 
 use App\Core\Operation\ActionQueue;
+use App\Core\Operation\OperationActionInterface;
 use App\Core\Operation\Filesystem\RemovePathAction;
+use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Package\PackageAssetSyncAction;
 use App\Core\Package\PackageAssetSyncPackage;
@@ -53,24 +55,23 @@ final readonly class AssetRebuildQueueFactory
         ]);
     }
 
-    private function consoleCommand(string $command, string $environment, ?float $timeout = 120.0): RunCommandAction
+    private function consoleCommand(string $command, string $environment, ?float $timeout = 120.0): OperationActionInterface
     {
+        $resolution = $this->phpCliBinaryResolver->resolve($this->projectDir);
+
+        if (!$resolution->isAvailable()) {
+            return new PhpCliUnavailableAction($command, $resolution->reason(), [
+                'environment' => $environment,
+                'project_dir' => $this->projectDir,
+            ]);
+        }
+
         return new RunCommandAction([
-            ...$this->phpCliCommandPrefix(),
+            ...$resolution->commandPrefix(),
             $this->projectDir.'/bin/console',
             $command,
             '--env='.$environment,
             '--no-interaction',
         ], $this->projectDir, timeout: $timeout);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function phpCliCommandPrefix(): array
-    {
-        $resolution = $this->phpCliBinaryResolver->resolve($this->projectDir);
-
-        return $resolution->isAvailable() ? $resolution->commandPrefix() : ['php'];
     }
 }

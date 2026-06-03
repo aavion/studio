@@ -15,7 +15,7 @@ final readonly class PhpCliBinaryResolver
     public function resolve(?string $workingDirectory = null, array $environment = []): PhpCliBinaryResolution
     {
         if ($this->safeModeEnabled()) {
-            return PhpCliBinaryResolution::unavailable('server_config');
+            return PhpCliBinaryResolution::unavailable('safe_mode_enabled');
         }
 
         if (!$this->processFunctionsAvailable()) {
