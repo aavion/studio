@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Setup;
 
 use App\Core\ActionLog\ActionLog;
+use App\Database\DatabaseReadyState;
 use App\Setup\DatabaseDriver;
 use App\Setup\DatabaseUrlFactory;
 use App\Setup\SetupCommandExecutorInterface;
@@ -86,7 +87,15 @@ final class SetupRunnerTest extends TestCase
         self::assertSame($root.'/var/composer-cache', $composerEnvironments[1]['COMPOSER_CACHE_DIR'] ?? null);
         self::assertSame($root.'/var', $composerEnvironments[1]['HOME'] ?? null);
         self::assertSame('0', $composerEnvironments[1]['SHELL_VERBOSITY'] ?? null);
+        self::assertIsArray($assetRebuildEnvironment);
+        self::assertSame('test', $assetRebuildEnvironment['APP_ENV'] ?? null);
+        self::assertFalse($assetRebuildEnvironment['APP_DEBUG'] ?? null);
         self::assertSame('0', $assetRebuildEnvironment['SHELL_VERBOSITY'] ?? null);
+        self::assertSame('1', $assetRebuildEnvironment[DatabaseReadyState::ALLOW_UNREADY_KEY] ?? null);
+        self::assertFalse($assetRebuildEnvironment['APP_SECRET'] ?? null);
+        self::assertFalse($assetRebuildEnvironment['DATABASE_URL'] ?? null);
+        self::assertFalse($assetRebuildEnvironment['APP_DATABASE_PREFIX'] ?? null);
+        self::assertFalse($assetRebuildEnvironment['DEFAULT_URI'] ?? null);
         self::assertSame([
             ['composer', '--version'],
             ['composer', 'dump-env', 'test'],

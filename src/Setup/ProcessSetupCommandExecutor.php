@@ -11,6 +11,9 @@ use Symfony\Component\Process\Process;
 
 final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutorInterface
 {
+    /**
+     * @param array<string, string|false> $environment
+     */
     public function run(array $command, string $cwd, array $environment = []): SetupCommandResult
     {
         try {
@@ -29,9 +32,9 @@ final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutor
     }
 
     /**
-     * @param array<string, string> $environment
+     * @param array<string, string|false> $environment
      *
-     * @return array<string, string>
+     * @return array<string, string|false>
      */
     private function processEnvironment(string $cwd, array $environment): array
     {
@@ -85,11 +88,11 @@ final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutor
     }
 
     /**
-     * @param array<string, string> $environment
+     * @param array<string, string|false> $environment
      */
     private function hasNonEmptyEnvironmentValue(array $environment, string $name): bool
     {
-        return array_key_exists($name, $environment) && '' !== trim($environment[$name]);
+        return array_key_exists($name, $environment) && false !== $environment[$name] && '' !== trim($environment[$name]);
     }
 
     private function ensureDirectory(string $path): void

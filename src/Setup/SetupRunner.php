@@ -315,24 +315,59 @@ final class SetupRunner
      */
     private function runAssetRebuild(SetupInput $input, array $environment): array
     {
-        $environment = [
-            ...$environment,
-            'SHELL_VERBOSITY' => '0',
-        ];
+        $phpResolutionEnvironment = $this->phpResolutionEnvironment($environment);
+        $commandEnvironment = $this->assetRebuildCommandEnvironment($input, $phpResolutionEnvironment);
         $command = [
-            ...$this->phpCliCommandPrefix($environment),
+            ...$this->phpCliCommandPrefix($phpResolutionEnvironment),
             $this->projectDir.'/bin/console',
             'studio:assets:rebuild',
             '--trigger=setup',
             '--env='.$input->appEnv(),
         ];
-        $result = $this->commandExecutor->run($command, $this->projectDir, $this->databaseCommandEnvironment($environment));
+        $result = $this->commandExecutor->run($command, $this->projectDir, $commandEnvironment);
 
         if (!$result->isSuccessful()) {
             throw new SetupStepFailedException($this->commandError($result));
         }
 
         return ['command' => $command];
+    }
+
+    /**
+     * @param array<string, string> $environment
+     *
+     * @return array<string, string|false>
+     */
+    private function assetRebuildCommandEnvironment(SetupInput $input, array $environment): array
+    {
+        return [
+            ...$environment,
+            'APP_ENV' => $input->appEnv(),
+            'APP_DEBUG' => false,
+            'APP_SECRET' => false,
+            'DATABASE_URL' => false,
+            'APP_DATABASE_PREFIX' => false,
+            'DEFAULT_URI' => false,
+            'SHELL_VERBOSITY' => '0',
+            DatabaseReadyState::ALLOW_UNREADY_KEY => '1',
+        ];
+    }
+
+    /**
+     * @param array<string, string> $environment
+     *
+     * @return array<string, string>
+     */
+    private function phpResolutionEnvironment(array $environment): array
+    {
+        $phpResolutionEnvironment = [];
+        foreach (['PATH', 'SystemRoot', 'WINDIR'] as $name) {
+            if (array_key_exists($name, $environment)) {
+                $phpResolutionEnvironment[$name] = $environment[$name];
+            }
+        }
+
+        return $phpResolutionEnvironment;
     }
 
     /**

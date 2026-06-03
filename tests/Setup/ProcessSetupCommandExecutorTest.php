@@ -31,6 +31,7 @@ final class ProcessSetupCommandExecutorTest extends TestCase
         $this->root = sys_get_temp_dir().'/studio-setup-process-test-'.bin2hex(random_bytes(6));
         mkdir($this->root.'/var', 0777, true);
         $this->backupEnvironmentValue('COMPOSER_HOME');
+        $this->backupEnvironmentValue('DATABASE_URL');
     }
 
     protected function tearDown(): void
@@ -84,6 +85,23 @@ final class ProcessSetupCommandExecutorTest extends TestCase
 
         self::assertTrue($result->isSuccessful(), $result->errorOutput());
         self::assertSame($customComposerHome, $result->output());
+    }
+
+    public function testItCanRemoveInheritedEnvironmentValues(): void
+    {
+        putenv('DATABASE_URL=sqlite:///inherited.db');
+        $_SERVER['DATABASE_URL'] = 'sqlite:///server.db';
+        $_ENV['DATABASE_URL'] = 'sqlite:///env.db';
+        $executor = new ProcessSetupCommandExecutor();
+
+        $result = $executor->run(
+            [PHP_BINARY, '-r', 'echo getenv("DATABASE_URL") === false ? "unset" : getenv("DATABASE_URL");'],
+            $this->root,
+            ['DATABASE_URL' => false],
+        );
+
+        self::assertTrue($result->isSuccessful(), $result->errorOutput());
+        self::assertSame('unset', $result->output());
     }
 
     private function backupEnvironmentValue(string $name): void
