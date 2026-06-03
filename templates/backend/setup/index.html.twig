@@ -115,6 +115,10 @@
                                 {% set check_icon = 'ti-server' %}
                             {% elseif check.key == 'php_version' %}
                                 {% set check_icon = 'ti-code' %}
+                            {% elseif check.key == 'safe_mode' %}
+                                {% set check_icon = 'ti-shield-check' %}
+                            {% elseif check.key == 'process_functions' %}
+                                {% set check_icon = 'ti-settings-automation' %}
                             {% elseif check.key == 'required_extensions' or check.key == 'optional_database_extensions' %}
                                 {% set check_icon = 'ti-puzzle' %}
                             {% elseif check.key == 'cli_runner' %}

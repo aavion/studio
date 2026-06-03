@@ -57,6 +57,8 @@ final class SetupPreflightCheckerTest extends TestCase
         self::assertContains('cli_runner', $keys);
         self::assertContains('composer_binary', $keys);
         self::assertContains('php_version', $keys);
+        self::assertContains('safe_mode', $detailKeys);
+        self::assertContains('process_functions', $detailKeys);
         self::assertContains('required_extensions', $detailKeys);
         self::assertContains('writable_paths', $detailKeys);
     }

@@ -62,8 +62,12 @@ setup:
       path: '%path%'
       php_version: 'PHP %version%'
       php_version_requirement: 'PHP %version% (erforderlich: %required% oder neuer)'
+      process_functions_available: 'PHP-Prozessfunktionen sind verfügbar'
+      process_functions_disabled: 'Deaktiviert: %functions%'
       present: 'vorhanden'
       missing: 'nicht vorhanden'
+      safe_mode_disabled: 'Safe Mode ist deaktiviert'
+      safe_mode_enabled: 'Safe Mode ist aktiviert'
       unavailable: 'nicht verfügbar'
       binary_not_found: 'PHP-CLI-Binary konnte nicht erkannt werden'
       process_disabled: 'PHP-Prozessfunktionen sind deaktiviert'
@@ -115,6 +119,14 @@ setup:
         label: 'PHP-Version'
         help: 'Die aktuelle PHP-Laufzeit erfüllt die Projektanforderung.'
         instruction: 'Führe Setup mit einer von composer.json unterstützten PHP-Version aus.'
+      safe_mode:
+        label: 'PHP Safe Mode'
+        help: 'PHP Safe Mode ist deaktiviert.'
+        instruction: 'Deaktiviere PHP Safe Mode in der Server-Konfiguration.'
+      process_functions:
+        label: 'PHP-Prozessfunktionen'
+        help: 'Die für Symfony Process benötigten PHP-Funktionen sind verfügbar.'
+        instruction: 'Aktiviere die gelisteten PHP-Prozessfunktionen in der php.ini oder im Hosting-Control-Panel: %functions%'
       composer_binary:
         label: 'Composer'
         help: 'Setup kann PHP-Abhängigkeiten installieren und aktualisieren.'

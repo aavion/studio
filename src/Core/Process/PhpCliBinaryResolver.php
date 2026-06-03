@@ -106,22 +106,33 @@ final readonly class PhpCliBinaryResolver
         return 12 === $process->getExitCode() ? 'not_cli' : 'failed';
     }
 
-    private function safeModeEnabled(): bool
+    public function safeModeEnabled(): bool
     {
         $safeMode = ini_get('safe_mode');
 
         return is_string($safeMode) && in_array(strtolower($safeMode), ['1', 'on', 'true', 'yes'], true);
     }
 
-    private function processFunctionsAvailable(): bool
+    public function processFunctionsAvailable(): bool
     {
-        if (!function_exists('proc_open')) {
-            return false;
+        return [] === $this->unavailableProcessFunctions();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function unavailableProcessFunctions(): array
+    {
+        $disabledFunctions = array_filter(array_map('trim', explode(',', strtolower((string) ini_get('disable_functions')))));
+        $unavailable = [];
+
+        foreach (['proc_open', 'proc_close', 'proc_get_status', 'proc_terminate'] as $function) {
+            if (!function_exists($function) || in_array($function, $disabledFunctions, true)) {
+                $unavailable[] = $function;
+            }
         }
 
-        $disabledFunctions = array_map('trim', explode(',', strtolower((string) ini_get('disable_functions'))));
-
-        return !in_array('proc_open', $disabledFunctions, true);
+        return $unavailable;
     }
 
     /**

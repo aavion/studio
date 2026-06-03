@@ -25,6 +25,8 @@ final readonly class SetupPreflightChecker
         $checks = [
             $this->webroot($projectDir, $server ?? $_SERVER),
             $this->phpVersion($projectDir),
+            $this->safeMode(),
+            $this->processFunctions(),
             $this->composerBinary($projectDir, $autoHeal),
             $this->directoryWritable($projectDir.'/var', 'var_writable', true, $autoHeal),
             $this->fileWritable($projectDir.'/.env.'.$environment.'.local', 'environment_writable', true, $autoHeal),
@@ -121,6 +123,28 @@ final readonly class SetupPreflightChecker
         return $this->checkRow('php_version', $status, true, false, 'ok' === $status ? 'php_version' : 'php_version_requirement', [
             '%version%' => PHP_VERSION,
             '%required%' => $requiredVersion ?? '',
+        ]);
+    }
+
+    /**
+     * @return array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}
+     */
+    private function safeMode(): array
+    {
+        $enabled = $this->phpCliBinaryResolver->safeModeEnabled();
+
+        return $this->checkRow('safe_mode', $enabled ? 'failed' : 'ok', true, false, $enabled ? 'safe_mode_enabled' : 'safe_mode_disabled');
+    }
+
+    /**
+     * @return array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}
+     */
+    private function processFunctions(): array
+    {
+        $unavailable = $this->phpCliBinaryResolver->unavailableProcessFunctions();
+
+        return $this->checkRow('process_functions', [] === $unavailable ? 'ok' : 'failed', true, false, [] === $unavailable ? 'process_functions_available' : 'process_functions_disabled', [
+            '%functions%' => implode(', ', $unavailable),
         ]);
     }
 
@@ -304,6 +328,8 @@ final readonly class SetupPreflightChecker
         return array_values(array_filter([
             $byKey['webroot_public'] ?? null,
             $byKey['php_version'] ?? null,
+            $byKey['safe_mode'] ?? null,
+            $byKey['process_functions'] ?? null,
             $this->extensionSummary('required_extensions', $requiredExtensions, true),
             $byKey['cli_runner'] ?? null,
             $byKey['composer_binary'] ?? null,
