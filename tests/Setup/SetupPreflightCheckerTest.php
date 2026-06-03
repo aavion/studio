@@ -47,7 +47,7 @@ final class SetupPreflightCheckerTest extends TestCase
 
     public function testItChecksCliRunnerAvailability(): void
     {
-        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', autoHeal: true, server: [
             'DOCUMENT_ROOT' => $this->root.'/public',
         ]);
 
@@ -56,11 +56,51 @@ final class SetupPreflightCheckerTest extends TestCase
 
         self::assertContains('cli_runner', $keys);
         self::assertContains('composer_binary', $keys);
+        self::assertContains('tailwind_build', $keys);
         self::assertContains('php_version', $keys);
         self::assertContains('safe_mode', $detailKeys);
         self::assertContains('process_functions', $detailKeys);
+        self::assertContains('tailwind_build', $detailKeys);
         self::assertContains('required_extensions', $detailKeys);
         self::assertContains('writable_paths', $detailKeys);
+    }
+
+    public function testItReportsTailwindSmokeBuildAsOptionalWarning(): void
+    {
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', autoHeal: true, server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $tailwind = array_values(array_filter($result['checks'], static fn (array $check): bool => 'tailwind_build' === $check['key']))[0] ?? null;
+
+        self::assertTrue($result['ok']);
+        self::assertSame('warning', $tailwind['status'] ?? null);
+        self::assertFalse($tailwind['required'] ?? true);
+    }
+
+    public function testItAcceptsSuccessfulTailwindSmokeBuild(): void
+    {
+        $binary = $this->root.'/var/tailwind/v0.0.0/tailwindcss-test';
+        mkdir(dirname($binary), 0775, true);
+        file_put_contents($binary, <<<'SH'
+#!/bin/sh
+while [ "$#" -gt 0 ]; do
+    if [ "$1" = "-o" ]; then
+        shift
+        printf ".ok{color:red}\n" > "$1"
+        exit 0
+    fi
+    shift
+done
+exit 1
+SH);
+        chmod($binary, 0755);
+
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $tailwind = array_values(array_filter($result['checks'], static fn (array $check): bool => 'tailwind_build' === $check['key']))[0] ?? null;
+
+        self::assertSame('ok', $tailwind['status'] ?? null);
     }
 
     public function testItUsesHighestPhpRequirementFromComposerFiles(): void

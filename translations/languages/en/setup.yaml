@@ -45,6 +45,7 @@ setup:
     show_details: 'Show details'
     summary:
       ok: 'Everything needed for setup is ready.'
+      warning: 'Setup can continue, but one optional server feature needs attention.'
       healable: 'Setup cannot currently run in this environment.'
       failed: 'Some checks need a server or PHP configuration change before setup can continue.'
     errors:
@@ -55,6 +56,7 @@ setup:
       failed: 'ERROR'
       missing: 'Missing'
       optional: 'Optional'
+      warning: 'WARN'
     values:
       executable: 'executable'
       not_detected: 'not detected'
@@ -76,6 +78,9 @@ setup:
       composer_system: 'system Composer available'
       composer_bundled: 'bin/composer available'
       composer_not_executable: 'bin/composer is not executable'
+      tailwind_available: 'automatic build available'
+      tailwind_blocked: 'blocked by server policy'
+      tailwind_not_prepared: 'not prepared yet'
       extensions_all_present: 'All %count% required extensions are available'
       optional_extensions_all_present: 'All %count% optional database extensions are available'
       extensions_missing: 'Missing: %extensions%'
@@ -131,8 +136,12 @@ setup:
         label: 'Composer'
         help: 'Setup can install and refresh PHP dependencies.'
         instruction: 'Install Composer globally or restore bin/composer.'
+      tailwind_build:
+        label: 'Tailwind build'
+        help: 'Automatic Tailwind builds are available.'
+        instruction: 'Automatic Tailwind builds are blocked. If you want web-triggered asset rebuilds, allow native build binaries for the web server, for example by disabling MemoryDenyWriteExecute.'
       cli_runner:
-        label: 'CLI runner'
+        label: 'PHP CLI binary'
         help: 'Setup can start PHP CLI subprocesses for long-running work.'
         instruction: 'Enable PHP CLI subprocesses, or run setup from an environment that allows background commands.'
       extension_ctype:

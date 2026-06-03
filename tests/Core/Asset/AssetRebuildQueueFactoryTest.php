@@ -42,7 +42,8 @@ final class AssetRebuildQueueFactoryTest extends TestCase
         self::assertSame('translation_aggregate', $actions[1]->type());
         self::assertStringContainsString('assets:install', $actions[2]->label());
         self::assertStringContainsString('importmap:install', $actions[3]->label());
-        self::assertStringContainsString('tailwind:build', $actions[4]->label());
+        self::assertSame('tailwind_build', $actions[4]->type());
+        self::assertSame('Build Tailwind CSS', $actions[4]->label());
         self::assertStringContainsString('cache:clear', $actions[5]->label());
         self::assertFalse($queue->context()['production_compile']);
         self::assertSame('manual', $queue->context()['trigger']);
@@ -64,17 +65,6 @@ final class AssetRebuildQueueFactoryTest extends TestCase
         self::assertStringContainsString('cache:clear', $actions[7]->label());
         self::assertTrue($queue->context()['production_compile']);
         self::assertSame('setup', $queue->context()['trigger']);
-    }
-
-    public function testItRunsTailwindVerbosityInDebugMode(): void
-    {
-        $_SERVER['APP_DEBUG'] = '1';
-
-        $queue = $this->factory()->create('dev', []);
-        $actions = $queue->actions();
-
-        self::assertStringContainsString('tailwind:build', $actions[4]->label());
-        self::assertStringContainsString('-vvv', $actions[4]->label());
     }
 
     private function factory(): AssetRebuildQueueFactory

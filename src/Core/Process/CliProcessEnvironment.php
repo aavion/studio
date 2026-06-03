@@ -41,6 +41,19 @@ final class CliProcessEnvironment
         'SERVER_',
     ];
 
+    private const WEB_STALE_IDENTITY_NAMES = [
+        'HOME',
+        'HOMEDRIVE',
+        'HOMEPATH',
+        'LOGNAME',
+        'SUDO_GID',
+        'SUDO_UID',
+        'SUDO_USER',
+        'USER',
+        'USERNAME',
+        'USERPROFILE',
+    ];
+
     /**
      * @param array<string, string|false> $environment
      *
@@ -85,6 +98,12 @@ final class CliProcessEnvironment
             $removals[$name] = false;
         }
 
+        if (self::hasWebContext($environment)) {
+            foreach (self::WEB_STALE_IDENTITY_NAMES as $name) {
+                $removals[$name] = false;
+            }
+        }
+
         return $removals;
     }
 
@@ -117,6 +136,20 @@ final class CliProcessEnvironment
 
         foreach (self::WEB_PREFIXES as $prefix) {
             if (str_starts_with($name, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string, string|false> $environment
+     */
+    private static function hasWebContext(array $environment): bool
+    {
+        foreach (['REQUEST_METHOD', 'GATEWAY_INTERFACE', 'FCGI_ROLE', 'DOCUMENT_ROOT', 'HTTP_HOST'] as $name) {
+            if (array_key_exists($name, $environment) || array_key_exists($name, $_SERVER) || false !== getenv($name)) {
                 return true;
             }
         }

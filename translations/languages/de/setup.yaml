@@ -45,6 +45,7 @@ setup:
     show_details: 'Details anzeigen'
     summary:
       ok: 'Alles Nötige für das Setup ist bereit.'
+      warning: 'Setup kann fortfahren, aber eine optionale Server-Funktion benötigt Aufmerksamkeit.'
       healable: 'Setup kann in dieser Umgebung aktuell nicht ausgeführt werden.'
       failed: 'Einige Prüfungen benötigen eine Server- oder PHP-Konfigurationsänderung, bevor das Setup fortfahren kann.'
     errors:
@@ -55,6 +56,7 @@ setup:
       failed: 'FEHLER'
       missing: 'Fehlt'
       optional: 'Optional'
+      warning: 'WARNUNG'
     values:
       executable: 'ausführbar'
       not_detected: 'nicht erkannt'
@@ -76,6 +78,9 @@ setup:
       composer_system: 'System-Composer verfügbar'
       composer_bundled: 'bin/composer verfügbar'
       composer_not_executable: 'bin/composer ist nicht ausführbar'
+      tailwind_available: 'automatischer Build verfügbar'
+      tailwind_blocked: 'durch Server-Policy blockiert'
+      tailwind_not_prepared: 'noch nicht vorbereitet'
       extensions_all_present: 'Alle %count% erforderlichen Erweiterungen sind vorhanden'
       optional_extensions_all_present: 'Alle %count% optionalen Datenbank-Erweiterungen sind vorhanden'
       extensions_missing: 'Fehlt: %extensions%'
@@ -131,8 +136,12 @@ setup:
         label: 'Composer'
         help: 'Setup kann PHP-Abhängigkeiten installieren und aktualisieren.'
         instruction: 'Installiere Composer global oder stelle bin/composer wieder her.'
+      tailwind_build:
+        label: 'Tailwind-Build'
+        help: 'Automatische Tailwind-Builds sind verfügbar.'
+        instruction: 'Automatische Tailwind-Builds sind blockiert. Wenn du Web-Asset-Rebuilds nutzen möchtest, erlaube native Build-Binaries für den Webserver, zum Beispiel durch Deaktivieren von MemoryDenyWriteExecute.'
       cli_runner:
-        label: 'CLI-Runner'
+        label: 'PHP-CLI-Binary'
         help: 'Setup kann PHP-CLI-Subprozesse für länger laufende Arbeiten starten.'
         instruction: 'Aktiviere PHP-CLI-Subprozesse oder führe Setup in einer Umgebung aus, die Hintergrundbefehle erlaubt.'
       extension_ctype:

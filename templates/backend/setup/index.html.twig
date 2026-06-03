@@ -81,7 +81,11 @@
             </section>
 
             <section class="studio-setup-preflight" aria-labelledby="setup-preflight-title">
-                {% if setup_preflight.ok %}
+                {% if setup_preflight.ok and setup_preflight.has_warnings %}
+                    {% set preflight_icon = 'ti-alert-triangle' %}
+                    {% set preflight_status_class = 'is-warning' %}
+                    {% set preflight_summary = 'setup.preflight.summary.warning' %}
+                {% elseif setup_preflight.ok %}
                     {% set preflight_icon = 'ti-check' %}
                     {% set preflight_status_class = 'is-ok' %}
                     {% set preflight_summary = 'setup.preflight.summary.ok' %}
@@ -103,7 +107,7 @@
                     </div>
                 </div>
 
-                <details class="studio-setup-check-details"{% if not setup_preflight.ok %} open{% endif %}>
+                <details class="studio-setup-check-details"{% if not setup_preflight.ok or setup_preflight.has_warnings %} open{% endif %}>
                     <summary>
                         <span>{{ 'setup.preflight.show_details'|trans }}</span>
                         <span class="ti ti-chevron-down" aria-hidden="true"></span>
@@ -125,6 +129,8 @@
                                 {% set check_icon = 'ti-terminal-2' %}
                             {% elseif check.key == 'composer_binary' %}
                                 {% set check_icon = 'ti-package' %}
+                            {% elseif check.key == 'tailwind_build' %}
+                                {% set check_icon = 'ti-wand' %}
                             {% elseif check.key == 'writable_paths' %}
                                 {% set check_icon = 'ti-folders' %}
                             {% elseif check.key == 'environment_writable' %}
@@ -136,9 +142,9 @@
                                     <span>{{ check.label_key|trans }}</span>
                                 </div>
                                 <p class="studio-setup-check-result">{{ check.value_key|trans(check.value_parameters) }}</p>
-                                <span class="studio-setup-status {{ check.status == 'ok' ? 'is-ok' : (check.required ? 'is-error' : 'is-neutral') }}">
-                                    <span class="ti {{ check.status == 'ok' ? 'ti-check' : (check.required ? 'ti-x' : 'ti-minus') }}" aria-hidden="true"></span>
-                                    {{ (check.status == 'ok' ? 'setup.preflight.status.ok' : (check.required ? 'setup.preflight.status.failed' : 'setup.preflight.status.optional'))|trans }}
+                                <span class="studio-setup-status {{ check.status == 'ok' ? 'is-ok' : (check.status == 'warning' ? 'is-warning' : (check.required ? 'is-error' : 'is-neutral')) }}">
+                                    <span class="ti {{ check.status == 'ok' ? 'ti-check' : (check.status == 'warning' ? 'ti-alert-triangle' : (check.required ? 'ti-x' : 'ti-minus')) }}" aria-hidden="true"></span>
+                                    {{ (check.status == 'ok' ? 'setup.preflight.status.ok' : (check.status == 'warning' ? 'setup.preflight.status.warning' : (check.required ? 'setup.preflight.status.failed' : 'setup.preflight.status.optional'))) | trans }}
                                 </span>
                                 {% if check.status != 'ok' %}
                                     <p class="studio-setup-check-help">{{ (check.healable ? check.help_key : check.instruction_key)|trans(check.value_parameters) }}</p>

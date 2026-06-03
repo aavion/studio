@@ -156,6 +156,8 @@ message:
     command_failed: 'Schritt "%command%" ist mit Exit-Code %exit_code% fehlgeschlagen.'
     command_completed: 'Schritt "%command%" wurde mit Exit-Code %exit_code% abgeschlossen.'
     php_cli_unavailable: 'PHP-CLI ist für Schritt "%command%" nicht verfügbar. Prüfe die Setup-Vorabprüfung oder die PHP-Konfiguration des Servers.'
+  tailwind:
+    build_deferred: 'Tailwind konnte nicht automatisch ausgeführt werden. Führe "%command%" bitte per CLI, SSH oder Terminal aus.'
   access:
     granted: 'Zugriff für "%capability%" erlaubt.'
     denied: 'Zugriff für "%capability%" verweigert: erforderlich ist Level %required_level%; Actor hat Level %actor_level%.'

@@ -18,6 +18,19 @@ Required Apache modules:
 - `mod_rewrite` when using `public/.htaccess`.
 - `mod_dir` for `DirectoryIndex` when using the virtual host template.
 
+### Native asset build binaries
+
+Studio can rebuild Tailwind assets automatically from setup and package maintenance flows. This uses the Tailwind standalone binary through Symfony Process. Some Linux systemd hardening profiles for Apache block native binaries with `MemoryDenyWriteExecute=yes`; setup then continues, but reports a warning and asks the operator to run `php bin/console tailwind:build` through CLI, SSH, or a terminal.
+
+If automatic web-triggered Tailwind rebuilds are required, add a service override for the web server and restart it:
+
+```ini
+[Service]
+MemoryDenyWriteExecute=no
+```
+
+Keep this setting scoped to the web server service. Other setup subprocess checks still report disabled PHP process functions, PHP safe mode, or missing PHP CLI binaries separately.
+
 ## nginx
 
 Use `config/webserver/nginx.conf` as a template. Adjust `server_name`, `root`, `fastcgi_pass`, TLS, log paths, and upload limits for the target system.

@@ -75,6 +75,7 @@ final class MessageCode
     public const PROCESS_COMMAND_FAILED = 'process.command_failed';
     public const PROCESS_COMMAND_COMPLETED = 'process.command_completed';
     public const PROCESS_PHP_CLI_UNAVAILABLE = 'process.php_cli_unavailable';
+    public const TAILWIND_BUILD_DEFERRED = 'tailwind.build_deferred';
     public const MANIFEST_PARSED = 'manifest.parsed';
     public const MANIFEST_VALIDATED = 'manifest.validated';
     public const PACKAGE_DISCOVERY_QUEUED = 'package.discovery_queued';

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Process\CliProcessEnvironment;
 use App\Core\Process\PhpCliBinaryResolver;
 use Symfony\Component\Process\Process;
 
@@ -18,7 +19,7 @@ final readonly class SetupPreflightChecker
     /**
      * @param array<string, mixed>|null $server
      *
-     * @return array{ok: bool, healable_failed: bool, can_auto_heal: bool, checks: list<array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}>, detail_rows: list<array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}>}
+     * @return array{ok: bool, has_warnings: bool, healable_failed: bool, can_auto_heal: bool, checks: list<array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}>, detail_rows: list<array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}>}
      */
     public function check(string $projectDir, string $environment, bool $autoHeal = false, ?array $server = null): array
     {
@@ -30,6 +31,7 @@ final readonly class SetupPreflightChecker
             $this->safeMode(),
             $this->processFunctions(),
             $this->composerBinary($projectDir, $autoHeal),
+            $this->tailwindBuild($projectDir),
             $this->directoryWritable($projectDir.'/var', 'var_writable', true, $autoHeal),
             $this->fileWritable($projectDir.'/.env.'.$environment.'.local', 'environment_writable', true, $autoHeal),
             $this->directoryWritable($projectDir.'/translations/runtime', 'runtime_translations_writable', true, $autoHeal),
@@ -42,6 +44,7 @@ final readonly class SetupPreflightChecker
 
         return [
             'ok' => [] === $failedRequired,
+            'has_warnings' => [] !== array_filter($checks, static fn (array $check): bool => 'warning' === $check['status']),
             'healable_failed' => [] !== array_filter($failedRequired, static fn (array $check): bool => true === $check['healable']),
             'can_auto_heal' => [] !== $failedRequired && [] === array_filter($failedRequired, static fn (array $check): bool => true !== $check['healable']),
             'checks' => $checks,
@@ -284,6 +287,23 @@ final readonly class SetupPreflightChecker
     }
 
     /**
+     * @return array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}
+     */
+    private function tailwindBuild(string $projectDir): array
+    {
+        $binary = $this->tailwindBinary($projectDir);
+        if (null === $binary) {
+            return $this->checkRow('tailwind_build', 'warning', false, false, 'tailwind_not_prepared');
+        }
+
+        if ($this->tailwindSmokeBuildWorks($binary, $projectDir)) {
+            return $this->checkRow('tailwind_build', 'ok', false, false, 'tailwind_available');
+        }
+
+        return $this->checkRow('tailwind_build', 'warning', false, false, 'tailwind_blocked');
+    }
+
+    /**
      * @param array<string, string> $valueParameters
      *
      * @return array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}
@@ -336,6 +356,7 @@ final readonly class SetupPreflightChecker
             $this->extensionSummary('required_extensions', $requiredExtensions, true),
             $byKey['cli_runner'] ?? null,
             $byKey['composer_binary'] ?? null,
+            $byKey['tailwind_build'] ?? null,
             $this->writablePathSummary($writablePaths),
             $this->extensionSummary('optional_database_extensions', $optionalExtensions, false),
         ]));
@@ -506,6 +527,49 @@ final readonly class SetupPreflightChecker
         $path = $_SERVER['PATH'] ?? $_ENV['PATH'] ?? getenv('PATH');
 
         return is_string($path) && '' !== $path ? ['PATH' => $path] : [];
+    }
+
+    private function tailwindBinary(string $projectDir): ?string
+    {
+        $candidates = glob($projectDir.'/var/tailwind/*/tailwindcss-*') ?: [];
+        $candidates = array_values(array_filter(
+            $candidates,
+            static fn (string $candidate): bool => is_file($candidate) && is_executable($candidate),
+        ));
+        rsort($candidates);
+
+        return $candidates[0] ?? null;
+    }
+
+    private function tailwindSmokeBuildWorks(string $binary, string $projectDir): bool
+    {
+        $temporaryDirectory = sys_get_temp_dir().'/studio_tailwind_preflight_'.bin2hex(random_bytes(4));
+
+        if (!@mkdir($temporaryDirectory, 0775, true) && !is_dir($temporaryDirectory)) {
+            return false;
+        }
+
+        $input = $temporaryDirectory.'/input.css';
+        $output = $temporaryDirectory.'/output.css';
+        @file_put_contents($input, ".studio-tailwind-preflight{color:red}\n");
+
+        try {
+            $process = new Process(
+                [$binary, '-i', $input, '-o', $output],
+                $projectDir,
+                CliProcessEnvironment::withoutWebContext($this->processEnvironment()),
+                timeout: 10.0,
+            );
+            $process->run();
+
+            return $process->isSuccessful() && is_file($output);
+        } catch (\Throwable) {
+            return false;
+        } finally {
+            @unlink($input);
+            @unlink($output);
+            @rmdir($temporaryDirectory);
+        }
     }
 
     private function minimumPhpVersion(string $projectDir): ?string

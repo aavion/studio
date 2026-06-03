@@ -69,6 +69,42 @@ final class CliProcessEnvironmentTest extends TestCase
         self::assertSame('test', $environment['APP_ENV'] ?? null);
     }
 
+    public function testItRemovesStaleWebIdentityVariablesOnlyInWebContext(): void
+    {
+        $this->backupEnvironmentValue('USER');
+        $this->backupEnvironmentValue('HOME');
+        $this->backupEnvironmentValue('REQUEST_METHOD');
+        putenv('USER=root');
+        putenv('HOME=/root');
+        putenv('REQUEST_METHOD=GET');
+
+        $environment = CliProcessEnvironment::withoutWebContext();
+
+        self::assertFalse($environment['USER'] ?? null);
+        self::assertFalse($environment['HOME'] ?? null);
+    }
+
+    public function testItKeepsCliIdentityVariablesOutsideWebContext(): void
+    {
+        $this->backupEnvironmentValue('USER');
+        $this->backupEnvironmentValue('REQUEST_METHOD');
+        $this->backupEnvironmentValue('GATEWAY_INTERFACE');
+        $this->backupEnvironmentValue('FCGI_ROLE');
+        $this->backupEnvironmentValue('DOCUMENT_ROOT');
+        $this->backupEnvironmentValue('HTTP_HOST');
+        putenv('REQUEST_METHOD');
+        putenv('GATEWAY_INTERFACE');
+        putenv('FCGI_ROLE');
+        putenv('DOCUMENT_ROOT');
+        putenv('HTTP_HOST');
+        unset($_SERVER['REQUEST_METHOD'], $_SERVER['GATEWAY_INTERFACE'], $_SERVER['FCGI_ROLE'], $_SERVER['DOCUMENT_ROOT'], $_SERVER['HTTP_HOST']);
+        putenv('USER=developer');
+
+        $environment = CliProcessEnvironment::withoutWebContext();
+
+        self::assertArrayNotHasKey('USER', $environment);
+    }
+
     private function backupEnvironmentValue(string $name): void
     {
         $this->processEnvironmentBackup[$name] = getenv($name);
