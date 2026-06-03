@@ -41,7 +41,13 @@ final class SetupRunnerTest extends TestCase
     {
         $databasePath = $this->root.'/var/setup.db';
         $this->createSchema($databasePath);
-        $executor = new RecordingSetupCommandExecutor();
+        $composerEnvironments = [];
+        $root = $this->root;
+        $executor = new RecordingSetupCommandExecutor(onRun: static function (array $command, string $_cwd, array $environment) use (&$composerEnvironments): void {
+            if (in_array('--version', $command, true) || in_array('dump-env', $command, true)) {
+                $composerEnvironments[] = $environment;
+            }
+        });
         $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
         $input = new SetupInput(
             appEnv: 'test',
@@ -67,6 +73,12 @@ final class SetupRunnerTest extends TestCase
         self::assertFileExists($this->root.'/.env.local.php');
         $dumpedEnvironment = include $this->root.'/.env.local.php';
         self::assertSame('1', $dumpedEnvironment['APP_SETUP_COMPLETED']);
+        self::assertSame($root.'/var/composer-home', $composerEnvironments[0]['COMPOSER_HOME'] ?? null);
+        self::assertSame($root.'/var/composer-cache', $composerEnvironments[0]['COMPOSER_CACHE_DIR'] ?? null);
+        self::assertSame($root.'/var', $composerEnvironments[0]['HOME'] ?? null);
+        self::assertSame($root.'/var/composer-home', $composerEnvironments[1]['COMPOSER_HOME'] ?? null);
+        self::assertSame($root.'/var/composer-cache', $composerEnvironments[1]['COMPOSER_CACHE_DIR'] ?? null);
+        self::assertSame($root.'/var', $composerEnvironments[1]['HOME'] ?? null);
         self::assertSame([
             ['composer', '--version'],
             ['composer', 'dump-env', 'test'],

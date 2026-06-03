@@ -54,6 +54,10 @@ final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutor
             $processEnvironment['HOME'] = $home;
         }
 
+        if ($this->hasNonEmptyEnvironmentValue($processEnvironment, 'COMPOSER_CACHE_DIR')) {
+            $this->ensureDirectory($processEnvironment['COMPOSER_CACHE_DIR']);
+        }
+
         return $processEnvironment;
     }
 

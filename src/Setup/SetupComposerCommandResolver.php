@@ -8,8 +8,10 @@ use App\Core\Process\PhpCliBinaryResolver;
 
 final readonly class SetupComposerCommandResolver
 {
-    public function __construct(private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver())
-    {
+    public function __construct(
+        private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver(),
+        private SetupComposerEnvironment $composerEnvironment = new SetupComposerEnvironment(),
+    ) {
     }
 
     /**
@@ -22,6 +24,7 @@ final readonly class SetupComposerCommandResolver
         SetupCommandExecutorInterface $commandExecutor,
         array $environment,
     ): array {
+        $environment = $this->environment($projectDir, $environment);
         $bundledComposer = $projectDir.'/bin/composer';
         $phpCli = $this->phpCliBinaryResolver->resolve($projectDir, $environment);
         $phpCommand = $phpCli->commandPrefix();
@@ -41,6 +44,16 @@ final readonly class SetupComposerCommandResolver
         }
 
         throw new SetupStepFailedException('Composer is unavailable. Install Composer or restore bin/composer.');
+    }
+
+    /**
+     * @param array<string, string> $environment
+     *
+     * @return array<string, string>
+     */
+    public function environment(string $projectDir, array $environment = []): array
+    {
+        return $this->composerEnvironment->create($projectDir, $environment);
     }
 
     /**

@@ -238,9 +238,10 @@ final class SetupRunner
      */
     private function dumpEnvironment(SetupInput $input, array $environment): array
     {
-        $composer = $this->composerCommandResolver->resolve($this->projectDir, $this->commandExecutor, $environment);
+        $composerEnvironment = $this->composerCommandResolver->environment($this->projectDir, $environment);
+        $composer = $this->composerCommandResolver->resolve($this->projectDir, $this->commandExecutor, $composerEnvironment);
         $command = [...$composer, 'dump-env', $input->appEnv()];
-        $result = $this->commandExecutor->run($command, $this->projectDir, $environment);
+        $result = $this->commandExecutor->run($command, $this->projectDir, $composerEnvironment);
 
         if (!$result->isSuccessful()) {
             throw new SetupStepFailedException($this->commandError($result));

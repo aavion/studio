@@ -9,8 +9,10 @@ use Symfony\Component\Process\Process;
 
 final readonly class SetupPreflightChecker
 {
-    public function __construct(private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver())
-    {
+    public function __construct(
+        private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver(),
+        private SetupComposerEnvironment $composerEnvironment = new SetupComposerEnvironment(),
+    ) {
     }
 
     /**
@@ -154,26 +156,27 @@ final readonly class SetupPreflightChecker
     private function composerBinary(string $projectDir, bool $autoHeal): array
     {
         $bundledComposer = $projectDir.'/bin/composer';
+        $composerEnvironment = $this->composerEnvironment->create($projectDir);
         if ($autoHeal && is_file($bundledComposer) && !is_executable($bundledComposer) && is_writable($bundledComposer)) {
             @chmod($bundledComposer, 0755);
         }
 
-        $phpCli = $this->phpCliBinaryResolver->resolve($projectDir);
+        $phpCli = $this->phpCliBinaryResolver->resolve($projectDir, $composerEnvironment);
         $phpCommand = $phpCli->commandPrefix();
 
-        if ($phpCli->isAvailable() && is_file($bundledComposer) && is_readable($bundledComposer) && $this->composerCommandWorks([...$phpCommand, $bundledComposer, '--version'], $projectDir)) {
+        if ($phpCli->isAvailable() && is_file($bundledComposer) && is_readable($bundledComposer) && $this->composerCommandWorks([...$phpCommand, $bundledComposer, '--version'], $projectDir, $composerEnvironment)) {
             return $this->checkRow('composer_binary', 'ok', true, false, 'composer_bundled');
         }
 
         if (is_file($bundledComposer)) {
             $works = $phpCli->isAvailable()
                 && is_readable($bundledComposer)
-                && $this->composerCommandWorks([...$phpCommand, $bundledComposer, '--version'], $projectDir);
+                && $this->composerCommandWorks([...$phpCommand, $bundledComposer, '--version'], $projectDir, $composerEnvironment);
             if (!$works && $autoHeal && is_writable($bundledComposer) && $this->downloadBundledComposer($bundledComposer, $projectDir)) {
                 return $this->checkRow('composer_binary', 'ok', true, false, 'composer_bundled');
             }
 
-            if (!$works && $this->composerCommandWorks(['composer', '--version'], $projectDir)) {
+            if (!$works && $this->composerCommandWorks(['composer', '--version'], $projectDir, $composerEnvironment)) {
                 return $this->checkRow('composer_binary', 'ok', true, false, 'composer_system');
             }
 
@@ -186,7 +189,7 @@ final readonly class SetupPreflightChecker
             );
         }
 
-        if ($this->composerCommandWorks(['composer', '--version'], $projectDir)) {
+        if ($this->composerCommandWorks(['composer', '--version'], $projectDir, $composerEnvironment)) {
             return $this->checkRow('composer_binary', 'ok', true, false, 'composer_system');
         }
 
@@ -466,11 +469,12 @@ final readonly class SetupPreflightChecker
                 return false;
             }
 
-            $phpCli = $this->phpCliBinaryResolver->resolve($projectDir);
+            $composerEnvironment = $this->composerEnvironment->create($projectDir);
+            $phpCli = $this->phpCliBinaryResolver->resolve($projectDir, $composerEnvironment);
 
             return is_executable($target)
                 && $phpCli->isAvailable()
-                && $this->composerCommandWorks([...$phpCli->commandPrefix(), $target, '--version'], $projectDir);
+                && $this->composerCommandWorks([...$phpCli->commandPrefix(), $target, '--version'], $projectDir, $composerEnvironment);
         } catch (\Throwable) {
             @unlink($temporary);
 
@@ -481,10 +485,10 @@ final readonly class SetupPreflightChecker
     /**
      * @param list<string> $command
      */
-    private function composerCommandWorks(array $command, ?string $workingDirectory): bool
+    private function composerCommandWorks(array $command, ?string $workingDirectory, array $environment): bool
     {
         try {
-            $process = new Process($command, $workingDirectory, $this->processEnvironment(), timeout: 5.0);
+            $process = new Process($command, $workingDirectory, $environment, timeout: 5.0);
             $process->run();
         } catch (\Throwable) {
             return false;
