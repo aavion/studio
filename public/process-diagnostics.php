@@ -11,7 +11,8 @@ echo "Studio process diagnostics\n";
 echo "Generated: ".gmdate('c')."\n";
 echo "SAPI: ".PHP_SAPI."\n";
 echo "PHP_VERSION: ".PHP_VERSION."\n";
-echo "PHP_BINARY: ".PHP_BINARY."\n";
+echo "PHP_BINARY: ".(PHP_BINARY ?: '(empty)')."\n";
+echo "Resolved PHP command: ".implode(' ', array_map('escapeshellarg', phpCommand()))."\n";
 echo "User: ".userLine()."\n";
 echo "Working directory: ".getcwd()."\n";
 echo "Project directory: ".$projectDir."\n";
@@ -48,7 +49,7 @@ echo relevantMountInfo($projectDir);
 echo "\n";
 
 section('Child process smoke test');
-printCommandResult('PHP child', [PHP_BINARY, '-r', 'echo "child ok\n";']);
+printCommandResult('PHP child', [...phpCommand(), '-r', 'echo "child ok\n";']);
 
 $tailwindBinary = latestTailwindBinary($projectDir);
 if (null === $tailwindBinary) {
@@ -57,6 +58,13 @@ if (null === $tailwindBinary) {
     echo "Tailwind binary: ".$tailwindBinary."\n";
     echo "Tailwind executable: ".(is_executable($tailwindBinary) ? 'yes' : 'no')."\n";
     printCommandResult('Tailwind help', [$tailwindBinary, '--help']);
+    printCommandResult('Tailwind build smoke', [
+        $tailwindBinary,
+        '-i',
+        $projectDir.'/assets/styles/app.css',
+        '-o',
+        $projectDir.'/var/tailwind/diagnostics.built.css',
+    ]);
 }
 
 function section(string $title): void
@@ -110,6 +118,75 @@ function readProcFile(string $path): string
     $contents = file_get_contents($path);
 
     return false === $contents ? $path.": read failed\n" : $contents;
+}
+
+/**
+ * @return list<string>
+ */
+function phpCommand(): array
+{
+    $candidates = [];
+    if ('' !== trim(PHP_BINARY)) {
+        $candidates[] = [PHP_BINARY];
+    }
+
+    if ('' !== trim(PHP_BINDIR)) {
+        $candidates[] = [rtrim(PHP_BINDIR, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.phpExecutableName()];
+    }
+
+    $candidates[] = [phpExecutableName()];
+
+    if ('\\' !== DIRECTORY_SEPARATOR) {
+        $candidates[] = ['/usr/bin/env', 'php'];
+        $candidates[] = ['/usr/bin/php'];
+    }
+
+    $seen = [];
+    foreach ($candidates as $candidate) {
+        $signature = implode("\0", $candidate);
+        if (isset($seen[$signature])) {
+            continue;
+        }
+
+        $seen[$signature] = true;
+        if (commandWorks([...$candidate, '-r', 'exit(PHP_SAPI === "cli" ? 0 : 1);'])) {
+            return $candidate;
+        }
+    }
+
+    return ['php'];
+}
+
+function phpExecutableName(): string
+{
+    return '\\' === DIRECTORY_SEPARATOR ? 'php.exe' : 'php';
+}
+
+/**
+ * @param list<string> $command
+ */
+function commandWorks(array $command): bool
+{
+    if (!function_exists('proc_open') || disabled('proc_open')) {
+        return false;
+    }
+
+    $pipes = [];
+    $process = @proc_open($command, [
+        0 => ['pipe', 'r'],
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ], $pipes, dirname(__DIR__));
+
+    if (!is_resource($process)) {
+        return false;
+    }
+
+    foreach ($pipes as $pipe) {
+        fclose($pipe);
+    }
+
+    return 0 === proc_close($process);
 }
 
 function relevantMountInfo(string $projectDir): string
