@@ -68,6 +68,7 @@
 
 ### 2026-06-04
 - Continued `feat-php-cli-resolver`: prefilled the setup site URL from the current HTTP host when no stored wizard value exists; propagated nested asset-rebuild warnings from setup-triggered JSON output into the setup action log, kept direct asset-rebuild text output aware of warning messages, aligned the setup dry-run plan/manual notes with the JSON-backed asset rebuild call, and documented Apache `mod_remoteip` as the preferred reverse-proxy client-IP integration.
+- Restored application locale handling after setup by applying the configured default language, session locale, or authenticated user language to main requests; changed profile settings saves to redirect-after-post with the shared alert stack so language changes and success feedback are immediately visible.
 
 ### 2026-06-03
 - Started `feat-php-cli-resolver`: added a shared PHP CLI resolver for web-hosted setup and background processes, with explicit preflight diagnostics for safe mode, disabled process functions, server-config-blocked CLI, and unresolved PHP binaries; wired setup preflight, setup runner, Composer phar execution, live operations, Messenger drain, scheduler command execution, and asset/backend command queues to use the resolved PHP CLI command prefix, failing command queues with a Message instead of falling back to an unverified `php` binary; aligned Composer preflight/setup checks on project-local Composer environment paths with non-silent Composer output; hardened CLI output assertions against terminal-width wrapping.
