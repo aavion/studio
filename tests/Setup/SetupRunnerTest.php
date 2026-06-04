@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Setup;
 
 use App\Core\ActionLog\ActionLog;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
 use App\Database\DatabaseReadyState;
 use App\Setup\DatabaseDriver;
 use App\Setup\DatabaseUrlFactory;
@@ -102,7 +104,7 @@ final class SetupRunnerTest extends TestCase
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test', '--json'],
         ], $executor->commands);
 
         $pdo = new PDO('sqlite:'.$databasePath);
@@ -460,7 +462,7 @@ final class SetupRunnerTest extends TestCase
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test', '--json'],
         ], $executor->commands);
     }
 
@@ -509,8 +511,70 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('run_package_discovery', $entries[8]['name']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'], $entries[8]['context']['command']);
         self::assertSame('run_asset_rebuild', $entries[9]['name']);
-        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test'], $entries[9]['context']['command']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test', '--json'], $entries[9]['context']['command']);
         self::assertSame('mark_setup_completed', $entries[10]['name']);
+    }
+
+    public function testItSurfacesNonBlockingAssetRebuildWarningsInSetupActionLog(): void
+    {
+        $databasePath = $this->root.'/var/setup.db';
+        $this->createSchema($databasePath);
+        $executor = new RecordingSetupCommandExecutor(onRun: static function (array $command, string $_cwd, array $_environment): ?SetupCommandResult {
+            if (!in_array('studio:assets:rebuild', $command, true)) {
+                return null;
+            }
+
+            return new SetupCommandResult(0, json_encode([
+                'action_log' => [
+                    'entries' => [
+                        [
+                            'name' => 'Build Tailwind CSS',
+                            'status' => 'success',
+                            'messages' => [
+                                [
+                                    'level' => 'WARN',
+                                    'code' => MessageCode::TAILWIND_BUILD_DEFERRED,
+                                    'translation_key' => MessageKey::TAILWIND_BUILD_DEFERRED,
+                                    'parameters' => [
+                                        '%command%' => 'php bin/console tailwind:build',
+                                    ],
+                                    'context' => [
+                                        'command' => ['php', 'bin/console', 'tailwind:build'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'result' => [
+                    'status' => 'success',
+                    'messages' => [],
+                ],
+            ], JSON_THROW_ON_ERROR));
+        });
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Example Studio',
+            defaultUri: 'https://example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: 'sqlite:///'.$databasePath,
+            adminUsername: 'admin',
+            adminPassword: 'Secret1!password',
+            adminEmail: 'admin@example.test',
+            appSecret: 'test-secret-12',
+        ));
+
+        self::assertTrue($result->isSuccess());
+
+        $log = $result->value();
+        self::assertInstanceOf(ActionLog::class, $log);
+        $entries = $log->toArray()['entries'];
+
+        self::assertSame('run_asset_rebuild', $entries[9]['name']);
+        self::assertSame(MessageCode::TAILWIND_BUILD_DEFERRED, $entries[9]['messages'][0]['code']);
     }
 
     public function testDryRunDoesNotCreateMissingSqliteDatabaseDuringPreparation(): void
@@ -738,7 +802,11 @@ final class RecordingSetupCommandExecutor implements SetupCommandExecutorInterfa
     {
         $this->commands[] = $command;
         if (is_callable($this->onRun)) {
-            ($this->onRun)($command, $cwd, $environment);
+            $result = ($this->onRun)($command, $cwd, $environment);
+
+            if ($result instanceof SetupCommandResult) {
+                return $result;
+            }
         }
 
         if (null !== $this->failure && $this->failureAt === count($this->commands)) {

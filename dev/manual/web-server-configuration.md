@@ -31,6 +31,10 @@ MemoryDenyWriteExecute=no
 
 Keep this setting scoped to the web server service. Other setup subprocess checks still report disabled PHP process functions, PHP safe mode, or missing PHP CLI binaries separately.
 
+### Reverse proxy client IPs
+
+When Apache runs behind a reverse proxy such as Cloudflare, prefer `mod_remoteip` at the web-server layer. This rewrites `REMOTE_ADDR` before PHP handles the request, so Symfony's normal `Request::getClientIp()` resolution and Studio access logging use the verified client IP without application-level proxy lists.
+
 ## nginx
 
 Use `config/webserver/nginx.conf` as a template. Adjust `server_name`, `root`, `fastcgi_pass`, TLS, log paths, and upload limits for the target system.
