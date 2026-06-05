@@ -385,6 +385,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/View/Twig/ViewTwigExtension.php:36`, `src/View/Twig/ViewTwigExtension.php:74`, `src/View/Twig/ViewTwigExtension.php:110`, `src/View/Twig/ViewTwigExtension.php:121`, `src/View/Twig/ViewTwigExtension.php:230`.
 - **Impact:** Template helper ownership and public naming become harder to document and review as the frontend/editor surface grows.
 - **Recommendation:** Split by helper family: `NavigationTwigExtension`, `PackageTwigExtension`, `SettingsFormTwigExtension`, `DiagnosticsTwigExtension`, and `MarkupTwigExtension`.
+- **Implementation note:** The first split keeps public Twig function/filter names stable and separates helper ownership into `ViewContextTwigExtension`, `ViewRuntimeTwigExtension`, and `AdminViewTwigExtension`.
 - **Priority:** Before UI/UX Refinement.
 
 ### F-012 Domain README files are too thin for current architecture
