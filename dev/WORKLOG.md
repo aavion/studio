@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Documented deferred audit boundaries for visitor/session hardening, custom Twig trust policy, public API content DTOs, and the debug account-link mail stub that cannot be production-hardened until real Symfony Mailer delivery exists.
 - Split Admin Logs browsing into a small facade plus source registry, reverse-line reader, entry filter, entry presenter, and pagination helpers.
 - Added a shared setup input normalizer for CLI/web database driver, URL, prefix, boolean, and default admin-email handling while leaving step-scoped web validation and interactive CLI prompts transport-specific.
 - Split setup database seeding into a small facade plus focused config, admin-account, initial-content, and state-marker writers while keeping seed data centralized in `SetupDefaultSeed`.

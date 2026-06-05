@@ -340,6 +340,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Statistics/VisitorIdGenerator.php:13`, `src/Core/Statistics/VisitorIdGenerator.php:17`, `src/Core/Statistics/VisitorIdGenerator.php:20`, `src/Core/Statistics/VisitorIdGenerator.php:64`.
 - **Impact:** This is privacy-preserving and stable for simple analytics, but it collides for NAT/shared devices and changes when IP or user agent changes. It should not become a session-hijack defense by itself.
 - **Recommendation:** Keep this for low-risk anonymized statistics for now. For Security work, design a separate session/client-binding strategy using a first-party, rotating, HMAC-protected client signal with clear privacy, DNT, and false-positive handling. Avoid invasive machine fingerprinting.
+- **Deferred:** Implementation belongs to the Security/visitor-identity slice because it affects cookies, privacy copy, session-risk handling, rate-limit inputs, and false-positive recovery. The current analytics visitor ID must not be reused as a hard session-binding factor.
 - **Priority:** Before Security.
 
 ### F-007 Request IDs can be externally controlled
@@ -423,6 +424,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Content/Render/ContentFieldsetRenderer.php:17`, `src/Content/Render/ContentFieldsetRenderer.php:21`, `src/Entity/ContentSchemaVersion.php:135`.
 - **Impact:** This is useful for trusted system/package schemas, but it is too powerful to expose as ordinary editor-managed data without a policy. Twig templates can call available functions/filters and may leak capability through future extensions.
 - **Recommendation:** Before Editor and first-party modules, decide whether custom Twig is restricted to trusted package/system schemas, moved to named templates, or rendered through a sandboxed/limited Twig environment. Document the trust boundary explicitly.
+- **Deferred:** Implementation depends on the Editor/schema permissions and package policy registry. Until those foundations exist, custom Twig remains a trusted administrative/schema capability and must not be exposed as ordinary content input.
 - **Priority:** Before Editor / Security.
 
 ### F-016 Public content read model is template-friendly but API-tight to Doctrine entities
@@ -432,6 +434,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Content/Read/PublishedContentView.php:16`, `src/Content/Read/PublishedContentView.php:25`, `src/Content/Read/PublishedContentView.php:30`, `src/Content/Read/PublishedContentResolver.php:94`.
 - **Impact:** This is ergonomic for Twig and internal rendering, but it couples future API payloads and package consumers to Doctrine entity shape and lazy-loading behavior.
 - **Recommendation:** Keep `PublishedContentView` for internal rendering, but introduce a dedicated API/content DTO or serializer boundary before exposing content through the API. Avoid using entities as the documented external extension contract.
+- **Deferred:** Implementation belongs to the API feature branch so serializer, versioning, pagination, error payloads, and content DTO conventions are chosen together rather than guessed in this audit branch.
 - **Priority:** Before API.
 
 ### F-017 Account, token, and password flows are still spread across controllers
@@ -623,6 +626,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Security/MessageLogAccountLinkDelivery.php:25`, `src/Security/MessageLogAccountLinkDelivery.php:37`, `src/Security/MessageLogAccountLinkDelivery.php:99`, `src/Security/MessageLogAccountLinkDelivery.php:115`, `src/Security/MessageLogAccountLinkDelivery.php:116`, `src/Security/AppSecretRotationGuard.php:175`, `src/Security/AppSecretRotationGuard.php:183`, `src/Security/AppSecretRotationGuard.php:191`.
 - **Impact:** This is acceptable only as a development/setup stub because account links need to be retrievable before a real mailer exists. In production, logs containing password-reset or invitation tokens are sensitive credentials.
 - **Recommendation:** Before the Security PR or production release, replace the stub with real mail delivery, make debug-token logging explicitly environment-gated, and redact tokens from persistent logs by default. Add a preflight/admin warning when account-link delivery is still in debug-log mode.
+- **Deferred:** A real fix requires the mailer delivery implementation. Gating the current stub now would either break invitation/password/setup recovery flows or falsely claim production delivery exists. The stub remains a pre-release blocker and must become debug-only once Symfony Mailer delivery is wired.
 - **Priority:** Before Security / Release.
 
 ### F-038 API key encryption and APP_SECRET rotation need a fuller key-management policy
