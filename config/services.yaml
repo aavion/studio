@@ -282,10 +282,6 @@ services:
         arguments:
             $secret: '%kernel.secret%'
 
-    App\Security\ApiKeyVault:
-        arguments:
-            $secret: '%kernel.secret%'
-
     App\Security\AppSecretRotationGuard:
         arguments:
             $secret: '%kernel.secret%'

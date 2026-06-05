@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Support\DatabaseSeed;
 
+use App\Core\Security\SecretPayloadProtector;
 use PDO;
 use RuntimeException;
 
@@ -103,27 +104,12 @@ final readonly class TestDatabaseSeedWriter
 
     public function apiKeyHmacHash(string $plainKey): string
     {
-        return hash_hmac('sha256', $plainKey, $this->appSecret());
+        return $this->secretPayloadProtector()->hmac($plainKey, 'security.api_key.hmac');
     }
 
-    public function encryptApiKey(string $plainKey): string
+    public function encryptApiKey(string $plainKey, string $prefix): string
     {
-        $nonce = random_bytes(12);
-        $tag = '';
-        $ciphertext = openssl_encrypt(
-            $plainKey,
-            'aes-256-gcm',
-            hash('sha256', $this->appSecret(), true),
-            OPENSSL_RAW_DATA,
-            $nonce,
-            $tag,
-        );
-
-        if (false === $ciphertext) {
-            throw new RuntimeException('Unable to encrypt seeded API key.');
-        }
-
-        return 'v1.'.base64_encode($nonce).'.'.base64_encode($tag).'.'.base64_encode($ciphertext);
+        return $this->secretPayloadProtector()->protect($plainKey, 'security.api_key.payload', $prefix);
     }
 
     public function json(mixed $value): string
@@ -140,5 +126,10 @@ final readonly class TestDatabaseSeedWriter
         }
 
         return $appSecret;
+    }
+
+    private function secretPayloadProtector(): SecretPayloadProtector
+    {
+        return new SecretPayloadProtector($this->appSecret());
     }
 }

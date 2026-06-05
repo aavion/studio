@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Security;
 
+use App\Core\Message\MessageKey;
 use App\Core\Security\SecretPayloadProtector;
 use PHPUnit\Framework\TestCase;
 
@@ -24,8 +25,7 @@ final class SecretPayloadProtectorTest extends TestCase
         $protector = new SecretPayloadProtector('runtime-secret');
         $payload = $protector->protect('plain-secret', 'test.context', 'owner-id');
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Secret payload could not be decrypted.');
+        $this->expectExceptionMessage(MessageKey::SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED);
 
         $protector->reveal($payload, 'other.context', 'owner-id');
     }
@@ -35,8 +35,7 @@ final class SecretPayloadProtectorTest extends TestCase
         $protector = new SecretPayloadProtector('runtime-secret');
         $payload = $protector->protect('plain-secret', 'test.context', 'owner-id');
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Secret payload could not be decrypted.');
+        $this->expectExceptionMessage(MessageKey::SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED);
 
         $protector->reveal($payload, 'test.context', 'other-owner-id');
     }
@@ -45,16 +44,22 @@ final class SecretPayloadProtectorTest extends TestCase
     {
         $protector = new SecretPayloadProtector('runtime-secret');
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Secret payload is invalid.');
+        $this->expectExceptionMessage(MessageKey::SYSTEM_SECRET_PAYLOAD_INVALID);
 
         $protector->reveal('v1.not-valid', 'test.context');
     }
 
+    public function testItBuildsContextBoundHmacs(): void
+    {
+        $protector = new SecretPayloadProtector('runtime-secret');
+
+        self::assertSame($protector->hmac('plain-secret', 'test.context'), $protector->hmac('plain-secret', 'test.context'));
+        self::assertNotSame($protector->hmac('plain-secret', 'test.context'), $protector->hmac('plain-secret', 'other.context'));
+    }
+
     public function testItRejectsEmptyRootSecrets(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Secret payload root secret must not be empty.');
+        $this->expectExceptionMessage(MessageKey::SYSTEM_SECRET_PAYLOAD_ROOT_SECRET_EMPTY);
 
         new SecretPayloadProtector('');
     }
@@ -63,8 +68,7 @@ final class SecretPayloadProtectorTest extends TestCase
     {
         $protector = new SecretPayloadProtector('runtime-secret');
 
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Secret payload context must not be empty.');
+        $this->expectExceptionMessage(MessageKey::SYSTEM_SECRET_PAYLOAD_CONTEXT_EMPTY);
 
         $protector->protect('plain-secret', '');
     }

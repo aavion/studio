@@ -166,6 +166,14 @@ message:
       invalid: 'Access level %level% must be between 0 and 9.'
     group_identifier:
       invalid: 'ACL group identifier "%identifier%" must be lowercase snake_case with at least 3 characters.'
+  system:
+    secret_payload:
+      root_secret_empty: 'Secret payload protection requires a root secret.'
+      context_empty: 'Secret payload protection requires a context label.'
+      invalid: 'Secret payload format is invalid.'
+      encrypt_failed: 'Secret payload encryption failed.'
+      decrypt_failed: 'Secret payload decryption failed.'
+      key_derivation_failed: 'Secret payload key derivation failed.'
   backend:
     route_not_found: 'Backend route "%path%" is not registered.'
     setup_locked: 'Setup is already completed and is no longer available.'

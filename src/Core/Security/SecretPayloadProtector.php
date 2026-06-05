@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Security;
 
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageException;
+use App\Core\Message\MessageKey;
+
 final readonly class SecretPayloadProtector
 {
     private const CIPHER = 'aes-256-gcm';
@@ -13,7 +17,10 @@ final readonly class SecretPayloadProtector
     public function __construct(private string $secret)
     {
         if ('' === $this->secret) {
-            throw new \InvalidArgumentException('Secret payload root secret must not be empty.');
+            throw MessageException::forMessage(
+                MessageCode::SYSTEM_SECRET_PAYLOAD_ROOT_SECRET_EMPTY,
+                MessageKey::SYSTEM_SECRET_PAYLOAD_ROOT_SECRET_EMPTY,
+            );
         }
     }
 
@@ -33,7 +40,10 @@ final readonly class SecretPayloadProtector
         );
 
         if (false === $ciphertext) {
-            throw new \RuntimeException('Secret payload could not be encrypted.');
+            throw MessageException::forMessage(
+                MessageCode::SYSTEM_SECRET_PAYLOAD_ENCRYPT_FAILED,
+                MessageKey::SYSTEM_SECRET_PAYLOAD_ENCRYPT_FAILED,
+            );
         }
 
         return implode('.', [
@@ -49,7 +59,10 @@ final readonly class SecretPayloadProtector
         $parts = explode('.', $payload);
 
         if (4 !== count($parts) || self::VERSION !== $parts[0]) {
-            throw new \RuntimeException('Secret payload is invalid.');
+            throw MessageException::forMessage(
+                MessageCode::SYSTEM_SECRET_PAYLOAD_INVALID,
+                MessageKey::SYSTEM_SECRET_PAYLOAD_INVALID,
+            );
         }
 
         $nonce = $this->decode($parts[1]);
@@ -57,7 +70,10 @@ final readonly class SecretPayloadProtector
         $ciphertext = $this->decode($parts[3]);
 
         if (null === $nonce || null === $tag || null === $ciphertext) {
-            throw new \RuntimeException('Secret payload is invalid.');
+            throw MessageException::forMessage(
+                MessageCode::SYSTEM_SECRET_PAYLOAD_INVALID,
+                MessageKey::SYSTEM_SECRET_PAYLOAD_INVALID,
+            );
         }
 
         $plaintext = openssl_decrypt(
@@ -71,22 +87,36 @@ final readonly class SecretPayloadProtector
         );
 
         if (!is_string($plaintext)) {
-            throw new \RuntimeException('Secret payload could not be decrypted.');
+            throw MessageException::forMessage(
+                MessageCode::SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED,
+                MessageKey::SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED,
+            );
         }
 
         return $plaintext;
     }
 
+    public function hmac(string $value, string $context): string
+    {
+        return hash_hmac('sha256', $value, $this->key($context));
+    }
+
     private function key(string $context): string
     {
         if ('' === $context) {
-            throw new \InvalidArgumentException('Secret payload context must not be empty.');
+            throw MessageException::forMessage(
+                MessageCode::SYSTEM_SECRET_PAYLOAD_CONTEXT_EMPTY,
+                MessageKey::SYSTEM_SECRET_PAYLOAD_CONTEXT_EMPTY,
+            );
         }
 
-        $key = hash_hkdf('sha256', $this->secret, 32, 'studio.secret_payload.'.self::VERSION.'.'.$context);
+        $key = hash_hkdf('sha256', $this->secret, 32, 'system.secret_payload.'.self::VERSION.'.'.$context);
 
         if (32 !== strlen($key)) {
-            throw new \RuntimeException('Secret payload key could not be derived.');
+            throw MessageException::forMessage(
+                MessageCode::SYSTEM_SECRET_PAYLOAD_KEY_DERIVATION_FAILED,
+                MessageKey::SYSTEM_SECRET_PAYLOAD_KEY_DERIVATION_FAILED,
+            );
         }
 
         return $key;

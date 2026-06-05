@@ -121,6 +121,12 @@ final class MessageCode
     public const PACKAGE_DEPENDENCY_RESOLVED = 'package.dependency.resolved';
     public const ACCESS_GRANTED = 'access.granted';
     public const ACCESS_DENIED = 'access.denied';
+    public const SYSTEM_SECRET_PAYLOAD_ROOT_SECRET_EMPTY = 'system.secret_payload.root_secret_empty';
+    public const SYSTEM_SECRET_PAYLOAD_CONTEXT_EMPTY = 'system.secret_payload.context_empty';
+    public const SYSTEM_SECRET_PAYLOAD_INVALID = 'system.secret_payload.invalid';
+    public const SYSTEM_SECRET_PAYLOAD_ENCRYPT_FAILED = 'system.secret_payload.encrypt_failed';
+    public const SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED = 'system.secret_payload.decrypt_failed';
+    public const SYSTEM_SECRET_PAYLOAD_KEY_DERIVATION_FAILED = 'system.secret_payload.key_derivation_failed';
     public const BACKEND_ROUTE_NOT_FOUND = 'backend.route_not_found';
     public const BACKEND_SETUP_LOCKED = 'backend.setup_locked';
     public const BACKEND_ACTION_UNKNOWN = 'backend.action_unknown';

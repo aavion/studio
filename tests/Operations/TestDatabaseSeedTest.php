@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Operations;
 
+use App\Core\Security\SecretPayloadProtector;
 use App\Setup\DatabaseDriver;
 use App\Setup\SetupDefaultSeed;
 use App\Setup\SetupInput;
@@ -83,20 +84,20 @@ final class TestDatabaseSeedTest extends TestCase
 
         self::assertCount(3, $apiKeys);
         self::assertSame('seedro', $apiKeys[0]['prefix']);
-        self::assertSame(hash_hmac('sha256', 'test_seed_read_only_key', (string) $_SERVER['APP_SECRET']), $apiKeys[0]['hmac_hash']);
-        self::assertSame('test_seed_read_only_key', self::decryptSeededApiKey((string) $apiKeys[0]['encrypted_key']));
+        self::assertSame(self::seededApiKeyHmac('test_seed_read_only_key'), $apiKeys[0]['hmac_hash']);
+        self::assertSame('test_seed_read_only_key', self::decryptSeededApiKey((string) $apiKeys[0]['encrypted_key'], 'seedro'));
         self::assertSame('read_only', $apiKeys[0]['status']);
         self::assertNull($apiKeys[0]['revoked_at']);
 
         self::assertSame('seedrv', $apiKeys[1]['prefix']);
-        self::assertSame(hash_hmac('sha256', 'test_seed_revoked_key', (string) $_SERVER['APP_SECRET']), $apiKeys[1]['hmac_hash']);
-        self::assertSame('test_seed_revoked_key', self::decryptSeededApiKey((string) $apiKeys[1]['encrypted_key']));
+        self::assertSame(self::seededApiKeyHmac('test_seed_revoked_key'), $apiKeys[1]['hmac_hash']);
+        self::assertSame('test_seed_revoked_key', self::decryptSeededApiKey((string) $apiKeys[1]['encrypted_key'], 'seedrv'));
         self::assertSame('revoked', $apiKeys[1]['status']);
         self::assertSame('2026-05-23 21:00:00', $apiKeys[1]['revoked_at']);
 
         self::assertSame('seedrw', $apiKeys[2]['prefix']);
-        self::assertSame(hash_hmac('sha256', 'test_seed_read_write_key', (string) $_SERVER['APP_SECRET']), $apiKeys[2]['hmac_hash']);
-        self::assertSame('test_seed_read_write_key', self::decryptSeededApiKey((string) $apiKeys[2]['encrypted_key']));
+        self::assertSame(self::seededApiKeyHmac('test_seed_read_write_key'), $apiKeys[2]['hmac_hash']);
+        self::assertSame('test_seed_read_write_key', self::decryptSeededApiKey((string) $apiKeys[2]['encrypted_key'], 'seedrw'));
         self::assertSame('read_write', $apiKeys[2]['status']);
         self::assertNull($apiKeys[2]['revoked_at']);
     }
@@ -164,34 +165,19 @@ final class TestDatabaseSeedTest extends TestCase
         self::assertSame(['/', '/about', '/news/first-update'], $menuItems);
     }
 
-    private static function decryptSeededApiKey(string $payload): string
+    private static function seededApiKeyHmac(string $plainKey): string
     {
-        $parts = explode('.', $payload);
-
-        self::assertCount(4, $parts);
-        self::assertSame('v1', $parts[0]);
-
-        $plaintext = openssl_decrypt(
-            self::decodeSeedPayloadPart($parts[3]),
-            'aes-256-gcm',
-            hash('sha256', (string) $_SERVER['APP_SECRET'], true),
-            OPENSSL_RAW_DATA,
-            self::decodeSeedPayloadPart($parts[1]),
-            self::decodeSeedPayloadPart($parts[2]),
-        );
-
-        self::assertIsString($plaintext);
-
-        return $plaintext;
+        return self::secretPayloadProtector()->hmac($plainKey, 'security.api_key.hmac');
     }
 
-    private static function decodeSeedPayloadPart(string $value): string
+    private static function decryptSeededApiKey(string $payload, string $prefix): string
     {
-        $decoded = base64_decode($value, true);
+        return self::secretPayloadProtector()->reveal($payload, 'security.api_key.payload', $prefix);
+    }
 
-        self::assertIsString($decoded);
-
-        return $decoded;
+    private static function secretPayloadProtector(): SecretPayloadProtector
+    {
+        return new SecretPayloadProtector((string) $_SERVER['APP_SECRET']);
     }
 
     private function setupSeedInput(): SetupInput

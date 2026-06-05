@@ -2213,7 +2213,7 @@ final class AdminUserControllerTest extends WebTestCase
             '62000000-0000-7000-8000-'.substr(md5($prefix.$user->uid()), 0, 12),
             $prefix,
             $vault->hmac($plainKey),
-            $vault->encrypt($plainKey),
+            $vault->encrypt($plainKey, $prefix),
             $user,
             ApiKeyStatus::ReadWrite,
         );

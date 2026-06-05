@@ -158,6 +158,12 @@ Validation rules:
 | `message.access.denied` | ACL resolver denied the requested capability. | `%capability%`, `%required_level%`, `%actor_level%` |
 | `message.access.level.invalid` | Access level is outside the supported 0-9 range. | `%level%` |
 | `message.access.group_identifier.invalid` | ACL group identifier is not lowercase snake_case or shorter than 3 characters. | `%identifier%` |
+| `message.system.secret_payload.root_secret_empty` | Secret payload protection was initialized without a root secret. | N/A |
+| `message.system.secret_payload.context_empty` | Secret payload protection was called without a context label. | N/A |
+| `message.system.secret_payload.invalid` | Secret payload format or encoding is invalid. | N/A |
+| `message.system.secret_payload.encrypt_failed` | Secret payload encryption failed. | N/A |
+| `message.system.secret_payload.decrypt_failed` | Secret payload decryption failed. | N/A |
+| `message.system.secret_payload.key_derivation_failed` | Secret payload key derivation failed. | N/A |
 | `message.config.key.invalid` | Configuration key does not use dotted lowercase segments. | `%key%` |
 | `message.config.read_failed` | Configuration storage could not read a key. | `%key%` |
 | `message.config.write_failed` | Configuration storage could not write a key. | `%key%` |

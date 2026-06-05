@@ -64,7 +64,7 @@ final class TestDatabaseSecuritySeeder
                 'uid' => $uid,
                 'prefix' => $prefix,
                 'hmac_hash' => $writer->apiKeyHmacHash($plainKey),
-                'encrypted_key' => $writer->encryptApiKey($plainKey),
+                'encrypted_key' => $writer->encryptApiKey($plainKey, $prefix),
                 'user_uid' => '00000000-0000-7000-8000-000000000201',
                 'status' => $status,
                 'created_at' => TestDatabaseSeedWriter::NOW,

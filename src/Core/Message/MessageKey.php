@@ -144,6 +144,12 @@ final class MessageKey
     public const ACCESS_GRANTED = 'message.access.granted';
     public const ACCESS_DENIED = 'message.access.denied';
     public const ACCESS_LOG_FAILED = 'message.access.log_failed';
+    public const SYSTEM_SECRET_PAYLOAD_ROOT_SECRET_EMPTY = 'message.system.secret_payload.root_secret_empty';
+    public const SYSTEM_SECRET_PAYLOAD_CONTEXT_EMPTY = 'message.system.secret_payload.context_empty';
+    public const SYSTEM_SECRET_PAYLOAD_INVALID = 'message.system.secret_payload.invalid';
+    public const SYSTEM_SECRET_PAYLOAD_ENCRYPT_FAILED = 'message.system.secret_payload.encrypt_failed';
+    public const SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED = 'message.system.secret_payload.decrypt_failed';
+    public const SYSTEM_SECRET_PAYLOAD_KEY_DERIVATION_FAILED = 'message.system.secret_payload.key_derivation_failed';
     public const BACKEND_ROUTE_NOT_FOUND = 'message.backend.route_not_found';
     public const BACKEND_SETUP_LOCKED = 'message.backend.setup_locked';
     public const BACKEND_ACTION_UNKNOWN = 'message.backend.action.unknown';

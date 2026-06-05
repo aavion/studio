@@ -166,6 +166,14 @@ message:
       invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
     group_identifier:
       invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein und mindestens 3 Zeichen enthalten.'
+  system:
+    secret_payload:
+      root_secret_empty: 'Secret-Payload-Schutz benötigt ein Root-Secret.'
+      context_empty: 'Secret-Payload-Schutz benötigt ein Kontext-Label.'
+      invalid: 'Das Secret-Payload-Format ist ungültig.'
+      encrypt_failed: 'Secret-Payload-Verschlüsselung ist fehlgeschlagen.'
+      decrypt_failed: 'Secret-Payload-Entschlüsselung ist fehlgeschlagen.'
+      key_derivation_failed: 'Secret-Payload-Key-Derivation ist fehlgeschlagen.'
   backend:
     route_not_found: 'Backend-Route "%path%" ist nicht registriert.'
     setup_locked: 'Setup ist bereits abgeschlossen und nicht mehr verfügbar.'
