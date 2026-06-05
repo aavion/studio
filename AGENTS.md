@@ -14,6 +14,7 @@
 - Repository text must be English, including code comments, documentation, commit messages, UI copy source strings, and worklog entries.
 - When instructions conflict, follow the user's explicit request for the current task and call out any repository-rule trade-off.
 - Prefer graceful production flows: handle recoverable errors, log useful context, and avoid throwing where a user-facing recovery path is possible.
+- Child processes and detached runners must use the central process/environment helpers unless a direct `Process` call is intentionally local and documented. Application subprocesses must inherit Symfony Dotenv-derived configuration and must filter web/CGI request context before execution.
 
 ## Project Map
 - `src/` contains Symfony PHP code under the `App\` PSR-4 namespace.

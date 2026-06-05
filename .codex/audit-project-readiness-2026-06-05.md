@@ -613,6 +613,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Scheduler/CommandSchedulerTaskExecutor.php:31`, `src/Scheduler/CommandSchedulerTaskExecutor.php:50`, `src/Core/Operation/Process/RunCommandAction.php:83`, `src/Core/Process/PhpCliBinaryValidator.php:27`, `src/Core/Operation/Live/LiveOperationStarter.php:104`, `src/Core/Asset/AssetRebuildQueueFactory.php:81`.
 - **Impact:** The current behavior aligns with the branch goal of passing Symfony Dotenv values while filtering web/CGI request context. The risk is documentation and future drift: a new process action could bypass `RunCommandAction` or pass a manually sanitized environment that omits Dotenv values.
 - **Recommendation:** Introduce or document a single `ChildProcessEnvironment`/`CliProcessEnvironment` policy and require all direct `Process` construction to use it. Add this as an explicit review checklist item for future subprocess features.
+- **Implementation note:** Rechecked direct `Process` construction after the shared process/detached-process foundations. Application subprocesses use `RunCommandAction`, `DetachedProcessStarter`, setup/preflight process helpers, or PHP CLI resolver/validator paths backed by `CliProcessEnvironment::fromCurrentProcess()`. Remaining direct `Process` calls are local tool probes such as PHP linting, diagnostics, `ps`, or `kill`. `AGENTS.md` now records the subprocess environment rule for future feature branches.
 - **Priority:** Now / ongoing.
 
 ### F-036 ACL group impact cleanup is a cross-domain JSON scanner
