@@ -34,6 +34,7 @@ use App\View\Injection\ViewSurface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\RouterInterface;
@@ -649,7 +650,7 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseRedirects('/admin/packages');
 
-            $client->followRedirect();
+            $this->followAdminRedirect($client);
 
             self::assertResponseIsSuccessful();
             self::assertSelectorExists('.studio-alert-success');
@@ -685,7 +686,7 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/admin/packages/system');
 
-        $client->followRedirect();
+        $this->followAdminRedirect($client);
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Studio');
@@ -890,7 +891,7 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/admin/settings/general');
 
-        $client->followRedirect();
+        $this->followAdminRedirect($client);
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'General settings');
@@ -973,11 +974,11 @@ final class BackendControllerTest extends WebTestCase
 
             $this->assertSchedulerTaskStatus('system.live_operation_cleanup', SchedulerTaskStatus::Active, '*/10 * * * *');
 
-            $crawler = $client->followRedirect();
+            $crawler = $this->followAdminRedirect($client);
             $client->submit($crawler->selectButton('Run now')->form());
             self::assertResponseRedirects('/admin/scheduler/system.live_operation_cleanup');
 
-            $client->followRedirect();
+            $this->followAdminRedirect($client);
             self::assertResponseIsSuccessful();
             self::assertStringContainsString('Scheduler run completed with status completed.', (string) $client->getResponse()->getContent());
         } finally {
@@ -1010,7 +1011,7 @@ final class BackendControllerTest extends WebTestCase
             $client->submit($crawler->selectButton('Run now')->form());
             self::assertResponseRedirects('/admin/scheduler/system.live_operation_cleanup');
 
-            $client->followRedirect();
+            $this->followAdminRedirect($client);
             self::assertResponseIsSuccessful();
             self::assertStringContainsString(
                 'The scheduler run completed, but the selected job failed.',
@@ -1071,7 +1072,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertStringNotContainsString('Saved Admin Title', $auditLog);
             self::assertStringNotContainsString('https://example.test', $auditLog);
 
-            $client->followRedirect();
+            $this->followAdminRedirect($client);
 
             self::assertSelectorTextContains('.studio-alert-success', 'Settings saved.');
             self::assertStringContainsString('value="Saved Admin Title"', (string) $client->getResponse()->getContent());
@@ -1300,6 +1301,13 @@ final class BackendControllerTest extends WebTestCase
     {
         $client->disableReboot();
         $client->loginUser($this->createUserWithLevel($level));
+    }
+
+    private function followAdminRedirect(KernelBrowser $client): Crawler
+    {
+        $this->loginUserWithLevel($client, 8);
+
+        return $client->followRedirect();
     }
 
     private function removePackageByName(string $packageName): void
