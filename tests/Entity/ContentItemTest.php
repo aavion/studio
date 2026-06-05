@@ -33,7 +33,7 @@ final class ContentItemTest extends TestCase
         self::assertSame(ContentStatus::Draft, $content->status());
         self::assertSame(ContentVisibility::Public, $content->visibility());
         self::assertSame(ContentSystemRoute::ROOT_PARENT_UID, $content->parentUid());
-        self::assertSame(['en'], $content->availableLanguages());
+        self::assertSame([], $content->availableLanguages());
         self::assertSame(['default'], $content->availableVariants());
         self::assertSame('index,follow', $content->metadataValue('seo_robots'));
     }

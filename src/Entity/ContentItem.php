@@ -73,7 +73,7 @@ class ContentItem
      * @var list<string>
      */
     #[ORM\Column(type: 'json')]
-    private array $availableLanguages = ['en'];
+    private array $availableLanguages = [];
 
     /**
      * @var list<string>

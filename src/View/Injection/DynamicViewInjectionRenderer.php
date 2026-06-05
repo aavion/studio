@@ -100,28 +100,32 @@ final readonly class DynamicViewInjectionRenderer
         Throwable $error,
     ): void
     {
-        $this->messageReporter->report(
-            Message::warning(
-                MessageCode::VIEW_DYNAMIC_INJECTION_RENDER_FAILED,
-                MessageKey::VIEW_DYNAMIC_INJECTION_RENDER_FAILED,
+        try {
+            $this->messageReporter->report(
+                Message::warning(
+                    MessageCode::VIEW_DYNAMIC_INJECTION_RENDER_FAILED,
+                    MessageKey::VIEW_DYNAMIC_INJECTION_RENDER_FAILED,
+                    [
+                        '%uid%' => $injection->uid(),
+                        '%template%' => $injection->template(),
+                    ],
+                ),
                 [
-                    '%uid%' => $injection->uid(),
-                    '%template%' => $injection->template(),
+                    'component' => self::class,
+                    'injection_uid' => $injection->uid(),
+                    'injection_label' => $injection->label(),
+                    'template' => $injection->template(),
+                    'surface' => $injection->surface()->value,
+                    'slot' => $injection->slot()->value,
+                    'variant_slug' => $injection->variantSlug(),
+                    'content_uid' => $view->content()->uid(),
+                    'path' => $request->getPathInfo(),
+                    'route' => $request->attributes->get('_route'),
+                    'exception_class' => $error::class,
                 ],
-            ),
-            [
-                'component' => self::class,
-                'injection_uid' => $injection->uid(),
-                'injection_label' => $injection->label(),
-                'template' => $injection->template(),
-                'surface' => $injection->surface()->value,
-                'slot' => $injection->slot()->value,
-                'variant_slug' => $injection->variantSlug(),
-                'content_uid' => $view->content()->uid(),
-                'path' => $request->getPathInfo(),
-                'route' => $request->attributes->get('_route'),
-                'exception_class' => $error::class,
-            ],
-        );
+            );
+        } catch (Throwable) {
+            return;
+        }
     }
 }
