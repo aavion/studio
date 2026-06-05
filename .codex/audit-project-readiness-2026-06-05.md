@@ -495,6 +495,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Log/LogFileBrowser.php:9`, `src/Core/Log/LogFileBrowser.php:36`, `src/Core/Log/LogFileBrowser.php:93`, `src/Core/Log/LogFileBrowser.php:184`, `src/Core/Log/LogFileBrowser.php:236`, `src/Core/Log/LogFileBrowser.php:287`.
 - **Impact:** The class is acceptable for the current small admin view, but it is already over the desired 300-line target and will become harder to evolve if log export, retention, streaming, or API access are added.
 - **Recommendation:** Split `LogSourceRegistry`, `LogEntryReader`, `LogEntryFilter`, and `LogPagination` once logs become more than a support/debug screen. Keep the current `LogFileBrowser` as a facade for templates.
+- **Implementation note:** Split completed with `LogFileBrowser` as the Admin Logs facade over `LogSourceRegistry`, `LogLineReader`, `LogEntryFilter`, `LogEntryPresenter`, and `LogPagination`.
 - **Priority:** Before API / Support tooling expansion.
 
 ### F-024 Translation aggregation is a filesystem transaction service plus catalogue merger
