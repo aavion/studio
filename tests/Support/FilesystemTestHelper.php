@@ -76,7 +76,7 @@ trait FilesystemTestHelper
                 continue;
             }
 
-            if ($file->isLink()) {
+            if ($file->isLink() || is_link($file->getPathname())) {
                 unlink($file->getPathname());
                 continue;
             }

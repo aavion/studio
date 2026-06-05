@@ -177,6 +177,11 @@ final class SetupCliInputFactoryTest extends TestCase
         try {
             $factory = new SetupCliInputFactory(
                 dirname(__DIR__, 2),
+                extensionAvailability: [
+                    'pdo_sqlite' => true,
+                    'pdo_mysql' => true,
+                    'pdo_pgsql' => true,
+                ],
                 input: $this->stream(''),
                 output: $this->stream(''),
                 interactive: false,

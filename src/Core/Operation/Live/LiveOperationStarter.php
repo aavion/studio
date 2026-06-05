@@ -87,6 +87,12 @@ final readonly class LiveOperationStarter
         ];
         $outputPath = $this->runStore->outputPath($operationId);
         $pidPath = $this->runStore->pidPath($operationId);
+        if ('\\' === DIRECTORY_SEPARATOR) {
+            $this->startWindowsProcess($command, $outputPath, $pidPath);
+
+            return;
+        }
+
         $shellCommand = implode(' ', array_map('escapeshellarg', $command))
             .' > '.escapeshellarg($outputPath).' 2>&1 & echo $! > '.escapeshellarg($pidPath);
 
@@ -103,6 +109,36 @@ final readonly class LiveOperationStarter
         if (!$process->isSuccessful()) {
             throw new \RuntimeException('Live operation runner could not be started.');
         }
+    }
+
+    /**
+     * @param list<string> $command
+     */
+    private function startWindowsProcess(array $command, string $outputPath, string $pidPath): void
+    {
+        if (false === file_put_contents($pidPath, 'started '.gmdate('c').PHP_EOL, LOCK_EX)) {
+            throw new \RuntimeException('Live operation runner pid marker could not be written.');
+        }
+
+        $shellCommand = 'start "" /B '.implode(' ', array_map($this->windowsArgument(...), $command))
+            .' > '.$this->windowsArgument($outputPath).' 2>&1';
+
+        $process = Process::fromShellCommandline(
+            'cmd /C '.$shellCommand,
+            $this->kernel->getProjectDir(),
+            CliProcessEnvironment::fromCurrentProcess(['APP_ENV' => $this->kernel->getEnvironment()]),
+            timeout: 5.0,
+        );
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            throw new \RuntimeException('Live operation runner could not be started.');
+        }
+    }
+
+    private function windowsArgument(string $argument): string
+    {
+        return '"'.str_replace('"', '\"', $argument).'"';
     }
 
     /**
