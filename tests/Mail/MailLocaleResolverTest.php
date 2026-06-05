@@ -8,6 +8,7 @@ use App\Content\Routing\ContentRouteLocalization;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Entity\UserAccount;
+use App\Localization\LocalePreferenceResolver;
 use App\Localization\TranslationLanguageCatalog;
 use App\Mail\MailLocaleResolver;
 use Doctrine\DBAL\DriverManager;
@@ -66,9 +67,11 @@ final class MailLocaleResolverTest extends TestCase
         $config = new Config($connection);
         $config->set(ContentRouteLocalization::DEFAULT_LANGUAGE_KEY, $defaultLanguage, ConfigValueType::String);
 
-        return new MailLocaleResolver(new ContentRouteLocalization(
+        $localization = new ContentRouteLocalization(
             $config,
             new TranslationLanguageCatalog(dirname(__DIR__, 2)),
-        ));
+        );
+
+        return new MailLocaleResolver(new LocalePreferenceResolver($localization));
     }
 }

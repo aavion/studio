@@ -4,77 +4,28 @@ declare(strict_types=1);
 
 namespace App\Mail;
 
-use App\Content\Routing\ContentRouteLocalization;
 use App\Entity\UserAccount;
+use App\Localization\LocalePreferenceResolver;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class MailLocaleResolver
 {
-    public function __construct(private ContentRouteLocalization $localization)
+    public function __construct(private LocalePreferenceResolver $localePreferences)
     {
     }
 
     public function forPublicRequest(Request $request, ?UserAccount $user = null): string
     {
-        return $this->supportedLocale($this->userLocale($user), $request->getLocale(), $this->localization->defaultLanguage());
+        return $this->localePreferences->resolveMailLocale($user, $request->getLocale());
     }
 
     public function forAdminAction(?UserAccount $user = null): string
     {
-        return $this->supportedLocale($this->userLocale($user), $this->localization->defaultLanguage());
+        return $this->localePreferences->resolveMailLocale($user);
     }
 
     public function defaultLocale(): string
     {
-        return $this->localization->defaultLanguage();
-    }
-
-    private function userLocale(?UserAccount $user): ?string
-    {
-        if (!$user instanceof UserAccount) {
-            return null;
-        }
-
-        $language = $user->settings()['language'] ?? null;
-
-        if (!is_string($language) || '' === trim($language) || 'default' === $language) {
-            return null;
-        }
-
-        return trim($language);
-    }
-
-    private function supportedLocale(?string ...$candidates): string
-    {
-        $availableLanguages = $this->localization->availableLanguages();
-
-        foreach ($candidates as $locale) {
-            if (!is_string($locale) || '' === trim($locale)) {
-                continue;
-            }
-
-            $locale = trim($locale);
-
-            if (in_array($locale, $availableLanguages, true)) {
-                return $locale;
-            }
-
-            $normalized = strtolower(str_replace('_', '-', $locale));
-            $primary = explode('-', $normalized)[0] ?? '';
-
-            foreach ($availableLanguages as $availableLanguage) {
-                if ($normalized === strtolower(str_replace('_', '-', $availableLanguage))) {
-                    return $availableLanguage;
-                }
-            }
-
-            foreach ($availableLanguages as $availableLanguage) {
-                if ($primary === strtolower(str_replace('_', '-', $availableLanguage))) {
-                    return $availableLanguage;
-                }
-            }
-        }
-
-        return $this->localization->defaultLanguage();
+        return $this->localePreferences->defaultLocale();
     }
 }

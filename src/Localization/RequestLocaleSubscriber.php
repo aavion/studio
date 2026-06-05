@@ -19,6 +19,7 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
         private ContentRouteLocalization $localization,
         private TokenStorageInterface $tokenStorage,
         private LocaleSwitcher $localeSwitcher,
+        private LocalePreferenceResolver $localePreferences,
     ) {
     }
 
@@ -39,11 +40,10 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
         }
 
         $request = $event->getRequest();
-        $locale = $this->supportedLocale(
+        $locale = $this->localePreferences->resolveRequestLocale(
             $this->urlLocale($request->getPathInfo()),
             $this->userLocale(),
             $this->sessionLocale($event),
-            $this->localization->defaultLanguage(),
         );
 
         if (null === $locale) {
@@ -59,7 +59,7 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
         }
     }
 
-    private function userLocale(): ?string
+    private function userLocale(): ?UserAccount
     {
         $user = $this->tokenStorage->getToken()?->getUser();
 
@@ -67,13 +67,7 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
             return null;
         }
 
-        $language = $user->settings()['language'] ?? null;
-
-        if (!is_string($language) || '' === trim($language) || 'default' === $language) {
-            return null;
-        }
-
-        return trim($language);
+        return $user;
     }
 
     private function urlLocale(string $path): ?string
@@ -100,16 +94,4 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
         return is_string($locale) && '' !== trim($locale) ? trim($locale) : null;
     }
 
-    private function supportedLocale(?string ...$candidates): ?string
-    {
-        $availableLanguages = $this->localization->availableLanguages();
-
-        foreach ($candidates as $candidate) {
-            if (is_string($candidate) && in_array($candidate, $availableLanguages, true)) {
-                return $candidate;
-            }
-        }
-
-        return null;
-    }
 }

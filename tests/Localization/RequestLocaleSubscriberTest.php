@@ -8,6 +8,7 @@ use App\Content\Routing\ContentRouteLocalization;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Entity\UserAccount;
+use App\Localization\LocalePreferenceResolver;
 use App\Localization\RequestLocaleSubscriber;
 use App\Localization\TranslationLanguageCatalog;
 use Doctrine\DBAL\DriverManager;
@@ -26,7 +27,7 @@ final class RequestLocaleSubscriberTest extends TestCase
     public function testItAppliesConfiguredDefaultLanguage(): void
     {
         $request = Request::create('/admin');
-        $subscriber = new RequestLocaleSubscriber($this->localization('de'), new TokenStorage(), $this->localeSwitcher());
+        $subscriber = $this->subscriber($this->localization('de'), new TokenStorage());
 
         $subscriber->onKernelRequest($this->event($request));
 
@@ -45,7 +46,7 @@ final class RequestLocaleSubscriberTest extends TestCase
             settings: ['language' => 'de'],
         ), 'main'));
 
-        $subscriber = new RequestLocaleSubscriber($this->localization('en'), $tokenStorage, $this->localeSwitcher());
+        $subscriber = $this->subscriber($this->localization('en'), $tokenStorage);
 
         $subscriber->onKernelRequest($this->event($request));
 
@@ -64,7 +65,7 @@ final class RequestLocaleSubscriberTest extends TestCase
             settings: ['language' => 'en'],
         ), 'main'));
 
-        $subscriber = new RequestLocaleSubscriber($this->localization('en', routePrefixesEnabled: true), $tokenStorage, $this->localeSwitcher());
+        $subscriber = $this->subscriber($this->localization('en', routePrefixesEnabled: true), $tokenStorage);
 
         $subscriber->onKernelRequest($this->event($request));
 
@@ -86,7 +87,7 @@ final class RequestLocaleSubscriberTest extends TestCase
             settings: ['language' => 'fr'],
         ), 'main'));
 
-        $subscriber = new RequestLocaleSubscriber($this->localization('en'), $tokenStorage, $this->localeSwitcher());
+        $subscriber = $this->subscriber($this->localization('en'), $tokenStorage);
 
         $subscriber->onKernelRequest($this->event($request));
 
@@ -99,7 +100,7 @@ final class RequestLocaleSubscriberTest extends TestCase
         $session = new Session(new MockArraySessionStorage());
         $session->set('_locale', 'de');
         $request->setSession($session);
-        $subscriber = new RequestLocaleSubscriber($this->localization('en'), new TokenStorage(), $this->localeSwitcher());
+        $subscriber = $this->subscriber($this->localization('en'), new TokenStorage());
 
         $subscriber->onKernelRequest($this->event($request));
 
@@ -115,6 +116,16 @@ final class RequestLocaleSubscriberTest extends TestCase
         $config->set(ContentRouteLocalization::ENABLED_KEY, $routePrefixesEnabled, ConfigValueType::Boolean);
 
         return new ContentRouteLocalization($config, new TranslationLanguageCatalog(dirname(__DIR__, 2)));
+    }
+
+    private function subscriber(ContentRouteLocalization $localization, TokenStorage $tokenStorage): RequestLocaleSubscriber
+    {
+        return new RequestLocaleSubscriber(
+            $localization,
+            $tokenStorage,
+            $this->localeSwitcher(),
+            new LocalePreferenceResolver($localization),
+        );
     }
 
     private function event(Request $request): RequestEvent

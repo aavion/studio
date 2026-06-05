@@ -12,9 +12,9 @@ use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
 use App\Core\Validation\EmailAddress;
-use App\Content\Routing\ContentRouteLocalization;
 use App\Entity\AccountToken;
 use App\Entity\UserAccount;
+use App\Localization\LocalePreferenceResolver;
 use App\Mail\AccountMailFlow;
 use App\Mail\MailLocaleResolver;
 use App\Security\AccountLinkDeliveryInterface;
@@ -56,8 +56,8 @@ final class UserController extends AbstractController
         private readonly TokenStorageInterface $tokenStorage,
         private readonly StateMarkerRecorder $stateMarkers,
         private readonly PasswordPolicy $passwordPolicy,
-        private readonly ContentRouteLocalization $localization,
         private readonly LocaleSwitcher $localeSwitcher,
+        private readonly LocalePreferenceResolver $localePreferences,
     ) {
     }
 
@@ -164,9 +164,7 @@ final class UserController extends AbstractController
 
     private function applyProfileLocale(Request $request, UserAccount $user): void
     {
-        $language = $user->settings()['language'] ?? 'default';
-        $locale = $this->supportedLocale(is_string($language) && 'default' !== $language ? $language : null)
-            ?? $this->localization->defaultLanguage();
+        $locale = $this->localePreferences->resolveProfileLocale($user);
 
         $request->setLocale($locale);
 
@@ -175,17 +173,6 @@ final class UserController extends AbstractController
         } catch (SessionNotFoundException) {
         }
         $this->localeSwitcher->setLocale($locale);
-    }
-
-    private function supportedLocale(?string $locale): ?string
-    {
-        if (!is_string($locale) || '' === trim($locale)) {
-            return null;
-        }
-
-        $locale = trim($locale);
-
-        return in_array($locale, $this->localization->availableLanguages(), true) ? $locale : null;
     }
 
     #[Route('/user/profile/close', name: 'user_profile_close', methods: ['GET', 'POST'])]
