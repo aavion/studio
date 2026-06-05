@@ -38,7 +38,7 @@ final class RequestLocaleSubscriberTest extends TestCase
         $request = Request::create('/admin');
         $tokenStorage = new TokenStorage();
         $tokenStorage->setToken(new UsernamePasswordToken(new UserAccount(
-            '77777777-7777-4777-8777-777777777777',
+            '77777777-7777-7777-8777-777777777777',
             'localeuser',
             'locale@example.test',
             'hash',
@@ -57,7 +57,7 @@ final class RequestLocaleSubscriberTest extends TestCase
         $request = Request::create('/de/articles');
         $tokenStorage = new TokenStorage();
         $tokenStorage->setToken(new UsernamePasswordToken(new UserAccount(
-            '77777777-7777-4777-8777-777777777779',
+            '77777777-7777-7777-8777-777777777779',
             'urlprefuser',
             'url-pref@example.test',
             'hash',
@@ -79,7 +79,7 @@ final class RequestLocaleSubscriberTest extends TestCase
         $request->setSession($session);
         $tokenStorage = new TokenStorage();
         $tokenStorage->setToken(new UsernamePasswordToken(new UserAccount(
-            '77777777-7777-4777-8777-777777777778',
+            '77777777-7777-7777-8777-777777777778',
             'staleuserlocale',
             'stale-locale@example.test',
             'hash',

@@ -15,7 +15,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class DeletedUserCleanup
 {
-    public const DELETED_USER_UID = '00000000-0000-0000-0000-000000000099';
+    public const DELETED_USER_UID = '00000000-0000-7000-8000-000000000099';
     public const DELETED_USER_USERNAME = 'deleted-user';
     private const DELETED_USER_EMAIL = 'deleted-user@localhost.local';
 

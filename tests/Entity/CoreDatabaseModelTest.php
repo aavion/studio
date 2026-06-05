@@ -33,19 +33,19 @@ final class CoreDatabaseModelTest extends TestCase
     public function testItModelsUsersGroupsAndApiKeys(): void
     {
         $contentAuthors = new AclGroup(
-            '11111111-1111-1111-1111-111111111111',
+            '11111111-1111-7111-8111-111111111111',
             'content_authors',
             ['en' => 'Content authors'],
             AccessLevel::AUTHOR,
         );
         $reviewBoard = new AclGroup(
-            '22222222-2222-2222-2222-222222222222',
+            '22222222-2222-7222-8222-222222222222',
             'review_board',
             ['en' => 'Review board'],
             AccessLevel::MANAGER,
         );
         $user = new UserAccount(
-            '33333333-3333-3333-3333-333333333333',
+            '33333333-3333-7333-8333-333333333333',
             'dominique',
             'Dom@Example.COM',
             'hash',
@@ -56,7 +56,7 @@ final class CoreDatabaseModelTest extends TestCase
         $user->addGroup($reviewBoard);
         $hmacHash = hash_hmac('sha256', 'plain-key', 'app-secret');
         $apiKey = new ApiKey(
-            '44444444-4444-4444-4444-444444444444',
+            '44444444-4444-7444-8444-444444444444',
             'abcd1234',
             $hmacHash,
             'v1.test.encrypted-key',
@@ -64,7 +64,7 @@ final class CoreDatabaseModelTest extends TestCase
             ApiKeyStatus::ReadWrite,
         );
         $accountToken = new AccountToken(
-            '55555555-5555-4555-8555-555555555555',
+            '55555555-5555-7555-8555-555555555555',
             hash('sha256', 'plain-account-token'),
             AccountTokenType::Invitation,
             'Invitee@Example.COM',
@@ -116,7 +116,7 @@ final class CoreDatabaseModelTest extends TestCase
         $this->expectExceptionMessage(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
 
         new AclGroup(
-            '11111111-1111-1111-1111-111111111111',
+            '11111111-1111-7111-8111-111111111111',
             'ab',
             ['en' => 'Short'],
             AccessLevel::USER,
@@ -126,7 +126,7 @@ final class CoreDatabaseModelTest extends TestCase
     public function testItEnforcesUsernamePolicy(): void
     {
         $user = new UserAccount(
-            '33333333-3333-3333-3333-333333333334',
+            '33333333-3333-7333-8333-333333333334',
             'alpha_123',
             'alpha@example.com',
             'hash',
@@ -150,9 +150,9 @@ final class CoreDatabaseModelTest extends TestCase
     {
         $markedAt = new DateTimeImmutable('2026-05-24 12:00:00');
         $marker = new StateMarker(
-            '99999999-9999-9999-9999-999999999999',
+            '99999999-9999-7999-9999-999999999999',
             'user_account',
-            '33333333-3333-3333-3333-333333333333',
+            '33333333-3333-7333-8333-333333333333',
             'last_login',
             $markedAt,
             null,
@@ -161,7 +161,7 @@ final class CoreDatabaseModelTest extends TestCase
         );
 
         self::assertSame('user_account', $marker->subjectType());
-        self::assertSame('33333333-3333-3333-3333-333333333333', $marker->subjectUid());
+        self::assertSame('33333333-3333-7333-8333-333333333333', $marker->subjectUid());
         self::assertSame('last_login', $marker->markerKey());
         self::assertSame($markedAt, $marker->markerAt());
         self::assertNull($marker->markerBy());
@@ -174,19 +174,19 @@ final class CoreDatabaseModelTest extends TestCase
         $config = new ConfigEntry('content.cleanup.trash_retention_days', 30, ConfigValueType::Integer);
         $packageSetting = new PackageSettingEntry('demo_package', 'theme.variant', 'green', ConfigValueType::String);
         $package = new ExtensionPackage(
-            '55555555-5555-5555-5555-555555555555',
+            '55555555-5555-7555-8555-555555555555',
             [PackageScope::FrontendTheme, PackageScope::Module],
             'demo_package',
             'packages/demo',
             ExtensionPackageStatus::Active,
         );
-        $menu = new SiteMenu('66666666-6666-6666-6666-666666666666', 'main', ['en' => 'Main']);
+        $menu = new SiteMenu('66666666-6666-7666-8666-666666666666', 'main', ['en' => 'Main']);
         $item = new SiteMenuItem(
-            '77777777-7777-7777-7777-777777777777',
+            '77777777-7777-7777-8777-777777777777',
             $menu,
             ['en' => 'Home'],
             'content',
-            '88888888-8888-8888-8888-888888888888',
+            '88888888-8888-7888-8888-888888888888',
             viewMinLevel: AccessLevel::PUBLIC,
             viewGroupIdentifiers: ['project_team'],
         );
@@ -212,17 +212,17 @@ final class CoreDatabaseModelTest extends TestCase
 
     public function testItRejectsInvalidMenuAccessGroupIdentifiers(): void
     {
-        $menu = new SiteMenu('66666666-6666-6666-6666-666666666666', 'main', ['en' => 'Main']);
+        $menu = new SiteMenu('66666666-6666-7666-8666-666666666666', 'main', ['en' => 'Main']);
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
 
         new SiteMenuItem(
-            '77777777-7777-7777-7777-777777777777',
+            '77777777-7777-7777-8777-777777777777',
             $menu,
             ['en' => 'Home'],
             'content',
-            '88888888-8888-8888-8888-888888888888',
+            '88888888-8888-7888-8888-888888888888',
             viewGroupIdentifiers: ['Project Team'],
         );
     }
@@ -232,6 +232,6 @@ final class CoreDatabaseModelTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(MessageKey::ACCESS_LEVEL_INVALID);
 
-        new AclGroup('11111111-1111-1111-1111-111111111111', 'bad', ['en' => 'Bad'], 42);
+        new AclGroup('11111111-1111-7111-8111-111111111111', 'bad', ['en' => 'Bad'], 42);
     }
 }

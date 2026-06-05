@@ -19,7 +19,7 @@ final class MailLocaleResolverTest extends TestCase
     public function testItPrefersUserLanguageForPublicAndAdminFlows(): void
     {
         $resolver = $this->resolver('de');
-        $user = new UserAccount('55555555-5555-4555-8555-555555555555', 'localeuser', 'locale@example.test', 'hash', settings: [
+        $user = new UserAccount('55555555-5555-7555-8555-555555555555', 'localeuser', 'locale@example.test', 'hash', settings: [
             'language' => 'de',
         ]);
         $request = Request::create('/user/reset-password');
@@ -41,7 +41,7 @@ final class MailLocaleResolverTest extends TestCase
     public function testItIgnoresUnsupportedUserLanguageBeforePublicRequestLocaleFallback(): void
     {
         $resolver = $this->resolver('de');
-        $user = new UserAccount('55555555-5555-4555-8555-555555555556', 'staleuserlocale', 'stale-locale@example.test', 'hash', settings: [
+        $user = new UserAccount('55555555-5555-7555-8555-555555555556', 'staleuserlocale', 'stale-locale@example.test', 'hash', settings: [
             'language' => 'fr',
         ]);
         $request = Request::create('/user/reset-password');

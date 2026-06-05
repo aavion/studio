@@ -12,6 +12,7 @@ use App\Core\Workflow\WorkflowStatus;
 use App\Entity\ExtensionPackage;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Uid\Uuid;
 use ZipArchive;
 
 final class PackageZipInstallerTest extends KernelTestCase
@@ -23,6 +24,13 @@ final class PackageZipInstallerTest extends KernelTestCase
         'zip-install-review',
         'zip-install-rollback',
         'zip-install-symlink',
+    ];
+
+    private const TEST_PACKAGE_DATABASE_SLUGS = [
+        ...self::TEST_PACKAGE_SLUGS,
+        'demo-captcha-provider',
+        'demo-frontend-theme',
+        'demo-module',
     ];
 
     private const TEST_INSTALL_IDS = [
@@ -47,6 +55,9 @@ final class PackageZipInstallerTest extends KernelTestCase
 
         foreach (self::TEST_PACKAGE_SLUGS as $slug) {
             $this->removePath($this->projectDir.'/packages/'.$slug);
+        }
+
+        foreach (self::TEST_PACKAGE_DATABASE_SLUGS as $slug) {
             $this->deletePackageRow($slug);
         }
     }
@@ -55,6 +66,9 @@ final class PackageZipInstallerTest extends KernelTestCase
     {
         foreach (self::TEST_PACKAGE_SLUGS as $slug) {
             $this->removePath($this->projectDir.'/packages/'.$slug);
+        }
+
+        foreach (self::TEST_PACKAGE_DATABASE_SLUGS as $slug) {
             $this->deletePackageRow($slug);
         }
 
@@ -442,11 +456,7 @@ final class PackageZipInstallerTest extends KernelTestCase
 
     private function uuid(): string
     {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+        return Uuid::v7()->toRfc4122();
     }
 
     private function removePath(string $path): void

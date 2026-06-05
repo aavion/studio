@@ -29,9 +29,9 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
             'trigger' => 'admin_ui',
         ]);
         $aclGroupApply = $factory->create(LiveOperationQueueFactory::ACL_GROUP_APPLY, [
-            'group_uid' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'group_uid' => 'aaaaaaaa-aaaa-7aaa-aaaa-aaaaaaaaaaaa',
             'action' => 'delete',
-            'actor_uid' => 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+            'actor_uid' => 'bbbbbbbb-bbbb-7bbb-bbbb-bbbbbbbbbbbb',
             'environment' => 'test',
             'trigger' => 'admin_ui',
         ]);
@@ -83,7 +83,7 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
             'package' => 'demo-module',
         ]);
         $invalidAclGroupApply = $factory->create(LiveOperationQueueFactory::ACL_GROUP_APPLY, [
-            'group_uid' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'group_uid' => 'aaaaaaaa-aaaa-7aaa-aaaa-aaaaaaaaaaaa',
         ]);
 
         self::assertFalse($unknown->isSuccess());

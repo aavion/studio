@@ -197,7 +197,7 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
     public function testItDeletesStatisticEventsOlderThanThreeMonths(): void
     {
         $this->connection->insert('access_statistic_event', [
-            'uid' => '00000000-0000-0000-0000-000000000999',
+            'uid' => '00000000-0000-7000-8000-000000000999',
             'occurred_at' => (new \DateTimeImmutable('-4 months'))->format('Y-m-d H:i:s'),
             'request_id' => 'old-request',
             'visitor_id' => 'old-visitor',

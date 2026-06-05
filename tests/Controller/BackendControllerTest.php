@@ -391,7 +391,7 @@ final class BackendControllerTest extends WebTestCase
         $this->removePackageByName('test-removed-theme');
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $frontendTheme = new ExtensionPackage(
-            '00000000-0000-0000-0000-000000000499',
+            '00000000-0000-7000-8000-000000000499',
             [PackageScope::FrontendTheme],
             'test-frontend-theme',
             'packages/test-frontend-theme',
@@ -400,7 +400,7 @@ final class BackendControllerTest extends WebTestCase
             manifestVersion: '1.0.0',
         );
         $removedTheme = new ExtensionPackage(
-            '00000000-0000-0000-0000-000000000497',
+            '00000000-0000-7000-8000-000000000497',
             [PackageScope::FrontendTheme],
             'test-removed-theme',
             'packages/test-removed-theme',
@@ -532,7 +532,7 @@ final class BackendControllerTest extends WebTestCase
         $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
         $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);
         $connection->insert('access_statistic_event', [
-            'uid' => '99999999-0000-0000-0000-000000000901',
+            'uid' => '99999999-0000-7000-8000-000000000901',
             'occurred_at' => '2099-01-01 10:00:00',
             'request_id' => 'request-admin-logs',
             'visitor_id' => hash('sha256', 'test-visitor'),
@@ -720,7 +720,7 @@ final class BackendControllerTest extends WebTestCase
         $this->loginUserWithLevel($client, 8);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $package = new ExtensionPackage(
-            '00000000-0000-0000-0000-000000000498',
+            '00000000-0000-7000-8000-000000000498',
             [PackageScope::Module],
             'test-lifecycle',
             'packages/test-lifecycle',
@@ -805,7 +805,7 @@ final class BackendControllerTest extends WebTestCase
         $this->loginUserWithLevel($client, 8);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $theme = new ExtensionPackage(
-            '00000000-0000-0000-0000-000000000596',
+            '00000000-0000-7000-8000-000000000596',
             [PackageScope::FrontendTheme],
             'test-dependent-theme',
             'packages/test-dependent-theme',
@@ -814,7 +814,7 @@ final class BackendControllerTest extends WebTestCase
             manifestVersion: '1.0.0',
         );
         $captcha = new ExtensionPackage(
-            '00000000-0000-0000-0000-000000000597',
+            '00000000-0000-7000-8000-000000000597',
             [PackageScope::CaptchaProvider],
             'test-dependent-captcha',
             'packages/test-dependent-captcha',
@@ -851,7 +851,7 @@ final class BackendControllerTest extends WebTestCase
         $this->loginUserWithLevel($client, 8);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $package = new ExtensionPackage(
-            '00000000-0000-0000-0000-000000000598',
+            '00000000-0000-7000-8000-000000000598',
             [PackageScope::Module],
             'test-unsafe-metadata',
             'packages/test-unsafe-metadata',
@@ -1155,7 +1155,7 @@ final class BackendControllerTest extends WebTestCase
         $originalRegistrationEmail = $config->get(UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '');
         $originalSecurityEmail = $config->get(UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, '');
         $originalMenuSortOrder = $config->get(UserFlowConfig::MENU_SORT_ORDER_KEY, 900);
-        $group = new AclGroup('66000000-0000-0000-0000-000000000001', 'settings_clear_default', ['en' => 'Settings clear default'], AccessLevel::USER);
+        $group = new AclGroup('66000000-0000-7000-8000-000000000001', 'settings_clear_default', ['en' => 'Settings clear default'], AccessLevel::USER);
         $entityManager->persist($group);
         $entityManager->flush();
         $config->set('user.default_acl_group', $group->identifier(), ConfigValueType::String, modifiedBy: 'test');

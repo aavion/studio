@@ -17,14 +17,14 @@ final class ContentSchemaTest extends TestCase
     public function testItActivatesVersionAndStoresSchemaAccessRules(): void
     {
         $schema = new ContentSchema(
-            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'aaaaaaaa-aaaa-7aaa-aaaa-aaaaaaaaaaaa',
             'static_page',
             ContentSchemaSource::Preset,
             ['en' => 'Static page', 'de' => 'Statische Seite'],
             locked: true,
         );
         $version = new ContentSchemaVersion(
-            'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+            'bbbbbbbb-bbbb-7bbb-bbbb-bbbbbbbbbbbb',
             $schema,
             1,
             ['en' => 'Static page schema'],
@@ -47,7 +47,7 @@ final class ContentSchemaTest extends TestCase
 
         self::assertSame('static_page', $schema->identifier());
         self::assertTrue($schema->locked());
-        self::assertSame('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', $schema->activeVersionUid());
+        self::assertSame('bbbbbbbb-bbbb-7bbb-bbbb-bbbbbbbbbbbb', $schema->activeVersionUid());
         self::assertSame($version, $schema->activeVersion());
         self::assertSame(1, $version->version());
         self::assertSame(AccessLevel::PUBLIC, $version->useMinLevel());
@@ -62,7 +62,7 @@ final class ContentSchemaTest extends TestCase
     public function testItRejectsSchemasMissingRequiredBaseFields(): void
     {
         $schema = new ContentSchema(
-            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'aaaaaaaa-aaaa-7aaa-aaaa-aaaaaaaaaaaa',
             'article',
             ContentSchemaSource::Custom,
             ['en' => 'Article'],
@@ -72,7 +72,7 @@ final class ContentSchemaTest extends TestCase
         $this->expectExceptionMessage(MessageKey::CONTENT_SCHEMA_REQUIRED_FIELD_MISSING);
 
         new ContentSchemaVersion(
-            'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+            'bbbbbbbb-bbbb-7bbb-bbbb-bbbbbbbbbbbb',
             $schema,
             1,
             ['en' => 'Article schema'],
@@ -87,7 +87,7 @@ final class ContentSchemaTest extends TestCase
     public function testItRejectsDuplicateFieldIdentifiers(): void
     {
         $schema = new ContentSchema(
-            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'aaaaaaaa-aaaa-7aaa-aaaa-aaaaaaaaaaaa',
             'article',
             ContentSchemaSource::Custom,
             ['en' => 'Article'],
@@ -97,7 +97,7 @@ final class ContentSchemaTest extends TestCase
         $this->expectExceptionMessage(MessageKey::CONTENT_SCHEMA_FIELD_DUPLICATE);
 
         new ContentSchemaVersion(
-            'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+            'bbbbbbbb-bbbb-7bbb-bbbb-bbbbbbbbbbbb',
             $schema,
             1,
             ['en' => 'Article schema'],
@@ -114,7 +114,7 @@ final class ContentSchemaTest extends TestCase
     public function testItRejectsInvalidSchemaFieldIdentifiers(): void
     {
         $schema = new ContentSchema(
-            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'aaaaaaaa-aaaa-7aaa-aaaa-aaaaaaaaaaaa',
             'article',
             ContentSchemaSource::Custom,
             ['en' => 'Article'],
@@ -124,7 +124,7 @@ final class ContentSchemaTest extends TestCase
         $this->expectExceptionMessage(MessageKey::CONTENT_FIELD_IDENTIFIER_INVALID);
 
         new ContentSchemaVersion(
-            'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+            'bbbbbbbb-bbbb-7bbb-bbbb-bbbbbbbbbbbb',
             $schema,
             1,
             ['en' => 'Article schema'],

@@ -352,7 +352,7 @@ final class UserRegistrationController extends AbstractController
             $this->rejectDuplicateUsername($username);
         }
 
-        return new UserAccount($this->uuidFactory->v4(), $username, $token->email(), '', role: $token->role());
+        return new UserAccount($this->uuidFactory->generate(), $username, $token->email(), '', role: $token->role());
     }
 
     private function replaceGroups(UserAccount $user, AccountToken $token): void

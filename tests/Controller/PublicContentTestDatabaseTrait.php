@@ -25,8 +25,8 @@ trait PublicContentTestDatabaseTrait
         $parentUid = $this->systemErrorUid($statusCode, 0);
         $contentUid = $this->systemErrorUid($statusCode, 1);
         $revisionUid = $this->systemErrorUid($statusCode, 2);
-        $schemaUid = '10000000-0000-0000-0000-000000000001';
-        $schemaVersionUid = '10000000-0000-0000-0000-000000000101';
+        $schemaUid = '10000000-0000-7000-8000-000000000001';
+        $schemaVersionUid = '10000000-0000-7000-8000-000000000101';
 
         $connection->insert('content_item', [
             'uid' => $parentUid,

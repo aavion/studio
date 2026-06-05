@@ -77,7 +77,7 @@ final readonly class PackageRegistryHandler
             $isNew = !isset($packages[$packageName]);
             $manifestVersion = $candidate->manifest()->get('PACKAGE_VERSION');
             $package = $packages[$packageName] ?? new ExtensionPackage(
-                $this->uuidFactory->v4(),
+                $this->uuidFactory->generate(),
                 $scopes,
                 $packageName,
                 $path,

@@ -173,6 +173,6 @@ final readonly class SetupPasswordResetRunner
 
     private function uuid(): string
     {
-        return $this->uuidFactory->v4();
+        return $this->uuidFactory->generate();
     }
 }

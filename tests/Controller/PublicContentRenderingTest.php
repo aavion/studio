@@ -153,7 +153,7 @@ final class PublicContentRenderingTest extends WebTestCase
                 strpos($html, 'schema-custom-fieldset'),
             );
         } finally {
-            $connection->update('content_schema_version', ['custom_twig' => null], ['uid' => '10000000-0000-0000-0000-000000000102']);
+            $connection->update('content_schema_version', ['custom_twig' => null], ['uid' => '10000000-0000-7000-8000-000000000102']);
         }
     }
 
@@ -171,7 +171,7 @@ final class PublicContentRenderingTest extends WebTestCase
             self::assertSelectorExists('.studio-content-fields');
             self::assertSelectorTextContains('.studio-content-fields', 'Content fields');
         } finally {
-            $connection->update('content_schema_version', ['custom_twig' => null], ['uid' => '10000000-0000-0000-0000-000000000102']);
+            $connection->update('content_schema_version', ['custom_twig' => null], ['uid' => '10000000-0000-7000-8000-000000000102']);
         }
     }
 
@@ -266,7 +266,7 @@ final class PublicContentRenderingTest extends WebTestCase
         self::getContainer()->get(Connection::class)->update(
             'content_schema_version',
             ['custom_twig' => $customTwig],
-            ['uid' => '10000000-0000-0000-0000-000000000102'],
+            ['uid' => '10000000-0000-7000-8000-000000000102'],
         );
     }
 }

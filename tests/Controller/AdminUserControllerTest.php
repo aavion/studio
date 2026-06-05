@@ -1658,19 +1658,19 @@ final class AdminUserControllerTest extends WebTestCase
             'cleanup-invite@example.test',
             [$group->identifier()],
         );
-        $content = new ContentItem('64000000-0000-0000-0000-000000000001', 'acl-cleanup-content');
+        $content = new ContentItem('64000000-0000-7000-8000-000000000001', 'acl-cleanup-content');
         $content->setAclRestrictions([$group->identifier()]);
         $content->setViewRule(AccessLevel::PUBLIC);
         $content->setEditRule(AccessLevel::AUTHOR, [$group->identifier()]);
         $content->setManageRule(AccessLevel::MANAGER, [$group->identifier()]);
         $content->publish();
-        $viewOnlyContent = new ContentItem('64000000-0000-0000-0000-000000000006', 'acl-view-only-content');
+        $viewOnlyContent = new ContentItem('64000000-0000-7000-8000-000000000006', 'acl-view-only-content');
         $viewOnlyContent->setAclRestrictions([]);
         $viewOnlyContent->setViewRule(null, [$group->identifier()]);
         $viewOnlyContent->publish();
-        $schema = new ContentSchema('64000000-0000-0000-0000-000000000002', 'acl_cleanup_schema', ContentSchemaSource::Custom, ['en' => 'ACL cleanup']);
+        $schema = new ContentSchema('64000000-0000-7000-8000-000000000002', 'acl_cleanup_schema', ContentSchemaSource::Custom, ['en' => 'ACL cleanup']);
         $version = new ContentSchemaVersion(
-            '64000000-0000-0000-0000-000000000003',
+            '64000000-0000-7000-8000-000000000003',
             $schema,
             1,
             ['en' => 'ACL cleanup schema'],
@@ -1684,8 +1684,8 @@ final class AdminUserControllerTest extends WebTestCase
             editGroupIdentifiers: [$group->identifier()],
             manageGroupIdentifiers: [$group->identifier()],
         );
-        $menu = new SiteMenu('64000000-0000-0000-0000-000000000004', 'acl_cleanup_menu', ['en' => 'ACL cleanup']);
-        $menuItem = new SiteMenuItem('64000000-0000-0000-0000-000000000005', $menu, ['en' => 'ACL cleanup'], 'route', 'content_home', viewGroupIdentifiers: [$group->identifier()]);
+        $menu = new SiteMenu('64000000-0000-7000-8000-000000000004', 'acl_cleanup_menu', ['en' => 'ACL cleanup']);
+        $menuItem = new SiteMenuItem('64000000-0000-7000-8000-000000000005', $menu, ['en' => 'ACL cleanup'], 'route', 'content_home', viewGroupIdentifiers: [$group->identifier()]);
 
         $schema->addVersion($version);
         $menu->addItem($menuItem);
@@ -1761,8 +1761,8 @@ final class AdminUserControllerTest extends WebTestCase
         $client->loginUser($this->adminUser());
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $group = $this->createGroup('menu_public_warning', AccessLevel::USER);
-        $menu = new SiteMenu('64000000-0000-0000-0000-000000000007', 'acl_menu_warning', ['en' => 'ACL menu warning']);
-        $menuItem = new SiteMenuItem('64000000-0000-0000-0000-000000000008', $menu, ['en' => 'ACL menu warning'], 'route', 'content_home', viewGroupIdentifiers: [$group->identifier()]);
+        $menu = new SiteMenu('64000000-0000-7000-8000-000000000007', 'acl_menu_warning', ['en' => 'ACL menu warning']);
+        $menuItem = new SiteMenuItem('64000000-0000-7000-8000-000000000008', $menu, ['en' => 'ACL menu warning'], 'route', 'content_home', viewGroupIdentifiers: [$group->identifier()]);
 
         $menu->addItem($menuItem);
         $entityManager->persist($menu);

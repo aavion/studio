@@ -18,10 +18,10 @@ final class ContentFieldValueTest extends TestCase
 {
     public function testItStoresFieldContextAndContent(): void
     {
-        $content = new ContentItem('11111111-1111-1111-1111-111111111111', 'article');
+        $content = new ContentItem('11111111-1111-7111-8111-111111111111', 'article');
         $revision = $this->revision($content);
         $fieldValue = new ContentFieldValue(
-            '22222222-2222-2222-2222-222222222222',
+            '22222222-2222-7222-8222-222222222222',
             $revision,
             'de',
             'compact',
@@ -29,7 +29,7 @@ final class ContentFieldValueTest extends TestCase
             'Kurzfassung',
         );
 
-        self::assertSame('22222222-2222-2222-2222-222222222222', $fieldValue->uid());
+        self::assertSame('22222222-2222-7222-8222-222222222222', $fieldValue->uid());
         self::assertSame($revision, $fieldValue->revision());
         self::assertSame($content, $fieldValue->content());
         self::assertSame(1, $fieldValue->version());
@@ -45,8 +45,8 @@ final class ContentFieldValueTest extends TestCase
         $this->expectExceptionMessage(MessageKey::CONTENT_FIELD_IDENTIFIER_INVALID);
 
         new ContentFieldValue(
-            '22222222-2222-2222-2222-222222222222',
-            $this->revision(new ContentItem('11111111-1111-1111-1111-111111111111', 'article')),
+            '22222222-2222-7222-8222-222222222222',
+            $this->revision(new ContentItem('11111111-1111-7111-8111-111111111111', 'article')),
             'en',
             'default',
             'Invalid-Identifier',
@@ -57,13 +57,13 @@ final class ContentFieldValueTest extends TestCase
     private function revision(ContentItem $content): ContentRevision
     {
         $schema = new ContentSchema(
-            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'aaaaaaaa-aaaa-7aaa-aaaa-aaaaaaaaaaaa',
             'article',
             ContentSchemaSource::Custom,
             ['en' => 'Article'],
         );
         $schemaVersion = new ContentSchemaVersion(
-            'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+            'bbbbbbbb-bbbb-7bbb-bbbb-bbbbbbbbbbbb',
             $schema,
             1,
             ['en' => 'Article schema'],
@@ -77,7 +77,7 @@ final class ContentFieldValueTest extends TestCase
         );
 
         return new ContentRevision(
-            '33333333-3333-3333-3333-333333333333',
+            '33333333-3333-7333-8333-333333333333',
             $content,
             1,
             $schemaVersion,

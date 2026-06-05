@@ -55,7 +55,7 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
             $path = $this->accessRequestMetadata->sanitizedPath($request);
 
             $this->connection->insert('access_statistic_event', [
-                'uid' => $this->uuidFactory->v4(),
+                'uid' => $this->uuidFactory->generate(),
                 'occurred_at' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
                 'request_id' => $this->accessRequestMetadata->requestId($request),
                 'visitor_id' => $this->visitorIdGenerator->generate($request),

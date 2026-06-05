@@ -161,7 +161,7 @@ final class AdminAclGroupController extends AbstractController
             }
 
             $group = new AclGroup(
-                $this->uuidFactory->v4(),
+                $this->uuidFactory->generate(),
                 $this->field($request, 'identifier'),
                 [
                     'en' => $this->field($request, 'name_en'),

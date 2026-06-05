@@ -75,8 +75,8 @@ final class TestDatabaseSchemaSeeder
                 'definition' => $setupVersion['definition'],
             ],
             [
-                'schema_uid' => '10000000-0000-0000-0000-000000000002',
-                'version_uid' => '10000000-0000-0000-0000-000000000102',
+                'schema_uid' => '10000000-0000-7000-8000-000000000002',
+                'version_uid' => '10000000-0000-7000-8000-000000000102',
                 'identifier' => 'article',
                 'labels' => ['en' => 'Article', 'de' => 'Artikel'],
                 'title' => ['en' => 'Article schema', 'de' => 'Artikelschema'],

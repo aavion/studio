@@ -19,7 +19,7 @@ final class StateMarkerRecorderTest extends KernelTestCase
         $connection = $entityManager->getConnection();
         $recorder = self::getContainer()->get(StateMarkerRecorder::class);
         $subjectType = 'test_state_marker';
-        $subjectUid = '65000000-0000-0000-0000-000000000001';
+        $subjectUid = '65000000-0000-7000-8000-000000000001';
 
         $connection->delete('state_marker', [
             'subject_type' => $subjectType,
@@ -54,8 +54,8 @@ final class StateMarkerRecorderTest extends KernelTestCase
         $connection = $entityManager->getConnection();
         $recorder = self::getContainer()->get(StateMarkerRecorder::class);
         $subjectType = 'user_account';
-        $subjectUid = '65000000-0000-0000-0000-000000000002';
-        $otherUid = '65000000-0000-0000-0000-000000000003';
+        $subjectUid = '65000000-0000-7000-8000-000000000002';
+        $otherUid = '65000000-0000-7000-8000-000000000003';
 
         foreach ([$subjectUid, $otherUid] as $uid) {
             $connection->delete('state_marker', ['subject_type' => $subjectType, 'subject_uid' => $uid]);
@@ -95,7 +95,7 @@ final class StateMarkerRecorderTest extends KernelTestCase
         $connection = $entityManager->getConnection();
         $recorder = self::getContainer()->get(StateMarkerRecorder::class);
         $subjectType = 'test_state_marker';
-        $subjectUid = '65000000-0000-0000-0000-000000000004';
+        $subjectUid = '65000000-0000-7000-8000-000000000004';
 
         $connection->delete('state_marker', [
             'subject_type' => $subjectType,

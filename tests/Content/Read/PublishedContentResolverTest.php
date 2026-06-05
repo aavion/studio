@@ -128,7 +128,7 @@ final class PublishedContentResolverTest extends KernelTestCase
             'available_variants' => json_encode(['default', 'compact'], JSON_THROW_ON_ERROR),
         ], ['slug' => 'home']);
         $this->connection->insert('content_field_value', [
-            'uid' => '40000000-0000-0000-0000-000000000401',
+            'uid' => '40000000-0000-7000-8000-000000000401',
             'revision_uid' => $revisionUid,
             'language' => 'en',
             'variant' => 'compact',

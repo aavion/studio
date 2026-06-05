@@ -25,7 +25,7 @@ final class AuditLoggerTest extends TestCase
         $monolog->pushHandler($handler);
 
         (new AuditLogger($monolog))->log(
-            AccessActor::fromAccess(9, ['site_operations'], '10000000-0000-0000-0000-000000000001', 'admin'),
+            AccessActor::fromAccess(9, ['site_operations'], '10000000-0000-7000-8000-000000000001', 'admin'),
             'package.activate',
             [
                 'package' => 'demo-module',
@@ -52,7 +52,7 @@ final class AuditLoggerTest extends TestCase
         $monolog->pushHandler($handler);
 
         (new AuditLogger($monolog, new DenyAllAuditLogPolicy()))->log(
-            AccessActor::fromAccess(9, ['site_operations'], '10000000-0000-0000-0000-000000000001', 'admin'),
+            AccessActor::fromAccess(9, ['site_operations'], '10000000-0000-7000-8000-000000000001', 'admin'),
             'settings.core.save',
         );
 

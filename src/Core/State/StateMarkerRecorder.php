@@ -55,7 +55,7 @@ final class StateMarkerRecorder
         }
 
         $marker = new StateMarker(
-            $this->uuidFactory->v4(),
+            $this->uuidFactory->generate(),
             $subjectType,
             $subjectUid,
             $markerKey,

@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Content\Routing\ContentSlug;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
+use App\Core\Validation\Uid;
 use App\Repository\ContentFieldValueRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -118,14 +119,7 @@ class ContentFieldValue
 
     private static function assertUid(string $uid, string $label): string
     {
-        if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $uid)) {
-            throw MessageException::invalidArgument(MessageKey::CONTENT_UID_INVALID, [
-                '%label%' => $label,
-                '%uid%' => $uid,
-            ]);
-        }
-
-        return $uid;
+        return Uid::assert($uid, $label);
     }
 
     private static function assertToken(string $token, string $label): string

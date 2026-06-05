@@ -36,7 +36,7 @@ final readonly class AccountTokenIssuer
 
         return [
             new AccountToken(
-                $this->uuidFactory->v4(),
+                $this->uuidFactory->generate(),
                 $this->hash($plainToken),
                 $type,
                 $email,

@@ -22,7 +22,7 @@ final class MessageLogAccountLinkDeliveryTest extends TestCase
         $logger = new RecordingAccountLinkMessageLogger();
         $delivery = new MessageLogAccountLinkDelivery($logger, new MailFlowRegistry());
         $token = new AccountToken(
-            '55555555-5555-4555-8555-555555555555',
+            '55555555-5555-7555-8555-555555555555',
             hash('sha256', 'plain-account-token'),
             AccountTokenType::Registration,
             'User@Example.Test',
@@ -50,7 +50,7 @@ final class MessageLogAccountLinkDeliveryTest extends TestCase
         $logger = new RecordingAccountLinkMessageLogger();
         $delivery = new MessageLogAccountLinkDelivery($logger, new MailFlowRegistry());
         $token = new AccountToken(
-            '55555555-5555-4555-8555-555555555555',
+            '55555555-5555-7555-8555-555555555555',
             hash('sha256', 'plain-account-token'),
             AccountTokenType::Registration,
             'User@Example.Test',

@@ -50,7 +50,7 @@ final class UserAccountUniquenessGuardTest extends KernelTestCase
     public function testItRejectsDuplicateUserAccountIdentifiersAlreadyInStorage(): void
     {
         $existing = new UserAccount(
-            '68000000-0000-0000-0000-000000000010',
+            '68000000-0000-7000-8000-000000000010',
             'uniqueguardstored',
             'UniqueGuardStored@Example.Test',
             'pending',
@@ -59,7 +59,7 @@ final class UserAccountUniquenessGuardTest extends KernelTestCase
         $this->entityManager->flush();
 
         $duplicate = new UserAccount(
-            '68000000-0000-0000-0000-000000000011',
+            '68000000-0000-7000-8000-000000000011',
             'uniqueguardfresh',
             'uniqueguardstored@example.test',
             'pending',
@@ -79,13 +79,13 @@ final class UserAccountUniquenessGuardTest extends KernelTestCase
     {
         yield 'email' => [
             new UserAccount(
-                '68000000-0000-0000-0000-000000000001',
+                '68000000-0000-7000-8000-000000000001',
                 'uniqueguardone',
                 'UniqueGuard@Example.Test',
                 'pending',
             ),
             new UserAccount(
-                '68000000-0000-0000-0000-000000000002',
+                '68000000-0000-7000-8000-000000000002',
                 'uniqueguardtwo',
                 'uniqueguard@example.test',
                 'pending',
@@ -95,13 +95,13 @@ final class UserAccountUniquenessGuardTest extends KernelTestCase
 
         yield 'username' => [
             new UserAccount(
-                '68000000-0000-0000-0000-000000000003',
+                '68000000-0000-7000-8000-000000000003',
                 'uniqueguardname',
                 'uniqueguard-name-one@example.test',
                 'pending',
             ),
             new UserAccount(
-                '68000000-0000-0000-0000-000000000004',
+                '68000000-0000-7000-8000-000000000004',
                 'uniqueguardname',
                 'uniqueguard-name-two@example.test',
                 'pending',

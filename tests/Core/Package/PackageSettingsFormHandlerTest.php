@@ -42,7 +42,7 @@ final class PackageSettingsFormHandlerTest extends KernelTestCase
                 ])],
                 new FormHandlerActivePackageProvider([
                     new ExtensionPackage(
-                        '10000000-0000-0000-0000-000000000777',
+                        '10000000-0000-7000-8000-000000000777',
                         [PackageScope::Module],
                         'form-module',
                         'packages/form-module',

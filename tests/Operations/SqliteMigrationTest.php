@@ -59,16 +59,16 @@ final class SqliteMigrationTest extends TestCase
         $pdo = new PDO('sqlite:'.$databasePath);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        $this->insertContentProbe($pdo, '99999999-0000-0000-0000-000000000001', 'root-uniqueness-probe');
+        $this->insertContentProbe($pdo, '99999999-0000-7000-8000-000000000001', 'root-uniqueness-probe');
 
         $parentUid = $pdo
-            ->query("SELECT parent_uid FROM content_item WHERE uid = '99999999-0000-0000-0000-000000000001'")
+            ->query("SELECT parent_uid FROM content_item WHERE uid = '99999999-0000-7000-8000-000000000001'")
             ->fetchColumn();
 
         self::assertSame('/', $parentUid);
 
         try {
-            $this->insertContentProbe($pdo, '99999999-0000-0000-0000-000000000002', 'root-uniqueness-probe');
+            $this->insertContentProbe($pdo, '99999999-0000-7000-8000-000000000002', 'root-uniqueness-probe');
             self::fail('Duplicate root content slugs must be rejected.');
         } catch (PDOException $exception) {
             self::assertStringContainsString('UNIQUE', strtoupper($exception->getMessage()));

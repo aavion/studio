@@ -88,7 +88,7 @@ final class MaintenanceModeSubscriberTest extends TestCase
     private function userWithAccessLevel(int $accessLevel): UserAccount
     {
         $user = new UserAccount(
-            '33333333-3333-3333-3333-333333333333',
+            '33333333-3333-7333-8333-333333333333',
             'securitytest',
             'security@example.test',
             'hash',

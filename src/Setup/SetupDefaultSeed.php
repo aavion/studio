@@ -84,7 +84,7 @@ final readonly class SetupDefaultSeed
     public function contentSchema(): array
     {
         return [
-            'uid' => '10000000-0000-0000-0000-000000000001',
+            'uid' => '10000000-0000-7000-8000-000000000001',
             'identifier' => 'static_page',
             'source' => 'setup',
             'locked' => true,
@@ -102,7 +102,7 @@ final readonly class SetupDefaultSeed
     public function contentSchemaVersion(): array
     {
         return [
-            'uid' => '10000000-0000-0000-0000-000000000101',
+            'uid' => '10000000-0000-7000-8000-000000000101',
             'version' => 1,
             'title' => ['en' => 'Static page schema', 'de' => 'Schema fuer statische Seiten'],
             'definition' => [
@@ -123,7 +123,7 @@ final readonly class SetupDefaultSeed
     public function homeContentItem(): array
     {
         return [
-            'uid' => '20000000-0000-0000-0000-000000000001',
+            'uid' => '20000000-0000-7000-8000-000000000001',
             'slug' => 'home',
             'status' => 'published',
             'parent_uid' => '/',
@@ -146,7 +146,7 @@ final readonly class SetupDefaultSeed
     public function homeContentRevision(): array
     {
         return [
-            'uid' => '20000000-0000-0000-0000-000000000101',
+            'uid' => '20000000-0000-7000-8000-000000000101',
             'version' => 1,
             'change_summary' => 'Seeded setup homepage.',
         ];

@@ -139,7 +139,7 @@ final readonly class SchedulerRunner
     private function runTask(SchedulerTask $task, ?int $softBudgetMs): array
     {
         $startedAt = new DateTimeImmutable();
-        $run = new SchedulerTaskRun($this->uuidFactory->v4(), $task, $startedAt, [
+        $run = new SchedulerTaskRun($this->uuidFactory->generate(), $task, $startedAt, [
             'task' => $task->identifier(),
             'source' => $task->source(),
             'type' => $task->type()->value,

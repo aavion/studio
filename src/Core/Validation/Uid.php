@@ -6,12 +6,13 @@ namespace App\Core\Validation;
 
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
+use Symfony\Component\Uid\Uuid as SymfonyUuid;
 
 final class Uid
 {
     public static function assert(string $uid, string $label = 'UID'): string
     {
-        if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $uid)) {
+        if (!SymfonyUuid::isValid($uid)) {
             throw MessageException::invalidArgument(MessageKey::CONTENT_UID_INVALID, [
                 '%label%' => $label,
                 '%uid%' => $uid,

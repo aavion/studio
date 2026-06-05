@@ -13,7 +13,7 @@ final class AccessStatisticEventTest extends TestCase
     public function testItStoresAnonymizedAccessStatisticFields(): void
     {
         $event = new AccessStatisticEvent(
-            '00000000-0000-0000-0000-000000000001',
+            '00000000-0000-7000-8000-000000000001',
             new DateTimeImmutable('2026-05-27T10:00:00+00:00'),
             'request-a',
             str_repeat('a', 64),
@@ -35,7 +35,7 @@ final class AccessStatisticEventTest extends TestCase
             country: 'DE',
         );
 
-        self::assertSame('00000000-0000-0000-0000-000000000001', $event->uid());
+        self::assertSame('00000000-0000-7000-8000-000000000001', $event->uid());
         self::assertSame('request-a', $event->requestId());
         self::assertSame(str_repeat('a', 64), $event->visitorId());
         self::assertSame('GET', $event->method());

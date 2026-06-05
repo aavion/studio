@@ -61,7 +61,7 @@ final class TestDatabaseSeedTest extends TestCase
             ->query("SELECT password_hash, settings, status, uid FROM user_account WHERE username = 'admin'")
             ->fetch(PDO::FETCH_ASSOC);
         $markers = $this->pdo
-            ->query("SELECT marker_key, marker_value FROM state_marker WHERE subject_type = 'user_account' AND subject_uid = '00000000-0000-0000-0000-000000000201' ORDER BY marker_key")
+            ->query("SELECT marker_key, marker_value FROM state_marker WHERE subject_type = 'user_account' AND subject_uid = '00000000-0000-7000-8000-000000000201' ORDER BY marker_key")
             ->fetchAll(PDO::FETCH_KEY_PAIR);
 
         self::assertIsArray($user);
@@ -78,7 +78,7 @@ final class TestDatabaseSeedTest extends TestCase
     public function testItSeedsApiKeysForEachLifecycleStatus(): void
     {
         $apiKeys = $this->pdo
-            ->query("SELECT prefix, hmac_hash, encrypted_key, status, revoked_at FROM api_key WHERE user_uid = '00000000-0000-0000-0000-000000000201' ORDER BY prefix")
+            ->query("SELECT prefix, hmac_hash, encrypted_key, status, revoked_at FROM api_key WHERE user_uid = '00000000-0000-7000-8000-000000000201' ORDER BY prefix")
             ->fetchAll(PDO::FETCH_ASSOC);
 
         self::assertCount(3, $apiKeys);
@@ -158,7 +158,7 @@ final class TestDatabaseSeedTest extends TestCase
     public function testItSeedsMainNavigation(): void
     {
         $menuItems = $this->pdo
-            ->query("SELECT target_value FROM site_menu_item WHERE menu_uid = '30000000-0000-0000-0000-000000000001' ORDER BY sort_order")
+            ->query("SELECT target_value FROM site_menu_item WHERE menu_uid = '30000000-0000-7000-8000-000000000001' ORDER BY sort_order")
             ->fetchAll(PDO::FETCH_COLUMN);
 
         self::assertSame(['/', '/about', '/news/first-update'], $menuItems);

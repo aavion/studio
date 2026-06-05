@@ -1034,7 +1034,7 @@ final class UserControllerTest extends WebTestCase
         $config = self::getContainer()->get(Config::class);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $group = new AclGroup(
-            '00000000-0000-4000-8000-000000009901',
+            '00000000-0000-7000-8000-000000009901',
             'signup_default',
             ['en' => 'Signup Default'],
             AccessLevel::USER,

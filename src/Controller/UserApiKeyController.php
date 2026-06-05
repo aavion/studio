@@ -52,7 +52,7 @@ final class UserApiKeyController extends AbstractController
                 $status = '1' === $this->stringField($request, 'read_only') ? ApiKeyStatus::ReadOnly : ApiKeyStatus::ReadWrite;
 
                 try {
-                    $apiKey = new ApiKey($this->uuidFactory->v4(), $prefix, $this->apiKeyVault->hmac($plainKey), $this->apiKeyVault->encrypt($plainKey), $user, $status);
+                    $apiKey = new ApiKey($this->uuidFactory->generate(), $prefix, $this->apiKeyVault->hmac($plainKey), $this->apiKeyVault->encrypt($plainKey), $user, $status);
                     $this->entityManager->persist($apiKey);
                     $this->entityManager->flush();
                     $this->audit($user, 'api_key.created', ['api_key_uid' => $apiKey->uid(), 'prefix' => $apiKey->prefix(), 'status' => $status->value]);

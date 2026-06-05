@@ -367,7 +367,7 @@ final readonly class SetupDatabaseSeeder
 
     private function uuid(): string
     {
-        return $this->uuidFactory->v4();
+        return $this->uuidFactory->generate();
     }
 
     private function now(): string

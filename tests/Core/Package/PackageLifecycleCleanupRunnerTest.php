@@ -24,7 +24,7 @@ final class PackageLifecycleCleanupRunnerTest extends KernelTestCase
         $settings->set('neighbor-module', 'display.mode', 'comfortable', ConfigValueType::String);
 
         $result = $runner->cleanup(new ExtensionPackage(
-            '10000000-0000-0000-0000-000000000611',
+            '10000000-0000-7000-8000-000000000611',
             [PackageScope::Module],
             'cleanup-module',
             'packages/cleanup-module',

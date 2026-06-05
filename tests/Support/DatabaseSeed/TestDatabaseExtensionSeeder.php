@@ -9,7 +9,7 @@ final class TestDatabaseExtensionSeeder
     public static function seed(TestDatabaseSeedWriter $writer): void
     {
         $writer->insert('extension_package', [
-            'uid' => '00000000-0000-0000-0000-000000000401',
+            'uid' => '00000000-0000-7000-8000-000000000401',
             'package_scopes' => $writer->json(['frontend-theme', 'backend-theme', 'system-template']),
             'package_name' => 'system',
             'path' => '.',

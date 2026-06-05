@@ -31,7 +31,7 @@ final class PublicContentRedirectTest extends WebTestCase
                 'slug' => 'about',
                 'parent_uid' => '/',
                 'custom_url' => '/about',
-            ], ['uid' => '20000000-0000-0000-0000-000000000002']);
+            ], ['uid' => '20000000-0000-7000-8000-000000000002']);
             $connection->update('content_item', ['redirect_target' => null], ['slug' => 'first-update']);
         }
     }
@@ -65,7 +65,7 @@ final class PublicContentRedirectTest extends WebTestCase
             'available_variants' => json_encode(['default', 'compact'], JSON_THROW_ON_ERROR),
         ], ['slug' => 'about']);
         $connection->insert('content_field_value', [
-            'uid' => '40000000-0000-0000-0000-000000000501',
+            'uid' => '40000000-0000-7000-8000-000000000501',
             'revision_uid' => $revisionUid,
             'language' => 'en',
             'variant' => 'compact',
@@ -81,13 +81,13 @@ final class PublicContentRedirectTest extends WebTestCase
             self::assertSelectorTextContains('h1', 'Compact Footer');
             self::assertSame('/news/first-update', $client->getRequest()->getPathInfo());
         } finally {
-            $connection->delete('content_field_value', ['uid' => '40000000-0000-0000-0000-000000000501']);
+            $connection->delete('content_field_value', ['uid' => '40000000-0000-7000-8000-000000000501']);
             $connection->update('content_item', [
                 'slug' => 'about',
                 'parent_uid' => '/',
                 'custom_url' => '/about',
                 'available_variants' => json_encode(['default'], JSON_THROW_ON_ERROR),
-            ], ['uid' => '20000000-0000-0000-0000-000000000002']);
+            ], ['uid' => '20000000-0000-7000-8000-000000000002']);
             $connection->update('content_item', ['redirect_target' => null], ['slug' => 'first-update']);
         }
     }

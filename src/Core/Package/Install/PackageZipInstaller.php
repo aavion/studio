@@ -533,7 +533,7 @@ final readonly class PackageZipInstaller
     {
         $version = trim((string) $manifest->get('PACKAGE_VERSION', ''));
         $package = new ExtensionPackage(
-            $this->uuidFactory->v4(),
+            $this->uuidFactory->generate(),
             $scopes,
             $slug,
             'packages/'.$slug,
