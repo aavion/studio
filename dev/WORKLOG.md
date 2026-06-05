@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Added a shared console workflow result renderer and migrated package lifecycle plus ACL group apply commands to the common issue/message and exit-code rendering path.
 - Moved scheduler run locking behind Symfony Lock while keeping the existing scheduler lock adapter and contention behavior intact for cron/API callers.
 - Replaced the custom UUID generator with Symfony UID-backed UUIDv7 generation, centralized UID validation through Symfony's UUID parser, normalized UUID-shaped fixtures to valid RFC UUIDs, and hardened package ZIP installer test cleanup so discovery side effects do not leak into later package lifecycle tests.
 - Added a phased implementation plan for the project-readiness audit, covering shared runtime foundations, setup and operations, package boundaries, admin/presentation modularity, content/ACL/security foundations, API/data read models, documentation alignment, and suggested commit slices.
