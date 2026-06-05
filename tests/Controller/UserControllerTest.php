@@ -764,7 +764,7 @@ final class UserControllerTest extends WebTestCase
         );
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $claimedUser = new UserAccount(
-            '60000000-0000-0000-0000-'.substr(md5('claimedinvitee'), 0, 12),
+            '60000000-0000-7000-8000-'.substr(md5('claimedinvitee'), 0, 12),
             'claimedinvitee',
             'claimed-invitee@example.test',
             'pending',
@@ -1589,7 +1589,7 @@ final class UserControllerTest extends WebTestCase
         }
 
         $user = new UserAccount(
-            '60000000-0000-0000-0000-'.substr(md5($username), 0, 12),
+            '60000000-0000-7000-8000-'.substr(md5($username), 0, 12),
             $username,
             $username.'@example.test',
             'pending',
@@ -1607,7 +1607,7 @@ final class UserControllerTest extends WebTestCase
         $vault = self::getContainer()->get(ApiKeyVault::class);
         $plainKey = $vault->generatePlainKey($prefix);
         $apiKey = new ApiKey(
-            '63000000-0000-0000-0000-'.substr(md5($prefix.$user->uid()), 0, 12),
+            '63000000-0000-7000-8000-'.substr(md5($prefix.$user->uid()), 0, 12),
             $prefix,
             $vault->hmac($plainKey),
             $vault->encrypt($plainKey),
@@ -1633,7 +1633,7 @@ final class UserControllerTest extends WebTestCase
         }
 
         $group = new AclGroup(
-            '62000000-0000-0000-0000-'.substr(md5($identifier), 0, 12),
+            '62000000-0000-7000-8000-'.substr(md5($identifier), 0, 12),
             $identifier,
             ['en' => ucfirst(str_replace('_', ' ', $identifier))],
             $minRole,

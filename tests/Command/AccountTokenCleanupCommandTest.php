@@ -69,8 +69,8 @@ final class AccountTokenCleanupCommandTest extends KernelTestCase
     public function testItKeepsUsedSecurityReviewTokensForInactiveUsers(): void
     {
         $issuer = new AccountTokenIssuer();
-        $inactiveUser = new UserAccount('61000000-0000-0000-0000-'.substr(md5('cleanupdispute'), 0, 12), 'cleanupdispute', 'cleanupdispute@example.test', 'pending', status: UserAccountStatus::Inactive);
-        $activeUser = new UserAccount('61000000-0000-0000-0000-'.substr(md5('cleanupresolved'), 0, 12), 'cleanupresolved', 'cleanupresolved@example.test', 'pending');
+        $inactiveUser = new UserAccount('61000000-0000-7000-8000-'.substr(md5('cleanupdispute'), 0, 12), 'cleanupdispute', 'cleanupdispute@example.test', 'pending', status: UserAccountStatus::Inactive);
+        $activeUser = new UserAccount('61000000-0000-7000-8000-'.substr(md5('cleanupresolved'), 0, 12), 'cleanupresolved', 'cleanupresolved@example.test', 'pending');
         [$unresolvedDispute] = $issuer->issue(AccountTokenType::SecurityReview, $inactiveUser->email(), [], $inactiveUser, ttl: '-1 hour');
         [$resolvedReview] = $issuer->issue(AccountTokenType::SecurityReview, $activeUser->email(), [], $activeUser, ttl: '-1 hour');
         [$usedReset] = $issuer->issue(AccountTokenType::PasswordReset, $inactiveUser->email(), [], $inactiveUser, ttl: '-1 hour');

@@ -166,9 +166,9 @@ final class TestDatabaseContentSeeder
 
         $writer->update('content_item', ['active_revision_uid' => $item['revision_uid']], ['uid' => $item['content_uid']]);
         $suffix = substr($item['content_uid'], -1);
-        $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000094%s', $suffix), 'content_item', $item['content_uid'], 'created', 'system', null, ['slug' => $item['slug']]);
-        $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000095%s', $suffix), 'content_item', $item['content_uid'], 'published', 'system', 'published', ['revision_uid' => $item['revision_uid']]);
-        $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000096%s', $suffix), 'content_revision', $item['revision_uid'], 'created', 'system', null, ['content_uid' => $item['content_uid']]);
+        $writer->seedStateMarker(sprintf('00000000-0000-7000-8000-00000000094%s', $suffix), 'content_item', $item['content_uid'], 'created', 'system', null, ['slug' => $item['slug']]);
+        $writer->seedStateMarker(sprintf('00000000-0000-7000-8000-00000000095%s', $suffix), 'content_item', $item['content_uid'], 'published', 'system', 'published', ['revision_uid' => $item['revision_uid']]);
+        $writer->seedStateMarker(sprintf('00000000-0000-7000-8000-00000000096%s', $suffix), 'content_revision', $item['revision_uid'], 'created', 'system', null, ['content_uid' => $item['content_uid']]);
     }
 
     private function __construct()

@@ -48,7 +48,7 @@ final class ContentSchemaFieldTest extends TestCase
 
         foreach (ContentSchemaField::requiredBaseIdentifiers() as $index => $fieldIdentifier) {
             $fieldValue = new ContentFieldValue(
-                sprintf('22222222-2222-2222-2222-%012d', $index + 1),
+                sprintf('22222222-2222-7222-8222-%012d', $index + 1),
                 $revision,
                 'en',
                 'default',

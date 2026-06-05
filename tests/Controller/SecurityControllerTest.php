@@ -11,6 +11,7 @@ use App\Security\UserRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Uid\Uuid;
 
 final class SecurityControllerTest extends WebTestCase
 {
@@ -236,12 +237,6 @@ final class SecurityControllerTest extends WebTestCase
 
     private function testUserUid(string $username): string
     {
-        $hash = md5($username);
-
-        return substr($hash, 0, 8)
-            .'-'.substr($hash, 8, 4)
-            .'-'.substr($hash, 12, 4)
-            .'-'.substr($hash, 16, 4)
-            .'-'.substr($hash, 20, 12);
+        return Uuid::v5(Uuid::fromString(Uuid::NAMESPACE_DNS), $username)->toRfc4122();
     }
 }

@@ -98,7 +98,7 @@ final class AccessStatisticsAggregatorTest extends TestCase
         try {
             for ($index = 0; $index < 10005; ++$index) {
                 $this->insertEvent(
-                    sprintf('10000000-0000-0000-0000-%012d', $index),
+                    sprintf('10000000-0000-7000-8000-%012d', $index),
                     'request-'.$index,
                     'visitor-'.$index,
                     'GET',

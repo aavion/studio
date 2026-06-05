@@ -1284,7 +1284,7 @@ final class BackendControllerTest extends WebTestCase
         }
 
         $user = new UserAccount(
-            '10000000-0000-0000-0000-00000000000'.$level,
+            '10000000-0000-7000-8000-00000000000'.$level,
             'testuser'.$level,
             'testuser'.$level.'@example.test',
             'hash',

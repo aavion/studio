@@ -119,6 +119,6 @@ trait PublicContentTestDatabaseTrait
 
     private function systemErrorUid(int $statusCode, int $suffix): string
     {
-        return sprintf('90000000-0000-0000-0000-%012d', ($statusCode * 10) + $suffix);
+        return sprintf('90000000-0000-7000-8000-%012d', ($statusCode * 10) + $suffix);
     }
 }

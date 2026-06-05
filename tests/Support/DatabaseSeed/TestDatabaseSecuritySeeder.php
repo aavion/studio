@@ -27,7 +27,7 @@ final class TestDatabaseSecuritySeeder
                 'min_role' => $group['min_role'],
                 'metadata' => $writer->json(['preset' => true]),
             ]);
-            $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000091%d', $index), 'acl_group', $group['uid'], 'created', 'test_seed', null, ['identifier' => $group['identifier']]);
+            $writer->seedStateMarker(sprintf('00000000-0000-7000-8000-00000000091%d', $index), 'acl_group', $group['uid'], 'created', 'test_seed', null, ['identifier' => $group['identifier']]);
         }
     }
 

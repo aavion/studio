@@ -2129,7 +2129,7 @@ final class AdminUserControllerTest extends WebTestCase
         }
 
         $user = new UserAccount(
-            '61000000-0000-0000-0000-'.substr(md5($username), 0, 12),
+            '61000000-0000-7000-8000-'.substr(md5($username), 0, 12),
             $username,
             $username.'@example.test',
             'pending',
@@ -2169,7 +2169,7 @@ final class AdminUserControllerTest extends WebTestCase
         }
 
         $group = new AclGroup(
-            '62000000-0000-0000-0000-'.substr(md5($identifier), 0, 12),
+            '62000000-0000-7000-8000-'.substr(md5($identifier), 0, 12),
             $identifier,
             ['en' => ucfirst(str_replace('_', ' ', $identifier))],
             $accessLevel,
@@ -2210,7 +2210,7 @@ final class AdminUserControllerTest extends WebTestCase
         $vault = self::getContainer()->get(ApiKeyVault::class);
         $plainKey = $vault->generatePlainKey($prefix);
         $apiKey = new ApiKey(
-            '62000000-0000-0000-0000-'.substr(md5($prefix.$user->uid()), 0, 12),
+            '62000000-0000-7000-8000-'.substr(md5($prefix.$user->uid()), 0, 12),
             $prefix,
             $vault->hmac($plainKey),
             $vault->encrypt($plainKey),

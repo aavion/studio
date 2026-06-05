@@ -315,7 +315,7 @@ final readonly class SetupDatabaseSeeder
         foreach ($fields as $fieldIdentifier => $localizedValues) {
             foreach ($localizedValues as $language => $fieldContent) {
                 $connection->insert('content_field_value', [
-                    'uid' => sprintf('20000000-0000-0000-0001-%012d', $fieldIndex),
+                    'uid' => sprintf('20000000-0000-7000-8001-%012d', $fieldIndex),
                     'revision_uid' => $revisionUid,
                     'language' => $language,
                     'variant' => 'default',

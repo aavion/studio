@@ -93,7 +93,7 @@ final readonly class TestDatabaseSeedWriter
     {
         $contentNumber = (int) substr($contentUid, -12);
 
-        return sprintf('40000000-0000-%04d-%04d-%012d', $contentNumber, $fieldIndex, ($contentNumber * 100) + $fieldIndex);
+        return sprintf('40000000-0000-7%03d-8%03d-%012d', $contentNumber, $fieldIndex, ($contentNumber * 100) + $fieldIndex);
     }
 
     public function adminPasswordHash(): string
