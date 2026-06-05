@@ -26,7 +26,7 @@ final readonly class ContentReadContext
 
     public function languageFallbackUsed(): bool
     {
-        return $this->requestedLanguage !== $this->language;
+        return '' !== $this->requestedLanguage && $this->requestedLanguage !== $this->language;
     }
 
     public function requestedVariant(): string

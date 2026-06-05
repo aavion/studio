@@ -84,6 +84,7 @@ final class PublishedContentResolverTest extends KernelTestCase
         self::assertNotNull($view);
         self::assertSame('compact', $view->context()->requestedVariant());
         self::assertSame('default', $view->context()->variant());
+        self::assertFalse($view->context()->languageFallbackUsed());
         self::assertTrue($view->context()->variantFallbackUsed());
         self::assertSame(MessageCode::CONTENT_VARIANT_FALLBACK, $result->messages()[0]->code());
         self::assertSame(MessageLevel::Warning, $result->messages()[0]->level());
