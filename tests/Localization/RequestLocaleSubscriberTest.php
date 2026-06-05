@@ -52,6 +52,25 @@ final class RequestLocaleSubscriberTest extends TestCase
         self::assertSame('de', $request->getLocale());
     }
 
+    public function testItPrefersSupportedUrlLocaleOverUserLanguageWhenRoutePrefixesAreEnabled(): void
+    {
+        $request = Request::create('/de/articles');
+        $tokenStorage = new TokenStorage();
+        $tokenStorage->setToken(new UsernamePasswordToken(new UserAccount(
+            '77777777-7777-4777-8777-777777777779',
+            'urlprefuser',
+            'url-pref@example.test',
+            'hash',
+            settings: ['language' => 'en'],
+        ), 'main'));
+
+        $subscriber = new RequestLocaleSubscriber($this->localization('en', routePrefixesEnabled: true), $tokenStorage, $this->localeSwitcher());
+
+        $subscriber->onKernelRequest($this->event($request));
+
+        self::assertSame('de', $request->getLocale());
+    }
+
     public function testItIgnoresUnsupportedUserLanguageAndUsesSessionLanguage(): void
     {
         $request = Request::create('/admin');
@@ -87,12 +106,13 @@ final class RequestLocaleSubscriberTest extends TestCase
         self::assertSame('de', $request->getLocale());
     }
 
-    private function localization(string $defaultLanguage): ContentRouteLocalization
+    private function localization(string $defaultLanguage, bool $routePrefixesEnabled = false): ContentRouteLocalization
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL, modified_at DATETIME NOT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
         $config = new Config($connection);
         $config->set(ContentRouteLocalization::DEFAULT_LANGUAGE_KEY, $defaultLanguage, ConfigValueType::String);
+        $config->set(ContentRouteLocalization::ENABLED_KEY, $routePrefixesEnabled, ConfigValueType::Boolean);
 
         return new ContentRouteLocalization($config, new TranslationLanguageCatalog(dirname(__DIR__, 2)));
     }

@@ -75,11 +75,13 @@ final readonly class TailwindBuildAction implements OperationActionInterface
             ], $result->messages());
         }
 
-        return $this->deferred([
+        $context = [
             ...$result->context(),
-            'deferred_reason' => 'process_failed',
-            'deferred_issues' => array_map(static fn (Message $issue): array => $issue->toArray(), $result->issues()),
-        ]);
+            'tailwind_executed' => false,
+            'manual_command' => self::MANUAL_COMMAND,
+        ];
+
+        return WorkflowResult::failed($result->issues(), $context, $result->messages());
     }
 
     /**

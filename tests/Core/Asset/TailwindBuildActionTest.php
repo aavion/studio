@@ -34,22 +34,19 @@ final class TailwindBuildActionTest extends TestCase
         self::assertSame([], $result->issues());
     }
 
-    public function testItDefersFailedTailwindCommandWithoutFailingTheQueue(): void
+    public function testItFailsWhenTailwindCommandReportsBuildErrors(): void
     {
         $result = (new TailwindBuildAction([PHP_BINARY, '-r', 'fwrite(STDERR, "blocked"); exit(1);'], $this->root))->execute();
 
-        self::assertTrue($result->isSuccess());
-        self::assertFalse($result->value()['tailwind_executed'] ?? true);
-        self::assertSame([], $result->issues());
-        self::assertSame(MessageCode::TAILWIND_BUILD_DEFERRED, $result->messages()[0]->code());
+        self::assertFalse($result->isSuccess());
+        self::assertSame(MessageCode::PROCESS_COMMAND_FAILED, $result->firstIssue()?->code());
+        self::assertFalse($result->context()['tailwind_executed'] ?? true);
         self::assertSame('php bin/console tailwind:build', $result->context()['manual_command'] ?? null);
     }
 
     public function testItDefersTailwindProcessStartExceptionsWithoutFailingTheQueue(): void
     {
-        $missingBinary = $this->root.'/missing-tailwind';
-
-        $result = (new TailwindBuildAction([$missingBinary, '--version'], $this->root))->execute();
+        $result = (new TailwindBuildAction([''], $this->root))->execute();
 
         self::assertTrue($result->isSuccess());
         self::assertFalse($result->value()['tailwind_executed'] ?? true);

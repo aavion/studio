@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Addressed the latest review findings by preserving real Tailwind build failures and honoring supported URL locale prefixes before stored language preferences.
 - Addressed review findings by making request, mail, and profile locale selection skip unsupported candidates, keeping setup dry-run command planning independent from throwing PHP CLI resolution, and translating PHP CLI validation failure reasons in setup preflight output.
 - Added an Admin Settings System Information diagnostic page with current preflight status, cross-platform server/PHP/Composer summaries, reduced PHP configuration output, GD/Imagick capability reporting, and an explicit `ext-gd` platform requirement while keeping Imagick optional for hosting portability.
 - Applied the P4 drift-audit checkpoint to the current branch and aligned the System Information Composer diagnostic with the managed PHP CLI resolver instead of invoking bundled Composer through `PHP_BINARY` directly.

@@ -38,7 +38,9 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
             return;
         }
 
+        $request = $event->getRequest();
         $locale = $this->supportedLocale(
+            $this->urlLocale($request->getPathInfo()),
             $this->userLocale(),
             $this->sessionLocale($event),
             $this->localization->defaultLanguage(),
@@ -48,7 +50,6 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $request = $event->getRequest();
         $request->setLocale($locale);
         $this->localeSwitcher->setLocale($locale);
 
@@ -73,6 +74,17 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
         }
 
         return trim($language);
+    }
+
+    private function urlLocale(string $path): ?string
+    {
+        if (!$this->localization->isEnabled()) {
+            return null;
+        }
+
+        $segment = explode('/', trim($path, '/'), 2)[0] ?? '';
+
+        return '' !== $segment ? $segment : null;
     }
 
     private function sessionLocale(RequestEvent $event): ?string
