@@ -658,6 +658,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Setup/SetupDatabaseSeeder.php:14`, `src/Setup/SetupDatabaseSeeder.php:35`, `src/Setup/SetupDatabaseSeeder.php:55`, `src/Setup/SetupDatabaseSeeder.php:99`, `src/Setup/SetupDatabaseSeeder.php:149`, `src/Setup/SetupDatabaseSeeder.php:202`, `src/Setup/SetupDatabaseSeeder.php:268`, `src/Setup/SetupDatabaseSeeder.php:330`.
 - **Impact:** Raw DBAL seeding is fast and avoids requiring a fully bootstrapped domain model during install, but it duplicates knowledge from content, security, scheduler, and config domains. Future schema/default-content changes can miss setup.
 - **Recommendation:** Split into domain seeders such as `SetupConfigSeeder`, `SetupOwnerSeeder`, `SetupContentSeeder`, `SetupNavigationSeeder`, and `SetupStateSeeder`, coordinated by a small setup facade. Keep DBAL if necessary, but move table/column payload ownership closer to the target domain.
+- **Implementation note:** First split completed with `SetupDatabaseSeeder` as a facade over `SetupConfigSeeder`, `SetupAdminAccountSeeder`, `SetupInitialContentSeeder`, and `SetupStateMarkerWriter`. Seed data remains centralized in `SetupDefaultSeed`; only DBAL execution responsibilities moved into domain-specific writers.
 - **Priority:** Before Editor / Release.
 
 ### F-042 Setup live-operation payload crypto duplicates secret-derived encryption policy

@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Split setup database seeding into a small facade plus focused config, admin-account, initial-content, and state-marker writers while keeping seed data centralized in `SetupDefaultSeed`.
 - Split package lifecycle admin handling into a thin facade plus focused detail-provider, review-provider, and action-handler services so package metadata presentation and lifecycle mutations no longer share one class.
 - Split navigation building internals into focused repository, access-filter, URL-resolver, and tree/slice services while preserving `NavigationBuilder::build()` and `NavigationBuilder::collectItems()` as the public facade for themes and packages.
 - Added a shared console workflow result renderer and migrated package lifecycle plus ACL group apply commands to the common issue/message and exit-code rendering path.
