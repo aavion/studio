@@ -594,6 +594,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Scheduler/SchedulerRunner.php:38`, `src/Scheduler/SchedulerRunner.php:53`, `src/Scheduler/SchedulerRunner.php:96`, `src/Scheduler/SchedulerRunner.php:119`, `src/Scheduler/SchedulerRunner.php:139`, `src/Scheduler/SchedulerRunner.php:170`, `src/Scheduler/SchedulerRunner.php:223`, `src/Scheduler/SchedulerRunner.php:240`, `src/Scheduler/SchedulerRunner.php:292`, `src/Scheduler/SchedulerRunner.php:330`.
 - **Impact:** The scheduler domain is modular around definitions/executors, but the central runner is still the place where most lifecycle invariants live. More scheduler task types, retries, concurrency controls, or admin/API views would increase risk.
 - **Recommendation:** Keep `SchedulerRunner::run()` as the facade. Extract `SchedulerDueTaskSelector`, `SchedulerTaskRunRecorder`, `SchedulerFailurePolicy`, and `SchedulerRunReporter` or a task-run transaction service. Re-evaluate how much of this can be delegated to Symfony Scheduler/Messenger before adding distributed or long-running task behavior.
+- **Implementation note:** First split completed with `SchedulerDueTaskSelector` owning due-task selection, package/runnability checks, and skipped-task result shaping. `SchedulerRunner` remains the execution facade and is now below the 300-line context target; run recording and failure-policy extraction remain future scheduler slices.
 - **Priority:** Before Scheduler/API expansion.
 
 ### F-034 Scheduler and live operations should share Symfony Lock policy
