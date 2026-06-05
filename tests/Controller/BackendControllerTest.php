@@ -350,7 +350,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminRouteAllowsAccessLevelEight(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $client->request('GET', '/admin');
 
         self::assertResponseIsSuccessful();
@@ -361,7 +361,7 @@ final class BackendControllerTest extends WebTestCase
     {
         $manifest = $this->rootManifest();
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $client->request('GET', '/admin/packages');
 
         self::assertResponseIsSuccessful();
@@ -439,7 +439,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminOperationsViewListsTransientLiveOperationState(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $store = self::getContainer()->get(LiveOperationRunStore::class);
         self::assertInstanceOf(LiveOperationRunStore::class, $store);
         $run = $store->create('backend.cache_clear', [], 'Cache clear');
@@ -465,7 +465,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminOperationsCleanupWritesAuditEntry(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
         foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
@@ -488,7 +488,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminOperationDetailShowsRetainedActionLogEntries(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $store = self::getContainer()->get(LiveOperationRunStore::class);
         self::assertInstanceOf(LiveOperationRunStore::class, $store);
         $run = $store->create('backend.cache_clear', [], 'Cache clear');
@@ -518,7 +518,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminLogsViewReadsSelectedLogSource(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
         $logFile = $logDir.'/test.studio-access-2099-01-01.log';
 
@@ -592,7 +592,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminOperationDetailExposesReviewContinuation(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $store = self::getContainer()->get(LiveOperationRunStore::class);
         self::assertInstanceOf(LiveOperationRunStore::class, $store);
         $run = $store->create('package.install.verify', [], 'Install package');
@@ -638,7 +638,7 @@ final class BackendControllerTest extends WebTestCase
         }
 
         try {
-            $client->loginUser($this->createUserWithLevel(8));
+            $this->loginUserWithLevel($client, 8);
             $crawler = $client->request('GET', '/admin/packages');
 
             self::assertSelectorNotExists('.studio-table tr[data-package-name="demo-module"]');
@@ -673,7 +673,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminTopbarActionsHandlePackageDetailPosts(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $crawler = $client->request('GET', '/admin/packages/system');
 
         self::assertResponseIsSuccessful();
@@ -717,7 +717,7 @@ final class BackendControllerTest extends WebTestCase
         file_put_contents($packageDir.'/README.md', "# Lifecycle README\n\nThis package has **markdown** docs.");
         file_put_contents($assetsDir.'/preview.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9"><rect width="16" height="9" fill="#315bdc"/></svg>');
 
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $package = new ExtensionPackage(
             '00000000-0000-0000-0000-000000000498',
@@ -802,7 +802,7 @@ final class BackendControllerTest extends WebTestCase
         $this->removePackageByName('test-dependent-theme');
         $this->removePackageByName('test-dependent-captcha');
 
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $theme = new ExtensionPackage(
             '00000000-0000-0000-0000-000000000596',
@@ -848,7 +848,7 @@ final class BackendControllerTest extends WebTestCase
         $client = self::createClient();
         $this->removePackageByName('test-unsafe-metadata');
 
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $package = new ExtensionPackage(
             '00000000-0000-0000-0000-000000000598',
@@ -885,7 +885,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminSettingsRoutesRenderThroughRegistry(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $client->request('GET', '/admin/settings');
 
         self::assertResponseRedirects('/admin/settings/general');
@@ -946,7 +946,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminSchedulerListsEditsAndRunsRegisteredJobs(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
 
         try {
             $crawler = $client->request('GET', '/admin/scheduler');
@@ -956,7 +956,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertStringContainsString('Live operation cleanup', (string) $client->getResponse()->getContent());
             self::assertStringContainsString('Cron syntax', (string) $client->getResponse()->getContent());
 
-            $client->loginUser($this->createUserWithLevel(8));
+            $this->loginUserWithLevel($client, 8);
             $crawler = $client->request('GET', '/admin/scheduler/system.live_operation_cleanup');
 
             self::assertResponseIsSuccessful();
@@ -988,7 +988,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminSchedulerRunNowSurfacesFailedTaskResults(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $definition = SchedulerTaskDefinition::command(
             'system.live_operation_cleanup',
@@ -1040,7 +1040,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminSettingsFormsPersistCoreSettings(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $config = self::getContainer()->get(Config::class);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
@@ -1087,7 +1087,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminSettingsFormsRenderValidationErrors(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $crawler = $client->request('GET', '/admin/settings/general');
         $form = $crawler->selectButton('Save settings')->form([
             'site.title' => '',
@@ -1112,7 +1112,7 @@ final class BackendControllerTest extends WebTestCase
         $staleUser->changeStatus(UserAccountStatus::Inactive);
         $entityManager->flush();
 
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $client->request('GET', '/admin/settings/general');
 
         self::assertResponseIsSuccessful();
@@ -1122,7 +1122,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminUserSettingsRejectInvalidDefaultAclGroup(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $config = self::getContainer()->get(Config::class);
         $originalDefaultGroup = $config->get('user.default_acl_group', '');
 
@@ -1146,7 +1146,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminUserSettingsAllowClearingDefaultAclGroup(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $config = self::getContainer()->get(Config::class);
         $originalDefaultGroup = $config->get('user.default_acl_group', '');
@@ -1194,7 +1194,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminUserSettingsRejectInvalidNotificationEmail(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $config = self::getContainer()->get(Config::class);
         $originalRegistrationEmail = $config->get(UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '');
         $originalSecurityEmail = $config->get(UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, '');
@@ -1237,7 +1237,7 @@ final class BackendControllerTest extends WebTestCase
             ));
         });
 
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $client->request('GET', '/admin/reports');
 
         self::assertResponseIsSuccessful();
@@ -1247,7 +1247,7 @@ final class BackendControllerTest extends WebTestCase
     public function testEditorRouteAllowsEditorsButAdminRouteDoesNot(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(3));
+        $this->loginUserWithLevel($client, 3);
         $client->request('GET', '/editor');
 
         self::assertResponseIsSuccessful();
@@ -1263,7 +1263,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAuthenticatedBackendAreaReturnsMessageForUnknownRoute(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(8));
+        $this->loginUserWithLevel($client, 8);
         $client->request('GET', '/admin/missing');
 
         self::assertResponseStatusCodeSame(404);
@@ -1294,6 +1294,12 @@ final class BackendControllerTest extends WebTestCase
         $entityManager->flush();
 
         return $user;
+    }
+
+    private function loginUserWithLevel(KernelBrowser $client, int $level): void
+    {
+        $client->disableReboot();
+        $client->loginUser($this->createUserWithLevel($level));
     }
 
     private function removePackageByName(string $packageName): void
