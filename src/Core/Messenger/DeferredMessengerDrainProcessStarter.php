@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Messenger;
 
+use App\Core\Process\CliProcessEnvironment;
 use Symfony\Component\Process\Process;
 
 final readonly class DeferredMessengerDrainProcessStarter implements DeferredMessengerDrainStarterInterface
@@ -21,12 +22,39 @@ final readonly class DeferredMessengerDrainProcessStarter implements DeferredMes
             return false;
         }
 
+        if ('\\' === DIRECTORY_SEPARATOR) {
+            return $this->startWindows($command, $cwd, $outputPath, $pidPath);
+        }
+
         $shellCommand = implode(' ', array_map('escapeshellarg', $command))
             .' > '.escapeshellarg($outputPath).' 2>&1 & echo $! > '.escapeshellarg($pidPath);
 
-        $process = Process::fromShellCommandline($shellCommand, $cwd, timeout: 5.0);
+        $process = Process::fromShellCommandline($shellCommand, $cwd, CliProcessEnvironment::fromCurrentProcess(), timeout: 5.0);
         $process->run();
 
         return $process->isSuccessful();
+    }
+
+    /**
+     * @param list<string> $command
+     */
+    private function startWindows(array $command, string $cwd, string $outputPath, string $pidPath): bool
+    {
+        if (false === file_put_contents($pidPath, 'started '.gmdate('c').PHP_EOL, LOCK_EX)) {
+            return false;
+        }
+
+        $shellCommand = 'start "" /B '.implode(' ', array_map($this->windowsArgument(...), $command))
+            .' > '.$this->windowsArgument($outputPath).' 2>&1';
+
+        $process = Process::fromShellCommandline('cmd /C '.$shellCommand, $cwd, CliProcessEnvironment::fromCurrentProcess(), timeout: 5.0);
+        $process->run();
+
+        return $process->isSuccessful();
+    }
+
+    private function windowsArgument(string $argument): string
+    {
+        return '"'.str_replace('"', '\"', $argument).'"';
     }
 }

@@ -28,7 +28,7 @@ final class DeferredMessengerDrainTest extends TestCase
 
     public function testItStartsDetachedWorkerWhenPendingMessagesExist(): void
     {
-        $projectDir = $this->createTemporaryDirectory('messenger-drain');
+        $projectDir = $this->createTemporaryProjectDirectory('messenger-drain');
         $connection = $this->connectionWithMessengerTable();
         $starter = new RecordingDeferredMessengerStarter();
         $this->insertMessage($connection, 'default');
@@ -40,15 +40,15 @@ final class DeferredMessengerDrainTest extends TestCase
         self::assertContains('messenger:consume', $starter->starts[0]['command']);
         self::assertContains('async', $starter->starts[0]['command']);
         self::assertContains('--env=test', $starter->starts[0]['command']);
-        self::assertStringEndsWith('/var/log/test/messenger-drain.log', $starter->starts[0]['output_path']);
-        self::assertStringEndsWith('/var/cache/test/studio-messenger-drain.pid', $starter->starts[0]['pid_path']);
+        self::assertStringEndsWith('/var/log/test/messenger-drain.log', $this->portablePath($starter->starts[0]['output_path']));
+        self::assertStringEndsWith('/var/cache/test/studio-messenger-drain.pid', $this->portablePath($starter->starts[0]['pid_path']));
 
         $this->removeDirectory($projectDir);
     }
 
     public function testItDoesNotStartWorkerWithoutPendingMessages(): void
     {
-        $projectDir = $this->createTemporaryDirectory('messenger-drain-empty');
+        $projectDir = $this->createTemporaryProjectDirectory('messenger-drain-empty');
         $connection = $this->connectionWithMessengerTable();
         $starter = new RecordingDeferredMessengerStarter();
 
@@ -62,7 +62,7 @@ final class DeferredMessengerDrainTest extends TestCase
 
     public function testItUsesCooldownLockToAvoidParallelWorkers(): void
     {
-        $projectDir = $this->createTemporaryDirectory('messenger-drain-lock');
+        $projectDir = $this->createTemporaryProjectDirectory('messenger-drain-lock');
         $connection = $this->connectionWithMessengerTable();
         $starter = new RecordingDeferredMessengerStarter();
         $this->insertMessage($connection, 'async');
@@ -78,7 +78,7 @@ final class DeferredMessengerDrainTest extends TestCase
 
     public function testItStartsDetachedSchedulerWhenWebTriggerIsEnabled(): void
     {
-        $projectDir = $this->createTemporaryDirectory('messenger-drain-scheduler');
+        $projectDir = $this->createTemporaryProjectDirectory('messenger-drain-scheduler');
         $connection = $this->connectionWithMessengerTable();
         $starter = new RecordingDeferredMessengerStarter();
         $settings = $this->schedulerSettings($connection, true);
@@ -88,18 +88,18 @@ final class DeferredMessengerDrainTest extends TestCase
         self::assertTrue($drain->drainPendingMessages());
         self::assertCount(1, $starter->starts);
         self::assertSame(PHP_BINARY, $starter->starts[0]['command'][0]);
-        self::assertStringEndsWith('/bin/scheduler', $starter->starts[0]['command'][1]);
+        self::assertStringEndsWith('/bin/scheduler', $this->portablePath($starter->starts[0]['command'][1]));
         self::assertContains('--json', $starter->starts[0]['command']);
         self::assertContains('--env=test', $starter->starts[0]['command']);
-        self::assertStringEndsWith('/var/log/test/scheduler-web-trigger.log', $starter->starts[0]['output_path']);
-        self::assertStringEndsWith('/var/cache/test/studio-scheduler-web-trigger.pid', $starter->starts[0]['pid_path']);
+        self::assertStringEndsWith('/var/log/test/scheduler-web-trigger.log', $this->portablePath($starter->starts[0]['output_path']));
+        self::assertStringEndsWith('/var/cache/test/studio-scheduler-web-trigger.pid', $this->portablePath($starter->starts[0]['pid_path']));
 
         $this->removeDirectory($projectDir);
     }
 
     public function testItUsesSharedCooldownForWebTriggeredScheduler(): void
     {
-        $projectDir = $this->createTemporaryDirectory('messenger-drain-scheduler-lock');
+        $projectDir = $this->createTemporaryProjectDirectory('messenger-drain-scheduler-lock');
         $connection = $this->connectionWithMessengerTable();
         $starter = new RecordingDeferredMessengerStarter();
         $settings = $this->schedulerSettings($connection, true);
@@ -115,7 +115,7 @@ final class DeferredMessengerDrainTest extends TestCase
 
     public function testSubscriberSkipsSchedulerCronRequests(): void
     {
-        $projectDir = $this->createTemporaryDirectory('messenger-drain-scheduler-route');
+        $projectDir = $this->createTemporaryProjectDirectory('messenger-drain-scheduler-route');
         $connection = $this->connectionWithMessengerTable();
         $starter = new RecordingDeferredMessengerStarter();
         $settings = $this->schedulerSettings($connection, true);
@@ -141,7 +141,7 @@ final class DeferredMessengerDrainTest extends TestCase
 
     public function testItLogsDispatchFailureWhenDetachedStartFails(): void
     {
-        $projectDir = $this->createTemporaryDirectory('messenger-drain-scheduler-failure');
+        $projectDir = $this->createTemporaryProjectDirectory('messenger-drain-scheduler-failure');
         $connection = $this->connectionWithMessengerTable();
         $starter = new RecordingDeferredMessengerStarter(false);
         $logger = new RecordingMessageLogger();
@@ -165,7 +165,7 @@ final class DeferredMessengerDrainTest extends TestCase
 
     public function testSchedulerStartDoesNotMaskMessengerStartFailure(): void
     {
-        $projectDir = $this->createTemporaryDirectory('messenger-drain-messenger-failure');
+        $projectDir = $this->createTemporaryProjectDirectory('messenger-drain-messenger-failure');
         $connection = $this->connectionWithMessengerTable();
         $starter = new RecordingDeferredMessengerStarter(false);
         $logger = new RecordingMessageLogger();
@@ -193,7 +193,7 @@ final class DeferredMessengerDrainTest extends TestCase
 
     public function testMessengerStartSucceedsEvenWhenSchedulerStartFails(): void
     {
-        $projectDir = $this->createTemporaryDirectory('messenger-drain-scheduler-start-failure');
+        $projectDir = $this->createTemporaryProjectDirectory('messenger-drain-scheduler-start-failure');
         $connection = $this->connectionWithMessengerTable();
         $starter = new RecordingDeferredMessengerStarter(failCommandsContaining: 'bin/scheduler');
         $logger = new RecordingMessageLogger();
@@ -214,7 +214,7 @@ final class DeferredMessengerDrainTest extends TestCase
         self::assertCount(2, $starter->starts);
         self::assertContains('messenger:consume', $starter->starts[0]['command']);
         self::assertSame(PHP_BINARY, $starter->starts[1]['command'][0]);
-        self::assertStringEndsWith('/bin/scheduler', $starter->starts[1]['command'][1]);
+        self::assertStringEndsWith('/bin/scheduler', $this->portablePath($starter->starts[1]['command'][1]));
         self::assertCount(1, $logger->messages);
         self::assertSame('messenger.deferred_process_start_failed', $logger->messages[0]->code());
 
@@ -223,7 +223,7 @@ final class DeferredMessengerDrainTest extends TestCase
 
     public function testItUsesConfiguredDoctrineQueueNameForPendingCheck(): void
     {
-        $projectDir = $this->createTemporaryDirectory('messenger-drain-queue-name');
+        $projectDir = $this->createTemporaryProjectDirectory('messenger-drain-queue-name');
         $connection = $this->connectionWithMessengerTable();
         $starter = new RecordingDeferredMessengerStarter();
         $this->insertMessage($connection, 'custom_queue');
@@ -239,7 +239,7 @@ final class DeferredMessengerDrainTest extends TestCase
 
     public function testItSilentlySkipsWhenMessengerTableDoesNotExist(): void
     {
-        $projectDir = $this->createTemporaryDirectory('messenger-drain-missing-table');
+        $projectDir = $this->createTemporaryProjectDirectory('messenger-drain-missing-table');
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $starter = new RecordingDeferredMessengerStarter();
 
@@ -249,6 +249,14 @@ final class DeferredMessengerDrainTest extends TestCase
         self::assertSame([], $starter->starts);
 
         $this->removeDirectory($projectDir);
+    }
+
+    private function createTemporaryProjectDirectory(string $prefix): string
+    {
+        $projectDir = $this->createTemporaryDirectory($prefix);
+        $this->writeTestFile($projectDir, 'bin/console', "#!/usr/bin/env php\n<?php echo \"Studio test\";\n");
+
+        return $projectDir;
     }
 
     private function connectionWithMessengerTable(): Connection
@@ -298,6 +306,11 @@ final class DeferredMessengerDrainTest extends TestCase
             'available_at' => (new DateTimeImmutable('-1 minute'))->format('Y-m-d H:i:s'),
             'delivered_at' => null,
         ]);
+    }
+
+    private function portablePath(string $path): string
+    {
+        return str_replace('\\', '/', $path);
     }
 }
 

@@ -149,14 +149,28 @@ final class TestSuiteLifecycle
                 continue;
             }
 
+            if ($file->isLink() || is_link($file->getPathname())) {
+                self::removeFileOrLink($file->getPathname());
+                continue;
+            }
+
             if ($file->isDir()) {
                 rmdir($file->getPathname());
                 continue;
             }
 
-            unlink($file->getPathname());
+            self::removeFileOrLink($file->getPathname());
         }
 
         rmdir($directory);
+    }
+
+    private static function removeFileOrLink(string $path): void
+    {
+        if ('\\' === DIRECTORY_SEPARATOR && @rmdir($path)) {
+            return;
+        }
+
+        @unlink($path);
     }
 }

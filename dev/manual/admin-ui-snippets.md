@@ -28,6 +28,7 @@ Future operational screens should reuse common patterns:
 | Theme management | Frontend and backend theme cards with preview-image space, version labels, immutable system fallback, and a single quick use/active/repair control. |
 | Package management | Extension package registry rows plus the immutable virtual system package so application and package update flows can share one UI foundation. |
 | Package detail | Manifest metadata, current status, scopes, package-owned lifecycle buttons, and non-menu review screens before state changes, including separate irreversible flows for data purge and physical package deletion. Later iterations can add inventory, features, lint results, and compatibility notes. |
+| System information | Read-only setup preflight status, server/PHP/Composer summary values, media capabilities such as GD and Imagick, and a reduced PHP configuration table. Do not embed raw `phpinfo()` output or expose request, cookie, environment, or secret values. |
 | Backend actions | CSRF-protected POST buttons for discovery, asset rebuild dispatch, cache clearing, and later long-running ActionLog overlays. |
 | Import review | Diffs, risks, affected paths/entities, confirmation. |
 | Action log | Timeline, status counts, issues, context payload. |

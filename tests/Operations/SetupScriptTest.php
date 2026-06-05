@@ -18,7 +18,9 @@ final class SetupScriptTest extends TestCase
     public function testSetupScriptExistsAndIsExecutable(): void
     {
         self::assertFileExists($this->scriptPath);
-        self::assertTrue(is_executable($this->scriptPath));
+        if ('\\' !== DIRECTORY_SEPARATOR) {
+            self::assertTrue(is_executable($this->scriptPath));
+        }
     }
 
     public function testSetupScriptHasValidPhpSyntax(): void

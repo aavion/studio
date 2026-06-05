@@ -74,7 +74,7 @@ final class UserControllerTest extends WebTestCase
             'language' => 'default',
         ]);
 
-        self::assertResponseIsSuccessful();
+        self::assertResponseRedirects('/user/profile');
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->clear();
@@ -82,6 +82,38 @@ final class UserControllerTest extends WebTestCase
 
         self::assertInstanceOf(UserAccount::class, $unchangedUser);
         self::assertSame('stableprofile', $unchangedUser->username());
+    }
+
+    public function testProfileLanguageCanBeChangedAndAppliesToCurrentResponse(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'languageprofile', 'profile-password');
+
+        $client->loginUser($user);
+        $crawler = $client->request('GET', '/user/profile');
+        $client->submit($crawler->selectButton('Save profile')->form([
+            'email' => $user->email(),
+            'display_name' => 'Language Profile',
+            'language' => 'de',
+        ]));
+
+        self::assertResponseRedirects('/user/profile');
+        $client->followRedirect();
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.studio-alert-success', 'Profil gespeichert.');
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $updatedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+        self::assertInstanceOf(UserAccount::class, $updatedUser);
+        self::assertSame('de', $updatedUser->settings()['language'] ?? null);
+
+        $client->request('GET', '/user/profile');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Profil');
     }
 
     public function testProfileUsernameCanBeChangedWhenSettingIsEnabled(): void
@@ -104,8 +136,11 @@ final class UserControllerTest extends WebTestCase
                 'language' => 'default',
             ]));
 
+            self::assertResponseRedirects('/user/profile');
+            $client->followRedirect();
+
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-notice', 'Profile saved.');
+            self::assertSelectorTextContains('.studio-alert-success', 'Profile saved.');
 
             $entityManager = self::getContainer()->get(EntityManagerInterface::class);
             $entityManager->clear();
@@ -163,8 +198,11 @@ final class UserControllerTest extends WebTestCase
             'language' => 'default',
         ]));
 
+        self::assertResponseRedirects('/user/profile');
+        $client->followRedirect();
+
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-auth-notice', 'Profile saved.');
+        self::assertSelectorTextContains('.studio-alert-success', 'Profile saved.');
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->clear();
@@ -193,7 +231,7 @@ final class UserControllerTest extends WebTestCase
             'language' => 'default',
         ]));
 
-        self::assertResponseIsSuccessful();
+        self::assertResponseRedirects('/user/profile');
 
         $entityManager->clear();
         $updatedReset = $entityManager->find(AccountToken::class, $resetToken->uid());

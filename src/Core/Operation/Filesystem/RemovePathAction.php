@@ -122,8 +122,8 @@ final readonly class RemovePathAction implements OperationActionInterface
 
     private function remove(string $path): void
     {
-        if (is_file($path)) {
-            @unlink($path);
+        if (is_file($path) || is_link($path)) {
+            $this->removeFileOrLink($path);
             return;
         }
 
@@ -141,7 +141,7 @@ final readonly class RemovePathAction implements OperationActionInterface
             $child = $path.DIRECTORY_SEPARATOR.$entry;
 
             if (is_link($child) || is_file($child)) {
-                @unlink($child);
+                $this->removeFileOrLink($child);
                 continue;
             }
 
@@ -151,5 +151,14 @@ final readonly class RemovePathAction implements OperationActionInterface
         }
 
         @rmdir($path);
+    }
+
+    private function removeFileOrLink(string $path): void
+    {
+        if ('\\' === DIRECTORY_SEPARATOR && @rmdir($path)) {
+            return;
+        }
+
+        @unlink($path);
     }
 }

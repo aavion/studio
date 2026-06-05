@@ -11,6 +11,7 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationActionInterface;
+use App\Core\Process\CliProcessEnvironment;
 use App\Core\Workflow\WorkflowResult;
 use InvalidArgumentException;
 use Symfony\Component\Process\Process;
@@ -85,7 +86,7 @@ final readonly class RunCommandAction implements OperationActionInterface
      */
     public function execute(): WorkflowResult
     {
-        $process = new Process($this->command, $this->cwd, $this->env, null, $this->timeout);
+        $process = new Process($this->command, $this->cwd, CliProcessEnvironment::fromCurrentProcess($this->env), null, $this->timeout);
         $process->run();
 
         $context = [
@@ -94,6 +95,9 @@ final readonly class RunCommandAction implements OperationActionInterface
             'label' => $this->label(),
             'cwd' => $this->cwd,
             'exit_code' => $process->getExitCode(),
+            'exit_code_text' => $process->getExitCodeText(),
+            'signaled' => $process->hasBeenSignaled(),
+            'term_signal' => $process->hasBeenSignaled() ? $process->getTermSignal() : null,
             'output_excerpt' => $this->excerpt($process->getOutput()),
             'error_excerpt' => $this->excerpt($process->getErrorOutput()),
         ];

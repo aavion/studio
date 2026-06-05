@@ -246,6 +246,16 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 minimumAccessLevel: AccessLevel::ADMIN,
             ),
             new BackendViewDefinition(
+                'backend-admin-settings-system-info',
+                BackendArea::Admin,
+                'settings/system-info',
+                'admin.navigation.system_info',
+                '@backend/admin/settings/system-info.html.twig',
+                65,
+                parentUid: 'backend-admin-settings',
+                minimumAccessLevel: AccessLevel::ADMIN,
+            ),
+            new BackendViewDefinition(
                 'backend-admin-settings-scheduler',
                 BackendArea::Admin,
                 'settings/scheduler',

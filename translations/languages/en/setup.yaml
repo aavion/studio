@@ -45,6 +45,7 @@ setup:
     show_details: 'Show details'
     summary:
       ok: 'Everything needed for setup is ready.'
+      warning: 'Setup can continue, but one optional server feature needs attention.'
       healable: 'Setup cannot currently run in this environment.'
       failed: 'Some checks need a server or PHP configuration change before setup can continue.'
     errors:
@@ -55,6 +56,7 @@ setup:
       failed: 'ERROR'
       missing: 'Missing'
       optional: 'Optional'
+      warning: 'WARN'
     values:
       executable: 'executable'
       not_detected: 'not detected'
@@ -62,13 +64,30 @@ setup:
       path: '%path%'
       php_version: 'PHP %version%'
       php_version_requirement: 'PHP %version% (required: %required% or newer)'
+      process_functions_available: 'PHP process functions are available'
+      process_functions_disabled: 'Disabled: %functions%'
       present: 'present'
       missing: 'missing'
+      safe_mode_disabled: 'safe mode is disabled'
+      safe_mode_enabled: 'safe mode is enabled'
       unavailable: 'unavailable'
+      binary_not_found: 'PHP CLI binary could not be detected'
+      console_unreadable: 'project bin/console is not readable by PHP CLI'
+      extension_missing: 'PHP CLI misses a required extension'
+      not_cli: 'resolved PHP binary is not a CLI binary'
+      php_version_too_old: 'PHP CLI version does not satisfy the requirement'
+      process_disabled: 'PHP process functions are disabled'
+      process_failed: 'PHP CLI validation process failed'
+      project_dir_unreadable: 'project directory is not readable by PHP CLI'
+      server_config: 'PHP CLI is blocked by the server configuration'
+      validation_failed: 'PHP CLI validation failed'
       writable: 'writable'
       composer_system: 'system Composer available'
       composer_bundled: 'bin/composer available'
       composer_not_executable: 'bin/composer is not executable'
+      tailwind_available: 'automatic build available'
+      tailwind_blocked: 'blocked by server policy'
+      tailwind_not_prepared: 'not prepared yet'
       extensions_all_present: 'All %count% required extensions are available'
       optional_extensions_all_present: 'All %count% optional database extensions are available'
       extensions_missing: 'Missing: %extensions%'
@@ -104,6 +123,10 @@ setup:
         label: 'Database extensions'
         help: 'Optional database extensions are available when their driver is selected.'
         instruction: 'Install these extensions when using MySQL/MariaDB or PostgreSQL: %extensions%'
+      optional_media_extensions:
+        label: 'Media extensions'
+        help: 'Optional media extensions improve image processing features.'
+        instruction: 'Install these extensions when advanced image processing is needed: %extensions%'
       writable_paths:
         label: 'Writable paths'
         help: 'These paths are currently not writable: %paths%'
@@ -112,12 +135,24 @@ setup:
         label: 'PHP version'
         help: 'The current PHP runtime satisfies the project requirement.'
         instruction: 'Run setup with a PHP version supported by composer.json.'
+      safe_mode:
+        label: 'PHP safe mode'
+        help: 'PHP safe mode is disabled.'
+        instruction: 'Disable PHP safe mode in the server configuration.'
+      process_functions:
+        label: 'PHP process functions'
+        help: 'The PHP functions required for Symfony Process are available.'
+        instruction: 'Enable the listed PHP process functions in php.ini or the hosting control panel: %functions%'
       composer_binary:
         label: 'Composer'
         help: 'Setup can install and refresh PHP dependencies.'
         instruction: 'Install Composer globally or restore bin/composer.'
+      tailwind_build:
+        label: 'Tailwind build'
+        help: 'Automatic Tailwind builds are available.'
+        instruction: 'Automatic Tailwind builds are blocked. If you want web-triggered asset rebuilds, allow native build binaries for the web server, for example by disabling MemoryDenyWriteExecute.'
       cli_runner:
-        label: 'CLI runner'
+        label: 'PHP CLI binary'
         help: 'Setup can start PHP CLI subprocesses for long-running work.'
         instruction: 'Enable PHP CLI subprocesses, or run setup from an environment that allows background commands.'
       extension_ctype:

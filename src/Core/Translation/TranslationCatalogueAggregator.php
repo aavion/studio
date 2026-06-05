@@ -382,7 +382,7 @@ final readonly class TranslationCatalogueAggregator
         }
 
         if (is_link($path) || is_file($path)) {
-            @unlink($path);
+            $this->removeFileOrLink($path);
             return;
         }
 
@@ -395,6 +395,15 @@ final readonly class TranslationCatalogueAggregator
         }
 
         @rmdir($path);
+    }
+
+    private function removeFileOrLink(string $path): void
+    {
+        if ('\\' === DIRECTORY_SEPARATOR && @rmdir($path)) {
+            return;
+        }
+
+        @unlink($path);
     }
 
     private function absolutePath(string $path): string

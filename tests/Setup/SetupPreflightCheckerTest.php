@@ -15,6 +15,8 @@ final class SetupPreflightCheckerTest extends TestCase
     {
         $this->root = sys_get_temp_dir().'/studio_preflight_'.bin2hex(random_bytes(6));
         mkdir($this->root.'/public', 0775, true);
+        mkdir($this->root.'/bin', 0775, true);
+        file_put_contents($this->root.'/bin/console', "#!/usr/bin/env php\n<?php echo \"Studio test\";\n");
     }
 
     protected function tearDown(): void
@@ -47,7 +49,7 @@ final class SetupPreflightCheckerTest extends TestCase
 
     public function testItChecksCliRunnerAvailability(): void
     {
-        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', autoHeal: true, server: [
             'DOCUMENT_ROOT' => $this->root.'/public',
         ]);
 
@@ -56,9 +58,84 @@ final class SetupPreflightCheckerTest extends TestCase
 
         self::assertContains('cli_runner', $keys);
         self::assertContains('composer_binary', $keys);
+        self::assertContains('tailwind_build', $keys);
         self::assertContains('php_version', $keys);
+        self::assertContains('safe_mode', $detailKeys);
+        self::assertContains('process_functions', $detailKeys);
+        self::assertContains('tailwind_build', $detailKeys);
         self::assertContains('required_extensions', $detailKeys);
         self::assertContains('writable_paths', $detailKeys);
+        self::assertContains('optional_media_extensions', $detailKeys);
+    }
+
+    public function testItReportsImagickAsOptionalMediaExtension(): void
+    {
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $imagick = array_values(array_filter($result['checks'], static fn (array $check): bool => 'extension_imagick' === $check['key']))[0] ?? null;
+        $summary = array_values(array_filter($result['detail_rows'], static fn (array $check): bool => 'optional_media_extensions' === $check['key']))[0] ?? null;
+
+        self::assertNotNull($imagick);
+        self::assertFalse($imagick['required'] ?? true);
+        self::assertSame(extension_loaded('imagick') ? 'ok' : 'missing', $imagick['status'] ?? null);
+        self::assertSame(extension_loaded('imagick') ? 'ok' : 'missing', $summary['status'] ?? null);
+    }
+
+    public function testItMapsPhpCliValidationFailuresToTranslatedValueKeys(): void
+    {
+        unlink($this->root.'/bin/console');
+
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $cliRunner = array_values(array_filter($result['checks'], static fn (array $check): bool => 'cli_runner' === $check['key']))[0] ?? null;
+
+        self::assertFalse($result['ok']);
+        self::assertSame('failed', $cliRunner['status'] ?? null);
+        self::assertSame('setup.preflight.values.console_unreadable', $cliRunner['value_key'] ?? null);
+    }
+
+    public function testItReportsTailwindSmokeBuildAsOptionalWarning(): void
+    {
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', autoHeal: true, server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $tailwind = array_values(array_filter($result['checks'], static fn (array $check): bool => 'tailwind_build' === $check['key']))[0] ?? null;
+
+        self::assertTrue($result['ok']);
+        self::assertSame('warning', $tailwind['status'] ?? null);
+        self::assertFalse($tailwind['required'] ?? true);
+    }
+
+    public function testItAcceptsSuccessfulTailwindSmokeBuild(): void
+    {
+        if ('\\' === DIRECTORY_SEPARATOR) {
+            self::markTestSkipped('The fake Tailwind shell binary is Unix-specific.');
+        }
+
+        $binary = $this->root.'/var/tailwind/v0.0.0/tailwindcss-test';
+        mkdir(dirname($binary), 0775, true);
+        file_put_contents($binary, <<<'SH'
+#!/bin/sh
+while [ "$#" -gt 0 ]; do
+    if [ "$1" = "-o" ]; then
+        shift
+        printf ".ok{color:red}\n" > "$1"
+        exit 0
+    fi
+    shift
+done
+exit 1
+SH);
+        chmod($binary, 0755);
+
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $tailwind = array_values(array_filter($result['checks'], static fn (array $check): bool => 'tailwind_build' === $check['key']))[0] ?? null;
+
+        self::assertSame('ok', $tailwind['status'] ?? null);
     }
 
     public function testItUsesHighestPhpRequirementFromComposerFiles(): void
@@ -107,14 +184,24 @@ final class SetupPreflightCheckerTest extends TestCase
             $result['checks'],
             static fn (array $check): bool => 'extension_definitely_missing_for_studio_tests' === $check['key'],
         ))[0] ?? null;
+        $summary = array_values(array_filter(
+            $result['detail_rows'],
+            static fn (array $check): bool => 'required_extensions' === $check['key'],
+        ))[0] ?? null;
 
         self::assertFalse($result['ok']);
         self::assertSame('missing', $extension['status'] ?? null);
         self::assertTrue($extension['required'] ?? false);
+        self::assertSame('missing', $summary['status'] ?? null);
+        self::assertSame('definitely_missing_for_studio_tests', $summary['value_parameters']['%extensions%'] ?? null);
     }
 
     public function testItAutoHealsBundledComposerExecutableBit(): void
     {
+        if ('\\' === DIRECTORY_SEPARATOR) {
+            self::markTestSkipped('Executable bits are not portable to Windows.');
+        }
+
         mkdir($this->root.'/bin', 0775, true);
         file_put_contents($this->root.'/bin/composer', "#!/usr/bin/env php\n<?php echo \"Composer version test\";\n");
         chmod($this->root.'/bin/composer', 0644);
@@ -145,6 +232,10 @@ final class SetupPreflightCheckerTest extends TestCase
 
     public function testItAutoHealsCorruptWritableBundledComposer(): void
     {
+        if ('\\' === DIRECTORY_SEPARATOR) {
+            self::markTestSkipped('The fake curl shell binary is Unix-specific.');
+        }
+
         mkdir($this->root.'/bin', 0775, true);
         file_put_contents($this->root.'/bin/composer', 'broken');
         chmod($this->root.'/bin/composer', 0644);

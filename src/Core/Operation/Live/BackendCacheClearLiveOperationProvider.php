@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace App\Core\Operation\Live;
 
 use App\Core\Operation\ActionQueue;
+use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
+use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 final readonly class BackendCacheClearLiveOperationProvider implements LiveOperationQueueProviderInterface
 {
-    public function __construct(private KernelInterface $kernel)
+    public function __construct(
+        private KernelInterface $kernel,
+        private PhpCliBinaryManager $phpCliBinaryManager,
+    )
     {
     }
 
@@ -28,10 +33,24 @@ final readonly class BackendCacheClearLiveOperationProvider implements LiveOpera
     public function create(array $payload = []): WorkflowResult
     {
         $environment = $this->environment($payload);
+        $trigger = $this->trigger($payload);
+        $resolution = $this->phpCliBinaryManager->resolve($this->kernel->getProjectDir(), $environment, persistPreference: true);
+
+        if (!$resolution->isAvailable()) {
+            return WorkflowResult::failed([
+                PhpCliUnavailableAction::message('cache:clear', $resolution->reason(), [
+                    'environment' => $environment,
+                    'trigger' => $trigger,
+                ]),
+            ], [
+                'environment' => $environment,
+                'trigger' => $trigger,
+            ]);
+        }
 
         return WorkflowResult::success(ActionQueue::create('backend cache clear', [
             new RunCommandAction([
-                PHP_BINARY,
+                ...$resolution->commandPrefix(),
                 $this->kernel->getProjectDir().'/bin/console',
                 'cache:clear',
                 '--env='.$environment,
@@ -39,7 +58,7 @@ final readonly class BackendCacheClearLiveOperationProvider implements LiveOpera
             ], $this->kernel->getProjectDir(), timeout: 300.0),
         ], context: [
             'environment' => $environment,
-            'trigger' => $this->trigger($payload),
+            'trigger' => $trigger,
         ]));
     }
 

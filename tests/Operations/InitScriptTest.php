@@ -18,7 +18,9 @@ final class InitScriptTest extends TestCase
     public function testInitScriptExistsAndIsExecutable(): void
     {
         self::assertFileExists($this->scriptPath);
-        self::assertTrue(is_executable($this->scriptPath));
+        if ('\\' !== DIRECTORY_SEPARATOR) {
+            self::assertTrue(is_executable($this->scriptPath));
+        }
     }
 
     public function testInitScriptHasValidPhpSyntax(): void
@@ -38,6 +40,10 @@ final class InitScriptTest extends TestCase
         self::assertIsString($contents);
         self::assertStringContainsString("'composer', '--version'", $contents);
         self::assertStringContainsString("/bin/composer'", $contents);
+        self::assertStringContainsString('$streamOutput ? STDOUT', $contents);
+        self::assertStringContainsString('$streamOutput ? STDERR', $contents);
+        self::assertStringContainsString('function nullDevice()', $contents);
+        self::assertStringNotContainsString('stream_set_blocking', $contents);
         self::assertStringContainsString('resetVendorDirectory()', $contents);
         self::assertStringContainsString('Existing vendor directory removed before Composer install.', $contents);
         self::assertLessThan(

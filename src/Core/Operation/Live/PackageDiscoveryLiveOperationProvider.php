@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace App\Core\Operation\Live;
 
 use App\Core\Operation\ActionQueue;
+use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
+use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 final readonly class PackageDiscoveryLiveOperationProvider implements LiveOperationQueueProviderInterface
 {
-    public function __construct(private KernelInterface $kernel)
+    public function __construct(
+        private KernelInterface $kernel,
+        private PhpCliBinaryManager $phpCliBinaryManager,
+    )
     {
     }
 
@@ -29,10 +34,23 @@ final readonly class PackageDiscoveryLiveOperationProvider implements LiveOperat
     {
         $environment = $this->environment($payload);
         $trigger = $this->trigger($payload);
+        $resolution = $this->phpCliBinaryManager->resolve($this->kernel->getProjectDir(), $environment, persistPreference: true);
+
+        if (!$resolution->isAvailable()) {
+            return WorkflowResult::failed([
+                PhpCliUnavailableAction::message('studio:packages:discover', $resolution->reason(), [
+                    'environment' => $environment,
+                    'trigger' => $trigger,
+                ]),
+            ], [
+                'environment' => $environment,
+                'trigger' => $trigger,
+            ]);
+        }
 
         return WorkflowResult::success(ActionQueue::create('package discovery', [
             new RunCommandAction([
-                PHP_BINARY,
+                ...$resolution->commandPrefix(),
                 $this->kernel->getProjectDir().'/bin/console',
                 'studio:packages:discover',
                 '--run-now',

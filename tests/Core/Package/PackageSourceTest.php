@@ -58,6 +58,9 @@ final class PackageSourceTest extends TestCase
 
         $directories = PackageSource::children('package', 'packages')->candidateDirectories($this->projectDir);
 
-        self::assertSame([$this->projectDir.'/packages/system'], $directories);
+        self::assertSame([str_replace('\\', '/', $this->projectDir.'/packages/system')], array_map(
+            static fn (string $path): string => str_replace('\\', '/', $path),
+            $directories,
+        ));
     }
 }

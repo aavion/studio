@@ -12,6 +12,7 @@ use App\Backend\BackendViewDefinition;
 use App\Backend\PackageLifecycleAdmin;
 use App\Core\Access\AccessActor;
 use App\Core\Config\Settings\CoreSettingsFormHandler;
+use App\Core\Diagnostics\SystemInfoProvider;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Log\LogFileBrowser;
 use App\Core\Message\Message;
@@ -47,6 +48,7 @@ final class BackendController extends AbstractController
         private readonly HttpErrorRenderer $httpError,
         private readonly CoreSettingsFormHandler $coreSettingsFormHandler,
         private readonly PackageSettingsFormHandler $packageSettingsFormHandler,
+        private readonly SystemInfoProvider $systemInfoProvider,
         private readonly BackendActions $backendActions,
         private readonly PackageLifecycleAdmin $packageLifecycleAdmin,
         private readonly PackageZipInstaller $packageZipInstaller,
@@ -390,6 +392,10 @@ final class BackendController extends AbstractController
         if (BackendArea::Admin === $area && 'backend-admin-statistics' === $view?->uid()) {
             $templateVariables['access_statistics'] = $this->accessStatisticsSnapshotProvider->snapshot($request->query->get('statistics_window'));
             $templateVariables['access_statistics_windows'] = $this->accessStatisticsSnapshotProvider->windows();
+        }
+
+        if (BackendArea::Admin === $area && 'backend-admin-settings-system-info' === $view?->uid()) {
+            $templateVariables['system_info'] = $this->systemInfoProvider->report($request->server->all());
         }
 
         return $this->render($result->template(), $templateVariables, new Response(status: $result->statusCode()));

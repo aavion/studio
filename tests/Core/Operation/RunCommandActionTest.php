@@ -44,6 +44,30 @@ final class RunCommandActionTest extends TestCase
         self::assertSame(MessageLevel::Success, $execution->actionLog()->entries()[0]->messages()[0]->level());
     }
 
+    public function testItDoesNotPassInheritedWebContextToCommands(): void
+    {
+        $previousProcessValue = getenv('HTTP_HOST');
+        $serverExists = array_key_exists('HTTP_HOST', $_SERVER);
+        $serverValue = $_SERVER['HTTP_HOST'] ?? null;
+        putenv('HTTP_HOST=example.test');
+        $_SERVER['HTTP_HOST'] = 'example.test';
+
+        try {
+            $action = new RunCommandAction([PHP_BINARY, '-r', 'echo getenv("HTTP_HOST") === false ? "unset" : getenv("HTTP_HOST");']);
+            $result = $action->execute();
+        } finally {
+            false === $previousProcessValue ? putenv('HTTP_HOST') : putenv('HTTP_HOST='.$previousProcessValue);
+            if ($serverExists) {
+                $_SERVER['HTTP_HOST'] = $serverValue;
+            } else {
+                unset($_SERVER['HTTP_HOST']);
+            }
+        }
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('unset', $result->context()['output_excerpt']);
+    }
+
     public function testItUsesCustomLabelsForUserFacingProcessMessages(): void
     {
         $action = new RunCommandAction([PHP_BINARY, '-r', 'echo "hello";'], label: 'Apply reviewed ACL group change');
@@ -62,6 +86,9 @@ final class RunCommandActionTest extends TestCase
         self::assertSame(WorkflowStatus::Failed, $execution->result()->status());
         self::assertSame('process.command_failed', $execution->result()->firstIssue()?->code());
         self::assertSame(7, $execution->result()->firstIssue()?->context()['exit_code']);
+        self::assertIsString($execution->result()->firstIssue()?->context()['exit_code_text']);
+        self::assertFalse($execution->result()->firstIssue()?->context()['signaled']);
+        self::assertNull($execution->result()->firstIssue()?->context()['term_signal']);
         self::assertSame('nope', $execution->actionLog()->entries()[0]->context()['error_excerpt']);
     }
 

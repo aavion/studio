@@ -9,16 +9,38 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux Lint+Test-Suite / PHP 8.5
+            os: ubuntu-latest
+            php: '8.5'
+            lint: true
+          - name: MacOS Compatibility / PHP 8.4
+            os: macos-latest
+            php: '8.4'
+            lint: false
+          - name: Windows Compatibility / PHP 8.4
+            os: windows-latest
+            php: '8.4'
+            lint: false
+          - name: Linux ARM Compatibility / PHP 8.4
+            os: ubuntu-24.04-arm
+            php: '8.4'
+            lint: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
-          extensions: ctype, fileinfo, iconv, intl, sqlite3
+          php-version: ${{ matrix.php }}
+          extensions: ctype, fileinfo, iconv, intl, pdo_sqlite, xml, curl, json, gd
           tools: composer
           coverage: none
 
@@ -26,18 +48,19 @@ jobs:
         run: composer validate --strict
 
       - name: Cache Composer packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor
-          key: ${{ runner.os }}-php-8.4-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-php-${{ matrix.php }}-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
-            ${{ runner.os }}-php-8.4-
+            ${{ runner.os }}-${{ runner.arch }}-php-${{ matrix.php }}-
 
       - name: Install dependencies
-        run: bin/init
+        run: php bin/init
 
       - name: Run linters
-        run: bin/lint
+        if: matrix.lint
+        run: php bin/lint
 
       - name: Run test suite
-        run: bin/phpunit
+        run: php bin/phpunit

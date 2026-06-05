@@ -317,14 +317,37 @@ final class SetupController extends AbstractController
             $state = [];
         }
 
+        $storedValues = is_array($state['values'] ?? null) ? $state['values'] : [];
+        $defaults = $this->inputFactory->defaults();
+        if (!array_key_exists('default_uri', $storedValues)) {
+            $defaults['default_uri'] = $this->defaultUriFromRequest($request) ?? $defaults['default_uri'];
+        }
+
         $normalized = [
-            'values' => array_replace($this->inputFactory->defaults(), is_array($state['values'] ?? null) ? $state['values'] : []),
+            'values' => array_replace($defaults, $storedValues),
             'completed' => array_values(array_filter(is_array($state['completed'] ?? null) ? $state['completed'] : [], 'is_string')),
             'workflow' => is_array($state['workflow'] ?? null) ? $state['workflow'] : null,
             'action_log' => is_array($state['action_log'] ?? null) ? $state['action_log'] : null,
         ];
 
         return $this->unprotectState($normalized, $state);
+    }
+
+    private function defaultUriFromRequest(Request $request): ?string
+    {
+        try {
+            $host = trim($request->getHttpHost());
+        } catch (Throwable) {
+            return null;
+        }
+
+        if ('' === $host) {
+            return null;
+        }
+
+        $uri = $request->getScheme().'://'.$host;
+
+        return false === filter_var($uri, FILTER_VALIDATE_URL) ? null : $uri;
     }
 
     /**

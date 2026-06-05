@@ -1,0 +1,222 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Core\Process;
+
+final class CliProcessEnvironment
+{
+    private const WEB_EXACT_NAMES = [
+        'AUTH_TYPE',
+        'CONTENT_LENGTH',
+        'CONTENT_TYPE',
+        'DOCUMENT_ROOT',
+        'FCGI_ROLE',
+        'GATEWAY_INTERFACE',
+        'HTTPS',
+        'PATH_INFO',
+        'PATH_TRANSLATED',
+        'PHP_AUTH_DIGEST',
+        'PHP_AUTH_PW',
+        'PHP_AUTH_TYPE',
+        'PHP_AUTH_USER',
+        'QUERY_STRING',
+        'REMOTE_ADDR',
+        'REMOTE_HOST',
+        'REMOTE_IDENT',
+        'REMOTE_PORT',
+        'REMOTE_USER',
+        'REQUEST_METHOD',
+        'REQUEST_SCHEME',
+        'REQUEST_TIME',
+        'REQUEST_TIME_FLOAT',
+        'REQUEST_URI',
+        'SCRIPT_FILENAME',
+        'SCRIPT_NAME',
+    ];
+
+    private const WEB_PREFIXES = [
+        'HTTP_',
+        'REDIRECT_',
+        'SERVER_',
+    ];
+
+    private const WEB_STALE_IDENTITY_NAMES = [
+        'HOME',
+        'HOMEDRIVE',
+        'HOMEPATH',
+        'LOGNAME',
+        'SUDO_GID',
+        'SUDO_UID',
+        'SUDO_USER',
+        'USER',
+        'USERNAME',
+        'USERPROFILE',
+    ];
+
+    /**
+     * @param array<string, string|false> $environment
+     *
+     * @return array<string, string|false>
+     */
+    public static function withoutWebContext(array $environment = []): array
+    {
+        return [
+            ...self::webContextRemovals(),
+            ...$environment,
+        ];
+    }
+
+    /**
+     * @param array<string, string|false> $environment
+     *
+     * @return array<string, string|false>
+     */
+    public static function fromCurrentProcess(array $environment = []): array
+    {
+        $current = self::removeWebContextFrom([
+            ...self::scalarEnvironment(getenv()),
+            ...self::scalarEnvironment($_SERVER),
+            ...self::scalarEnvironment($_ENV),
+        ]);
+
+        return [
+            ...$current,
+            ...self::nonWebExplicitEnvironment($environment),
+        ];
+    }
+
+    /**
+     * @param array<string, string|false> $environment
+     *
+     * @return array<string, string|false>
+     */
+    public static function removeWebContextFrom(array $environment): array
+    {
+        return [
+            ...$environment,
+            ...self::webContextRemovals($environment),
+        ];
+    }
+
+    /**
+     * @param array<string, string|false> $environment
+     *
+     * @return array<string, false>
+     */
+    private static function webContextRemovals(array $environment = []): array
+    {
+        $removals = [];
+        foreach (self::environmentNames($environment) as $name) {
+            if (self::isWebContextName($name)) {
+                $removals[$name] = false;
+            }
+        }
+
+        foreach (self::WEB_EXACT_NAMES as $name) {
+            $removals[$name] = false;
+        }
+
+        if (self::hasWebContext($environment)) {
+            foreach (self::WEB_STALE_IDENTITY_NAMES as $name) {
+                $removals[$name] = false;
+            }
+        }
+
+        return $removals;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function environmentNames(array $environment = []): array
+    {
+        $names = [];
+        foreach ([getenv(), $_SERVER, $_ENV, $environment] as $source) {
+            if (!is_array($source)) {
+                continue;
+            }
+
+            foreach ($source as $name => $_value) {
+                if (is_string($name) && '' !== trim($name)) {
+                    $names[$name] = $name;
+                }
+            }
+        }
+
+        return array_values($names);
+    }
+
+    /**
+     * @param array<mixed>|false $environment
+     *
+     * @return array<string, string>
+     */
+    private static function scalarEnvironment(array|false $environment): array
+    {
+        if (false === $environment) {
+            return [];
+        }
+
+        $scalars = [];
+        foreach ($environment as $name => $value) {
+            if (!is_string($name) || '' === trim($name) || !is_scalar($value)) {
+                continue;
+            }
+
+            $scalars[$name] = (string) $value;
+        }
+
+        return $scalars;
+    }
+
+    private static function isWebContextName(string $name): bool
+    {
+        if (in_array($name, self::WEB_EXACT_NAMES, true)) {
+            return true;
+        }
+
+        foreach (self::WEB_PREFIXES as $prefix) {
+            if (str_starts_with($name, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string, string|false> $environment
+     *
+     * @return array<string, string|false>
+     */
+    private static function nonWebExplicitEnvironment(array $environment): array
+    {
+        $filtered = [];
+
+        foreach ($environment as $name => $value) {
+            if (self::isWebContextName($name)) {
+                $filtered[$name] = false;
+                continue;
+            }
+
+            $filtered[$name] = $value;
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * @param array<string, string|false> $environment
+     */
+    private static function hasWebContext(array $environment): bool
+    {
+        foreach (['REQUEST_METHOD', 'GATEWAY_INTERFACE', 'FCGI_ROLE', 'DOCUMENT_ROOT', 'HTTP_HOST'] as $name) {
+            if (array_key_exists($name, $environment) || array_key_exists($name, $_SERVER) || false !== getenv($name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}

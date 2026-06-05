@@ -21,10 +21,13 @@ final class AssetRebuildQueueFactoryTest extends TestCase
     protected function setUp(): void
     {
         $this->root = $this->createTemporaryDirectory('studio-asset-rebuild');
+        $this->writeTestFile($this->root, 'bin/console', "#!/usr/bin/env php\n<?php echo \"Studio test\";\n");
     }
 
     protected function tearDown(): void
     {
+        unset($_SERVER['APP_DEBUG'], $_ENV['APP_DEBUG']);
+        putenv('APP_DEBUG');
         $this->removeDirectory($this->root);
     }
 
@@ -40,7 +43,8 @@ final class AssetRebuildQueueFactoryTest extends TestCase
         self::assertSame('translation_aggregate', $actions[1]->type());
         self::assertStringContainsString('assets:install', $actions[2]->label());
         self::assertStringContainsString('importmap:install', $actions[3]->label());
-        self::assertStringContainsString('tailwind:build', $actions[4]->label());
+        self::assertSame('tailwind_build', $actions[4]->type());
+        self::assertSame('Build Tailwind CSS', $actions[4]->label());
         self::assertStringContainsString('cache:clear', $actions[5]->label());
         self::assertFalse($queue->context()['production_compile']);
         self::assertSame('manual', $queue->context()['trigger']);

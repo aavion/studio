@@ -155,6 +155,9 @@ message:
   process:
     command_failed: 'Step "%command%" failed with exit code %exit_code%.'
     command_completed: 'Step "%command%" completed with exit code %exit_code%.'
+    php_cli_unavailable: 'PHP CLI is unavailable for step "%command%". Check the setup preflight diagnostics or the server PHP configuration.'
+  tailwind:
+    build_deferred: 'Tailwind could not be executed automatically. Please run "%command%" via CLI, SSH, or terminal.'
   access:
     granted: 'Access granted for "%capability%".'
     denied: 'Access denied for "%capability%": requires level %required_level%; actor has level %actor_level%.'

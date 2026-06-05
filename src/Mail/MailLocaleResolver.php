@@ -16,12 +16,12 @@ final readonly class MailLocaleResolver
 
     public function forPublicRequest(Request $request, ?UserAccount $user = null): string
     {
-        return $this->userLocale($user) ?? $this->supportedLocale($request->getLocale());
+        return $this->supportedLocale($this->userLocale($user), $request->getLocale(), $this->localization->defaultLanguage());
     }
 
     public function forAdminAction(?UserAccount $user = null): string
     {
-        return $this->userLocale($user) ?? $this->localization->defaultLanguage();
+        return $this->supportedLocale($this->userLocale($user), $this->localization->defaultLanguage());
     }
 
     public function defaultLocale(): string
@@ -41,29 +41,37 @@ final readonly class MailLocaleResolver
             return null;
         }
 
-        return $this->supportedLocale($language);
+        return trim($language);
     }
 
-    private function supportedLocale(string $locale): string
+    private function supportedLocale(?string ...$candidates): string
     {
         $availableLanguages = $this->localization->availableLanguages();
 
-        if (in_array($locale, $availableLanguages, true)) {
-            return $locale;
-        }
-
-        $normalized = strtolower(str_replace('_', '-', $locale));
-        $primary = explode('-', $normalized)[0] ?? '';
-
-        foreach ($availableLanguages as $availableLanguage) {
-            if ($normalized === strtolower(str_replace('_', '-', $availableLanguage))) {
-                return $availableLanguage;
+        foreach ($candidates as $locale) {
+            if (!is_string($locale) || '' === trim($locale)) {
+                continue;
             }
-        }
 
-        foreach ($availableLanguages as $availableLanguage) {
-            if ($primary === strtolower(str_replace('_', '-', $availableLanguage))) {
-                return $availableLanguage;
+            $locale = trim($locale);
+
+            if (in_array($locale, $availableLanguages, true)) {
+                return $locale;
+            }
+
+            $normalized = strtolower(str_replace('_', '-', $locale));
+            $primary = explode('-', $normalized)[0] ?? '';
+
+            foreach ($availableLanguages as $availableLanguage) {
+                if ($normalized === strtolower(str_replace('_', '-', $availableLanguage))) {
+                    return $availableLanguage;
+                }
+            }
+
+            foreach ($availableLanguages as $availableLanguage) {
+                if ($primary === strtolower(str_replace('_', '-', $availableLanguage))) {
+                    return $availableLanguage;
+                }
             }
         }
 

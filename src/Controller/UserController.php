@@ -12,6 +12,7 @@ use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
 use App\Core\Validation\EmailAddress;
+use App\Content\Routing\ContentRouteLocalization;
 use App\Entity\AccountToken;
 use App\Entity\UserAccount;
 use App\Mail\AccountMailFlow;
@@ -30,9 +31,11 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Exception\SessionNotFoundException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Translation\LocaleSwitcher;
 use Throwable;
 
 final class UserController extends AbstractController
@@ -53,6 +56,8 @@ final class UserController extends AbstractController
         private readonly TokenStorageInterface $tokenStorage,
         private readonly StateMarkerRecorder $stateMarkers,
         private readonly PasswordPolicy $passwordPolicy,
+        private readonly ContentRouteLocalization $localization,
+        private readonly LocaleSwitcher $localeSwitcher,
     ) {
     }
 
@@ -138,7 +143,10 @@ final class UserController extends AbstractController
                     $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::MODIFIED, $user->username(), 'profile');
                     $this->entityManager->flush();
                     $this->audit($user, 'user.profile_updated', ['result_status' => 'success']);
-                    $success = true;
+                    $this->applyProfileLocale($request, $user);
+                    $this->addFlash('success', 'ui.user.profile.success');
+
+                    return $this->redirectToRoute('user_profile');
                 } catch (MessageException $exception) {
                     $errors[] = $exception->messageKey();
                     $this->audit($user, 'user.profile_update_failed', ['result_status' => 'failed', 'error_key' => $exception->messageKey()]);
@@ -152,6 +160,32 @@ final class UserController extends AbstractController
             'success' => $success,
             'errors' => $errors,
         ]);
+    }
+
+    private function applyProfileLocale(Request $request, UserAccount $user): void
+    {
+        $language = $user->settings()['language'] ?? 'default';
+        $locale = $this->supportedLocale(is_string($language) && 'default' !== $language ? $language : null)
+            ?? $this->localization->defaultLanguage();
+
+        $request->setLocale($locale);
+
+        try {
+            $request->getSession()->set('_locale', $locale);
+        } catch (SessionNotFoundException) {
+        }
+        $this->localeSwitcher->setLocale($locale);
+    }
+
+    private function supportedLocale(?string $locale): ?string
+    {
+        if (!is_string($locale) || '' === trim($locale)) {
+            return null;
+        }
+
+        $locale = trim($locale);
+
+        return in_array($locale, $this->localization->availableLanguages(), true) ? $locale : null;
     }
 
     #[Route('/user/profile/close', name: 'user_profile_close', methods: ['GET', 'POST'])]

@@ -1,7 +1,7 @@
 # Framework version recap
 
 > **Status:** Active  
-> **Updated:** 2026-05-29  
+> **Updated:** 2026-06-05  
 > **Owner:** Codex  
 > **Purpose:** Offline working notes for this repository's framework and bundle versions, based on official documentation checks. Use this before implementing Symfony, Doctrine, Twig, frontend, or test changes.  
 
@@ -18,12 +18,12 @@ The local `vendor/` directory is not installed in this workspace at the time of 
 | DoctrineBundle | `3.2.2` | Existing config uses attribute mapping for `App\Entity`. |
 | DoctrineMigrationsBundle | `4.0.0` | Multiple migration paths/namespaces are supported through bundle configuration. |
 | Twig | `3.27.0` | Avoid Twig 4-deprecated APIs where possible. |
-| SymfonyCasts TailwindBundle | `0.12.0` | Project uses Tailwind binary `v4.1.11`. |
-| Tailwind CSS | `v4.1.11` | CSS-first configuration. `assets/styles/app.css` uses `@import "tailwindcss";` and `@custom-variant`. |
+| SymfonyCasts TailwindBundle | `0.12.0` | Project uses Tailwind binary `v4.3.0`. |
+| Tailwind CSS | `v4.3.0` | CSS-first configuration. `assets/styles/app.css` uses `@import "tailwindcss";` and `@custom-variant`. |
 | StimulusBundle | `3.1.0` | Project uses Symfony UX Stimulus loader plus importmap. |
 | Turbo | `8.0.23` via importmap | Use Hotwire/Turbo 8 behavior; test form/navigation interactions. |
 | Stimulus | `3.2.2` via importmap | Use controllers, targets, values, classes, and actions. |
-| PHPUnit | `13.1.13` | Official online manual search currently surfaced PHPUnit 12.5 docs; avoid features documented as incompatible with PHPUnit 13. |
+| PHPUnit | `13.2.0` | Official online manual search currently surfaced PHPUnit 12.5 docs; avoid features documented as incompatible with PHPUnit 13. |
 
 ## Symfony 8 implementation notes
 

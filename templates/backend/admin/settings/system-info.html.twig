@@ -1,0 +1,107 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.system_info.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.settings.title'|trans,
+        title: 'admin.system_info.title'|trans,
+    } only %}
+
+    <section class="studio-panel">
+        <div class="studio-panel-header">
+            <div>
+                <h2>{{ 'admin.system_info.preflight.title'|trans }}</h2>
+                <p class="studio-muted">{{ 'admin.system_info.preflight.text'|trans }}</p>
+            </div>
+            <span class="studio-badge studio-badge-{{ system_info.preflight.ok ? (system_info.preflight.has_warnings ? 'warning' : 'success') : 'error' }}">
+                {{ (system_info.preflight.ok ? (system_info.preflight.has_warnings ? 'setup.preflight.status.warning' : 'setup.preflight.status.ok') : 'setup.preflight.status.failed')|trans }}
+            </span>
+        </div>
+        <div class="studio-table-wrapper">
+            <table class="studio-table">
+                <tbody>
+                    {% for check in system_info.preflight.detail_rows %}
+                        <tr>
+                            <th scope="row">{{ check.label_key|trans }}</th>
+                            <td>
+                                <span class="studio-badge studio-badge-{{ check.status == 'ok' ? 'success' : (check.status == 'warning' ? 'warning' : (check.required ? 'error' : 'neutral')) }}">
+                                    {{ (check.status == 'ok' ? 'setup.preflight.status.ok' : (check.status == 'warning' ? 'setup.preflight.status.warning' : (check.required ? 'setup.preflight.status.failed' : 'setup.preflight.status.optional'))) | trans }}
+                                </span>
+                            </td>
+                            <td>{{ check.value_key|trans(check.value_parameters) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.system_info.summary.title'|trans }}</h2>
+        <dl class="studio-definition-list">
+            {% for row in system_info.summary %}
+                <div>
+                    <dt>{{ row.label_key|trans }}</dt>
+                    <dd>{{ row.value in ['unknown', 'unavailable', 'none'] ? ('admin.system_info.values.' ~ row.value)|trans : row.value }}</dd>
+                </div>
+            {% endfor %}
+        </dl>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.system_info.capabilities.title'|trans }}</h2>
+        <div class="studio-table-wrapper">
+            <table class="studio-table">
+                <tbody>
+                    {% for capability in system_info.capabilities %}
+                        <tr>
+                            <th scope="row">{{ capability.label_key|trans }}</th>
+                            <td>
+                                <span class="studio-badge studio-badge-{{ capability.status == 'ok' ? 'success' : 'neutral' }}">
+                                    {{ ('admin.system_info.status.' ~ capability.status)|trans }}
+                                </span>
+                            </td>
+                            <td>{{ capability.value in ['available', 'missing'] ? ('admin.system_info.values.' ~ capability.value)|trans : capability.value }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.system_info.php_settings.title'|trans }}</h2>
+        <dl class="studio-definition-list">
+            {% for row in system_info.php_settings %}
+                <div>
+                    <dt>{{ row.label_key|trans }}</dt>
+                    <dd>{{ row.value in ['unknown', 'unavailable', 'none'] ? ('admin.system_info.values.' ~ row.value)|trans : row.value }}</dd>
+                </div>
+            {% endfor %}
+        </dl>
+    </section>
+
+    <section class="studio-panel">
+        <h2>{{ 'admin.system_info.php_info.title'|trans }}</h2>
+        <p class="studio-muted">{{ 'admin.system_info.php_info.text'|trans }}</p>
+        <div class="studio-table-wrapper">
+            <table class="studio-table">
+                <tbody>
+                    {% for row in system_info.php_info %}
+                        <tr>
+                            <th scope="row">{{ row.label_key|trans }}</th>
+                            <td>{{ row.value in ['unknown', 'unavailable', 'none'] ? ('admin.system_info.values.' ~ row.value)|trans : row.value }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

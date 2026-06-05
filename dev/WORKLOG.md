@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-06-01
+> **Updated**: 2026-06-05  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -62,9 +62,40 @@
 - [ ] Finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
 - [ ] Before production readiness, review public package/developer-facing class, interface, function, and Twig helper names for clarity and ergonomics; decide whether to rename directly or provide stable aliases so extension APIs read as intentional rather than provisional.
+- [ ] Evaluate whether the documented minimum memory requirement should become 256M after PHPUnit 13.2/full-suite runs needed a higher CLI memory limit; do not fix this requirement until setup/init/lint/runtime memory behavior has been reviewed across target hosting platforms.
 
 ## Session Logs
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
+
+### 2026-06-05
+- Addressed the latest review findings by preserving real Tailwind build failures and honoring supported URL locale prefixes before stored language preferences.
+- Refreshed the backend scheduler controller test login before the Windows-sensitive detail/form segment to keep the full-suite mock session stable across compatibility runners.
+- Centralized synthetic backend admin test logins behind a reboot-stable BrowserKit helper after Linux ARM CI exposed another session loss on the settings validation form.
+- Addressed review findings by making request, mail, and profile locale selection skip unsupported candidates, keeping setup dry-run command planning independent from throwing PHP CLI resolution, and translating PHP CLI validation failure reasons in setup preflight output.
+- Added an Admin Settings System Information diagnostic page with current preflight status, cross-platform server/PHP/Composer summaries, reduced PHP configuration output, GD/Imagick capability reporting, and an explicit `ext-gd` platform requirement while keeping Imagick optional for hosting portability.
+- Applied the P4 drift-audit checkpoint to the current branch and aligned the System Information Composer diagnostic with the managed PHP CLI resolver instead of invoking bundled Composer through `PHP_BINARY` directly.
+- Hardened the shared backend controller test user helper so full-suite runs recover a reusable admin test account back to an active status before logging it in, covering the Linux ARM CI session-refresh failure.
+- Made the logout confirmation controller test deterministic by using Symfony's test login helper for the already-covered authenticated session setup.
+- Aligned pull request verification on a PHP 8.5 Linux lint baseline plus PHP 8.4 compatibility jobs for macOS, Windows, and Linux ARM, added curl, JSON, and XML as explicit Composer platform requirements, and covered required-extension preflight failure naming.
+- Hardened Windows cleanup retries after CI showed that directory symlinks can fail `is_dir()` checks while still requiring `rmdir()`, so test-suite and package cleanup helpers now try the Windows directory-link removal path directly before falling back to `unlink()`.
+- Audited additional Windows-sensitive filesystem and process helpers, replacing hardcoded lint null-device usage and making recursive cleanup paths handle Windows directory links safely across init, package assets, package ZIP installs, translation runtime aggregation, operation removal, and test helpers.
+- Finished the remaining Windows CI hardening for live-operation detached startup, package-source path assertions, setup CLI driver-default tests, and Windows directory-link cleanup.
+- Hardened Windows PHPUnit compatibility by adding Windows-aware detached Messenger drain startup, platform-safe setup SQLite path handling, symlink-safe test cleanup, and portable path/executable-bit assertions for cross-platform CI.
+- Made the `bin/init` command runner Windows-safe by streaming child-process output directly instead of polling non-blocking pipes, and by quietly falling back when a system Composer executable is not available.
+- Expanded pull request verification to run the full PHPUnit suite on Ubuntu, macOS, and Windows with PHP 8.4.1 while keeping linting on the Ubuntu runner.
+- Updated the pull request verification workflow to Node 24-compatible GitHub Actions versions for checkout and dependency caching, and aligned setup subprocess/PHP CLI resolver environment handling on the shared Dotenv-aware child-process filter so explicit web request variables cannot be forwarded accidentally.
+- Added a cache-first PHP CLI manager around `APP_DEFAULT_PHP_BINARY`, with validation for CLI SAPI, project PHP/version/extension requirements, project console readability, controlled preference refreshes, and Dotenv-aware child-process environment forwarding that still strips web request context.
+- Reviewed `feat-php-cli-resolver` against `dev-latest` and hardened the scheduler wrapper so its console child process uses the shared web-context environment filter instead of inheriting request/server variables.
+- Updated composer and dependencies to their latest stable version.
+
+### 2026-06-04
+- Continued `feat-php-cli-resolver`: prefilled the setup site URL from the current HTTP host when no stored wizard value exists; propagated nested asset-rebuild warnings from setup-triggered JSON output into the setup action log, kept direct asset-rebuild text output aware of warning messages, aligned the setup dry-run plan/manual notes with the JSON-backed asset rebuild call, and documented Apache `mod_remoteip` as the preferred reverse-proxy client-IP integration.
+- Restored application locale handling after setup by applying the configured default language, session locale, or authenticated user language to main requests; changed profile settings saves to redirect-after-post with the shared alert stack so language changes and success feedback are immediately visible.
+
+### 2026-06-03
+- Started `feat-php-cli-resolver`: added a shared PHP CLI resolver for web-hosted setup and background processes, with explicit preflight diagnostics for safe mode, disabled process functions, server-config-blocked CLI, and unresolved PHP binaries; wired setup preflight, setup runner, Composer phar execution, live operations, Messenger drain, scheduler command execution, and asset/backend command queues to use the resolved PHP CLI command prefix, failing command queues with a Message instead of falling back to an unverified `php` binary; aligned Composer preflight/setup checks on project-local Composer environment paths with non-silent Composer output; hardened CLI output assertions against terminal-width wrapping.
+- Kept setup subprocess recovery narrow by making Composer diagnostics verbose while isolating the setup-triggered asset rebuild from transient setup secrets and direct database environment values after `dump-env` has persisted the install configuration; added a shared CLI process environment filter so web/CGI request variables are not inherited by Symfony Process children.
+- Documented Apache/systemd native-binary hardening for automatic Tailwind rebuilds, removed temporary public process diagnostics, added a non-blocking setup preflight warning for blocked Tailwind native builds, and wrapped Tailwind asset rebuilds so setup/package maintenance can continue while instructing operators to run `php bin/console tailwind:build` through CLI/SSH when the web server policy blocks the binary.
 
 ### 2026-06-01
 - Updated tailwind-binary to v4.3.0 and composer dependencies

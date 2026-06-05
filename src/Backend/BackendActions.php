@@ -11,9 +11,11 @@ use App\Core\Operation\ActionQueue;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationStarter;
 use App\Core\Operation\OperationExecutor;
+use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Package\PackageAssetRebuildDispatcher;
 use App\Core\Package\PackageDiscoveryRunner;
+use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpKernel\KernelInterface;
 
@@ -29,6 +31,7 @@ final readonly class BackendActions
         private PackageAssetRebuildDispatcher $assetRebuildDispatcher,
         private OperationExecutor $operationExecutor,
         private LiveOperationStarter $liveOperationStarter,
+        private PhpCliBinaryManager $phpCliBinaryManager,
     ) {
     }
 
@@ -126,9 +129,23 @@ final readonly class BackendActions
      */
     private function clearCache(): WorkflowResult
     {
+        $resolution = $this->phpCliBinaryManager->resolve($this->kernel->getProjectDir(), $this->kernel->getEnvironment(), persistPreference: true);
+
+        if (!$resolution->isAvailable()) {
+            return WorkflowResult::failed([
+                PhpCliUnavailableAction::message('cache:clear', $resolution->reason(), [
+                    'environment' => $this->kernel->getEnvironment(),
+                    'trigger' => 'admin_ui',
+                ]),
+            ], [
+                'environment' => $this->kernel->getEnvironment(),
+                'trigger' => 'admin_ui',
+            ]);
+        }
+
         $queue = ActionQueue::create('backend cache clear', [
             new RunCommandAction([
-                PHP_BINARY,
+                ...$resolution->commandPrefix(),
                 $this->kernel->getProjectDir().'/bin/console',
                 'cache:clear',
                 '--env='.$this->kernel->getEnvironment(),

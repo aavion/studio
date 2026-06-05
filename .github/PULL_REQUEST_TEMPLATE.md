@@ -14,6 +14,7 @@
 
 ## Additional Checks
 - [ ] Security/privacy considerations
+- [ ] Project rules, architecture/naming drift, and documentation drift reviewed (see #57) for details
 - [ ] Follow-up tasks captured in WORKLOG
 - [ ] Linked issues / discussions
 - [ ] Updated / aligned translations

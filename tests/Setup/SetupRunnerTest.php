@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Setup;
 
 use App\Core\ActionLog\ActionLog;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Process\PhpCliBinaryPreferenceStore;
+use App\Core\Process\PhpCliBinaryValidator;
+use App\Database\DatabaseReadyState;
 use App\Setup\DatabaseDriver;
 use App\Setup\DatabaseUrlFactory;
 use App\Setup\SetupCommandExecutorInterface;
@@ -41,7 +46,18 @@ final class SetupRunnerTest extends TestCase
     {
         $databasePath = $this->root.'/var/setup.db';
         $this->createSchema($databasePath);
-        $executor = new RecordingSetupCommandExecutor();
+        $composerEnvironments = [];
+        $assetRebuildEnvironment = null;
+        $root = $this->root;
+        $executor = new RecordingSetupCommandExecutor(onRun: static function (array $command, string $_cwd, array $environment) use (&$composerEnvironments, &$assetRebuildEnvironment): void {
+            if (in_array('--version', $command, true) || in_array('dump-env', $command, true)) {
+                $composerEnvironments[] = $environment;
+            }
+
+            if (in_array('studio:assets:rebuild', $command, true)) {
+                $assetRebuildEnvironment = $environment;
+            }
+        });
         $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
         $input = new SetupInput(
             appEnv: 'test',
@@ -49,7 +65,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -64,16 +80,36 @@ final class SetupRunnerTest extends TestCase
         self::assertFalse($result->context()['halt_on_error']);
         self::assertFileExists($this->root.'/.env.test.local');
         self::assertStringContainsString("APP_SECRET='test-secret-12'", (string) file_get_contents($this->root.'/.env.test.local'));
+        $storedPhpBinary = (new PhpCliBinaryPreferenceStore())->read($this->root, 'test');
+        self::assertIsString($storedPhpBinary);
+        self::assertTrue((new PhpCliBinaryValidator())->validate([$storedPhpBinary], $this->root)->isValid());
         self::assertFileExists($this->root.'/.env.local.php');
         $dumpedEnvironment = include $this->root.'/.env.local.php';
         self::assertSame('1', $dumpedEnvironment['APP_SETUP_COMPLETED']);
+        self::assertSame($root.'/var/composer-home', $composerEnvironments[0]['COMPOSER_HOME'] ?? null);
+        self::assertSame($root.'/var/composer-cache', $composerEnvironments[0]['COMPOSER_CACHE_DIR'] ?? null);
+        self::assertSame($root.'/var', $composerEnvironments[0]['HOME'] ?? null);
+        self::assertSame('0', $composerEnvironments[0]['SHELL_VERBOSITY'] ?? null);
+        self::assertSame($root.'/var/composer-home', $composerEnvironments[1]['COMPOSER_HOME'] ?? null);
+        self::assertSame($root.'/var/composer-cache', $composerEnvironments[1]['COMPOSER_CACHE_DIR'] ?? null);
+        self::assertSame($root.'/var', $composerEnvironments[1]['HOME'] ?? null);
+        self::assertSame('0', $composerEnvironments[1]['SHELL_VERBOSITY'] ?? null);
+        self::assertIsArray($assetRebuildEnvironment);
+        self::assertSame('test', $assetRebuildEnvironment['APP_ENV'] ?? null);
+        self::assertFalse($assetRebuildEnvironment['APP_DEBUG'] ?? null);
+        self::assertSame('0', $assetRebuildEnvironment['SHELL_VERBOSITY'] ?? null);
+        self::assertSame('1', $assetRebuildEnvironment[DatabaseReadyState::ALLOW_UNREADY_KEY] ?? null);
+        self::assertFalse($assetRebuildEnvironment['APP_SECRET'] ?? null);
+        self::assertFalse($assetRebuildEnvironment['DATABASE_URL'] ?? null);
+        self::assertFalse($assetRebuildEnvironment['APP_DATABASE_PREFIX'] ?? null);
+        self::assertFalse($assetRebuildEnvironment['DEFAULT_URI'] ?? null);
         self::assertSame([
             ['composer', '--version'],
             ['composer', 'dump-env', 'test'],
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test', '--json'],
         ], $executor->commands);
 
         $pdo = new PDO('sqlite:'.$databasePath);
@@ -128,7 +164,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'short',
             adminEmail: 'admin@example.test',
@@ -153,7 +189,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -177,7 +213,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Prefixed Studio',
             defaultUri: 'https://prefixed.example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             databasePrefix: 'studio_',
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
@@ -235,7 +271,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Broken Studio',
             defaultUri: 'https://broken.example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$this->root.'/var/missing-schema.db',
+            databaseUrl: $this->sqliteUrl($this->root.'/var/missing-schema.db'),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -247,7 +283,7 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('seed_default_settings', $result->context()['failed_step']);
         self::assertSame(
             'config.write_failed',
-            $result->context()['action_log']['entries'][4]['issues'][0]['code'],
+            $result->context()['action_log']['entries'][5]['issues'][0]['code'],
         );
     }
 
@@ -262,7 +298,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$this->root.'/var/setup.db',
+            databaseUrl: $this->sqliteUrl($this->root.'/var/setup.db'),
             appSecret: 'test-secret-12',
         ));
 
@@ -296,7 +332,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -312,7 +348,7 @@ final class SetupRunnerTest extends TestCase
         self::assertSame([], $result->context()['rollback']['sqlite_files_removed']);
         self::assertContains('config_entry', $result->context()['rollback']['database_tables_removed']['tables']);
         self::assertContains('doctrine_migration_versions', $result->context()['rollback']['database_tables_removed']['tables']);
-        self::assertSame('setup.rollback_completed', $result->context()['action_log']['entries'][7]['messages'][0]['code']);
+        self::assertSame('setup.rollback_completed', $result->context()['action_log']['entries'][8]['messages'][0]['code']);
 
         $pdo = new PDO('sqlite:'.$databasePath);
         self::assertSame([], $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('config_entry', 'user_account', 'doctrine_migration_versions')")->fetchAll(PDO::FETCH_COLUMN));
@@ -331,7 +367,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -364,7 +400,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -390,7 +426,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$this->root.'/var/setup.db',
+            databaseUrl: $this->sqliteUrl($this->root.'/var/setup.db'),
             appSecret: 'test-secret-12',
         ));
 
@@ -419,7 +455,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             appSecret: 'test-secret-12',
         ));
 
@@ -431,7 +467,7 @@ final class SetupRunnerTest extends TestCase
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test', '--json'],
         ], $executor->commands);
     }
 
@@ -447,7 +483,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Dry Studio',
             defaultUri: 'https://dry.example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -480,8 +516,97 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('run_package_discovery', $entries[8]['name']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'], $entries[8]['context']['command']);
         self::assertSame('run_asset_rebuild', $entries[9]['name']);
-        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test'], $entries[9]['context']['command']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test', '--json'], $entries[9]['context']['command']);
         self::assertSame('mark_setup_completed', $entries[10]['name']);
+    }
+
+    public function testDryRunUsesPhpCliPlaceholderWhenResolverValidationFails(): void
+    {
+        unlink($this->root.'/bin/console');
+
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), new RecordingSetupCommandExecutor());
+        $input = new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Dry Studio',
+            defaultUri: 'https://dry.example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: $this->sqliteUrl($this->root.'/var/setup.db'),
+            adminUsername: 'admin',
+            adminPassword: 'Secret1!password',
+            adminEmail: 'admin@example.test',
+            dryRun: true,
+        );
+
+        $result = $runner->run($input);
+
+        self::assertTrue($result->isSuccess());
+        self::assertInstanceOf(ActionLog::class, $result->value());
+        $entries = $result->value()->toArray()['entries'];
+        self::assertSame('run_migrations', $entries[3]['name']);
+        self::assertSame('php-cli-unavailable:console_unreadable', $entries[3]['context']['command'][0]);
+    }
+
+    public function testItSurfacesNonBlockingAssetRebuildWarningsInSetupActionLog(): void
+    {
+        $databasePath = $this->root.'/var/setup.db';
+        $this->createSchema($databasePath);
+        $executor = new RecordingSetupCommandExecutor(onRun: static function (array $command, string $_cwd, array $_environment): ?SetupCommandResult {
+            if (!in_array('studio:assets:rebuild', $command, true)) {
+                return null;
+            }
+
+            return new SetupCommandResult(0, json_encode([
+                'action_log' => [
+                    'entries' => [
+                        [
+                            'name' => 'Build Tailwind CSS',
+                            'status' => 'success',
+                            'messages' => [
+                                [
+                                    'level' => 'WARN',
+                                    'code' => MessageCode::TAILWIND_BUILD_DEFERRED,
+                                    'translation_key' => MessageKey::TAILWIND_BUILD_DEFERRED,
+                                    'parameters' => [
+                                        '%command%' => 'php bin/console tailwind:build',
+                                    ],
+                                    'context' => [
+                                        'command' => ['php', 'bin/console', 'tailwind:build'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'result' => [
+                    'status' => 'success',
+                    'messages' => [],
+                ],
+            ], JSON_THROW_ON_ERROR));
+        });
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Example Studio',
+            defaultUri: 'https://example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: $this->sqliteUrl($databasePath),
+            adminUsername: 'admin',
+            adminPassword: 'Secret1!password',
+            adminEmail: 'admin@example.test',
+            appSecret: 'test-secret-12',
+        ));
+
+        self::assertTrue($result->isSuccess());
+
+        $log = $result->value();
+        self::assertInstanceOf(ActionLog::class, $log);
+        $entries = $log->toArray()['entries'];
+
+        self::assertSame('run_asset_rebuild', $entries[10]['name']);
+        self::assertSame(MessageCode::TAILWIND_BUILD_DEFERRED, $entries[10]['messages'][0]['code']);
     }
 
     public function testDryRunDoesNotCreateMissingSqliteDatabaseDuringPreparation(): void
@@ -496,7 +621,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Dry Studio',
             defaultUri: 'https://dry.example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -594,7 +719,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Dry Studio',
             defaultUri: 'https://dry.example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$this->root.'/var/missing-dry-run.db',
+            databaseUrl: $this->sqliteUrl($this->root.'/var/missing-dry-run.db'),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -671,6 +796,11 @@ final class SetupRunnerTest extends TestCase
         $pdo->exec(sprintf('CREATE TABLE %scontent_field_value (uid VARCHAR(36) NOT NULL PRIMARY KEY, revision_uid VARCHAR(36) NOT NULL, language VARCHAR(16) NOT NULL, variant VARCHAR(80) NOT NULL, field_identifier VARCHAR(160) NOT NULL, field_content CLOB NOT NULL, UNIQUE(revision_uid, language, variant, field_identifier))', $prefix));
     }
 
+    private function sqliteUrl(string $path): string
+    {
+        return 'sqlite:///'.str_replace('\\', '/', $path);
+    }
+
     private function removeDirectory(string $directory): void
     {
         if (!is_dir($directory)) {
@@ -683,6 +813,11 @@ final class SetupRunnerTest extends TestCase
         );
 
         foreach ($iterator as $file) {
+            if ($file->isLink()) {
+                unlink($file->getPathname());
+                continue;
+            }
+
             $file->isDir() ? rmdir($file->getPathname()) : unlink($file->getPathname());
         }
 
@@ -709,7 +844,11 @@ final class RecordingSetupCommandExecutor implements SetupCommandExecutorInterfa
     {
         $this->commands[] = $command;
         if (is_callable($this->onRun)) {
-            ($this->onRun)($command, $cwd, $environment);
+            $result = ($this->onRun)($command, $cwd, $environment);
+
+            if ($result instanceof SetupCommandResult) {
+                return $result;
+            }
         }
 
         if (null !== $this->failure && $this->failureAt === count($this->commands)) {

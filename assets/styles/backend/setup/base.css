@@ -393,6 +393,15 @@
     background: var(--color-error);
 }
 
+.studio-setup-status.is-warning {
+    background: var(--color-warning-soft);
+    color: var(--color-warning);
+}
+
+.studio-setup-status.is-warning .ti {
+    background: var(--color-warning);
+}
+
 .studio-setup-status.is-neutral {
     background: var(--color-debug-soft);
     color: var(--color-debug);

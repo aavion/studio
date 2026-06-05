@@ -113,6 +113,11 @@ services:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
 
+    App\Core\Diagnostics\SystemInfoProvider:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
     App\Backend\BackendViewRegistry:
         arguments:
             $providers: !tagged_iterator { tag: studio.backend_view_provider }

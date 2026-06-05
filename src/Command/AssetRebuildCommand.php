@@ -6,6 +6,8 @@ namespace App\Command;
 
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\Asset\AssetRebuildQueueFactory;
+use App\Core\Message\Message;
+use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Operation\OperationExecutor;
 use App\Core\Package\ActivePackageAssetProviderInterface;
@@ -84,7 +86,7 @@ final class AssetRebuildCommand extends Command
             ];
         }
 
-        $queue = $this->queueFactory->create($this->kernel->getEnvironment(), $packages, $trigger);
+        $queue = $this->queueFactory->create($this->kernel->getEnvironment(), $packages, $trigger, !$dryRun);
 
         if ($dryRun) {
             $plan = $this->operationExecutor->planQueue($queue);
@@ -148,7 +150,24 @@ final class AssetRebuildCommand extends Command
             foreach ($entry->issues() as $issue) {
                 $io->warning(sprintf('%s: %s', $issue->code(), $issue->translationKey()));
             }
+
+            foreach ($entry->messages() as $message) {
+                if (!self::isTextModeWarning($message)) {
+                    continue;
+                }
+
+                $io->warning(sprintf('%s: %s', $message->code(), $message->translationKey()));
+            }
         };
+    }
+
+    private static function isTextModeWarning(Message $message): bool
+    {
+        return in_array($message->level(), [
+            MessageLevel::Exception,
+            MessageLevel::Error,
+            MessageLevel::Warning,
+        ], true);
     }
 
     private function writeProviderFailure(SymfonyStyle $io, OutputInterface $output, bool $json, Throwable $error): void

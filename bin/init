@@ -3,6 +3,9 @@
 
 declare(strict_types=1);
 
+ini_set('memory_limit', '512M');
+ini_set('max_execution_time', 0);
+
 use App\Localization\CoreTranslationBootstrapper;
 use App\Core\Package\PackageAssetFilesystem;
 use App\Core\Package\PackageAssetRegistryWriter;
@@ -358,61 +361,22 @@ final class InitCommand
         }
 
         $descriptors = [
-            0 => ['file', 'php://stdin', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
+            0 => ['file', $this->nullDevice(), 'r'],
+            1 => $streamOutput ? STDOUT : ['file', $this->nullDevice(), 'w'],
+            2 => $streamOutput ? STDERR : ['file', $this->nullDevice(), 'w'],
         ];
 
-        $process = proc_open($command, $descriptors, $pipes, $this->projectDir);
+        $process = @proc_open($command, $descriptors, $pipes, $this->projectDir);
         if (!is_resource($process)) {
             return 1;
         }
 
-        foreach ([1, 2] as $pipe) {
-            stream_set_blocking($pipes[$pipe], false);
-        }
-
-        $output = '';
-        $errorOutput = '';
-
-        while (true) {
-            $status = proc_get_status($process);
-            $output .= stream_get_contents($pipes[1]);
-            $errorOutput .= stream_get_contents($pipes[2]);
-
-            if ($streamOutput && '' !== $output) {
-                echo $output;
-                $output = '';
-            }
-
-            if ($streamOutput && '' !== $errorOutput) {
-                fwrite(STDERR, $errorOutput);
-                $errorOutput = '';
-            }
-
-            if (!$status['running']) {
-                break;
-            }
-
-            usleep(100000);
-        }
-
-        $output .= stream_get_contents($pipes[1]);
-        $errorOutput .= stream_get_contents($pipes[2]);
-
-        if ($streamOutput && '' !== $output) {
-            echo $output;
-        }
-
-        if ($streamOutput && '' !== $errorOutput) {
-            fwrite(STDERR, $errorOutput);
-        }
-
-        foreach ([1, 2] as $pipe) {
-            fclose($pipes[$pipe]);
-        }
-
         return proc_close($process);
+    }
+
+    private function nullDevice(): string
+    {
+        return '\\' === DIRECTORY_SEPARATOR ? 'NUL' : '/dev/null';
     }
 
     /**
@@ -607,7 +571,7 @@ final class InitCommand
     private function removePath(string $path): void
     {
         if (is_link($path) || is_file($path)) {
-            if (!unlink($path)) {
+            if (!$this->removeFileOrLink($path)) {
                 throw new RuntimeException(sprintf('Unable to remove file "%s".', basename($path)));
             }
 
@@ -627,7 +591,7 @@ final class InitCommand
             $itemPath = $item->getPathname();
 
             if ($item->isLink() || $item->isFile()) {
-                if (!unlink($itemPath)) {
+                if (!$this->removeFileOrLink($itemPath)) {
                     throw new RuntimeException(sprintf('Unable to remove file "%s".', basename($itemPath)));
                 }
 
@@ -642,6 +606,15 @@ final class InitCommand
         if (!rmdir($path)) {
             throw new RuntimeException(sprintf('Unable to remove directory "%s".', basename($path)));
         }
+    }
+
+    private function removeFileOrLink(string $path): bool
+    {
+        if ('\\' === DIRECTORY_SEPARATOR && @rmdir($path)) {
+            return true;
+        }
+
+        return @unlink($path);
     }
 
     /**

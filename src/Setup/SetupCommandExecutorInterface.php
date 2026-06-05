@@ -8,7 +8,7 @@ interface SetupCommandExecutorInterface
 {
     /**
      * @param list<string> $command
-     * @param array<string, string> $environment
+     * @param array<string, string|false> $environment
      */
     public function run(array $command, string $cwd, array $environment = []): SetupCommandResult;
 }

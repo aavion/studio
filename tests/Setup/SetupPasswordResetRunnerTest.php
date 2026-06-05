@@ -31,7 +31,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
     public function testItFindsAndResetsUserPassword(): void
     {
         $runner = new SetupPasswordResetRunner(new NullWorkflowResultMessageReporter());
-        $databaseUrl = 'sqlite:///'.$this->databasePath;
+        $databaseUrl = $this->sqliteUrl($this->databasePath);
 
         $user = $runner->findUser($this->root, $databaseUrl, 'admin');
 
@@ -61,7 +61,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
     {
         $runner = new SetupPasswordResetRunner(new NullWorkflowResultMessageReporter());
 
-        $result = $runner->reset($this->root, 'sqlite:///'.$this->databasePath, 'missing', 'NewPassword1!');
+        $result = $runner->reset($this->root, $this->sqliteUrl($this->databasePath), 'missing', 'NewPassword1!');
 
         self::assertFalse($result->isSuccess());
         self::assertTrue($result->context()['halt_on_error']);
@@ -72,7 +72,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
         $databasePath = $this->root.'/var/prefixed-reset.db';
         $this->createSchema($databasePath, 'studio_');
         $runner = new SetupPasswordResetRunner(new NullWorkflowResultMessageReporter());
-        $databaseUrl = 'sqlite:///'.$databasePath;
+        $databaseUrl = $this->sqliteUrl($databasePath);
 
         $user = $runner->findUser($this->root, $databaseUrl, 'admin', 'studio_');
         $result = $runner->reset($this->root, $databaseUrl, 'admin', 'NewPassword1!', 'test', 'studio_');
@@ -95,7 +95,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
         $this->createSchema($databasePath, 'studio_');
         $runner = new SetupPasswordResetRunner(new NullWorkflowResultMessageReporter());
 
-        $result = $runner->reset($this->root, 'sqlite:///'.$databasePath, 'admin', 'NewPassword1!');
+        $result = $runner->reset($this->root, $this->sqliteUrl($databasePath), 'admin', 'NewPassword1!');
 
         self::assertFalse($result->isSuccess());
         self::assertSame('E_INVALID_ARGUMENT', $result->firstIssue()?->code());
@@ -117,6 +117,11 @@ final class SetupPasswordResetRunnerTest extends TestCase
             'settings' => '{"language":"default"}',
             'status' => 'active',
         ]);
+    }
+
+    private function sqliteUrl(string $path): string
+    {
+        return 'sqlite:///'.str_replace('\\', '/', $path);
     }
 
     private function removeDirectory(string $directory): void

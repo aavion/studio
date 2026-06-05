@@ -138,6 +138,8 @@ final class MessageKey
     public const OPERATION_FINISHED_UNKNOWN = 'message.operation.finished_unknown';
     public const PROCESS_COMMAND_FAILED = 'message.process.command_failed';
     public const PROCESS_COMMAND_COMPLETED = 'message.process.command_completed';
+    public const PROCESS_PHP_CLI_UNAVAILABLE = 'message.process.php_cli_unavailable';
+    public const TAILWIND_BUILD_DEFERRED = 'message.tailwind.build_deferred';
 
     public const ACCESS_GRANTED = 'message.access.granted';
     public const ACCESS_DENIED = 'message.access.denied';

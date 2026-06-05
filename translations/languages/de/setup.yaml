@@ -45,6 +45,7 @@ setup:
     show_details: 'Details anzeigen'
     summary:
       ok: 'Alles Nötige für das Setup ist bereit.'
+      warning: 'Setup kann fortfahren, aber eine optionale Server-Funktion benötigt Aufmerksamkeit.'
       healable: 'Setup kann in dieser Umgebung aktuell nicht ausgeführt werden.'
       failed: 'Einige Prüfungen benötigen eine Server- oder PHP-Konfigurationsänderung, bevor das Setup fortfahren kann.'
     errors:
@@ -55,6 +56,7 @@ setup:
       failed: 'FEHLER'
       missing: 'Fehlt'
       optional: 'Optional'
+      warning: 'WARNUNG'
     values:
       executable: 'ausführbar'
       not_detected: 'nicht erkannt'
@@ -62,13 +64,30 @@ setup:
       path: '%path%'
       php_version: 'PHP %version%'
       php_version_requirement: 'PHP %version% (erforderlich: %required% oder neuer)'
+      process_functions_available: 'PHP-Prozessfunktionen sind verfügbar'
+      process_functions_disabled: 'Deaktiviert: %functions%'
       present: 'vorhanden'
       missing: 'nicht vorhanden'
+      safe_mode_disabled: 'Safe Mode ist deaktiviert'
+      safe_mode_enabled: 'Safe Mode ist aktiviert'
       unavailable: 'nicht verfügbar'
+      binary_not_found: 'PHP-CLI-Binary konnte nicht erkannt werden'
+      console_unreadable: 'bin/console des Projekts ist für PHP-CLI nicht lesbar'
+      extension_missing: 'PHP-CLI fehlt eine erforderliche Erweiterung'
+      not_cli: 'Die aufgelöste PHP-Binary ist keine CLI-Binary'
+      php_version_too_old: 'Die PHP-CLI-Version erfüllt die Anforderung nicht'
+      process_disabled: 'PHP-Prozessfunktionen sind deaktiviert'
+      process_failed: 'PHP-CLI-Validierungsprozess ist fehlgeschlagen'
+      project_dir_unreadable: 'Das Projektverzeichnis ist für PHP-CLI nicht lesbar'
+      server_config: 'PHP-CLI wird durch die Server-Konfiguration blockiert'
+      validation_failed: 'PHP-CLI-Validierung ist fehlgeschlagen'
       writable: 'beschreibbar'
       composer_system: 'System-Composer verfügbar'
       composer_bundled: 'bin/composer verfügbar'
       composer_not_executable: 'bin/composer ist nicht ausführbar'
+      tailwind_available: 'automatischer Build verfügbar'
+      tailwind_blocked: 'durch Server-Policy blockiert'
+      tailwind_not_prepared: 'noch nicht vorbereitet'
       extensions_all_present: 'Alle %count% erforderlichen Erweiterungen sind vorhanden'
       optional_extensions_all_present: 'Alle %count% optionalen Datenbank-Erweiterungen sind vorhanden'
       extensions_missing: 'Fehlt: %extensions%'
@@ -104,6 +123,10 @@ setup:
         label: 'Datenbank-Erweiterungen'
         help: 'Optionale Datenbank-Erweiterungen sind verfügbar, wenn ihr Treiber gewählt wird.'
         instruction: 'Installiere diese Erweiterungen, wenn du MySQL/MariaDB oder PostgreSQL verwenden möchtest: %extensions%'
+      optional_media_extensions:
+        label: 'Medien-Erweiterungen'
+        help: 'Optionale Medien-Erweiterungen verbessern Bildverarbeitungsfunktionen.'
+        instruction: 'Installiere diese Erweiterungen, wenn erweiterte Bildverarbeitung benötigt wird: %extensions%'
       writable_paths:
         label: 'Beschreibbare Pfade'
         help: 'Diese Pfade sind aktuell nicht beschreibbar: %paths%'
@@ -112,12 +135,24 @@ setup:
         label: 'PHP-Version'
         help: 'Die aktuelle PHP-Laufzeit erfüllt die Projektanforderung.'
         instruction: 'Führe Setup mit einer von composer.json unterstützten PHP-Version aus.'
+      safe_mode:
+        label: 'PHP Safe Mode'
+        help: 'PHP Safe Mode ist deaktiviert.'
+        instruction: 'Deaktiviere PHP Safe Mode in der Server-Konfiguration.'
+      process_functions:
+        label: 'PHP-Prozessfunktionen'
+        help: 'Die für Symfony Process benötigten PHP-Funktionen sind verfügbar.'
+        instruction: 'Aktiviere die gelisteten PHP-Prozessfunktionen in der php.ini oder im Hosting-Control-Panel: %functions%'
       composer_binary:
         label: 'Composer'
         help: 'Setup kann PHP-Abhängigkeiten installieren und aktualisieren.'
         instruction: 'Installiere Composer global oder stelle bin/composer wieder her.'
+      tailwind_build:
+        label: 'Tailwind-Build'
+        help: 'Automatische Tailwind-Builds sind verfügbar.'
+        instruction: 'Automatische Tailwind-Builds sind blockiert. Wenn du Web-Asset-Rebuilds nutzen möchtest, erlaube native Build-Binaries für den Webserver, zum Beispiel durch Deaktivieren von MemoryDenyWriteExecute.'
       cli_runner:
-        label: 'CLI-Runner'
+        label: 'PHP-CLI-Binary'
         help: 'Setup kann PHP-CLI-Subprozesse für länger laufende Arbeiten starten.'
         instruction: 'Aktiviere PHP-CLI-Subprozesse oder führe Setup in einer Umgebung aus, die Hintergrundbefehle erlaubt.'
       extension_ctype:

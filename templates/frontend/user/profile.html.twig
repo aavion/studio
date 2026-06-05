@@ -8,9 +8,6 @@
             title: 'ui.user.profile.title'|trans,
             subtitle: 'ui.user.profile.subtitle'|trans,
         } only %}
-        {% if success|default(false) %}
-            <p class="studio-auth-notice">{{ 'ui.user.profile.success'|trans }}</p>
-        {% endif %}
         {% if errors|default([]) is not empty %}
             <ul class="studio-form-errors">
                 {% for error in errors %}

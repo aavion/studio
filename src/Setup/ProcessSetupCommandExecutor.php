@@ -7,10 +7,14 @@ namespace App\Setup;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
+use App\Core\Process\CliProcessEnvironment;
 use Symfony\Component\Process\Process;
 
 final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutorInterface
 {
+    /**
+     * @param array<string, string|false> $environment
+     */
     public function run(array $command, string $cwd, array $environment = []): SetupCommandResult
     {
         try {
@@ -29,18 +33,13 @@ final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutor
     }
 
     /**
-     * @param array<string, string> $environment
+     * @param array<string, string|false> $environment
      *
-     * @return array<string, string>
+     * @return array<string, string|false>
      */
     private function processEnvironment(string $cwd, array $environment): array
     {
-        $processEnvironment = [
-            ...$this->scalarEnvironment(getenv()),
-            ...$this->scalarEnvironment($_SERVER),
-            ...$this->scalarEnvironment($_ENV),
-            ...$environment,
-        ];
+        $processEnvironment = CliProcessEnvironment::fromCurrentProcess($environment);
 
         if (!$this->hasNonEmptyEnvironmentValue($processEnvironment, 'COMPOSER_HOME')) {
             $composerHome = $cwd.'/var/composer-home';
@@ -54,38 +53,19 @@ final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutor
             $processEnvironment['HOME'] = $home;
         }
 
+        if ($this->hasNonEmptyEnvironmentValue($processEnvironment, 'COMPOSER_CACHE_DIR')) {
+            $this->ensureDirectory($processEnvironment['COMPOSER_CACHE_DIR']);
+        }
+
         return $processEnvironment;
     }
 
     /**
-     * @param array<mixed>|false $environment
-     *
-     * @return array<string, string>
-     */
-    private function scalarEnvironment(array|false $environment): array
-    {
-        if (false === $environment) {
-            return [];
-        }
-
-        $scalars = [];
-        foreach ($environment as $name => $value) {
-            if (!is_string($name) || '' === trim($name) || !is_scalar($value)) {
-                continue;
-            }
-
-            $scalars[$name] = (string) $value;
-        }
-
-        return $scalars;
-    }
-
-    /**
-     * @param array<string, string> $environment
+     * @param array<string, string|false> $environment
      */
     private function hasNonEmptyEnvironmentValue(array $environment, string $name): bool
     {
-        return array_key_exists($name, $environment) && '' !== trim($environment[$name]);
+        return array_key_exists($name, $environment) && false !== $environment[$name] && '' !== trim($environment[$name]);
     }
 
     private function ensureDirectory(string $path): void

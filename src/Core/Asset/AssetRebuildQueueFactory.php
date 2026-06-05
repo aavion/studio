@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Core\Asset;
 
 use App\Core\Operation\ActionQueue;
+use App\Core\Operation\OperationActionInterface;
 use App\Core\Operation\Filesystem\RemovePathAction;
+use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Package\PackageAssetSyncAction;
 use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageAssetSyncer;
+use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Translation\TranslationAggregateAction;
 use App\Core\Translation\TranslationCatalogueAggregator;
 
@@ -19,29 +22,30 @@ final readonly class AssetRebuildQueueFactory
         private string $projectDir,
         private PackageAssetSyncer $packageAssetSyncer,
         private TranslationCatalogueAggregator $translationCatalogueAggregator,
+        private PhpCliBinaryManager $phpCliBinaryManager = new PhpCliBinaryManager(),
     ) {
     }
 
     /**
      * @param list<PackageAssetSyncPackage> $packages
      */
-    public function create(string $environment, array $packages, string $trigger = 'manual'): ActionQueue
+    public function create(string $environment, array $packages, string $trigger = 'manual', bool $persistPhpBinaryPreference = true): ActionQueue
     {
         $isProduction = 'prod' === $environment;
         $actions = [
             new PackageAssetSyncAction($this->packageAssetSyncer, $packages),
             new TranslationAggregateAction($this->translationCatalogueAggregator, $packages),
-            $this->consoleCommand('assets:install', $environment),
-            $this->consoleCommand('importmap:install', $environment),
-            $this->consoleCommand('tailwind:build', $environment, timeout: 300.0),
+            $this->consoleCommand('assets:install', $environment, $persistPhpBinaryPreference),
+            $this->consoleCommand('importmap:install', $environment, $persistPhpBinaryPreference),
+            $this->consoleCommand('tailwind:build', $environment, $persistPhpBinaryPreference, timeout: 300.0),
         ];
 
         if ($isProduction) {
             $actions[] = new RemovePathAction($this->projectDir, 'public/assets');
-            $actions[] = $this->consoleCommand('asset-map:compile', $environment, timeout: 300.0);
+            $actions[] = $this->consoleCommand('asset-map:compile', $environment, $persistPhpBinaryPreference, timeout: 300.0);
         }
 
-        $actions[] = $this->consoleCommand('cache:clear', $environment, timeout: 300.0);
+        $actions[] = $this->consoleCommand('cache:clear', $environment, $persistPhpBinaryPreference, timeout: 300.0);
 
         return ActionQueue::create('asset rebuild', $actions, context: [
             'environment' => $environment,
@@ -51,14 +55,29 @@ final readonly class AssetRebuildQueueFactory
         ]);
     }
 
-    private function consoleCommand(string $command, string $environment, ?float $timeout = 120.0): RunCommandAction
+    private function consoleCommand(string $command, string $environment, bool $persistPhpBinaryPreference, ?float $timeout = 120.0): OperationActionInterface
     {
-        return new RunCommandAction([
-            PHP_BINARY,
+        $resolution = $this->phpCliBinaryManager->resolve($this->projectDir, $environment, persistPreference: $persistPhpBinaryPreference);
+
+        if (!$resolution->isAvailable()) {
+            return new PhpCliUnavailableAction($command, $resolution->reason(), [
+                'environment' => $environment,
+                'project_dir' => $this->projectDir,
+            ]);
+        }
+
+        $consoleCommand = [
+            ...$resolution->commandPrefix(),
             $this->projectDir.'/bin/console',
             $command,
             '--env='.$environment,
             '--no-interaction',
-        ], $this->projectDir, timeout: $timeout);
+        ];
+
+        if ('tailwind:build' === $command) {
+            return new TailwindBuildAction($consoleCommand, $this->projectDir, $timeout);
+        }
+
+        return new RunCommandAction($consoleCommand, $this->projectDir, timeout: $timeout);
     }
 }
