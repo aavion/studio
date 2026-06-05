@@ -13,6 +13,7 @@
 - Info: [Grav Plugin Inspiration Notes](grav-plugin-inspiration-notes.md)
 - Info: [Symfony Documentation Notes](symfony-docs-notes.md)
 - Audit: [Test Suite Performance Audit 2026-06-01](test-suite-performance-audit-2026-06-01.md)
+- Audit: [Project Readiness Drift Audit 2026-06-05](audit-project-readiness-2026-06-05.md)
 - Tool: [Render Symfony Output](render.php)
 - Tool: [Compare Translation Keys](compare_translations.php)
 - Tool: [Global Project Lint](../bin/lint)

@@ -1,7 +1,7 @@
 # Project Rules
 
 > **Status**: Active  
-> **Updated**: 2026-05-23  
+> **Updated**: 2026-06-05  
 > **Owner**: Dominik Letica, OpenAI/Codex  
 > **Purpose:** Record project-wide decisions agents should remember across sessions.  
 
@@ -28,3 +28,25 @@
 - Content revisions are the stable unit for import previews, structured diffs, review, revert, and retention.
 - Imports may stage proposed changes as new revisions, diff those revisions against the active revision, and activate them only after review.
 - Cleanup and retention should be driven by nullable active pointers and configuration, not by hard-deleting historical rows by default.
+
+## Architecture And Development Rules
+
+- Modularity is preferred over monolithic implementations. Split large classes, controllers, services, tests, and helpers when the extracted boundary improves responsibility, reuse, readability, or LLM context stability.
+- Files should ideally stay below roughly 300 lines when that can be achieved without artificial fragmentation or needless indirection.
+- Public and contributor-facing callable, interface, hook, event, command, route, payload, translation-key, and extension-point names must be clear, consistent, and easy to document.
+- Add small wrapper or helper APIs when they make public or extension-facing behavior easier to explain, safer to call, or less error-prone.
+- Prefer Symfony, Doctrine, Twig, Messenger, Validator, Serializer, Process, Filesystem, Security, EventDispatcher, Form, Translation, and other maintained vendor capabilities over custom infrastructure unless the custom abstraction has clear project-specific value.
+- Additional vendor packages are acceptable when they reduce custom maintenance, improve portability/security, or integrate cleanly with Symfony without making the project unnecessarily heavy.
+- Keep tests behavior-focused. Secure public behavior, cross-platform assumptions, security boundaries, and data-model guarantees without pinning fragile template, CSS, or implementation details.
+- Performance and data-model decisions must be justified by expected behavior and scale, including identifier strategy, indexes, pagination, filtering, sorting, caching, filesystem scans, process spawning, request/visitor identifiers, and full-table or full-tree work.
+- Security and misuse resistance must be considered for public entry points, sessions, tokens, visitor/request identity, subprocesses, filesystem access, package/module boundaries, logging, audit data, secrets, and environment propagation.
+- Feature drafts, previous implementation choices, and early pre-`1.0.0` assumptions are guidance, not law. Prefer a simpler, safer, more Symfony-native, or more maintainable design when evidence supports changing course.
+
+## Architecture And Drift Audits
+
+- Run broad architecture and project-rules drift audits as reusable review gates, not as one-time cleanup exercises.
+- Use audits to verify that current code and new feature work still follow the architecture and development rules above.
+- Challenge feature drafts, previous implementation choices, and early pre-`1.0.0` assumptions during audits instead of treating them as binding.
+- Review performance and data-model decisions critically, including UUIDs versus auto-increment identifiers, indexes, pagination, filtering, sorting, caching, filesystem scans, process spawning, request/visitor identifiers, and full-table or full-tree work.
+- Review security and misuse resistance around public entry points, sessions, tokens, visitor/request identity, subprocesses, filesystem access, package/module boundaries, logging, audit data, secrets, and environment propagation.
+- Capture audit findings with evidence, impact, recommendation, and priority. Apply small safe improvements directly; split larger refactors into dedicated follow-up issues or audit PR slices.
