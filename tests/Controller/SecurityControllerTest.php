@@ -52,15 +52,9 @@ final class SecurityControllerTest extends WebTestCase
     public function testLogoutRouteRendersConfirmationWithoutEndingSession(): void
     {
         $client = self::createClient();
-        $this->createUserWithLevel(8, 'logoutadmin', 'correct-password');
+        $user = $this->createUserWithLevel(8, 'logoutadmin', 'correct-password');
 
-        $crawler = $client->request('GET', '/user/login');
-        $form = $crawler->selectButton('Sign in')->form([
-            'username' => 'logoutadmin',
-            'password' => 'correct-password',
-        ]);
-
-        $client->submit($form);
+        $client->loginUser($user);
         $client->request('GET', '/user/logout');
 
         self::assertResponseIsSuccessful();
