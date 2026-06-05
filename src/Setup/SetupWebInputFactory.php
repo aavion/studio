@@ -20,6 +20,7 @@ final readonly class SetupWebInputFactory
         private SetupLanguageCatalog $languageCatalog = new SetupLanguageCatalog(),
         private SetupPasswordPolicy $passwordPolicy = new SetupPasswordPolicy(),
         private SetupSiteSettings $siteSettings = new SetupSiteSettings(),
+        private SetupInputNormalizer $inputNormalizer = new SetupInputNormalizer(),
         private ?array $extensionAvailability = null,
     ) {
     }
@@ -39,11 +40,11 @@ final readonly class SetupWebInputFactory
             ...$this->siteSettings->defaults(),
             'database_driver' => $this->defaultDatabaseDriver($databaseUrl),
             'database_url' => $databaseUrl,
-            'database_host' => $this->databaseUrlPart($databaseUrl, 'host') ?? '127.0.0.1',
-            'database_port' => $this->databaseUrlPart($databaseUrl, 'port') ?? '',
-            'database_name' => $this->databaseUrlPathName($databaseUrl) ?? 'app',
-            'database_user' => $this->databaseUrlPart($databaseUrl, 'user') ?? 'app',
-            'database_password' => $this->databaseUrlPart($databaseUrl, 'pass') ?? '',
+            'database_host' => $this->inputNormalizer->databaseUrlPart($databaseUrl, 'host') ?? '127.0.0.1',
+            'database_port' => $this->inputNormalizer->databaseUrlPart($databaseUrl, 'port') ?? '',
+            'database_name' => $this->inputNormalizer->databaseUrlPathName($databaseUrl) ?? 'app',
+            'database_user' => $this->inputNormalizer->databaseUrlPart($databaseUrl, 'user') ?? 'app',
+            'database_password' => $this->inputNormalizer->databaseUrlPart($databaseUrl, 'pass') ?? '',
             'database_prefix' => $this->databasePrefixInputValue($this->defaultDatabasePrefix()),
             'admin_username' => 'admin',
             'admin_email' => '',
@@ -83,7 +84,7 @@ final readonly class SetupWebInputFactory
 
     public function databasePrefixInputValue(string $prefix): string
     {
-        return str_ends_with($prefix, '_') ? substr($prefix, 0, -1) : $prefix;
+        return $this->inputNormalizer->databasePrefixInputValue($prefix);
     }
 
     private function defaultDatabasePrefix(): string
@@ -95,7 +96,7 @@ final readonly class SetupWebInputFactory
 
     private function defaultDatabaseDriver(string $databaseUrl): string
     {
-        $driver = $this->driverFromDatabaseUrl($databaseUrl)->value;
+        $driver = $this->inputNormalizer->driverFromDatabaseUrl($databaseUrl)->value;
         $options = $this->databaseDriverOptions();
 
         return isset($options[$driver]) ? $driver : (array_key_first($options) ?? DatabaseDriver::SQLite->value);
@@ -214,7 +215,7 @@ final readonly class SetupWebInputFactory
 
             if (isset($submitted[$key]) && is_scalar($submitted[$key])) {
                 $values[$key] = 'database_prefix' === $key
-                    ? $this->normalizePrefix((string) $submitted[$key])
+                    ? $this->inputNormalizer->normalizeDatabasePrefix((string) $submitted[$key])
                     : trim((string) $submitted[$key]);
             }
         }
@@ -271,7 +272,7 @@ final readonly class SetupWebInputFactory
             $errors['database_port'][] = 'setup.form.errors.port';
         }
 
-        if ('' !== trim((string) $values['database_url']) && !$this->isValidDatabaseUrl((string) $values['database_url'], $driver)) {
+        if ('' !== trim((string) $values['database_url']) && !$this->inputNormalizer->isValidDatabaseUrl((string) $values['database_url'], $driver)) {
             $errors['database_url'][] = 'setup.form.errors.database_url';
         }
 
@@ -313,78 +314,11 @@ final readonly class SetupWebInputFactory
 
     private function databaseDriver(string $value): DatabaseDriver
     {
-        return match ($value) {
-            DatabaseDriver::MySql->value => DatabaseDriver::MySql,
-            DatabaseDriver::PostgreSql->value => DatabaseDriver::PostgreSql,
-            default => DatabaseDriver::SQLite,
-        };
+        return $this->inputNormalizer->databaseDriverFromFormValue($value);
     }
 
     private function boolValue(mixed $value): bool
     {
-        if (is_bool($value)) {
-            return $value;
-        }
-
-        return is_scalar($value) && in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
-    }
-
-    private function normalizePrefix(string $prefix): string
-    {
-        $prefix = trim($prefix);
-
-        return '' === $prefix ? '' : rtrim($prefix, '_').'_';
-    }
-
-    private function isValidDatabaseUrl(string $databaseUrl, DatabaseDriver $driver): bool
-    {
-        if (DatabaseDriver::SQLite === $driver) {
-            return str_starts_with($databaseUrl, 'sqlite:///')
-                && '' !== trim((string) preg_replace('#^sqlite:///#', '', $databaseUrl));
-        }
-
-        $scheme = parse_url($databaseUrl, PHP_URL_SCHEME);
-        $host = parse_url($databaseUrl, PHP_URL_HOST);
-        $allowedSchemes = DatabaseDriver::MySql === $driver
-            ? ['mysql', 'mariadb']
-            : ['pgsql', 'postgres', 'postgresql'];
-
-        return is_string($scheme)
-            && in_array($scheme, $allowedSchemes, true)
-            && is_string($host)
-            && '' !== trim($host);
-    }
-
-    private function driverFromDatabaseUrl(string $databaseUrl): DatabaseDriver
-    {
-        return match ((string) parse_url($databaseUrl, PHP_URL_SCHEME)) {
-            'mysql', 'mariadb' => DatabaseDriver::MySql,
-            'pgsql', 'postgres', 'postgresql' => DatabaseDriver::PostgreSql,
-            default => DatabaseDriver::SQLite,
-        };
-    }
-
-    private function databaseUrlPart(string $databaseUrl, string $part): ?string
-    {
-        $value = parse_url($databaseUrl, match ($part) {
-            'host' => PHP_URL_HOST,
-            'port' => PHP_URL_PORT,
-            'user' => PHP_URL_USER,
-            'pass' => PHP_URL_PASS,
-            default => -1,
-        });
-
-        return is_scalar($value) ? (string) $value : null;
-    }
-
-    private function databaseUrlPathName(string $databaseUrl): ?string
-    {
-        $path = parse_url($databaseUrl, PHP_URL_PATH);
-
-        if (!is_string($path) || '' === trim($path, '/')) {
-            return null;
-        }
-
-        return rawurldecode(trim($path, '/'));
+        return $this->inputNormalizer->boolValue($value);
     }
 }

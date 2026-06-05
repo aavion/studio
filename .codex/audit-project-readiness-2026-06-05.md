@@ -649,6 +649,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Setup/SetupCliInputFactory.php:18`, `src/Setup/SetupCliInputFactory.php:39`, `src/Setup/SetupCliInputFactory.php:119`, `src/Setup/SetupCliInputFactory.php:197`, `src/Setup/SetupWebInputFactory.php:18`, `src/Setup/SetupWebInputFactory.php:68`, `src/Setup/SetupWebInputFactory.php:160`, `src/Setup/SetupWebInputFactory.php:282`.
 - **Impact:** Current behavior is aligned enough, but setup validation can drift between interactive CLI and web setup. That is especially risky for platform requirements and database URL handling because those paths are supposed to be equivalent entry points.
 - **Recommendation:** Extract shared `SetupInputNormalizer`/`SetupInputValidator` services and keep CLI/web factories as thin transport adapters. Reuse the same database/default-URI/admin validation and error keys in both flows.
+- **Implementation note:** First split completed with `SetupInputNormalizer` for shared CLI/web database-driver, database-URL, prefix, boolean, and default-admin-email normalization. A shared `SetupInputValidator` remains open because web step-scoped field errors and CLI prompt failures still have different presentation needs.
 - **Priority:** Before Release.
 
 ### F-041 Setup seeding owns too many domain defaults and raw schema details

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Message\MessageKey;
-use App\Core\Validation\EmailAddress;
 use App\View\SystemPackageMetadataProvider;
 
 final class SetupCliInputFactory
@@ -23,6 +22,7 @@ final class SetupCliInputFactory
         private readonly SetupLanguageCatalog $languageCatalog = new SetupLanguageCatalog(),
         SetupMessageTranslator $translator = new SetupMessageTranslator(),
         private readonly SetupSiteSettings $siteSettings = new SetupSiteSettings(),
+        private readonly SetupInputNormalizer $inputNormalizer = new SetupInputNormalizer(),
         private readonly ?array $extensionAvailability = null,
         mixed $input = null,
         mixed $output = null,
@@ -69,7 +69,7 @@ final class SetupCliInputFactory
                 MessageKey::SETUP_PROMPT_ADMIN_PASSWORD,
                 MessageKey::SETUP_PROMPT_ADMIN_PASSWORD_CONFIRM,
             ),
-            adminEmail: $this->prompter->value($options, 'admin-email', self::adminEmailFromDefaultUri($defaultUri), $interactive, $language, MessageKey::SETUP_PROMPT_ADMIN_EMAIL),
+            adminEmail: $this->prompter->value($options, 'admin-email', $this->inputNormalizer->adminEmailFromDefaultUri($defaultUri), $interactive, $language, MessageKey::SETUP_PROMPT_ADMIN_EMAIL),
             appSecret: $this->prompter->value($options, 'app-secret', '', $interactive, $language, MessageKey::SETUP_PROMPT_APP_SECRET) ?: null,
             siteSettings: $this->siteSettings($options),
             dryRun: array_key_exists('dry-run', $options),
@@ -100,7 +100,7 @@ final class SetupCliInputFactory
             'statistics-respect-dnt' => 'statistics_respect_dnt',
         ] as $option => $name) {
             if (array_key_exists($option, $options)) {
-                $values[$name] = $this->boolOption($options[$option]);
+                $values[$name] = $this->inputNormalizer->boolValue($options[$option], falseMeansTrue: true);
             }
         }
 
@@ -180,14 +180,14 @@ final class SetupCliInputFactory
         $defaultDriver = $this->driverFromDatabaseUrl($databaseUrl);
         $default = $this->databaseDriverAvailable($defaultDriver) ? $defaultDriver->value : $availableDrivers[0]->value;
         $value = $this->option($options, 'db-driver', $default);
-        $selectedDriver = $this->databaseDriverFromValue($value);
+        $selectedDriver = $this->inputNormalizer->databaseDriverFromValue($value);
 
         if (isset($options['database-url']) && !isset($options['db-driver'])) {
             return $this->requireAvailableDatabaseDriver($this->driverFromDatabaseUrl($databaseUrl));
         }
 
         if (isset($options['database-url']) && isset($options['db-driver']) && null !== $databaseUrl) {
-            $urlDriver = $this->driverFromDatabaseUrl($databaseUrl);
+            $urlDriver = $this->inputNormalizer->driverFromDatabaseUrl($databaseUrl);
 
             if ($selectedDriver !== $urlDriver) {
                 throw new \InvalidArgumentException(sprintf(
@@ -205,20 +205,10 @@ final class SetupCliInputFactory
                 array_map(static fn (DatabaseDriver $driver): string => $driver->value, $availableDrivers),
                 $default,
             );
-            $selectedDriver = $this->databaseDriverFromValue($value);
+            $selectedDriver = $this->inputNormalizer->databaseDriverFromValue($value);
         }
 
         return $this->requireAvailableDatabaseDriver($selectedDriver);
-    }
-
-    private function databaseDriverFromValue(?string $value): DatabaseDriver
-    {
-        return match ($value) {
-            'mysql', 'mariadb' => DatabaseDriver::MySql,
-            'postgres', 'pgsql', 'postgresql' => DatabaseDriver::PostgreSql,
-            'sqlite', null => DatabaseDriver::SQLite,
-            default => throw new \InvalidArgumentException(sprintf('Unsupported database driver "%s".', $value)),
-        };
     }
 
     /**
@@ -252,11 +242,7 @@ final class SetupCliInputFactory
 
     private function databaseDriverExtension(DatabaseDriver $driver): string
     {
-        return match ($driver) {
-            DatabaseDriver::SQLite => 'pdo_sqlite',
-            DatabaseDriver::MySql => 'pdo_mysql',
-            DatabaseDriver::PostgreSql => 'pdo_pgsql',
-        };
+        return $this->inputNormalizer->databaseDriverExtension($driver);
     }
 
     /**
@@ -304,25 +290,7 @@ final class SetupCliInputFactory
      */
     private function serverDatabaseDefaults(?string $databaseUrl, DatabaseDriver $driver): array
     {
-        $defaults = [
-            'host' => '127.0.0.1',
-            'port' => DatabaseDriver::MySql === $driver ? '3306' : '5432',
-            'name' => 'studio',
-            'user' => 'studio',
-            'password' => '',
-        ];
-
-        if (null === $databaseUrl || $driver !== $this->driverFromDatabaseUrl($databaseUrl)) {
-            return $defaults;
-        }
-
-        return [
-            'host' => (string) (parse_url($databaseUrl, PHP_URL_HOST) ?: $defaults['host']),
-            'port' => (string) (parse_url($databaseUrl, PHP_URL_PORT) ?: $defaults['port']),
-            'name' => urldecode(trim((string) parse_url($databaseUrl, PHP_URL_PATH), '/')) ?: $defaults['name'],
-            'user' => urldecode((string) (parse_url($databaseUrl, PHP_URL_USER) ?: $defaults['user'])),
-            'password' => urldecode((string) (parse_url($databaseUrl, PHP_URL_PASS) ?: $defaults['password'])),
-        ];
+        return $this->inputNormalizer->serverDatabaseDefaults($databaseUrl, $driver);
     }
 
     /**
@@ -341,15 +309,7 @@ final class SetupCliInputFactory
 
     private function driverFromDatabaseUrl(?string $databaseUrl): DatabaseDriver
     {
-        if (null === $databaseUrl || '' === trim($databaseUrl)) {
-            return DatabaseDriver::SQLite;
-        }
-
-        return match ((string) parse_url($databaseUrl, PHP_URL_SCHEME)) {
-            'mysql', 'mariadb' => DatabaseDriver::MySql,
-            'pgsql', 'postgres', 'postgresql' => DatabaseDriver::PostgreSql,
-            default => DatabaseDriver::SQLite,
-        };
+        return $this->inputNormalizer->driverFromDatabaseUrl($databaseUrl);
     }
 
     private function option(array $options, string $name, ?string $default = null): ?string
@@ -361,18 +321,9 @@ final class SetupCliInputFactory
 
     private function normalizePrefix(?string $prefix): ?string
     {
-        $prefix = trim((string) $prefix);
+        $prefix = $this->inputNormalizer->normalizeDatabasePrefix((string) $prefix);
 
-        return '' === $prefix ? null : rtrim($prefix, '_').'_';
-    }
-
-    private function boolOption(string|false $value): bool
-    {
-        if (false === $value) {
-            return true;
-        }
-
-        return in_array(strtolower($value), ['1', 'true', 'yes', 'on', 'enabled'], true);
+        return '' === $prefix ? null : $prefix;
     }
 
     private function environment(string $key, ?string $default = null): string
@@ -380,14 +331,4 @@ final class SetupCliInputFactory
         return (string) ($_SERVER[$key] ?? $_ENV[$key] ?? $default);
     }
 
-    private static function adminEmailFromDefaultUri(string $defaultUri): string
-    {
-        $host = parse_url($defaultUri, PHP_URL_HOST);
-
-        if (!is_string($host) || '' === $host || !EmailAddress::isValid('admin@'.$host)) {
-            $host = 'localhost.local';
-        }
-
-        return EmailAddress::normalize('admin@'.$host);
-    }
 }

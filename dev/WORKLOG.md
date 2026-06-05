@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Added a shared setup input normalizer for CLI/web database driver, URL, prefix, boolean, and default admin-email handling while leaving step-scoped web validation and interactive CLI prompts transport-specific.
 - Split setup database seeding into a small facade plus focused config, admin-account, initial-content, and state-marker writers while keeping seed data centralized in `SetupDefaultSeed`.
 - Split package lifecycle admin handling into a thin facade plus focused detail-provider, review-provider, and action-handler services so package metadata presentation and lifecycle mutations no longer share one class.
 - Split navigation building internals into focused repository, access-filter, URL-resolver, and tree/slice services while preserving `NavigationBuilder::build()` and `NavigationBuilder::collectItems()` as the public facade for themes and packages.
