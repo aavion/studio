@@ -15,8 +15,11 @@ use App\Entity\ExtensionPackage;
 use App\Entity\SchedulerTask;
 use App\Entity\SchedulerTaskRun;
 use App\Scheduler\SchedulerLockFactory;
+use App\Scheduler\SchedulerDueTaskSelector;
+use App\Scheduler\SchedulerRunReporter;
 use App\Scheduler\SchedulerRunner;
 use App\Scheduler\SchedulerSettings;
+use App\Scheduler\SchedulerTaskRunRecorder;
 use App\Scheduler\SchedulerTaskDefinition;
 use App\Scheduler\SchedulerTaskExecution;
 use App\Scheduler\SchedulerTaskExecutorInterface;
@@ -482,18 +485,21 @@ final class SchedulerRunnerTest extends KernelTestCase
         ?ActivePackageProviderInterface $activePackageProvider = null,
     ): SchedulerRunner
     {
+        $settings = new SchedulerSettings(new Config($this->entityManager->getConnection()));
+        $activePackages = $activePackageProvider ?? new TestActivePackageProvider();
+        $messageLogger = new TestSchedulerMessageLogger();
+        $reporter = new SchedulerRunReporter($messageLogger);
+
         return new SchedulerRunner(
-            new SchedulerSettings(new Config($this->entityManager->getConnection())),
+            $settings,
             $this->synchronizer($provider),
-            $this->entityManager,
-            [$executor],
             new SchedulerLockFactory(
                 new LockFactory(new FlockStore(sys_get_temp_dir().'/studio-scheduler-test-'.bin2hex(random_bytes(4)))),
                 'test',
             ),
-            new UuidFactory(),
-            new TestSchedulerMessageLogger(),
-            $activePackageProvider ?? new TestActivePackageProvider(),
+            new SchedulerDueTaskSelector($settings, $activePackages),
+            new SchedulerTaskRunRecorder($this->entityManager, [$executor], new UuidFactory(), $reporter),
+            $reporter,
         );
     }
 }

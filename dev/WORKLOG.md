@@ -61,10 +61,10 @@
 - Harden database-prefix coverage by keeping Doctrine metadata self-checked against `TablePrefix::TABLES`, validating prefixed ORM metadata, and covering raw DBAL insert/update/join/delete prefix rewriting.
 - Removed hard-coded profile language options so profile language choices are generated from the dynamic translation-language catalog, matching the project rule that future languages must not require template or controller rewrites.
 - Migrated live-operation runner serialization to Symfony Lock while retaining the runner status file for Admin Operations visibility and making stale cleanup respect still-held framework locks.
-- Recorded the child-process environment policy in the repository agent guide and closed the audit check that application subprocesses use the central Dotenv-preserving, web/CGI-filtering process helpers.
+- Recorded the child-process environment policy in `.codex/PROJECT_RULES.md` and closed the audit check that application subprocesses use the central Dotenv-preserving, web/CGI-filtering process helpers.
 - Closed the detached-process audit check after verifying live-operation and Messenger-drain process starts share `DetachedProcessStarter`; remaining raw process helpers are confined to tests and script linting.
 - Closed the live JSON route audit note by recording the D18 boundary: `/api/live/**` remains internal application JSON, while external integrations belong under versioned `/api/v1/**` routes.
-- Split scheduler due-task selection into `SchedulerDueTaskSelector`, keeping `SchedulerRunner` as the execution facade while moving package/runnability checks and skipped-task result shaping out of the runner.
+- Split scheduler execution into `SchedulerRunner` as a thin facade plus `SchedulerDueTaskSelector`, `SchedulerTaskRunRecorder`, `SchedulerFailurePolicy`, and `SchedulerRunReporter` for due selection, persistent run recording, failure thresholds, and reporting.
 - Fixed content read fallback reporting so implicit/default language resolution does not emit a language-fallback warning when only the requested variant falls back.
 - ! Keep Symfony service discovery narrow so DTOs, value objects, messages, events, enums, and other non-services do not bloat the container.
 - [ ] Finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.

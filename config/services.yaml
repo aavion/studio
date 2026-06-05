@@ -135,7 +135,7 @@ services:
         arguments:
             $providers: !tagged_iterator { tag: studio.scheduler_task_provider }
 
-    App\Scheduler\SchedulerRunner:
+    App\Scheduler\SchedulerTaskRunRecorder:
         arguments:
             $executors: !tagged_iterator { tag: studio.scheduler_task_executor }
 
