@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Backend\PackageLifecycleAdmin;
-use App\Core\Console\ConsoleWorkflowResultRenderer;
+use App\Core\Console\ConsoleResultRenderer;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -20,9 +20,8 @@ final class PackageLifecycleCommand extends Command
 {
     public function __construct(
         private readonly PackageLifecycleAdmin $packageLifecycleAdmin,
-        private readonly ConsoleWorkflowResultRenderer $resultRenderer,
-    )
-    {
+        private readonly ConsoleResultRenderer $resultRenderer,
+    ) {
         parent::__construct();
     }
 
@@ -39,6 +38,6 @@ final class PackageLifecycleCommand extends Command
         $action = (string) $input->getArgument('action');
         $result = $this->packageLifecycleAdmin->apply($packageName, $action);
 
-        return $this->resultRenderer->write($output, $result);
+        return $this->resultRenderer->writeWorkflow($output, $result);
     }
 }

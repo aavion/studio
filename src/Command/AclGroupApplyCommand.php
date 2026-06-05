@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Core\Console\ConsoleWorkflowResultRenderer;
+use App\Core\Console\ConsoleResultRenderer;
 use App\Security\AclGroupApplyService;
 use JsonException;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -22,9 +22,8 @@ final class AclGroupApplyCommand extends Command
 {
     public function __construct(
         private readonly AclGroupApplyService $applyService,
-        private readonly ConsoleWorkflowResultRenderer $resultRenderer,
-    )
-    {
+        private readonly ConsoleResultRenderer $resultRenderer,
+    ) {
         parent::__construct();
     }
 
@@ -46,7 +45,7 @@ final class AclGroupApplyCommand extends Command
             $this->payload((string) ($input->getOption('payload') ?? '')),
         );
 
-        return $this->resultRenderer->write($output, $result);
+        return $this->resultRenderer->writeWorkflow($output, $result);
     }
 
     /**

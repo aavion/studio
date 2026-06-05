@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Command;
 
 use App\Command\PackageDiscoveryCommand;
+use App\Core\Console\ConsoleResultRenderer;
 use App\Core\Package\PackageDiscovery;
 use App\Core\Package\PackageDiscoveryDispatcher;
 use App\Core\Package\PackageDiscoveryMessage;
@@ -107,6 +108,7 @@ final class PackageDiscoveryCommandTest extends KernelTestCase
                 new NullWorkflowResultMessageReporter(),
             ),
             new IdentityTranslator(),
+            new ConsoleResultRenderer(),
         );
     }
 }

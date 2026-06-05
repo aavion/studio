@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\Asset\AssetRebuildQueueFactory;
+use App\Core\Console\ConsoleResultRenderer;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationActionInterface;
@@ -34,6 +35,7 @@ final class AssetRebuildCommand extends Command
         private readonly AssetRebuildQueueFactory $queueFactory,
         private readonly OperationExecutor $operationExecutor,
         private readonly PackageAssetRebuildDispatcher $rebuildDispatcher,
+        private readonly ConsoleResultRenderer $resultRenderer,
     ) {
         parent::__construct();
     }
@@ -60,7 +62,7 @@ final class AssetRebuildCommand extends Command
             $result = $this->rebuildDispatcher->dispatch($this->kernel->getEnvironment(), $trigger);
 
             if ($json) {
-                $output->writeln($this->json($result->toArray()));
+                $this->resultRenderer->writeWorkflow($output, $result, true);
             } elseif ($result->isSuccess()) {
                 $io->success('Asset rebuild queued.');
             } else {
@@ -97,7 +99,7 @@ final class AssetRebuildCommand extends Command
             }
 
             if ($json) {
-                $output->writeln($this->json($payload));
+                $this->resultRenderer->writeJsonPayload($output, $payload, true);
             } else {
                 $io->title('Asset rebuild dry-run');
                 if (null !== $packageProviderError) {
@@ -117,7 +119,7 @@ final class AssetRebuildCommand extends Command
         );
 
         if ($json) {
-            $output->writeln($this->json($execution->toArray()));
+            $this->resultRenderer->writeJsonPayload($output, $execution->toArray(), true);
         } elseif ($execution->result()->isSuccess()) {
             $io->success('Asset rebuild completed.');
         } else {
@@ -182,18 +184,10 @@ final class AssetRebuildCommand extends Command
         ];
 
         if ($json) {
-            $output->writeln($this->json($payload));
+            $this->resultRenderer->writeJsonPayload($output, $payload, true);
             return;
         }
 
         $io->error('Active packages could not be loaded; asset rebuild was not started.');
-    }
-
-    /**
-     * @param array<string, mixed> $payload
-     */
-    private function json(array $payload): string
-    {
-        return (string) json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 }

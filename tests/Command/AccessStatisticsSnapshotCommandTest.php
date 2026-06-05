@@ -7,6 +7,7 @@ namespace App\Tests\Command;
 use App\Command\AccessStatisticsSnapshotCommand;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\Console\ConsoleResultRenderer;
 use App\Core\Statistics\AccessStatisticsAggregator;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Core\Statistics\AccessStatisticsSnapshotProvider;
@@ -82,7 +83,7 @@ final class AccessStatisticsSnapshotCommandTest extends KernelTestCase
             $window,
             $policy,
         );
-        $tester = new CommandTester(new AccessStatisticsSnapshotCommand($provider, $policy, $window));
+        $tester = new CommandTester(new AccessStatisticsSnapshotCommand($provider, $policy, $window, new ConsoleResultRenderer()));
 
         $exitCode = $tester->execute(['--json' => true, '--window' => '24h']);
         $payload = json_decode($tester->getDisplay(), true, flags: JSON_THROW_ON_ERROR);

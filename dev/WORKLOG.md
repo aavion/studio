@@ -65,6 +65,7 @@
 - Closed the detached-process audit check after verifying live-operation and Messenger-drain process starts share `DetachedProcessStarter`; remaining raw process helpers are confined to tests and script linting.
 - Closed the live JSON route audit note by recording the D18 boundary: `/api/live/**` remains internal application JSON, while external integrations belong under versioned `/api/v1/**` routes.
 - Split scheduler execution into `SchedulerRunner` as a thin facade plus `SchedulerDueTaskSelector`, `SchedulerTaskRunRecorder`, `SchedulerFailurePolicy`, and `SchedulerRunReporter` for due selection, persistent run recording, failure thresholds, and reporting.
+- Replaced the workflow-only console renderer with `ConsoleResultRenderer` so console commands share WorkflowResult text/JSON output, JSON payload writing, and status/exit-code mapping.
 - Fixed content read fallback reporting so implicit/default language resolution does not emit a language-fallback warning when only the requested variant falls back.
 - ! Keep Symfony service discovery narrow so DTOs, value objects, messages, events, enums, and other non-services do not bloat the container.
 - [ ] Finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.

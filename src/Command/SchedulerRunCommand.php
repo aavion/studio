@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Core\Console\ConsoleResultRenderer;
 use App\Scheduler\SchedulerRunner;
 use App\Scheduler\SchedulerTaskDefinition;
 use App\Scheduler\SchedulerTaskRegistry;
@@ -22,6 +23,7 @@ final class SchedulerRunCommand extends Command
     public function __construct(
         private readonly SchedulerRunner $runner,
         private readonly SchedulerTaskRegistry $registry,
+        private readonly ConsoleResultRenderer $resultRenderer,
     ) {
         parent::__construct();
     }
@@ -48,7 +50,7 @@ final class SchedulerRunCommand extends Command
         $payload = $result->toArray();
 
         if ((bool) $input->getOption('json')) {
-            $output->writeln(json_encode($payload, JSON_THROW_ON_ERROR));
+            $this->resultRenderer->writeJsonPayload($output, $payload);
         } else {
             $output->writeln(sprintf('Scheduler status: %s', $payload['status']));
             foreach ($payload['tasks'] as $task) {

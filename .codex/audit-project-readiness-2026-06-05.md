@@ -415,6 +415,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Command/AssetRebuildCommand.php:48`, `src/Command/AssetRebuildCommand.php:130`, `src/Command/PackageAssetSyncCommand.php:47`, `src/Command/PackageDiscoveryCommand.php:40`, `src/Command/SchedulerRunCommand.php:42`, `src/Command/AclGroupApplyCommand.php:35`, `src/Command/PackageLifecycleCommand.php:35`.
 - **Impact:** Current behavior is acceptable, but new API/CLI automation surfaces may drift in JSON shape and failure semantics. Reviewers and docs must explain each command separately even though most follow the same pattern.
 - **Recommendation:** Add a small `ConsoleResultRenderer` or `WorkflowResultConsoleRenderer` for JSON/text rendering, message formatting, and command exit-code mapping. Keep command classes as thin input adapters.
+- **Implementation note:** Shared rendering completed with `ConsoleResultRenderer`, which owns WorkflowResult text/JSON output, generic JSON payload writing, and status/WorkflowResult exit-code mapping. ACL group, package lifecycle, package discovery, scheduler run, statistics snapshot, asset rebuild, and package asset sync commands now reuse the shared JSON/result helpers while preserving their command-specific text summaries.
 - **Priority:** Before API / Scheduler expansion.
 
 ### F-015 Schema custom Twig needs a clear trust boundary before editor/module work
