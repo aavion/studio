@@ -728,6 +728,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Controller/LiveOperationController.php:26`, `src/Controller/LiveOperationController.php:29`, `src/Controller/LiveOperationController.php:43`, `src/Controller/LiveOperationController.php:46`, `src/Controller/LiveOperationController.php:88`, `src/Controller/LiveOperationController.php:98`.
 - **Impact:** The tokenized endpoint is useful for setup/admin live progress and does not depend on cookies. However, `/api` will soon become a documented product surface, while these routes are internal operational plumbing. Query-string tokens are also more likely to appear in browser history, diagnostics, and copied URLs than header/body credentials.
 - **Recommendation:** Before the API feature, decide whether internal operational JSON moves to an internal prefix such as `/_studio/live/operations/*` or becomes a documented internal API namespace. Prefer POST/body or short-lived session-bound continuation tokens where practical, and document why polling status tokens may remain in URLs if they do.
+- **Implementation note:** Product decision D18 keeps `/api/live/**` as an application-owned internal JSON branch outside the stable external API contract. The first stable integration API remains reserved for versioned routes such as `/api/v1/**`; the API draft and class map already document this boundary.
 - **Priority:** Before API.
 
 ## Cross-Cutting Passes
