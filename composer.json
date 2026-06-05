@@ -59,7 +59,6 @@
         "symfony/monolog-bundle": "^4.0.2",
         "symfony/notifier": "8.1.*",
         "symfony/polyfill-php85": "^1.38",
-        "symfony/polyfill-uuid": "^1.37",
         "symfony/process": "8.1.*",
         "symfony/property-access": "8.1.*",
         "symfony/property-info": "8.1.*",
