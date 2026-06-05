@@ -38,6 +38,19 @@ final class MailLocaleResolverTest extends TestCase
         self::assertSame('en', $resolver->forPublicRequest($request));
     }
 
+    public function testItIgnoresUnsupportedUserLanguageBeforePublicRequestLocaleFallback(): void
+    {
+        $resolver = $this->resolver('de');
+        $user = new UserAccount('55555555-5555-4555-8555-555555555556', 'staleuserlocale', 'stale-locale@example.test', 'hash', settings: [
+            'language' => 'fr',
+        ]);
+        $request = Request::create('/user/reset-password');
+        $request->setLocale('en');
+
+        self::assertSame('en', $resolver->forPublicRequest($request, $user));
+    }
+
+
     public function testItFallsBackToDefaultLocaleForAdminFlows(): void
     {
         $resolver = $this->resolver('de');

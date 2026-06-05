@@ -67,6 +67,20 @@ final class SetupPreflightCheckerTest extends TestCase
         self::assertContains('writable_paths', $detailKeys);
     }
 
+    public function testItMapsPhpCliValidationFailuresToTranslatedValueKeys(): void
+    {
+        unlink($this->root.'/bin/console');
+
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $cliRunner = array_values(array_filter($result['checks'], static fn (array $check): bool => 'cli_runner' === $check['key']))[0] ?? null;
+
+        self::assertFalse($result['ok']);
+        self::assertSame('failed', $cliRunner['status'] ?? null);
+        self::assertSame('setup.preflight.values.console_unreadable', $cliRunner['value_key'] ?? null);
+    }
+
     public function testItReportsTailwindSmokeBuildAsOptionalWarning(): void
     {
         $result = (new SetupPreflightChecker())->check($this->root, 'test', autoHeal: true, server: [

@@ -213,7 +213,7 @@ final class SetupRunner
                     $input,
                     $appSecret,
                     $databaseUrl,
-                    $this->migrationCommand($input),
+                    $this->dryRunMigrationCommand($input),
                 ),
             ];
         }
@@ -518,6 +518,22 @@ final class SetupRunner
     {
         return [
             ...$this->phpCliCommandPrefix($input),
+            $this->projectDir.'/bin/console',
+            'doctrine:migrations:migrate',
+            '--no-interaction',
+            '--env='.$input->appEnv(),
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function dryRunMigrationCommand(SetupInput $input): array
+    {
+        $resolution = $this->phpCliBinaryManager->resolve($this->projectDir, $input->appEnv());
+
+        return [
+            ...($resolution->isAvailable() ? $resolution->commandPrefix() : ['php-cli-unavailable:'.$resolution->reason()]),
             $this->projectDir.'/bin/console',
             'doctrine:migrations:migrate',
             '--no-interaction',

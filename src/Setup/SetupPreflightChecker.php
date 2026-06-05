@@ -192,7 +192,7 @@ final readonly class SetupPreflightChecker
                 $works ? 'ok' : 'failed',
                 true,
                 !$works && is_writable($bundledComposer) && $this->canDownloadBundledComposer($projectDir),
-                $works ? 'composer_bundled' : ($phpCli->isAvailable() ? 'composer_not_executable' : $phpCli->reason()),
+                $works ? 'composer_bundled' : ($phpCli->isAvailable() ? 'composer_not_executable' : $this->phpCliFailureValueKey($phpCli->reason())),
             );
         }
 
@@ -239,8 +239,30 @@ final readonly class SetupPreflightChecker
             $resolution->isAvailable() ? 'ok' : 'failed',
             true,
             false,
-            $resolution->isAvailable() ? 'executable' : $resolution->reason(),
+            $resolution->isAvailable() ? 'executable' : $this->phpCliFailureValueKey($resolution->reason()),
         );
+    }
+
+    private function phpCliFailureValueKey(string $reason): string
+    {
+        if (str_starts_with($reason, 'extension_missing:')) {
+            return 'extension_missing';
+        }
+
+        return match ($reason) {
+            'binary_not_found',
+            'console_unreadable',
+            'extension_missing',
+            'not_cli',
+            'php_version_too_old',
+            'process_disabled',
+            'process_failed',
+            'project_dir_unreadable',
+            'safe_mode_enabled',
+            'server_config',
+            'validation_failed' => $reason,
+            default => 'validation_failed',
+        };
     }
 
     /**

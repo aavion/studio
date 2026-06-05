@@ -165,13 +165,8 @@ final class UserController extends AbstractController
     private function applyProfileLocale(Request $request, UserAccount $user): void
     {
         $language = $user->settings()['language'] ?? 'default';
-        $locale = is_string($language) && '' !== trim($language) && 'default' !== $language
-            ? $language
-            : $this->localization->defaultLanguage();
-
-        if (!in_array($locale, $this->localization->availableLanguages(), true)) {
-            return;
-        }
+        $locale = $this->supportedLocale(is_string($language) && 'default' !== $language ? $language : null)
+            ?? $this->localization->defaultLanguage();
 
         $request->setLocale($locale);
 
@@ -180,6 +175,17 @@ final class UserController extends AbstractController
         } catch (SessionNotFoundException) {
         }
         $this->localeSwitcher->setLocale($locale);
+    }
+
+    private function supportedLocale(?string $locale): ?string
+    {
+        if (!is_string($locale) || '' === trim($locale)) {
+            return null;
+        }
+
+        $locale = trim($locale);
+
+        return in_array($locale, $this->localization->availableLanguages(), true) ? $locale : null;
     }
 
     #[Route('/user/profile/close', name: 'user_profile_close', methods: ['GET', 'POST'])]

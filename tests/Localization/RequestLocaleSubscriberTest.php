@@ -52,6 +52,28 @@ final class RequestLocaleSubscriberTest extends TestCase
         self::assertSame('de', $request->getLocale());
     }
 
+    public function testItIgnoresUnsupportedUserLanguageAndUsesSessionLanguage(): void
+    {
+        $request = Request::create('/admin');
+        $session = new Session(new MockArraySessionStorage());
+        $session->set('_locale', 'de');
+        $request->setSession($session);
+        $tokenStorage = new TokenStorage();
+        $tokenStorage->setToken(new UsernamePasswordToken(new UserAccount(
+            '77777777-7777-4777-8777-777777777778',
+            'staleuserlocale',
+            'stale-locale@example.test',
+            'hash',
+            settings: ['language' => 'fr'],
+        ), 'main'));
+
+        $subscriber = new RequestLocaleSubscriber($this->localization('en'), $tokenStorage, $this->localeSwitcher());
+
+        $subscriber->onKernelRequest($this->event($request));
+
+        self::assertSame('de', $request->getLocale());
+    }
+
     public function testItUsesSessionLanguageBeforeConfiguredDefault(): void
     {
         $request = Request::create('/admin');

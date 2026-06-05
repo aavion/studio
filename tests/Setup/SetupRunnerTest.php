@@ -520,6 +520,33 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('mark_setup_completed', $entries[10]['name']);
     }
 
+    public function testDryRunUsesPhpCliPlaceholderWhenResolverValidationFails(): void
+    {
+        unlink($this->root.'/bin/console');
+
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), new RecordingSetupCommandExecutor());
+        $input = new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Dry Studio',
+            defaultUri: 'https://dry.example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: $this->sqliteUrl($this->root.'/var/setup.db'),
+            adminUsername: 'admin',
+            adminPassword: 'Secret1!password',
+            adminEmail: 'admin@example.test',
+            dryRun: true,
+        );
+
+        $result = $runner->run($input);
+
+        self::assertTrue($result->isSuccess());
+        self::assertInstanceOf(ActionLog::class, $result->value());
+        $entries = $result->value()->toArray()['entries'];
+        self::assertSame('run_migrations', $entries[3]['name']);
+        self::assertSame('php-cli-unavailable:console_unreadable', $entries[3]['context']['command'][0]);
+    }
+
     public function testItSurfacesNonBlockingAssetRebuildWarningsInSetupActionLog(): void
     {
         $databasePath = $this->root.'/var/setup.db';

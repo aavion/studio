@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Addressed review findings by making request, mail, and profile locale selection skip unsupported candidates, keeping setup dry-run command planning independent from throwing PHP CLI resolution, and translating PHP CLI validation failure reasons in setup preflight output.
 - Made the logout confirmation controller test deterministic by using Symfony's test login helper for the already-covered authenticated session setup.
 - Aligned pull request verification on a PHP 8.5 Linux lint baseline plus PHP 8.4 compatibility jobs for macOS, Windows, and Linux ARM, added curl, JSON, and XML as explicit Composer platform requirements, and covered required-extension preflight failure naming.
 - Hardened Windows cleanup retries after CI showed that directory symlinks can fail `is_dir()` checks while still requiring `rmdir()`, so test-suite and package cleanup helpers now try the Windows directory-link removal path directly before falling back to `unlink()`.

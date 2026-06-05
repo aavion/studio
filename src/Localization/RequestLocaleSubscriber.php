@@ -38,9 +38,13 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $locale = $this->userLocale() ?? $this->sessionLocale($event) ?? $this->localization->defaultLanguage();
+        $locale = $this->supportedLocale(
+            $this->userLocale(),
+            $this->sessionLocale($event),
+            $this->localization->defaultLanguage(),
+        );
 
-        if (!in_array($locale, $this->localization->availableLanguages(), true)) {
+        if (null === $locale) {
             return;
         }
 
@@ -68,7 +72,7 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
             return null;
         }
 
-        return $language;
+        return trim($language);
     }
 
     private function sessionLocale(RequestEvent $event): ?string
@@ -81,6 +85,19 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
             return null;
         }
 
-        return is_string($locale) && '' !== trim($locale) ? $locale : null;
+        return is_string($locale) && '' !== trim($locale) ? trim($locale) : null;
+    }
+
+    private function supportedLocale(?string ...$candidates): ?string
+    {
+        $availableLanguages = $this->localization->availableLanguages();
+
+        foreach ($candidates as $candidate) {
+            if (is_string($candidate) && in_array($candidate, $availableLanguages, true)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 }
