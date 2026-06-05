@@ -14,12 +14,16 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
-final readonly class ResponseHookSubscriber implements EventSubscriberInterface
+final class ResponseHookSubscriber implements EventSubscriberInterface
 {
+    private readonly ResponseHeaderPolicy $headerPolicy;
+
     public function __construct(
-        private PublicEventDispatcher $eventDispatcher,
-        private ?StudioDebugCollector $debugCollector = null,
+        private readonly PublicEventDispatcher $eventDispatcher,
+        private readonly ?StudioDebugCollector $debugCollector = null,
+        ?ResponseHeaderPolicy $headerPolicy = null,
     ) {
+        $this->headerPolicy = $headerPolicy ?? new ResponseHeaderPolicy();
     }
 
     public static function getSubscribedEvents(): array
@@ -60,11 +64,15 @@ final readonly class ResponseHookSubscriber implements EventSubscriberInterface
         }
 
         foreach ($hook->removedHeaders() as $header) {
-            $response->headers->remove($header);
+            if ($this->headerPolicy->canRemove($header)) {
+                $response->headers->remove($header);
+            }
         }
 
         foreach ($hook->headers() as $header) {
-            $response->headers->set($header['name'], $header['value'], $header['replace']);
+            if ($this->headerPolicy->canSet($header['name'], $header['value'])) {
+                $response->headers->set($header['name'], $header['value'], $header['replace']);
+            }
         }
     }
 

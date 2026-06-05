@@ -38,6 +38,32 @@ final class ResponseHookSubscriberTest extends TestCase
         self::assertFalse($response->headers->has('X-Remove-Me'));
     }
 
+    public function testItRejectsUnsafeResponseHeaderHookChanges(): void
+    {
+        $dispatcher = new EventDispatcher();
+        $dispatcher->addListener(ResponseHeadersEvent::class, static function (ResponseHeadersEvent $event): void {
+            $event->setHeader('Set-Cookie', 'session=package-owned');
+            $event->setHeader('X-Bad-Value', "first\r\nsecond");
+            $event->setHeader('X-Frame-Options', 'ALLOWALL');
+            $event->removeHeader('Content-Security-Policy');
+            $event->removeHeader('X-Remove-Me');
+        });
+        $response = new Response('<html></html>', 200, [
+            'Content-Security-Policy' => "default-src 'self'",
+            'Content-Type' => 'text/html',
+            'X-Frame-Options' => 'DENY',
+            'X-Remove-Me' => 'yes',
+        ]);
+
+        $this->subscriber($dispatcher)->onKernelResponse($this->responseEvent($response));
+
+        self::assertFalse($response->headers->has('Set-Cookie'));
+        self::assertFalse($response->headers->has('X-Bad-Value'));
+        self::assertSame('DENY', $response->headers->get('X-Frame-Options'));
+        self::assertSame("default-src 'self'", $response->headers->get('Content-Security-Policy'));
+        self::assertFalse($response->headers->has('X-Remove-Me'));
+    }
+
     public function testItAppliesHtmlOutputHookChanges(): void
     {
         $dispatcher = new EventDispatcher();

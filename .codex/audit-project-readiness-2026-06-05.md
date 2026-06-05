@@ -683,6 +683,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/View/Event/ResponseHeadersEvent.php:13`, `src/View/Event/ResponseHeadersEvent.php:36`, `src/View/Event/ResponseHeadersEvent.php:43`, `src/View/Http/ResponseHookSubscriber.php:43`, `src/View/Http/ResponseHookSubscriber.php:57`.
 - **Impact:** Symfony will handle many invalid header cases, but the project-level public hook contract does not currently explain which headers package code may alter or how invalid names/values are rejected. Security-sensitive headers could be removed by a trusted package hook without a clear policy.
 - **Recommendation:** Add an explicit header allow/deny policy or at least validation in `ResponseHeadersEvent`, and document that response hooks are trusted package code. Consider protecting security headers from removal unless a privileged/core hook opts in.
+- **Implementation note:** `ResponseHookSubscriber` now filters public hook changes through `ResponseHeaderPolicy`, allowing ordinary safe headers while blocking invalid values plus cookie, authentication, transport, content-length, and core security header mutations.
 - **Priority:** Before Security / First-party modules.
 
 ### F-045 View injection rendering hides failures without diagnostics
