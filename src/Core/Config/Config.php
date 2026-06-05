@@ -22,13 +22,14 @@ final readonly class Config
         private Connection $connection,
         private ?MessageReporterInterface $messageReporter = null,
         private ?DatabaseReadyState $databaseReadyState = null,
+        private ?ConfigDefaultProviderInterface $defaultProvider = null,
     ) {
     }
 
     public function get(string $key, mixed $default = null): mixed
     {
         if (!$this->databaseIsReady()) {
-            return $default;
+            return $this->fallbackValue($key, $default);
         }
 
         if (!$this->validateKey($key, 'config.get')) {
@@ -45,11 +46,11 @@ final readonly class Config
                 $this->errorContext($error, 'config.get', $key),
             ));
 
-            return $default;
+            return $this->fallbackValue($key, $default);
         }
 
         if (!is_string($value)) {
-            return $default;
+            return $this->fallbackValue($key, $default);
         }
 
         try {
@@ -62,7 +63,7 @@ final readonly class Config
                 $this->errorContext($error, 'config.get', $key),
             ));
 
-            return $default;
+            return $this->fallbackValue($key, $default);
         }
     }
 
@@ -116,6 +117,15 @@ final readonly class Config
             is_string($value) => ConfigValueType::String,
             default => ConfigValueType::Json,
         };
+    }
+
+    private function fallbackValue(string $key, mixed $default): mixed
+    {
+        if (null !== $this->defaultProvider && $this->defaultProvider->hasDefault($key)) {
+            return $this->defaultProvider->defaultValue($key);
+        }
+
+        return $default;
     }
 
     private function databaseIsReady(): bool

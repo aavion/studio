@@ -53,7 +53,7 @@ final readonly class AbsoluteUriGenerator
 
     private function siteUrl(): ?string
     {
-        $siteUrl = $this->config->get('site.url', null);
+        $siteUrl = $this->config->get('site.url');
 
         if (!is_string($siteUrl)) {
             return null;

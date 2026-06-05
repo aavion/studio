@@ -19,21 +19,21 @@ final readonly class SchedulerSettings
 
     public function enabled(): bool
     {
-        return true === $this->config->get(self::ENABLED_KEY, true);
+        return true === ($this->config->get(self::ENABLED_KEY) ?? true);
     }
 
     public function getAuthEnabled(): bool
     {
-        return true === $this->config->get(self::GET_AUTH_ENABLED_KEY, false);
+        return true === ($this->config->get(self::GET_AUTH_ENABLED_KEY) ?? false);
     }
 
     public function packageActionQueuesEnabled(): bool
     {
-        return true === $this->config->get(self::PACKAGE_ACTION_QUEUES_ENABLED_KEY, false);
+        return true === ($this->config->get(self::PACKAGE_ACTION_QUEUES_ENABLED_KEY) ?? false);
     }
 
     public function webTriggerEnabled(): bool
     {
-        return true === $this->config->get(self::WEB_TRIGGER_ENABLED_KEY, false);
+        return true === ($this->config->get(self::WEB_TRIGGER_ENABLED_KEY) ?? false);
     }
 }

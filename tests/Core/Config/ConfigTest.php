@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Tests\Core\Config;
 
 use App\Core\Config\Config;
+use App\Core\Config\ConfigDefaultProviderInterface;
 use App\Core\Config\ConfigValueType;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
+use App\Database\DatabaseReadyState;
 use App\Security\UserFlowConfig;
+use App\Setup\SetupCompletionMarker;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 
@@ -54,6 +57,50 @@ final class ConfigTest extends TestCase
 
         self::assertSame('disabled', $config->get('user.registration.mode', 'disabled'));
         self::assertSame(900, $config->get('user.menu.sort_order', 900));
+    }
+
+    public function testItUsesRegisteredDefaultsWhenConfigurationKeyIsMissing(): void
+    {
+        $config = new Config($this->connection(), defaultProvider: new ArrayConfigDefaultProvider([
+            'user.menu.enabled' => true,
+            'user.menu.sort_order' => 900,
+        ]));
+
+        self::assertTrue($config->get('user.menu.enabled', false));
+        self::assertSame(900, $config->get('user.menu.sort_order', 100));
+        self::assertSame('explicit', $config->get('unknown.setting', 'explicit'));
+    }
+
+    public function testItUsesRegisteredDefaultsWhenDatabaseIsNotReady(): void
+    {
+        $serverValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
+        $envValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
+        $processValue = getenv(SetupCompletionMarker::KEY);
+        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
+        putenv(SetupCompletionMarker::KEY);
+
+        try {
+            $config = new Config(
+                $this->connection(),
+                databaseReadyState: new DatabaseReadyState(new SetupCompletionMarker(), sys_get_temp_dir(), 'test'),
+                defaultProvider: new ArrayConfigDefaultProvider(['scheduler.enabled' => true]),
+            );
+
+            self::assertTrue($config->get('scheduler.enabled', false));
+            self::assertSame('explicit', $config->get('unknown.setting', 'explicit'));
+        } finally {
+            if (null !== $serverValue) {
+                $_SERVER[SetupCompletionMarker::KEY] = $serverValue;
+            }
+
+            if (null !== $envValue) {
+                $_ENV[SetupCompletionMarker::KEY] = $envValue;
+            }
+
+            false === $processValue
+                ? putenv(SetupCompletionMarker::KEY)
+                : putenv(SetupCompletionMarker::KEY.'='.$processValue);
+        }
     }
 
     public function testItSetsConfigurationValues(): void
@@ -129,6 +176,26 @@ final class ConfigTest extends TestCase
         $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL DEFAULT 0, modified_at DATETIME DEFAULT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
 
         return $connection;
+    }
+}
+
+final readonly class ArrayConfigDefaultProvider implements ConfigDefaultProviderInterface
+{
+    /**
+     * @param array<string, mixed> $defaults
+     */
+    public function __construct(private array $defaults)
+    {
+    }
+
+    public function hasDefault(string $key): bool
+    {
+        return array_key_exists($key, $this->defaults);
+    }
+
+    public function defaultValue(string $key): mixed
+    {
+        return $this->defaults[$key] ?? null;
     }
 }
 

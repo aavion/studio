@@ -21,7 +21,7 @@ final readonly class ContentRouteLocalization
 
     public function isEnabled(): bool
     {
-        return true === $this->configValue(self::ENABLED_KEY, false);
+        return true === ($this->config->get(self::ENABLED_KEY) ?? false);
     }
 
     /**
@@ -34,7 +34,7 @@ final readonly class ContentRouteLocalization
 
     public function defaultLanguage(): string
     {
-        $defaultLanguage = $this->configValue(self::DEFAULT_LANGUAGE_KEY, null);
+        $defaultLanguage = $this->config->get(self::DEFAULT_LANGUAGE_KEY);
         $availableLanguages = $this->availableLanguages();
 
         if (is_string($defaultLanguage) && in_array($defaultLanguage, $availableLanguages, true)) {
@@ -46,7 +46,7 @@ final readonly class ContentRouteLocalization
 
     public function homePath(): string
     {
-        $homePath = $this->configValue(self::HOME_PATH_KEY, '/home');
+        $homePath = $this->config->get(self::HOME_PATH_KEY) ?? '/home';
 
         if (!is_string($homePath) || '' === trim($homePath)) {
             return '/home';
@@ -134,10 +134,5 @@ final readonly class ContentRouteLocalization
             explode('/', trim($path, '/')),
             static fn (string $segment): bool => '' !== $segment,
         ));
-    }
-
-    private function configValue(string $key, mixed $default): mixed
-    {
-        return $this->config->get($key, $default);
     }
 }

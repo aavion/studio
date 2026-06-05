@@ -34,7 +34,7 @@ final readonly class CoreSettingsRegistry
     /**
      * @return list<CoreSettingDefinition>
      */
-    private function allDefinitions(): array
+    public function allDefinitions(): array
     {
         return [
             new CoreSettingDefinition('general', 'site.title', 'admin.settings.fields.site_title.label', $this->appName(), ConfigValueType::String, validation: ['required' => true, 'max_length' => 120], sortOrder: 10),

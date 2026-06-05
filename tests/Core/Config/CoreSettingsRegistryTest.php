@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Config;
 
 use App\Core\Config\Settings\CoreSettingDefinition;
+use App\Core\Config\Settings\CoreConfigDefaultProvider;
 use App\Core\Config\Settings\CoreSettingsRegistry;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Statistics\AccessStatisticsPolicy;
@@ -75,6 +76,18 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertSame([], $registry->definitions('content'));
         self::assertSame([], $registry->definitions('schemas'));
         self::assertSame([], $registry->definitions('imports'));
+    }
+
+    public function testItExposesPersistedDefaultsForRuntimeConfigFallbacks(): void
+    {
+        $provider = new CoreConfigDefaultProvider($this->registry());
+
+        self::assertTrue($provider->hasDefault('site.title'));
+        self::assertSame('Studio', $provider->defaultValue('site.title'));
+        self::assertSame('/home', $provider->defaultValue('content.home_path'));
+        self::assertTrue($provider->defaultValue(AccessStatisticsPolicy::ENABLED_KEY));
+        self::assertFalse($provider->hasDefault('security.captcha.preview'));
+        self::assertNull($provider->defaultValue('security.captcha.preview'));
     }
 
     private function registry(): CoreSettingsRegistry

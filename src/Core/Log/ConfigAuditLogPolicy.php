@@ -35,11 +35,11 @@ final readonly class ConfigAuditLogPolicy implements AuditLogPolicyInterface
 
     public function allows(string $action): bool
     {
-        if (false === $this->config->get(self::ENABLED_KEY, true)) {
+        if (false === ($this->config->get(self::ENABLED_KEY) ?? true)) {
             return false;
         }
 
-        $categories = $this->config->get(self::EVENTS_KEY, self::DEFAULT_CATEGORIES);
+        $categories = $this->config->get(self::EVENTS_KEY) ?? self::DEFAULT_CATEGORIES;
 
         if (!is_array($categories)) {
             $categories = self::DEFAULT_CATEGORIES;

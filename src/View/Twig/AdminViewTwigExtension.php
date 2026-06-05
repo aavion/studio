@@ -101,7 +101,7 @@ final class AdminViewTwigExtension extends AbstractExtension
         }
 
         try {
-            $configured = $this->config->get('site.footer_copyright', '');
+            $configured = $this->config->get('site.footer_copyright') ?? '';
         } catch (Throwable) {
             return $default;
         }
@@ -119,7 +119,7 @@ final class AdminViewTwigExtension extends AbstractExtension
         $request = $this->requestStack->getCurrentRequest();
 
         foreach ($definitions as $definition) {
-            $values[$definition->key()] = $this->config->get($definition->key(), $definition->defaultValue());
+            $values[$definition->key()] = $this->config->get($definition->key()) ?? $definition->defaultValue();
         }
 
         $values = array_replace($values, $this->requestFormValues($request));
