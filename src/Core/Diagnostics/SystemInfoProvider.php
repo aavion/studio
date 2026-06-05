@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Diagnostics;
 
 use App\Core\Process\CliProcessEnvironment;
+use App\Core\Process\PhpCliBinaryManager;
 use App\Setup\SetupPreflightChecker;
 use Symfony\Component\Process\Process;
 
@@ -12,6 +13,7 @@ final readonly class SystemInfoProvider
 {
     public function __construct(
         private SetupPreflightChecker $preflightChecker,
+        private PhpCliBinaryManager $phpCliBinaryManager,
         private string $projectDir,
         private string $environment,
     ) {
@@ -157,27 +159,30 @@ final readonly class SystemInfoProvider
     private function composerVersion(): string
     {
         $bundledComposer = $this->projectDir.'/bin/composer';
+        $processEnvironment = CliProcessEnvironment::fromCurrentProcess($this->processEnvironment());
+        $phpCli = $this->phpCliBinaryManager->resolve($this->projectDir, $this->environment, $processEnvironment);
 
-        if (is_file($bundledComposer) && is_readable($bundledComposer)) {
-            $version = $this->commandOutput([PHP_BINARY, $bundledComposer, '--version']);
+        if ($phpCli->isAvailable() && is_file($bundledComposer) && is_readable($bundledComposer)) {
+            $version = $this->commandOutput([...$phpCli->commandPrefix(), $bundledComposer, '--version'], $processEnvironment);
             if (null !== $version) {
                 return $version;
             }
         }
 
-        return $this->commandOutput(['composer', '--version']) ?? 'unavailable';
+        return $this->commandOutput(['composer', '--version'], $processEnvironment) ?? 'unavailable';
     }
 
     /**
      * @param list<string> $command
+     * @param array<string, string|false> $environment
      */
-    private function commandOutput(array $command): ?string
+    private function commandOutput(array $command, array $environment): ?string
     {
         try {
             $process = new Process(
                 $command,
                 $this->projectDir,
-                CliProcessEnvironment::fromCurrentProcess($this->processEnvironment()),
+                $environment,
                 timeout: 3.0,
             );
             $process->run();
