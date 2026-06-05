@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Core\Operation\Live;
 
+use Symfony\Component\Lock\LockInterface;
+use Throwable;
+
 final class LiveOperationRunLock
 {
     private bool $released = false;
@@ -11,6 +14,8 @@ final class LiveOperationRunLock
     public function __construct(
         private readonly LiveOperationRunStore $store,
         private readonly string $owner,
+        private readonly LockInterface $lock,
+        private readonly int $ttlSeconds,
     ) {
     }
 
@@ -21,6 +26,11 @@ final class LiveOperationRunLock
         }
 
         $this->store->touchRunnerLock($this->owner);
+
+        try {
+            $this->lock->refresh($this->ttlSeconds);
+        } catch (Throwable) {
+        }
     }
 
     public function release(): void
@@ -31,6 +41,11 @@ final class LiveOperationRunLock
 
         $this->released = true;
         $this->store->releaseRunnerLock($this->owner);
+
+        try {
+            $this->lock->release();
+        } catch (Throwable) {
+        }
     }
 
     public function __destruct()

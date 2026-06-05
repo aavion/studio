@@ -596,13 +596,14 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Recommendation:** Keep `SchedulerRunner::run()` as the facade. Extract `SchedulerDueTaskSelector`, `SchedulerTaskRunRecorder`, `SchedulerFailurePolicy`, and `SchedulerRunReporter` or a task-run transaction service. Re-evaluate how much of this can be delegated to Symfony Scheduler/Messenger before adding distributed or long-running task behavior.
 - **Priority:** Before Scheduler/API expansion.
 
-### F-034 Scheduler and live operations use custom file locks instead of Symfony Lock
+### F-034 Scheduler and live operations should share Symfony Lock policy
 
 - **Area:** Scheduler, live operations, and framework alignment.
-- **Finding:** Scheduler run locking uses direct `flock()` handles under `var/scheduler/{env}`, while live operations have their own lock/run coordination. Both solve similar cross-process exclusion problems outside Symfony Lock.
+- **Finding:** Scheduler run locking already uses `symfony/lock`, while live operations still had their own lock/run coordination. Both solve similar cross-process exclusion problems.
 - **Evidence:** `src/Scheduler/SchedulerLockFactory.php:7`, `src/Scheduler/SchedulerLockFactory.php:13`, `src/Scheduler/SchedulerRunLock.php:7`, `src/Core/Operation/Live/LiveOperationRunStore.php:274`, `src/Core/Operation/Live/LiveOperationRunStore.php:350`.
 - **Impact:** `flock()` is acceptable on ordinary local filesystems, but Symfony Lock would give one documented abstraction for flock/semaphore/redis/database-backed stores and clearer behavior across hosting topologies.
 - **Recommendation:** Evaluate `symfony/lock` for scheduler and live-operation run locks. If the custom lock remains, document its filesystem assumptions and add a shared lock helper so the policy is not duplicated.
+- **Implementation note:** Live-operation runner serialization now uses `Symfony\Component\Lock\LockFactory`; the former `runner.lock/state.json` file remains only as owner/status metadata for Admin Operations, stale detection, and emergency recovery. Stale cleanup no longer pretends to release a still-held Symfony lock.
 - **Priority:** Before Security / multi-worker deployment.
 
 ### F-035 Child-process environment handling is correct but not obvious at scheduler call sites

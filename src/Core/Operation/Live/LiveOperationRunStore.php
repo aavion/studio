@@ -11,6 +11,8 @@ use App\Core\Message\MessageKey;
 use App\Core\Log\OperationLoggerInterface;
 use App\Core\Workflow\WorkflowResult;
 use RuntimeException;
+use Symfony\Component\Lock\LockFactory;
+use Symfony\Component\Lock\Store\FlockStore;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -24,14 +26,16 @@ final readonly class LiveOperationRunStore
     private const TERMINAL_STATUSES = [self::STATUS_SUCCESS, self::STATUS_REQUIRES_REVIEW, self::STATUS_FAILED];
     private const RUNNER_LOCK_DIRECTORY = 'runner.lock';
     private const RUNNER_LOCK_STATE = 'state.json';
+    private LockFactory $runnerLockFactory;
 
     public function __construct(
         private string $projectDir,
         private string $environment,
         private int $staleAfterSeconds = 3600,
         private ?OperationLoggerInterface $operationLogger = null,
-    )
-    {
+        ?LockFactory $runnerLockFactory = null,
+    ) {
+        $this->runnerLockFactory = $runnerLockFactory ?? new LockFactory(new FlockStore($this->runnerLockDirectory()));
     }
 
     /**
@@ -278,19 +282,22 @@ final readonly class LiveOperationRunStore
         }
 
         $owner = bin2hex(random_bytes(16));
+        $lock = $this->runnerLockFactory->createLock($this->runnerLockName(), max(1, $ttlSeconds), autoRelease: false);
 
-        for ($attempt = 0; $attempt < 2; ++$attempt) {
-            if (@mkdir($this->runnerLockDirectory(), 0775)) {
-                $this->writeRunnerLockState($owner, $operationId);
-
-                return new LiveOperationRunLock($this, $owner);
+        if (!$lock->acquire(false)) {
+            if ($this->isRunnerLockExpired($ttlSeconds)) {
+                $this->clearRunnerLock(staleOnly: true, ttlSeconds: $ttlSeconds);
             }
 
-            if (!is_dir($this->runnerLockDirectory()) || !$this->isRunnerLockExpired($ttlSeconds)) {
-                return null;
-            }
+            return null;
+        }
 
-            $this->cleanupRunnerLock($ttlSeconds);
+        try {
+            $this->writeRunnerLockState($owner, $operationId);
+
+            return new LiveOperationRunLock($this, $owner, $lock, $ttlSeconds);
+        } catch (Throwable) {
+            $lock->release();
         }
 
         return null;
@@ -324,13 +331,13 @@ final readonly class LiveOperationRunStore
      */
     public function runnerLockStatus(int $ttlSeconds = 3600): ?array
     {
-        if (!is_dir($this->runnerLockDirectory())) {
+        if (!is_file($this->runnerLockStatePath())) {
             return null;
         }
 
         $state = $this->readRunnerLockState() ?? [];
         $updatedAt = is_string($state['updated_at'] ?? null) ? $state['updated_at'] : null;
-        $timestamp = $this->timestamp($updatedAt) ?? (filemtime($this->runnerLockDirectory()) ?: null);
+        $timestamp = $this->timestamp($updatedAt) ?? (filemtime($this->runnerLockStatePath()) ?: null);
 
         return [
             'operation_id' => is_string($state['operation_id'] ?? null) ? $state['operation_id'] : null,
@@ -390,17 +397,21 @@ final readonly class LiveOperationRunStore
 
     public function clearRunnerLock(bool $staleOnly = true, int $ttlSeconds = 3600): bool
     {
-        if (!is_dir($this->runnerLockDirectory())) {
+        if (!is_file($this->runnerLockStatePath())) {
             return false;
         }
 
-        if ($staleOnly && !$this->isRunnerLockExpired($ttlSeconds)) {
-            return false;
+        if ($staleOnly) {
+            if (!$this->isRunnerLockExpired($ttlSeconds) || !$this->runnerLockCanBeCleared($ttlSeconds)) {
+                return false;
+            }
         }
 
         @unlink($this->runnerLockStatePath());
 
-        return @rmdir($this->runnerLockDirectory());
+        @rmdir($this->runnerLockDirectory());
+
+        return true;
     }
 
     public function setTotal(string $operationId, int $total): void
@@ -794,6 +805,11 @@ final readonly class LiveOperationRunStore
         return $this->runnerLockDirectory().'/'.self::RUNNER_LOCK_STATE;
     }
 
+    private function runnerLockName(): string
+    {
+        return 'system.live_operation.'.$this->safeEnvironment().'.runner';
+    }
+
     public function outputPath(string $operationId): string
     {
         if (!$this->validOperationId($operationId)) {
@@ -900,6 +916,11 @@ final readonly class LiveOperationRunStore
 
     private function writeRunnerLockState(string $owner, string $operationId): void
     {
+        $directory = $this->runnerLockDirectory();
+        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+            throw new RuntimeException(sprintf('Live operation runner lock directory "%s" could not be created.', $directory));
+        }
+
         file_put_contents($this->runnerLockStatePath(), json_encode([
             'owner' => $owner,
             'operation_id' => $operationId,
@@ -929,15 +950,28 @@ final readonly class LiveOperationRunStore
 
     private function isRunnerLockExpired(int $ttlSeconds): bool
     {
-        if (!is_dir($this->runnerLockDirectory())) {
+        if (!is_file($this->runnerLockStatePath())) {
             return false;
         }
 
         $state = $this->readRunnerLockState();
         $timestamp = is_array($state) ? $this->timestamp($state['updated_at'] ?? null) : null;
-        $timestamp ??= filemtime($this->runnerLockDirectory()) ?: null;
+        $timestamp ??= filemtime($this->runnerLockStatePath()) ?: null;
 
         return null !== $timestamp && $timestamp <= time() - max(0, $ttlSeconds);
+    }
+
+    private function runnerLockCanBeCleared(int $ttlSeconds): bool
+    {
+        $lock = $this->runnerLockFactory->createLock($this->runnerLockName(), max(1, $ttlSeconds), autoRelease: false);
+
+        if (!$lock->acquire(false)) {
+            return false;
+        }
+
+        $lock->release();
+
+        return true;
     }
 
     private function cleanupRunnerLock(int $ttlSeconds): void
@@ -946,8 +980,7 @@ final readonly class LiveOperationRunStore
             return;
         }
 
-        @unlink($this->runnerLockStatePath());
-        @rmdir($this->runnerLockDirectory());
+        $this->clearRunnerLock(staleOnly: true, ttlSeconds: $ttlSeconds);
     }
 
     private function now(): string

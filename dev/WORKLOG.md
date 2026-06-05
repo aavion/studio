@@ -60,6 +60,7 @@
 - ! Prefer repository/database queries over full-table PHP filtering for lists, pagination, ACL impact checks, and other scalable read paths.
 - Harden database-prefix coverage by keeping Doctrine metadata self-checked against `TablePrefix::TABLES`, validating prefixed ORM metadata, and covering raw DBAL insert/update/join/delete prefix rewriting.
 - Removed hard-coded profile language options so profile language choices are generated from the dynamic translation-language catalog, matching the project rule that future languages must not require template or controller rewrites.
+- Migrated live-operation runner serialization to Symfony Lock while retaining the runner status file for Admin Operations visibility and making stale cleanup respect still-held framework locks.
 - ! Keep Symfony service discovery narrow so DTOs, value objects, messages, events, enums, and other non-services do not bloat the container.
 - [ ] Finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.

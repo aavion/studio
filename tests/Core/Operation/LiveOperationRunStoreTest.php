@@ -223,12 +223,35 @@ final class LiveOperationRunStoreTest extends TestCase
             'operation_id' => $run['operation_id'],
             'updated_at' => (new \DateTimeImmutable('-2 hours'))->format(DATE_ATOM),
         ]);
+        $lock->release();
 
         $store->cleanup(3600);
 
         $nextLock = $store->acquireRunnerLock($run['operation_id']);
         self::assertNotNull($nextLock);
         $nextLock->release();
+    }
+
+    public function testItKeepsStaleRunnerStateWhileSymfonyLockIsStillHeld(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('live-operation-runner-lock-held');
+        $store = new LiveOperationRunStore($projectDir, 'test');
+        $run = $store->create('backend.cache_clear', [], 'Cache clear');
+        $lock = $store->acquireRunnerLock($run['operation_id']);
+
+        self::assertNotNull($lock);
+        $this->rewriteRunnerLock($store, [
+            'owner' => 'stale-owner',
+            'operation_id' => $run['operation_id'],
+            'updated_at' => (new \DateTimeImmutable('-2 hours'))->format(DATE_ATOM),
+        ]);
+
+        $store->cleanup(3600);
+
+        self::assertNotNull($store->runnerLockStatus());
+        self::assertNull($store->acquireRunnerLock($run['operation_id']));
+
+        $lock->release();
     }
 
     public function testItClearsStaleEmergencyKillWithoutStoredPid(): void
@@ -244,6 +267,7 @@ final class LiveOperationRunStoreTest extends TestCase
             'operation_id' => $run['operation_id'],
             'updated_at' => (new \DateTimeImmutable('-2 hours'))->format(DATE_ATOM),
         ]);
+        $lock->release();
 
         $result = $store->killStaleRunner(3600);
 
