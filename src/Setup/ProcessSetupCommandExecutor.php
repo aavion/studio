@@ -39,15 +39,7 @@ final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutor
      */
     private function processEnvironment(string $cwd, array $environment): array
     {
-        $processEnvironment = [
-            ...$this->scalarEnvironment(getenv()),
-            ...$this->scalarEnvironment($_SERVER),
-            ...$this->scalarEnvironment($_ENV),
-        ];
-        $processEnvironment = [
-            ...CliProcessEnvironment::removeWebContextFrom($processEnvironment),
-            ...$environment,
-        ];
+        $processEnvironment = CliProcessEnvironment::fromCurrentProcess($environment);
 
         if (!$this->hasNonEmptyEnvironmentValue($processEnvironment, 'COMPOSER_HOME')) {
             $composerHome = $cwd.'/var/composer-home';
@@ -66,29 +58,6 @@ final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutor
         }
 
         return $processEnvironment;
-    }
-
-    /**
-     * @param array<mixed>|false $environment
-     *
-     * @return array<string, string>
-     */
-    private function scalarEnvironment(array|false $environment): array
-    {
-        if (false === $environment) {
-            return [];
-        }
-
-        $scalars = [];
-        foreach ($environment as $name => $value) {
-            if (!is_string($name) || '' === trim($name) || !is_scalar($value)) {
-                continue;
-            }
-
-            $scalars[$name] = (string) $value;
-        }
-
-        return $scalars;
     }
 
     /**

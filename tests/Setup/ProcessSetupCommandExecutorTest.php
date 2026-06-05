@@ -121,6 +121,20 @@ final class ProcessSetupCommandExecutorTest extends TestCase
         self::assertSame('unset', $result->output());
     }
 
+    public function testItDoesNotPassExplicitWebContextToSetupCommands(): void
+    {
+        $executor = new ProcessSetupCommandExecutor();
+
+        $result = $executor->run(
+            [PHP_BINARY, '-r', 'echo getenv("HTTP_HOST") === false ? "unset" : getenv("HTTP_HOST");'],
+            $this->root,
+            ['HTTP_HOST' => 'explicit.test'],
+        );
+
+        self::assertTrue($result->isSuccessful(), $result->errorOutput());
+        self::assertSame('unset', $result->output());
+    }
+
     private function backupEnvironmentValue(string $name): void
     {
         $this->processEnvironmentBackup[$name] = getenv($name);
