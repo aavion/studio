@@ -109,7 +109,7 @@ final readonly class PackageAssetFilesystem
     public function removePath(string $path): void
     {
         if (is_link($path) || is_file($path)) {
-            if (!@unlink($path)) {
+            if (!$this->removeFileOrLink($path)) {
                 throw new RuntimeException(sprintf('Path "%s" could not be removed.', $path));
             }
 
@@ -137,5 +137,14 @@ final readonly class PackageAssetFilesystem
         if (!@rmdir($path)) {
             throw new RuntimeException(sprintf('Directory "%s" could not be removed.', $path));
         }
+    }
+
+    private function removeFileOrLink(string $path): bool
+    {
+        if ('\\' === DIRECTORY_SEPARATOR && is_dir($path)) {
+            return @rmdir($path);
+        }
+
+        return @unlink($path);
     }
 }

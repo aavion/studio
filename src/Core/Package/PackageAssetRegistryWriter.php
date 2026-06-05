@@ -151,7 +151,7 @@ final readonly class PackageAssetRegistryWriter
 
             if (null === $backupPath) {
                 if (is_file($absolutePath) || is_link($absolutePath)) {
-                    @unlink($absolutePath);
+                    $this->removeFileOrLink($absolutePath);
                 }
 
                 continue;
@@ -168,8 +168,18 @@ final readonly class PackageAssetRegistryWriter
     {
         foreach ($backups as $backupPath) {
             if (null !== $backupPath && is_file($backupPath)) {
-                @unlink($backupPath);
+                $this->removeFileOrLink($backupPath);
             }
         }
+    }
+
+    private function removeFileOrLink(string $path): void
+    {
+        if ('\\' === DIRECTORY_SEPARATOR && is_dir($path)) {
+            @rmdir($path);
+            return;
+        }
+
+        @unlink($path);
     }
 }

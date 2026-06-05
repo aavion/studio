@@ -571,7 +571,7 @@ final class InitCommand
     private function removePath(string $path): void
     {
         if (is_link($path) || is_file($path)) {
-            if (!unlink($path)) {
+            if (!$this->removeFileOrLink($path)) {
                 throw new RuntimeException(sprintf('Unable to remove file "%s".', basename($path)));
             }
 
@@ -591,7 +591,7 @@ final class InitCommand
             $itemPath = $item->getPathname();
 
             if ($item->isLink() || $item->isFile()) {
-                if (!unlink($itemPath)) {
+                if (!$this->removeFileOrLink($itemPath)) {
                     throw new RuntimeException(sprintf('Unable to remove file "%s".', basename($itemPath)));
                 }
 
@@ -606,6 +606,15 @@ final class InitCommand
         if (!rmdir($path)) {
             throw new RuntimeException(sprintf('Unable to remove directory "%s".', basename($path)));
         }
+    }
+
+    private function removeFileOrLink(string $path): bool
+    {
+        if ('\\' === DIRECTORY_SEPARATOR && is_dir($path)) {
+            return rmdir($path);
+        }
+
+        return unlink($path);
     }
 
     /**

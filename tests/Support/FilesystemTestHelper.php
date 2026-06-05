@@ -77,7 +77,7 @@ trait FilesystemTestHelper
             }
 
             if ($file->isLink() || is_link($file->getPathname())) {
-                unlink($file->getPathname());
+                $this->removeFileOrLink($file->getPathname());
                 continue;
             }
 
@@ -86,9 +86,19 @@ trait FilesystemTestHelper
                 continue;
             }
 
-            unlink($file->getPathname());
+            $this->removeFileOrLink($file->getPathname());
         }
 
         rmdir($directory);
+    }
+
+    private function removeFileOrLink(string $path): void
+    {
+        if ('\\' === DIRECTORY_SEPARATOR && is_dir($path)) {
+            rmdir($path);
+            return;
+        }
+
+        unlink($path);
     }
 }

@@ -1013,7 +1013,7 @@ final readonly class PackageZipInstaller
         }
 
         if (is_file($path) || is_link($path)) {
-            unlink($path);
+            $this->removeFileOrLink($path);
 
             return;
         }
@@ -1028,10 +1028,22 @@ final readonly class PackageZipInstaller
                 continue;
             }
 
-            $item->isDir() && !$item->isLink() ? rmdir($item->getPathname()) : unlink($item->getPathname());
+            $item->isDir() && !$item->isLink()
+                ? rmdir($item->getPathname())
+                : $this->removeFileOrLink($item->getPathname());
         }
 
         rmdir($path);
+    }
+
+    private function removeFileOrLink(string $path): void
+    {
+        if ('\\' === DIRECTORY_SEPARATOR && is_dir($path)) {
+            rmdir($path);
+            return;
+        }
+
+        unlink($path);
     }
 
     private function symlinkZipEntry(ZipArchive $zip, int $index): bool

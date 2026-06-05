@@ -19,6 +19,11 @@ $php = PHP_BINARY;
 $failures = 0;
 $targets = array_slice($argv, 1);
 
+function nullDevice(): string
+{
+    return '\\' === DIRECTORY_SEPARATOR ? 'NUL' : '/dev/null';
+}
+
 $run = static function (array $command, string $label) use (&$failures, $root): void {
     fwrite(STDOUT, sprintf("\n==> %s\n", $label));
     $process = proc_open(
@@ -105,7 +110,7 @@ function lintPhpFiles(string $root, array $files, string $php): int
         $process = proc_open(
             [$php, '-l', $file],
             [
-                0 => ['file', '/dev/null', 'r'],
+                0 => ['file', nullDevice(), 'r'],
                 1 => ['pipe', 'w'],
                 2 => STDERR,
             ],
