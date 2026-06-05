@@ -65,7 +65,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -164,7 +164,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'short',
             adminEmail: 'admin@example.test',
@@ -189,7 +189,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -213,7 +213,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Prefixed Studio',
             defaultUri: 'https://prefixed.example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             databasePrefix: 'studio_',
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
@@ -271,7 +271,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Broken Studio',
             defaultUri: 'https://broken.example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$this->root.'/var/missing-schema.db',
+            databaseUrl: $this->sqliteUrl($this->root.'/var/missing-schema.db'),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -298,7 +298,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$this->root.'/var/setup.db',
+            databaseUrl: $this->sqliteUrl($this->root.'/var/setup.db'),
             appSecret: 'test-secret-12',
         ));
 
@@ -332,7 +332,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -367,7 +367,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -400,7 +400,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -426,7 +426,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$this->root.'/var/setup.db',
+            databaseUrl: $this->sqliteUrl($this->root.'/var/setup.db'),
             appSecret: 'test-secret-12',
         ));
 
@@ -455,7 +455,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             appSecret: 'test-secret-12',
         ));
 
@@ -483,7 +483,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Dry Studio',
             defaultUri: 'https://dry.example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -565,7 +565,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Example Studio',
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -594,7 +594,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Dry Studio',
             defaultUri: 'https://dry.example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$databasePath,
+            databaseUrl: $this->sqliteUrl($databasePath),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -692,7 +692,7 @@ final class SetupRunnerTest extends TestCase
             siteTitle: 'Dry Studio',
             defaultUri: 'https://dry.example.test',
             databaseDriver: DatabaseDriver::SQLite,
-            databaseUrl: 'sqlite:///'.$this->root.'/var/missing-dry-run.db',
+            databaseUrl: $this->sqliteUrl($this->root.'/var/missing-dry-run.db'),
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
@@ -769,6 +769,11 @@ final class SetupRunnerTest extends TestCase
         $pdo->exec(sprintf('CREATE TABLE %scontent_field_value (uid VARCHAR(36) NOT NULL PRIMARY KEY, revision_uid VARCHAR(36) NOT NULL, language VARCHAR(16) NOT NULL, variant VARCHAR(80) NOT NULL, field_identifier VARCHAR(160) NOT NULL, field_content CLOB NOT NULL, UNIQUE(revision_uid, language, variant, field_identifier))', $prefix));
     }
 
+    private function sqliteUrl(string $path): string
+    {
+        return 'sqlite:///'.str_replace('\\', '/', $path);
+    }
+
     private function removeDirectory(string $directory): void
     {
         if (!is_dir($directory)) {
@@ -781,6 +786,11 @@ final class SetupRunnerTest extends TestCase
         );
 
         foreach ($iterator as $file) {
+            if ($file->isLink()) {
+                unlink($file->getPathname());
+                continue;
+            }
+
             $file->isDir() ? rmdir($file->getPathname()) : unlink($file->getPathname());
         }
 

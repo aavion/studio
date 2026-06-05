@@ -40,8 +40,8 @@ final class DeferredMessengerDrainTest extends TestCase
         self::assertContains('messenger:consume', $starter->starts[0]['command']);
         self::assertContains('async', $starter->starts[0]['command']);
         self::assertContains('--env=test', $starter->starts[0]['command']);
-        self::assertStringEndsWith('/var/log/test/messenger-drain.log', $starter->starts[0]['output_path']);
-        self::assertStringEndsWith('/var/cache/test/studio-messenger-drain.pid', $starter->starts[0]['pid_path']);
+        self::assertStringEndsWith('/var/log/test/messenger-drain.log', $this->portablePath($starter->starts[0]['output_path']));
+        self::assertStringEndsWith('/var/cache/test/studio-messenger-drain.pid', $this->portablePath($starter->starts[0]['pid_path']));
 
         $this->removeDirectory($projectDir);
     }
@@ -88,11 +88,11 @@ final class DeferredMessengerDrainTest extends TestCase
         self::assertTrue($drain->drainPendingMessages());
         self::assertCount(1, $starter->starts);
         self::assertSame(PHP_BINARY, $starter->starts[0]['command'][0]);
-        self::assertStringEndsWith('/bin/scheduler', $starter->starts[0]['command'][1]);
+        self::assertStringEndsWith('/bin/scheduler', $this->portablePath($starter->starts[0]['command'][1]));
         self::assertContains('--json', $starter->starts[0]['command']);
         self::assertContains('--env=test', $starter->starts[0]['command']);
-        self::assertStringEndsWith('/var/log/test/scheduler-web-trigger.log', $starter->starts[0]['output_path']);
-        self::assertStringEndsWith('/var/cache/test/studio-scheduler-web-trigger.pid', $starter->starts[0]['pid_path']);
+        self::assertStringEndsWith('/var/log/test/scheduler-web-trigger.log', $this->portablePath($starter->starts[0]['output_path']));
+        self::assertStringEndsWith('/var/cache/test/studio-scheduler-web-trigger.pid', $this->portablePath($starter->starts[0]['pid_path']));
 
         $this->removeDirectory($projectDir);
     }
@@ -214,7 +214,7 @@ final class DeferredMessengerDrainTest extends TestCase
         self::assertCount(2, $starter->starts);
         self::assertContains('messenger:consume', $starter->starts[0]['command']);
         self::assertSame(PHP_BINARY, $starter->starts[1]['command'][0]);
-        self::assertStringEndsWith('/bin/scheduler', $starter->starts[1]['command'][1]);
+        self::assertStringEndsWith('/bin/scheduler', $this->portablePath($starter->starts[1]['command'][1]));
         self::assertCount(1, $logger->messages);
         self::assertSame('messenger.deferred_process_start_failed', $logger->messages[0]->code());
 
@@ -306,6 +306,11 @@ final class DeferredMessengerDrainTest extends TestCase
             'available_at' => (new DateTimeImmutable('-1 minute'))->format('Y-m-d H:i:s'),
             'delivered_at' => null,
         ]);
+    }
+
+    private function portablePath(string $path): string
+    {
+        return str_replace('\\', '/', $path);
     }
 }
 

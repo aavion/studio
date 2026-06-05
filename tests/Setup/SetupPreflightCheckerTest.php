@@ -81,6 +81,10 @@ final class SetupPreflightCheckerTest extends TestCase
 
     public function testItAcceptsSuccessfulTailwindSmokeBuild(): void
     {
+        if ('\\' === DIRECTORY_SEPARATOR) {
+            self::markTestSkipped('The fake Tailwind shell binary is Unix-specific.');
+        }
+
         $binary = $this->root.'/var/tailwind/v0.0.0/tailwindcss-test';
         mkdir(dirname($binary), 0775, true);
         file_put_contents($binary, <<<'SH'
@@ -159,6 +163,10 @@ SH);
 
     public function testItAutoHealsBundledComposerExecutableBit(): void
     {
+        if ('\\' === DIRECTORY_SEPARATOR) {
+            self::markTestSkipped('Executable bits are not portable to Windows.');
+        }
+
         mkdir($this->root.'/bin', 0775, true);
         file_put_contents($this->root.'/bin/composer', "#!/usr/bin/env php\n<?php echo \"Composer version test\";\n");
         chmod($this->root.'/bin/composer', 0644);
@@ -189,6 +197,10 @@ SH);
 
     public function testItAutoHealsCorruptWritableBundledComposer(): void
     {
+        if ('\\' === DIRECTORY_SEPARATOR) {
+            self::markTestSkipped('The fake curl shell binary is Unix-specific.');
+        }
+
         mkdir($this->root.'/bin', 0775, true);
         file_put_contents($this->root.'/bin/composer', 'broken');
         chmod($this->root.'/bin/composer', 0644);

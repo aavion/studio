@@ -33,7 +33,7 @@ final readonly class SetupDatabaseConnectionFactory
         if (str_starts_with($databaseUrl, 'sqlite:///')) {
             return [
                 'driver' => 'pdo_sqlite',
-                'path' => preg_replace('#^sqlite:///#', '/', $databaseUrl),
+                'path' => $this->sqlitePath($databaseUrl),
                 'wrapperClass' => PrefixedConnection::class,
                 'studio_allow_unready_database' => true,
             ];
@@ -51,6 +51,21 @@ final readonly class SetupDatabaseConnectionFactory
                 default => throw new SetupStepFailedException(sprintf('Unsupported database URL scheme "%s".', $scheme)),
             },
         ];
+    }
+
+    private function sqlitePath(string $databaseUrl): string
+    {
+        $path = urldecode(substr($databaseUrl, strlen('sqlite:///')));
+
+        if (str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        if (1 === preg_match('/^[A-Za-z]:[\/\\\\]/', $path)) {
+            return str_replace('\\', '/', $path);
+        }
+
+        return '/'.$path;
     }
 
     private function resolveSymfonyPlaceholders(string $databaseUrl, string $projectDir, ?string $appEnv): string

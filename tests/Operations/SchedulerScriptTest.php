@@ -18,7 +18,9 @@ final class SchedulerScriptTest extends TestCase
     public function testSchedulerScriptExistsAndIsExecutable(): void
     {
         self::assertFileExists($this->scriptPath);
-        self::assertTrue(is_executable($this->scriptPath));
+        if ('\\' !== DIRECTORY_SEPARATOR) {
+            self::assertTrue(is_executable($this->scriptPath));
+        }
     }
 
     public function testSchedulerScriptHasValidPhpSyntax(): void

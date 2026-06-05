@@ -58,7 +58,7 @@ final class PathGuardTest extends TestCase
     {
         self::assertSame(
             '/project/public/assets/app.css',
-            (new PathGuard())->join('/project/public', './assets/app.css'),
+            str_replace('\\', '/', (new PathGuard())->join('/project/public', './assets/app.css')),
         );
     }
 

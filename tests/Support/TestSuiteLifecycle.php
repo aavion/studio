@@ -149,6 +149,11 @@ final class TestSuiteLifecycle
                 continue;
             }
 
+            if ($file->isLink()) {
+                unlink($file->getPathname());
+                continue;
+            }
+
             if ($file->isDir()) {
                 rmdir($file->getPathname());
                 continue;

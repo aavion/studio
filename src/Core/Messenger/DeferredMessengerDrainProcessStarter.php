@@ -22,6 +22,10 @@ final readonly class DeferredMessengerDrainProcessStarter implements DeferredMes
             return false;
         }
 
+        if ('\\' === DIRECTORY_SEPARATOR) {
+            return $this->startWindows($command, $cwd, $outputPath, $pidPath);
+        }
+
         $shellCommand = implode(' ', array_map('escapeshellarg', $command))
             .' > '.escapeshellarg($outputPath).' 2>&1 & echo $! > '.escapeshellarg($pidPath);
 
@@ -29,5 +33,28 @@ final readonly class DeferredMessengerDrainProcessStarter implements DeferredMes
         $process->run();
 
         return $process->isSuccessful();
+    }
+
+    /**
+     * @param list<string> $command
+     */
+    private function startWindows(array $command, string $cwd, string $outputPath, string $pidPath): bool
+    {
+        if (false === file_put_contents($pidPath, 'started '.gmdate('c').PHP_EOL, LOCK_EX)) {
+            return false;
+        }
+
+        $shellCommand = 'start "" /B '.implode(' ', array_map($this->windowsArgument(...), $command))
+            .' > '.$this->windowsArgument($outputPath).' 2>&1';
+
+        $process = Process::fromShellCommandline('cmd /C '.$shellCommand, $cwd, CliProcessEnvironment::fromCurrentProcess(), timeout: 5.0);
+        $process->run();
+
+        return $process->isSuccessful();
+    }
+
+    private function windowsArgument(string $argument): string
+    {
+        return '"'.str_replace('"', '\"', $argument).'"';
     }
 }

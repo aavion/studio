@@ -18,7 +18,9 @@ final class InitScriptTest extends TestCase
     public function testInitScriptExistsAndIsExecutable(): void
     {
         self::assertFileExists($this->scriptPath);
-        self::assertTrue(is_executable($this->scriptPath));
+        if ('\\' !== DIRECTORY_SEPARATOR) {
+            self::assertTrue(is_executable($this->scriptPath));
+        }
     }
 
     public function testInitScriptHasValidPhpSyntax(): void

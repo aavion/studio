@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Hardened Windows PHPUnit compatibility by adding Windows-aware detached Messenger drain startup, platform-safe setup SQLite path handling, symlink-safe test cleanup, and portable path/executable-bit assertions for cross-platform CI.
 - Made the `bin/init` command runner Windows-safe by streaming child-process output directly instead of polling non-blocking pipes, and by quietly falling back when a system Composer executable is not available.
 - Expanded pull request verification to run the full PHPUnit suite on Ubuntu, macOS, and Windows with PHP 8.4.1 while keeping linting on the Ubuntu runner.
 - Updated the pull request verification workflow to Node 24-compatible GitHub Actions versions for checkout and dependency caching, and aligned setup subprocess/PHP CLI resolver environment handling on the shared Dotenv-aware child-process filter so explicit web request variables cannot be forwarded accidentally.
