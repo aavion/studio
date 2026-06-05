@@ -8,9 +8,9 @@
 - **Repository root**: `/Users/letica/Library/Mobile Documents/com~apple~CloudDocs/Repository/studio`  
 
 ## Paths & Interpreters
-- **php**: `/opt/homebrew/bin/php` - Version: 8.5.6 + Xdebug 3.5.1
+- **php**: `/opt/homebrew/bin/php` - Version: 8.5.7 + Xdebug 3.5.1
 - **python**: `/usr/bin/python3` - Version: 3.14.5
-- **composer**: `/opt/homebrew/bin/composer` - Version: 2.10.0
+- **composer**: `/opt/homebrew/bin/composer` - Version: 2.10.1
 - **symfony**: `/opt/homebrew/opt/symfony-cli/bin/symfony` - Version (CLI): 5.17.1, Version (PHP): 8.1.0
 - **perl**: `/usr/bin/perl` - Version: 5.34.1
 

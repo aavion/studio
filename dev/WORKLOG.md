@@ -69,6 +69,7 @@
 ### 2026-06-05
 - Added a cache-first PHP CLI manager around `APP_DEFAULT_PHP_BINARY`, with validation for CLI SAPI, project PHP/version/extension requirements, project console readability, controlled preference refreshes, and Dotenv-aware child-process environment forwarding that still strips web request context.
 - Reviewed `feat-php-cli-resolver` against `dev-latest` and hardened the scheduler wrapper so its console child process uses the shared web-context environment filter instead of inheriting request/server variables.
+- Updated composer and dependencies to their latest stable version.
 
 ### 2026-06-04
 - Continued `feat-php-cli-resolver`: prefilled the setup site URL from the current HTTP host when no stored wizard value exists; propagated nested asset-rebuild warnings from setup-triggered JSON output into the setup action log, kept direct asset-rebuild text output aware of warning messages, aligned the setup dry-run plan/manual notes with the JSON-backed asset rebuild call, and documented Apache `mod_remoteip` as the preferred reverse-proxy client-IP integration.
