@@ -23,6 +23,7 @@ use App\Entity\SchedulerTask;
 use App\Entity\UserAccount;
 use App\Scheduler\SchedulerTaskDefinition;
 use App\Scheduler\SchedulerTaskStatus;
+use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\Security\UserRole;
 use App\Setup\SetupCompletionMarker;
@@ -1102,6 +1103,21 @@ final class BackendControllerTest extends WebTestCase
         self::assertStringContainsString('The submitted value does not match the expected format.', $html);
     }
 
+    public function testAdminTestUserHelperRestoresUsableAccountStatus(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $staleUser = $this->createUserWithLevel(8);
+        $staleUser->changeStatus(UserAccountStatus::Inactive);
+        $entityManager->flush();
+
+        $client->loginUser($this->createUserWithLevel(8));
+        $client->request('GET', '/admin/settings/general');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(UserAccountStatus::Active, $this->createUserWithLevel(8)->status());
+    }
+
     public function testAdminUserSettingsRejectInvalidDefaultAclGroup(): void
     {
         $client = self::createClient();
@@ -1259,6 +1275,7 @@ final class BackendControllerTest extends WebTestCase
         $existingUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'testuser'.$level]);
 
         if ($existingUser instanceof UserAccount) {
+            $existingUser->changeStatus(UserAccountStatus::Active);
             $existingUser->changeRole(UserRole::fromAccessLevel($level));
             $entityManager->flush();
 
