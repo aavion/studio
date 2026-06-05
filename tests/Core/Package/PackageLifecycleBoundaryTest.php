@@ -166,6 +166,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         $this->writeTestFile($this->projectDir, 'packages/demo-module/package.php', <<<'PHP'
             <?php
 
+            use App\Core\Package\PackageContributions;
             use App\Core\Package\Settings\PackageSettingDefinition;
             use App\View\Injection\ConfigurableStaticViewInjectionRoute;
             use App\View\Injection\ConfigurableStaticViewInjectionSet;
@@ -174,15 +175,15 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
             use App\View\Injection\StaticViewInjection;
             use App\View\Injection\ViewSurface;
 
-            return [
-                new StaticViewInjection(
+            return PackageContributions::create()
+                ->staticView(new StaticViewInjection(
                     'pkg-demo-module-route',
                     ViewSurface::Public,
                     'demo-module',
                     'pkg.demo-module.widget',
                     '@frontend/demo-module/frontend.html.twig',
-                ),
-                new ConfigurableStaticViewInjectionSet(
+                ))
+                ->configurableStaticViews(new ConfigurableStaticViewInjectionSet(
                     'demo-module',
                     'demo.route',
                     ViewSurface::Public,
@@ -195,20 +196,19 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
                             '@frontend/demo-module/frontend.html.twig',
                         ),
                     ],
-                ),
-                new DynamicViewInjection(
+                ))
+                ->dynamicView(new DynamicViewInjection(
                     'pkg-demo-module-after-content',
                     ViewSurface::Public,
                     DynamicViewInjectionSlot::AfterContent,
                     '@frontend/demo-module/after-content.html.twig',
-                ),
-                new PackageSettingDefinition(
+                ))
+                ->setting(new PackageSettingDefinition(
                     'demo-module',
                     'display.mode',
                     'pkg.demo-module.settings.display_mode.label',
                     'compact',
-                ),
-            ];
+                ));
             PHP);
         $registry = new PackageRuntimeContributionRegistry();
 
