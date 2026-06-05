@@ -141,8 +141,8 @@ final readonly class PackageAssetFilesystem
 
     private function removeFileOrLink(string $path): bool
     {
-        if ('\\' === DIRECTORY_SEPARATOR && is_dir($path)) {
-            return @rmdir($path);
+        if ('\\' === DIRECTORY_SEPARATOR && @rmdir($path)) {
+            return true;
         }
 
         return @unlink($path);

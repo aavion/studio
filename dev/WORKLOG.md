@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Hardened Windows cleanup retries after CI showed that directory symlinks can fail `is_dir()` checks while still requiring `rmdir()`, so test-suite and package cleanup helpers now try the Windows directory-link removal path directly before falling back to `unlink()`.
 - Audited additional Windows-sensitive filesystem and process helpers, replacing hardcoded lint null-device usage and making recursive cleanup paths handle Windows directory links safely across init, package assets, package ZIP installs, translation runtime aggregation, operation removal, and test helpers.
 - Finished the remaining Windows CI hardening for live-operation detached startup, package-source path assertions, setup CLI driver-default tests, and Windows directory-link cleanup.
 - Hardened Windows PHPUnit compatibility by adding Windows-aware detached Messenger drain startup, platform-safe setup SQLite path handling, symlink-safe test cleanup, and portable path/executable-bit assertions for cross-platform CI.

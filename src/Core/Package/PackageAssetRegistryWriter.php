@@ -175,8 +175,7 @@ final readonly class PackageAssetRegistryWriter
 
     private function removeFileOrLink(string $path): void
     {
-        if ('\\' === DIRECTORY_SEPARATOR && is_dir($path)) {
-            @rmdir($path);
+        if ('\\' === DIRECTORY_SEPARATOR && @rmdir($path)) {
             return;
         }
 
