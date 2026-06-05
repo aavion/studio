@@ -97,6 +97,7 @@ final class MessageKey
     public const EVENT_HOOK_PACKAGE_ASSET_SYNC_STARTED_SUMMARY = 'message.event.hook.package_asset_sync_started.summary';
     public const EVENT_HOOK_PACKAGE_ASSET_REGISTRY_BUILD_SUMMARY = 'message.event.hook.package_asset_registry_build.summary';
     public const EVENT_HOOK_PACKAGE_ASSET_SYNC_COMPLETED_SUMMARY = 'message.event.hook.package_asset_sync_completed.summary';
+    public const VIEW_DYNAMIC_INJECTION_RENDER_FAILED = 'message.view.dynamic_injection.render_failed';
 
     public const LINT_PHP_UNREADABLE = 'message.lint.php_unreadable';
     public const LINT_PHP_SYNTAX_ERROR = 'message.lint.php_syntax_error';

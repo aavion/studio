@@ -113,6 +113,9 @@ message:
         summary: 'Add package asset registry contributions before CSS and JavaScript registries are written.'
       package_asset_sync_completed:
         summary: 'Observe package asset synchronization metrics after registries are written.'
+  view:
+    dynamic_injection:
+      render_failed: 'Dynamic view injection "%uid%" failed while rendering "%template%".'
   lint:
     php_unreadable: 'PHP source cannot be read.'
     php_syntax_error: 'PHP syntax check failed.'

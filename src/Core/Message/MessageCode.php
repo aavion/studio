@@ -43,6 +43,7 @@ final class MessageCode
     public const EVENT_HOOK_INVALID = 'event.hook_invalid';
     public const EVENT_HOOK_UNREGISTERED = 'event.hook_unregistered';
     public const EVENT_HOOK_LISTENER_FAILED = 'event.hook_listener_failed';
+    public const VIEW_DYNAMIC_INJECTION_RENDER_FAILED = 'view.dynamic_injection.render_failed';
 
     public const LINT_PHP_UNREADABLE = 'lint.php_unreadable';
     public const LINT_PHP_SYNTAX_ERROR = 'lint.php_syntax_error';

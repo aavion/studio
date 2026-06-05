@@ -693,6 +693,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/View/Injection/DynamicViewInjectionRenderer.php:31`, `src/View/Injection/DynamicViewInjectionRenderer.php:45`, `src/View/Injection/DynamicViewInjectionRenderer.php:55`.
 - **Impact:** The frontend remains robust when an extension breaks, which is good for production. However, package authors and support diagnostics will struggle to find failed injections if the only visible behavior is missing UI.
 - **Recommendation:** Keep graceful rendering, but report failures through the existing message logger/debug collector or package runtime failure path with bounded context. Expose failure counts in admin diagnostics during development.
+- **Implementation note:** Failed dynamic injection rendering now stays graceful for visitors and writes `message.view.dynamic_injection.render_failed` through the message layer with bounded injection/template/request context.
 - **Priority:** Before First-party modules / UI refinement.
 
 ### F-046 Detached child-process starters duplicate platform-specific shell behavior

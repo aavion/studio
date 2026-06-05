@@ -113,6 +113,9 @@ message:
         summary: 'Ergänzt Paket-Asset-Registry-Beiträge, bevor CSS- und JavaScript-Registries geschrieben werden.'
       package_asset_sync_completed:
         summary: 'Beobachtet Paket-Asset-Sync-Metriken nach dem Schreiben der Registries.'
+  view:
+    dynamic_injection:
+      render_failed: 'Dynamische View-Injection "%uid%" ist beim Rendern von "%template%" fehlgeschlagen.'
   lint:
     php_unreadable: 'PHP-Quelle kann nicht gelesen werden.'
     php_syntax_error: 'PHP-Syntaxprüfung fehlgeschlagen.'

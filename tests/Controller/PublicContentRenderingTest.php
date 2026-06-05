@@ -105,6 +105,41 @@ final class PublicContentRenderingTest extends WebTestCase
         self::assertSelectorTextContains('[data-injection="test-after-content"]', 'Content fields');
     }
 
+    public function testItReportsFailedDynamicContentSlotInjections(): void
+    {
+        $logPattern = dirname(__DIR__, 2).'/var/log/test.studio-message-*.log';
+
+        foreach (glob($logPattern) ?: [] as $logFile) {
+            unlink($logFile);
+        }
+
+        $client = self::createClient();
+        $eventDispatcher = self::getContainer()->get(EventDispatcherInterface::class);
+        $eventDispatcher->addListener(DynamicViewInjectionRegistryEvent::class, static function (DynamicViewInjectionRegistryEvent $event): void {
+            $event->addInjection(new DynamicViewInjection(
+                'broken-dynamic-injection',
+                ViewSurface::Public,
+                DynamicViewInjectionSlot::AfterContent,
+                '@frontend/content/injections/missing.html.twig',
+                DynamicViewInjectionFilter::realContent(['article']),
+                label: 'ui.content.fields',
+            ));
+        });
+
+        $client->request('GET', '/news/first-update');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorNotExists('[data-injection="broken-dynamic-injection"]');
+
+        $messageLog = '';
+        foreach (glob($logPattern) ?: [] as $logFile) {
+            $messageLog .= (string) file_get_contents($logFile);
+        }
+
+        self::assertStringContainsString('message.view.dynamic_injection.render_failed', $messageLog);
+        self::assertStringContainsString('broken-dynamic-injection', $messageLog);
+    }
+
     public function testSchemaCustomTwigReplacesOnlyInnerFieldset(): void
     {
         $client = self::createClient();

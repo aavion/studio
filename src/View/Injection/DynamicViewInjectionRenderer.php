@@ -7,6 +7,10 @@ namespace App\View\Injection;
 use App\Content\Read\PublishedContentView;
 use App\Core\Access\AccessActor;
 use App\Core\Access\AccessRule;
+use App\Core\Message\Message;
+use App\Core\Message\MessageCode;
+use App\Core\Message\MessageKey;
+use App\Core\Message\MessageReporterInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Twig\Environment;
 use Throwable;
@@ -16,6 +20,7 @@ final readonly class DynamicViewInjectionRenderer
     public function __construct(
         private ViewInjectionRegistry $registry,
         private Environment $twig,
+        private MessageReporterInterface $messageReporter,
     ) {
     }
 
@@ -41,7 +46,8 @@ final readonly class DynamicViewInjectionRenderer
                     'label' => $injection->label(),
                     'content' => $this->render($injection, $view, $request),
                 ];
-            } catch (Throwable) {
+            } catch (Throwable $error) {
+                $this->reportRenderFailure($injection, $view, $request, $error);
                 continue;
             }
         }
@@ -61,7 +67,9 @@ final readonly class DynamicViewInjectionRenderer
 
         try {
             return $this->render($injection, $view, $request);
-        } catch (Throwable) {
+        } catch (Throwable $error) {
+            $this->reportRenderFailure($injection, $view, $request, $error);
+
             return null;
         }
     }
@@ -83,5 +91,37 @@ final readonly class DynamicViewInjectionRenderer
         }
 
         return AccessRule::from($injection->accessLevel(), $injection->accessGroups())->allows($actor);
+    }
+
+    private function reportRenderFailure(
+        DynamicViewInjection $injection,
+        PublishedContentView $view,
+        Request $request,
+        Throwable $error,
+    ): void
+    {
+        $this->messageReporter->report(
+            Message::warning(
+                MessageCode::VIEW_DYNAMIC_INJECTION_RENDER_FAILED,
+                MessageKey::VIEW_DYNAMIC_INJECTION_RENDER_FAILED,
+                [
+                    '%uid%' => $injection->uid(),
+                    '%template%' => $injection->template(),
+                ],
+            ),
+            [
+                'component' => self::class,
+                'injection_uid' => $injection->uid(),
+                'injection_label' => $injection->label(),
+                'template' => $injection->template(),
+                'surface' => $injection->surface()->value,
+                'slot' => $injection->slot()->value,
+                'variant_slug' => $injection->variantSlug(),
+                'content_uid' => $view->content()->uid(),
+                'path' => $request->getPathInfo(),
+                'route' => $request->attributes->get('_route'),
+                'exception_class' => $error::class,
+            ],
+        );
     }
 }
