@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Aligned pull request verification on a PHP 8.5 Linux lint baseline plus PHP 8.4 compatibility jobs for macOS, Windows, and Linux ARM, added curl, JSON, and XML as explicit Composer platform requirements, and covered required-extension preflight failure naming.
 - Hardened Windows cleanup retries after CI showed that directory symlinks can fail `is_dir()` checks while still requiring `rmdir()`, so test-suite and package cleanup helpers now try the Windows directory-link removal path directly before falling back to `unlink()`.
 - Audited additional Windows-sensitive filesystem and process helpers, replacing hardcoded lint null-device usage and making recursive cleanup paths handle Windows directory links safely across init, package assets, package ZIP installs, translation runtime aggregation, operation removal, and test helpers.
 - Finished the remaining Windows CI hardening for live-operation detached startup, package-source path assertions, setup CLI driver-default tests, and Windows directory-link cleanup.

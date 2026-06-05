@@ -20,10 +20,13 @@
     "require": {
         "php": ">=8.4.1",
         "ext-ctype": "*",
+        "ext-curl": "*",
         "ext-fileinfo": "*",
         "ext-iconv": "*",
         "ext-intl": "*",
+        "ext-json": "*",
         "ext-pdo_sqlite": "*",
+        "ext-xml": "*",
         "doctrine/dbal": "^4.4.3",
         "doctrine/doctrine-bundle": "^3.2.2",
         "doctrine/doctrine-migrations-bundle": "^4.0",

@@ -155,10 +155,16 @@ SH);
             $result['checks'],
             static fn (array $check): bool => 'extension_definitely_missing_for_studio_tests' === $check['key'],
         ))[0] ?? null;
+        $summary = array_values(array_filter(
+            $result['detail_rows'],
+            static fn (array $check): bool => 'required_extensions' === $check['key'],
+        ))[0] ?? null;
 
         self::assertFalse($result['ok']);
         self::assertSame('missing', $extension['status'] ?? null);
         self::assertTrue($extension['required'] ?? false);
+        self::assertSame('missing', $summary['status'] ?? null);
+        self::assertSame('definitely_missing_for_studio_tests', $summary['value_parameters']['%extensions%'] ?? null);
     }
 
     public function testItAutoHealsBundledComposerExecutableBit(): void
