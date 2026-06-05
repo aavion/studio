@@ -33,6 +33,7 @@ final class AssetRebuildCommandTest extends TestCase
     protected function setUp(): void
     {
         $this->root = $this->createTemporaryDirectory('studio-asset-command');
+        $this->writeTestFile($this->root, 'bin/console', "#!/usr/bin/env php\n<?php echo \"Studio test\";\n");
     }
 
     protected function tearDown(): void
@@ -62,6 +63,7 @@ final class AssetRebuildCommandTest extends TestCase
         self::assertSame('asset rebuild', $payload['name']);
         self::assertCount(6, $payload['actions']);
         self::assertSame(RuntimeException::class, $payload['context']['package_provider_error']['exception']);
+        self::assertFileDoesNotExist($this->root.'/.env.test.local');
     }
 
     public function testPackageAssetSyncDoesNotMutateWhenPackageStorageIsUnavailable(): void

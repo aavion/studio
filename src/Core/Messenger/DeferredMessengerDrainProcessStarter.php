@@ -25,7 +25,7 @@ final readonly class DeferredMessengerDrainProcessStarter implements DeferredMes
         $shellCommand = implode(' ', array_map('escapeshellarg', $command))
             .' > '.escapeshellarg($outputPath).' 2>&1 & echo $! > '.escapeshellarg($pidPath);
 
-        $process = Process::fromShellCommandline($shellCommand, $cwd, CliProcessEnvironment::withoutWebContext(), timeout: 5.0);
+        $process = Process::fromShellCommandline($shellCommand, $cwd, CliProcessEnvironment::fromCurrentProcess(), timeout: 5.0);
         $process->run();
 
         return $process->isSuccessful();

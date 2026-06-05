@@ -86,7 +86,7 @@ final class AssetRebuildCommand extends Command
             ];
         }
 
-        $queue = $this->queueFactory->create($this->kernel->getEnvironment(), $packages, $trigger);
+        $queue = $this->queueFactory->create($this->kernel->getEnvironment(), $packages, $trigger, !$dryRun);
 
         if ($dryRun) {
             $plan = $this->operationExecutor->planQueue($queue);

@@ -10,7 +10,7 @@ use App\Core\Message\MessageKey;
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
-use App\Core\Process\PhpCliBinaryResolver;
+use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpKernel\KernelInterface;
 
@@ -18,7 +18,7 @@ final readonly class PackageLifecycleLiveOperationProvider implements LiveOperat
 {
     public function __construct(
         private KernelInterface $kernel,
-        private PhpCliBinaryResolver $phpCliBinaryResolver,
+        private PhpCliBinaryManager $phpCliBinaryManager,
     )
     {
     }
@@ -51,7 +51,7 @@ final readonly class PackageLifecycleLiveOperationProvider implements LiveOperat
 
         $environment = $this->environment($payload);
         $trigger = $this->trigger($payload);
-        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
+        $resolution = $this->phpCliBinaryManager->resolve($this->kernel->getProjectDir(), $environment, persistPreference: true);
 
         if (!$resolution->isAvailable()) {
             return WorkflowResult::failed([

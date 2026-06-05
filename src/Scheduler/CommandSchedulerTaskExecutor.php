@@ -6,7 +6,7 @@ namespace App\Scheduler;
 
 use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
-use App\Core\Process\PhpCliBinaryResolver;
+use App\Core\Process\PhpCliBinaryManager;
 use App\Entity\SchedulerTask;
 
 final readonly class CommandSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
@@ -15,7 +15,7 @@ final readonly class CommandSchedulerTaskExecutor implements SchedulerTaskExecut
         private string $projectDir,
         private string $environment,
         private SchedulerCommandTargetParser $targetParser = new SchedulerCommandTargetParser(),
-        private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver(),
+        private PhpCliBinaryManager $phpCliBinaryManager = new PhpCliBinaryManager(),
     )
     {
     }
@@ -28,9 +28,9 @@ final readonly class CommandSchedulerTaskExecutor implements SchedulerTaskExecut
     public function execute(SchedulerTask $task): SchedulerTaskExecution
     {
         $parts = $this->targetParser->parse($task->target());
-        $resolution = $this->phpCliBinaryResolver->resolve($this->projectDir, [
+        $resolution = $this->phpCliBinaryManager->resolve($this->projectDir, $this->environment, [
             'APP_ENV' => $this->environment,
-        ]);
+        ], true);
 
         if (!$resolution->isAvailable()) {
             return SchedulerTaskExecution::failed([

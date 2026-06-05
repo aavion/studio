@@ -13,20 +13,25 @@ final readonly class PhpCliBinaryResolution
         private bool $available,
         private array $commandPrefix,
         private string $reason,
+        private array $context = [],
     ) {
     }
 
     /**
      * @param list<string> $commandPrefix
+     * @param array<string, mixed> $context
      */
-    public static function available(array $commandPrefix): self
+    public static function available(array $commandPrefix, array $context = []): self
     {
-        return new self(true, $commandPrefix, 'ok');
+        return new self(true, $commandPrefix, 'ok', $context);
     }
 
-    public static function unavailable(string $reason): self
+    /**
+     * @param array<string, mixed> $context
+     */
+    public static function unavailable(string $reason, array $context = []): self
     {
-        return new self(false, [], $reason);
+        return new self(false, [], $reason, $context);
     }
 
     public function isAvailable(): bool
@@ -45,5 +50,13 @@ final readonly class PhpCliBinaryResolution
     public function reason(): string
     {
         return $this->reason;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function context(): array
+    {
+        return $this->context;
     }
 }

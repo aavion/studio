@@ -72,6 +72,25 @@ final class CliProcessEnvironment
      *
      * @return array<string, string|false>
      */
+    public static function fromCurrentProcess(array $environment = []): array
+    {
+        $current = self::removeWebContextFrom([
+            ...self::scalarEnvironment(getenv()),
+            ...self::scalarEnvironment($_SERVER),
+            ...self::scalarEnvironment($_ENV),
+        ]);
+
+        return [
+            ...$current,
+            ...self::nonWebExplicitEnvironment($environment),
+        ];
+    }
+
+    /**
+     * @param array<string, string|false> $environment
+     *
+     * @return array<string, string|false>
+     */
     public static function removeWebContextFrom(array $environment): array
     {
         return [
@@ -128,6 +147,29 @@ final class CliProcessEnvironment
         return array_values($names);
     }
 
+    /**
+     * @param array<mixed>|false $environment
+     *
+     * @return array<string, string>
+     */
+    private static function scalarEnvironment(array|false $environment): array
+    {
+        if (false === $environment) {
+            return [];
+        }
+
+        $scalars = [];
+        foreach ($environment as $name => $value) {
+            if (!is_string($name) || '' === trim($name) || !is_scalar($value)) {
+                continue;
+            }
+
+            $scalars[$name] = (string) $value;
+        }
+
+        return $scalars;
+    }
+
     private static function isWebContextName(string $name): bool
     {
         if (in_array($name, self::WEB_EXACT_NAMES, true)) {
@@ -141,6 +183,27 @@ final class CliProcessEnvironment
         }
 
         return false;
+    }
+
+    /**
+     * @param array<string, string|false> $environment
+     *
+     * @return array<string, string|false>
+     */
+    private static function nonWebExplicitEnvironment(array $environment): array
+    {
+        $filtered = [];
+
+        foreach ($environment as $name => $value) {
+            if (self::isWebContextName($name)) {
+                $filtered[$name] = false;
+                continue;
+            }
+
+            $filtered[$name] = $value;
+        }
+
+        return $filtered;
     }
 
     /**

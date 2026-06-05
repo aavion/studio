@@ -86,7 +86,7 @@ final readonly class RunCommandAction implements OperationActionInterface
      */
     public function execute(): WorkflowResult
     {
-        $process = new Process($this->command, $this->cwd, CliProcessEnvironment::withoutWebContext($this->env), null, $this->timeout);
+        $process = new Process($this->command, $this->cwd, CliProcessEnvironment::fromCurrentProcess($this->env), null, $this->timeout);
         $process->run();
 
         $context = [

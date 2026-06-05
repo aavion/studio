@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Process\CliProcessEnvironment;
+use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Process\PhpCliBinaryResolver;
+use App\Core\Process\PhpProjectRequirements;
 use Symfony\Component\Process\Process;
 
 final readonly class SetupPreflightChecker
 {
     public function __construct(
         private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver(),
+        private PhpCliBinaryManager $phpCliBinaryManager = new PhpCliBinaryManager(),
+        private PhpProjectRequirements $phpRequirements = new PhpProjectRequirements(),
         private SetupComposerEnvironment $composerEnvironment = new SetupComposerEnvironment(),
     ) {
     }
@@ -23,20 +27,20 @@ final readonly class SetupPreflightChecker
      */
     public function check(string $projectDir, string $environment, bool $autoHeal = false, ?array $server = null): array
     {
-        $requiredExtensions = $this->requiredPhpExtensions($projectDir);
+        $requiredExtensions = $this->phpRequirements->requiredPhpExtensions($projectDir);
         $optionalExtensions = array_values(array_diff($this->databaseDriverExtensions(), $requiredExtensions));
         $checks = [
             $this->webroot($projectDir, $server ?? $_SERVER),
             $this->phpVersion($projectDir),
             $this->safeMode(),
             $this->processFunctions(),
-            $this->composerBinary($projectDir, $autoHeal),
+            $this->composerBinary($projectDir, $environment, $autoHeal),
             $this->tailwindBuild($projectDir),
             $this->directoryWritable($projectDir.'/var', 'var_writable', true, $autoHeal),
             $this->fileWritable($projectDir.'/.env.'.$environment.'.local', 'environment_writable', true, $autoHeal),
             $this->directoryWritable($projectDir.'/translations/runtime', 'runtime_translations_writable', true, $autoHeal),
             $this->directoryWritable($projectDir.'/public', 'public_writable', true, $autoHeal),
-            $this->cliRunnerAvailable(),
+            $this->cliRunnerAvailable($projectDir, $environment, $autoHeal),
             ...array_map(fn (string $extension): array => $this->phpExtension($extension, true), $requiredExtensions),
             ...array_map(fn (string $extension): array => $this->phpExtension($extension, false), $optionalExtensions),
         ];
@@ -120,7 +124,7 @@ final readonly class SetupPreflightChecker
      */
     private function phpVersion(string $projectDir): array
     {
-        $requiredVersion = $this->minimumPhpVersion($projectDir);
+        $requiredVersion = $this->phpRequirements->minimumPhpVersion($projectDir);
         $status = null === $requiredVersion || version_compare(PHP_VERSION, $requiredVersion, '>=')
             ? 'ok'
             : 'failed';
@@ -156,7 +160,7 @@ final readonly class SetupPreflightChecker
     /**
      * @return array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}
      */
-    private function composerBinary(string $projectDir, bool $autoHeal): array
+    private function composerBinary(string $projectDir, string $environment, bool $autoHeal): array
     {
         $bundledComposer = $projectDir.'/bin/composer';
         $composerEnvironment = $this->composerEnvironment->create($projectDir);
@@ -164,7 +168,7 @@ final readonly class SetupPreflightChecker
             @chmod($bundledComposer, 0755);
         }
 
-        $phpCli = $this->phpCliBinaryResolver->resolve($projectDir, $composerEnvironment);
+        $phpCli = $this->phpCliBinaryManager->resolve($projectDir, $environment, $composerEnvironment, $autoHeal);
         $phpCommand = $phpCli->commandPrefix();
 
         if ($phpCli->isAvailable() && is_file($bundledComposer) && is_readable($bundledComposer) && $this->composerCommandWorks([...$phpCommand, $bundledComposer, '--version'], $projectDir, $composerEnvironment)) {
@@ -175,7 +179,7 @@ final readonly class SetupPreflightChecker
             $works = $phpCli->isAvailable()
                 && is_readable($bundledComposer)
                 && $this->composerCommandWorks([...$phpCommand, $bundledComposer, '--version'], $projectDir, $composerEnvironment);
-            if (!$works && $autoHeal && is_writable($bundledComposer) && $this->downloadBundledComposer($bundledComposer, $projectDir)) {
+            if (!$works && $autoHeal && is_writable($bundledComposer) && $this->downloadBundledComposer($bundledComposer, $projectDir, $environment)) {
                 return $this->checkRow('composer_binary', 'ok', true, false, 'composer_bundled');
             }
 
@@ -196,7 +200,7 @@ final readonly class SetupPreflightChecker
             return $this->checkRow('composer_binary', 'ok', true, false, 'composer_system');
         }
 
-        if ($autoHeal && $this->canDownloadBundledComposer($projectDir) && $this->downloadBundledComposer($bundledComposer, $projectDir)) {
+        if ($autoHeal && $this->canDownloadBundledComposer($projectDir) && $this->downloadBundledComposer($bundledComposer, $projectDir, $environment)) {
             return $this->checkRow('composer_binary', 'ok', true, false, 'composer_bundled');
         }
 
@@ -214,53 +218,6 @@ final readonly class SetupPreflightChecker
     /**
      * @return list<string>
      */
-    private function requiredPhpExtensions(string $projectDir): array
-    {
-        $composer = $this->readJsonFile($projectDir.'/composer.json');
-        $required = [];
-
-        foreach ($this->phpExtensionRequirements($composer['require'] ?? []) as $extension) {
-            $required[] = $extension;
-        }
-
-        $lock = $this->readJsonFile($projectDir.'/composer.lock');
-        foreach (($lock['packages'] ?? []) as $package) {
-            if (is_array($package)) {
-                foreach ($this->phpExtensionRequirements($package['require'] ?? []) as $extension) {
-                    $required[] = $extension;
-                }
-            }
-        }
-
-        sort($required);
-
-        return array_values(array_unique($required));
-    }
-
-    /**
-     * @param mixed $requirements
-     *
-     * @return list<string>
-     */
-    private function phpExtensionRequirements(mixed $requirements): array
-    {
-        if (!is_array($requirements)) {
-            return [];
-        }
-
-        $extensions = [];
-        foreach ($requirements as $name => $constraint) {
-            if (is_string($name) && str_starts_with($name, 'ext-')) {
-                $extensions[] = substr($name, strlen('ext-'));
-            }
-        }
-
-        return $extensions;
-    }
-
-    /**
-     * @return list<string>
-     */
     private function databaseDriverExtensions(): array
     {
         return [
@@ -273,9 +230,9 @@ final readonly class SetupPreflightChecker
     /**
      * @return array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}
      */
-    private function cliRunnerAvailable(): array
+    private function cliRunnerAvailable(string $projectDir, string $environment, bool $autoHeal): array
     {
-        $resolution = $this->phpCliBinaryResolver->resolve();
+        $resolution = $this->phpCliBinaryManager->resolve($projectDir, $environment, persistPreference: $autoHeal);
 
         return $this->checkRow(
             'cli_runner',
@@ -446,7 +403,7 @@ final readonly class SetupPreflightChecker
     private function commandWorks(array $command, ?string $workingDirectory): bool
     {
         try {
-            $process = new Process($command, $workingDirectory, $this->processEnvironment(), timeout: 5.0);
+            $process = new Process($command, $workingDirectory, CliProcessEnvironment::fromCurrentProcess($this->processEnvironment()), timeout: 5.0);
             $process->run();
         } catch (\Throwable) {
             return false;
@@ -462,7 +419,7 @@ final readonly class SetupPreflightChecker
             && $this->commandWorks(['curl', '--version'], $projectDir);
     }
 
-    private function downloadBundledComposer(string $target, string $projectDir): bool
+    private function downloadBundledComposer(string $target, string $projectDir, string $environment): bool
     {
         $temporary = $target.'.tmp-'.bin2hex(random_bytes(4));
 
@@ -473,7 +430,7 @@ final readonly class SetupPreflightChecker
                 'https://getcomposer.org/download/latest-stable/composer.phar',
                 '-o',
                 $temporary,
-            ], $projectDir, $this->processEnvironment(), timeout: 30.0);
+            ], $projectDir, CliProcessEnvironment::fromCurrentProcess($this->processEnvironment()), timeout: 30.0);
             $process->run();
 
             if (!$process->isSuccessful() || !is_file($temporary)) {
@@ -491,7 +448,7 @@ final readonly class SetupPreflightChecker
             }
 
             $composerEnvironment = $this->composerEnvironment->create($projectDir);
-            $phpCli = $this->phpCliBinaryResolver->resolve($projectDir, $composerEnvironment);
+            $phpCli = $this->phpCliBinaryManager->resolve($projectDir, $environment, $composerEnvironment, true);
 
             return is_executable($target)
                 && $phpCli->isAvailable()
@@ -509,7 +466,7 @@ final readonly class SetupPreflightChecker
     private function composerCommandWorks(array $command, ?string $workingDirectory, array $environment): bool
     {
         try {
-            $process = new Process($command, $workingDirectory, $environment, timeout: 5.0);
+            $process = new Process($command, $workingDirectory, CliProcessEnvironment::fromCurrentProcess($environment), timeout: 5.0);
             $process->run();
         } catch (\Throwable) {
             return false;
@@ -557,7 +514,7 @@ final readonly class SetupPreflightChecker
             $process = new Process(
                 [$binary, '-i', $input, '-o', $output],
                 $projectDir,
-                CliProcessEnvironment::withoutWebContext($this->processEnvironment()),
+                CliProcessEnvironment::fromCurrentProcess($this->processEnvironment()),
                 timeout: 10.0,
             );
             $process->run();
@@ -572,99 +529,4 @@ final readonly class SetupPreflightChecker
         }
     }
 
-    private function minimumPhpVersion(string $projectDir): ?string
-    {
-        $versions = [];
-
-        $composer = $this->readJsonFile($projectDir.'/composer.json');
-        if (null !== $composer) {
-            $versions[] = $composer['require']['php'] ?? null;
-        }
-
-        $lock = $this->readJsonFile($projectDir.'/composer.lock');
-        if (null !== $lock) {
-            $versions[] = $lock['platform']['php'] ?? null;
-
-            foreach (['packages', 'packages-dev'] as $section) {
-                foreach (($lock[$section] ?? []) as $package) {
-                    if (is_array($package)) {
-                        $versions[] = $package['require']['php'] ?? null;
-                    }
-                }
-            }
-        }
-
-        $minimum = null;
-        foreach ($versions as $constraint) {
-            if (!is_string($constraint)) {
-                continue;
-            }
-
-            $candidate = $this->minimumVersionFromConstraint($constraint);
-            if (null !== $candidate && (null === $minimum || version_compare($candidate, $minimum, '>'))) {
-                $minimum = $candidate;
-            }
-        }
-
-        return $minimum;
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function readJsonFile(string $path): ?array
-    {
-        $contents = @file_get_contents($path);
-        if (false === $contents) {
-            return null;
-        }
-
-        $decoded = json_decode($contents, true);
-
-        return is_array($decoded) ? $decoded : null;
-    }
-
-    private function minimumVersionFromConstraint(string $constraint): ?string
-    {
-        $alternatives = preg_split('/\s*\|\|?\s*/', $constraint) ?: [$constraint];
-        $minimum = null;
-
-        foreach ($alternatives as $alternative) {
-            $candidate = $this->minimumVersionFromConstraintAlternative($alternative);
-            if (null !== $candidate && (null === $minimum || version_compare($candidate, $minimum, '<'))) {
-                $minimum = $candidate;
-            }
-        }
-
-        return $minimum;
-    }
-
-    private function minimumVersionFromConstraintAlternative(string $constraint): ?string
-    {
-        $minimum = null;
-        if (preg_match_all('/(?:>=|\^|~)\s*v?([0-9]+(?:\.[0-9]+){1,2})/', $constraint, $matches)) {
-            foreach ($matches[1] as $version) {
-                $version = $this->normalizeVersion($version);
-                if (null === $minimum || version_compare($version, $minimum, '>')) {
-                    $minimum = $version;
-                }
-            }
-        }
-
-        if (null === $minimum && preg_match('/^\s*v?([0-9]+(?:\.[0-9]+){1,2})(?:\s|$|-)/', $constraint, $match)) {
-            $minimum = $this->normalizeVersion($match[1]);
-        }
-
-        return $minimum;
-    }
-
-    private function normalizeVersion(string $version): string
-    {
-        $parts = explode('.', $version);
-        while (count($parts) < 3) {
-            $parts[] = '0';
-        }
-
-        return implode('.', array_slice($parts, 0, 3));
-    }
 }

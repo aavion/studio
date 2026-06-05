@@ -67,6 +67,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Added a cache-first PHP CLI manager around `APP_DEFAULT_PHP_BINARY`, with validation for CLI SAPI, project PHP/version/extension requirements, project console readability, controlled preference refreshes, and Dotenv-aware child-process environment forwarding that still strips web request context.
 - Reviewed `feat-php-cli-resolver` against `dev-latest` and hardened the scheduler wrapper so its console child process uses the shared web-context environment filter instead of inheriting request/server variables.
 
 ### 2026-06-04

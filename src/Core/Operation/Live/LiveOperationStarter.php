@@ -8,7 +8,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Process\CliProcessEnvironment;
-use App\Core\Process\PhpCliBinaryResolver;
+use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Workflow\WorkflowResult;
 use App\Setup\SetupLiveOperationPayloadProtector;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -21,7 +21,7 @@ final readonly class LiveOperationStarter
         private KernelInterface $kernel,
         private LiveOperationRunStore $runStore,
         private SetupLiveOperationPayloadProtector $setupPayloadProtector,
-        private PhpCliBinaryResolver $phpCliBinaryResolver,
+        private PhpCliBinaryManager $phpCliBinaryManager,
     ) {
     }
 
@@ -95,7 +95,7 @@ final readonly class LiveOperationStarter
         $process = Process::fromShellCommandline(
             $shellCommand,
             $this->kernel->getProjectDir(),
-            CliProcessEnvironment::withoutWebContext(['APP_ENV' => $this->kernel->getEnvironment()]),
+            CliProcessEnvironment::fromCurrentProcess(['APP_ENV' => $this->kernel->getEnvironment()]),
             timeout: 5.0,
         );
         $process->run();
@@ -110,7 +110,7 @@ final readonly class LiveOperationStarter
      */
     private function phpCliCommandPrefix(): array
     {
-        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
+        $resolution = $this->phpCliBinaryManager->resolve($this->kernel->getProjectDir(), $this->kernel->getEnvironment(), persistPreference: true);
 
         if (!$resolution->isAvailable()) {
             throw new \RuntimeException('PHP CLI binary could not be resolved: '.$resolution->reason().'.');

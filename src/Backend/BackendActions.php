@@ -15,7 +15,7 @@ use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Package\PackageAssetRebuildDispatcher;
 use App\Core\Package\PackageDiscoveryRunner;
-use App\Core\Process\PhpCliBinaryResolver;
+use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpKernel\KernelInterface;
 
@@ -31,7 +31,7 @@ final readonly class BackendActions
         private PackageAssetRebuildDispatcher $assetRebuildDispatcher,
         private OperationExecutor $operationExecutor,
         private LiveOperationStarter $liveOperationStarter,
-        private PhpCliBinaryResolver $phpCliBinaryResolver,
+        private PhpCliBinaryManager $phpCliBinaryManager,
     ) {
     }
 
@@ -129,7 +129,7 @@ final readonly class BackendActions
      */
     private function clearCache(): WorkflowResult
     {
-        $resolution = $this->phpCliBinaryResolver->resolve($this->kernel->getProjectDir());
+        $resolution = $this->phpCliBinaryManager->resolve($this->kernel->getProjectDir(), $this->kernel->getEnvironment(), persistPreference: true);
 
         if (!$resolution->isAvailable()) {
             return WorkflowResult::failed([

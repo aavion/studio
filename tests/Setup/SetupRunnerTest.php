@@ -78,6 +78,7 @@ final class SetupRunnerTest extends TestCase
         self::assertFalse($result->context()['halt_on_error']);
         self::assertFileExists($this->root.'/.env.test.local');
         self::assertStringContainsString("APP_SECRET='test-secret-12'", (string) file_get_contents($this->root.'/.env.test.local'));
+        self::assertStringContainsString("APP_DEFAULT_PHP_BINARY='".str_replace(['\\', "'"], ['\\\\', "\\'"], PHP_BINARY)."'", (string) file_get_contents($this->root.'/.env.test.local'));
         self::assertFileExists($this->root.'/.env.local.php');
         $dumpedEnvironment = include $this->root.'/.env.local.php';
         self::assertSame('1', $dumpedEnvironment['APP_SETUP_COMPLETED']);
@@ -278,7 +279,7 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('seed_default_settings', $result->context()['failed_step']);
         self::assertSame(
             'config.write_failed',
-            $result->context()['action_log']['entries'][4]['issues'][0]['code'],
+            $result->context()['action_log']['entries'][5]['issues'][0]['code'],
         );
     }
 
@@ -343,7 +344,7 @@ final class SetupRunnerTest extends TestCase
         self::assertSame([], $result->context()['rollback']['sqlite_files_removed']);
         self::assertContains('config_entry', $result->context()['rollback']['database_tables_removed']['tables']);
         self::assertContains('doctrine_migration_versions', $result->context()['rollback']['database_tables_removed']['tables']);
-        self::assertSame('setup.rollback_completed', $result->context()['action_log']['entries'][7]['messages'][0]['code']);
+        self::assertSame('setup.rollback_completed', $result->context()['action_log']['entries'][8]['messages'][0]['code']);
 
         $pdo = new PDO('sqlite:'.$databasePath);
         self::assertSame([], $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('config_entry', 'user_account', 'doctrine_migration_versions')")->fetchAll(PDO::FETCH_COLUMN));
@@ -573,8 +574,8 @@ final class SetupRunnerTest extends TestCase
         self::assertInstanceOf(ActionLog::class, $log);
         $entries = $log->toArray()['entries'];
 
-        self::assertSame('run_asset_rebuild', $entries[9]['name']);
-        self::assertSame(MessageCode::TAILWIND_BUILD_DEFERRED, $entries[9]['messages'][0]['code']);
+        self::assertSame('run_asset_rebuild', $entries[10]['name']);
+        self::assertSame(MessageCode::TAILWIND_BUILD_DEFERRED, $entries[10]['messages'][0]['code']);
     }
 
     public function testDryRunDoesNotCreateMissingSqliteDatabaseDuringPreparation(): void

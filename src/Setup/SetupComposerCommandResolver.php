@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
-use App\Core\Process\PhpCliBinaryResolver;
+use App\Core\Process\PhpCliBinaryManager;
 
 final readonly class SetupComposerCommandResolver
 {
     public function __construct(
-        private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver(),
+        private PhpCliBinaryManager $phpCliBinaryManager = new PhpCliBinaryManager(),
         private SetupComposerEnvironment $composerEnvironment = new SetupComposerEnvironment(),
     ) {
     }
@@ -26,7 +26,7 @@ final readonly class SetupComposerCommandResolver
     ): array {
         $environment = $this->environment($projectDir, $environment);
         $bundledComposer = $projectDir.'/bin/composer';
-        $phpCli = $this->phpCliBinaryResolver->resolve($projectDir, $environment);
+        $phpCli = $this->phpCliBinaryManager->resolve($projectDir, $this->appEnv($environment), $environment);
         $phpCommand = $phpCli->commandPrefix();
 
         if (
@@ -62,7 +62,7 @@ final readonly class SetupComposerCommandResolver
     public function plannedCommand(string $projectDir): array
     {
         $bundledComposer = $projectDir.'/bin/composer';
-        $phpCli = $this->phpCliBinaryResolver->resolve($projectDir);
+        $phpCli = $this->phpCliBinaryManager->resolve($projectDir, $this->appEnv());
         $phpCommand = $phpCli->commandPrefix();
 
         return $phpCli->isAvailable() && is_file($bundledComposer) && is_readable($bundledComposer)
@@ -88,5 +88,15 @@ final readonly class SetupComposerCommandResolver
         } catch (\Throwable) {
             return false;
         }
+    }
+
+    /**
+     * @param array<string, string> $environment
+     */
+    private function appEnv(array $environment = []): string
+    {
+        $appEnv = $environment['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? getenv('APP_ENV');
+
+        return is_string($appEnv) && '' !== trim($appEnv) ? trim($appEnv) : 'dev';
     }
 }

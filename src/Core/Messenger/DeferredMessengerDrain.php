@@ -9,7 +9,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Operation\Process\PhpCliUnavailableAction;
-use App\Core\Process\PhpCliBinaryResolver;
+use App\Core\Process\PhpCliBinaryManager;
 use App\Scheduler\SchedulerSettings;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -34,7 +34,7 @@ final readonly class DeferredMessengerDrain
         private int $cooldownSeconds = self::DEFAULT_COOLDOWN_SECONDS,
         private ?SchedulerSettings $schedulerSettings = null,
         private ?MessageLoggerInterface $messageLogger = null,
-        private PhpCliBinaryResolver $phpCliBinaryResolver = new PhpCliBinaryResolver(),
+        private PhpCliBinaryManager $phpCliBinaryManager = new PhpCliBinaryManager(),
     ) {
     }
 
@@ -48,7 +48,7 @@ final readonly class DeferredMessengerDrain
             return false;
         }
 
-        $phpCliResolution = $this->phpCliBinaryResolver->resolve($this->projectDir());
+        $phpCliResolution = $this->phpCliBinaryManager->resolve($this->projectDir(), $this->safeEnvironment(), persistPreference: true);
         if (!$phpCliResolution->isAvailable()) {
             $this->messageLogger?->log(PhpCliUnavailableAction::message('deferred messenger drain', $phpCliResolution->reason(), [
                 'drain_messenger' => $drainMessenger,

@@ -19,6 +19,11 @@ final class CliProcessEnvironmentTest extends TestCase
      */
     private array $serverBackup = [];
 
+    /**
+     * @var array<string, array{exists: bool, value: mixed}>
+     */
+    private array $envBackup = [];
+
     protected function tearDown(): void
     {
         foreach ($this->processEnvironmentBackup as $name => $value) {
@@ -30,6 +35,14 @@ final class CliProcessEnvironmentTest extends TestCase
                 $_SERVER[$name] = $backup['value'];
             } else {
                 unset($_SERVER[$name]);
+            }
+        }
+
+        foreach ($this->envBackup as $name => $backup) {
+            if ($backup['exists']) {
+                $_ENV[$name] = $backup['value'];
+            } else {
+                unset($_ENV[$name]);
             }
         }
     }
@@ -105,12 +118,48 @@ final class CliProcessEnvironmentTest extends TestCase
         self::assertArrayNotHasKey('USER', $environment);
     }
 
+    public function testItPassesDotenvValuesFromCurrentProcess(): void
+    {
+        $this->backupEnvironmentValue('APP_SECRET');
+        $_SERVER['APP_SECRET'] = 'dotenv-secret';
+        $_ENV['APP_SECRET'] = 'dotenv-secret';
+
+        $environment = CliProcessEnvironment::fromCurrentProcess();
+
+        self::assertSame('dotenv-secret', $environment['APP_SECRET'] ?? null);
+    }
+
+    public function testItKeepsExplicitHomeOverrideWhileRemovingInheritedWebIdentity(): void
+    {
+        $this->backupEnvironmentValue('HOME');
+        $this->backupEnvironmentValue('REQUEST_METHOD');
+        putenv('HOME=/root');
+        putenv('REQUEST_METHOD=GET');
+
+        $environment = CliProcessEnvironment::fromCurrentProcess(['HOME' => '/project/var']);
+
+        self::assertSame('/project/var', $environment['HOME'] ?? null);
+    }
+
+    public function testItDoesNotPassExplicitHttpRequestValuesToChildProcesses(): void
+    {
+        $this->backupEnvironmentValue('HTTP_HOST');
+
+        $environment = CliProcessEnvironment::fromCurrentProcess(['HTTP_HOST' => 'explicit.test']);
+
+        self::assertFalse($environment['HTTP_HOST'] ?? null);
+    }
+
     private function backupEnvironmentValue(string $name): void
     {
         $this->processEnvironmentBackup[$name] = getenv($name);
         $this->serverBackup[$name] = [
             'exists' => array_key_exists($name, $_SERVER),
             'value' => $_SERVER[$name] ?? null,
+        ];
+        $this->envBackup[$name] = [
+            'exists' => array_key_exists($name, $_ENV),
+            'value' => $_ENV[$name] ?? null,
         ];
     }
 }

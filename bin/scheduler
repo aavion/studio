@@ -8,7 +8,7 @@ require dirname(__DIR__).'/vendor/autoload.php';
 use App\Core\Process\CliProcessEnvironment;
 
 $command = [PHP_BINARY ?: 'php', dirname(__DIR__).'/bin/console', 'studio:scheduler:run', ...array_slice($argv, 1)];
-$process = new Symfony\Component\Process\Process($command, dirname(__DIR__), CliProcessEnvironment::withoutWebContext());
+$process = new Symfony\Component\Process\Process($command, dirname(__DIR__), CliProcessEnvironment::fromCurrentProcess());
 $process->setTimeout(null);
 $process->run(static function (string $type, string $buffer): void {
     fwrite(Symfony\Component\Process\Process::ERR === $type ? STDERR : STDOUT, $buffer);

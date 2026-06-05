@@ -15,6 +15,8 @@ final class SetupPreflightCheckerTest extends TestCase
     {
         $this->root = sys_get_temp_dir().'/studio_preflight_'.bin2hex(random_bytes(6));
         mkdir($this->root.'/public', 0775, true);
+        mkdir($this->root.'/bin', 0775, true);
+        file_put_contents($this->root.'/bin/console', "#!/usr/bin/env php\n<?php echo \"Studio test\";\n");
     }
 
     protected function tearDown(): void
