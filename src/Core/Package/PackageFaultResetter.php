@@ -275,7 +275,7 @@ final readonly class PackageFaultResetter
         return WorkflowResult::blocked([
             Message::create(
                 MessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
-            MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
                 ['%package%' => $package->packageName(), '%status%' => $package->status()->value],
                 ['package' => $package->packageName(), 'status' => $package->status()->value, 'reason' => $reason],
                 MessageLevel::Warning,

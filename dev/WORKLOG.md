@@ -68,6 +68,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Started the issue #57 project-readiness drift audit with a complete production-domain pass across `src/`, recorded architecture/modularity/naming/security/performance/Symfony-alignment findings in `.codex/audit-project-readiness-2026-06-05.md`, and added cross-cutting scans for public entry points, large files, UUID generation, child processes, and filesystem mutation zones.
+- Centralized remaining duplicated UUID-v4 generation in statistics recording, package registry/install paths, state markers, account tokens, setup seeding, and setup password reset through the shared `UuidFactory`, with small PSR-12 cleanups discovered during the audit.
 - Addressed the latest review findings by preserving real Tailwind build failures and honoring supported URL locale prefixes before stored language preferences.
 - Refreshed the backend scheduler controller test login before the Windows-sensitive detail/form segment to keep the full-suite mock session stable across compatibility runners.
 - Centralized synthetic backend admin test logins behind a reboot-stable BrowserKit helper after Linux ARM CI exposed another session loss on the settings validation form.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Filesystem\PathGuard;
+use App\Core\Id\UuidFactory;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
@@ -27,6 +28,7 @@ final readonly class PackageRegistryHandler
         private ?PackageAssetRebuildDispatcher $assetRebuildDispatcher = null,
         private ?PackageLifecycleAssetRebuilderInterface $assetRebuildFallback = null,
         private string $environment = 'test',
+        private UuidFactory $uuidFactory = new UuidFactory(),
         ?PackageSpec $validationSpec = null,
         ?PackageDependencyResolver $dependencyResolver = null,
     ) {
@@ -75,7 +77,7 @@ final readonly class PackageRegistryHandler
             $isNew = !isset($packages[$packageName]);
             $manifestVersion = $candidate->manifest()->get('PACKAGE_VERSION');
             $package = $packages[$packageName] ?? new ExtensionPackage(
-                $this->uuid(),
+                $this->uuidFactory->v4(),
                 $scopes,
                 $packageName,
                 $path,
@@ -367,15 +369,6 @@ final readonly class PackageRegistryHandler
             'action' => $action,
             'status' => $status->value,
         ];
-    }
-
-    private function uuid(): string
-    {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 
     private function assetRebuildTrigger(string $packageName, string $trigger): string

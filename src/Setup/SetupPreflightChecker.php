@@ -571,5 +571,4 @@ final readonly class SetupPreflightChecker
             @rmdir($temporaryDirectory);
         }
     }
-
 }

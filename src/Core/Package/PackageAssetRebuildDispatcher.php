@@ -21,8 +21,7 @@ final readonly class PackageAssetRebuildDispatcher
         private MessageBusInterface $messageBus,
         private WorkflowResultMessageReporterInterface $messageReporter,
         private ?Connection $connection = null,
-    )
-    {
+    ) {
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Config\Config;
+use App\Core\Id\UuidFactory;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
@@ -17,6 +18,7 @@ final readonly class SetupDatabaseSeeder
     public function __construct(
         private SetupDatabaseConnectionFactory $connectionFactory = new SetupDatabaseConnectionFactory(),
         private SetupDefaultSeed $defaultSeed = new SetupDefaultSeed(),
+        private UuidFactory $uuidFactory = new UuidFactory(),
     ) {
     }
 
@@ -365,11 +367,7 @@ final readonly class SetupDatabaseSeeder
 
     private function uuid(): string
     {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+        return $this->uuidFactory->v4();
     }
 
     private function now(): string

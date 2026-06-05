@@ -21,8 +21,7 @@ final readonly class PackageDiscoveryDispatcher
         private MessageBusInterface $messageBus,
         private WorkflowResultMessageReporterInterface $messageReporter,
         private ?Connection $connection = null,
-    )
-    {
+    ) {
     }
 
     /**

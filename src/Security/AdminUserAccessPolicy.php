@@ -263,5 +263,4 @@ final readonly class AdminUserAccessPolicy
             static fn (mixed $user): bool => $user instanceof UserAccount,
         ));
     }
-
 }

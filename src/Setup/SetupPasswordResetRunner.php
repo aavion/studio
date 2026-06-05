@@ -7,6 +7,7 @@ namespace App\Setup;
 use App\Core\ActionLog\ActionLog;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
+use App\Core\Id\UuidFactory;
 use App\Core\Message\Message;
 use App\Core\Message\MessageCode;
 use App\Core\Message\MessageLevel;
@@ -25,8 +26,8 @@ final readonly class SetupPasswordResetRunner
         private WorkflowResultMessageReporterInterface $messageReporter,
         private SetupDatabaseConnectionFactory $connectionFactory = new SetupDatabaseConnectionFactory(),
         private PasswordPolicy $passwordPolicy = new PasswordPolicy(),
-    )
-    {
+        private UuidFactory $uuidFactory = new UuidFactory(),
+    ) {
     }
 
     public function findUser(string $projectDir, string $databaseUrl, string $username, ?string $databasePrefix = null): ?SetupPasswordResetUser
@@ -172,10 +173,6 @@ final readonly class SetupPasswordResetRunner
 
     private function uuid(): string
     {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+        return $this->uuidFactory->v4();
     }
 }

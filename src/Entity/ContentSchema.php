@@ -144,5 +144,4 @@ class ContentSchema
     {
         return $this->versions;
     }
-
 }

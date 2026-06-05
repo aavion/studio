@@ -45,6 +45,7 @@ final readonly class SetupEnvironmentWriter
 
         return ['path' => basename($path), 'keys' => array_keys($values)];
     }
+
     private function failure(string $code, string $translationKey, string $path): SetupStepFailedException
     {
         return SetupStepFailedException::fromMessage(Message::error(

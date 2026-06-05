@@ -14,8 +14,7 @@ final readonly class SchedulerTaskRegistry
     public function __construct(
         private iterable $providers,
         private ?PackagePhpLoader $packagePhpLoader = null,
-    )
-    {
+    ) {
     }
 
     /**

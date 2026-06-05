@@ -250,5 +250,4 @@ final readonly class SetupRollbacker
 
         return array_values(array_unique($tables));
     }
-
 }
