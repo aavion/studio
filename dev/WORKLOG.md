@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Expanded pull request verification to run the full PHPUnit suite on Ubuntu, macOS, and Windows with PHP 8.4.1 while keeping linting on the Ubuntu runner.
 - Updated the pull request verification workflow to Node 24-compatible GitHub Actions versions for checkout and dependency caching, and aligned setup subprocess/PHP CLI resolver environment handling on the shared Dotenv-aware child-process filter so explicit web request variables cannot be forwarded accidentally.
 - Added a cache-first PHP CLI manager around `APP_DEFAULT_PHP_BINARY`, with validation for CLI SAPI, project PHP/version/extension requirements, project console readability, controlled preference refreshes, and Dotenv-aware child-process environment forwarding that still strips web request context.
 - Reviewed `feat-php-cli-resolver` against `dev-latest` and hardened the scheduler wrapper so its console child process uses the shared web-context environment filter instead of inheriting request/server variables.
