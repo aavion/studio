@@ -271,6 +271,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - Keep compatibility notes explicit for Linux, macOS, Windows, Apache, NGINX, IIS, and shared hosting; mark untested combinations as untested rather than unsupported.
 - After each phase, update `dev/CLASSMAP.md`, `dev/WORKLOG.md`, affected manuals, and PR checklist notes.
 - Before release readiness, run a final naming/documentation drift pass over public classes, interfaces, Twig helpers, form APIs, package APIs, route conventions, and CSS conventions.
+- Before release readiness, run a final structured-diagnostics and system-owner naming pass: hard throws with literal messages must be reviewed as deliberate low-level invariants, recoverable diagnostics and user/operator feedback should use the Message layer and translation keys, and branding-irrelevant internal `studio` identifiers should be migrated to the `system` owner convention where practical.
 
 ### Suggested Commit Slices
 
@@ -281,7 +282,8 @@ Run a complete project audit without treating feature-draft assumptions or previ
 5. Split backend/admin/navigation/Twig/form presentation boundaries.
 6. Split content aggregate and add ACL/identity/session foundations.
 7. Align API/statistics/log/prefix follow-ups with their owning feature branches.
-8. Remove obsolete orientation docs and finish release documentation alignment.
+8. Run final Message-layer, translation-key, hard-throw, and `system` owner naming compliance checks.
+9. Remove obsolete orientation docs and finish release documentation alignment.
 
 ## Early Findings
 
