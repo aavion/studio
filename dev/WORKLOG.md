@@ -67,6 +67,7 @@
 - Split scheduler execution into `SchedulerRunner` as a thin facade plus `SchedulerDueTaskSelector`, `SchedulerTaskRunRecorder`, `SchedulerFailurePolicy`, and `SchedulerRunReporter` for due selection, persistent run recording, failure thresholds, and reporting.
 - Replaced the workflow-only console renderer with `ConsoleResultRenderer` so console commands share WorkflowResult text/JSON output, JSON payload writing, and status/exit-code mapping.
 - Added a central config default provider so missing or unreadable database-backed config keys fall back to registered core setting defaults before explicit caller fallbacks, and aligned setup config seeding to the same DB-free default source for non-input settings.
+- Added a shared setup input validator for web setup error-key validation and CLI input assertions, aligning language, URI, database URL/prefix, admin credential, and APP_SECRET length checks while keeping prompt and step filtering transport-specific.
 - Fixed content read fallback reporting so implicit/default language resolution does not emit a language-fallback warning when only the requested variant falls back.
 - ! Keep Symfony service discovery narrow so DTOs, value objects, messages, events, enums, and other non-services do not bloat the container.
 - [ ] Finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.

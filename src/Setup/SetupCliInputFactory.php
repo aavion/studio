@@ -23,6 +23,7 @@ final class SetupCliInputFactory
         SetupMessageTranslator $translator = new SetupMessageTranslator(),
         private readonly SetupSiteSettings $siteSettings = new SetupSiteSettings(),
         private readonly SetupInputNormalizer $inputNormalizer = new SetupInputNormalizer(),
+        private readonly SetupInputValidator $inputValidator = new SetupInputValidator(),
         private readonly ?array $extensionAvailability = null,
         mixed $input = null,
         mixed $output = null,
@@ -46,7 +47,7 @@ final class SetupCliInputFactory
         $databaseDriver = $this->databaseDriver($options, $databaseUrl, $interactive, $language);
         $parts = $this->databaseParts($options, $databaseUrl, $databaseDriver, $interactive, $language);
 
-        return new SetupInput(
+        $input = new SetupInput(
             appEnv: (string) $this->option($options, 'env', $this->environment('APP_ENV', 'dev')),
             language: $language,
             siteTitle: $siteTitle,
@@ -74,6 +75,9 @@ final class SetupCliInputFactory
             siteSettings: $this->siteSettings($options),
             dryRun: array_key_exists('dry-run', $options),
         );
+        $this->inputValidator->assertValidInput($input, $this->languageCatalog->availableLanguages($this->projectDir));
+
+        return $input;
     }
 
     private function appName(): string

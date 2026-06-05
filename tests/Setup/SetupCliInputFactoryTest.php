@@ -28,7 +28,7 @@ final class SetupCliInputFactoryTest extends TestCase
             'admin-username' => 'owner',
             'admin-password' => 'Safe1!pass',
             'admin-email' => 'owner@example.test',
-            'app-secret' => 'app-secret',
+            'app-secret' => 'app-secret-12',
             'dry-run' => false,
         ]);
 
@@ -252,7 +252,7 @@ final class SetupCliInputFactoryTest extends TestCase
             'Safe1!pass',
             'Safe1!pass',
             'owner@example.test',
-            'app-secret',
+            'app-secret-12',
             '',
         ]));
         $outputStream = $this->stream('');
@@ -280,7 +280,7 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertSame('db.example.test', $input->databaseHost());
         self::assertSame(3307, $input->databasePort());
         self::assertSame('owner@example.test', $input->adminEmail());
-        self::assertSame('app-secret', $input->appSecret());
+        self::assertSame('app-secret-12', $input->appSecret());
         self::assertStringContainsString('Installer language', $output);
         self::assertStringContainsString('Seitentitel', $output);
         self::assertStringContainsString('Datenbank-Treiber', $output);

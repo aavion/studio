@@ -169,12 +169,12 @@ final class SetupRunner
             $this->passwordPolicy->violationCodes($input->adminPassword(), $input->adminUsername(), $input->adminEmail()),
         );
 
-        if (null !== $input->appSecret() && strlen($input->appSecret()) < SetupWebInputFactory::MIN_APP_SECRET_LENGTH) {
+        if (null !== $input->appSecret() && strlen($input->appSecret()) < SetupInputValidator::MIN_APP_SECRET_LENGTH) {
             $issues[] = Message::error(
                 MessageCode::SETUP_APP_SECRET_TOO_SHORT,
                 MessageKey::SETUP_APP_SECRET_TOO_SHORT,
-                ['%min_length%' => SetupWebInputFactory::MIN_APP_SECRET_LENGTH],
-                ['field' => 'app_secret', 'min_length' => SetupWebInputFactory::MIN_APP_SECRET_LENGTH],
+                ['%min_length%' => SetupInputValidator::MIN_APP_SECRET_LENGTH],
+                ['field' => 'app_secret', 'min_length' => SetupInputValidator::MIN_APP_SECRET_LENGTH],
             );
         }
 
