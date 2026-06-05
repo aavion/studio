@@ -956,6 +956,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertStringContainsString('Live operation cleanup', (string) $client->getResponse()->getContent());
             self::assertStringContainsString('Cron syntax', (string) $client->getResponse()->getContent());
 
+            $client->loginUser($this->createUserWithLevel(8));
             $crawler = $client->request('GET', '/admin/scheduler/system.live_operation_cleanup');
 
             self::assertResponseIsSuccessful();

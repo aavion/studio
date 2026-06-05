@@ -69,6 +69,7 @@
 
 ### 2026-06-05
 - Addressed the latest review findings by preserving real Tailwind build failures and honoring supported URL locale prefixes before stored language preferences.
+- Refreshed the backend scheduler controller test login before the Windows-sensitive detail/form segment to keep the full-suite mock session stable across compatibility runners.
 - Addressed review findings by making request, mail, and profile locale selection skip unsupported candidates, keeping setup dry-run command planning independent from throwing PHP CLI resolution, and translating PHP CLI validation failure reasons in setup preflight output.
 - Added an Admin Settings System Information diagnostic page with current preflight status, cross-platform server/PHP/Composer summaries, reduced PHP configuration output, GD/Imagick capability reporting, and an explicit `ext-gd` platform requirement while keeping Imagick optional for hosting portability.
 - Applied the P4 drift-audit checkpoint to the current branch and aligned the System Information Composer diagnostic with the managed PHP CLI resolver instead of invoking bundled Composer through `PHP_BINARY` directly.
