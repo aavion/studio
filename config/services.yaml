@@ -278,11 +278,11 @@ services:
         arguments:
             $secret: '%kernel.secret%'
 
-    App\Security\ApiKeyVault:
+    App\Core\Security\SecretPayloadProtector:
         arguments:
             $secret: '%kernel.secret%'
 
-    App\Setup\SetupLiveOperationPayloadProtector:
+    App\Security\ApiKeyVault:
         arguments:
             $secret: '%kernel.secret%'
 

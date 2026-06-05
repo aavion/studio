@@ -11,6 +11,7 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Log\OperationLoggerInterface;
 use App\Core\Operation\Live\LiveOperationRunStore;
+use App\Core\Security\SecretPayloadProtector;
 use App\Core\Workflow\WorkflowResult;
 use App\Setup\SetupLiveOperationPayloadProtector;
 use App\Tests\Support\FilesystemTestHelper;
@@ -68,7 +69,7 @@ final class LiveOperationRunStoreTest extends TestCase
     {
         $projectDir = $this->createTemporaryDirectory('live-operation-protected-setup');
         $store = new LiveOperationRunStore($projectDir, 'test');
-        $protector = new SetupLiveOperationPayloadProtector('runtime-secret');
+        $protector = new SetupLiveOperationPayloadProtector(new SecretPayloadProtector('runtime-secret'));
         $payload = $protector->protect([
             'values' => [
                 'admin_password' => 'Secret1!password',

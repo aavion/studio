@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Security\SecretPayloadProtector;
+
 final readonly class SetupLiveOperationPayloadProtector
 {
-    private const VERSION = 'v1';
+    private const CONTEXT = 'setup.live_operation_payload';
     public const MARKER = '_setup_payload_protected';
     public const SECRETS = '_setup_payload_secrets';
     private const SECRET_FIELDS = [
@@ -17,7 +19,7 @@ final readonly class SetupLiveOperationPayloadProtector
         'app_secret',
     ];
 
-    public function __construct(private string $secret)
+    public function __construct(private SecretPayloadProtector $protector)
     {
     }
 
@@ -42,7 +44,7 @@ final readonly class SetupLiveOperationPayloadProtector
                 continue;
             }
 
-            $secrets[$field] = $this->encrypt($value);
+            $secrets[$field] = $this->protector->protect($value, self::CONTEXT, $field);
             $values[$field] = '[protected]';
         }
 
@@ -77,81 +79,12 @@ final readonly class SetupLiveOperationPayloadProtector
                 continue;
             }
 
-            $values[$field] = $this->decrypt($encrypted);
+            $values[$field] = $this->protector->reveal($encrypted, self::CONTEXT, $field);
         }
 
         unset($payload[self::MARKER], $payload[self::SECRETS]);
         $payload['values'] = $values;
 
         return $payload;
-    }
-
-    private function encrypt(string $value): string
-    {
-        $nonce = random_bytes(12);
-        $tag = '';
-        $ciphertext = openssl_encrypt(
-            $value,
-            'aes-256-gcm',
-            $this->key(),
-            OPENSSL_RAW_DATA,
-            $nonce,
-            $tag,
-        );
-
-        if (false === $ciphertext) {
-            throw new \RuntimeException('Setup live-operation payload could not be encrypted.');
-        }
-
-        return implode('.', [
-            self::VERSION,
-            base64_encode($nonce),
-            base64_encode($tag),
-            base64_encode($ciphertext),
-        ]);
-    }
-
-    private function decrypt(string $payload): string
-    {
-        $parts = explode('.', $payload);
-
-        if (4 !== count($parts) || self::VERSION !== $parts[0]) {
-            throw new \RuntimeException('Setup live-operation payload secret is invalid.');
-        }
-
-        $nonce = $this->decode($parts[1]);
-        $tag = $this->decode($parts[2]);
-        $ciphertext = $this->decode($parts[3]);
-
-        if (null === $nonce || null === $tag || null === $ciphertext) {
-            throw new \RuntimeException('Setup live-operation payload secret is invalid.');
-        }
-
-        $plaintext = openssl_decrypt(
-            $ciphertext,
-            'aes-256-gcm',
-            $this->key(),
-            OPENSSL_RAW_DATA,
-            $nonce,
-            $tag,
-        );
-
-        if (!is_string($plaintext)) {
-            throw new \RuntimeException('Setup live-operation payload could not be decrypted.');
-        }
-
-        return $plaintext;
-    }
-
-    private function key(): string
-    {
-        return hash('sha256', $this->secret, true);
-    }
-
-    private function decode(string $value): ?string
-    {
-        $decoded = base64_decode($value, true);
-
-        return is_string($decoded) ? $decoded : null;
     }
 }
