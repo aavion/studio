@@ -3,6 +3,9 @@
 
 declare(strict_types=1);
 
+ini_set('memory_limit', '512M');
+ini_set('max_execution_time', 0);
+
 use App\Localization\CoreTranslationBootstrapper;
 use App\Core\Package\PackageAssetFilesystem;
 use App\Core\Package\PackageAssetRegistryWriter;
