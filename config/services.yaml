@@ -166,6 +166,14 @@ services:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
 
+    App\Core\Translation\TranslationSourceCollector:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Core\Translation\TranslationRuntimeWriter:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\Core\Package\PackageAssetSyncer:
         arguments:
             $projectDir: '%kernel.project_dir%'

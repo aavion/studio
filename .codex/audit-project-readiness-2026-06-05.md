@@ -508,6 +508,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Translation/TranslationCatalogueAggregator.php:35`, `src/Core/Translation/TranslationCatalogueAggregator.php:57`, `src/Core/Translation/TranslationCatalogueAggregator.php:79`, `src/Core/Translation/TranslationCatalogueAggregator.php:166`, `src/Core/Translation/TranslationCatalogueAggregator.php:227`, `src/Core/Translation/TranslationCatalogueAggregator.php:266`, `src/Core/Translation/TranslationCatalogueAggregator.php:290`, `src/Core/Translation/TranslationCatalogueAggregator.php:378`.
 - **Impact:** The current implementation is careful enough for the branch, but it duplicates filesystem transaction patterns also present in package assets/installers and exceeds the preferred file-size target.
 - **Recommendation:** Split source discovery, catalogue merging/collision reporting, and runtime-directory transactions. Reuse or introduce a shared atomic directory replacement helper for package assets and translations.
+- **Implementation note:** Split completed with `TranslationCatalogueAggregator` as the workflow facade over `TranslationSourceCollector`, `TranslationCatalogueMerger`, and `TranslationRuntimeWriter`. A broader shared atomic-directory helper remains a later cross-filesystem follow-up because package assets/installers need to converge on the same contract.
 - **Priority:** Before First-party modules / Release.
 
 ### F-025 Public event dispatch wraps Symfony events with a stricter registry contract
