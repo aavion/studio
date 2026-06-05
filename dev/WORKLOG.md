@@ -68,6 +68,8 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Added a phased implementation plan for the project-readiness audit, covering shared runtime foundations, setup and operations, package boundaries, admin/presentation modularity, content/ACL/security foundations, API/data read models, documentation alignment, and suggested commit slices.
+- Ran the project-readiness decision interview for audit findings F-001 through F-047, recorded product decisions D1 through D47 in the audit log, and aligned the owning feature drafts for architecture, setup, content, system UI, admin, events, packages, security, navigation, API, scheduler, mailer, and operational workflows.
 - Started the issue #57 project-readiness drift audit with a complete production-domain pass across `src/`, recorded architecture/modularity/naming/security/performance/Symfony-alignment findings in `.codex/audit-project-readiness-2026-06-05.md`, and added cross-cutting scans for public entry points, large files, UUID generation, child processes, and filesystem mutation zones.
 - Centralized remaining duplicated UUID-v4 generation in statistics recording, package registry/install paths, state markers, account tokens, setup seeding, and setup password reset through the shared `UuidFactory`, with small PSR-12 cleanups discovered during the audit.
 - Addressed the latest review findings by preserving real Tailwind build failures and honoring supported URL locale prefixes before stored language preferences.

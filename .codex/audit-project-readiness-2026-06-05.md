@@ -100,12 +100,188 @@ Run a complete project audit without treating feature-draft assumptions or previ
 
 ## Open Decision Questions
 
-- Are UUID primary identifiers still the right default for all entities, or should internal entities move to auto-increment IDs plus public UUIDs/slugs where needed?
-- Should request and visitor IDs become shorter, longer, deterministic, or HMAC-derived differently?
-- Can unique visitors be identified more deterministically and stable?
-- Should session tokens be additionally bound to a visitor/client signal, and what privacy/usability tradeoff is acceptable?
-- Which custom abstractions should move closer to Symfony components before API and Security work expands their public surface?
-- Which large classes deserve immediate splitting before more features depend on their current boundaries?
+- Resolved through the product decision interview below. Deferred items are recorded as provisional until their owning feature branch implements the missing foundation.
+
+## Product Decisions
+
+- **D1:** Existing and future orchestration classes should be split into thin facades plus small services wherever this improves modularity, reuse, and context stability. The roughly 300-line target is a real design pressure, not only a hint.
+- **D2:** Controllers should be HTTP adapters. Workflow logic belongs in application services, and existing controllers should be refactored toward that boundary when touched or when audit work identifies a useful split.
+- **D3:** Package code is not a full sandbox. First-party and third-party packages share the lifecycle model, but package activation must validate package PHP, templates, routes, hooks, headers, namespaces/classes, and other capabilities against an adjustable allow/warn/block policy registry.
+- **D4:** Package authors should have one preferred `PackageContributions`-style builder/DTO API. Provider interfaces may remain internal adapters or advanced extension points.
+- **D5:** Custom Twig is a product feature. Schema Twig may be edited by trusted users with explicit permissions and validation; content-body Twig is not allowed or must be strongly sandboxed. Package Twig templates are trusted package code, but package access to sensitive user, ACL, or secret data must go through core-provided providers.
+- **D6:** Replace the custom UUID helper with `symfony/uid` as the unified UID source. Do not introduce a second public ID when the stable UID or a unique slug already covers the reference case. High-write tables may still need storage/index strategy review.
+- **D7:** Visitor identity should use a first-party, server-generated, HMAC-protected, rotatable visitor cookie that respects DNT/opt-out. Avoid machine IDs, advertising IDs, or fingerprinting.
+- **D8:** Session hardening should use a soft client/visitor binding strategy that can trigger risk scoring or re-authentication rather than blindly logging users out on ordinary network or browser changes.
+- **D9:** Current inbound request ID behavior may remain: sanitized `X-Request-ID`/`X-Correlation-ID` values are acceptable and should stay short enough for access-log filtering and later security correlation.
+- **D10:** Add a central payload/secret protection layer that derives context-specific keys from `APP_SECRET` through HKDF/Sodium-compatible labels and payload versions. `APP_SECRET` remains the root secret; rotation is an emergency action handled by the existing guard/recovery model.
+- **D11:** Modularize setup runner, preflight, wizard, and CLI/web input handling. Keep the setup seeder central enough to manage preset content coherently.
+- **D12:** Keep setup seeding easy to handle. Prefer separating seeder execution from seed data, for example with domain-aware PHP array data files that a central seeder reads, while retaining DBAL where it keeps bootstrap reliable.
+- **D13:** Hard setup/preflight requirements must block setup. Optional feature requirements should warn clearly instead of silently allowing broken features.
+- **D14:** Database table prefix support remains a product requirement for hosting multiple Studio instances in one database. Prefixing should be hardened and tested across Doctrine and raw DBAL paths.
+- **D15:** Symfony roles remain the native primary authorization layer. ACL groups are an optional, separate project/domain layer with AND/OR semantics, suitable for entity/tree permissions and package-owned domains. Long-term storage should support impact checks better than ad-hoc JSON scans.
+- **D16:** Split `ContentItem` and related content behavior into route/redirect, ACL, localization/variant, revision activation, and tree/sort boundaries before Editor/API growth.
+- **D17:** Provisional until the API feature branch: API responses should not be finalized before serializer, DTO/read-model, and permission decisions are made there.
+- **D18:** Keep `/api/live/**` for internal live JSON flows. Stable external APIs live under versioned prefixes such as `/api/v1/**`, so `/api/live/**` is intentionally outside the external API contract.
+- **D19:** Evaluate and prefer `symfony/lock` for scheduler and live-operation locks, keeping hosting portability and shared lock policy central.
+- **D20:** All child-process and detached-process creation should go through central process/environment services.
+- **D21:** Large test files should be split by behavior/domain as part of ongoing modularization.
+- **D22:** Console output should use a shared text/JSON/result/exit-code renderer.
+- **D23:** Message codes/keys should become domain-owned registries that aggregate into the central message layer.
+- **D24:** Package lifecycle transitions should use a central state-machine/transition policy for activate, deactivate, fault, remove, purge, and update behavior.
+- **D25:** Keep the `.manifest` `KEY=VALUE` format. Strengthen the validator rather than turning manifests into broad capability dumps.
+- **D26:** Keep one centralized form builder/submission layer, but align it as closely as practical with Symfony Forms and Validator.
+- **D27:** Add a central locale preference resolver for request, profile, setup, API, and mail. Mail intentionally keeps recipient-preferred-language fallback, then request/default depending on flow type.
+- **D28:** Keep granular statistics events for now and add scheduled snapshots/compaction read models once final statistics dimensions are known.
+- **D29:** Keep Monolog/file-backed logs for operational reliability during database problems. Modularize file-log browsing; JSONL or indexing can be revisited if performance requires it. Retention remains 30 days for log files.
+- **D30:** The account-link message-log mail stub may be used in production only when explicitly gated by `APP_DEBUG` and a strong admin warning; real mail delivery remains the production path.
+- **D31:** Response header hooks need an allow/deny policy. Packages may signal route-specific errors through explicit codes, but cannot freely define or remove all response headers.
+- **D32:** `src/**/README.md` files are only coarse orientation and should eventually disappear. Decisions belong in drafts/manuals; manuals remain snippets until the release documentation pass.
+- **D33:** Admin views should use separate query/filter/read-model/view-factory layers, separated from lifecycle/action services.
+- **D34:** Split navigation into repository, access filter, URL resolver, tree builder, and slice resolver while keeping a thin facade.
+- **D35:** Split Twig helper extensions by helper family.
+- **D36:** Markdown profiles remain intentional and may later be assigned by ACL. The Design profile is trusted/admin/package content only.
+- **D37:** Failed dynamic view injections should render visible diagnostics for admins or debug contexts, while normal production users are protected from raw failures.
+- **D38:** Admin diagnostics may offer a more detailed export for owners/admins, but only in strongly redacted form. Raw secrets, full env dumps, cookies, and request data remain out of scope.
+- **D39:** Split `SchedulerRunner` into due-task selection, run recording, failure policy, and reporting.
+- **D40:** Use Symfony Scheduler/Messenger as far as practical, with Studio-specific policy kept thin and explicit.
+- **D41:** API keys remain user-owned. Admins may oversee or revoke; scheduler/cron uses an admin-owned key so execution still runs in a user/role context.
+- **D42:** Request and visitor identity may support rate limiting and suspicious-behavior detection, but they are signals. Some enforcement may use IP buckets, some visitor buckets, and neither should be the only identity proof.
+- **D43:** The package validator policy registry should block, warn, or allow PHP functions, namespaces/classes, templates, routes, hooks, headers, and similar capabilities. Activation blocks on blocked rules; first-party overrides can be added later if needed.
+- **D44:** Repeated or severe package hook/injection failures should be attributable to package ownership and may mark the package faulty.
+- **D45:** Stabilize technical API, Twig, form, and CSS naming as refactors happen. Package-owned CSS should follow a predictable `<package>-<surface>-<component>` convention; the native system package should not assume every class must start with `studio-`.
+- **D46:** Target support is Linux, macOS, Windows, Apache, NGINX, IIS, and shared hosting that meets requirements. Untested combinations should be documented as untested while remaining compatibility goals.
+- **D47:** Provisional decisions should be recorded as `Decision: provisional until <feature>` at the finding and in the matching feature draft.
+
+## Finding Decision Map
+
+| Finding | Decision status |
+| --- | --- |
+| F-001 | D1 requires splitting package install orchestration into a facade plus small archive, staging, verification, and application services. |
+| F-002 | D1, D19, and D20 require splitting live-operation storage/process/lock behavior and centralizing lock/process policy. |
+| F-003 | D1, D2, and D33 require controller/action/read-model extraction for backend administration. |
+| F-004 | D11 and D13 require setup runner/preflight modularization while preserving hard requirement blocking. |
+| F-005 | D21 requires behavior/domain-based test-suite modularization. |
+| F-006 | D7, D8, and D42 replace fingerprint-like visitor assumptions with a first-party visitor signal and soft session/security use. |
+| F-007 | D9 keeps sanitized inbound request IDs but requires short, filterable values for log/security correlation. |
+| F-008 | D6 selects `symfony/uid` as the unified UID source and defers high-write storage/index optimization to schema work. |
+| F-009 | D28 keeps granular statistics plus later snapshot/compaction read models. |
+| F-010 | D4 requires a primary package contribution builder/DTO API. |
+| F-011 | D35 requires splitting Twig helper extensions by helper family. |
+| F-012 | D32 keeps domain READMEs as temporary coarse orientation and moves binding decisions to drafts/manuals. |
+| F-013 | D1 and D33 require package admin read-model/action split. |
+| F-014 | D22 requires a shared console result renderer. |
+| F-015 | D5 preserves Custom Twig with trusted-user, validation, and sandbox/provider boundaries. |
+| F-016 | D17 is provisional until API; API DTO/read-model boundaries will be decided in the API feature branch. |
+| F-017 | D2 requires account/password/API workflows to move into application services. |
+| F-018 | D2 and D11 require setup wizard flow extraction. |
+| F-019 | D23 requires domain-owned message registries aggregated centrally. |
+| F-020 | D24 requires a package lifecycle transition policy/state machine. |
+| F-021 | D25 keeps `.manifest` simple and strengthens validation/policy instead of broad manifest capability dumps. |
+| F-022 | D3, D5, D43, and D44 define package PHP/templates as validated trusted package code with policy-gated activation and package faulting. |
+| F-023 | D29 keeps file-backed logs and modularizes log browsing. |
+| F-024 | D1 applies to translation aggregation and filesystem transaction helpers. |
+| F-025 | D31 and D44 define public hook policy, failure attribution, and package faulting. |
+| F-026 | D14 keeps table prefixing as a product requirement and requires hardening/tests. |
+| F-027 | D16 requires content aggregate splitting. |
+| F-028 | D15 requires Symfony roles plus separate group ACL rules with clearer shared access-rule modeling. |
+| F-029 | D6 and D16 move UID handling toward `symfony/uid` and content-specific helpers. |
+| F-030 | D34 requires navigation builder modularization. |
+| F-031 | D27 requires centralized locale preference resolution with mail-specific fallback behavior. |
+| F-032 | D26 keeps a centralized form layer while moving it closer to Symfony Forms/Validator. |
+| F-033 | D39 and D40 require scheduler runner splitting and stronger Symfony Scheduler/Messenger alignment. |
+| F-034 | D19 requires evaluating/preferring `symfony/lock`. |
+| F-035 | D20 requires centralized child-process environment/process policy. |
+| F-036 | D15 requires ACL group impact/cleanup to move toward shared ACL reference ownership. |
+| F-037 | D30 gates the mail debug stub behind `APP_DEBUG` and warnings once production mail exists. |
+| F-038 | D10 and D41 define APP_SECRET-rooted key derivation and user-owned API key recovery semantics. |
+| F-039 | D33 requires admin list/review query/read-model/view-factory split. |
+| F-040 | D11 requires shared setup input normalization/validation for CLI and web. |
+| F-041 | D11 and D12 keep seeding central but split seed data from execution where useful. |
+| F-042 | D10 requires a central payload/secret protector. |
+| F-043 | D27 requires shared language/locale discovery and preference behavior. |
+| F-044 | D31 requires response header allow/deny policy. |
+| F-045 | D37 and D44 require admin/debug diagnostics plus package fault ownership for view injection failures. |
+| F-046 | D20 requires a central detached process starter. |
+| F-047 | D18 keeps `/api/live/**` internal and outside the versioned external API contract. |
+
+## Implementation Plan
+
+### Planning Principles
+
+- Keep implementation slices reviewable and independently testable. Avoid a single broad refactor PR that changes unrelated runtime behavior.
+- Prefer foundations that unlock multiple findings before domain-specific rewrites.
+- Preserve current behavior unless a finding explicitly calls out security, portability, or correctness drift.
+- Update tests, class map, worklog, feature drafts, and manuals in the same slice that changes behavior.
+- Commit by architectural theme, not by file type.
+
+### Phase 0: Preparation and Safety Baseline
+
+- Re-run focused inventory commands before each implementation slice: large classes, public callables, process execution, filesystem mutation, package hooks, and access-control paths.
+- Capture a starting verification baseline with targeted PHPUnit for touched domains, `bin/lint`, `php bin/console lint:container`, and full suite when a slice touches shared runtime behavior.
+- Add or update characterization tests only where current behavior is likely to be changed by extraction.
+- Keep this audit log as the canonical decision index and link implementation commits back to the relevant `F-###` and `D##` entries.
+
+### Phase 1: Shared Runtime Foundations
+
+- **Process and environment service (F-002, F-035, F-046 / D20):** Introduce a central child-process and detached-process starter that carries Symfony Dotenv output, strips web/CGI request context, validates resolved PHP binaries where needed, and owns cross-platform command quoting.
+- **Lock service policy (F-002, F-034 / D19):** Evaluate `symfony/lock`, define one lock-factory/policy surface, and migrate scheduler/live-operation locks behind that surface if it remains hosting-portable.
+- **Console result renderer (F-014 / D22):** Add a shared renderer for text/JSON output, exit codes, warnings, and actionable errors before adding more operational commands.
+- **Secret/payload protector (F-038, F-042 / D10):** Add a central `APP_SECRET`-rooted protector with contextual key labels and payload versions, then migrate only one low-risk token path first.
+- **UID foundation (F-008, F-029 / D6):** Replace the custom UUID helper with `symfony/uid` behind the existing factory boundary first, then migrate direct call sites in small batches.
+
+### Phase 2: Setup and Operational Workflows
+
+- **Setup pipeline split (F-004, F-018, F-040, F-041 / D11-D13):** Separate runner steps, preflight checks, CLI/web input normalization, dry-run planning, and seed execution/data while preserving hard requirement blocking.
+- **Operational admin workflows (F-002, F-023, F-046 / D20, D29, D37, D38):** Split live-operation storage, report building, runner supervision, cleanup, and diagnostics. Keep diagnostics redacted and admin/debug scoped.
+- **Scheduler alignment (F-033, F-034 / D39-D40):** Split due-task selection, execution recording, failure policy, and reporting; integrate Symfony Scheduler/Messenger where it reduces custom orchestration.
+
+### Phase 3: Package and Extension Boundaries
+
+- **Package installer split (F-001 / D1):** Extract upload staging, archive extraction, install verification, application/replacement, and archive/filesystem safety helpers while keeping a thin public installer facade.
+- **Contribution API (F-010 / D4):** Introduce or formalize a `PackageContributions` builder/DTO as the preferred author-facing extension surface and keep provider interfaces as adapters or advanced hooks.
+- **Package policy registry (F-020-F-022, F-025, F-044, F-045 / D3, D24, D25, D31, D43, D44):** Add allow/warn/block policy registries for PHP capabilities, templates, routes, hooks, headers, and lifecycle transitions. Block activation on blocked policy violations and mark packages faulty on severe or repeated owned failures.
+- **Naming conventions (F-010, F-011, F-045 / D32, D35, D45):** Stabilize developer-facing names as extension surfaces are touched, including Twig helper families and package-owned CSS naming with `<package>-<surface>-<component>`.
+
+### Phase 4: Admin, Navigation, and Presentation Modularity
+
+- **Backend controller split (F-003, F-013, F-017, F-039 / D2, D33):** Move package actions, account/password/API workflows, admin list/read-model generation, settings post handling, system info, and live-operation endpoints out of the central backend controller.
+- **Navigation split (F-030 / D34):** Separate navigation repository, access filtering, URL resolution, tree building, and slice resolving behind a thin facade.
+- **Twig and dynamic view helpers (F-011, F-045 / D35, D37, D44):** Split helper extensions by family and make injection failures visible to admin/debug contexts while assigning owned failures to packages.
+- **Form layer alignment (F-032 / D26):** Keep the central form builder but move validation, errors, and submission semantics closer to Symfony Forms and Validator.
+- **Locale resolver (F-031, F-043 / D27):** Centralize request/profile/setup/API/mail locale preference resolution and keep the mail-specific recipient fallback explicit.
+
+### Phase 5: Content, ACL, and Security Foundations
+
+- **Content aggregate split (F-027 / D16):** Split routing/redirects, localization/variants, revision activation, ACL links, and tree/sort behavior before the Editor and stable API depend on the current aggregate shape.
+- **ACL role/group model (F-028, F-036 / D15):** Keep Symfony roles native and add a separate group ACL layer with explicit AND/OR semantics, ownership references, impact checks, and cleanup rules.
+- **Visitor and request identity (F-006, F-007 / D7-D9, D42):** Implement first-party signed visitor cookies, preserve short request IDs, and use visitor/IP signals only as risk and rate-limit inputs.
+- **Session hardening (F-006 / D8):** Add soft client/visitor binding that can require re-authentication or raise risk, without fragile logout behavior on ordinary network changes.
+- **Mail debug behavior (F-037 / D30):** Ensure production mail stubs remain impossible without `APP_DEBUG` and clear admin warnings.
+
+### Phase 6: API and Data Read Models
+
+- **API branch handoff (F-016, F-047 / D17-D18, D41):** Keep `/api/live/**` internal and reserve `/api/v1/**` for the stable API. Decide serializer/DTO/read-model conventions inside the API feature branch.
+- **API key ownership (F-038 / D41):** Preserve user-owned API keys with admin oversight and admin-owned scheduler keys.
+- **Statistics and log read models (F-009, F-023 / D28-D29):** Keep granular events for now, then add snapshots/compaction and optional log indexing only after final analytics dimensions are known.
+- **Database prefix hardening (F-026 / D14):** Test table prefixes across Doctrine and raw DBAL paths, especially migrations, setup, package activation, and cleanup.
+
+### Phase 7: Documentation and Release Alignment
+
+- Move temporary `src/**/README.md` orientation content into drafts/manuals as matching implementation slices land, then remove obsolete domain READMEs.
+- Keep compatibility notes explicit for Linux, macOS, Windows, Apache, NGINX, IIS, and shared hosting; mark untested combinations as untested rather than unsupported.
+- After each phase, update `dev/CLASSMAP.md`, `dev/WORKLOG.md`, affected manuals, and PR checklist notes.
+- Before release readiness, run a final naming/documentation drift pass over public classes, interfaces, Twig helpers, form APIs, package APIs, route conventions, and CSS conventions.
+
+### Suggested Commit Slices
+
+1. Record audit decisions and implementation plan.
+2. Add shared process, lock, console, UID, and secret foundations.
+3. Split setup and operational workflow orchestration.
+4. Split package installer and add package policy/lifecycle foundations.
+5. Split backend/admin/navigation/Twig/form presentation boundaries.
+6. Split content aggregate and add ACL/identity/session foundations.
+7. Align API/statistics/log/prefix follow-ups with their owning feature branches.
+8. Remove obsolete orientation docs and finish release documentation alignment.
 
 ## Early Findings
 
