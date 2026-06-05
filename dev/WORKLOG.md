@@ -78,6 +78,10 @@
 ## Session Logs
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
+### 2026-06-06
+- Split setup preflight internals into a thin checklist facade plus focused Composer, Tailwind, process probe, row factory, requirement catalog, detail-row builder, and PHP CLI failure-key mapper services.
+- Compacted branch-external worklog sessions into `dev/WORKLOG_HISTORY.md` and shortened the recent pre-audit history block so the active worklog stays focused on the current audit branch.
+
 ### 2026-06-05
 - Removed the unused optional string-list helper from `ContentItem`; content UID validation already uses the shared `Uid::assert()` helper.
 - Split translation catalogue aggregation into source collection, YAML merge/collision handling, and runtime-directory writer services behind the existing aggregate facade/action.

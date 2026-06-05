@@ -322,6 +322,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Setup/SetupRunner.php:23`, `src/Setup/SetupRunner.php:45`, `src/Setup/SetupRunner.php:224`, `src/Setup/SetupPreflightChecker.php:10`, `src/Setup/SetupPreflightChecker.php:29`, `src/Setup/SetupPreflightChecker.php:74`.
 - **Impact:** Adding setup checks or changing setup order risks regressions because validation, environment writing, process execution, rollback, and reporting are coupled.
 - **Recommendation:** Introduce explicit `SetupStepProvider` and `SetupPreflightCheck` services. Let Symfony DI assemble checks/steps instead of using many constructor defaults in production services.
+- **Implementation note:** First preflight split completed by keeping `SetupPreflightChecker` as the DB-free checklist facade while moving Composer probing, Tailwind smoke checks, process probing, row construction, requirement groups, detail-row aggregation, and PHP CLI failure-key mapping into focused services. A full DI-assembled `SetupPreflightCheck` pipeline remains optional if future setup checks need independent registration.
 - **Priority:** Before Release.
 
 ### F-005 Controller tests protect too much behavior in oversized files
