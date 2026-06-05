@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-06-05  
+> **Updated**: 2026-06-06
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -75,7 +75,9 @@
 - [ ] Evaluate whether the documented minimum memory requirement should become 256M after PHPUnit 13.2/full-suite runs needed a higher CLI memory limit; do not fix this requirement until setup/init/lint/runtime memory behavior has been reviewed across target hosting platforms.
 
 ## Session Logs
-**Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
+**Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session and move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then keep a link to the archived history under the current session log.
+
+Archived compacted session history: [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
 
 ### 2026-06-05
 - Removed the unused optional string-list helper from `ContentItem`; content UID validation already uses the shared `Uid::assert()` helper.
