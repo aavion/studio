@@ -31,7 +31,7 @@ final class TestDatabaseContentSeeder
     private static function contentItems(): array
     {
         $setupSeed = new SetupDefaultSeed();
-        $homeContent = $setupSeed->homeContentItem();
+        $homeContent = $setupSeed->homeContentItem(['en', 'de']);
         $homeRevision = $setupSeed->homeContentRevision();
         $setupSchema = $setupSeed->contentSchema();
         $setupSchemaVersion = $setupSeed->contentSchemaVersion();

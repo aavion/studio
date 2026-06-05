@@ -387,7 +387,7 @@ final class AdminUserController extends AbstractController
             $groupsByRole[$role->value] = array_map(
                 fn (AclGroup $group): array => [
                     'identifier' => $group->identifier(),
-                    'label' => $group->name()['en'] ?? $group->identifier(),
+                    'label' => $group->name(),
                 ],
                 $this->assignableGroups($role),
             );

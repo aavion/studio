@@ -23,7 +23,7 @@ final class TestDatabaseSecuritySeeder
             $writer->insert('acl_group', [
                 'uid' => $group['uid'],
                 'identifier' => $group['identifier'],
-                'name' => $writer->json($group['name']),
+                'name' => $group['name'],
                 'min_role' => $group['min_role'],
                 'metadata' => $writer->json(['preset' => true]),
             ]);

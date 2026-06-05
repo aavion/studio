@@ -35,13 +35,13 @@ final class CoreDatabaseModelTest extends TestCase
         $contentAuthors = new AclGroup(
             '11111111-1111-7111-8111-111111111111',
             'content_authors',
-            ['en' => 'Content authors'],
+            'Content authors',
             AccessLevel::AUTHOR,
         );
         $reviewBoard = new AclGroup(
             '22222222-2222-7222-8222-222222222222',
             'review_board',
-            ['en' => 'Review board'],
+            'Review board',
             AccessLevel::MANAGER,
         );
         $user = new UserAccount(
@@ -118,7 +118,7 @@ final class CoreDatabaseModelTest extends TestCase
         new AclGroup(
             '11111111-1111-7111-8111-111111111111',
             'ab',
-            ['en' => 'Short'],
+            'Short',
             AccessLevel::USER,
         );
     }
@@ -232,6 +232,6 @@ final class CoreDatabaseModelTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(MessageKey::ACCESS_LEVEL_INVALID);
 
-        new AclGroup('11111111-1111-7111-8111-111111111111', 'bad', ['en' => 'Bad'], 42);
+        new AclGroup('11111111-1111-7111-8111-111111111111', 'bad', 'Bad', 42);
     }
 }

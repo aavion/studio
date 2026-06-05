@@ -163,10 +163,7 @@ final class AdminAclGroupController extends AbstractController
             $group = new AclGroup(
                 $this->uuidFactory->generate(),
                 $this->field($request, 'identifier'),
-                [
-                    'en' => $this->field($request, 'name_en'),
-                    'de' => $this->field($request, 'name_de') ?: $this->field($request, 'name_en'),
-                ],
+                $this->field($request, 'name'),
                 $accessLevel,
             );
             $this->entityManager->persist($group);
@@ -187,10 +184,15 @@ final class AdminAclGroupController extends AbstractController
         }
 
         $pending = [
-            'name_en' => $this->field($request, 'name_en'),
-            'name_de' => $this->field($request, 'name_de') ?: $this->field($request, 'name_en'),
+            'name' => $this->field($request, 'name'),
             'min_role' => (int) $this->field($request, 'min_role'),
         ];
+
+        if ('' === $pending['name']) {
+            $this->addFlash('error', 'admin.groups.form.invalid');
+
+            return null;
+        }
 
         try {
             AccessLevel::assert($pending['min_role']);
@@ -225,10 +227,7 @@ final class AdminAclGroupController extends AbstractController
         try {
             $oldName = $group->name();
             $oldMinRole = $group->minRole();
-            $group->rename([
-                'en' => $pending['name_en'],
-                'de' => $pending['name_de'],
-            ]);
+            $group->rename($pending['name']);
             $floorCleanup = $this->aclGroupImpact->removeBelowMinRoleReferences($group, $pending['min_role']);
             $group->changeMinRole($pending['min_role']);
             $this->entityManager->flush();

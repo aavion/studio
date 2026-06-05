@@ -43,7 +43,7 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
         );
     }
 
-    public function notify(AccountToken $token, AccountMailFlow $flow, ?string $recipientEmail = null, string $locale = 'en', array $parameters = []): void
+    public function notify(AccountToken $token, AccountMailFlow $flow, ?string $recipientEmail = null, string $locale = '', array $parameters = []): void
     {
         $adminFacing = in_array($flow, [
             AccountMailFlow::RegistrationApprovalRequested,

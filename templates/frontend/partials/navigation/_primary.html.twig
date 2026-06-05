@@ -23,7 +23,7 @@
 {% endmacro %}
 
 <nav class="studio-frontend-navigation" aria-label="{{ 'ui.frontend.navigation'|trans }}">
-    {% set items = studio_navigation('main', app.request.locale|default('en'), 3) %}
+    {% set items = studio_navigation('main', app.request.locale|default(''), 3) %}
     {% block frontend_navigation_items %}
         {{ _self.render_items(items) }}
     {% endblock %}

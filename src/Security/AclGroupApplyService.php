@@ -74,16 +74,15 @@ final readonly class AclGroupApplyService
      */
     private function update(AclGroup $group, AccessActor $actor, array $payload): WorkflowResult
     {
-        $nameEn = $this->string($payload['name_en'] ?? null);
-        $nameDe = $this->string($payload['name_de'] ?? null) ?: $nameEn;
+        $name = $this->string($payload['name'] ?? null);
         $minRole = (int) ($payload['min_role'] ?? -1);
 
-        if ('' === $nameEn || null !== $this->policy->validateGroupUpdate($actor, $group, $minRole)) {
+        if ('' === $name || null !== $this->policy->validateGroupUpdate($actor, $group, $minRole)) {
             return WorkflowResult::blocked([$this->message(MessageKey::ACL_GROUP_APPLY_UPDATE_BLOCKED, ['%group%' => $group->identifier()], ['group_uid' => $group->uid(), 'group' => $group->identifier()])]);
         }
 
         $impact = $this->impactService->impact($group);
-        $group->rename(['en' => $nameEn, 'de' => $nameDe]);
+        $group->rename($name);
         $floorCleanup = $this->impactService->removeBelowMinRoleReferences($group, $minRole);
         $group->changeMinRole($minRole);
         $this->entityManager->flush();

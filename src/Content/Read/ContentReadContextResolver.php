@@ -9,12 +9,12 @@ use App\Entity\ContentItem;
 final readonly class ContentReadContextResolver
 {
     public function __construct(
-        private string $defaultLanguage = 'en',
+        private string $defaultLanguage = '',
         private string $defaultVariant = 'default',
     ) {
     }
 
-    public function resolve(ContentItem $content, string $language = 'en', string $variant = 'default'): ?ContentReadContext
+    public function resolve(ContentItem $content, string $language = '', string $variant = 'default'): ?ContentReadContext
     {
         $language = trim($language);
         $variant = trim($variant);
@@ -39,7 +39,7 @@ final readonly class ContentReadContextResolver
             return $requestedLanguage;
         }
 
-        if (in_array($this->defaultLanguage, $availableLanguages, true)) {
+        if ('' !== $this->defaultLanguage && in_array($this->defaultLanguage, $availableLanguages, true)) {
             return $this->defaultLanguage;
         }
 

@@ -54,7 +54,7 @@
                             name="groups[]"
                             value="{{ group.identifier }}"
                         >
-                        <span>{{ group.name.en|default(group.identifier) }}</span>
+                        <span>{{ group.name }}</span>
                     </label>
                 {% endfor %}
             </fieldset>
@@ -92,7 +92,7 @@
                     <select name="group">
                         <option value="">{{ 'admin.users.filters.any_group'|trans }}</option>
                         {% for group in users_view.group_options %}
-                            <option value="{{ group.identifier }}" {% if group.identifier == users_view.filters.group %}selected{% endif %}>{{ group.name.en|default(group.identifier) }}</option>
+                            <option value="{{ group.identifier }}" {% if group.identifier == users_view.filters.group %}selected{% endif %}>{{ group.name }}</option>
                         {% endfor %}
                     </select>
                 </label>

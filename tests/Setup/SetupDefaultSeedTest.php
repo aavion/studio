@@ -33,14 +33,15 @@ final class SetupDefaultSeedTest extends TestCase
     public function testItDefinesSetupAclAndContentDefaults(): void
     {
         $seed = new SetupDefaultSeed();
-        $input = $this->input(siteTitle: 'Seeded Studio');
+        $input = $this->input(siteTitle: 'Seeded Studio', language: 'de');
 
         self::assertSame([], $seed->aclGroups());
         self::assertSame('/home', $seed->homePath());
         self::assertSame('static_page', $seed->contentSchema()['identifier']);
         self::assertSame(['title', 'subtitle', 'body', 'seo_title'], array_column($seed->contentSchemaVersion()['definition']['fields'], 'identifier'));
-        self::assertSame('home', $seed->homeContentItem()['slug']);
-        self::assertSame('Seeded Studio', $seed->homeContentFields($input)['title']['en']);
+        self::assertSame('home', $seed->homeContentItem([$input->language()])['slug']);
+        self::assertSame(['de'], $seed->homeContentItem([$input->language()])['available_languages']);
+        self::assertSame('Seeded Studio', $seed->homeContentFields($input)['title']['de']);
     }
 
     private function input(

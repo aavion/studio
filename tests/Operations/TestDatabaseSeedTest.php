@@ -129,8 +129,9 @@ final class TestDatabaseSeedTest extends TestCase
     public function testItSeedsPublishedContentWithActiveRevisionsAndFields(): void
     {
         $seed = new SetupDefaultSeed();
+        $input = $this->setupSeedInput();
         $content = $this->pdo
-            ->query(sprintf("SELECT slug, custom_url, active_revision_uid FROM content_item WHERE slug = '%s'", $seed->homeContentItem()['slug']))
+            ->query(sprintf("SELECT slug, custom_url, active_revision_uid FROM content_item WHERE slug = '%s'", $seed->homeContentItem([$input->language()])['slug']))
             ->fetch(PDO::FETCH_ASSOC);
 
         self::assertIsArray($content);
@@ -144,7 +145,7 @@ final class TestDatabaseSeedTest extends TestCase
         self::assertSame($seed->homePath(), json_decode((string) $homePath, true, flags: JSON_THROW_ON_ERROR));
 
         $titleJson = $this->pdo
-            ->query(sprintf("SELECT fv.field_content FROM content_field_value fv INNER JOIN content_item ci ON ci.active_revision_uid = fv.revision_uid WHERE ci.slug = '%s' AND fv.language = 'en' AND fv.variant = 'default' AND fv.field_identifier = 'title'", $seed->homeContentItem()['slug']))
+            ->query(sprintf("SELECT fv.field_content FROM content_field_value fv INNER JOIN content_item ci ON ci.active_revision_uid = fv.revision_uid WHERE ci.slug = '%s' AND fv.language = '%s' AND fv.variant = 'default' AND fv.field_identifier = 'title'", $seed->homeContentItem([$input->language()])['slug'], $input->language()))
             ->fetchColumn();
 
         self::assertSame('Welcome to Studio', json_decode((string) $titleJson, true, flags: JSON_THROW_ON_ERROR));

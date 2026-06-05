@@ -166,6 +166,8 @@ message:
       invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
     group_identifier:
       invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein und mindestens 3 Zeichen enthalten.'
+    group_name:
+      invalid: 'ACL-Gruppenname muss 1 bis 160 Zeichen enthalten.'
   system:
     secret_payload:
       root_secret_empty: 'Secret-Payload-Schutz benötigt ein Root-Secret.'

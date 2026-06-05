@@ -6,6 +6,7 @@ namespace App\Setup;
 
 use App\Core\Validation\EmailAddress;
 use App\Entity\UserAccount;
+use App\Localization\LocaleToken;
 use InvalidArgumentException;
 
 final readonly class SetupInput
@@ -62,11 +63,12 @@ final readonly class SetupInput
 
     public static function withDefaults(
         string $appEnv = 'dev',
-        string $language = 'en',
+        ?string $language = null,
         string $defaultUri = 'http://localhost',
         ?string $databaseUrl = null,
     ): self {
         $defaultUri = '' === trim($defaultUri) ? 'http://localhost' : $defaultUri;
+        $language ??= LocaleToken::systemDefault();
 
         return new self(
             appEnv: $appEnv,

@@ -196,6 +196,7 @@ final class MessageKey
     public const SETUP_PASSWORD_RESET_CONFIRM_REQUIRED = 'message.setup.password_reset.confirm_required';
     public const ACCESS_LEVEL_INVALID = 'message.access.level.invalid';
     public const ACCESS_GROUP_IDENTIFIER_INVALID = 'message.access.group_identifier.invalid';
+    public const ACCESS_GROUP_NAME_INVALID = 'message.access.group_name.invalid';
     public const STATE_SUBJECT_TYPE_INVALID = 'message.state.subject_type.invalid';
     public const STATE_MARKER_KEY_INVALID = 'message.state.marker_key.invalid';
     public const CONFIG_KEY_INVALID = 'message.config.key.invalid';

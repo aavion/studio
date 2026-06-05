@@ -25,7 +25,7 @@ final readonly class NavigationBuilder
      */
     public function build(
         string $identifier = 'main',
-        string $language = 'en',
+        string $language = '',
         int $maxDepth = 3,
         int $startLevel = 1,
         ?string $rootUid = null,
@@ -52,7 +52,7 @@ final readonly class NavigationBuilder
      */
     public function collectItems(
         string $identifier = 'main',
-        string $language = 'en',
+        string $language = '',
         int $maxDepth = 3,
         int $startLevel = 1,
         ?string $rootUid = null,
@@ -444,7 +444,7 @@ final readonly class NavigationBuilder
      */
     private function label(array $labels, string $language): string
     {
-        $label = $labels[$language] ?? $labels['en'] ?? reset($labels);
+        $label = $labels[$language] ?? reset($labels);
 
         return is_string($label) ? $label : '';
     }

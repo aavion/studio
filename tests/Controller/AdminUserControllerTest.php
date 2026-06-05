@@ -1602,8 +1602,7 @@ final class AdminUserControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/admin/users/groups');
         $client->submit($crawler->selectButton('Create group')->form([
             'identifier' => 'peer_created_group',
-            'name_en' => 'Peer created group',
-            'name_de' => 'Peer created group',
+            'name' => 'Peer created group',
             'min_role' => '8',
         ]));
 
@@ -1834,8 +1833,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
         $client->submit($crawler->selectButton('Save')->form([
-            'name_en' => 'Floor update group',
-            'name_de' => 'Floor update group',
+            'name' => 'Floor update group',
             'min_role' => (string) AccessLevel::PUBLIC,
         ]));
 
@@ -1904,8 +1902,7 @@ final class AdminUserControllerTest extends WebTestCase
         try {
             $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
             $client->submit($crawler->selectButton('Save')->form([
-                'name_en' => 'Default level guard',
-                'name_de' => 'Default level guard',
+                'name' => 'Default level guard',
                 'min_role' => (string) AccessLevel::PUBLIC,
             ]));
 
@@ -1943,8 +1940,7 @@ final class AdminUserControllerTest extends WebTestCase
         try {
             $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
             $client->submit($crawler->selectButton('Save')->form([
-                'name_en' => 'Default raise guard',
-                'name_de' => 'Default raise guard',
+                'name' => 'Default raise guard',
                 'min_role' => (string) AccessLevel::AUTHOR,
             ]));
 
@@ -1985,8 +1981,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
         $client->submit($crawler->selectButton('Save')->form([
-            'name_en' => 'Floor cleanup',
-            'name_de' => 'Floor cleanup',
+            'name' => 'Floor cleanup',
             'min_role' => (string) AccessLevel::AUTHOR,
         ]));
 
@@ -2029,8 +2024,7 @@ final class AdminUserControllerTest extends WebTestCase
                 AclGroupApplyService::ACTION_UPDATE,
                 $admin->uid(),
                 [
-                    'name_en' => 'Live floor guard',
-                    'name_de' => 'Live floor guard',
+                    'name' => 'Live floor guard',
                     'min_role' => AccessLevel::MANAGER,
                 ],
             );
@@ -2054,8 +2048,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
         $client->submit($crawler->selectButton('Save')->form([
-            'name_en' => 'Review update changed',
-            'name_de' => 'Review update changed',
+            'name' => 'Review update changed',
             'min_role' => (string) AccessLevel::MANAGER,
         ]));
 
@@ -2073,7 +2066,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         self::assertInstanceOf(AclGroup::class, $updatedGroup);
         self::assertSame(AccessLevel::MANAGER, $updatedGroup->minRole());
-        self::assertSame('Review update changed', $updatedGroup->name()['en']);
+        self::assertSame('Review update changed', $updatedGroup->name());
 
         $entityManager->remove($updatedGroup);
         $entityManager->flush();
@@ -2086,8 +2079,7 @@ final class AdminUserControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/admin/users/groups');
         $form = $crawler->selectButton('Create group')->form([
             'identifier' => 'review_team',
-            'name_en' => 'Review team',
-            'name_de' => 'Review-Team',
+            'name' => 'Review team',
             'min_role' => '6',
         ]);
         $client->submit($form);
@@ -2101,7 +2093,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         self::assertInstanceOf(AclGroup::class, $group);
         self::assertSame(6, $group->minRole());
-        self::assertSame(['en' => 'Review team', 'de' => 'Review-Team'], $group->name());
+        self::assertSame('Review team', $group->name());
         $entityManager->remove($group);
         $entityManager->flush();
     }
@@ -2171,7 +2163,7 @@ final class AdminUserControllerTest extends WebTestCase
         $group = new AclGroup(
             '62000000-0000-7000-8000-'.substr(md5($identifier), 0, 12),
             $identifier,
-            ['en' => ucfirst(str_replace('_', ' ', $identifier))],
+            ucfirst(str_replace('_', ' ', $identifier)),
             $accessLevel,
         );
         $entityManager->persist($group);

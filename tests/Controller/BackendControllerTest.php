@@ -1156,7 +1156,7 @@ final class BackendControllerTest extends WebTestCase
         $originalRegistrationEmail = $config->get(UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '');
         $originalSecurityEmail = $config->get(UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, '');
         $originalMenuSortOrder = $config->get(UserFlowConfig::MENU_SORT_ORDER_KEY, 900);
-        $group = new AclGroup('66000000-0000-7000-8000-000000000001', 'settings_clear_default', ['en' => 'Settings clear default'], AccessLevel::USER);
+        $group = new AclGroup('66000000-0000-7000-8000-000000000001', 'settings_clear_default', 'Settings clear default', AccessLevel::USER);
         $entityManager->persist($group);
         $entityManager->flush();
         $config->set('user.default_acl_group', $group->identifier(), ConfigValueType::String, modifiedBy: 'test');

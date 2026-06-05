@@ -148,7 +148,7 @@ final class Version20260531000000 extends AbstractMigration
         $aclGroup = $schema->createTable('acl_group');
         $aclGroup->addColumn('uid', 'string', ['length' => 36]);
         $aclGroup->addColumn('identifier', 'string', ['length' => 80]);
-        $aclGroup->addColumn('name', 'json');
+        $aclGroup->addColumn('name', 'string', ['length' => 160]);
         $aclGroup->addColumn('min_role', 'integer');
         $aclGroup->addColumn('metadata', 'json');
         $this->addPrimaryKey($aclGroup, 'uid');

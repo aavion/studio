@@ -75,8 +75,7 @@ final readonly class AdminUserListViewFactory
             $groups = array_values(array_filter(
                 $groups,
                 static fn (AclGroup $group): bool => str_contains(mb_strtolower($group->identifier()), $needle)
-                    || str_contains(mb_strtolower((string) ($group->name()['en'] ?? '')), $needle)
-                    || str_contains(mb_strtolower((string) ($group->name()['de'] ?? '')), $needle),
+                    || str_contains(mb_strtolower($group->name()), $needle),
             ));
         }
 
@@ -245,7 +244,7 @@ final readonly class AdminUserListViewFactory
     {
         usort($groups, static function (AclGroup $left, AclGroup $right) use ($sort, $direction): int {
             $result = match ($sort) {
-                'name' => strcasecmp((string) ($left->name()['en'] ?? $left->identifier()), (string) ($right->name()['en'] ?? $right->identifier())),
+                'name' => strcasecmp($left->name(), $right->name()),
                 'identifier' => strcasecmp($left->identifier(), $right->identifier()),
                 default => [$left->minRole(), $left->identifier()] <=> [$right->minRole(), $right->identifier()],
             };

@@ -12,7 +12,10 @@ final class SetupMessageTranslator
     /** @var array<string, array<string, mixed>> */
     private array $catalogues = [];
 
-    public function __construct(private ?string $environment = null)
+    public function __construct(
+        private ?string $environment = null,
+        private SetupLanguageCatalog $languageCatalog = new SetupLanguageCatalog(),
+    )
     {
     }
 
@@ -21,7 +24,10 @@ final class SetupMessageTranslator
      */
     public function translate(string $projectDir, string $language, string $key, array $parameters = []): string
     {
-        $message = $this->read($projectDir, $language, $key) ?? $this->read($projectDir, 'en', $key) ?? $key;
+        $defaultLanguage = $this->languageCatalog->defaultLanguage($projectDir, $this->environment);
+        $message = $this->read($projectDir, $language, $key)
+            ?? ($defaultLanguage !== $language ? $this->read($projectDir, $defaultLanguage, $key) : null)
+            ?? $key;
 
         return strtr($message, $parameters);
     }

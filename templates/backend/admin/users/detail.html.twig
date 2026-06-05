@@ -57,7 +57,7 @@
                 name: 'groups',
                 label: 'admin.users.fields.groups'|trans,
                 values: user_account.groups|map(group => group.identifier),
-                options: groups|reduce((carry, group) => carry|merge({(group.identifier): group.name.en|default(group.identifier)}), {}),
+                options: groups|reduce((carry, group) => carry|merge({(group.identifier): group.name}), {}),
             } only %}
             {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.actions.save'|trans} only %}
         </form>

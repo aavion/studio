@@ -83,7 +83,7 @@ final readonly class SetupDatabaseSeeder
         $now = $this->now();
         $schema = $this->defaultSeed->contentSchema();
         $schemaVersion = $this->defaultSeed->contentSchemaVersion();
-        $homeContent = $this->defaultSeed->homeContentItem();
+        $homeContent = $this->defaultSeed->homeContentItem([$input->language()]);
         $homeRevision = $this->defaultSeed->homeContentRevision();
 
         $schemaUid = $this->upsertContentSchema($connection, $schema, $now);
@@ -103,19 +103,16 @@ final readonly class SetupDatabaseSeeder
         return ['schema' => $schema['identifier'], 'path' => $this->defaultSeed->homePath(), 'content_uid' => $contentUid];
     }
 
-    /**
-     * @param array<string, string> $name
-     */
     private function upsertAclGroup(
         Connection $connection,
         string $uid,
         string $identifier,
-        array $name,
+        string $name,
         int $minRole,
     ): string {
         $values = [
             'identifier' => $identifier,
-            'name' => json_encode($name, JSON_THROW_ON_ERROR),
+            'name' => $name,
             'min_role' => $minRole,
             'metadata' => json_encode(['seeded_by' => 'setup'], JSON_THROW_ON_ERROR),
         ];

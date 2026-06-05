@@ -37,22 +37,22 @@ final class PublishedContentResolver
         $this->pathLookup = $pathLookup ?? new ContentPathLookup($contentItems);
     }
 
-    public function findBySlug(string $slug, AccessActor $actor, string $language = 'en', string $variant = 'default'): ?PublishedContentView
+    public function findBySlug(string $slug, AccessActor $actor, string $language = '', string $variant = 'default'): ?PublishedContentView
     {
         return $this->resolveBySlug($slug, $actor, $language, $variant)->view();
     }
 
-    public function resolveBySlug(string $slug, AccessActor $actor, string $language = 'en', string $variant = 'default'): PublishedContentResolveResult
+    public function resolveBySlug(string $slug, AccessActor $actor, string $language = '', string $variant = 'default'): PublishedContentResolveResult
     {
         return $this->resolve($this->contentItems->findOneContentBySlug($slug), $actor, $language, $variant);
     }
 
-    public function findByPath(string $path, AccessActor $actor, string $language = 'en', string $variant = 'default'): ?PublishedContentView
+    public function findByPath(string $path, AccessActor $actor, string $language = '', string $variant = 'default'): ?PublishedContentView
     {
         return $this->resolveByPath($path, $actor, $language, $variant)->view();
     }
 
-    public function resolveByPath(string $path, AccessActor $actor, string $language = 'en', string $variant = 'default'): PublishedContentResolveResult
+    public function resolveByPath(string $path, AccessActor $actor, string $language = '', string $variant = 'default'): PublishedContentResolveResult
     {
         $routePath = ContentRoutePath::fromPath($path);
         $variant = $routePath->variant() ?? $variant;

@@ -1036,7 +1036,7 @@ final class UserControllerTest extends WebTestCase
         $group = new AclGroup(
             '00000000-0000-7000-8000-000000009901',
             'signup_default',
-            ['en' => 'Signup Default'],
+            'Signup Default',
             AccessLevel::USER,
         );
         $entityManager->persist($group);
@@ -1635,7 +1635,7 @@ final class UserControllerTest extends WebTestCase
         $group = new AclGroup(
             '62000000-0000-7000-8000-'.substr(md5($identifier), 0, 12),
             $identifier,
-            ['en' => ucfirst(str_replace('_', ' ', $identifier))],
+            ucfirst(str_replace('_', ' ', $identifier)),
             $minRole,
         );
         $entityManager->persist($group);

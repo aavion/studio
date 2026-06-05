@@ -120,7 +120,7 @@ final class ViewTwigExtension extends AbstractExtension implements GlobalsInterf
      */
     public function navigation(
         string $identifier = 'main',
-        string $language = 'en',
+        string $language = '',
         int $maxDepth = 3,
         int $startLevel = 1,
         ?string $rootUid = null,

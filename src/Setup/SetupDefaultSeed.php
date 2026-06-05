@@ -9,6 +9,7 @@ use App\Core\Config\ConfigValueType;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Content\Routing\ContentRouteLocalization;
 use App\Core\Statistics\AccessStatisticsPolicy;
+use App\Localization\LocaleToken;
 use App\Scheduler\SchedulerSettings;
 use App\Security\UserFlowConfig;
 
@@ -66,7 +67,7 @@ final readonly class SetupDefaultSeed
     }
 
     /**
-     * @return list<array{uid: string, identifier: string, name: array<string, string>, min_role: int}>
+     * @return list<array{uid: string, identifier: string, name: string, min_role: int}>
      */
     public function aclGroups(): array
     {
@@ -118,10 +119,17 @@ final readonly class SetupDefaultSeed
     }
 
     /**
+     * @param list<string> $availableLanguages
+     *
      * @return array{uid: string, slug: string, status: string, parent_uid: string, sort_order: int, schema_version: int, version: int, available_languages: list<string>, available_variants: list<string>, visibility: string, view_min_level: int, edit_min_level: int, manage_min_level: int, template_hint: string}
      */
-    public function homeContentItem(): array
+    public function homeContentItem(array $availableLanguages): array
     {
+        $availableLanguages = array_values(array_unique(array_filter(
+            $availableLanguages,
+            static fn (string $language): bool => LocaleToken::isValid($language),
+        )));
+
         return [
             'uid' => '20000000-0000-7000-8000-000000000001',
             'slug' => 'home',
@@ -130,7 +138,7 @@ final readonly class SetupDefaultSeed
             'sort_order' => 10,
             'schema_version' => 1,
             'version' => 1,
-            'available_languages' => ['en', 'de'],
+            'available_languages' => [] === $availableLanguages ? [LocaleToken::systemDefault()] : $availableLanguages,
             'available_variants' => ['default'],
             'visibility' => 'public',
             'view_min_level' => AccessLevel::PUBLIC,
@@ -157,22 +165,20 @@ final readonly class SetupDefaultSeed
      */
     public function homeContentFields(SetupInput $input): array
     {
+        $language = $input->language();
+
         return [
             'title' => [
-                'en' => $input->siteTitle(),
-                'de' => $input->siteTitle(),
+                $language => $input->siteTitle(),
             ],
             'subtitle' => [
-                'en' => 'Your new Studio site is ready.',
-                'de' => 'Deine neue Studio-Seite ist bereit.',
+                $language => 'Your new Studio site is ready.',
             ],
             'body' => [
-                'en' => ['html' => '<p>This placeholder page was created during setup and can be replaced in the editor.</p>'],
-                'de' => ['html' => '<p>Diese Platzhalterseite wurde waehrend des Setups angelegt und kann im Editor ersetzt werden.</p>'],
+                $language => ['html' => '<p>This placeholder page was created during setup and can be replaced in the editor.</p>'],
             ],
             'seo_title' => [
-                'en' => $input->siteTitle(),
-                'de' => $input->siteTitle(),
+                $language => $input->siteTitle(),
             ],
         ];
     }

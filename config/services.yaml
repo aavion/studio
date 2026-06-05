@@ -159,6 +159,7 @@ services:
     App\Localization\TranslationLanguageCatalog:
         arguments:
             $projectDir: '%kernel.project_dir%'
+            $preferredDefaultLanguage: '%kernel.default_locale%'
 
     App\Core\Translation\TranslationRuntimePath:
         arguments:
