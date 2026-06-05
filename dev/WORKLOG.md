@@ -76,6 +76,7 @@
 - Clarified project rules for `system`-owned technical naming and structured Message-layer diagnostics, then aligned the new secret payload protector with translated system message keys.
 - Added a final audit roadmap gate for Message-layer diagnostics, translation-key coverage, deliberate hard throws, and `system` owner naming compliance.
 - Added a project rule and final audit gate for dynamic language handling: runtime logic and administrative forms should avoid hardcoded language variants, while intentionally localized Content entities remain allowed to store per-language variants.
+- Hardened access request id handling so only short safe upstream correlation tokens are reused, invalid or oversized request-id headers fall back to compact generated ids, and internal request metadata attributes use the `system` owner prefix.
 - Extracted a shared cross-platform detached process starter for Live Operations and deferred Messenger drains so output files, PID markers, command quoting, and filtered Dotenv-aware environments share one boundary.
 - Added a central locale preference resolver for request, profile, and mail flows so dynamically discovered languages, stale user settings, session/request fallbacks, and default-language behavior share one supported-language policy.
 - Flattened ACL group names from fixed English/German maps into one generic administrative name, updated group forms/review/apply flows, and made setup home content seed its available language from setup input rather than a fixed language list.

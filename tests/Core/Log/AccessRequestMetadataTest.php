@@ -15,7 +15,7 @@ final class AccessRequestMetadataTest extends TestCase
     {
         $metadata = new AccessRequestMetadata();
         $request = Request::create('/admin/logs', 'POST', server: [
-            'HTTP_X_REQUEST_ID' => 'request 123',
+            'HTTP_X_REQUEST_ID' => 'request-123',
             'HTTP_REFERER' => 'https://example.org/source?token=hidden#fragment',
             'HTTP_ACCEPT_LANGUAGE' => 'de-DE,de;q=0.9,en;q=0.8',
             'CONTENT_TYPE' => 'application/json; charset=utf-8',
@@ -23,7 +23,7 @@ final class AccessRequestMetadataTest extends TestCase
         $metadata->markStarted($request);
         $request->attributes->set('_route', 'backend_admin_route');
 
-        self::assertSame('request123', $metadata->requestId($request));
+        self::assertSame('request-123', $metadata->requestId($request));
         self::assertIsInt($metadata->durationMs($request));
         self::assertSame('admin', $metadata->surface($request));
         self::assertSame('backend_admin_route', $metadata->resolvedRoute($request));
@@ -33,11 +33,36 @@ final class AccessRequestMetadataTest extends TestCase
         self::assertSame('application/json', $metadata->contentType($request->headers->get('Content-Type')));
         self::assertSame(7, $metadata->responseSize(new Response('content')));
         self::assertSame([
-            'request_id' => 'request123',
+            'request_id' => 'request-123',
             'visitor_id' => 'visitor-a',
             'requested_path' => '/admin/logs',
             'resolved_route' => 'backend_admin_route',
         ], $metadata->trace($request, 'visitor-a'));
+    }
+
+    public function testItFallsBackToGeneratedRequestIdsForInvalidHeaderTokens(): void
+    {
+        $metadata = new AccessRequestMetadata();
+        $request = Request::create('/admin/logs', server: [
+            'HTTP_X_REQUEST_ID' => 'request 123',
+            'HTTP_X_CORRELATION_ID' => str_repeat('a', 65),
+        ]);
+
+        $requestId = $metadata->requestId($request);
+
+        self::assertMatchesRegularExpression('/\A[a-f0-9]{24}\z/', $requestId);
+        self::assertSame($requestId, $metadata->requestId($request));
+    }
+
+    public function testItFallsBackToCorrelationIdWhenPrimaryRequestIdIsInvalid(): void
+    {
+        $metadata = new AccessRequestMetadata();
+        $request = Request::create('/admin/logs', server: [
+            'HTTP_X_REQUEST_ID' => 'short',
+            'HTTP_X_CORRELATION_ID' => 'correlation-123',
+        ]);
+
+        self::assertSame('correlation-123', $metadata->requestId($request));
     }
 
     public function testItRedactsSensitivePathSegments(): void

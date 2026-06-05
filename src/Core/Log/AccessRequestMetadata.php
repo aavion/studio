@@ -9,8 +9,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class AccessRequestMetadata
 {
-    public const REQUEST_ID_ATTRIBUTE = '_studio_access_request_id';
-    public const STARTED_AT_ATTRIBUTE = '_studio_access_started_at';
+    public const REQUEST_ID_ATTRIBUTE = '_system_access_request_id';
+    public const STARTED_AT_ATTRIBUTE = '_system_access_started_at';
+    private const GENERATED_REQUEST_ID_BYTES = 12;
+    private const MAX_REQUEST_ID_LENGTH = 64;
+    private const MIN_REQUEST_ID_LENGTH = 8;
+    private const REQUEST_ID_PATTERN = '/\A[A-Za-z0-9][A-Za-z0-9._:-]*\z/';
     private const REDACTED_SEGMENT = '[redacted]';
 
     public function markStarted(Request $request): void
@@ -32,7 +36,7 @@ final readonly class AccessRequestMetadata
 
         $requestId = $this->headerToken($request->headers->get('X-Request-ID'))
             ?? $this->headerToken($request->headers->get('X-Correlation-ID'))
-            ?? bin2hex(random_bytes(16));
+            ?? $this->generateRequestId();
         $request->attributes->set(self::REQUEST_ID_ATTRIBUTE, $requestId);
 
         return $requestId;
@@ -220,8 +224,15 @@ final readonly class AccessRequestMetadata
             return null;
         }
 
-        $token = preg_replace('/[^A-Za-z0-9._:-]/', '', $value) ?? '';
+        if (strlen($value) < self::MIN_REQUEST_ID_LENGTH || strlen($value) > self::MAX_REQUEST_ID_LENGTH) {
+            return null;
+        }
 
-        return '' === $token ? null : substr($token, 0, 64);
+        return 1 === preg_match(self::REQUEST_ID_PATTERN, $value) ? $value : null;
+    }
+
+    private function generateRequestId(): string
+    {
+        return bin2hex(random_bytes(self::GENERATED_REQUEST_ID_BYTES));
     }
 }
