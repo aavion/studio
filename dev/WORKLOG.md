@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Moved scheduler run locking behind Symfony Lock while keeping the existing scheduler lock adapter and contention behavior intact for cron/API callers.
 - Replaced the custom UUID generator with Symfony UID-backed UUIDv7 generation, centralized UID validation through Symfony's UUID parser, normalized UUID-shaped fixtures to valid RFC UUIDs, and hardened package ZIP installer test cleanup so discovery side effects do not leak into later package lifecycle tests.
 - Added a phased implementation plan for the project-readiness audit, covering shared runtime foundations, setup and operations, package boundaries, admin/presentation modularity, content/ACL/security foundations, API/data read models, documentation alignment, and suggested commit slices.
 - Ran the project-readiness decision interview for audit findings F-001 through F-047, recorded product decisions D1 through D47 in the audit log, and aligned the owning feature drafts for architecture, setup, content, system UI, admin, events, packages, security, navigation, API, scheduler, mailer, and operational workflows.

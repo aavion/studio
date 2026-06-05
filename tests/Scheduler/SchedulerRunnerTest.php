@@ -28,6 +28,9 @@ use App\Scheduler\SchedulerTaskSynchronizer;
 use App\Scheduler\SchedulerTaskType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Lock\LockFactory;
+use Symfony\Component\Lock\Store\FlockStore;
+use Symfony\Component\Uid\Uuid;
 
 final class SchedulerRunnerTest extends KernelTestCase
 {
@@ -484,7 +487,10 @@ final class SchedulerRunnerTest extends KernelTestCase
             $this->synchronizer($provider),
             $this->entityManager,
             [$executor],
-            new SchedulerLockFactory(sys_get_temp_dir().'/studio-scheduler-test-'.bin2hex(random_bytes(4)), 'test'),
+            new SchedulerLockFactory(
+                new LockFactory(new FlockStore(sys_get_temp_dir().'/studio-scheduler-test-'.bin2hex(random_bytes(4)))),
+                'test',
+            ),
             new UuidFactory(),
             new TestSchedulerMessageLogger(),
             $activePackageProvider ?? new TestActivePackageProvider(),
@@ -749,15 +755,6 @@ final class MutableActivePackageProvider implements ActivePackageProviderInterfa
 
     private static function uuidFor(string $value): string
     {
-        $hash = md5($value);
-
-        return sprintf(
-            '%s-%s-%s-%s-%s',
-            substr($hash, 0, 8),
-            substr($hash, 8, 4),
-            substr($hash, 12, 4),
-            substr($hash, 16, 4),
-            substr($hash, 20, 12),
-        );
+        return Uuid::v5(Uuid::fromString(Uuid::NAMESPACE_DNS), $value)->toRfc4122();
     }
 }

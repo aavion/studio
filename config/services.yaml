@@ -141,7 +141,6 @@ services:
 
     App\Scheduler\SchedulerLockFactory:
         arguments:
-            $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
 
     App\Scheduler\CommandSchedulerTaskExecutor:

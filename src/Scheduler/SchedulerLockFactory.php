@@ -4,33 +4,27 @@ declare(strict_types=1);
 
 namespace App\Scheduler;
 
+use Symfony\Component\Lock\LockFactory;
+
 final readonly class SchedulerLockFactory
 {
-    public function __construct(private string $projectDir, private string $environment)
+    public function __construct(private LockFactory $lockFactory, private string $environment)
     {
     }
 
     public function acquire(string $identifier = 'run'): ?SchedulerRunLock
     {
-        $directory = $this->projectDir.'/var/scheduler/'.$this->environment;
+        $lock = $this->lockFactory->createLock('studio.scheduler.'.$this->environment.'.'.$this->normalizeIdentifier($identifier));
 
-        if (!is_dir($directory) && !@mkdir($directory, 0775, true) && !is_dir($directory)) {
+        if (!$lock->acquire(false)) {
             return null;
         }
 
-        $path = $directory.'/'.preg_replace('/[^a-zA-Z0-9_.-]+/', '_', $identifier).'.lock';
-        $handle = @fopen($path, 'c');
+        return new SchedulerRunLock($lock);
+    }
 
-        if (!is_resource($handle)) {
-            return null;
-        }
-
-        if (!flock($handle, LOCK_EX | LOCK_NB)) {
-            fclose($handle);
-
-            return null;
-        }
-
-        return new SchedulerRunLock($handle);
+    private function normalizeIdentifier(string $identifier): string
+    {
+        return preg_replace('/[^a-zA-Z0-9_.-]+/', '_', $identifier) ?? 'run';
     }
 }

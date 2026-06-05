@@ -4,27 +4,22 @@ declare(strict_types=1);
 
 namespace App\Scheduler;
 
+use Symfony\Component\Lock\LockInterface;
+
 final class SchedulerRunLock
 {
-    /** @var resource|null */
-    private mixed $handle;
+    private ?LockInterface $lock;
 
-    /**
-     * @param resource $handle
-     */
-    public function __construct(mixed $handle)
+    public function __construct(LockInterface $lock)
     {
-        $this->handle = $handle;
+        $this->lock = $lock;
     }
 
     public function release(): void
     {
-        if (is_resource($this->handle)) {
-            flock($this->handle, LOCK_UN);
-            fclose($this->handle);
-        }
+        $this->lock?->release();
 
-        $this->handle = null;
+        $this->lock = null;
     }
 
     public function __destruct()
