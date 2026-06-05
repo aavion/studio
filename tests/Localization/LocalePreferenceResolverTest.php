@@ -33,6 +33,7 @@ final class LocalePreferenceResolverTest extends TestCase
         self::assertSame('fr', $resolver->resolveRequestLocale(null, $user, null));
         self::assertSame('fr', $resolver->resolveMailLocale($user));
         self::assertSame('fr', $resolver->resolveProfileLocale($user));
+        self::assertSame(['de', 'en', 'fr'], $resolver->availableLocales());
     }
 
     public function testItKeepsUrlLocalesStrictBeforeLenientUserFallback(): void

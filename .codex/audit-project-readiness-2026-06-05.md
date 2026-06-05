@@ -575,6 +575,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Localization/RequestLocaleSubscriber.php:42`, `src/Localization/RequestLocaleSubscriber.php:62`, `src/Localization/RequestLocaleSubscriber.php:103`, `src/Mail/MailLocaleResolver.php:17`, `src/Mail/MailLocaleResolver.php:32`, `src/Mail/MailLocaleResolver.php:47`.
 - **Impact:** A user preference such as `de_DE` can be accepted for mail but ignored for request locale fallback. This is not dangerous, but it is user-visible drift and will spread when API/Admin/Editor add more locale-aware flows.
 - **Recommendation:** Introduce one `LocalePreferenceResolver` or move the normalization fallback into `ContentRouteLocalization`. Use it from request handling, mail, setup/user settings validation, and future API serialization.
+- **Implementation note:** Request, profile, and mail locale decisions now share `LocalePreferenceResolver`; profile language options are generated from the dynamic translation-language catalog instead of hard-coded language variants in Twig.
 - **Priority:** Before API / UI refinement.
 
 ### F-032 Renderer-neutral generated forms should stay scoped or move closer to Symfony Form/Validator

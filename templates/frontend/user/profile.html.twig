@@ -57,11 +57,9 @@
                 name: 'language',
                 label: 'ui.user.profile.language'|trans,
                 value: user_account.settings.language|default('default'),
-                options: {
+                options: ({
                     default: 'ui.user.profile.language_default'|trans,
-                    en: 'English',
-                    de: 'Deutsch',
-                },
+                })|merge(language_options|default({})),
             } only %}
             {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.profile.submit'|trans} only %}
         </form>

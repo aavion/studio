@@ -157,6 +157,7 @@ final class UserController extends AbstractController
         return $this->render('@frontend/user/profile.html.twig', [
             'user_account' => $user,
             'username_change_enabled' => $usernameChangeEnabled,
+            'language_options' => $this->profileLanguageOptions(),
             'success' => $success,
             'errors' => $errors,
         ]);
@@ -173,6 +174,21 @@ final class UserController extends AbstractController
         } catch (SessionNotFoundException) {
         }
         $this->localeSwitcher->setLocale($locale);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function profileLanguageOptions(): array
+    {
+        $options = [];
+
+        foreach ($this->localePreferences->availableLocales() as $locale) {
+            $label = \Locale::getDisplayName($locale, $locale);
+            $options[$locale] = '' !== $label ? $label : $locale;
+        }
+
+        return $options;
     }
 
     #[Route('/user/profile/close', name: 'user_profile_close', methods: ['GET', 'POST'])]

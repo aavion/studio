@@ -18,6 +18,14 @@ final readonly class LocalePreferenceResolver
         return $this->localization->defaultLanguage();
     }
 
+    /**
+     * @return list<string>
+     */
+    public function availableLocales(): array
+    {
+        return $this->localization->availableLanguages();
+    }
+
     public function resolveRequestLocale(?string $urlLocale, ?UserAccount $user, ?string $sessionLocale): ?string
     {
         return $this->firstSupported($urlLocale)
