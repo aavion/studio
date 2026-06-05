@@ -404,6 +404,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Backend/PackageLifecycleAdmin.php:25`, `src/Backend/PackageLifecycleAdmin.php:45`, `src/Backend/PackageLifecycleAdmin.php:58`, `src/Backend/PackageLifecycleAdmin.php:85`, `src/Backend/PackageLifecycleAdmin.php:107`, `src/Backend/PackageLifecycleAdmin.php:267`, `src/Backend/PackageLifecycleAdmin.php:315`.
 - **Impact:** The public backend callable is easy enough to use today, but future package UI/API work will likely duplicate or depend on admin-specific array shapes. The class also hides security-relevant URL/image sanitization inside an admin facade.
 - **Recommendation:** Split a `PackageAdminReadModelFactory` or `PackageDetailViewFactory` from a smaller `PackageLifecycleAdmin` action facade. Move external URL and preview-image policy into a reusable package metadata presenter if API responses will expose the same fields.
+- **Implementation note:** First split completed with `PackageLifecycleAdmin` as a thin facade and separate `PackageAdminDetailProvider`, `PackageLifecycleReviewProvider`, and `PackageLifecycleActionHandler` services. The metadata URL/preview policy is now isolated in the detail provider and can be promoted again if API package detail responses need the same shape.
 - **Priority:** Before API / Admin.
 
 ### F-014 Console output conventions are duplicated across commands
