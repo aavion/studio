@@ -538,20 +538,6 @@ class ContentItem
      *
      * @return list<string>|null
      */
-    private static function assertOptionalStringList(?array $values, string $label): ?array
-    {
-        if (null === $values) {
-            return null;
-        }
-
-        return self::assertStringList($values, $label);
-    }
-
-    /**
-     * @param list<string>|null $values
-     *
-     * @return list<string>|null
-     */
     private static function assertOptionalGroupIdentifierList(?array $values): ?array
     {
         if (null === $values) {

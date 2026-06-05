@@ -68,6 +68,7 @@
 **Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
 
 ### 2026-06-05
+- Removed the unused optional string-list helper from `ContentItem`; content UID validation already uses the shared `Uid::assert()` helper.
 - Split translation catalogue aggregation into source collection, YAML merge/collision handling, and runtime-directory writer services behind the existing aggregate facade/action.
 - Documented deferred audit boundaries for visitor/session hardening, custom Twig trust policy, public API content DTOs, and the debug account-link mail stub that cannot be production-hardened until real Symfony Mailer delivery exists.
 - Split Admin Logs browsing into a small facade plus source registry, reverse-line reader, entry filter, entry presenter, and pagination helpers.

@@ -554,6 +554,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Entity/ContentItem.php:139`, `src/Entity/ContentItem.php:456`, `src/Entity/ContentItem.php:547`, `src/Entity/ContentFieldValue.php:55`, `src/Entity/ContentFieldValue.php:119`.
 - **Impact:** The duplicated helpers are small, but they create drift against the repository rule that shared primitives should be reused when they already exist. The only reason not to replace them immediately is that their exception keys/placeholders are content-specific and tests/translations may rely on that.
 - **Recommendation:** Either move content-specific UID validation into a reusable `ContentUid` helper or switch to `Uid::assert()` and align error keys/tests intentionally. Remove unused helpers during the ContentItem split.
+- **Implementation note:** UID validation now uses the shared `App\Core\Validation\Uid::assert()` path for `ContentItem` and `ContentFieldValue`, and the unused optional string-list helper was removed from `ContentItem`.
 - **Priority:** Before Editor.
 
 ### F-030 NavigationBuilder is a public extension facade and a full navigation engine
