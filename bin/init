@@ -361,61 +361,22 @@ final class InitCommand
         }
 
         $descriptors = [
-            0 => ['file', 'php://stdin', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
+            0 => ['file', $this->nullDevice(), 'r'],
+            1 => $streamOutput ? STDOUT : ['file', $this->nullDevice(), 'w'],
+            2 => $streamOutput ? STDERR : ['file', $this->nullDevice(), 'w'],
         ];
 
-        $process = proc_open($command, $descriptors, $pipes, $this->projectDir);
+        $process = @proc_open($command, $descriptors, $pipes, $this->projectDir);
         if (!is_resource($process)) {
             return 1;
         }
 
-        foreach ([1, 2] as $pipe) {
-            stream_set_blocking($pipes[$pipe], false);
-        }
-
-        $output = '';
-        $errorOutput = '';
-
-        while (true) {
-            $status = proc_get_status($process);
-            $output .= stream_get_contents($pipes[1]);
-            $errorOutput .= stream_get_contents($pipes[2]);
-
-            if ($streamOutput && '' !== $output) {
-                echo $output;
-                $output = '';
-            }
-
-            if ($streamOutput && '' !== $errorOutput) {
-                fwrite(STDERR, $errorOutput);
-                $errorOutput = '';
-            }
-
-            if (!$status['running']) {
-                break;
-            }
-
-            usleep(100000);
-        }
-
-        $output .= stream_get_contents($pipes[1]);
-        $errorOutput .= stream_get_contents($pipes[2]);
-
-        if ($streamOutput && '' !== $output) {
-            echo $output;
-        }
-
-        if ($streamOutput && '' !== $errorOutput) {
-            fwrite(STDERR, $errorOutput);
-        }
-
-        foreach ([1, 2] as $pipe) {
-            fclose($pipes[$pipe]);
-        }
-
         return proc_close($process);
+    }
+
+    private function nullDevice(): string
+    {
+        return '\\' === DIRECTORY_SEPARATOR ? 'NUL' : '/dev/null';
     }
 
     /**

@@ -38,6 +38,10 @@ final class InitScriptTest extends TestCase
         self::assertIsString($contents);
         self::assertStringContainsString("'composer', '--version'", $contents);
         self::assertStringContainsString("/bin/composer'", $contents);
+        self::assertStringContainsString('$streamOutput ? STDOUT', $contents);
+        self::assertStringContainsString('$streamOutput ? STDERR', $contents);
+        self::assertStringContainsString('function nullDevice()', $contents);
+        self::assertStringNotContainsString('stream_set_blocking', $contents);
         self::assertStringContainsString('resetVendorDirectory()', $contents);
         self::assertStringContainsString('Existing vendor directory removed before Composer install.', $contents);
         self::assertLessThan(
