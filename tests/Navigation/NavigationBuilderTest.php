@@ -359,6 +359,7 @@ final class NavigationBuilderTest extends KernelTestCase
             'admin.navigation.security_settings',
             'admin.navigation.statistics_settings',
             'admin.navigation.package_settings',
+            'admin.navigation.system_info',
             'admin.navigation.scheduler_settings',
         ], array_column($navigation[9]['children'], 'label'));
     }

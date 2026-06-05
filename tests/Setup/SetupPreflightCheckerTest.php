@@ -65,6 +65,21 @@ final class SetupPreflightCheckerTest extends TestCase
         self::assertContains('tailwind_build', $detailKeys);
         self::assertContains('required_extensions', $detailKeys);
         self::assertContains('writable_paths', $detailKeys);
+        self::assertContains('optional_media_extensions', $detailKeys);
+    }
+
+    public function testItReportsImagickAsOptionalMediaExtension(): void
+    {
+        $result = (new SetupPreflightChecker())->check($this->root, 'test', server: [
+            'DOCUMENT_ROOT' => $this->root.'/public',
+        ]);
+        $imagick = array_values(array_filter($result['checks'], static fn (array $check): bool => 'extension_imagick' === $check['key']))[0] ?? null;
+        $summary = array_values(array_filter($result['detail_rows'], static fn (array $check): bool => 'optional_media_extensions' === $check['key']))[0] ?? null;
+
+        self::assertNotNull($imagick);
+        self::assertFalse($imagick['required'] ?? true);
+        self::assertSame(extension_loaded('imagick') ? 'ok' : 'missing', $imagick['status'] ?? null);
+        self::assertSame(extension_loaded('imagick') ? 'ok' : 'missing', $summary['status'] ?? null);
     }
 
     public function testItMapsPhpCliValidationFailuresToTranslatedValueKeys(): void

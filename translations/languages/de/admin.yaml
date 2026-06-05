@@ -27,6 +27,7 @@ admin:
     package_settings: 'Pakete'
     statistics_settings: 'Statistiken'
     scheduler_settings: 'Scheduler'
+    system_info: 'System-Info'
   actions:
     package_discovery:
       label: 'Registry aktualisieren'
@@ -814,5 +815,52 @@ admin:
         hourly: 'Stündlich'
         daily: 'Täglich'
         weekly: 'Wöchentlich'
+  system_info:
+    title: 'System-Info'
+    preflight:
+      title: 'Preflight-Status'
+      text: 'Aktuelle Setup-Kompatibilitätsprüfungen als reine Diagnoseansicht.'
+    status:
+      ok: 'Verfügbar'
+      missing: 'Fehlt'
+    values:
+      available: 'Verfügbar'
+      missing: 'Fehlt'
+      none: 'Keine'
+      unavailable: 'Nicht verfügbar'
+      unknown: 'Unbekannt'
+    summary:
+      title: 'Server-Umgebung'
+      os: 'Betriebssystem'
+      architecture: 'Architektur'
+      web_server: 'Webserver'
+      php_version: 'PHP-Version'
+      php_sapi: 'PHP-SAPI'
+      php_binary: 'PHP-Binary'
+      environment: 'Anwendungsumgebung'
+      composer: 'Composer'
+    capabilities:
+      title: 'Capabilities'
+      gd: 'GD'
+      imagick: 'Imagick'
+      intl: 'Intl'
+      fileinfo: 'Fileinfo'
+      opcache: 'OPcache'
+    php_settings:
+      title: 'PHP-Limits'
+      memory_limit: 'Memory-Limit'
+      upload_max_filesize: 'Upload-Max-Filesize'
+      post_max_size: 'Post-Max-Size'
+      max_execution_time: 'Max-Execution-Time'
+      max_input_vars: 'Max-Input-Vars'
+      timezone: 'Zeitzone'
+    php_info:
+      title: 'Reduzierte PHP-Info'
+      text: 'Sensible Request-, Environment-, Cookie- und Secret-Werte werden bewusst ausgelassen.'
+      loaded_ini: 'Geladene php.ini'
+      scanned_ini: 'Gescannte ini-Dateien'
+      extensions: 'Geladene Erweiterungen'
+      disabled_functions: 'Deaktivierte Funktionen'
+      temp_dir: 'Temporäres Verzeichnis'
   message:
     title: 'Admin-Route'

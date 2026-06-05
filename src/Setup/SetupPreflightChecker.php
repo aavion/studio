@@ -28,7 +28,8 @@ final readonly class SetupPreflightChecker
     public function check(string $projectDir, string $environment, bool $autoHeal = false, ?array $server = null): array
     {
         $requiredExtensions = $this->phpRequirements->requiredPhpExtensions($projectDir);
-        $optionalExtensions = array_values(array_diff($this->databaseDriverExtensions(), $requiredExtensions));
+        $optionalDatabaseExtensions = array_values(array_diff($this->databaseDriverExtensions(), $requiredExtensions));
+        $optionalMediaExtensions = array_values(array_diff($this->mediaExtensions(), $requiredExtensions));
         $checks = [
             $this->webroot($projectDir, $server ?? $_SERVER),
             $this->phpVersion($projectDir),
@@ -42,7 +43,8 @@ final readonly class SetupPreflightChecker
             $this->directoryWritable($projectDir.'/public', 'public_writable', true, $autoHeal),
             $this->cliRunnerAvailable($projectDir, $environment, $autoHeal),
             ...array_map(fn (string $extension): array => $this->phpExtension($extension, true), $requiredExtensions),
-            ...array_map(fn (string $extension): array => $this->phpExtension($extension, false), $optionalExtensions),
+            ...array_map(fn (string $extension): array => $this->phpExtension($extension, false), $optionalDatabaseExtensions),
+            ...array_map(fn (string $extension): array => $this->phpExtension($extension, false), $optionalMediaExtensions),
         ];
         $failedRequired = array_filter($checks, static fn (array $check): bool => true === $check['required'] && 'ok' !== $check['status']);
 
@@ -228,6 +230,16 @@ final readonly class SetupPreflightChecker
     }
 
     /**
+     * @return list<string>
+     */
+    private function mediaExtensions(): array
+    {
+        return [
+            'imagick',
+        ];
+    }
+
+    /**
      * @return array{key: string, status: string, required: bool, healable: bool, label_key: string, help_key: string, instruction_key: string, value_key: string, value_parameters: array<string, string>}
      */
     private function cliRunnerAvailable(string $projectDir, string $environment, bool $autoHeal): array
@@ -318,9 +330,17 @@ final readonly class SetupPreflightChecker
             $checks,
             static fn (array $check): bool => str_starts_with($check['key'], 'extension_') && true === $check['required'],
         ));
-        $optionalExtensions = array_values(array_filter(
+        $optionalDatabaseExtensions = array_values(array_filter(
             $checks,
-            static fn (array $check): bool => str_starts_with($check['key'], 'extension_') && false === $check['required'],
+            fn (array $check): bool => str_starts_with($check['key'], 'extension_')
+                && false === $check['required']
+                && in_array(substr($check['key'], strlen('extension_')), $this->databaseDriverExtensions(), true),
+        ));
+        $optionalMediaExtensions = array_values(array_filter(
+            $checks,
+            fn (array $check): bool => str_starts_with($check['key'], 'extension_')
+                && false === $check['required']
+                && in_array(substr($check['key'], strlen('extension_')), $this->mediaExtensions(), true),
         ));
         $writablePaths = array_values(array_filter(
             $checks,
@@ -337,7 +357,8 @@ final readonly class SetupPreflightChecker
             $byKey['composer_binary'] ?? null,
             $byKey['tailwind_build'] ?? null,
             $this->writablePathSummary($writablePaths),
-            $this->extensionSummary('optional_database_extensions', $optionalExtensions, false),
+            $this->extensionSummary('optional_database_extensions', $optionalDatabaseExtensions, false),
+            $this->extensionSummary('optional_media_extensions', $optionalMediaExtensions, false),
         ]));
     }
 

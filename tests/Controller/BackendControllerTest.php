@@ -932,6 +932,14 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('input[name="scheduler.get_auth_enabled"]');
         self::assertSelectorExists('input[name="scheduler.package_action_queues_enabled"]');
         self::assertSelectorExists('input[name="scheduler.web_trigger_enabled"]');
+
+        $client->request('GET', '/admin/settings/system-info');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'System information');
+        self::assertSelectorTextContains('.studio-panel', PHP_VERSION);
+        self::assertStringContainsString('GD', (string) $client->getResponse()->getContent());
+        self::assertStringNotContainsString('$_SERVER', (string) $client->getResponse()->getContent());
     }
 
     public function testAdminSchedulerListsEditsAndRunsRegisteredJobs(): void

@@ -123,6 +123,10 @@ setup:
         label: 'Database extensions'
         help: 'Optional database extensions are available when their driver is selected.'
         instruction: 'Install these extensions when using MySQL/MariaDB or PostgreSQL: %extensions%'
+      optional_media_extensions:
+        label: 'Media extensions'
+        help: 'Optional media extensions improve image processing features.'
+        instruction: 'Install these extensions when advanced image processing is needed: %extensions%'
       writable_paths:
         label: 'Writable paths'
         help: 'These paths are currently not writable: %paths%'

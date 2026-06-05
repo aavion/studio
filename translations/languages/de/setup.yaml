@@ -123,6 +123,10 @@ setup:
         label: 'Datenbank-Erweiterungen'
         help: 'Optionale Datenbank-Erweiterungen sind verfügbar, wenn ihr Treiber gewählt wird.'
         instruction: 'Installiere diese Erweiterungen, wenn du MySQL/MariaDB oder PostgreSQL verwenden möchtest: %extensions%'
+      optional_media_extensions:
+        label: 'Medien-Erweiterungen'
+        help: 'Optionale Medien-Erweiterungen verbessern Bildverarbeitungsfunktionen.'
+        instruction: 'Installiere diese Erweiterungen, wenn erweiterte Bildverarbeitung benötigt wird: %extensions%'
       writable_paths:
         label: 'Beschreibbare Pfade'
         help: 'Diese Pfade sind aktuell nicht beschreibbar: %paths%'

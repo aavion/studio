@@ -27,6 +27,7 @@ admin:
     package_settings: 'Packages'
     statistics_settings: 'Statistics'
     scheduler_settings: 'Scheduler'
+    system_info: 'System information'
   actions:
     package_discovery:
       label: 'Update registry'
@@ -814,5 +815,52 @@ admin:
         hourly: 'Hourly'
         daily: 'Daily'
         weekly: 'Weekly'
+  system_info:
+    title: 'System information'
+    preflight:
+      title: 'Preflight status'
+      text: 'Current setup compatibility checks, shown read-only for diagnostics.'
+    status:
+      ok: 'Available'
+      missing: 'Missing'
+    values:
+      available: 'Available'
+      missing: 'Missing'
+      none: 'None'
+      unavailable: 'Unavailable'
+      unknown: 'Unknown'
+    summary:
+      title: 'Server environment'
+      os: 'Operating system'
+      architecture: 'Architecture'
+      web_server: 'Web server'
+      php_version: 'PHP version'
+      php_sapi: 'PHP SAPI'
+      php_binary: 'PHP binary'
+      environment: 'Application environment'
+      composer: 'Composer'
+    capabilities:
+      title: 'Capabilities'
+      gd: 'GD'
+      imagick: 'Imagick'
+      intl: 'Intl'
+      fileinfo: 'Fileinfo'
+      opcache: 'OPcache'
+    php_settings:
+      title: 'PHP limits'
+      memory_limit: 'Memory limit'
+      upload_max_filesize: 'Upload max filesize'
+      post_max_size: 'Post max size'
+      max_execution_time: 'Max execution time'
+      max_input_vars: 'Max input vars'
+      timezone: 'Timezone'
+    php_info:
+      title: 'Reduced PHP info'
+      text: 'Sensitive request, environment, cookie, and secret values are intentionally omitted.'
+      loaded_ini: 'Loaded php.ini'
+      scanned_ini: 'Scanned ini files'
+      extensions: 'Loaded extensions'
+      disabled_functions: 'Disabled functions'
+      temp_dir: 'Temporary directory'
   message:
     title: 'Admin route'
