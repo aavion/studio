@@ -527,6 +527,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Database/PrefixedConnection.php:25`, `src/Database/PrefixedConnection.php:30`, `src/Database/PrefixedConnection.php:39`, `src/Database/PrefixedConnection.php:93`, `src/Database/PrefixedConnection.php:101`, `src/Database/TablePrefix.php:9`, `src/Database/DoctrineTablePrefixListener.php:14`.
 - **Impact:** The current approach supports raw DBAL calls and Doctrine metadata, but SQL rewriting can miss future query shapes or accidentally rewrite string/comment content. The manual table list can drift when migrations add tables.
 - **Recommendation:** Prefer Doctrine metadata/table prefixing for ORM-owned queries and add explicit tests for every raw DBAL query path. Consider generating `TablePrefix::TABLES` from Doctrine metadata/migrations or centralizing raw SQL through repository helpers.
+- **Implementation note:** Added regression coverage that compares Doctrine metadata and join tables against `TablePrefix::TABLES`, verifies prefixed Doctrine metadata, and exercises raw SQL `CREATE TABLE`, `INSERT INTO`, `UPDATE`, `JOIN`, and `DELETE FROM` paths through `PrefixedConnection`.
 - **Priority:** Before API / Schema expansion.
 
 ### F-027 ContentItem is a broad aggregate with routing, tree, ACL, schema, localization, and revision state
