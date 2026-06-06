@@ -1,0 +1,55 @@
+<section class="studio-panel">
+    <h2>{{ 'setup.database.title'|trans }}</h2>
+    <p class="studio-muted">{{ 'setup.database.text'|trans }}</p>
+    {% set database_driver_options = {} %}
+    {% for driver_value, driver_label in setup_database_driver_options %}
+        {% set database_driver_options = database_driver_options|merge({(driver_value): driver_label|trans}) %}
+    {% endfor %}
+    {% set setup_uses_server_database = setup_display_values.database_driver != 'sqlite' %}
+
+    {% include '@backend/partials/forms/fields/select.html.twig' with {
+        name: 'database_driver',
+        label: 'setup.form.database_driver.label'|trans,
+        value: setup_display_values.database_driver,
+        options: database_driver_options,
+        required: true,
+        errors: setup_errors.database_driver|default([]),
+        attributes: {'data-setup-wizard-target': 'driver', 'data-action': 'setup-wizard#driverChanged'},
+    } only %}
+
+    <div data-setup-wizard-target="sqliteFields">
+        {% include '@backend/partials/forms/fields/input.html.twig' with {
+            name: 'database_url',
+            label: 'setup.form.database_url.label'|trans,
+            value: setup_display_values.database_url,
+            help: 'setup.form.database_url.sqlite_help'|trans,
+            attributes: {
+                pattern: 'sqlite:///.+|mysql://.+|mariadb://.+|pgsql://.+|postgres://.+|postgresql://.+',
+                placeholder: 'sqlite:///%kernel.project_dir%/var/data_prod.db',
+            },
+            errors: setup_errors.database_url|default([]),
+        } only %}
+    </div>
+
+    <div data-setup-wizard-target="serverFields">
+        {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_host', label: 'setup.form.database_host.label'|trans, value: setup_display_values.database_host, required: setup_uses_server_database, attributes: {maxlength: 255}, errors: setup_errors.database_host|default([])} only %}
+        {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_port', label: 'setup.form.database_port.label'|trans, type: 'number', value: setup_display_values.database_port, required: setup_uses_server_database, attributes: {min: 1, max: 65535, step: 1}, errors: setup_errors.database_port|default([])} only %}
+        {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_name', label: 'setup.form.database_name.label'|trans, value: setup_display_values.database_name, required: setup_uses_server_database, attributes: {maxlength: 120, pattern: '[A-Za-z0-9_\\-]+'}, errors: setup_errors.database_name|default([])} only %}
+        {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_user', label: 'setup.form.database_user.label'|trans, value: setup_display_values.database_user, required: setup_uses_server_database, attributes: {maxlength: 120}, errors: setup_errors.database_user|default([])} only %}
+        {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'database_password', label: 'setup.form.database_password.label'|trans, type: 'password', value: setup_display_values.database_password, errors: setup_errors.database_password|default([])} only %}
+    </div>
+
+    {% include '@backend/partials/forms/fields/input.html.twig' with {
+        name: 'database_prefix',
+        label: 'setup.form.database_prefix.label'|trans,
+        value: setup_display_values.database_prefix,
+        help: 'setup.form.database_prefix.help'|trans,
+        attributes: {maxlength: 80, pattern: '[a-z][a-z0-9_]*'},
+        errors: setup_errors.database_prefix|default([]),
+    } only %}
+    <div class="studio-button-group">
+        <button class="studio-button studio-button-secondary" type="submit" name="_setup_action" value="test_database">
+            {{ 'setup.database.test_connection'|trans }}
+        </button>
+    </div>
+</section>

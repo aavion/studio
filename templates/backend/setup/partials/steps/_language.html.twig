@@ -1,0 +1,28 @@
+<section class="studio-setup-landing px-6 pb-12 pt-16 md:px-10 md:pb-14 md:pt-20">
+    <div class="studio-setup-landing-pattern" aria-hidden="true"></div>
+    <span class="studio-setup-landing-icon ti ti-rocket" aria-hidden="true"></span>
+    <div class="studio-setup-landing-inner mx-auto grid max-w-3xl justify-items-center gap-4">
+        <p class="studio-setup-landing-kicker">{{ 'setup.header.eyebrow'|trans({'%app_name%': setup_app_name}) }}</p>
+        <h1>{{ 'setup.landing.title'|trans({'%app_name%': setup_app_name}) }}</h1>
+        <p>{{ 'setup.landing.text'|trans }}</p>
+
+        {% set language_options = {} %}
+        {% for language in setup_available_languages %}
+            {% set language_options = language_options|merge({(language): language}) %}
+        {% endfor %}
+
+        <div class="studio-setup-language-select">
+            {% include '@backend/partials/forms/fields/select.html.twig' with {
+                name: 'language',
+                label: 'setup.form.language.label'|trans,
+                value: setup_display_values.language,
+                options: language_options,
+                required: true,
+                errors: setup_errors.language|default([]),
+                attributes: {'data-action': 'change->setup-wizard#submitOnChange'},
+            } only %}
+        </div>
+    </div>
+</section>
+
+{% include '@backend/setup/partials/_preflight.html.twig' with {setup_preflight: setup_preflight} only %}

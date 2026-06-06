@@ -1,0 +1,37 @@
+{% set check_icon = 'ti-circle-dashed' %}
+{% if check.key == 'webroot_public' %}
+    {% set check_icon = 'ti-server' %}
+{% elseif check.key == 'php_version' %}
+    {% set check_icon = 'ti-code' %}
+{% elseif check.key == 'safe_mode' %}
+    {% set check_icon = 'ti-shield-check' %}
+{% elseif check.key == 'process_functions' %}
+    {% set check_icon = 'ti-settings-automation' %}
+{% elseif check.key == 'required_extensions' or check.key == 'optional_database_extensions' %}
+    {% set check_icon = 'ti-puzzle' %}
+{% elseif check.key == 'cli_runner' %}
+    {% set check_icon = 'ti-terminal-2' %}
+{% elseif check.key == 'composer_binary' %}
+    {% set check_icon = 'ti-package' %}
+{% elseif check.key == 'tailwind_build' %}
+    {% set check_icon = 'ti-wand' %}
+{% elseif check.key == 'writable_paths' %}
+    {% set check_icon = 'ti-folders' %}
+{% elseif check.key == 'environment_writable' %}
+    {% set check_icon = 'ti-file-settings' %}
+{% endif %}
+
+<article class="studio-setup-check">
+    <div class="studio-setup-check-title">
+        <span class="studio-setup-check-icon ti {{ check_icon }}" aria-hidden="true"></span>
+        <span>{{ check.label_key|trans }}</span>
+    </div>
+    <p class="studio-setup-check-result">{{ check.value_key|trans(check.value_parameters) }}</p>
+    <span class="studio-setup-status {{ check.status == 'ok' ? 'is-ok' : (check.status == 'warning' ? 'is-warning' : (check.required ? 'is-error' : 'is-neutral')) }}">
+        <span class="ti {{ check.status == 'ok' ? 'ti-check' : (check.status == 'warning' ? 'ti-alert-triangle' : (check.required ? 'ti-x' : 'ti-minus')) }}" aria-hidden="true"></span>
+        {{ (check.status == 'ok' ? 'setup.preflight.status.ok' : (check.status == 'warning' ? 'setup.preflight.status.warning' : (check.required ? 'setup.preflight.status.failed' : 'setup.preflight.status.optional'))) | trans }}
+    </span>
+    {% if check.status != 'ok' %}
+        <p class="studio-setup-check-help">{{ (check.healable ? check.help_key : check.instruction_key)|trans(check.value_parameters) }}</p>
+    {% endif %}
+</article>

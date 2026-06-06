@@ -107,8 +107,8 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Scheduler | `src/Scheduler` | Reviewed | Scheduler task registry, lock naming, package task policy, run recorder, web-auth settings, task definitions, `/cron/run` controller behavior, direct job triggering, and docs alignment reviewed. S2-012 converts public task definition invariants to Message-layer diagnostics; GET-token auth remains opt-in, Bearer auth stays primary, and only read-write API keys owned by active admin/owner users can trigger web runs. |
 | Security | `src/Security` | Reviewed | Session visitor binding, AccountToken issuer/entity behavior, API-key vault/entity behavior, ACL group policies/apply operations, maintenance-mode HTTP flow, APP_SECRET rotation guard, mail-link delivery stub, and remember-me direction reviewed. S2-008 records the remaining copied-session plus copied-visitor-cookie limitation, S2-018 captures remember-me as a Security-branch feature candidate using server-side rotating tokens bound to the visitor cookie, S2-028 extracts shared account token/password helpers, and S2-038 removes separate plain-token logging from the mail-link debug stub. Account-flow controller extraction remains tracked in the Controller domain by S2-003. |
 | Setup | `src/Setup` | Reviewed | PHP-CLI resolver/preference flow, dry-run placeholder behavior, preflight failure mapping, Composer probe, setup subprocess environment, setup seeding, environment writing/rollback, web/CLI input validation, and setup class sizes reviewed. S2-039 splits CLI database input resolution out of the oversized CLI input factory; all setup production files are now below the 300-line target. |
-| View | `src/View` | In progress | Template runtime fallback reviewed; S2-005 removes a hardcoded `en` fallback from the root layout. S2-023 moves Markdown embed accessibility copy to translations. S2-024 converts unsupported template namespace failures to View Message keys. Twig helper split, response header policy, dynamic injection failure ownership, and technical naming still need broader review. |
-| Assets/Templates/Translations | `assets`, `templates`, `translations` | In progress | Hardcoded language variants and package translation fallback policy reviewed. S2-022 replaces the package `languages/en` special case with a configured fallback-locale requirement. S2-023 fixes Markdown embed UI copy. Remaining pass: broader CSS naming classification. |
+| View | `src/View` | Reviewed | Template runtime fallback, Markdown rendering/embed output, package macro/template paths, system package metadata, Twig helper ownership, dynamic/static view injection registry, response header/output hooks, HTTP error rendering, and dynamic injection failure reporting reviewed. S2-005 removes a hardcoded `en` fallback from the root layout, S2-023 moves Markdown embed accessibility copy to translations, and S2-024 converts unsupported template namespace failures to View Message keys. Public `studio_*` Twig helper names remain intentional product/theme API; internal technical naming stays under `system`. |
+| Assets/Templates/Translations | `assets`, `templates`, `translations` | In progress | Hardcoded language variants, package translation fallback policy, and active setup templates reviewed. S2-022 replaces the package `languages/en` special case with a configured fallback-locale requirement. S2-023 fixes Markdown embed UI copy. S2-040 splits the setup wizard render target into focused partials. Remaining pass: broader CSS naming classification. |
 | Documentation | `dev/draft`, `dev/manual`, `docs`, `.codex` | Pending | Re-check drift against actual behavior after all second-pass fixes. |
 
 ### Review Method
@@ -523,6 +523,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added `SetupCliDatabaseInput`, reduced `SetupCliInputFactory` from 338 to 152 lines, added a regression test for environment-specific SQLite defaults, and kept the existing CLI setup behavior covered by the focused setup suite.
 - **Priority:** Now / Modularity.
 
+### S2-040 Setup wizard template mixed all step rendering into one file
+
+- **Area:** Setup wizard templates, backend partial structure, context-size target.
+- **Finding:** `templates/backend/setup/index.html.twig` still rendered alerts, preflight details, every setup step, footer navigation, and result logs in one 373-line template. The file was not a PHP class, but it had become a volatile UI orchestrator where small step changes required loading the whole wizard.
+- **Evidence:** `templates/backend/setup/index.html.twig`, `templates/backend/setup/partials/_step-header.html.twig`, `dev/CLASSMAP.md`.
+- **Impact:** Runtime behavior was functional, but the structure worked against the modularity and LLM-context rules. Future setup UI changes, preflight-row adjustments, or result-log tweaks would have a larger review surface than necessary.
+- **Recommendation:** Keep the setup index as the form/frame orchestrator and move alerts, preflight rows, footer navigation, result logs, and step-specific panels into backend setup partials.
+- **Fix applied:** Split setup rendering into focused partial templates under `templates/backend/setup/partials/**`, reduced the index template from 373 to 95 lines, rendered `/setup`, and ran focused setup/backend tests.
+- **Priority:** Now / Modularity and review readability.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -559,6 +569,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Package translation fallback policy reviewed. S2-022 keeps package fallback validation deterministic while replacing the hardcoded `languages/en` requirement with configured fallback-locale candidates.
 - Markdown embed accessibility copy reviewed. S2-023 moves the iframe title to `ui.markdown.embed.video_title` and keeps standalone rendering key-based.
 - Template namespace resolution reviewed. S2-024 keeps the invariant hard but exposes unsupported namespace failures through View Message keys.
+- View/Twig runtime reviewed. Response header hooks keep sensitive header mutations blocked, output hooks are HTML-only, dynamic injection rendering failures already report through View Message diagnostics, and public `studio_*` Twig helper names remain intentional theme API.
 - Internal logging/service naming reviewed. S2-025 moves Monolog channel/file names, event/backend view tags, and setup wizard session storage to `system` naming while classifying `studio_*` Twig helpers and CSS classes as public product/theme API.
 - Package asset contribution invariants reviewed. S2-026 moves package author-facing asset contribution failures to Package Message keys.
 - Package admin detail read model reviewed. S2-027 splits file IO, URL sanitization, and dependency label parsing out of the oversized provider.
@@ -577,6 +588,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
 - Setup PHP-CLI and Composer preflight reviewed. Cached `APP_DEFAULT_PHP_BINARY` remains validation-first and auto-heal/persistence is limited to controlled setup/preflight flows.
 - Setup CLI input reviewed. S2-039 extracts database input resolution from the CLI input factory and leaves all setup production classes below the 300-line target.
+- Setup wizard templates reviewed. S2-040 moves step-specific rendering into setup partials while preserving the existing controller context, translation keys, form fields, and routes.
 - Form builder/submission layer reviewed. No immediate drift found: values cast centrally, option validation is generic, and user-facing errors stay on existing translation keys.
 
 ## Fixes Applied
@@ -603,6 +615,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Extracted repeated account token lookup and password-policy error mapping into Security helpers.
 - Removed separate clear-token context logging from the account-link message-log delivery stub and narrowed the delivery contract to generated action URLs.
 - Split CLI setup database input resolution out of the top-level CLI input factory.
+- Split the web setup wizard render target into focused backend setup partials.
 - Normalized trailing POSIX and Windows separators for live-operation storage paths.
 - Validated access-statistics request and visitor trace identifiers before persistence.
 - Moved state-marker metadata validation to the State Message catalogue.

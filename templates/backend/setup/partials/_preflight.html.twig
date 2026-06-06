@@ -1,0 +1,47 @@
+{% if setup_preflight.ok and setup_preflight.has_warnings %}
+    {% set preflight_icon = 'ti-alert-triangle' %}
+    {% set preflight_status_class = 'is-warning' %}
+    {% set preflight_summary = 'setup.preflight.summary.warning' %}
+{% elseif setup_preflight.ok %}
+    {% set preflight_icon = 'ti-check' %}
+    {% set preflight_status_class = 'is-ok' %}
+    {% set preflight_summary = 'setup.preflight.summary.ok' %}
+{% elseif setup_preflight.healable_failed %}
+    {% set preflight_icon = 'ti-tool' %}
+    {% set preflight_status_class = 'is-warning' %}
+    {% set preflight_summary = 'setup.preflight.summary.healable' %}
+{% else %}
+    {% set preflight_icon = 'ti-alert-triangle' %}
+    {% set preflight_status_class = 'is-error' %}
+    {% set preflight_summary = 'setup.preflight.summary.failed' %}
+{% endif %}
+
+<section class="studio-setup-preflight" aria-labelledby="setup-preflight-title">
+    <div class="studio-setup-summary {{ preflight_status_class }}">
+        <span class="studio-setup-summary-icon ti {{ preflight_icon }}" aria-hidden="true"></span>
+        <div>
+            <h2 id="setup-preflight-title">{{ 'setup.preflight.title'|trans }}</h2>
+            <p>{{ preflight_summary|trans }}</p>
+        </div>
+    </div>
+
+    <details class="studio-setup-check-details"{% if not setup_preflight.ok or setup_preflight.has_warnings %} open{% endif %}>
+        <summary>
+            <span>{{ 'setup.preflight.show_details'|trans }}</span>
+            <span class="ti ti-chevron-down" aria-hidden="true"></span>
+        </summary>
+        <div class="studio-setup-check-table">
+            {% for check in setup_preflight.detail_rows %}
+                {% include '@backend/setup/partials/_preflight-row.html.twig' with {check: check} only %}
+            {% endfor %}
+        </div>
+        {% if setup_preflight.can_auto_heal %}
+            <div class="studio-setup-heal-actions">
+                <p>{{ 'setup.preflight.auto_heal_hint'|trans }}</p>
+                <button class="studio-button studio-button-secondary" type="submit" name="_setup_action" value="heal_preflight" formnovalidate>
+                    {{ 'setup.preflight.auto_heal'|trans }}
+                </button>
+            </div>
+        {% endif %}
+    </details>
+</section>
