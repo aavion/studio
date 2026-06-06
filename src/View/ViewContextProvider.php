@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\View;
 
+use App\Content\Routing\ContentRouteLocalization;
 use App\Core\Event\PublicEventDispatcher;
 
 final readonly class ViewContextProvider
@@ -11,6 +12,7 @@ final readonly class ViewContextProvider
     public function __construct(
         private SystemPackageMetadataProvider $systemPackage,
         private PackageMacroRegistry $macroRegistry,
+        private ContentRouteLocalization $localization,
         private PublicEventDispatcher $eventDispatcher,
     ) {
     }
@@ -24,6 +26,7 @@ final readonly class ViewContextProvider
             'system_package' => $this->systemPackage->metadata(),
             'active_frontend_theme' => null,
             'active_backend_theme' => null,
+            'default_locale' => $this->localization->defaultLanguage(),
             'macro_namespaces' => $this->macroRegistry->namespaces(),
             'template_areas' => [
                 'frontend' => ['content', 'error-pages', 'user'],

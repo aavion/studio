@@ -17,10 +17,14 @@ final readonly class PackagePhpCapabilityPolicy
     private const BLOCKED_FUNCTIONS = [
         'chmod' => 'direct_filesystem',
         'chown' => 'direct_filesystem',
+        'call_user_func' => 'dynamic_callable',
+        'call_user_func_array' => 'dynamic_callable',
         'copy' => 'direct_filesystem',
         'curl_exec' => 'direct_network',
         'curl_init' => 'direct_network',
         'exec' => 'direct_process',
+        'forward_static_call' => 'dynamic_callable',
+        'forward_static_call_array' => 'dynamic_callable',
         'file' => 'direct_filesystem',
         'file_exists' => 'direct_filesystem',
         'file_get_contents' => 'direct_filesystem',
@@ -69,6 +73,9 @@ final readonly class PackagePhpCapabilityPolicy
         'recursivedirectoryiterator' => 'direct_filesystem',
         'splfileinfo' => 'direct_filesystem',
         'splfileobject' => 'direct_filesystem',
+        'reflectionclass' => 'dynamic_introspection',
+        'reflectionfunction' => 'dynamic_introspection',
+        'reflectionmethod' => 'dynamic_introspection',
         'ziparchive' => 'direct_filesystem',
     ];
 
@@ -142,6 +149,11 @@ final readonly class PackagePhpCapabilityPolicy
 
             if (T_VARIABLE === $token[0] && isset(self::BLOCKED_SUPERGLOBALS[$token[1]])) {
                 $issues[] = $this->issue($candidate, $file, $path, $token[1], self::BLOCKED_SUPERGLOBALS[$token[1]]);
+                continue;
+            }
+
+            if (T_VARIABLE === $token[0] && $this->isFunctionCall($tokens, $index)) {
+                $issues[] = $this->issue($candidate, $file, $path, $token[1].'()', 'dynamic_callable');
                 continue;
             }
 

@@ -932,6 +932,41 @@ PHP);
         ));
     }
 
+    public function testItBlocksDynamicPhpCapabilityBypassesForInstallablePackages(): void
+    {
+        $this->writeFile('package.php', <<<'PHP'
+            <?php
+
+            $reader = 'file_get_contents';
+            $reader('/etc/passwd');
+            call_user_func('exec', 'whoami');
+            new ReflectionFunction('file_get_contents');
+
+            return [];
+            PHP);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+
+        $policyIssues = array_values(array_filter(
+            $result->issues(),
+            static fn ($issue): bool => 'package.policy.blocked_php_capability' === $issue->code(),
+        ));
+
+        self::assertSame(['$reader()', 'call_user_func', 'ReflectionFunction'], array_map(
+            static fn ($issue): string => $issue->context()['capability'],
+            $policyIssues,
+        ));
+        self::assertSame(['dynamic_callable', 'dynamic_callable', 'dynamic_introspection'], array_map(
+            static fn ($issue): string => $issue->context()['reason'],
+            $policyIssues,
+        ));
+    }
+
     private function candidate(): PackageCandidate
     {
         return new PackageCandidate(
