@@ -24,10 +24,11 @@ use App\Mail\MailLocaleResolver;
 use App\Security\AccountLinkDeliveryInterface;
 use App\Security\AccountReactivationAccessResolver;
 use App\Security\AccountTokenIssuer;
+use App\Security\AccountTokenLookup;
 use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
-use App\Security\PasswordPolicy;
+use App\Security\PasswordPolicyErrorMapper;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
 use App\Security\UserAccountStatus;
@@ -53,6 +54,7 @@ final class UserRegistrationController extends AbstractController
         private readonly MessageLoggerInterface $messageLogger,
         private readonly UserFlowConfig $userFlowConfig,
         private readonly AccountTokenIssuer $tokenIssuer,
+        private readonly AccountTokenLookup $tokenLookup,
         private readonly AccountTokenMaintenance $tokenMaintenance,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
         private readonly AbsoluteUriGenerator $absoluteUris,
@@ -61,7 +63,7 @@ final class UserRegistrationController extends AbstractController
         private readonly UuidFactory $uuidFactory,
         private readonly AccountReactivationAccessResolver $reactivationAccess,
         private readonly UserGroupMembershipManager $userGroups,
-        private readonly PasswordPolicy $passwordPolicy,
+        private readonly PasswordPolicyErrorMapper $passwordErrors,
     ) {
     }
 
@@ -175,7 +177,7 @@ final class UserRegistrationController extends AbstractController
     #[Route('/user/invitation/{token}', name: 'user_invitation_accept', requirements: ['token' => '[a-f0-9]{64}'], methods: ['GET', 'POST'])]
     public function invitation(Request $request, string $token): Response
     {
-        $accountToken = $this->usableToken($token, null);
+        $accountToken = $this->tokenLookup->pending($token);
 
         if (!$accountToken instanceof AccountToken || !in_array($accountToken->type(), [AccountTokenType::Invitation, AccountTokenType::Registration], true)) {
             return $this->httpError->notFound($request);
@@ -195,7 +197,7 @@ final class UserRegistrationController extends AbstractController
 
             $errors = [
                 ...$errors,
-                ...$this->passwordViolationKeys($password, $username, $accountToken->email()),
+                ...$this->passwordErrors->errorKeys($password, $username, $accountToken->email()),
             ];
 
             if ($password !== $confirmPassword) {
@@ -244,38 +246,6 @@ final class UserRegistrationController extends AbstractController
             'success' => $success,
             'errors' => $errors,
         ]);
-    }
-
-    private function usableToken(string $plainToken, ?AccountTokenType $type): ?AccountToken
-    {
-        $criteria = [
-            'tokenHash' => $this->tokenIssuer->hash($plainToken),
-            'status' => AccountTokenStatus::Pending,
-        ];
-
-        if ($type instanceof AccountTokenType) {
-            $criteria['type'] = $type;
-        }
-
-        $token = $this->entityManager->getRepository(AccountToken::class)->findOneBy($criteria);
-
-        return $token instanceof AccountToken && !$token->isExpired() ? $token : null;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function passwordViolationKeys(string $password, string $username, string $email): array
-    {
-        return array_map(
-            static fn (string $violation): string => match ($violation) {
-                PasswordPolicy::VIOLATION_COMPLEXITY => 'ui.user.password.errors.new_password_complexity',
-                PasswordPolicy::VIOLATION_REPEATED => 'ui.user.password.errors.new_password_repeated',
-                PasswordPolicy::VIOLATION_PERSONAL => 'ui.user.password.errors.new_password_personal',
-                default => 'ui.user.password.errors.new_password_length',
-            },
-            $this->passwordPolicy->violationCodes($password, $username, $email),
-        );
     }
 
     private function userByEmail(string $email): ?UserAccount

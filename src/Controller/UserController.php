@@ -22,7 +22,7 @@ use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenType;
 use App\Security\AdminUserAccessPolicy;
-use App\Security\PasswordPolicy;
+use App\Security\PasswordPolicyErrorMapper;
 use App\Security\UserAccountLifecycle;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
@@ -55,7 +55,7 @@ final class UserController extends AbstractController
         private readonly AdminUserAccessPolicy $adminUserPolicy,
         private readonly TokenStorageInterface $tokenStorage,
         private readonly StateMarkerRecorder $stateMarkers,
-        private readonly PasswordPolicy $passwordPolicy,
+        private readonly PasswordPolicyErrorMapper $passwordErrors,
         private readonly LocaleSwitcher $localeSwitcher,
         private readonly LocalePreferenceResolver $localePreferences,
     ) {
@@ -292,7 +292,7 @@ final class UserController extends AbstractController
 
             $errors = [
                 ...$errors,
-                ...$this->passwordViolationKeys($newPassword, $user->username(), $user->email()),
+                ...$this->passwordErrors->errorKeys($newPassword, $user->username(), $user->email()),
             ];
 
             if ($newPassword !== $confirmPassword) {
@@ -365,22 +365,6 @@ final class UserController extends AbstractController
     private function passwordChangeReviewUrl(string $plainToken): ?string
     {
         return $this->absoluteUris->generateUri(__METHOD__, 'user_security_review', ['token' => $plainToken]);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function passwordViolationKeys(string $password, string $username, string $email): array
-    {
-        return array_map(
-            static fn (string $violation): string => match ($violation) {
-                PasswordPolicy::VIOLATION_COMPLEXITY => 'ui.user.password.errors.new_password_complexity',
-                PasswordPolicy::VIOLATION_REPEATED => 'ui.user.password.errors.new_password_repeated',
-                PasswordPolicy::VIOLATION_PERSONAL => 'ui.user.password.errors.new_password_personal',
-                default => 'ui.user.password.errors.new_password_length',
-            },
-            $this->passwordPolicy->violationCodes($password, $username, $email),
-        );
     }
 
     private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $plainToken, string $url): void
