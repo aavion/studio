@@ -198,9 +198,27 @@ message:
     available_languages: 'Available installer languages: %languages%'
     rollback_completed: 'Rollback removed %tables_removed% database tables, removed %env_removed% generated environment files, restored %env_restored% pre-existing environment files, and reported %errors% cleanup errors.'
     dry_run: 'Dry run only; no changes were written.'
+    composer_unavailable: 'Composer is unavailable. Install Composer or restore bin/composer.'
+    runtime_command_failed: 'Setup command failed: %message%'
+    php_cli_unavailable: 'PHP CLI binary could not be resolved: %reason%.'
+    database_url:
+      scheme_missing: 'Database URL must include a supported scheme.'
+      sqlite_format_invalid: 'SQLite database URLs must use the sqlite:///path/to/database.db format.'
+      scheme_unsupported: 'Unsupported database URL scheme "%scheme%".'
     output:
       success: 'Setup completed successfully.'
       failed: 'Setup failed.'
+    input:
+      app_env_empty: 'Setup APP_ENV must not be empty.'
+      language_invalid: 'Setup language "%language%" must be a valid locale token.'
+      language_unavailable: 'Setup language "%language%" is not available.'
+      site_title_empty: 'Setup site title must not be empty.'
+      default_uri_empty: 'Setup default URI must not be empty.'
+      default_uri_invalid: 'Setup default URI "%uri%" must be a valid URL.'
+      database_url_driver_mismatch: 'Setup database URL must match the selected "%driver%" database driver.'
+      database_prefix_invalid: 'Setup database prefix "%prefix%" must start with a lowercase letter and contain only lowercase letters, digits, or underscores.'
+      admin_username_invalid: 'Setup admin username "%username%" must start with a letter and contain 5 to 30 letters, digits, hyphens, or underscores.'
+      admin_email_invalid: 'Setup admin email "%email%" must be valid.'
     prompt:
       language: 'Installer language (%choices%)'
       site_title: 'Site title'

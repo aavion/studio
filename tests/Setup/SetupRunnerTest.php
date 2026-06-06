@@ -704,11 +704,8 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('prepare_setup', $result->context()['failed_step']);
         self::assertSame([], $executor->commands);
         self::assertFileDoesNotExist($this->root.'/.env.test.local');
-        self::assertSame('message.setup.step_failed', $result->issues()[0]->translationKey());
-        self::assertSame(
-            'SQLite database URLs must use the sqlite:///path/to/database.db format.',
-            $result->issues()[0]->parameters()['%message%'],
-        );
+        self::assertSame('message.setup.database_url.sqlite_format_invalid', $result->issues()[0]->translationKey());
+        self::assertSame('prepare_setup', $result->issues()[0]->context()['step'] ?? null);
     }
 
     public function testDryRunRollbackHandlesStepFailuresAfterPreparation(): void

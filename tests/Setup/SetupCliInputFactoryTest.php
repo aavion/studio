@@ -6,6 +6,7 @@ namespace App\Tests\Setup;
 
 use App\Setup\DatabaseDriver;
 use App\Setup\SetupCliInputFactory;
+use App\Setup\SetupMessageKey;
 use PHPUnit\Framework\TestCase;
 
 final class SetupCliInputFactoryTest extends TestCase
@@ -148,7 +149,7 @@ final class SetupCliInputFactoryTest extends TestCase
         );
 
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Setup admin username must start with a letter');
+        $this->expectExceptionMessage(SetupMessageKey::SETUP_INPUT_ADMIN_USERNAME_INVALID);
 
         $factory->create([
             'env' => 'test',

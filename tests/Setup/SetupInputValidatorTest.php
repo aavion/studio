@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Setup;
 
+use App\Core\Message\MessageException;
 use App\Setup\DatabaseDriver;
 use App\Setup\SetupInput;
 use App\Setup\SetupInputValidator;
+use App\Setup\SetupMessageKey;
 use PHPUnit\Framework\TestCase;
 
 final class SetupInputValidatorTest extends TestCase
@@ -44,16 +46,16 @@ final class SetupInputValidatorTest extends TestCase
 
     public function testItRejectsCliInputsWithUnavailableLanguage(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Setup language "fr" is not available.');
+        $this->expectException(MessageException::class);
+        $this->expectExceptionMessage(SetupMessageKey::SETUP_INPUT_LANGUAGE_UNAVAILABLE);
 
         (new SetupInputValidator())->assertValidInput($this->input(language: 'fr'), ['en', 'de']);
     }
 
     public function testItRejectsCliInputsWithShortAppSecret(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('APP_SECRET must be at least');
+        $this->expectException(MessageException::class);
+        $this->expectExceptionMessage(SetupMessageKey::SETUP_APP_SECRET_TOO_SHORT);
 
         (new SetupInputValidator())->assertValidInput($this->input(appSecret: 'short'), ['en']);
     }

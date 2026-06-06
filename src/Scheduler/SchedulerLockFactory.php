@@ -14,7 +14,7 @@ final readonly class SchedulerLockFactory
 
     public function acquire(string $identifier = 'run'): ?SchedulerRunLock
     {
-        $lock = $this->lockFactory->createLock('studio.scheduler.'.$this->environment.'.'.$this->normalizeIdentifier($identifier));
+        $lock = $this->lockFactory->createLock('system.scheduler.'.$this->environment.'.'.$this->normalizeIdentifier($identifier));
 
         if (!$lock->acquire(false)) {
             return null;

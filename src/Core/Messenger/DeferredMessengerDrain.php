@@ -242,7 +242,7 @@ final readonly class DeferredMessengerDrain
             .DIRECTORY_SEPARATOR.'var'
             .DIRECTORY_SEPARATOR.'cache'
             .DIRECTORY_SEPARATOR.$this->safeEnvironment()
-            .DIRECTORY_SEPARATOR.'studio-messenger-drain.lock';
+            .DIRECTORY_SEPARATOR.'system-messenger-drain.lock';
     }
 
     private function outputPath(): string
@@ -260,7 +260,7 @@ final readonly class DeferredMessengerDrain
             .DIRECTORY_SEPARATOR.'var'
             .DIRECTORY_SEPARATOR.'cache'
             .DIRECTORY_SEPARATOR.$this->safeEnvironment()
-            .DIRECTORY_SEPARATOR.'studio-messenger-drain.pid';
+            .DIRECTORY_SEPARATOR.'system-messenger-drain.pid';
     }
 
     private function schedulerOutputPath(): string
@@ -278,7 +278,7 @@ final readonly class DeferredMessengerDrain
             .DIRECTORY_SEPARATOR.'var'
             .DIRECTORY_SEPARATOR.'cache'
             .DIRECTORY_SEPARATOR.$this->safeEnvironment()
-            .DIRECTORY_SEPARATOR.'studio-scheduler-web-trigger.pid';
+            .DIRECTORY_SEPARATOR.'system-scheduler-web-trigger.pid';
     }
 
     private function safeEnvironment(): string

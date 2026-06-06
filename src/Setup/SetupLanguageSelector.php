@@ -23,7 +23,11 @@ final readonly class SetupLanguageSelector
         $availableLanguages = $this->languageCatalog->availableLanguages($projectDir);
 
         if (!in_array($input->language(), $availableLanguages, true)) {
-            throw new SetupStepFailedException(sprintf('Setup language "%s" is not available.', $input->language()));
+            throw SetupStepFailedException::fromMessage(Message::error(
+                SetupMessageCode::SETUP_STEP_FAILED,
+                SetupMessageKey::SETUP_INPUT_LANGUAGE_UNAVAILABLE,
+                ['%language%' => $input->language()],
+            ));
         }
 
         return [

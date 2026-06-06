@@ -220,7 +220,7 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
 
     private function fingerprint(): string
     {
-        return hash_hmac('sha256', 'studio.app_secret_rotation.'.$this->environmentKey(), $this->secret);
+        return hash_hmac('sha256', 'system.app_secret_rotation.'.$this->environmentKey(), $this->secret);
     }
 
     private function environmentKey(): string

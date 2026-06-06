@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Message\Message;
+
 final readonly class DatabaseUrlFactory
 {
     public function create(SetupInput $input, string $projectDir): string
@@ -28,16 +30,22 @@ final readonly class DatabaseUrlFactory
         $scheme = parse_url($databaseUrl, PHP_URL_SCHEME);
 
         if (!is_string($scheme) || '' === $scheme) {
-            throw new SetupStepFailedException('Database URL must include a supported scheme.');
+            throw $this->failure(
+                SetupMessageCode::SETUP_DATABASE_URL_SCHEME_MISSING,
+                SetupMessageKey::SETUP_DATABASE_URL_SCHEME_MISSING,
+            );
         }
 
         if ('sqlite' === $scheme) {
-            throw new SetupStepFailedException('SQLite database URLs must use the sqlite:///path/to/database.db format.');
+            throw $this->failure(
+                SetupMessageCode::SETUP_DATABASE_URL_SQLITE_FORMAT_INVALID,
+                SetupMessageKey::SETUP_DATABASE_URL_SQLITE_FORMAT_INVALID,
+            );
         }
 
         return match ($scheme) {
             'mysql', 'mariadb', 'pgsql', 'postgres', 'postgresql' => $databaseUrl,
-            default => throw new SetupStepFailedException(sprintf('Unsupported database URL scheme "%s".', $scheme)),
+            default => throw $this->unsupportedScheme($scheme),
         };
     }
 
@@ -50,5 +58,22 @@ final readonly class DatabaseUrlFactory
         $password = rawurlencode($input->databasePassword() ?? '');
 
         return sprintf('%s://%s:%s@%s:%d/%s', $scheme, $user, $password, $host, $port, rawurlencode($name));
+    }
+
+    private function unsupportedScheme(string $scheme): SetupStepFailedException
+    {
+        return $this->failure(
+            SetupMessageCode::SETUP_DATABASE_URL_SCHEME_UNSUPPORTED,
+            SetupMessageKey::SETUP_DATABASE_URL_SCHEME_UNSUPPORTED,
+            ['%scheme%' => $scheme],
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     */
+    private function failure(string $code, string $translationKey, array $parameters = []): SetupStepFailedException
+    {
+        return SetupStepFailedException::fromMessage(Message::error($code, $translationKey, $parameters));
     }
 }

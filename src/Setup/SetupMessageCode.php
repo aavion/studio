@@ -13,6 +13,12 @@ final class SetupMessageCode
     public const SETUP_AVAILABLE_LANGUAGES = 'setup.available_languages';
     public const SETUP_ROLLBACK_COMPLETED = 'setup.rollback_completed';
     public const SETUP_DRY_RUN = 'setup.dry_run';
+    public const SETUP_COMPOSER_UNAVAILABLE = 'setup.composer_unavailable';
+    public const SETUP_RUNTIME_COMMAND_FAILED = 'setup.runtime_command_failed';
+    public const SETUP_PHP_CLI_UNAVAILABLE = 'setup.php_cli_unavailable';
+    public const SETUP_DATABASE_URL_SCHEME_MISSING = 'setup.database_url.scheme_missing';
+    public const SETUP_DATABASE_URL_SQLITE_FORMAT_INVALID = 'setup.database_url.sqlite_format_invalid';
+    public const SETUP_DATABASE_URL_SCHEME_UNSUPPORTED = 'setup.database_url.scheme_unsupported';
     public const SETUP_PROMPT_LANGUAGE = 'setup.prompt.language';
     public const SETUP_PROMPT_SITE_TITLE = 'setup.prompt.site_title';
     public const SETUP_PROMPT_DEFAULT_URI = 'setup.prompt.default_uri';

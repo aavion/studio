@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Message\MessageException;
 use App\Core\Validation\EmailAddress;
 use App\Entity\UserAccount;
 use App\Security\PasswordPolicy;
@@ -111,19 +112,27 @@ final readonly class SetupInputValidator
     public function assertValidInput(SetupInput $input, array $availableLanguages): void
     {
         if (!in_array($input->language(), $availableLanguages, true)) {
-            throw new \InvalidArgumentException(sprintf('Setup language "%s" is not available.', $input->language()));
+            throw MessageException::invalidArgument(SetupMessageKey::SETUP_INPUT_LANGUAGE_UNAVAILABLE, [
+                '%language%' => $input->language(),
+            ]);
         }
 
         if (false === filter_var($input->defaultUri(), FILTER_VALIDATE_URL)) {
-            throw new \InvalidArgumentException('Setup default URI must be a valid URL.');
+            throw MessageException::invalidArgument(SetupMessageKey::SETUP_INPUT_DEFAULT_URI_INVALID, [
+                '%uri%' => $input->defaultUri(),
+            ]);
         }
 
         if (null !== $input->databaseUrl() && !$this->inputNormalizer->isValidDatabaseUrl($input->databaseUrl(), $input->databaseDriver())) {
-            throw new \InvalidArgumentException('Setup database URL must match the selected database driver.');
+            throw MessageException::invalidArgument(SetupMessageKey::SETUP_INPUT_DATABASE_URL_DRIVER_MISMATCH, [
+                '%driver%' => $input->databaseDriver()->value,
+            ]);
         }
 
         if (null !== $input->appSecret() && strlen($input->appSecret()) < self::MIN_APP_SECRET_LENGTH) {
-            throw new \InvalidArgumentException(sprintf('Setup APP_SECRET must be at least %d characters long.', self::MIN_APP_SECRET_LENGTH));
+            throw MessageException::invalidArgument(SetupMessageKey::SETUP_APP_SECRET_TOO_SHORT, [
+                '%min_length%' => self::MIN_APP_SECRET_LENGTH,
+            ]);
         }
     }
 

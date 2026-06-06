@@ -198,9 +198,27 @@ message:
     available_languages: 'Verfügbare Installer-Sprachen: %languages%'
     rollback_completed: 'Rollback hat %tables_removed% Datenbanktabellen entfernt, %env_removed% generierte Environment-Dateien entfernt, %env_restored% vorhandene Environment-Dateien wiederhergestellt und %errors% Aufräumfehler gemeldet.'
     dry_run: 'Nur Dry-Run; es wurden keine Änderungen geschrieben.'
+    composer_unavailable: 'Composer ist nicht verfügbar. Installiere Composer oder stelle bin/composer wieder her.'
+    runtime_command_failed: 'Setup-Befehl fehlgeschlagen: %message%'
+    php_cli_unavailable: 'PHP-CLI-Binary konnte nicht aufgelöst werden: %reason%.'
+    database_url:
+      scheme_missing: 'Datenbank-URL muss ein unterstütztes Schema enthalten.'
+      sqlite_format_invalid: 'SQLite-Datenbank-URLs müssen das Format sqlite:///path/to/database.db verwenden.'
+      scheme_unsupported: 'Nicht unterstütztes Datenbank-URL-Schema "%scheme%".'
     output:
       success: 'Setup erfolgreich abgeschlossen.'
       failed: 'Setup fehlgeschlagen.'
+    input:
+      app_env_empty: 'Setup-APP_ENV darf nicht leer sein.'
+      language_invalid: 'Setup-Sprache "%language%" muss ein gültiger Locale-Token sein.'
+      language_unavailable: 'Setup-Sprache "%language%" ist nicht verfügbar.'
+      site_title_empty: 'Setup-Seitentitel darf nicht leer sein.'
+      default_uri_empty: 'Setup-Standard-URI darf nicht leer sein.'
+      default_uri_invalid: 'Setup-Standard-URI "%uri%" muss eine gültige URL sein.'
+      database_url_driver_mismatch: 'Setup-Datenbank-URL muss zum ausgewählten Datenbanktreiber "%driver%" passen.'
+      database_prefix_invalid: 'Setup-Datenbankpräfix "%prefix%" muss mit einem Kleinbuchstaben beginnen und darf nur Kleinbuchstaben, Ziffern oder Unterstriche enthalten.'
+      admin_username_invalid: 'Setup-Admin-Username "%username%" muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
+      admin_email_invalid: 'Setup-Admin-E-Mail "%email%" muss gültig sein.'
     prompt:
       language: 'Installer-Sprache (%choices%)'
       site_title: 'Seitentitel'

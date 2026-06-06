@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Message\MessageException;
 use App\Core\Validation\EmailAddress;
 use App\Entity\UserAccount;
 use App\Localization\LocaleToken;
-use InvalidArgumentException;
 
 final readonly class SetupInput
 {
@@ -33,31 +33,39 @@ final readonly class SetupInput
         private bool $dryRun = false,
     ) {
         if ('' === trim($this->appEnv)) {
-            throw new InvalidArgumentException('Setup APP_ENV must not be empty.');
+            throw MessageException::invalidArgument(SetupMessageKey::SETUP_INPUT_APP_ENV_EMPTY);
         }
 
         if (1 !== preg_match('/^[a-z][a-z0-9]*(?:[_-][a-zA-Z0-9]+)*$/', $this->language)) {
-            throw new InvalidArgumentException('Setup language must be a valid locale token.');
+            throw MessageException::invalidArgument(SetupMessageKey::SETUP_INPUT_LANGUAGE_INVALID, [
+                '%language%' => $this->language,
+            ]);
         }
 
         if ('' === trim($this->siteTitle)) {
-            throw new InvalidArgumentException('Setup site title must not be empty.');
+            throw MessageException::invalidArgument(SetupMessageKey::SETUP_INPUT_SITE_TITLE_EMPTY);
         }
 
         if ('' === trim($this->defaultUri)) {
-            throw new InvalidArgumentException('Setup default URI must not be empty.');
+            throw MessageException::invalidArgument(SetupMessageKey::SETUP_INPUT_DEFAULT_URI_EMPTY);
         }
 
         if (!UserAccount::isValidUsername($this->adminUsername)) {
-            throw new InvalidArgumentException('Setup admin username must start with a letter and contain 5 to 30 letters, digits, hyphens, or underscores.');
+            throw MessageException::invalidArgument(SetupMessageKey::SETUP_INPUT_ADMIN_USERNAME_INVALID, [
+                '%username%' => $this->adminUsername,
+            ]);
         }
 
         if (null !== $this->adminEmail && !EmailAddress::isValid($this->adminEmail)) {
-            throw new InvalidArgumentException('Setup admin email must be valid.');
+            throw MessageException::invalidArgument(SetupMessageKey::SETUP_INPUT_ADMIN_EMAIL_INVALID, [
+                '%email%' => $this->adminEmail,
+            ]);
         }
 
         if (null !== $this->databasePrefix && '' !== $this->databasePrefix && 1 !== preg_match('/^[a-z][a-z0-9_]*$/', $this->databasePrefix)) {
-            throw new InvalidArgumentException('Setup database prefix must start with a lowercase letter and contain lowercase letters, digits, or underscores.');
+            throw MessageException::invalidArgument(SetupMessageKey::SETUP_INPUT_DATABASE_PREFIX_INVALID, [
+                '%prefix%' => $this->databasePrefix,
+            ]);
         }
     }
 

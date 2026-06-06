@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Message\Message;
 use App\Core\Process\PhpCliBinaryManager;
 use App\Database\DatabaseReadyState;
 
@@ -34,7 +35,7 @@ final readonly class SetupRuntimeCommandRunner
         $result = $commandExecutor->run($command, $projectDir, $composerEnvironment);
 
         if (!$result->isSuccessful()) {
-            throw new SetupStepFailedException($this->commandError($result));
+            throw $this->commandFailed($result);
         }
 
         return ['command' => $command];
@@ -55,7 +56,7 @@ final readonly class SetupRuntimeCommandRunner
         $result = $commandExecutor->run($command, $projectDir, $this->databaseEnvironmentScope->commandEnvironment($environment));
 
         if (!$result->isSuccessful()) {
-            throw new SetupStepFailedException($this->commandError($result));
+            throw $this->commandFailed($result);
         }
 
         return ['command' => $command];
@@ -76,7 +77,7 @@ final readonly class SetupRuntimeCommandRunner
         $result = $commandExecutor->run($command, $projectDir, $this->databaseEnvironmentScope->commandEnvironment($environment));
 
         if (!$result->isSuccessful()) {
-            throw new SetupStepFailedException($this->commandError($result));
+            throw $this->commandFailed($result);
         }
 
         return ['command' => $command];
@@ -104,7 +105,7 @@ final readonly class SetupRuntimeCommandRunner
         $result = $commandExecutor->run($command, $projectDir, $this->databaseEnvironmentScope->commandEnvironment($environment));
 
         if (!$result->isSuccessful()) {
-            throw new SetupStepFailedException($this->commandError($result));
+            throw $this->commandFailed($result);
         }
 
         return ['command' => $command];
@@ -134,7 +135,7 @@ final readonly class SetupRuntimeCommandRunner
         $result = $commandExecutor->run($command, $projectDir, $commandEnvironment);
 
         if (!$result->isSuccessful()) {
-            throw new SetupStepFailedException($this->commandError($result));
+            throw $this->commandFailed($result);
         }
 
         return [
@@ -174,7 +175,7 @@ final readonly class SetupRuntimeCommandRunner
         );
 
         if (!$resolution->isAvailable()) {
-            throw new SetupStepFailedException('PHP CLI binary could not be resolved: '.$resolution->reason().'.');
+            throw $this->phpCliUnavailable($resolution->reason());
         }
 
         return [
@@ -224,7 +225,7 @@ final readonly class SetupRuntimeCommandRunner
         $resolution = $this->phpCliBinaryManager->resolve($projectDir, $input->appEnv(), $environment, $persistPreference);
 
         if (!$resolution->isAvailable()) {
-            throw new SetupStepFailedException('PHP CLI binary could not be resolved: '.$resolution->reason().'.');
+            throw $this->phpCliUnavailable($resolution->reason());
         }
 
         return $resolution->commandPrefix();
@@ -270,5 +271,23 @@ final readonly class SetupRuntimeCommandRunner
     private function commandError(SetupCommandResult $result): string
     {
         return trim($result->output().PHP_EOL.$result->errorOutput()) ?: 'Setup command failed.';
+    }
+
+    private function commandFailed(SetupCommandResult $result): SetupStepFailedException
+    {
+        return SetupStepFailedException::fromMessage(Message::error(
+            SetupMessageCode::SETUP_RUNTIME_COMMAND_FAILED,
+            SetupMessageKey::SETUP_RUNTIME_COMMAND_FAILED,
+            ['%message%' => $this->commandError($result)],
+        ));
+    }
+
+    private function phpCliUnavailable(string $reason): SetupStepFailedException
+    {
+        return SetupStepFailedException::fromMessage(Message::error(
+            SetupMessageCode::SETUP_PHP_CLI_UNAVAILABLE,
+            SetupMessageKey::SETUP_PHP_CLI_UNAVAILABLE,
+            ['%reason%' => $reason],
+        ));
     }
 }

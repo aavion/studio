@@ -77,7 +77,7 @@ final class PrefixedConnection extends Connection
     {
         $params = $this->getParams();
 
-        if (($params['studio_allow_unready_database'] ?? false) === true) {
+        if (($params['system_allow_unready_database'] ?? false) === true) {
             return true;
         }
 
@@ -115,7 +115,7 @@ final class PrefixedConnection extends Connection
     private function prefix(): string
     {
         $params = $this->getParams();
-        $prefix = $params['studio_database_prefix'] ?? null;
+        $prefix = $params['system_database_prefix'] ?? null;
 
         return is_string($prefix) ? TablePrefix::normalize($prefix) : TablePrefix::fromEnvironment();
     }

@@ -25,28 +25,28 @@ services:
                 - { name: 'studio.backend_view_provider', priority: 0 }
         App\View\Injection\StaticViewInjectionProviderInterface:
             tags:
-                - { name: 'studio.static_view_injection_provider', priority: 0 }
+                - { name: 'system.static_view_injection_provider', priority: 0 }
         App\View\Injection\DynamicViewInjectionProviderInterface:
             tags:
-                - { name: 'studio.dynamic_view_injection_provider', priority: 0 }
+                - { name: 'system.dynamic_view_injection_provider', priority: 0 }
         App\Core\Package\Settings\PackageSettingProviderInterface:
             tags:
-                - { name: 'studio.package_setting_provider', priority: 0 }
+                - { name: 'system.package_setting_provider', priority: 0 }
         App\Core\Operation\Live\LiveOperationQueueProviderInterface:
             tags:
-                - { name: 'studio.live_operation_queue_provider', priority: 0 }
+                - { name: 'system.live_operation_queue_provider', priority: 0 }
         App\Scheduler\SchedulerTaskProviderInterface:
             tags:
-                - { name: 'studio.scheduler_task_provider', priority: 0 }
+                - { name: 'system.scheduler_task_provider', priority: 0 }
         App\Scheduler\SchedulerTaskExecutorInterface:
             tags:
-                - { name: 'studio.scheduler_task_executor', priority: 0 }
+                - { name: 'system.scheduler_task_executor', priority: 0 }
         App\Scheduler\SchedulerActionQueueProviderInterface:
             tags:
-                - { name: 'studio.scheduler_action_queue_provider', priority: 0 }
+                - { name: 'system.scheduler_action_queue_provider', priority: 0 }
         App\Scheduler\SchedulerCallableProviderInterface:
             tags:
-                - { name: 'studio.scheduler_callable_provider', priority: 0 }
+                - { name: 'system.scheduler_callable_provider', priority: 0 }
         App\Security\AclGroupReferenceProviderInterface:
             tags:
                 - { name: 'system.acl_group_reference_provider', priority: 0 }
@@ -143,20 +143,20 @@ services:
 
     App\View\Injection\ViewInjectionRegistry:
         arguments:
-            $staticProviders: !tagged_iterator { tag: studio.static_view_injection_provider }
-            $dynamicProviders: !tagged_iterator { tag: studio.dynamic_view_injection_provider }
+            $staticProviders: !tagged_iterator { tag: system.static_view_injection_provider }
+            $dynamicProviders: !tagged_iterator { tag: system.dynamic_view_injection_provider }
 
     App\Core\Package\Settings\PackageSettingRegistry:
         arguments:
-            $providers: !tagged_iterator { tag: studio.package_setting_provider }
+            $providers: !tagged_iterator { tag: system.package_setting_provider }
 
     App\Scheduler\SchedulerTaskRegistry:
         arguments:
-            $providers: !tagged_iterator { tag: studio.scheduler_task_provider }
+            $providers: !tagged_iterator { tag: system.scheduler_task_provider }
 
     App\Scheduler\SchedulerTaskRunRecorder:
         arguments:
-            $executors: !tagged_iterator { tag: studio.scheduler_task_executor }
+            $executors: !tagged_iterator { tag: system.scheduler_task_executor }
 
     App\Scheduler\SchedulerLockFactory:
         arguments:
@@ -169,11 +169,11 @@ services:
 
     App\Scheduler\ActionQueueSchedulerTaskExecutor:
         arguments:
-            $providers: !tagged_iterator { tag: studio.scheduler_action_queue_provider }
+            $providers: !tagged_iterator { tag: system.scheduler_action_queue_provider }
 
     App\Scheduler\CallableSchedulerTaskExecutor:
         arguments:
-            $providers: !tagged_iterator { tag: studio.scheduler_callable_provider }
+            $providers: !tagged_iterator { tag: system.scheduler_callable_provider }
 
     App\Security\AclGroupImpactService:
         arguments:
@@ -370,7 +370,7 @@ services:
 
     App\Core\Operation\Live\LiveOperationQueueFactory:
         arguments:
-            $providers: !tagged_iterator { tag: studio.live_operation_queue_provider }
+            $providers: !tagged_iterator { tag: system.live_operation_queue_provider }
 
     App\Security\MaintenanceModeSubscriber:
         arguments:
