@@ -25,6 +25,9 @@ ui:
     pending: 'Ausstehend'
   empty_state:
     title: 'Nichts anzuzeigen'
+  markdown:
+    embed:
+      video_title: 'Eingebettetes Video'
   user:
     identity:
       deleted: 'Gelöschter Benutzer'

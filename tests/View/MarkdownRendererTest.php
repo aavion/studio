@@ -6,6 +6,7 @@ namespace App\Tests\View;
 
 use App\View\MarkdownRenderer;
 use PHPUnit\Framework\TestCase;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class MarkdownRendererTest extends TestCase
 {
@@ -58,6 +59,25 @@ final class MarkdownRendererTest extends TestCase
         self::assertStringNotContainsString('youtube-nocookie.com', $html);
         self::assertStringContainsString('href="https://youtu.be/dQw4w9WgXcQ"', $html);
         self::assertStringContainsString('<h1 id="title">Title', $html);
+    }
+
+    public function testItUsesTranslatedEmbedVideoTitle(): void
+    {
+        $translator = new class implements TranslatorInterface {
+            public function trans(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
+            {
+                return 'ui.markdown.embed.video_title' === $id ? 'Localized "Video"' : $id;
+            }
+
+            public function getLocale(): string
+            {
+                return 'en';
+            }
+        };
+
+        $html = (new MarkdownRenderer($translator))->render('https://youtu.be/dQw4w9WgXcQ', 'design');
+
+        self::assertStringContainsString('title="Localized &quot;Video&quot;"', $html);
     }
 
     public function testItRendersBasicMarkdownForUntrustedContent(): void

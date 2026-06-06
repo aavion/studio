@@ -26,13 +26,20 @@ use League\CommonMark\Extension\TableOfContents\TableOfContentsExtension;
 use League\CommonMark\Extension\TaskList\TaskListExtension;
 use League\CommonMark\MarkdownConverter;
 use League\CommonMark\Output\RenderedContentInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class MarkdownRenderer
 {
+    private const EMBED_VIDEO_TITLE_KEY = 'ui.markdown.embed.video_title';
+
     /**
      * @var array<string, MarkdownConverter>
      */
     private array $converters = [];
+
+    public function __construct(private readonly ?TranslatorInterface $translator = null)
+    {
+    }
 
     public function render(string $markdown, string|MarkdownProfile|null $profile = null): string
     {
@@ -150,7 +157,7 @@ final class MarkdownRenderer
     {
         return array_replace_recursive($this->safeConfig(), [
             'embed' => [
-                'adapter' => new MarkdownEmbedAdapter(),
+                'adapter' => new MarkdownEmbedAdapter($this->embedVideoTitle()),
                 'allowed_domains' => [
                     'youtube.com',
                     'www.youtube.com',
@@ -193,5 +200,10 @@ final class MarkdownRenderer
             'allow_unsafe_links' => false,
             'html_input' => 'escape',
         ];
+    }
+
+    private function embedVideoTitle(): string
+    {
+        return $this->translator?->trans(self::EMBED_VIDEO_TITLE_KEY) ?? self::EMBED_VIDEO_TITLE_KEY;
     }
 }
