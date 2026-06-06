@@ -91,7 +91,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 
 | Domain | Scope | Status | Notes |
 | --- | --- | --- | --- |
-| Backend | `src/Backend` | In progress | Admin settings/system-info path and backend view context reviewed. System-info uses a reduced admin-only report, not raw `phpinfo()` or `$_SERVER`; package detail provider size/read-model split still needs final assessment. |
+| Backend | `src/Backend` | In progress | Admin settings/system-info path and backend view context reviewed. System-info uses a reduced admin-only report, not raw `phpinfo()` or `$_SERVER`; S2-021 renames internal backend form request attributes to `system`. Package detail provider size/read-model split still needs final assessment. |
 | Command | `src/Command` | Reviewed | Commands are small and use `studio:` as intentional product CLI branding. Process-heavy work delegates into services; no immediate command naming drift found. |
 | Content | `src/Content` | In progress | Content read resolution, routing language behavior, and content field locale tokens reviewed. S2-015 hardens regional locale fallback and persisted field locale compatibility. Aggregate/API read-model boundaries still need review. |
 | Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap and S2-009 hardens profile language persistence. Setup/backend leftovers still need review. |
@@ -101,7 +101,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Core observability | `src/Core/Log`, `Statistics`, `Diagnostics` | In progress | Visitor/request ID, access metadata sanitization, statistics recorder/aggregator/store reviewed. S2-016 hardens snapshot temp-file writes. Diagnostics/debug naming still needs review. |
 | Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | In progress | Event hook registry reviewed; S2-011 prevents silent public hook descriptor overrides. Translation/runtime paths, catalogue collision handling, lint, manifest, and Message invariants reviewed. S2-019 renames an internal lint temp prefix to `system-*`. Remaining pass: package catalogue conflict docs/tests and broader generated catalogue checks. |
 | Database | `src/Database` | Reviewed | Table-prefix coverage, raw DBAL wrapper prefixing, Doctrine metadata prefixing, and migration portability reviewed. `studio_` remains a user-facing/product example prefix, while internal DBAL wrapper params use `system_*`. |
-| Debug and Kernel | `src/Debug`, `src/Kernel.php` | Pending | Re-check debug collector naming, output safety, and APP_DEBUG gating. |
+| Debug and Kernel | `src/Debug`, `src/Kernel.php` | Reviewed | Debug collector naming, output safety, and APP_DEBUG gating reviewed. S2-021 renames the internal collector and debug HTML comment to `system`; public Twig helper names remain `studio_*` as theme-facing API. |
 | Entity and Repository | `src/Entity`, `src/Repository` | In progress | Entity inventory, UID storage, statistics indexes, and content field locale token compatibility reviewed. UUIDv7 RFC 4122 strings remain the portable pre-1.0 tradeoff; repositories/filtering boundaries still need final assessment. |
 | Form, Mail, Navigation, Localization | `src/Form`, `src/Mail`, `src/Navigation`, `src/Localization` | Reviewed | Locale resolver, form builder/submission layer, mail locale behavior, and navigation label fallback reviewed. S2-013 records the deferred Mail Message/API hardening; S2-014 hardens navigation primary-language fallback. |
 | Scheduler | `src/Scheduler` | In progress | Scheduler task registry, lock naming, package task policy, run recorder, web-auth settings, and task definitions reviewed. S2-012 converts public task definition invariants to Message-layer diagnostics. Remaining pass: route/controller usage and docs alignment. |
@@ -333,6 +333,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Deferred; documented as a Security hardening follow-up.
 - **Priority:** Security feature branch / Before release.
 
+### S2-021 Internal debug collector and backend form request attributes used product-brand naming
+
+- **Area:** Debug collector, debug HTML comments, backend settings form repopulation, and internal request attributes.
+- **Finding:** `StudioDebugCollector`, the `studio-debug` HTML comment, and `_studio_form_values`/`_studio_form_errors` were internal technical names rather than public branding surfaces. Public Twig helpers such as `studio_debug_info()` and CSS classes remain intentional product/theme API.
+- **Evidence:** `src/Debug/StudioDebugCollector.php`, `src/View/Http/ResponseHookSubscriber.php`, `src/Controller/BackendController.php:255`, `src/View/Twig/AdminViewTwigExtension.php:192`.
+- **Impact:** No behavior was broken, but this was exactly the kind of internal naming drift the final audit rule was meant to catch.
+- **Recommendation:** Use `SystemDebugCollector`, `system-debug`, and `_system_*` request attributes for core-owned internals while leaving product-facing Twig/CSS API stable.
+- **Fix applied:** Renamed the collector class/file/service references, debug HTML comment marker, tests, class map, drafts, and backend form request attributes.
+- **Priority:** Now / Final naming gate.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -363,6 +373,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Security tokens reviewed. Account links/recovery tokens are server-side rows storing only SHA-256 token hashes, while API keys use APP_SECRET-rooted HMAC plus encrypted reversible payloads; remember-me should be a separate credential model rather than reusing account-link tokens.
 - Maintenance mode reviewed. The public UI uses translated 503 error-page keys; the literal `ServiceUnavailableHttpException` text is debug-only HTTP control-flow and acceptable as a Symfony-native boundary.
 - APP_SECRET rotation reviewed. S2-020 records the remaining idempotency edge around repeated owner recovery delivery if fingerprint persistence fails.
+- Debug/view internal naming reviewed. S2-021 moves internal debug collector/comment and backend form request attributes from `studio` to `system`; `studio_*` Twig helpers and CSS classes remain intentionally public/product-facing.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.

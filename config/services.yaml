@@ -380,7 +380,7 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Debug\StudioDebugCollector:
+    App\Debug\SystemDebugCollector:
         arguments:
             $debug: '%kernel.debug%'
 

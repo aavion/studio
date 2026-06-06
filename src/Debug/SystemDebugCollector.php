@@ -8,7 +8,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
-final class StudioDebugCollector implements EventSubscriberInterface
+final class SystemDebugCollector implements EventSubscriberInterface
 {
     /**
      * @var list<array<string, mixed>>
@@ -111,7 +111,7 @@ final class StudioDebugCollector implements EventSubscriberInterface
             return '';
         }
 
-        return "\n<!-- studio-debug\n".str_replace('--', '- -', $json)."\n-->";
+        return "\n<!-- system-debug\n".str_replace('--', '- -', $json)."\n-->";
     }
 
     private function normalize(mixed $value, int $depth = 0): mixed

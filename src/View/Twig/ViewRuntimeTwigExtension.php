@@ -7,7 +7,7 @@ namespace App\View\Twig;
 use App\Core\Access\AccessActor;
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Statistics\VisitorIdGenerator;
-use App\Debug\StudioDebugCollector;
+use App\Debug\SystemDebugCollector;
 use App\Entity\UserAccount;
 use App\Navigation\NavigationBuilder;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -20,7 +20,7 @@ final class ViewRuntimeTwigExtension extends AbstractExtension
 {
     public function __construct(
         private readonly NavigationBuilder $navigationBuilder,
-        private readonly StudioDebugCollector $debugCollector,
+        private readonly SystemDebugCollector $debugCollector,
         private readonly Security $security,
         private readonly RequestStack $requestStack,
         private readonly AccessRequestMetadata $accessRequestMetadata,

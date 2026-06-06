@@ -10,7 +10,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Workflow\WorkflowResult;
-use App\Debug\StudioDebugCollector;
+use App\Debug\SystemDebugCollector;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Throwable;
 
@@ -20,7 +20,7 @@ final readonly class PublicEventDispatcher
         private EventDispatcherInterface $eventDispatcher,
         private PublicEventHookRegistry $hookRegistry,
         private WorkflowResultMessageReporterInterface $messageReporter,
-        private ?StudioDebugCollector $debugCollector = null,
+        private ?SystemDebugCollector $debugCollector = null,
     ) {
     }
 

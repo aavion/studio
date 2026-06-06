@@ -6,7 +6,7 @@ namespace App\Tests\View\Http;
 
 use App\Core\Event\PublicEventDispatcher;
 use App\Core\Event\PublicEventHookRegistry;
-use App\Debug\StudioDebugCollector;
+use App\Debug\SystemDebugCollector;
 use App\View\Event\OutputGeneratedEvent;
 use App\View\Event\ResponseHeadersEvent;
 use App\View\Http\ResponseHookSubscriber;
@@ -68,7 +68,7 @@ final class ResponseHookSubscriberTest extends TestCase
     {
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(OutputGeneratedEvent::class, static function (OutputGeneratedEvent $event): void {
-            $event->appendContent('<!-- studio-debug -->');
+            $event->appendContent('<!-- package-output-hook -->');
         });
         $response = new Response('<html></html>', 200, [
             'Content-Type' => 'text/html; charset=UTF-8',
@@ -77,7 +77,7 @@ final class ResponseHookSubscriberTest extends TestCase
 
         $this->subscriber($dispatcher)->onKernelResponse($this->responseEvent($response));
 
-        self::assertSame('<html></html><!-- studio-debug -->', $response->getContent());
+        self::assertSame('<html></html><!-- package-output-hook -->', $response->getContent());
         self::assertFalse($response->headers->has('Content-Length'));
     }
 
@@ -115,7 +115,7 @@ final class ResponseHookSubscriberTest extends TestCase
     public function testItAppendsDebugCommentWhenCollectorIsEnabled(): void
     {
         $dispatcher = new EventDispatcher();
-        $collector = new StudioDebugCollector(true);
+        $collector = new SystemDebugCollector(true);
         $response = new Response('<html></html>', 200, [
             'Content-Type' => 'text/html',
         ]);
@@ -125,7 +125,7 @@ final class ResponseHookSubscriberTest extends TestCase
             $collector,
         ))->onKernelResponse($this->responseEvent($response));
 
-        self::assertStringContainsString('<!-- studio-debug', (string) $response->getContent());
+        self::assertStringContainsString('<!-- system-debug', (string) $response->getContent());
         self::assertStringContainsString('ResponseHeadersEvent', (string) $response->getContent());
         self::assertStringContainsString('OutputGeneratedEvent', (string) $response->getContent());
     }

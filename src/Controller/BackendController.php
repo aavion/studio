@@ -252,8 +252,8 @@ final class BackendController extends AbstractController
             return $this->redirect($request->getPathInfo());
         }
 
-        $request->attributes->set('_studio_form_values', $result->values());
-        $request->attributes->set('_studio_form_errors', $result->errors());
+        $request->attributes->set('_system_form_values', $result->values());
+        $request->attributes->set('_system_form_errors', $result->errors());
 
         return null;
     }

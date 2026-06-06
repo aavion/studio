@@ -189,7 +189,7 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     private function requestFormValues(?Request $request): array
     {
-        $values = $request?->attributes->get('_studio_form_values');
+        $values = $request?->attributes->get('_system_form_values');
 
         return is_array($values) ? $values : [];
     }
@@ -199,7 +199,7 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     private function requestFormErrors(?Request $request): array
     {
-        $errors = $request?->attributes->get('_studio_form_errors');
+        $errors = $request?->attributes->get('_system_form_errors');
 
         return is_array($errors) ? $errors : [];
     }

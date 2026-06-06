@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\View\Http;
 
 use App\Core\Event\PublicEventDispatcher;
-use App\Debug\StudioDebugCollector;
+use App\Debug\SystemDebugCollector;
 use App\View\Event\OutputGeneratedEvent;
 use App\View\Event\ResponseHeadersEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -20,7 +20,7 @@ final class ResponseHookSubscriber implements EventSubscriberInterface
 
     public function __construct(
         private readonly PublicEventDispatcher $eventDispatcher,
-        private readonly ?StudioDebugCollector $debugCollector = null,
+        private readonly ?SystemDebugCollector $debugCollector = null,
         ?ResponseHeaderPolicy $headerPolicy = null,
     ) {
         $this->headerPolicy = $headerPolicy ?? new ResponseHeaderPolicy();
