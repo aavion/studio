@@ -9,6 +9,7 @@ use App\Core\Message\MessageCode;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
 use App\Core\Statistics\AccessStatisticsRecorderInterface;
+use App\Core\Statistics\VisitorIdGenerator;
 use App\Database\DatabaseReadyState;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -22,6 +23,7 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
         private AccessLoggerInterface $accessLogger,
         private AccessStatisticsRecorderInterface $accessStatisticsRecorder,
         private AccessRequestMetadata $accessRequestMetadata,
+        private VisitorIdGenerator $visitorIdGenerator,
         private ?MessageReporterInterface $messageReporter = null,
         private ?DatabaseReadyState $databaseReadyState = null,
     ) {
@@ -49,6 +51,8 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
         if (!$event->isMainRequest() || $this->shouldSkipAccessLog($event->getRequest()->getPathInfo())) {
             return;
         }
+
+        $this->visitorIdGenerator->attachCookie($event->getRequest(), $event->getResponse());
 
         try {
             $this->accessLogger->log($event->getRequest(), $event->getResponse());

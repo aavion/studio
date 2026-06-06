@@ -1,7 +1,7 @@
 # Project Rules
 
 > **Status**: Active  
-> **Updated**: 2026-06-05  
+> **Updated**: 2026-06-06  
 > **Owner**: Dominik Letica, OpenAI/Codex  
 > **Purpose:** Record project-wide decisions agents should remember across sessions.  
 
@@ -37,6 +37,7 @@
 - New or refactored package-owned technical identifiers must follow one stable owner/scope/name convention. The native core/system package owner is `system`; reserve `Studio`/`studio` for product branding or deliberate legacy UI surfaces until those surfaces are intentionally migrated.
 - Runtime errors, validation failures, operational diagnostics, and user-facing feedback should use the shared `Message`, `MessageCode`, `MessageKey`, `WorkflowResult`, or `MessageException` layer wherever practical. Hard exceptions with literal text are allowed only for consciously chosen low-level invariants or unrecoverable adapter failures, and should not be used as a convenience shortcut around structured messages.
 - Available languages must be discovered from translation catalogues, runtime configuration, or explicit content data. Do not hardcode language variants in runtime control flow, default API parameters, or administrative form fields. Content entities may intentionally store separate localized variants per language, but non-content domain data should use one generic label/name unless localized variants are a documented product requirement.
+- Core/system cookies must be first-party and technically scoped only, such as visitor identification, session/security binding, language preference, or appearance preference. Core must not set or read cross-site advertising, profiling, or external analytics cookies. Future advertising or external statistics packages must own their own cookie strategy, consent requirements, documentation, and isolation from core technical cookies, for example through a centralized consent interface where packages register their cookie policies.
 - Child processes and detached runners must use the central process/environment helpers unless a direct process call is intentionally local and documented. Application subprocesses must inherit Symfony Dotenv-derived configuration and must filter web/CGI request context before execution.
 - Add small wrapper or helper APIs when they make public or extension-facing behavior easier to explain, safer to call, or less error-prone.
 - Prefer Symfony, Doctrine, Twig, Messenger, Validator, Serializer, Process, Filesystem, Security, EventDispatcher, Form, Translation, and other maintained vendor capabilities over custom infrastructure unless the custom abstraction has clear project-specific value.

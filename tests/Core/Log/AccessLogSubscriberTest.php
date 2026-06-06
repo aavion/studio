@@ -11,6 +11,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
 use App\Core\Statistics\AccessStatisticsRecorderInterface;
+use App\Core\Statistics\VisitorIdGenerator;
 use App\Database\DatabaseReadyState;
 use App\Setup\SetupCompletionMarker;
 use PHPUnit\Framework\TestCase;
@@ -33,6 +34,7 @@ final class AccessLogSubscriberTest extends TestCase
             new FailingAccessLogger(),
             $statisticsRecorder,
             new AccessRequestMetadata(),
+            new VisitorIdGenerator('test-secret'),
             $reporter,
         ))->onKernelResponse(new ResponseEvent(
             new AccessSubscriberTestKernel(),
@@ -43,6 +45,7 @@ final class AccessLogSubscriberTest extends TestCase
 
         self::assertCount(1, $statisticsRecorder->records);
         self::assertCount(1, $reporter->records);
+        self::assertSame(VisitorIdGenerator::COOKIE_NAME, $response->headers->getCookies()[0]?->getName());
         self::assertSame(MessageKey::ACCESS_LOG_FAILED, $reporter->records[0]['message']->translationKey());
         self::assertSame('access.log', $reporter->records[0]['context']['operation']);
     }
@@ -58,6 +61,7 @@ final class AccessLogSubscriberTest extends TestCase
             $accessLogger,
             $statisticsRecorder,
             new AccessRequestMetadata(),
+            new VisitorIdGenerator('test-secret'),
             null,
             new DatabaseReadyState(new SetupCompletionMarker(), sys_get_temp_dir().'/missing-studio-project', 'test'),
         ))->onKernelResponse(new ResponseEvent(

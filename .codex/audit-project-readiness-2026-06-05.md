@@ -110,7 +110,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **D4:** Package authors should have one preferred `PackageContributions`-style builder/DTO API. Provider interfaces may remain internal adapters or advanced extension points.
 - **D5:** Custom Twig is a product feature. Schema Twig may be edited by trusted users with explicit permissions and validation; content-body Twig is not allowed or must be strongly sandboxed. Package Twig templates are trusted package code, but package access to sensitive user, ACL, or secret data must go through core-provided providers.
 - **D6:** Replace the custom UUID helper with `symfony/uid` as the unified UID source. Do not introduce a second public ID when the stable UID or a unique slug already covers the reference case. High-write tables may still need storage/index strategy review.
-- **D7:** Visitor identity should use a first-party, server-generated, HMAC-protected, rotatable visitor cookie that respects DNT/opt-out. Avoid machine IDs, advertising IDs, or fingerprinting.
+- **D7:** Visitor identity should use a first-party, server-generated, HMAC-protected, rotatable technical visitor cookie. Statistics recording still honors DNT/opt-out through the statistics policy. Avoid machine IDs, advertising IDs, cross-site identifiers, or fingerprinting.
 - **D8:** Session hardening should use a soft client/visitor binding strategy that can trigger risk scoring or re-authentication rather than blindly logging users out on ordinary network or browser changes.
 - **D9:** Current inbound request ID behavior may remain: sanitized `X-Request-ID`/`X-Correlation-ID` values are acceptable and should stay short enough for access-log filtering and later security correlation.
 - **D10:** Add a central payload/secret protection layer that derives context-specific keys from `APP_SECRET` through HKDF/Sodium-compatible labels and payload versions. `APP_SECRET` remains the root secret; rotation is an emergency action handled by the existing guard/recovery model.
@@ -340,11 +340,12 @@ Run a complete project audit without treating feature-draft assumptions or previ
 ### F-006 Visitor identity is stable but not robust enough for future security decisions
 
 - **Area:** Statistics, logging, and session/security planning.
-- **Finding:** `VisitorIdGenerator` uses `HMAC(secret, client-ip|lowercase-user-agent)` as the visitor ID.
+- **Finding:** `VisitorIdGenerator` previously used `HMAC(secret, client-ip|lowercase-user-agent)` as the visitor ID.
 - **Evidence:** `src/Core/Statistics/VisitorIdGenerator.php:13`, `src/Core/Statistics/VisitorIdGenerator.php:17`, `src/Core/Statistics/VisitorIdGenerator.php:20`, `src/Core/Statistics/VisitorIdGenerator.php:64`.
-- **Impact:** This is privacy-preserving and stable for simple analytics, but it collides for NAT/shared devices and changes when IP or user agent changes. It should not become a session-hijack defense by itself.
-- **Recommendation:** Keep this for low-risk anonymized statistics for now. For Security work, design a separate session/client-binding strategy using a first-party, rotating, HMAC-protected client signal with clear privacy, DNT, and false-positive handling. Avoid invasive machine fingerprinting.
-- **Deferred:** Implementation belongs to the Security/visitor-identity slice because it affects cookies, privacy copy, session-risk handling, rate-limit inputs, and false-positive recovery. The current analytics visitor ID must not be reused as a hard session-binding factor.
+- **Impact:** The old shape was privacy-preserving and stable for simple analytics, but it collided for NAT/shared devices and changed when IP or user agent changed. It should not become a session-hijack defense by itself.
+- **Recommendation:** Use a first-party, server-generated, signed visitor cookie as the stable device/browser signal. Keep IP and user-agent as separate soft signals for rate limiting and suspicious-behavior detection. Avoid invasive machine IDs, advertising IDs, or fingerprinting.
+- **Implementation note:** `VisitorIdGenerator` now prefers a signed first-party technical `system_visitor` cookie, generates a random token when no valid cookie exists, stores only a compact 128-bit `APP_SECRET`-derived visitor ID in logs/statistics, and `AccessLogSubscriber` refreshes the HttpOnly SameSite=Lax cookie on normal responses. This gives future Security features a visitor bucket separate from IP buckets while keeping session binding, external module consent policy, false-positive handling, and re-authentication behavior deferred to the Security slice.
+- **Deferred:** Session/client binding, privacy copy, rate-limit configuration, false-positive recovery, and a possible centralized consent interface where packages can register cookie policies for advertising or external analytics remain in the Security/visitor-identity slice. The visitor ID is a risk/rate-limit signal, not sole proof of identity.
 - **Priority:** Before Security.
 
 ### F-007 Request IDs can be externally controlled
