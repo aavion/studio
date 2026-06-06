@@ -335,6 +335,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** inventory shows `tests/Controller/AdminUserControllerTest.php` at 2226 lines, `tests/Controller/UserControllerTest.php` at 1663 lines, and `tests/Controller/BackendControllerTest.php` at 1386 lines.
 - **Impact:** High context cost and higher flake/debug time when one workflow mutates shared fixtures for later workflows.
 - **Recommendation:** Split by behavior domain: deleted users, invitations, review queue, group management, profile/password/API keys, backend packages, operations, settings, scheduler. Keep assertions behavior-focused and avoid template-detail drift.
+- **Implementation note:** First test split completed by moving Admin Scheduler, Admin User Review, User Profile, and User API-key flows into dedicated controller test classes with shared fixture/authentication helpers. Authenticated BrowserKit clients now receive a valid first-party visitor cookie before `loginUser()` so visitor-bound sessions behave like browser sessions, redirect helpers no longer re-login mid-flow, and a redundant Topbar action test that could trigger cache/asset side effects was removed.
 - **Priority:** Now.
 
 ### F-006 Visitor identity is stable but not robust enough for future security decisions

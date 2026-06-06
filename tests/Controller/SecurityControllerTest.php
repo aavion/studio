@@ -15,6 +15,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class SecurityControllerTest extends WebTestCase
 {
+    use AuthenticatedClientTrait;
+
     public function testLoginRouteRendersLoginForm(): void
     {
         $client = self::createClient();
@@ -55,7 +57,7 @@ final class SecurityControllerTest extends WebTestCase
         $client = self::createClient();
         $user = $this->createUserWithLevel(8, 'logoutadmin', 'correct-password');
 
-        $client->loginUser($user);
+        $this->loginTestUser($client, $user);
         $client->request('GET', '/user/logout');
 
         self::assertResponseIsSuccessful();
