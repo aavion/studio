@@ -314,6 +314,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Controller/BackendController.php:42`, `src/Controller/BackendController.php:71`, `src/Controller/BackendController.php:343`, `src/Controller/BackendController.php:458`, `src/Controller/BackendController.php:523`, `src/Controller/BackendController.php:662`.
 - **Impact:** Admin features become harder to extend without touching one central controller. This also hides natural route/action ownership from docs and class maps.
 - **Recommendation:** Keep dynamic backend routing as a small dispatcher and move package install/lifecycle, operation maintenance, log detail, settings post handling, and system-info context into focused controllers or action services.
+- **Implementation note:** First admin split completed with dedicated package and operation controllers, a shared admin view-context provider for logs/statistics/system info/operations read models, a reusable backend action responder, and a shared form-token validator. `BackendController` now stays focused on dynamic backend/editor routing, access checks, settings submissions, and log-entry detail.
 - **Priority:** Before Admin/Editor.
 
 ### F-004 Setup runner and preflight should become step/check pipelines
