@@ -15,7 +15,7 @@
                 'aria-expanded': item.children|length > 0 ? (children_visible ? 'true' : 'false') : false,
             }) %}
             <li{% if item_classes %} class="{{ item_classes }}"{% endif %}>
-                <a href="{{ item.url }}" {{ studio_html_attributes(link_attributes) }}>{{ item.label|trans }}</a>
+                <a href="{{ item.url }}" {{ html_attributes(link_attributes) }}>{{ item.label|trans }}</a>
                 {% if children_visible %}
                     {% include '@backend/partials/navigation/_tree.html.twig' with {
                         items: item.children,

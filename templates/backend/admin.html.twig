@@ -13,7 +13,7 @@
             <section class="studio-admin-content">
                 {% include '@backend/partials/layout/_topbar.html.twig' with {
                     area_key: 'ui.admin.area',
-                    actions: studio_backend_actions(['asset_rebuild', 'cache_clear']),
+                    actions: backend_actions(['asset_rebuild', 'cache_clear']),
                 } only %}
                 <div class="studio-admin-content-inner">
                     {% include '@backend/partials/feedback/_flash-stack.html.twig' %}

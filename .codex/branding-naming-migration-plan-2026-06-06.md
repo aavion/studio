@@ -31,9 +31,9 @@
 
 1. **Twig helpers and templates**
    - Rename `studio_navigation()` to `navigation()`.
-   - Rename `studio_markdown` filter to `markdown` if no filter conflict exists.
+   - Rename `studio_markdown` filter to `render_markdown`.
    - Rename simple helper families to domain names where clear, for example `html_attributes()`, `request_trace()`, `macro_template()`, `macro_namespaces()`, `event_hooks()`, `backend_actions()`, `footer_copyright()`, `extension_packages()`, `themes()`, `package_setting*()`, and `core_settings_form()`.
-   - Re-evaluate `studio_view`/`studio_view_context()` separately because `view`/`view_context()` may be too generic or conflict-prone.
+   - Remove the unused `studio_view` global and rename `studio_view_context()` to `view_context()`.
 
 2. **CSS classes and template IDs**
    - Replace native `studio-*` classes/IDs with `system-*`, `system-frontend-*`, `system-backend-*`, or provider-scoped names according to the template namespace.
@@ -70,12 +70,12 @@
 
 ## Interview Candidates Before Editing
 
-- Should `studio_view` become `view`, `view_context`, `app_view`, or something else?
-- Should the Markdown filter be plain `markdown`, or is that too likely to collide with third-party Twig filters?
-- Should backend/admin helper functions stay domain-specific, for example `backend_actions()`, or receive a minimal owner prefix?
-- Should `packages:lifecycle` be renamed to `packages:apply`, `packages:state`, or stay `packages:lifecycle`?
-- Should `account-tokens:cleanup` live under `account-tokens:*` or `security:*`?
-- Should Monolog channel names become `message`, `audit`, `access`, or stay `system_message`, `system_audit`, `system_access` while only filenames become neutral?
+- `studio_view` is removed because no template needs a global provider object; `studio_view_context()` becomes `view_context()`.
+- `studio_markdown` becomes `render_markdown` to keep the filter verb-based and avoid likely third-party `markdown` collisions.
+- Backend/admin helper functions use speaking domain names such as `backend_actions()`, `core_settings_form()`, and `package_settings_form()`.
+- `studio:packages:lifecycle` becomes `packages:lifecycle`.
+- Account and ACL commands become `account-tokens:cleanup` and `acl-groups:apply` unless implementation reveals a clearer shared pattern.
+- Monolog channels and filenames should both use speaking names where practical; the Admin Log viewer should not show internal owner prefixes because they add no user value.
 
 ## Verification Plan
 

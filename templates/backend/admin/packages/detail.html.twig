@@ -123,7 +123,7 @@
     {% if package.readme %}
         <section class="studio-panel studio-markdown">
             <h2>{{ 'admin.packages.detail.readme_title'|trans }}</h2>
-            {{ package.readme|studio_markdown('readme')|raw }}
+            {{ package.readme|render_markdown('readme')|raw }}
         </section>
     {% endif %}
 {% endblock %}

@@ -1,6 +1,6 @@
 {% extends '@backend/admin.html.twig' %}
 
-{% set packages = studio_extension_packages() %}
+{% set packages = extension_packages() %}
 
 {% block title %}{{ 'admin.packages.title'|trans }}{% endblock %}
 
@@ -17,7 +17,7 @@
                 {{ 'admin.packages.install.label'|trans }}
             </button>
             {% include '@backend/admin/partials/_backend-actions.html.twig' with {
-                actions: studio_backend_actions(['package_discovery']),
+                actions: backend_actions(['package_discovery']),
                 class: 'studio-backend-button-group-inline',
             } only %}
         </div>
@@ -77,7 +77,7 @@
                     {% for package in packages %}
                         {% set row_classes = package.immutable ? 'is-immutable' : '' %}
                         {% set row_classes = package.available_version|default(null) ? (row_classes ~ ' has-update')|trim : row_classes %}
-                        <tr {{ studio_html_attributes({
+                        <tr {{ html_attributes({
                             class: row_classes ?: null,
                             'data-package-name': package.package_name,
                             'data-package-status': package.status,

@@ -6,10 +6,10 @@
     {% if value.html is defined %}
         <div class="studio-rich-text">{{ value.html|raw }}</div>
     {% elseif value.markdown is defined %}
-        <div class="studio-rich-text">{{ value.markdown|studio_markdown }}</div>
+        <div class="studio-rich-text">{{ value.markdown|render_markdown }}</div>
     {% else %}
         <pre class="studio-code-block">{{ value|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
     {% endif %}
 {% else %}
-    <div class="studio-rich-text">{{ value|studio_markdown }}</div>
+    <div class="studio-rich-text">{{ value|render_markdown }}</div>
 {% endif %}

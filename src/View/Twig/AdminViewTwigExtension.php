@@ -41,15 +41,15 @@ final class AdminViewTwigExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('studio_core_settings_form', $this->coreSettingsForm(...)),
-            new TwigFunction('studio_backend_actions', $this->backendActions(...)),
-            new TwigFunction('studio_footer_copyright', $this->footerCopyright(...)),
-            new TwigFunction('studio_extension_packages', $this->extensionPackages(...)),
-            new TwigFunction('studio_themes', $this->themes(...)),
-            new TwigFunction('studio_package_setting', $this->packageSetting(...)),
-            new TwigFunction('studio_package_settings', $this->packageSettings(...)),
-            new TwigFunction('studio_package_settings_form', $this->packageSettingsForm(...)),
-            new TwigFunction('studio_package_setting_packages', $this->packageSettingPackages(...)),
+            new TwigFunction('core_settings_form', $this->coreSettingsForm(...)),
+            new TwigFunction('backend_actions', $this->backendActions(...)),
+            new TwigFunction('footer_copyright', $this->footerCopyright(...)),
+            new TwigFunction('extension_packages', $this->extensionPackages(...)),
+            new TwigFunction('themes', $this->themes(...)),
+            new TwigFunction('package_setting', $this->packageSetting(...)),
+            new TwigFunction('package_settings', $this->packageSettings(...)),
+            new TwigFunction('package_settings_form', $this->packageSettingsForm(...)),
+            new TwigFunction('package_setting_packages', $this->packageSettingPackages(...)),
         ];
     }
 

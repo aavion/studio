@@ -34,10 +34,10 @@ final class ViewRuntimeTwigExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('studio_html_attributes', $this->htmlAttributes(...), ['is_safe' => ['html']]),
-            new TwigFunction('studio_navigation', $this->navigation(...)),
-            new TwigFunction('studio_debug_info', $this->debugInfo(...)),
-            new TwigFunction('studio_request_trace', $this->requestTrace(...)),
+            new TwigFunction('html_attributes', $this->htmlAttributes(...), ['is_safe' => ['html']]),
+            new TwigFunction('navigation', $this->navigation(...)),
+            new TwigFunction('debug_info', $this->debugInfo(...)),
+            new TwigFunction('request_trace', $this->requestTrace(...)),
         ];
     }
 

@@ -10,11 +10,10 @@ use App\View\MarkdownRenderer;
 use App\View\PackageMacroRegistry;
 use App\View\ViewContextProvider;
 use Twig\Extension\AbstractExtension;
-use Twig\Extension\GlobalsInterface;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
 
-final class ViewContextTwigExtension extends AbstractExtension implements GlobalsInterface
+final class ViewContextTwigExtension extends AbstractExtension
 {
     public function __construct(
         private readonly ViewContextProvider $contextProvider,
@@ -25,25 +24,15 @@ final class ViewContextTwigExtension extends AbstractExtension implements Global
     }
 
     /**
-     * @return array<string, mixed>
-     */
-    public function getGlobals(): array
-    {
-        return [
-            'studio_view' => $this->contextProvider,
-        ];
-    }
-
-    /**
      * @return list<TwigFunction>
      */
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('studio_view_context', $this->contextProvider->context(...)),
-            new TwigFunction('studio_macro_namespaces', $this->macroRegistry->namespaces(...)),
-            new TwigFunction('studio_macro_template', $this->macroRegistry->template(...)),
-            new TwigFunction('studio_event_hooks', $this->eventHooks(...)),
+            new TwigFunction('view_context', $this->contextProvider->context(...)),
+            new TwigFunction('macro_namespaces', $this->macroRegistry->namespaces(...)),
+            new TwigFunction('macro_template', $this->macroRegistry->template(...)),
+            new TwigFunction('event_hooks', $this->eventHooks(...)),
         ];
     }
 
@@ -53,7 +42,7 @@ final class ViewContextTwigExtension extends AbstractExtension implements Global
     public function getFilters(): array
     {
         return [
-            new TwigFilter('studio_markdown', $this->markdownRenderer->render(...), ['is_safe' => ['html']]),
+            new TwigFilter('render_markdown', $this->markdownRenderer->render(...), ['is_safe' => ['html']]),
         ];
     }
 

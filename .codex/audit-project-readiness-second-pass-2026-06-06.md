@@ -180,7 +180,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Evidence:** `templates/base.html.twig:2`, `src/View/ViewContextProvider.php:24`.
 - **Impact:** Normal HTTP rendering already uses the request locale, so user-facing impact is low. Request-less/error-adjacent rendering and review scans would still see a hardcoded language assumption.
 - **Recommendation:** Surface the resolved default locale through the existing view context and let the template consume that fallback only when no request exists.
-- **Fix applied:** Added `default_locale` to `ViewContextProvider` from `ContentRouteLocalization::defaultLanguage()` and changed the base template fallback to `studio_view_context().default_locale`.
+- **Fix applied:** Added `default_locale` to `ViewContextProvider` from `ContentRouteLocalization::defaultLanguage()` and changed the base template fallback to `view_context().default_locale`.
 - **Priority:** Now / Review readiness.
 
 ### S2-006 Package PHP capability policy misses dynamic callable bypasses
@@ -336,7 +336,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 ### S2-021 Internal debug collector and backend form request attributes used product-brand naming
 
 - **Area:** Debug collector, debug HTML comments, backend settings form repopulation, and internal request attributes.
-- **Finding:** `StudioDebugCollector`, the `studio-debug` HTML comment, and `_studio_form_values`/`_studio_form_errors` were internal technical names rather than public branding surfaces. Public Twig helpers such as `studio_debug_info()` and CSS classes remain intentional product/theme API.
+- **Finding:** `StudioDebugCollector`, the `studio-debug` HTML comment, and `_studio_form_values`/`_studio_form_errors` were internal technical names rather than public branding surfaces. Public Twig helpers and CSS classes were later classified as branding-neutrality migration debt.
 - **Evidence:** `src/Debug/StudioDebugCollector.php`, `src/View/Http/ResponseHookSubscriber.php`, `src/Controller/BackendController.php:255`, `src/View/Twig/AdminViewTwigExtension.php:192`.
 - **Impact:** No behavior was broken, but this was exactly the kind of internal naming drift the final audit rule was meant to catch.
 - **Recommendation:** Use `SystemDebugCollector`, `system-debug`, and `_system_*` request attributes for core-owned internals while leaving product-facing Twig/CSS API stable.

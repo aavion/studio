@@ -137,7 +137,7 @@ final class PackageSubscriber implements EventSubscriberInterface
 }
 ```
 
-Developers can inspect the currently surfaced hooks through `studio_event_hooks()` in Twig. This helper is intended for debug comments and future admin diagnostics, not for package control flow.
+Developers can inspect the currently surfaced hooks through `event_hooks()` in Twig. This helper is intended for debug comments and future admin diagnostics, not for package control flow.
 
 Output hooks should stay narrow. Prefer Twig context hooks and templates for normal rendering work; use `OutputGeneratedEvent` only when the final HTML string is the correct boundary.
 
@@ -151,7 +151,7 @@ Dynamic public content contributions should use dynamic view injections with dec
 
 Schema `custom_twig` belongs to the inner content fieldset only. The native public content template keeps the page header, package injection slots, and outer content chrome stable, then delegates the variable fieldset to schema Twig with a generic fallback when custom Twig is empty or invalid. Custom schema Twig receives `content_view`, `content`, `revision`, `schema`, `schema_version`, `fields`, `language`, and `variant`.
 
-Markdown rendering is profile-aware through the `studio_markdown` Twig filter. The default profile is `allrounder`, which enables rich Markdown features, heading anchors, task lists, tables, footnotes, description lists, highlights, safe attributes, and external-link handling while escaping raw HTML and omitting embeds. Package README rendering uses `readme`, which maps to GitHub-Flavored Markdown for developer-authored package documentation. Trusted schema or admin-controlled design fields may explicitly call `studio_markdown('design')`; that profile allows raw HTML, controlled attributes, rich Markdown, and YouTube embeds through the native no-cookie embed adapter. Public untrusted inputs such as future comments should call `studio_markdown('basic')`, which keeps the CommonMark baseline plus autolinks while escaping HTML and excluding richer layout controls.
+Markdown rendering is profile-aware through the `render_markdown` Twig filter. The default profile is `allrounder`, which enables rich Markdown features, heading anchors, task lists, tables, footnotes, description lists, highlights, safe attributes, and external-link handling while escaping raw HTML and omitting embeds. Package README rendering uses `readme`, which maps to GitHub-Flavored Markdown for developer-authored package documentation. Trusted schema or admin-controlled design fields may explicitly call `render_markdown('design')`; that profile allows raw HTML, controlled attributes, rich Markdown, and YouTube embeds through the native no-cookie embed adapter. Public untrusted inputs such as future comments should call `render_markdown('basic')`, which keeps the CommonMark baseline plus autolinks while escaping HTML and excluding richer layout controls.
 
 ## Admin UI and UX guidelines
 

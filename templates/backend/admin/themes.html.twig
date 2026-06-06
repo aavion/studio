@@ -1,6 +1,6 @@
 {% extends '@backend/admin.html.twig' %}
 
-{% set theme_sections = studio_themes() %}
+{% set theme_sections = themes() %}
 
 {% block title %}{{ 'admin.themes.title'|trans }}{% endblock %}
 
@@ -23,7 +23,7 @@
             {% if section.themes|length > 0 %}
                 <div class="studio-theme-grid">
                     {% for theme in section.themes %}
-                        <article {{ studio_html_attributes({
+                        <article {{ html_attributes({
                             class: theme.immutable ? 'studio-theme-card is-immutable' : 'studio-theme-card',
                             'data-package-name': theme.package_name,
                             'data-immutable': theme.immutable ? 'true' : null,
