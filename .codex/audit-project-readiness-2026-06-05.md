@@ -404,6 +404,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/README.md`, `src/Controller/README.md`, `src/Security/README.md`.
 - **Impact:** Future contributors and agents cannot use documentation to choose correct modules, especially around Core versus feature-local abstractions.
 - **Recommendation:** Update domain READMEs as refactors land. Do not over-document unstable APIs before naming is settled.
+- **Implementation note:** Removed temporary `src/**/README.md` orientation files. Architecture ownership now lives in `dev/CLASSMAP.md`, feature drafts, manuals, and this audit log, which reduces duplicate documentation surfaces and avoids stale domain summaries during the audit refactor.
 - **Priority:** Before Release.
 
 ### F-013 Package lifecycle admin mixes read-model composition and package actions
