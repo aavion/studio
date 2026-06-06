@@ -140,7 +140,7 @@ final readonly class LiveOperationRunStorage
 
     public function directory(): string
     {
-        return rtrim($this->projectDir, '/').'/var/operations/'.$this->safeEnvironment();
+        return rtrim($this->projectDir, '/\\').'/var/operations/'.$this->safeEnvironment();
     }
 
     public function outputPath(string $operationId): string

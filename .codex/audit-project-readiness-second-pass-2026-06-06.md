@@ -96,7 +96,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Content | `src/Content` | In progress | Content read resolution, routing language behavior, and content field locale tokens reviewed. S2-015 hardens regional locale fallback and persisted field locale compatibility. Aggregate/API read-model boundaries still need review. |
 | Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap, S2-009 hardens profile language persistence, and S2-028 centralizes repeated token/password helper logic. Setup/backend leftovers still need review. |
 | Core primitives | `src/Core/Access`, `ActionLog`, `Config`, `Diff`, `DryRun`, `Message`, `Workflow` | Reviewed | Config seed/default fallback, domain-owned Message code/key aggregation, access rules, ActionLog, Diff, DryRun, Message, and Workflow value-object invariants reviewed. Hard exceptions in this slice are deliberate low-level invariant guards, while recoverable runtime config failures already report through the Message layer. |
-| Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | In progress | Process environment, detached process boundaries, filesystem actions, and live-operation start failure handling reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics. Messenger still needs final sweep. |
+| Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | In progress | Process environment, detached process boundaries, filesystem actions, Messenger drain, and live-operation start/storage/runner boundaries reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics, and S2-030 normalizes trailing Windows/POSIX project separators in live-operation storage. |
 | Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, PHP capability policy, runtime contribution registry, and asset registry contributions reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, S2-007 records the remaining lifecycle transaction boundary, S2-010 converts package runtime contribution failures to Message-layer diagnostics, and S2-026 converts asset contribution invariants to Package Message keys. |
 | Core observability | `src/Core/Log`, `Statistics`, `Diagnostics` | In progress | Visitor/request ID, access metadata sanitization, statistics recorder/aggregator/store reviewed. S2-016 hardens snapshot temp-file writes. S2-025 renames internal log channels/files to `system_*`; public CSS/UI names remain product-facing. Diagnostics/debug naming still needs review. |
 | Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | In progress | Event hook registry reviewed; S2-011 prevents silent public hook descriptor overrides. Translation/runtime paths, catalogue collision handling, lint, manifest, and Message invariants reviewed. S2-019 renames an internal lint temp prefix to `system-*`. Remaining pass: package catalogue conflict docs/tests and broader generated catalogue checks. |
@@ -423,6 +423,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** None needed; audit decision recorded.
 - **Priority:** Reviewed / No immediate change.
 
+### S2-030 Live operation storage only trimmed POSIX project separators
+
+- **Area:** Live-operation file storage and cross-platform path construction.
+- **Finding:** `LiveOperationRunStorage::directory()` trimmed trailing `/` from the project directory but not trailing `\`. Most mixed-separator paths still work on Windows, but an externally constructed project directory ending in `\` could produce noisier `...\/var/...` paths than the rest of the process/storage code.
+- **Evidence:** `src/Core/Operation/Live/LiveOperationRunStorage.php`, adjacent `src/Core/Messenger/DeferredMessengerDrain.php` and `src/Core/Process/PhpCliBinaryPreferenceStore.php` already trim both `/` and `\`.
+- **Impact:** Low-risk portability drift rather than a known behavior break. Still worth aligning before Windows users exercise live operations more heavily.
+- **Recommendation:** Normalize both common directory separators at the live-operation storage root and keep public path behavior covered.
+- **Fix applied:** Changed the storage directory normalization to `rtrim($projectDir, '/\\')` and added a regression through `LiveOperationRunStore::outputPath()`.
+- **Priority:** Now / Platform polish.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -462,6 +472,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Package admin detail read model reviewed. S2-027 splits file IO, URL sanitization, and dependency label parsing out of the oversized provider.
 - Account token/password flows reviewed. S2-028 centralizes pending-token lookup and password-policy UI error mapping outside controllers while leaving the larger account-flow service extraction tracked by S2-003.
 - Core primitive foundations reviewed. S2-029 records that hard exceptions in ActionLog/Diff/DryRun/Message/Workflow are deliberate low-level invariants, while Config runtime failures already use Message diagnostics and central defaults.
+- Live-operation storage reviewed. S2-030 aligns project-root trimming with the rest of the cross-platform process/file storage code.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -490,3 +501,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Converted package asset contribution invariant failures from literal exceptions to Package Message keys.
 - Split package admin detail helper responsibilities into focused backend services.
 - Extracted repeated account token lookup and password-policy error mapping into Security helpers.
+- Normalized trailing POSIX and Windows separators for live-operation storage paths.

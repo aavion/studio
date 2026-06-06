@@ -48,6 +48,16 @@ final class LiveOperationRunStoreTest extends TestCase
         self::assertNull($store->pollingPayload($run['operation_id'], 'wrong-token'));
     }
 
+    public function testItNormalizesTrailingDirectorySeparatorsForOperationPaths(): void
+    {
+        $projectDir = rtrim($this->createTemporaryDirectory('live-operation-path'), '/\\').'/\\';
+        $store = new LiveOperationRunStore($projectDir, 'test');
+        $run = $store->create('backend.cache_clear', [], 'Cache clear');
+
+        self::assertStringNotContainsString('/\\/var/', $store->outputPath($run['operation_id']));
+        self::assertStringEndsWith('/var/operations/test/'.$run['operation_id'].'.out', $store->outputPath($run['operation_id']));
+    }
+
     public function testItReportsFinishedOperationsToOperationLogger(): void
     {
         $projectDir = $this->createTemporaryDirectory('live-operation-logger');
