@@ -36,7 +36,7 @@ final class ConsoleResultRendererTest extends TestCase
         self::assertSame(Command::FAILURE, $exitCode);
         self::assertSame(
             "[WARN] message.workflow.issue\n[INFO] message.workflow.message\n",
-            $output->fetch(),
+            str_replace("\r\n", "\n", $output->fetch()),
         );
     }
 

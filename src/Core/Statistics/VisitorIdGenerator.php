@@ -40,7 +40,18 @@ final readonly class VisitorIdGenerator
 
     public function attachCookie(Request $request, Response $response): void
     {
-        $token = $this->cookieToken($request) ?? $this->pendingToken($request);
+        $token = $this->cookieToken($request) ?? $this->pendingTokenIfPresent($request);
+
+        if (null === $token) {
+            $resolvedVisitorId = $request->attributes->get(self::ATTRIBUTE_ID);
+
+            if (null === $this->identityStore && is_string($resolvedVisitorId) && '' !== $resolvedVisitorId) {
+                return;
+            }
+
+            $token = $this->pendingToken($request);
+        }
+
         $cookie = Cookie::create(
             self::COOKIE_NAME,
             $this->packCookieValue($token),
@@ -140,12 +151,25 @@ final readonly class VisitorIdGenerator
         return $token;
     }
 
+    private function pendingTokenIfPresent(Request $request): ?string
+    {
+        $token = $request->attributes->get(self::ATTRIBUTE_PENDING_TOKEN);
+
+        return is_string($token) && '' !== $token ? $token : null;
+    }
+
     private function resolveVisitorId(Request $request): string
     {
         $cookieToken = $this->cookieToken($request);
 
         if (null === $this->identityStore) {
-            return null === $cookieToken ? $this->fallbackVisitorId($request) : $this->visitorId($cookieToken);
+            if (null !== $cookieToken) {
+                return $this->visitorId($cookieToken);
+            }
+
+            $pendingToken = $this->pendingTokenIfPresent($request);
+
+            return null === $pendingToken ? $this->fallbackVisitorId($request) : $this->visitorId($pendingToken);
         }
 
         if (null !== $cookieToken) {

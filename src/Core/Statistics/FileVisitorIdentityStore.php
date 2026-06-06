@@ -100,10 +100,20 @@ final readonly class FileVisitorIdentityStore implements VisitorIdentityStoreInt
             return $data['cookies'][$cookieHash]['visitor_id'];
         }
 
-        if (null === $cookieHash && isset($data['fallbacks'][$fallbackHash])) {
+        if (isset($data['fallbacks'][$fallbackHash])) {
             $data['fallbacks'][$fallbackHash]['expires_at'] = $now + self::FALLBACK_TTL_SECONDS;
+            $visitorId = $data['fallbacks'][$fallbackHash]['visitor_id'];
 
-            return $data['fallbacks'][$fallbackHash]['visitor_id'];
+            $hash = $cookieHash ?? $pendingCookieHash;
+
+            if (null !== $hash) {
+                $data['cookies'][$hash] = [
+                    'visitor_id' => $visitorId,
+                    'expires_at' => $now + self::COOKIE_TTL_SECONDS,
+                ];
+            }
+
+            return $visitorId;
         }
 
         if (null === $cookieHash) {

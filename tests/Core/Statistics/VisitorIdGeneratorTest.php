@@ -92,7 +92,46 @@ final class VisitorIdGeneratorTest extends TestCase
         );
     }
 
-    public function testItIssuesUniqueVisitorCookiesForSharedIpAndUserAgentFallbacks(): void
+    public function testItUsesPendingCookieVisitorIdsWithoutAStore(): void
+    {
+        $request = Request::create('/docs', server: [
+            'REMOTE_ADDR' => '203.0.113.10',
+            'HTTP_USER_AGENT' => 'Studio Browser/1.0',
+        ]);
+        $generator = new VisitorIdGenerator('test-secret');
+        $response = new Response();
+
+        $generator->attachCookie($request, $response);
+        $cookie = $response->headers->getCookies()[0] ?? null;
+
+        self::assertNotNull($cookie);
+
+        $nextRequest = Request::create('/docs', server: [
+            'REMOTE_ADDR' => '198.51.100.50',
+            'HTTP_USER_AGENT' => 'Another Browser/2.0',
+        ]);
+        $nextRequest->cookies->set(VisitorIdGenerator::COOKIE_NAME, $cookie->getValue());
+
+        self::assertSame($generator->generate($request), $generator->generate($nextRequest));
+    }
+
+    public function testItDoesNotIssueADifferentCookieAfterFallbackResolutionWithoutAStore(): void
+    {
+        $request = Request::create('/docs', server: [
+            'REMOTE_ADDR' => '203.0.113.10',
+            'HTTP_USER_AGENT' => 'Studio Browser/1.0',
+        ]);
+        $generator = new VisitorIdGenerator('test-secret');
+        $visitorId = $generator->generate($request);
+        $response = new Response();
+
+        $generator->attachCookie($request, $response);
+
+        self::assertSame($visitorId, $generator->generate($request));
+        self::assertSame([], $response->headers->getCookies());
+    }
+
+    public function testItBindsNewVisitorCookiesToRecentSharedIpAndUserAgentFallbacks(): void
     {
         $server = [
             'REMOTE_ADDR' => '203.0.113.10',
@@ -120,7 +159,7 @@ final class VisitorIdGeneratorTest extends TestCase
         $firstCookieRequest->cookies->set(VisitorIdGenerator::COOKIE_NAME, $firstCookie->getValue());
         $secondCookieRequest->cookies->set(VisitorIdGenerator::COOKIE_NAME, $secondCookie->getValue());
 
-        self::assertNotSame($generator->generate($firstCookieRequest), $generator->generate($secondCookieRequest));
+        self::assertSame($generator->generate($firstCookieRequest), $generator->generate($secondCookieRequest));
     }
 
     public function testItChangesIdsWhenTheSecretChanges(): void
