@@ -70,6 +70,7 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-06
+- Rechecked feature drafts and manual snippets against the current audit-branch behavior for visitor/session identity, package translation aggregation, message catalogues, public hook providers, config defaults, setup, scheduler, admin read models, and removed domain READMEs; fixed stale environment-less runtime translation paths in drafts.
 - Split controller tests toward workflow-owned files for Admin Scheduler, Admin User Review, User Profile, and User API-key behavior; added shared authenticated-client and fixture traits, stabilized visitor-cookie/session handling for BrowserKit logins, and removed a redundant topbar action test that could leak cache/asset state into later controller tests.
 - Split admin user, group, and review list request parsing into query value objects, kept the existing factories focused on read-model/view-model assembly, and explicitly excluded those request-query values from Symfony service discovery so non-service values do not bloat the container.
 - Tightened the project rule and catalogue test for namespace/scope-bound message key/code constants and aligned the user username validation key name to the stricter convention.

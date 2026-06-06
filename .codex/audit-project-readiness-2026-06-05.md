@@ -766,6 +766,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - Low-level randomness scan rechecked: no remaining duplicated UUID-v4 generator was found outside `UuidFactory`; remaining `random_bytes()` uses are tokens, nonces, operation IDs, temporary path suffixes, or request IDs.
 - Process-spawning scan rechecked: direct `Process` construction is concentrated in setup preflight/execution, PHP CLI resolution/validation, linting, diagnostics, live operations, messenger drain, and shared `RunCommandAction`; related policy findings are F-035 and F-046.
 - Filesystem/symlink scan rechecked: package install/assets, translation aggregation, setup environment writes, operation filesystem actions, and live-operation state are the primary mutation zones; related policy findings are F-001, F-024, F-026, and F-046.
+- Documentation sweep rechecked implemented audit slices against feature drafts and manual snippets for visitor/session identity, package translation aggregation, message catalogues, public hook providers, config defaults, setup, scheduler, admin read models, and removed `src/**/README.md` files. Fixed stale environment-less runtime translation paths; remaining draft/manual notes match the current branch behavior closely enough for the final audit pass.
 
 ## Foundation Fixes Applied
 
