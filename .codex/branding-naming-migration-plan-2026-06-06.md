@@ -57,7 +57,7 @@
 4. **Log file names**
    - Move from `%env%.system-{message|audit|access}-*.log` to `{APP_ENV}/{message|audit|access}-*.log` where Monolog rotation supports the target shape.
    - Update `LogSourceRegistry`, Admin Logs tests, controller tests, setup script tests, and docs.
-   - Keep Monolog channel names technical and stable; decide whether channel names should be `message`/`audit`/`access` or remain `system_*` for logger-service disambiguation.
+   - Keep Monolog channel names as `message`, `audit`, and `access` so file names, parsed channels, and admin log labels stay aligned.
 
 5. **System-template rebranding gate**
    - Verify current `system-template` packages can override root templates and branding assets sufficiently.
@@ -75,7 +75,7 @@
 - Backend/admin helper functions use speaking domain names such as `backend_actions()`, `core_settings_form()`, and `package_settings_form()`.
 - `packages:lifecycle` is clear enough because it is an operator-facing lifecycle adapter and the package domain is already explicit.
 - Account and ACL commands become `account-tokens:cleanup` and `acl-groups:apply` unless implementation reveals a clearer shared pattern.
-- Monolog channels and filenames should both use speaking names where practical; the Admin Log viewer should not show internal owner prefixes because they add no user value.
+- Monolog channels and filenames should both use speaking names; the Admin Log viewer should not show internal owner prefixes because they add no user value.
 
 ## Verification Plan
 

@@ -463,7 +463,7 @@ final class BackendControllerTest extends WebTestCase
         $this->loginUserWithLevel($client, 8);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.system-audit-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -474,7 +474,7 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/admin/operations');
 
-        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-audit-*.log') ?: []));
+        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
         self::assertStringContainsString('operations.cleanup', $auditLog);
         self::assertStringContainsString('"ttl_seconds":3600', $auditLog);
         self::assertStringContainsString('"result_status":"success"', $auditLog);
@@ -515,15 +515,15 @@ final class BackendControllerTest extends WebTestCase
         $client = self::createClient();
         $this->loginUserWithLevel($client, 8);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
-        $logFile = $logDir.'/test.system-access-2099-01-01.log';
+        $logFile = $logDir.'/test/access-2099-01-01.log';
 
-        if (!is_dir($logDir)) {
-            mkdir($logDir, 0775, true);
+        if (!is_dir($logDir.'/test')) {
+            mkdir($logDir.'/test', 0775, true);
         }
-        foreach (glob($logDir.'/test.system-access-*.log') ?: [] as $existingLogFile) {
+        foreach (glob($logDir.'/test/access-*.log') ?: [] as $existingLogFile) {
             @unlink($existingLogFile);
         }
-        file_put_contents($logFile, '[2099-01-01T10:00:00.000000+00:00] system_access.INFO: access.request {"method":"GET","path":"/admin/logs","route":"backend_admin_route","http_status":200,"ip":"127.0.0.1","city":"n/a","state":"n/a","country":"n/a","continent":"n/a"} []'.PHP_EOL);
+        file_put_contents($logFile, '[2099-01-01T10:00:00.000000+00:00] access.INFO: access.request {"method":"GET","path":"/admin/logs","route":"backend_admin_route","http_status":200,"ip":"127.0.0.1","city":"n/a","state":"n/a","country":"n/a","continent":"n/a"} []'.PHP_EOL);
         $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
         $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);
         $connection->insert('access_statistic_event', [
@@ -628,7 +628,7 @@ final class BackendControllerTest extends WebTestCase
         foreach ($demoPackages as $packageName) {
             $this->removePackageByName($packageName);
         }
-        foreach (glob($logDir.'/test.system-audit-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -655,7 +655,7 @@ final class BackendControllerTest extends WebTestCase
                 ExtensionPackage::class,
                 $entityManager->getRepository(ExtensionPackage::class)->findOneBy(['packageName' => 'demo-module']),
             );
-            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-audit-*.log') ?: []));
+            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
             self::assertStringContainsString('backend.action.package_discovery', $auditLog);
             self::assertStringContainsString('"result_status":"success"', $auditLog);
         } finally {
@@ -924,7 +924,7 @@ final class BackendControllerTest extends WebTestCase
         $config = self::getContainer()->get(Config::class);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.system-audit-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -944,7 +944,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertSame('https://example.test', $config->get('site.url'));
             self::assertSame('/saved-home', $config->get('content.home_path'));
 
-            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-audit-*.log') ?: []));
+            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
             self::assertStringContainsString('settings.core.save', $auditLog);
             self::assertStringContainsString('"section":"general"', $auditLog);
             self::assertStringContainsString('"setting_keys":["content.home_path","localization.default_language","localization.route_prefixes_enabled","site.footer_copyright","site.title","site.url"]', $auditLog);

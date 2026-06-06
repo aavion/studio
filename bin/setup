@@ -185,9 +185,9 @@ function workflowResultMessageReporter(string $projectDir, string $environment):
 
 function messageLogger(string $projectDir, string $environment): Logger
 {
-    $logger = new Logger('system_message');
+    $logger = new Logger('message');
     $logger->pushHandler(new RotatingFileHandler(
-        rtrim($projectDir, DIRECTORY_SEPARATOR.'/\\').DIRECTORY_SEPARATOR.'var'.DIRECTORY_SEPARATOR.'log'.DIRECTORY_SEPARATOR.$environment.'.system-message.log',
+        rtrim($projectDir, DIRECTORY_SEPARATOR.'/\\').DIRECTORY_SEPARATOR.'var'.DIRECTORY_SEPARATOR.'log'.DIRECTORY_SEPARATOR.$environment.DIRECTORY_SEPARATOR.'message.log',
         30,
         Logger::DEBUG,
         true,

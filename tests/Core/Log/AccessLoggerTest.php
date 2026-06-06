@@ -20,7 +20,7 @@ final class AccessLoggerTest extends TestCase
     public function testItWritesAccessEntriesWithGeoPlaceholders(): void
     {
         $handler = new TestHandler();
-        $monolog = new Logger('system_access');
+        $monolog = new Logger('access');
         $monolog->pushHandler($handler);
         $request = Request::create('/admin/logs?level=error&reset_token=hidden&filter[code]=oauth-code&auth=api-secret', 'POST', server: [
             'REMOTE_ADDR' => '203.0.113.10',
@@ -84,7 +84,7 @@ final class AccessLoggerTest extends TestCase
     public function testItRedactsTokenizedPathSegments(): void
     {
         $handler = new TestHandler();
-        $monolog = new Logger('system_access');
+        $monolog = new Logger('access');
         $monolog->pushHandler($handler);
         $request = Request::create('/user/invitation/test-token', 'GET', server: [
             'REMOTE_ADDR' => '203.0.113.10',
@@ -107,7 +107,7 @@ final class AccessLoggerTest extends TestCase
     public function testItRedactsTokenizedReferrerPathSegments(): void
     {
         $handler = new TestHandler();
-        $monolog = new Logger('system_access');
+        $monolog = new Logger('access');
         $monolog->pushHandler($handler);
         $request = Request::create('/docs', 'GET', server: [
             'REMOTE_ADDR' => '203.0.113.10',

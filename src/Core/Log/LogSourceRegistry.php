@@ -11,9 +11,9 @@ final readonly class LogSourceRegistry
      */
     private const SOURCES = [
         'application' => ['label' => 'admin.logs.sources.application', 'pattern' => '%env%.log'],
-        'message' => ['label' => 'admin.logs.sources.message', 'pattern' => '%env%.system-message-*.log'],
-        'audit' => ['label' => 'admin.logs.sources.audit', 'pattern' => '%env%.system-audit-*.log'],
-        'access' => ['label' => 'admin.logs.sources.access', 'pattern' => '%env%.system-access-*.log'],
+        'message' => ['label' => 'admin.logs.sources.message', 'pattern' => '%env%/message-*.log'],
+        'audit' => ['label' => 'admin.logs.sources.audit', 'pattern' => '%env%/audit-*.log'],
+        'access' => ['label' => 'admin.logs.sources.access', 'pattern' => '%env%/access-*.log'],
     ];
 
     /**

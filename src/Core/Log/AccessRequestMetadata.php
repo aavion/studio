@@ -9,9 +9,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class AccessRequestMetadata
 {
-    public const REQUEST_ID_ATTRIBUTE = '_system_access_request_id';
-    public const CORRELATION_ID_ATTRIBUTE = '_system_access_correlation_id';
-    public const STARTED_AT_ATTRIBUTE = '_system_access_started_at';
+    public const REQUEST_ID_ATTRIBUTE = '_access_request_id';
+    public const CORRELATION_ID_ATTRIBUTE = '_access_correlation_id';
+    public const STARTED_AT_ATTRIBUTE = '_access_started_at';
     private const GENERATED_REQUEST_ID_BYTES = 12;
     private const MAX_REQUEST_ID_LENGTH = 64;
     private const MIN_REQUEST_ID_LENGTH = 8;

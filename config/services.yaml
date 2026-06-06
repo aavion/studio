@@ -319,15 +319,15 @@ services:
 
     App\Core\Log\MonologMessageLogger:
         arguments:
-            $logger: '@monolog.logger.system_message'
+            $logger: '@monolog.logger.message'
 
     App\Core\Log\AuditLogger:
         arguments:
-            $logger: '@monolog.logger.system_audit'
+            $logger: '@monolog.logger.audit'
 
     App\Core\Log\AccessLogger:
         arguments:
-            $logger: '@monolog.logger.system_access'
+            $logger: '@monolog.logger.access'
 
     App\Core\Statistics\VisitorIdGenerator:
         arguments:
