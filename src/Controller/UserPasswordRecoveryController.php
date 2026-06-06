@@ -89,7 +89,7 @@ final class UserPasswordRecoveryController extends AbstractController
                     } else {
                         $this->entityManager->persist($token);
                         $this->entityManager->flush();
-                        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $url, $this->mailLocaleResolver->forPublicRequest($request, $user));
+                        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $url, $this->mailLocaleResolver->forPublicRequest($request, $user));
                     }
                 }
 
@@ -211,7 +211,7 @@ final class UserPasswordRecoveryController extends AbstractController
                     $token->consume($user);
                     $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::PASSWORD_CHANGED, $user->username(), 'password_reset');
                     $this->entityManager->flush();
-                    $this->deliverPasswordChangeNotification($request, $reviewToken, $plainReviewToken, $reviewUrl);
+                    $this->deliverPasswordChangeNotification($request, $reviewToken, $reviewUrl);
                     $this->audit($user, 'auth.password_reset_completed', ['result_status' => 'success']);
                     $success = true;
                 }
@@ -255,12 +255,11 @@ final class UserPasswordRecoveryController extends AbstractController
         return $this->absoluteUris->generateUri(__METHOD__, 'user_security_review', ['token' => $plainToken]);
     }
 
-    private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $plainToken, string $url): void
+    private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $url): void
     {
         $this->linkDelivery->deliver(
             $token,
             AccountMailFlow::PasswordChanged,
-            $plainToken,
             $url,
             $this->mailLocaleResolver->forPublicRequest($request, $token->user()),
         );

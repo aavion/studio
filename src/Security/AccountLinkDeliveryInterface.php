@@ -12,7 +12,7 @@ interface AccountLinkDeliveryInterface
     /**
      * @param array<string, mixed> $parameters
      */
-    public function deliver(AccountToken $token, AccountMailFlow $flow, string $plainToken, string $url, string $locale, array $parameters = []): void;
+    public function deliver(AccountToken $token, AccountMailFlow $flow, string $url, string $locale, array $parameters = []): void;
 
     /**
      * @param array<string, mixed> $parameters

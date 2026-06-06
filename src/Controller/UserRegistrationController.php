@@ -150,7 +150,7 @@ final class UserRegistrationController extends AbstractController
                     } else {
                         $this->entityManager->persist($token);
                         $this->entityManager->flush();
-                        $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $url, $this->mailLocaleResolver->forPublicRequest($request));
+                        $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $url, $this->mailLocaleResolver->forPublicRequest($request));
                         $success = true;
                     }
                 } else {

@@ -24,7 +24,6 @@ final readonly class MailDeliveryMessage
         private string $locale,
         private array $parameters,
         private ?string $actionUrl = null,
-        private ?string $debugPlainToken = null,
         private ?string $tokenUid = null,
         private ?string $tokenType = null,
     ) {
@@ -93,11 +92,6 @@ final readonly class MailDeliveryMessage
     public function actionUrl(): ?string
     {
         return $this->actionUrl;
-    }
-
-    public function debugPlainToken(): ?string
-    {
-        return $this->debugPlainToken;
     }
 
     public function tokenUid(): ?string

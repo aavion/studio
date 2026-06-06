@@ -167,7 +167,7 @@ final class AdminUserInvitationController extends AbstractController
 
             $this->entityManager->persist($token);
             $this->entityManager->flush();
-            $this->linkDelivery->deliver($token, AccountMailFlow::InvitationLink, $plainToken, $url, $this->mailLocaleResolver->forAdminAction());
+            $this->linkDelivery->deliver($token, AccountMailFlow::InvitationLink, $url, $this->mailLocaleResolver->forAdminAction());
             $this->audit('user.invitation_created', ['email' => $email, 'role' => $tokenRole->value, 'groups' => $tokenGroups, 'token_uid' => $token->uid()]);
             $this->addFlash('success', 'admin.users.invitation.created');
         } catch (Throwable) {
@@ -218,7 +218,7 @@ final class AdminUserInvitationController extends AbstractController
         $token->approve();
         $this->entityManager->flush();
         $this->linkDelivery->notify($token, AccountMailFlow::RegistrationApproved, locale: $this->mailLocaleResolver->forAdminAction($token->user()));
-        $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $plainToken, $url, $this->mailLocaleResolver->forAdminAction($token->user()));
+        $this->linkDelivery->deliver($token, AccountMailFlow::RegistrationLink, $url, $this->mailLocaleResolver->forAdminAction($token->user()));
         $this->audit('user.registration_approved', ['email' => $token->email(), 'token_uid' => $token->uid()]);
         $this->addFlash('success', 'admin.users.invitation.approved');
 
@@ -264,7 +264,7 @@ final class AdminUserInvitationController extends AbstractController
         }
 
         $this->entityManager->flush();
-        $this->linkDelivery->deliver($token, $this->flowForToken($token), $plainToken, $url, $this->mailLocaleResolver->forAdminAction($token->user()));
+        $this->linkDelivery->deliver($token, $this->flowForToken($token), $url, $this->mailLocaleResolver->forAdminAction($token->user()));
         $this->audit('user.account_token_reissued', ['email' => $token->email(), 'token_uid' => $token->uid(), 'token_type' => $token->type()->value]);
         $this->addFlash('success', 'admin.users.invitation.reissued');
 

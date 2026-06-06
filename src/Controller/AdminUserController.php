@@ -208,7 +208,7 @@ final class AdminUserController extends AbstractController
 
         $this->entityManager->persist($token);
         $this->entityManager->flush();
-        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $url, $this->mailLocaleResolver->forAdminAction($user));
+        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $url, $this->mailLocaleResolver->forAdminAction($user));
         $this->adminContext->audit($this->getUser(), 'user.password_reset_created', ['target_user' => $user->uid(), 'token_uid' => $token->uid()]);
         $this->addFlash('success', 'admin.users.password_reset.created');
 

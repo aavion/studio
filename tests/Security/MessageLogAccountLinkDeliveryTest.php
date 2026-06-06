@@ -29,7 +29,7 @@ final class MessageLogAccountLinkDeliveryTest extends TestCase
             ['launch_team'],
         );
 
-        $delivery->deliver($token, AccountMailFlow::RegistrationLink, 'plain-account-token', '/user/invitation/plain-account-token', 'de');
+        $delivery->deliver($token, AccountMailFlow::RegistrationLink, '/user/invitation/plain-account-token', 'de');
 
         self::assertCount(1, $logger->records);
         self::assertSame(SecurityMessageCode::ACCOUNT_MAIL_STUB_QUEUED, $logger->records[0]['message']->code());
@@ -39,7 +39,7 @@ final class MessageLogAccountLinkDeliveryTest extends TestCase
         self::assertSame('user@example.test', $logger->records[0]['context']['recipient_email']);
         self::assertSame('de', $logger->records[0]['context']['locale']);
         self::assertSame('/user/invitation/plain-account-token', $logger->records[0]['context']['action_url']);
-        self::assertSame('plain-account-token', $logger->records[0]['context']['debug_plain_token']);
+        self::assertArrayNotHasKey('debug_plain_token', $logger->records[0]['context']);
         self::assertSame('/user/invitation/plain-account-token', $logger->records[0]['context']['parameters']['action_url']);
         self::assertSame('user@example.test', $logger->records[0]['context']['parameters']['email']);
         self::assertContains('expires_at', $logger->records[0]['context']['available_parameters']);

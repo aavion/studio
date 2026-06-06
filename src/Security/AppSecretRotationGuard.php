@@ -191,7 +191,6 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
             $this->linkDelivery->deliver(
                 $token,
                 AccountMailFlow::PasswordResetLink,
-                $plainToken,
                 $url,
                 $this->mailLocaleResolver->forAdminAction($user),
             );

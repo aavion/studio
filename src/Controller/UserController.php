@@ -309,7 +309,7 @@ final class UserController extends AbstractController
                     $user->changePassword($this->passwordHasher->hashPassword($user, $newPassword));
                     $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::PASSWORD_CHANGED, $user->username(), 'profile');
                     $this->entityManager->flush();
-                    $this->deliverPasswordChangeNotification($request, $token, $plainToken, $reviewUrl);
+                    $this->deliverPasswordChangeNotification($request, $token, $reviewUrl);
                     $this->audit($user, 'auth.password_change_success', ['result_status' => 'success']);
                     $success = true;
                 }
@@ -367,12 +367,11 @@ final class UserController extends AbstractController
         return $this->absoluteUris->generateUri(__METHOD__, 'user_security_review', ['token' => $plainToken]);
     }
 
-    private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $plainToken, string $url): void
+    private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $url): void
     {
         $this->linkDelivery->deliver(
             $token,
             AccountMailFlow::PasswordChanged,
-            $plainToken,
             $url,
             $this->mailLocaleResolver->forPublicRequest($request, $token->user()),
         );

@@ -105,7 +105,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Entity and Repository | `src/Entity`, `src/Repository` | Reviewed | Entity inventory, UID storage, statistics indexes, content field locale token compatibility, security/account token entities, state markers, config/package settings, site menus, and repository filtering boundaries reviewed. UUIDv7 RFC 4122 strings remain the portable pre-1.0 tradeoff; S2-031 validates statistics trace IDs, S2-032 moves state marker metadata errors to State messages, and S2-033 validates persisted navigation targets. |
 | Form, Mail, Navigation, Localization | `src/Form`, `src/Mail`, `src/Navigation`, `src/Localization` | Reviewed | Locale resolver, form builder/submission layer, mail locale behavior, and navigation label fallback reviewed. S2-013 records the deferred Mail Message/API hardening; S2-014 hardens navigation primary-language fallback. |
 | Scheduler | `src/Scheduler` | Reviewed | Scheduler task registry, lock naming, package task policy, run recorder, web-auth settings, task definitions, `/cron/run` controller behavior, direct job triggering, and docs alignment reviewed. S2-012 converts public task definition invariants to Message-layer diagnostics; GET-token auth remains opt-in, Bearer auth stays primary, and only read-write API keys owned by active admin/owner users can trigger web runs. |
-| Security | `src/Security` | In progress | Session visitor binding, AccountToken issuer/entity behavior, API-key vault/entity behavior, maintenance-mode HTTP flow, and remember-me direction reviewed. S2-008 records the remaining copied-session plus copied-visitor-cookie limitation, S2-018 captures remember-me as a Security-branch feature candidate using server-side rotating tokens bound to the visitor cookie, and S2-028 extracts shared account token/password helpers. ACL groups, account-flow controller extraction, and secret rotation still need broader review. |
+| Security | `src/Security` | Reviewed | Session visitor binding, AccountToken issuer/entity behavior, API-key vault/entity behavior, ACL group policies/apply operations, maintenance-mode HTTP flow, APP_SECRET rotation guard, mail-link delivery stub, and remember-me direction reviewed. S2-008 records the remaining copied-session plus copied-visitor-cookie limitation, S2-018 captures remember-me as a Security-branch feature candidate using server-side rotating tokens bound to the visitor cookie, S2-028 extracts shared account token/password helpers, and S2-038 removes separate plain-token logging from the mail-link debug stub. Account-flow controller extraction remains tracked in the Controller domain by S2-003. |
 | Setup | `src/Setup` | In progress | PHP-CLI resolver/preference flow, dry-run placeholder behavior, preflight failure mapping, Composer probe, and setup subprocess environment reviewed. Large setup input/runtime classes remain watchlisted, but no immediate review-blocker found in this slice. |
 | View | `src/View` | In progress | Template runtime fallback reviewed; S2-005 removes a hardcoded `en` fallback from the root layout. S2-023 moves Markdown embed accessibility copy to translations. S2-024 converts unsupported template namespace failures to View Message keys. Twig helper split, response header policy, dynamic injection failure ownership, and technical naming still need broader review. |
 | Assets/Templates/Translations | `assets`, `templates`, `translations` | In progress | Hardcoded language variants and package translation fallback policy reviewed. S2-022 replaces the package `languages/en` special case with a configured fallback-locale requirement. S2-023 fixes Markdown embed UI copy. Remaining pass: broader CSS naming classification. |
@@ -503,6 +503,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added `content.render.custom_twig_failed` / `message.content.render.custom_twig_failed`, reported invalid custom Twig before falling back, documented the diagnostic, and added focused renderer coverage.
 - **Priority:** Now / Operability and Message-layer consistency.
 
+### S2-038 Account-link debug delivery duplicated clear tokens in log context
+
+- **Area:** Account-token delivery, mailer stub, Security/Logging.
+- **Finding:** `MessageLogAccountLinkDelivery` must keep action URLs visible until real mail delivery exists, but it also logged the same clear one-time token as a separate `debug_plain_token` context field through `MailDeliveryMessage`.
+- **Evidence:** `src/Security/MessageLogAccountLinkDelivery.php`, `src/Mail/MailDeliveryMessage.php`, `tests/Security/MessageLogAccountLinkDeliveryTest.php`, `dev/draft/0.4.x-MailerDeliveryContract.md`.
+- **Impact:** The action URL is currently the only retrievable local delivery path, but duplicating the raw token in a second context field increases leak surface and makes future production gating easier to miss.
+- **Recommendation:** Keep action-url based local delivery until Symfony Mailer exists, remove the plain-token field from the mail delivery contract and logs, and document that production must replace or debug-gate the stub before release.
+- **Fix applied:** Removed `debugPlainToken` from `MailDeliveryMessage`, removed the plain-token parameter from `AccountLinkDeliveryInterface::deliver()`, updated all account-flow callers, and adjusted tests/docs to assert no separate plain-token context field is logged.
+- **Priority:** Now / Security hardening.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -532,6 +542,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Database prefixing reviewed. `PrefixedConnection`, `DoctrineTablePrefixListener`, setup/migration support, and table inventory tests cover known application tables; the `APP_DATABASE_PREFIX` value itself is intentionally user-facing and may be product-branded by an installation.
 - Runtime config defaults reviewed. `Config::get()` already falls back to registered core setting defaults when the DB is unavailable, a key is missing, reads fail, or stored JSON is invalid; callers only see their explicit default after no registered seed/default exists.
 - Security tokens reviewed. Account links/recovery tokens are server-side rows storing only SHA-256 token hashes, while API keys use APP_SECRET-rooted HMAC plus encrypted reversible payloads; remember-me should be a separate credential model rather than reusing account-link tokens.
+- Account-link debug delivery reviewed. S2-038 removes separate plain-token log context while keeping action-url based local delivery until the Mailer slice can replace or debug-gate the stub.
 - Maintenance mode reviewed. The public UI uses translated 503 error-page keys; the literal `ServiceUnavailableHttpException` text is debug-only HTTP control-flow and acceptable as a Symfony-native boundary.
 - APP_SECRET rotation reviewed. S2-020 records the remaining idempotency edge around repeated owner recovery delivery if fingerprint persistence fails.
 - Debug/view internal naming reviewed. S2-021 moves internal debug collector/comment and backend form request attributes from `studio` to `system`; `studio_*` Twig helpers and CSS classes remain intentionally public/product-facing.
@@ -579,6 +590,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Converted package asset contribution invariant failures from literal exceptions to Package Message keys.
 - Split package admin detail helper responsibilities into focused backend services.
 - Extracted repeated account token lookup and password-policy error mapping into Security helpers.
+- Removed separate clear-token context logging from the account-link message-log delivery stub and narrowed the delivery contract to generated action URLs.
 - Normalized trailing POSIX and Windows separators for live-operation storage paths.
 - Validated access-statistics request and visitor trace identifiers before persistence.
 - Moved state-marker metadata validation to the State Message catalogue.

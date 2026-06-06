@@ -22,7 +22,7 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
     ) {
     }
 
-    public function deliver(AccountToken $token, AccountMailFlow $flow, string $plainToken, string $url, string $locale, array $parameters = []): void
+    public function deliver(AccountToken $token, AccountMailFlow $flow, string $url, string $locale, array $parameters = []): void
     {
         $this->logMailMessage(
             new MailDeliveryMessage(
@@ -35,7 +35,6 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
                     'action_url' => $url,
                 ],
                 actionUrl: $url,
-                debugPlainToken: $plainToken,
                 tokenUid: $token->uid(),
                 tokenType: $token->type()->value,
             ),
@@ -113,7 +112,6 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
                 'parameters' => $mailMessage->parameters(),
                 'available_parameters' => $definition->parameterKeys(),
                 'action_url' => $mailMessage->actionUrl(),
-                'debug_plain_token' => $mailMessage->debugPlainToken(),
                 'token_uid' => $mailMessage->tokenUid(),
                 'token_type' => $mailMessage->tokenType(),
             ],
