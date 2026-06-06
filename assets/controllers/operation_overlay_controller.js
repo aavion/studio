@@ -394,7 +394,7 @@ export default class extends Controller {
         const formId = formData.get('_form_id') || '';
         const backendAction = formData.get('_backend_action') || '';
 
-        return `studio.operation.${this.element.action}.${formId}.${backendAction}`;
+        return `system.operation.${this.element.action}.${formId}.${backendAction}`;
     }
 
     storedOperation() {

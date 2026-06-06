@@ -108,7 +108,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Security | `src/Security` | Reviewed | Session visitor binding, AccountToken issuer/entity behavior, API-key vault/entity behavior, ACL group policies/apply operations, maintenance-mode HTTP flow, APP_SECRET rotation guard, mail-link delivery stub, and remember-me direction reviewed. S2-008 records the remaining copied-session plus copied-visitor-cookie limitation, S2-018 captures remember-me as a Security-branch feature candidate using server-side rotating tokens bound to the visitor cookie, S2-028 extracts shared account token/password helpers, and S2-038 removes separate plain-token logging from the mail-link debug stub. Account-flow controller extraction remains tracked in the Controller domain by S2-003. |
 | Setup | `src/Setup` | Reviewed | PHP-CLI resolver/preference flow, dry-run placeholder behavior, preflight failure mapping, Composer probe, setup subprocess environment, setup seeding, environment writing/rollback, web/CLI input validation, and setup class sizes reviewed. S2-039 splits CLI database input resolution out of the oversized CLI input factory; all setup production files are now below the 300-line target. |
 | View | `src/View` | Reviewed | Template runtime fallback, Markdown rendering/embed output, package macro/template paths, system package metadata, Twig helper ownership, dynamic/static view injection registry, response header/output hooks, HTTP error rendering, and dynamic injection failure reporting reviewed. S2-005 removes a hardcoded `en` fallback from the root layout, S2-023 moves Markdown embed accessibility copy to translations, and S2-024 converts unsupported template namespace failures to View Message keys. Public `studio_*` Twig helper names remain intentional product/theme API; internal technical naming stays under `system`. |
-| Assets/Templates/Translations | `assets`, `templates`, `translations` | In progress | Hardcoded language variants, package translation fallback policy, and active setup templates reviewed. S2-022 replaces the package `languages/en` special case with a configured fallback-locale requirement. S2-023 fixes Markdown embed UI copy. S2-040 splits the setup wizard render target into focused partials. Remaining pass: broader CSS naming classification. |
+| Assets/Templates/Translations | `assets`, `templates`, `translations` | In progress | Hardcoded language variants, package translation fallback policy, active setup templates, and project-owned asset naming reviewed. S2-022 replaces the package `languages/en` special case with a configured fallback-locale requirement. S2-023 fixes Markdown embed UI copy. S2-040 splits the setup wizard render target into focused partials. S2-041 moves the internal operation-overlay storage key to `system`. Remaining pass: final classification summary. |
 | Documentation | `dev/draft`, `dev/manual`, `docs`, `.codex` | Pending | Re-check drift against actual behavior after all second-pass fixes. |
 
 ### Review Method
@@ -533,6 +533,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Split setup rendering into focused partial templates under `templates/backend/setup/partials/**`, reduced the index template from 373 to 95 lines, rendered `/setup`, and ran focused setup/backend tests.
 - **Priority:** Now / Modularity and review readability.
 
+### S2-041 Operation overlay session storage used product branding as an internal key
+
+- **Area:** Frontend operation overlay controller, browser session storage, technical naming.
+- **Finding:** Most `studio-*` hits in assets/templates are public UI classes, CSS variables, Twig helpers, or product-facing theme API, but `operation_overlay_controller.js` used `studio.operation...` as an internal `sessionStorage` key for resumable live operations.
+- **Evidence:** `assets/controllers/operation_overlay_controller.js`, `templates/backend/operations/action-log-overlay.html.twig`, `dev/draft/0.4.x-OperationalAdminWorkflows.md`.
+- **Impact:** No user-facing behavior was broken, but this was a clear internal technical identifier and therefore contradicted the `system` owner/scope rule added during the first pass.
+- **Recommendation:** Keep public CSS/Twig names stable for now, but use `system.*` for new/refactored internal storage keys.
+- **Fix applied:** Renamed the operation overlay storage prefix to `system.operation...` and verified the controller syntax with focused lint.
+- **Priority:** Now / Naming consistency.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -589,6 +599,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Setup PHP-CLI and Composer preflight reviewed. Cached `APP_DEFAULT_PHP_BINARY` remains validation-first and auto-heal/persistence is limited to controlled setup/preflight flows.
 - Setup CLI input reviewed. S2-039 extracts database input resolution from the CLI input factory and leaves all setup production classes below the 300-line target.
 - Setup wizard templates reviewed. S2-040 moves step-specific rendering into setup partials while preserving the existing controller context, translation keys, form fields, and routes.
+- Asset/template `studio` naming reviewed. Public CSS classes, CSS variables, Twig helper names, and theme-facing IDs remain product/UI surface for now; S2-041 fixes the one internal browser-storage key found in project-owned JavaScript.
 - Form builder/submission layer reviewed. No immediate drift found: values cast centrally, option validation is generic, and user-facing errors stay on existing translation keys.
 
 ## Fixes Applied
@@ -616,6 +627,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Removed separate clear-token context logging from the account-link message-log delivery stub and narrowed the delivery contract to generated action URLs.
 - Split CLI setup database input resolution out of the top-level CLI input factory.
 - Split the web setup wizard render target into focused backend setup partials.
+- Renamed the operation-overlay resumable-run session storage key from `studio.operation...` to `system.operation...`.
 - Normalized trailing POSIX and Windows separators for live-operation storage paths.
 - Validated access-statistics request and visitor trace identifiers before persistence.
 - Moved state-marker metadata validation to the State Message catalogue.
