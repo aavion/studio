@@ -550,6 +550,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Entity/ContentItem.php:92`, `src/Entity/ContentItem.php:101`, `src/Entity/ContentItem.php:110`, `src/Entity/ContentItem.php:340`, `src/Entity/ContentItem.php:561`, `src/Entity/ContentSchemaVersion.php:57`, `src/Entity/ContentSchemaVersion.php:66`, `src/Entity/ContentSchemaVersion.php:75`, `src/Entity/ContentSchemaVersion.php:186`, `src/Entity/ContentSchemaVersion.php:299`, `src/Entity/SiteMenuItem.php:46`, `src/Entity/SiteMenuItem.php:126`, `src/Entity/SiteMenuItem.php:137`.
 - **Impact:** Behavior is currently similar, but future Security/Admin/API work can easily fix one path and miss another. The repeated shape also makes it harder to document one clear access-rule contract for packages, menus, schemas, and content.
 - **Recommendation:** Introduce a small `AccessRule`/`AclRestrictionSet` value object or embeddable plus a shared validator/factory. Use clear operation names such as `viewRule`, `editRule`, `manageRule`, and `useRule` consistently in DTOs and docs.
+- **Implementation note:** Extended the existing `App\Core\Access\AccessRule` with reusable stored-group normalization and switched content items, schema versions, and menu items to the same ACL group validation path. The persistence columns remain flat for now, while the validator/normalizer is centralized for future DTOs, package APIs, and cleanup flows.
 - **Priority:** Before Security / API.
 
 ### F-029 Content entity validation repeats generic UID/string-list helpers

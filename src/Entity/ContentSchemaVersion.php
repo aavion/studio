@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Content\Schema\ContentSchemaField;
 use App\Core\Access\AccessLevel;
+use App\Core\Access\AccessRule;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
@@ -120,12 +121,9 @@ class ContentSchemaVersion
         $this->definition = self::assertDefinition($definition);
         $this->customTwig = $customTwig;
         $this->definitionHash = hash('sha256', json_encode($this->definition, JSON_THROW_ON_ERROR));
-        $this->useMinLevel = AccessLevel::assert($useMinLevel);
-        $this->useGroupIdentifiers = self::assertOptionalGroupIdentifierList($useGroupIdentifiers);
-        $this->editMinLevel = AccessLevel::assert($editMinLevel);
-        $this->editGroupIdentifiers = self::assertOptionalGroupIdentifierList($editGroupIdentifiers);
-        $this->manageMinLevel = AccessLevel::assert($manageMinLevel);
-        $this->manageGroupIdentifiers = self::assertOptionalGroupIdentifierList($manageGroupIdentifiers);
+        $this->setUseRule($useMinLevel, $useGroupIdentifiers);
+        $this->setEditRule($editMinLevel, $editGroupIdentifiers);
+        $this->setManageRule($manageMinLevel, $manageGroupIdentifiers);
         $this->metadata = $metadata;
     }
 
@@ -186,7 +184,7 @@ class ContentSchemaVersion
     public function setUseRule(?int $minLevel, ?array $groupIdentifiers = null): void
     {
         $this->useMinLevel = AccessLevel::assert($minLevel);
-        $this->useGroupIdentifiers = self::assertOptionalGroupIdentifierList($groupIdentifiers);
+        $this->useGroupIdentifiers = AccessRule::normalizeGroupIdentifiersOrNull($groupIdentifiers);
     }
 
     public function editMinLevel(): ?int
@@ -208,7 +206,7 @@ class ContentSchemaVersion
     public function setEditRule(?int $minLevel, ?array $groupIdentifiers = null): void
     {
         $this->editMinLevel = AccessLevel::assert($minLevel);
-        $this->editGroupIdentifiers = self::assertOptionalGroupIdentifierList($groupIdentifiers);
+        $this->editGroupIdentifiers = AccessRule::normalizeGroupIdentifiersOrNull($groupIdentifiers);
     }
 
     public function manageMinLevel(): ?int
@@ -230,7 +228,7 @@ class ContentSchemaVersion
     public function setManageRule(?int $minLevel, ?array $groupIdentifiers = null): void
     {
         $this->manageMinLevel = AccessLevel::assert($minLevel);
-        $this->manageGroupIdentifiers = self::assertOptionalGroupIdentifierList($groupIdentifiers);
+        $this->manageGroupIdentifiers = AccessRule::normalizeGroupIdentifiersOrNull($groupIdentifiers);
     }
 
     public function activate(): void
@@ -291,27 +289,4 @@ class ContentSchemaVersion
         return $definition;
     }
 
-    /**
-     * @param list<string>|null $values
-     *
-     * @return list<string>|null
-     */
-    private static function assertOptionalGroupIdentifierList(?array $values): ?array
-    {
-        if (null === $values) {
-            return null;
-        }
-
-        foreach ($values as $identifier) {
-            if (!is_string($identifier)) {
-                throw MessageException::invalidArgument(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
-                    '%identifier%' => 'non-string',
-                ]);
-            }
-
-            Identifier::assertAclGroupIdentifier($identifier);
-        }
-
-        return array_values(array_unique($values));
-    }
 }

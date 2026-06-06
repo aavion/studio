@@ -6,6 +6,7 @@ namespace App\Content\Entity;
 
 use App\Content\ContentVisibility;
 use App\Core\Access\AccessLevel;
+use App\Core\Access\AccessRule;
 use Doctrine\ORM\Mapping as ORM;
 
 trait ContentItemAccessStateTrait
@@ -78,7 +79,7 @@ trait ContentItemAccessStateTrait
     public function setViewRule(?int $minLevel, ?array $groupIdentifiers = null): void
     {
         $this->viewMinLevel = AccessLevel::assert($minLevel);
-        $this->viewGroupIdentifiers = ContentItemInput::optionalAclGroupIdentifiers($groupIdentifiers);
+        $this->viewGroupIdentifiers = AccessRule::normalizeGroupIdentifiersOrNull($groupIdentifiers);
     }
 
     public function viewMinLevel(): ?int
@@ -100,7 +101,7 @@ trait ContentItemAccessStateTrait
     public function setEditRule(?int $minLevel, ?array $groupIdentifiers = null): void
     {
         $this->editMinLevel = AccessLevel::assert($minLevel);
-        $this->editGroupIdentifiers = ContentItemInput::optionalAclGroupIdentifiers($groupIdentifiers);
+        $this->editGroupIdentifiers = AccessRule::normalizeGroupIdentifiersOrNull($groupIdentifiers);
     }
 
     public function editMinLevel(): ?int
@@ -122,7 +123,7 @@ trait ContentItemAccessStateTrait
     public function setManageRule(?int $minLevel, ?array $groupIdentifiers = null): void
     {
         $this->manageMinLevel = AccessLevel::assert($minLevel);
-        $this->manageGroupIdentifiers = ContentItemInput::optionalAclGroupIdentifiers($groupIdentifiers);
+        $this->manageGroupIdentifiers = AccessRule::normalizeGroupIdentifiersOrNull($groupIdentifiers);
     }
 
     public function manageMinLevel(): ?int

@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Core\Access\AccessLevel;
-use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
-use App\Core\Validation\Identifier;
+use App\Core\Access\AccessRule;
 use App\Core\Validation\Uid;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -82,8 +80,7 @@ class SiteMenuItem
         $this->targetValue = $targetValue;
         $this->parentUid = null === $parentUid ? null : Uid::assert($parentUid, 'Parent site menu item UID');
         $this->sortOrder = $sortOrder;
-        $this->viewMinLevel = AccessLevel::assert($viewMinLevel);
-        $this->viewGroupIdentifiers = self::assertOptionalGroupIdentifierList($viewGroupIdentifiers);
+        $this->setViewRule($viewMinLevel, $viewGroupIdentifiers);
         $this->metadata = $metadata;
     }
 
@@ -126,30 +123,6 @@ class SiteMenuItem
     public function setViewRule(?int $minLevel, ?array $groupIdentifiers = null): void
     {
         $this->viewMinLevel = AccessLevel::assert($minLevel);
-        $this->viewGroupIdentifiers = self::assertOptionalGroupIdentifierList($groupIdentifiers);
-    }
-
-    /**
-     * @param list<string>|null $values
-     *
-     * @return list<string>|null
-     */
-    private static function assertOptionalGroupIdentifierList(?array $values): ?array
-    {
-        if (null === $values) {
-            return null;
-        }
-
-        foreach ($values as $identifier) {
-            if (!is_string($identifier)) {
-                throw MessageException::invalidArgument(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
-                    '%identifier%' => 'non-string',
-                ]);
-            }
-
-            Identifier::assertAclGroupIdentifier($identifier);
-        }
-
-        return array_values(array_unique($values));
+        $this->viewGroupIdentifiers = AccessRule::normalizeGroupIdentifiersOrNull($groupIdentifiers);
     }
 }

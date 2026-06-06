@@ -73,12 +73,14 @@
 - [ ] Finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
 - [ ] Before production readiness, review public package/developer-facing class, interface, function, and Twig helper names for clarity and ergonomics; decide whether to rename directly or provide stable aliases so extension APIs read as intentional rather than provisional.
+- [ ] Before PR review for the audit branch, repeat the full project-rules drift audit against the optimized branch state, including namespace/class placement, whether finding decisions were fully applied where possible, and whether the implementation covered related paths beyond the obvious candidates.
 - [ ] Evaluate whether the documented minimum memory requirement should become 256M after PHPUnit 13.2/full-suite runs needed a higher CLI memory limit; do not fix this requirement until setup/init/lint/runtime memory behavior has been reviewed across target hosting platforms.
 
 ## Session Logs
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-06
+- Centralized stored ACL group identifier normalization in the existing `AccessRule` value object and aligned content item, schema version, and menu item ACL setters to the shared rule path.
 - Split `ContentItem` into a small Doctrine aggregate facade plus focused routing, localization, access-rule, metadata, and revision-state traits with shared input validation, preserving existing columns and public behavior.
 - Split live-operation run handling into focused creator, storage, progress writer, presenter, lifecycle/cleanup, runner supervisor, and process-inspection services while keeping `LiveOperationRunStore` as the compatibility facade under the context-size target.
 - Split setup execution internals so `SetupRunner` stays under the context target and delegates runtime subprocesses, database-ready environment scoping, nested operation-message extraction, and run-input policy validation to focused services.

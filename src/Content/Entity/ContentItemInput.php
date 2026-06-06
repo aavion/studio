@@ -8,7 +8,6 @@ use App\Content\Routing\ContentSystemRoute;
 use App\Content\Schema\ContentSchemaField;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageKey;
-use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
 
 final readonly class ContentItemInput
@@ -92,23 +91,4 @@ final readonly class ContentItemInput
         return array_values(array_unique($values));
     }
 
-    /**
-     * @param list<string>|null $values
-     *
-     * @return list<string>|null
-     */
-    public static function optionalAclGroupIdentifiers(?array $values): ?array
-    {
-        if (null === $values) {
-            return null;
-        }
-
-        $identifiers = self::stringList($values, 'ACL group identifiers');
-
-        foreach ($identifiers as $identifier) {
-            Identifier::assertAclGroupIdentifier($identifier);
-        }
-
-        return $identifiers;
-    }
 }
