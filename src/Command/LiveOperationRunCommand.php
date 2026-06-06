@@ -24,7 +24,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
 #[AsCommand(
-    name: 'studio:operations:run',
+    name: 'operations:run',
     description: 'Run a staged live operation and write ActionLog progress.',
 )]
 final class LiveOperationRunCommand extends Command

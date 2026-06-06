@@ -38,7 +38,7 @@ final readonly class PackageDiscoveryLiveOperationProvider implements LiveOperat
 
         if (!$resolution->isAvailable()) {
             return WorkflowResult::failed([
-                PhpCliUnavailableAction::message('studio:packages:discover', $resolution->reason(), [
+                PhpCliUnavailableAction::message('packages:discover', $resolution->reason(), [
                     'environment' => $environment,
                     'trigger' => $trigger,
                 ]),
@@ -52,7 +52,7 @@ final readonly class PackageDiscoveryLiveOperationProvider implements LiveOperat
             new RunCommandAction([
                 ...$resolution->commandPrefix(),
                 $this->kernel->getProjectDir().'/bin/console',
-                'studio:packages:discover',
+                'packages:discover',
                 '--run-now',
                 '--trigger='.$trigger,
                 '--env='.$environment,

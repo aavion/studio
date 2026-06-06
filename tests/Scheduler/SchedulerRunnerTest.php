@@ -120,7 +120,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'admin.scheduler.tasks.demo.description',
             'demo-package',
             SchedulerTaskType::Command,
-            'studio:test',
+            'demo:test',
             '* * * * *',
             false,
         ));
@@ -315,7 +315,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'system.failed_task',
             'admin.scheduler.tasks.failed.label',
             'admin.scheduler.tasks.failed.description',
-            'studio:test',
+            'demo:test',
             '* * * * *',
         ));
         $now = new \DateTimeImmutable();
@@ -335,7 +335,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'system.sync_task',
             'admin.scheduler.tasks.sync.label',
             'admin.scheduler.tasks.sync.description',
-            'studio:test',
+            'demo:test',
             '* * * * *',
         ));
         $task->seedNextDue(new \DateTimeImmutable('+1 hour'));
@@ -344,7 +344,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'system.sync_task',
             'admin.scheduler.tasks.sync.label',
             'admin.scheduler.tasks.sync.description',
-            'studio:test',
+            'demo:test',
             '*/5 * * * *',
         ), new \DateTimeImmutable());
 
@@ -358,7 +358,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'demo.sync_task',
             'admin.scheduler.tasks.sync.label',
             'admin.scheduler.tasks.sync.description',
-            'studio:test',
+            'demo:test',
             '* * * * *',
             'demo-package',
             false,
@@ -422,7 +422,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'system.bad_task',
             '<script>alert(1)</script>',
             'admin.scheduler.tasks.bad.description',
-            'studio:test',
+            'demo:test',
             '* * * * *',
         );
     }
@@ -435,7 +435,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'system.bad_cron',
             'admin.scheduler.tasks.bad.label',
             'admin.scheduler.tasks.bad.description',
-            'studio:test',
+            'demo:test',
             'not a cron',
         );
     }
@@ -446,7 +446,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'ai.cleanup',
             'admin.scheduler.tasks.test.label',
             'admin.scheduler.tasks.test.description',
-            'studio:test',
+            'demo:test',
             '* * * * *',
             'ai',
             false,
@@ -465,7 +465,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'admin.scheduler.tasks.bad.description',
             'system',
             SchedulerTaskType::Command,
-            'studio:test',
+            'demo:test',
             '* * * * *',
             true,
             ['resource' => fopen('php://memory', 'r')],
@@ -515,7 +515,7 @@ final readonly class TestSchedulerTaskProvider implements SchedulerTaskProviderI
                 'system.test_task',
                 'admin.scheduler.tasks.test.label',
                 'admin.scheduler.tasks.test.description',
-                'studio:test',
+                'demo:test',
                 '* * * * *',
             ),
         ];
@@ -531,14 +531,14 @@ final readonly class TestMultipleSchedulerTaskProvider implements SchedulerTaskP
                 'system.first_task',
                 'admin.scheduler.tasks.test.label',
                 'admin.scheduler.tasks.test.description',
-                'studio:test',
+                'demo:test',
                 '* * * * *',
             ),
             SchedulerTaskDefinition::command(
                 'system.second_task',
                 'admin.scheduler.tasks.test.label',
                 'admin.scheduler.tasks.test.description',
-                'studio:test',
+                'demo:test',
                 '* * * * *',
             ),
         ];
@@ -554,7 +554,7 @@ final readonly class TestMixedSchedulerTaskProvider implements SchedulerTaskProv
                 'system.first_task',
                 'admin.scheduler.tasks.test.label',
                 'admin.scheduler.tasks.test.description',
-                'studio:test',
+                'demo:test',
                 '* * * * *',
             ),
             new SchedulerTaskDefinition(
@@ -563,7 +563,7 @@ final readonly class TestMixedSchedulerTaskProvider implements SchedulerTaskProv
                 'admin.scheduler.tasks.demo.description',
                 'demo-package',
                 SchedulerTaskType::Command,
-                'studio:test',
+                'demo:test',
                 '* * * * *',
                 false,
             ),
@@ -671,7 +671,7 @@ final readonly class TestPackageCommandSchedulerTaskProvider implements Schedule
                 'admin.scheduler.tasks.demo.description',
                 'demo-package',
                 SchedulerTaskType::Command,
-                'studio:test',
+                'demo:test',
                 '* * * * *',
                 false,
             ),
@@ -690,7 +690,7 @@ final readonly class TestCollidingPackageSchedulerTaskProvider implements Schedu
                 'admin.scheduler.tasks.demo.description',
                 'demo-package',
                 SchedulerTaskType::Command,
-                'studio:demo:test',
+                'demo:test',
                 '* * * * *',
                 false,
             ),

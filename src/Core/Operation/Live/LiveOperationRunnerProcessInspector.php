@@ -41,7 +41,7 @@ final readonly class LiveOperationRunnerProcessInspector
         $command = $this->processCommand($pid);
 
         return null !== $command
-            && str_contains($command, 'studio:operations:run')
+            && str_contains($command, 'operations:run')
             && str_contains($command, $operationId);
     }
 

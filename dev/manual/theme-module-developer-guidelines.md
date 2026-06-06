@@ -141,7 +141,7 @@ Developers can inspect the currently surfaced hooks through `event_hooks()` in T
 
 Output hooks should stay narrow. Prefer Twig context hooks and templates for normal rendering work; use `OutputGeneratedEvent` only when the final HTML string is the correct boundary.
 
-Do not expect package hooks for template path collection or runtime asset collection. Template namespaces are resolved through the package/theme lifecycle, and active package assets are mirrored and compiled through AssetSync and `studio:assets:rebuild`.
+Do not expect package hooks for template path collection or runtime asset collection. Template namespaces are resolved through the package/theme lifecycle, and active package assets are mirrored and compiled through AssetSync and `assets:rebuild`.
 
 Packages must not define new core permission rules dynamically. A package can require existing ACL levels, groups, roles, or manifest capabilities for its routes and UI, but the security model itself stays core-owned.
 
@@ -214,7 +214,7 @@ Run relevant verification commands once the implementation exists:
 
 ```bash
 php bin/console lint:container
-php bin/console studio:assets:rebuild
+php bin/console assets:rebuild
 php bin/phpunit
 php .codex/compare_translations.php
 ```

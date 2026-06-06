@@ -15,8 +15,8 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
-    name: 'studio:scheduler:run',
-    description: 'Run due Studio scheduler tasks.',
+    name: 'scheduler:run',
+    description: 'Run due scheduler tasks.',
 )]
 final class SchedulerRunCommand extends Command
 {

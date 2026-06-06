@@ -17,7 +17,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
-    name: 'studio:account-tokens:cleanup',
+    name: 'account-tokens:cleanup',
     description: 'Remove expired account tokens.',
 )]
 final class AccountTokenCleanupCommand extends Command

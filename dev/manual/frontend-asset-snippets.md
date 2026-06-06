@@ -19,7 +19,7 @@ Composer auto-scripts currently handle:
 
 `bin/init` should avoid duplicating those commands and only run `asset-map:compile` in `prod`.
 
-The global package-aware rebuild entry point is `php bin/console studio:assets:rebuild`. Package lifecycle workflows and manual admin recovery actions should call this command through the operational ActionLog runner, not rebuild assets during normal page requests.
+The global package-aware rebuild entry point is `php bin/console assets:rebuild`. Package lifecycle workflows and manual admin recovery actions should call this command through the operational ActionLog runner, not rebuild assets during normal page requests.
 
 The command publishes a planned step count in dry-run mode and reports current step progress during execution. The order is:
 
@@ -33,7 +33,7 @@ The command publishes a planned step count in dry-run mode and reports current s
 
 `cache:clear` intentionally runs last. The rebuild should run in a CLI worker or subprocess with persisted ActionLog entries, while the UI reads progress through streaming or `/api/live/operations/{operationId}/log?cursor=<number>`. If clearing the cache briefly interrupts polling, the UI can resume from the stored cursor. The command must not depend on the current HTTP request continuing after cache invalidation.
 
-Use `php bin/console studio:packages:assets:sync` when only the active package mirror and generated registry files need to be refreshed without running the full Symfony asset lifecycle.
+Use `php bin/console packages:assets:sync` when only the active package mirror and generated registry files need to be refreshed without running the full Symfony asset lifecycle.
 
 Package asset sync and translation aggregation should preserve the previous generated state until the replacement is ready. Package assets are mirrored into a temporary `assets/.packages.tmp-*` directory before `assets/packages` is swapped, generated CSS/JavaScript registries are replaced through temporary files, and runtime translation catalogues are aggregated into a temporary `translations/runtime/{APP_ENV}.tmp-*` directory before the environment runtime directory is replaced. Production rebuilds still remove `public/assets` before `asset-map:compile` because AssetMapper writes versioned files and repeated compiles would otherwise leave stale compiled assets behind.
 
@@ -52,7 +52,7 @@ Packages should keep assets namespaced. Active package assets are not loaded dir
 
 The package asset mirror and generated registries are runtime build artifacts. Git tracks only the package asset directories, their `.gitignore` files, and their README anchors. `bin/init`, the Composer install/update hook, and package asset sync all ensure the six registry files exist before Tailwind or AssetMapper can require them, so clean checkouts work while local package activation does not dirty the Git index.
 
-Database-backed schema Twig is not part of Tailwind's normal filesystem scan. Before schema-authored CSS classes are supported in production, the schema renderer needs a build input layer that aggregates class usage from active custom schema Twig and exposes it to `tailwind:build`, for example through a generated safelist/source artifact written during `studio:assets:rebuild`.
+Database-backed schema Twig is not part of Tailwind's normal filesystem scan. Before schema-authored CSS classes are supported in production, the schema renderer needs a build input layer that aggregates class usage from active custom schema Twig and exposes it to `tailwind:build`, for example through a generated safelist/source artifact written during `assets:rebuild`.
 
 The deterministic order is:
 

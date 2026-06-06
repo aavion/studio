@@ -163,7 +163,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -189,7 +189,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -214,7 +214,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -234,14 +234,14 @@ PHP);
 
 use App\Scheduler\SchedulerTaskDefinition;
 
-// Example only: SchedulerTaskDefinition::command('demo.bad', 'label', 'description', 'studio:bad', 'not a cron');
+// Example only: SchedulerTaskDefinition::command('demo.bad', 'label', 'description', 'demo:bad', 'not a cron');
 
 return [
     SchedulerTaskDefinition::command(
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         '*/10 * * * *',
     ),
 ];
@@ -259,14 +259,14 @@ PHP);
 
 use App\Scheduler\SchedulerTaskDefinition;
 
-$documentation = "Example only: SchedulerTaskDefinition::command('demo.bad', 'label', 'description', 'studio:bad', 'not a cron')";
+$documentation = "Example only: SchedulerTaskDefinition::command('demo.bad', 'label', 'description', 'demo:bad', 'not a cron')";
 
 return [
     SchedulerTaskDefinition::command(
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         '*/10 * * * *',
     ),
 ];
@@ -286,7 +286,7 @@ use App\Scheduler\SchedulerTaskDefinition;
 
 return [
     SchedulerTaskDefinition::command(
-        command: 'studio:demo:cleanup',
+        command: 'demo:cleanup',
         identifier: 'demo.cleanup',
         labelKey: 'pkg.demo.cleanup.label',
         descriptionKey: 'pkg.demo.cleanup.description',
@@ -309,7 +309,7 @@ use App\Scheduler\SchedulerTaskDefinition;
 
 return [
     SchedulerTaskDefinition::command(
-        command: 'studio:demo --label="defaultCronExpression: \'not a cron\'"',
+        command: 'demo --label="defaultCronExpression: \'not a cron\'"',
         identifier: 'demo.cleanup',
         labelKey: 'pkg.demo.cleanup.label',
         descriptionKey: 'pkg.demo.cleanup.description',
@@ -336,7 +336,7 @@ return [
         'pkg.demo.cleanup.label',
         // Example only, with comma: defaultCronExpression: 'not a cron',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         '*/10 * * * *',
     ),
 ];
@@ -359,7 +359,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -380,7 +380,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -404,7 +404,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -428,7 +428,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -457,7 +457,7 @@ final class DemoSchedulerTasks implements SchedulerTaskProviderInterface
                 'demo.cleanup',
                 'pkg.demo.cleanup.label',
                 'pkg.demo.cleanup.description',
-                'studio:demo:cleanup',
+                'demo:cleanup',
                 '*/15 * * * *',
                 'demo-module',
                 false,
@@ -489,7 +489,7 @@ final class DemoSchedulerTasks implements SchedulerTaskProviderInterface
                 'demo.cleanup',
                 'pkg.demo.cleanup.label',
                 'pkg.demo.cleanup.description',
-                'studio:demo:cleanup',
+                'demo:cleanup',
                 '*/15 * * * *',
                 'ai',
                 false,
@@ -524,7 +524,7 @@ return [
         TaskIds::CLEANUP,
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo cleanup',
+        'demo cleanup',
         '*/15 * * * *',
         'demo-module',
         false,
@@ -551,7 +551,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         $cron,
     ),
 ];

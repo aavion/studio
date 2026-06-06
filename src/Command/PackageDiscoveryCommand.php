@@ -19,7 +19,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsCommand(
-    name: 'studio:packages:discover',
+    name: 'packages:discover',
     description: 'Discover packages, validate them, and synchronize the package registry.',
 )]
 final class PackageDiscoveryCommand extends Command

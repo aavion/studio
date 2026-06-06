@@ -42,16 +42,16 @@
 
 3. **CLI command names**
    - Prefer neutral Symfony-style command names:
-     - `studio:assets:rebuild` -> `assets:rebuild`
-     - `studio:packages:discover` -> `packages:discover`
-     - `studio:packages:assets:sync` -> `packages:assets:sync`
-     - `studio:packages:lifecycle` -> decide between `packages:lifecycle` and a clearer operation name.
-     - `studio:operations:run` -> `operations:run`
-     - `studio:operations:cleanup` -> `operations:cleanup`
-     - `studio:statistics:snapshot` -> `statistics:snapshot`
-     - `studio:scheduler:run` -> `scheduler:run`
-     - `studio:account-tokens:cleanup` -> decide whether `account-tokens:cleanup` or `security:account-tokens:cleanup` is clearer.
-     - `studio:acl-groups:apply` -> decide whether `acl-groups:apply` is clear enough.
+     - `assets:rebuild`
+     - `packages:discover`
+     - `packages:assets:sync`
+     - `packages:lifecycle`
+     - `operations:run`
+     - `operations:cleanup`
+     - `statistics:snapshot`
+     - `scheduler:run`
+     - `account-tokens:cleanup`
+     - `acl-groups:apply`
    - Update setup subprocesses, Scheduler task definitions, Live Operation command invocations, runner process inspection, docs, and tests in the same slice.
 
 4. **Log file names**
@@ -73,7 +73,7 @@
 - `studio_view` is removed because no template needs a global provider object; `studio_view_context()` becomes `view_context()`.
 - `studio_markdown` becomes `render_markdown` to keep the filter verb-based and avoid likely third-party `markdown` collisions.
 - Backend/admin helper functions use speaking domain names such as `backend_actions()`, `core_settings_form()`, and `package_settings_form()`.
-- `studio:packages:lifecycle` becomes `packages:lifecycle`.
+- `packages:lifecycle` is clear enough because it is an operator-facing lifecycle adapter and the package domain is already explicit.
 - Account and ACL commands become `account-tokens:cleanup` and `acl-groups:apply` unless implementation reveals a clearer shared pattern.
 - Monolog channels and filenames should both use speaking names where practical; the Admin Log viewer should not show internal owner prefixes because they add no user value.
 

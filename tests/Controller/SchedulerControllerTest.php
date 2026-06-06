@@ -162,7 +162,7 @@ final class SchedulerControllerTest extends WebTestCase
             'system.live_operation_cleanup',
             'admin.scheduler.tasks.live_operation_cleanup.label',
             'admin.scheduler.tasks.live_operation_cleanup.description',
-            'studio:operations:cleanup',
+            'operations:cleanup',
             '*/15 * * * *',
         );
         $task = $entityManager->find(SchedulerTask::class, 'system.live_operation_cleanup') ?? new SchedulerTask($definition);
@@ -193,7 +193,7 @@ final class SchedulerControllerTest extends WebTestCase
             'system.live_operation_cleanup',
             'admin.scheduler.tasks.live_operation_cleanup.label',
             'admin.scheduler.tasks.live_operation_cleanup.description',
-            'studio:operations:cleanup',
+            'operations:cleanup',
             '*/15 * * * *',
         );
         $task = $entityManager->find(SchedulerTask::class, 'system.live_operation_cleanup') ?? new SchedulerTask($definition);

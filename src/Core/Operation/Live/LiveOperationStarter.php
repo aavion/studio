@@ -86,7 +86,7 @@ final readonly class LiveOperationStarter
         $command = [
             ...$this->phpCliCommandPrefix($operation),
             $this->kernel->getProjectDir().'/bin/console',
-            'studio:operations:run',
+            'operations:run',
             $operationId,
             '--token='.$token,
             '--env='.$this->kernel->getEnvironment(),

@@ -22,7 +22,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Throwable;
 
 #[AsCommand(
-    name: 'studio:packages:assets:sync',
+    name: 'packages:assets:sync',
     description: 'Mirror active package assets and rebuild generated package asset registries.',
 )]
 final class PackageAssetSyncCommand extends Command

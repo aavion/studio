@@ -15,7 +15,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
-    name: 'studio:statistics:snapshot',
+    name: 'statistics:snapshot',
     description: 'Refresh the stored access statistics snapshot.',
 )]
 final class AccessStatisticsSnapshotCommand extends Command

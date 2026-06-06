@@ -281,7 +281,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
                 'scheduler-module.cleanup',
                 'pkg.scheduler_module.cleanup.label',
                 'pkg.scheduler_module.cleanup.description',
-                'studio:demo:cleanup',
+                'demo:cleanup',
                 '*/15 * * * *',
                 'system',
                 true,

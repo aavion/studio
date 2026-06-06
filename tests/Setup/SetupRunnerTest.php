@@ -56,7 +56,7 @@ final class SetupRunnerTest extends TestCase
                 $composerEnvironments[] = $environment;
             }
 
-            if (in_array('studio:assets:rebuild', $command, true)) {
+            if (in_array('assets:rebuild', $command, true)) {
                 $assetRebuildEnvironment = $environment;
             }
         });
@@ -110,8 +110,8 @@ final class SetupRunnerTest extends TestCase
             ['composer', 'dump-env', 'test'],
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test', '--json'],
+            [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
         ], $executor->commands);
 
         $pdo = new PDO('sqlite:'.$databasePath);
@@ -469,8 +469,8 @@ final class SetupRunnerTest extends TestCase
             ['composer', 'dump-env', 'test'],
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test', '--json'],
+            [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
         ], $executor->commands);
     }
 
@@ -517,9 +517,9 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('clear_cache', $entries[7]['name']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'], $entries[7]['context']['command']);
         self::assertSame('run_package_discovery', $entries[8]['name']);
-        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'], $entries[8]['context']['command']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'], $entries[8]['context']['command']);
         self::assertSame('run_asset_rebuild', $entries[9]['name']);
-        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test', '--json'], $entries[9]['context']['command']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'], $entries[9]['context']['command']);
         self::assertSame('mark_setup_completed', $entries[10]['name']);
     }
 
@@ -555,7 +555,7 @@ final class SetupRunnerTest extends TestCase
         $databasePath = $this->root.'/var/setup.db';
         $this->createSchema($databasePath);
         $executor = new RecordingSetupCommandExecutor(onRun: static function (array $command, string $_cwd, array $_environment): ?SetupCommandResult {
-            if (!in_array('studio:assets:rebuild', $command, true)) {
+            if (!in_array('assets:rebuild', $command, true)) {
                 return null;
             }
 

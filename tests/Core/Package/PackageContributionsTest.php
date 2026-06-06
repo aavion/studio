@@ -32,7 +32,7 @@ final class PackageContributionsTest extends TestCase
             'demo.cleanup',
             'pkg.demo.scheduler.cleanup.label',
             'pkg.demo.scheduler.cleanup.description',
-            'studio:demo:cleanup',
+            'demo:cleanup',
             '*/15 * * * *',
             'demo',
         );

@@ -24,7 +24,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
 use Throwable;
 
 #[AsCommand(
-    name: 'studio:assets:rebuild',
+    name: 'assets:rebuild',
     description: 'Run the full application asset rebuild pipeline.',
 )]
 final class AssetRebuildCommand extends Command

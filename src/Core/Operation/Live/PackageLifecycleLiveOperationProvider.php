@@ -55,7 +55,7 @@ final readonly class PackageLifecycleLiveOperationProvider implements LiveOperat
 
         if (!$resolution->isAvailable()) {
             return WorkflowResult::failed([
-                PhpCliUnavailableAction::message('studio:packages:lifecycle', $resolution->reason(), [
+                PhpCliUnavailableAction::message('packages:lifecycle', $resolution->reason(), [
                     'operation' => $this->operation(),
                     'package' => trim($packageName),
                     'action' => trim($action),
@@ -75,7 +75,7 @@ final readonly class PackageLifecycleLiveOperationProvider implements LiveOperat
             new RunCommandAction([
                 ...$resolution->commandPrefix(),
                 $this->kernel->getProjectDir().'/bin/console',
-                'studio:packages:lifecycle',
+                'packages:lifecycle',
                 trim($packageName),
                 trim($action),
                 '--env='.$environment,

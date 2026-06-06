@@ -94,7 +94,7 @@ return [
         'demo-module.cleanup',
         'pkg.demo_module.scheduler.cleanup.label',
         'pkg.demo_module.scheduler.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         '*/20 * * * *',
         'demo-module',
         false,

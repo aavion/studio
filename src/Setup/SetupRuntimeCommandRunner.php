@@ -97,7 +97,7 @@ final readonly class SetupRuntimeCommandRunner
         $command = [
             ...$this->phpCliCommandPrefix($projectDir, $input, $environment, true),
             $projectDir.'/bin/console',
-            'studio:packages:discover',
+            'packages:discover',
             '--run-now',
             '--trigger=setup',
             '--env='.$input->appEnv(),
@@ -127,7 +127,7 @@ final readonly class SetupRuntimeCommandRunner
         $command = [
             ...$this->phpCliCommandPrefix($projectDir, $input, $phpResolutionEnvironment, true),
             $projectDir.'/bin/console',
-            'studio:assets:rebuild',
+            'assets:rebuild',
             '--trigger=setup',
             '--env='.$input->appEnv(),
             '--json',

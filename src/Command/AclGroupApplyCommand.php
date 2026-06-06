@@ -15,7 +15,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
-    name: 'studio:acl-groups:apply',
+    name: 'acl-groups:apply',
     description: 'Apply a reviewed ACL group update or delete operation.',
 )]
 final class AclGroupApplyCommand extends Command

@@ -13,7 +13,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
-    name: 'studio:packages:lifecycle',
+    name: 'packages:lifecycle',
     description: 'Apply a package lifecycle action.',
 )]
 final class PackageLifecycleCommand extends Command
