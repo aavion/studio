@@ -30,6 +30,10 @@ final class PackageMessageCode
     public const PACKAGE_ASSET_SYNC_FAILED = 'package.asset_sync_failed';
     public const PACKAGE_ASSET_REBUILD_QUEUED = 'package.asset_rebuild_queued';
     public const PACKAGE_ASSET_REBUILD_QUEUE_FAILED = 'package.asset_rebuild_queue_failed';
+    public const PACKAGE_ASSET_CONTRIBUTION_PACKAGE_INVALID = 'package.asset.contribution_package_invalid';
+    public const PACKAGE_ASSET_CONTRIBUTION_TYPE_INVALID = 'package.asset.contribution_type_invalid';
+    public const PACKAGE_ASSET_CONTRIBUTION_PATH_INVALID = 'package.asset.contribution_path_invalid';
+    public const PACKAGE_ASSET_CONTRIBUTION_PATH_TRAVERSAL = 'package.asset.contribution_path_traversal';
     public const PACKAGE_DISCOVERY_QUEUED = 'package.discovery_queued';
     public const PACKAGE_DISCOVERY_QUEUE_FAILED = 'package.discovery_queue_failed';
     public const PACKAGE_DISCOVERY_COMPLETED = 'package.discovery_completed';

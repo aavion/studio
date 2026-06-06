@@ -36,6 +36,11 @@ message:
     asset_sync_failed: 'Package asset sync failed: %message%'
     asset_rebuild_queued: 'Package asset rebuild was queued by "%trigger%".'
     asset_rebuild_queue_failed: 'Package asset rebuild could not be queued by "%trigger%".'
+    asset:
+      contribution_package_invalid: 'Package asset contribution requires a package identifier.'
+      contribution_type_invalid: 'Package asset contribution type "%type%" is not supported.'
+      contribution_path_invalid: 'Package asset path "%path%" must be project-relative.'
+      contribution_path_traversal: 'Package asset path "%path%" must not traverse parent directories.'
     discovery_queued: 'Package discovery was queued by "%trigger%".'
     discovery_queue_failed: 'Package discovery could not be queued by "%trigger%".'
     discovery_completed: 'Package discovery found %count% candidate(s).'

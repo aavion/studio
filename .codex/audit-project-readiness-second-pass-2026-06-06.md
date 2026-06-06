@@ -97,7 +97,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap and S2-009 hardens profile language persistence. Setup/backend leftovers still need review. |
 | Core primitives | `src/Core/Access`, `ActionLog`, `Config`, `Diff`, `DryRun`, `Message`, `Workflow` | Pending | Re-check config default fallbacks, message catalogues, hard throws, and public naming. |
 | Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | In progress | Process environment, detached process boundaries, filesystem actions, and live-operation start failure handling reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics. Messenger still needs final sweep. |
-| Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, PHP capability policy, and runtime contribution registry reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, S2-007 records the remaining lifecycle transaction boundary, and S2-010 converts package runtime contribution failures to Message-layer diagnostics. |
+| Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, PHP capability policy, runtime contribution registry, and asset registry contributions reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, S2-007 records the remaining lifecycle transaction boundary, S2-010 converts package runtime contribution failures to Message-layer diagnostics, and S2-026 converts asset contribution invariants to Package Message keys. |
 | Core observability | `src/Core/Log`, `Statistics`, `Diagnostics` | In progress | Visitor/request ID, access metadata sanitization, statistics recorder/aggregator/store reviewed. S2-016 hardens snapshot temp-file writes. S2-025 renames internal log channels/files to `system_*`; public CSS/UI names remain product-facing. Diagnostics/debug naming still needs review. |
 | Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | In progress | Event hook registry reviewed; S2-011 prevents silent public hook descriptor overrides. Translation/runtime paths, catalogue collision handling, lint, manifest, and Message invariants reviewed. S2-019 renames an internal lint temp prefix to `system-*`. Remaining pass: package catalogue conflict docs/tests and broader generated catalogue checks. |
 | Database | `src/Database` | Reviewed | Table-prefix coverage, raw DBAL wrapper prefixing, Doctrine metadata prefixing, and migration portability reviewed. `studio_` remains a user-facing/product example prefix, while internal DBAL wrapper params use `system_*`. |
@@ -383,6 +383,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Renamed Monolog channels/files to `system_message`, `system_audit`, and `system_access`; updated the manual setup-script logger, service tag names to `system.event_hook_provider` and `system.backend_view_provider`; changed the setup wizard session key to `_system_setup_wizard`; updated log source patterns, docs, and tests.
 - **Priority:** Now / Final naming gate.
 
+### S2-026 Package asset contribution invariants used literal exceptions
+
+- **Area:** Package asset registry contributions and package extension boundary.
+- **Finding:** `PackageAssetContribution` rejected empty package identifiers, unsupported contribution types, non-relative paths, and traversal paths with literal `InvalidArgumentException` messages.
+- **Evidence:** `src/Core/Package/PackageAssetContribution.php:23`, `src/Core/Package/PackageAssetContribution.php:27`, `src/Core/Package/PackageAssetContribution.php:76`, `src/Core/Package/PackageAssetContribution.php:81`.
+- **Impact:** These invariants are appropriate, but asset contributions are a documented package extension surface. Package author faults and loader diagnostics should carry stable Package Message keys rather than free text.
+- **Recommendation:** Preserve the `InvalidArgumentException` contract through `MessageException` and add package-owned Message codes/keys for each asset-contribution invariant.
+- **Fix applied:** Added package asset contribution Message codes/keys, converted the DTO to `MessageException`, updated translations and operation issue docs, and added focused regression coverage.
+- **Priority:** Now / Package extension diagnostics.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -418,6 +428,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Markdown embed accessibility copy reviewed. S2-023 moves the iframe title to `ui.markdown.embed.video_title` and keeps standalone rendering key-based.
 - Template namespace resolution reviewed. S2-024 keeps the invariant hard but exposes unsupported namespace failures through View Message keys.
 - Internal logging/service naming reviewed. S2-025 moves Monolog channel/file names, event/backend view tags, and setup wizard session storage to `system` naming while classifying `studio_*` Twig helpers and CSS classes as public product/theme API.
+- Package asset contribution invariants reviewed. S2-026 moves package author-facing asset contribution failures to Package Message keys.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -443,3 +454,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Moved Markdown embed iframe title copy from PHP literal to translated UI keys.
 - Converted unsupported template namespace failures from literal exceptions to View Message keys.
 - Renamed internal log channels/files, service tags, and setup wizard session key from `studio` to `system` naming.
+- Converted package asset contribution invariant failures from literal exceptions to Package Message keys.

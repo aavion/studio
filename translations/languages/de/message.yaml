@@ -36,6 +36,11 @@ message:
     asset_sync_failed: 'Paket-Asset-Sync fehlgeschlagen: %message%'
     asset_rebuild_queued: 'Paket-Asset-Rebuild wurde durch "%trigger%" eingereiht.'
     asset_rebuild_queue_failed: 'Paket-Asset-Rebuild konnte durch "%trigger%" nicht eingereiht werden.'
+    asset:
+      contribution_package_invalid: 'Paket-Asset-Contribution benötigt einen Paket-Identifier.'
+      contribution_type_invalid: 'Paket-Asset-Contribution-Typ "%type%" wird nicht unterstützt.'
+      contribution_path_invalid: 'Paket-Asset-Pfad "%path%" muss projektrelativ sein.'
+      contribution_path_traversal: 'Paket-Asset-Pfad "%path%" darf keine übergeordneten Verzeichnisse durchlaufen.'
     discovery_queued: 'Paket-Discovery wurde durch "%trigger%" eingereiht.'
     discovery_queue_failed: 'Paket-Discovery konnte durch "%trigger%" nicht eingereiht werden.'
     discovery_completed: 'Paket-Discovery hat %count% Kandidat(en) gefunden.'
