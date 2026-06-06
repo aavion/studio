@@ -99,7 +99,7 @@ final readonly class SystemInfoProvider
         return [
             ['label_key' => 'admin.system_info.php_info.loaded_ini', 'value' => php_ini_loaded_file() ?: 'none'],
             ['label_key' => 'admin.system_info.php_info.scanned_ini', 'value' => php_ini_scanned_files() ?: 'none'],
-            ['label_key' => 'admin.system_info.php_info.extensions', 'value' => implode(', ', get_loaded_extensions())],
+            ['label_key' => 'admin.system_info.php_info.extensions', 'value' => implode(', ', $this->loadedExtensions())],
             ['label_key' => 'admin.system_info.php_info.disabled_functions', 'value' => $this->iniValue('disable_functions', 'none')],
             ['label_key' => 'admin.system_info.php_info.temp_dir', 'value' => sys_get_temp_dir()],
         ];
@@ -147,6 +147,17 @@ final readonly class SystemInfoProvider
         $version = \Imagick::getVersion()['versionString'] ?? null;
 
         return is_string($version) && '' !== trim($version) ? trim($version) : (phpversion('imagick') ?: null);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function loadedExtensions(): array
+    {
+        $extensions = get_loaded_extensions();
+        natcasesort($extensions);
+
+        return array_values($extensions);
     }
 
     private function iniValue(string $key, string $emptyValue = 'unknown'): string

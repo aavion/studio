@@ -62,6 +62,6 @@ final readonly class FileAccessStatisticsStore implements AccessStatisticsStoreI
 
     private function path(): string
     {
-        return rtrim($this->statisticsDir, '/').'/'.$this->environment.'/access/latest.json';
+        return rtrim($this->statisticsDir, '/\\').'/'.$this->environment.'/access/latest.json';
     }
 }

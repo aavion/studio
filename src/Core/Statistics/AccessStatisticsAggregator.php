@@ -260,16 +260,6 @@ final readonly class AccessStatisticsAggregator
         return is_string($value) && '' !== trim($value) ? $value : $fallback;
     }
 
-    /**
-     * @param array<string, mixed> $row
-     */
-    private function boolValue(array $row, string $key): bool
-    {
-        $value = $row[$key] ?? false;
-
-        return true === $value || 1 === $value || '1' === $value || 'true' === $value;
-    }
-
     private function statusFamily(int $status): string
     {
         return match (intdiv(max(0, $status), 100)) {
