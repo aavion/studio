@@ -590,6 +590,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Form/FormFieldDefinition.php:9`, `src/Form/FormInputType.php:9`, `src/Form/FormBuilder.php:16`, `src/Form/FormBuilder.php:58`, `src/Form/FormSubmissionHandler.php:15`, `src/Form/FormSubmissionHandler.php:75`, `src/Form/FormSubmissionHandler.php:171`.
 - **Impact:** This is reasonable for package/core setting forms because definitions are renderer-neutral and package-provided, but it can become a parallel form framework if reused for user-facing workflows. Hard-coded `admin.settings.form.errors.*` keys also make the layer less neutral than its namespace suggests.
 - **Recommendation:** Document the form layer as a generated settings/config form primitive only, or adapt definitions to Symfony Form/Validator constraints before expanding it to public forms. Rename/generalize error keys if packages or non-admin UIs depend on them.
+- **Implementation note:** Split submission into a small facade plus `FormValueCaster`, `FormFieldValidator`, and centralized `FormErrorKey` constants. The current translation keys remain stable for existing admin/settings templates, but casting, option checks, validation checks, and error-key ownership now have separate review surfaces before any broader Symfony Form/Validator alignment.
 - **Priority:** Before Admin expansion / First-party modules.
 
 ### F-033 SchedulerRunner mixes orchestration, persistence, policy, and reporting

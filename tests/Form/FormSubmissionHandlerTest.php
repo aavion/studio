@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Form;
 
 use App\Core\Config\ConfigValueType;
+use App\Form\FormErrorKey;
 use App\Form\FormFieldDefinition;
 use App\Form\FormInputType;
 use App\Form\FormSubmissionHandler;
@@ -48,10 +49,10 @@ final class FormSubmissionHandlerTest extends TestCase
         ]);
 
         self::assertFalse($result->isValid());
-        self::assertSame(['admin.settings.form.errors.required'], $result->errors()['title']);
-        self::assertSame(['admin.settings.form.errors.pattern'], $result->errors()['home']);
-        self::assertSame(['admin.settings.form.errors.choice'], $result->errors()['mode']);
-        self::assertSame(['admin.settings.form.errors.integer'], $result->errors()['sort_order']);
+        self::assertSame([FormErrorKey::REQUIRED], $result->errors()['title']);
+        self::assertSame([FormErrorKey::PATTERN], $result->errors()['home']);
+        self::assertSame([FormErrorKey::CHOICE], $result->errors()['mode']);
+        self::assertSame([FormErrorKey::INTEGER], $result->errors()['sort_order']);
     }
 
     public function testItTreatsMissingMultiSelectValuesAsAnEmptySelection(): void

@@ -80,6 +80,7 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-06
+- Split generated form submission into separate value casting, field validation, and centralized error-key services while keeping the existing settings-form API and translation keys stable.
 - Centralized stored ACL group identifier normalization in the existing `AccessRule` value object and aligned content item, schema version, and menu item ACL setters to the shared rule path.
 - Split `ContentItem` into a small Doctrine aggregate facade plus focused routing, localization, access-rule, metadata, and revision-state traits with shared input validation, preserving existing columns and public behavior.
 - Split live-operation run handling into focused creator, storage, progress writer, presenter, lifecycle/cleanup, runner supervisor, and process-inspection services while keeping `LiveOperationRunStore` as the compatibility facade under the context-size target.

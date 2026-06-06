@@ -8,6 +8,7 @@ use App\Core\Config\Config;
 use App\Core\Access\AccessLevel;
 use App\Core\Validation\EmailAddress;
 use App\Entity\AclGroup;
+use App\Form\FormErrorKey;
 use App\Form\FormFieldDefinition;
 use App\Form\FormSubmissionHandler;
 use App\Form\FormSubmissionResult;
@@ -50,7 +51,7 @@ final readonly class CoreSettingsFormHandler
 
             if (!$this->config->set($definition->key(), $result->value($definition->key()), $definition->valueType(), modifiedBy: $modifiedBy)) {
                 return new FormSubmissionResult($result->values(), [
-                    '__form' => ['admin.settings.form.errors.save_failed'],
+                    '__form' => [FormErrorKey::SAVE_FAILED],
                 ]);
             }
         }
@@ -67,7 +68,7 @@ final readonly class CoreSettingsFormHandler
         foreach ([UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY] as $key) {
             if (!$this->isValidOptionalEmail($result->value($key))) {
                 return new FormSubmissionResult($result->values(), [
-                    $key => ['admin.settings.form.errors.email_invalid'],
+                    $key => [FormErrorKey::EMAIL_INVALID],
                 ]);
             }
         }
@@ -80,7 +81,7 @@ final readonly class CoreSettingsFormHandler
 
         if (!is_string($identifier)) {
             return new FormSubmissionResult($result->values(), [
-                UserFlowConfig::DEFAULT_ACL_GROUP_KEY => ['admin.settings.form.errors.default_acl_group_unavailable'],
+                UserFlowConfig::DEFAULT_ACL_GROUP_KEY => [FormErrorKey::DEFAULT_ACL_GROUP_UNAVAILABLE],
             ]);
         }
 
@@ -94,7 +95,7 @@ final readonly class CoreSettingsFormHandler
 
         if (!$group instanceof AclGroup || $group->minRole() > AccessLevel::USER) {
             return new FormSubmissionResult($result->values(), [
-                UserFlowConfig::DEFAULT_ACL_GROUP_KEY => ['admin.settings.form.errors.default_acl_group_unavailable'],
+                UserFlowConfig::DEFAULT_ACL_GROUP_KEY => [FormErrorKey::DEFAULT_ACL_GROUP_UNAVAILABLE],
             ]);
         }
 

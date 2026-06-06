@@ -27,6 +27,7 @@ use App\Core\Package\Settings\PackageSettingsFormHandler;
 use App\Core\Statistics\AccessStatisticsSnapshotProvider;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\UserAccount;
+use App\Form\FormErrorKey;
 use App\Form\FormSubmissionResult;
 use App\Navigation\NavigationBuilder;
 use App\View\Http\HttpErrorRenderer;
@@ -741,7 +742,7 @@ final class BackendController extends AbstractController
     private function invalidCsrfResult(Request $request): FormSubmissionResult
     {
         return new FormSubmissionResult($request->request->all(), [
-            '__form' => ['admin.settings.form.errors.invalid_csrf'],
+            '__form' => [FormErrorKey::INVALID_CSRF],
         ]);
     }
 
