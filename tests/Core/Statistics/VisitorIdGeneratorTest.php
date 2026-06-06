@@ -30,6 +30,8 @@ final class VisitorIdGeneratorTest extends TestCase
         self::assertSame(VisitorIdGenerator::COOKIE_NAME, $cookie->getName());
         self::assertTrue($cookie->isHttpOnly());
         self::assertSame('lax', strtolower((string) $cookie->getSameSite()));
+        self::assertGreaterThanOrEqual(time() + 2_591_990, $cookie->getExpiresTime());
+        self::assertLessThanOrEqual(time() + 2_592_010, $cookie->getExpiresTime());
 
         $nextRequest = Request::create('/docs', server: [
             'REMOTE_ADDR' => '198.51.100.50',

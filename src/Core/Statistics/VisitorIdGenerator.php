@@ -15,7 +15,7 @@ final readonly class VisitorIdGenerator
     private const ATTRIBUTE_ID = '_system_visitor_id';
     private const PLACEHOLDER = 'n/a';
     private const COOKIE_VERSION = 'v1';
-    private const COOKIE_LIFETIME_SECONDS = 31_536_000;
+    private const COOKIE_LIFETIME_SECONDS = 2_592_000;
     private const VISITOR_ID_BYTES = 16;
 
     public function __construct(private string $secret)
