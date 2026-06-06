@@ -94,7 +94,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Backend | `src/Backend` | Pending | Re-check read-model split, package detail provider size, dynamic context naming, and hard exceptions. |
 | Command | `src/Command` | Pending | Re-check command names, output renderer usage, subprocess boundaries, and `studio:` command branding decision. |
 | Content | `src/Content` | Pending | Re-check content aggregate split, language handling, route/error behavior, and future API read-model boundaries. |
-| Controller | `src/Controller` | In progress | Account registration/invitation flows reviewed first; S2-003 records the remaining controller-as-adapter gap. Setup/backend leftovers still need review. |
+| Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap and S2-009 hardens profile language persistence. Setup/backend leftovers still need review. |
 | Core primitives | `src/Core/Access`, `ActionLog`, `Config`, `Diff`, `DryRun`, `Message`, `Workflow` | Pending | Re-check config default fallbacks, message catalogues, hard throws, and public naming. |
 | Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | Pending | Re-check central process policy, filesystem/symlink handling, Windows edges, and operation message usage. |
 | Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, and PHP capability policy reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, and S2-007 records the remaining lifecycle transaction boundary. |
@@ -213,6 +213,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** None in this slice; documented as a Security follow-up and review note.
 - **Priority:** Security feature branch / Before release.
 
+### S2-009 Profile language accepts unsupported crafted POST values
+
+- **Area:** User profile settings and dynamic language handling.
+- **Finding:** The profile form renders dynamic language options, but the controller persisted any submitted `language` value. The locale resolver later falls back safely, but unsupported settings should not be stored at all.
+- **Evidence:** `src/Controller/UserController.php:132`, `templates/frontend/user/profile.html.twig:57`, `tests/Controller/UserProfileControllerTest.php:109`.
+- **Impact:** A crafted request could store stale or unsupported locale tokens in a user profile. This does not break rendering because `LocalePreferenceResolver` validates before use, but it creates avoidable configuration drift and undermines dynamic language guarantees.
+- **Recommendation:** Accept only `default` or a currently available locale from `LocalePreferenceResolver::availableLocales()` and return a translated profile validation error otherwise.
+- **Fix applied:** Added controller validation, `ui.user.profile.errors.language_invalid` translations, runtime catalogue entries, and a crafted POST regression test.
+- **Priority:** Now / Review readiness.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -223,6 +233,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Hardcoded language scan reviewed. Remaining `en`/`de` references are currently package translation fallback policy, content seed variants, test fixtures, or code-editor language identifiers except for S2-005.
 - Package policy bypass scan reviewed. Direct file/process/env/network calls, include/require/eval, reserved package paths, source namespaces, translation namespaces, symlink zip entries, scheduler cron literals, and source paths are validated; S2-006 closes the dynamic callable gap.
 - Session visitor binding reviewed. Hard binding works for missing/different visitor cookies, but complete cookie-pair duplication remains a deferred risk-scoring problem rather than a safe hard-termination signal today.
+- User profile language persistence reviewed. S2-009 now validates posted profile language values against the dynamic locale list instead of relying on later resolver fallback.
 
 ## Fixes Applied
 
@@ -230,3 +241,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Converted setup input validation and setup-step failure boundaries from free-text hard exceptions to domain-owned Message-layer keys while keeping hard invariant behavior.
 - Removed the hardcoded root-template English fallback by surfacing the resolved default locale through the view context.
 - Hardened installable package PHP validation against dynamic callable and reflection bypasses.
+- Rejected unsupported crafted profile language submissions before they reach account settings.

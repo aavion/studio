@@ -111,6 +111,33 @@ final class UserProfileControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Profil');
     }
 
+    public function testProfileLanguageRejectsUnsupportedSubmittedLocale(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'invalidlanguageprofile', 'profile-password');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $user->updateSettings([]);
+        $entityManager->flush();
+
+        $this->loginTestUser($client, $user);
+        $crawler = $client->request('GET', '/user/profile');
+        $client->request('POST', '/user/profile', [
+            '_csrf_token' => (string) $crawler->filter('input[name="_csrf_token"]')->attr('value'),
+            'email' => $user->email(),
+            'display_name' => 'Invalid Language Profile',
+            'language' => 'fr',
+        ]);
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Choose one of the available languages.', (string) $client->getResponse()->getContent());
+
+        $entityManager->clear();
+        $unchangedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+        self::assertInstanceOf(UserAccount::class, $unchangedUser);
+        self::assertArrayNotHasKey('language', $unchangedUser->settings());
+    }
+
     public function testProfileUsernameCanBeChangedWhenSettingIsEnabled(): void
     {
         $client = self::createClient();

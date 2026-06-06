@@ -132,12 +132,20 @@ final class UserController extends AbstractController
             }
 
             if ([] === $errors) {
+                $language = $this->stringField($request, 'language') ?: 'default';
+
+                if ('default' !== $language && !in_array($language, $this->localePreferences->availableLocales(), true)) {
+                    $errors[] = 'ui.user.profile.errors.language_invalid';
+                }
+            }
+
+            if ([] === $errors) {
                 $user->updateProfile([
                     'display_name' => $this->stringField($request, 'display_name'),
                 ]);
                 $user->updateSettings([
                     ...$user->settings(),
-                    'language' => $this->stringField($request, 'language') ?: 'default',
+                    'language' => $language,
                 ]);
                 try {
                     $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::MODIFIED, $user->username(), 'profile');

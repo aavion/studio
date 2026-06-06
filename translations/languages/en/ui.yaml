@@ -98,6 +98,7 @@ ui:
         invalid_csrf: 'The profile form expired. Please try again.'
         email_invalid: 'Choose a valid email address.'
         email_in_use: 'This email address is already used.'
+        language_invalid: 'Choose one of the available languages.'
         username_invalid: 'Choose a username that starts with a letter and contains 5 to 30 letters, digits, hyphens, or underscores.'
         username_in_use: 'This username is already used.'
     roles:
