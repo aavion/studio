@@ -47,6 +47,9 @@ services:
         App\Scheduler\SchedulerCallableProviderInterface:
             tags:
                 - { name: 'studio.scheduler_callable_provider', priority: 0 }
+        App\Security\AclGroupReferenceProviderInterface:
+            tags:
+                - { name: 'system.acl_group_reference_provider', priority: 0 }
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -158,6 +161,10 @@ services:
     App\Scheduler\CallableSchedulerTaskExecutor:
         arguments:
             $providers: !tagged_iterator { tag: studio.scheduler_callable_provider }
+
+    App\Security\AclGroupImpactService:
+        arguments:
+            $providers: !tagged_iterator { tag: system.acl_group_reference_provider }
 
     App\Localization\TranslationLanguageCatalog:
         arguments:
