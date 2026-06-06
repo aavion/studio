@@ -95,7 +95,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Command | `src/Command` | Reviewed | Commands are small and use `studio:` as intentional product CLI branding. Process-heavy work delegates into services; no immediate command naming drift found. |
 | Content | `src/Content` | In progress | Content read resolution, routing language behavior, and content field locale tokens reviewed. S2-015 hardens regional locale fallback and persisted field locale compatibility. Aggregate/API read-model boundaries still need review. |
 | Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap, S2-009 hardens profile language persistence, and S2-028 centralizes repeated token/password helper logic. Setup/backend leftovers still need review. |
-| Core primitives | `src/Core/Access`, `ActionLog`, `Config`, `Diff`, `DryRun`, `Message`, `Workflow` | Pending | Re-check config default fallbacks, message catalogues, hard throws, and public naming. |
+| Core primitives | `src/Core/Access`, `ActionLog`, `Config`, `Diff`, `DryRun`, `Message`, `Workflow` | Reviewed | Config seed/default fallback, domain-owned Message code/key aggregation, access rules, ActionLog, Diff, DryRun, Message, and Workflow value-object invariants reviewed. Hard exceptions in this slice are deliberate low-level invariant guards, while recoverable runtime config failures already report through the Message layer. |
 | Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | In progress | Process environment, detached process boundaries, filesystem actions, and live-operation start failure handling reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics. Messenger still needs final sweep. |
 | Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, PHP capability policy, runtime contribution registry, and asset registry contributions reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, S2-007 records the remaining lifecycle transaction boundary, S2-010 converts package runtime contribution failures to Message-layer diagnostics, and S2-026 converts asset contribution invariants to Package Message keys. |
 | Core observability | `src/Core/Log`, `Statistics`, `Diagnostics` | In progress | Visitor/request ID, access metadata sanitization, statistics recorder/aggregator/store reviewed. S2-016 hardens snapshot temp-file writes. S2-025 renames internal log channels/files to `system_*`; public CSS/UI names remain product-facing. Diagnostics/debug naming still needs review. |
@@ -413,6 +413,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added `AccountTokenLookup` for pending, non-expired token resolution, added `PasswordPolicyErrorMapper` for stable user-facing password error keys, rewired the account controllers to use both helpers, added focused mapper coverage, and updated the class map.
 - **Priority:** Now / Security readiness.
 
+### S2-029 Core primitive hard exceptions and config defaults are deliberate
+
+- **Area:** Core access, ActionLog, Config, Diff, DryRun, Message, and Workflow primitives.
+- **Finding:** This slice still contains literal `InvalidArgumentException` messages in value objects and immutable result models. Unlike recoverable controller/setup/package boundaries, these classes enforce low-level programming invariants such as non-empty labels, typed entries, valid message codes/keys, terminal statuses, and review prompts.
+- **Evidence:** `src/Core/ActionLog`, `src/Core/Diff`, `src/Core/DryRun`, `src/Core/Message`, `src/Core/Workflow`, `src/Core/Config/Config.php`, `src/Core/Config/Settings/CoreConfigDefaultProvider.php`, `tests/Core/Message/MessageCodeTest.php`, `tests/Core/Message/MessageKeyTest.php`, `tests/Core/Config/ConfigTest.php`.
+- **Impact:** No user-facing behavior gap was found. Config read/write/storage failures report through the Message layer and fall back to registered defaults when possible. Message code/key tests enforce domain catalogue scope and translation synchronization.
+- **Recommendation:** Keep these hard exceptions as deliberate primitive invariants. Continue moving recoverable runtime boundaries to `Message`/`WorkflowResult`, but do not wrap every immutable DTO assertion in translated diagnostics.
+- **Fix applied:** None needed; audit decision recorded.
+- **Priority:** Reviewed / No immediate change.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -451,6 +461,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Package asset contribution invariants reviewed. S2-026 moves package author-facing asset contribution failures to Package Message keys.
 - Package admin detail read model reviewed. S2-027 splits file IO, URL sanitization, and dependency label parsing out of the oversized provider.
 - Account token/password flows reviewed. S2-028 centralizes pending-token lookup and password-policy UI error mapping outside controllers while leaving the larger account-flow service extraction tracked by S2-003.
+- Core primitive foundations reviewed. S2-029 records that hard exceptions in ActionLog/Diff/DryRun/Message/Workflow are deliberate low-level invariants, while Config runtime failures already use Message diagnostics and central defaults.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
