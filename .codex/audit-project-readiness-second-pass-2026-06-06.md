@@ -94,7 +94,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Backend | `src/Backend` | In progress | Admin settings/system-info path and backend view context reviewed. System-info uses a reduced admin-only report, not raw `phpinfo()` or `$_SERVER`; S2-021 renames internal backend form request attributes to `system`. S2-027 splits package detail file/link/dependency helpers out of the package detail read-model assembler. Remaining pass: backend route/action naming and controller adapters. |
 | Command | `src/Command` | Reviewed | Commands are small and use `studio:` as intentional product CLI branding. Process-heavy work delegates into services; no immediate command naming drift found. |
 | Content | `src/Content` | Reviewed | Content read resolution, routing language behavior, content field locale tokens, public custom-Twig rendering, redirects, schema primitives, and content event payloads reviewed. S2-015 hardens regional locale fallback and persisted field locale compatibility; S2-037 reports custom-Twig render failures through the Message layer before falling back. |
-| Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap, S2-009 hardens profile language persistence, S2-028 centralizes repeated token/password helper logic, S2-042 moves admin invitation/token actions behind Security services, and S2-043 extracts account-link acceptance mutations. Setup/backend leftovers still need review. |
+| Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap, S2-009 hardens profile language persistence, S2-028 centralizes repeated token/password helper logic, S2-042 moves admin invitation/token actions behind Security services, S2-043 extracts account-link acceptance mutations, and S2-044 moves admin account update/password-reset mutations into Security services. Setup/backend leftovers still need review. |
 | Core primitives | `src/Core/Access`, `ActionLog`, `Config`, `Diff`, `DryRun`, `Message`, `Workflow` | Reviewed | Config seed/default fallback, domain-owned Message code/key aggregation, access rules, ActionLog, Diff, DryRun, Message, and Workflow value-object invariants reviewed. Hard exceptions in this slice are deliberate low-level invariant guards, while recoverable runtime config failures already report through the Message layer. |
 | Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | Reviewed | Process environment, detached process boundaries, filesystem actions, Messenger drain, live-operation start/storage/runner boundaries, PHP CLI resolver/preference validation, and file inventory scanning reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics, S2-030 normalizes live-operation storage roots, and S2-035 normalizes file-inventory roots. |
 | Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, PHP capability policy, runtime contribution registry, and asset registry contributions reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, S2-007 records the remaining lifecycle transaction boundary, S2-010 converts package runtime contribution failures to Message-layer diagnostics, and S2-026 converts asset contribution invariants to Package Message keys. |
@@ -563,6 +563,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added `AccountLinkAcceptanceService`, moved account creation/reactivation, group replacement, stale-group message logging, state-marker recording, token consumption, password hashing, flush, and audit logging into it, and reduced `UserRegistrationController` from 430 to 254 lines.
 - **Priority:** Now / Security modularity.
 
+### S2-044 Admin user controller still owned account update and reset mutations
+
+- **Area:** Admin user detail routes, account status/role/group updates, deleted-account status changes, admin-triggered password reset, assignable options.
+- **Finding:** After the invitation split, `AdminUserController` still had 422 lines and mixed view rendering with assignable role/group option filtering, user update mutation, deleted-account status repair/notification, password-reset token creation, audit contexts, and state-marker writes.
+- **Evidence:** `src/Controller/AdminUserController.php`, `src/Security/AdminUserAccessPolicy.php`, `src/Security/UserAccountLifecycle.php`, `tests/Controller/AdminUserControllerTest.php`.
+- **Impact:** Admin user routes were still too large and security-sensitive controller code remained hard to reuse for future API/admin workflow surfaces.
+- **Recommendation:** Move reusable assignment option calculation, account update mutation, deleted-account status mutation, and admin password-reset creation behind Security services while keeping access/CSRF/redirect/rendering in the controller.
+- **Fix applied:** Added `AdminUserAssignmentOptions`, `AdminUserAccountUpdateService`, `AdminUserAccountUpdateResult`, and `AdminUserPasswordResetService`; reduced `AdminUserController` from 422 to 279 lines; and verified admin user/review flows with focused controller tests.
+- **Priority:** Now / Security modularity.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -606,6 +616,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Account token/password flows reviewed. S2-028 centralizes pending-token lookup and password-policy UI error mapping outside controllers while leaving the larger account-flow service extraction tracked by S2-003.
 - Admin invitation/token action flows reviewed. S2-042 moves invitation creation, registration approval/rejection, account-token reissue/revoke policy, URL/TTL/flow mapping, delivery, and audit logging out of the controller into Security services.
 - Public account-link acceptance reviewed. S2-043 moves invitation/registration token acceptance mutations, group application, state markers, stale-group diagnostics, and audit logging out of the registration controller.
+- Admin user detail/update flows reviewed. S2-044 moves assignable option filtering, account updates, deleted-account status changes, and admin password-reset creation out of the controller into Security services.
 - Core primitive foundations reviewed. S2-029 records that hard exceptions in ActionLog/Diff/DryRun/Message/Workflow are deliberate low-level invariants, while Config runtime failures already use Message diagnostics and central defaults.
 - Live-operation storage reviewed. S2-030 aligns project-root trimming with the rest of the cross-platform process/file storage code.
 - Access statistic entity boundaries reviewed. S2-031 validates request/visitor trace identifiers as compact technical tokens before new rows are created.
@@ -649,6 +660,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Extracted repeated account token lookup and password-policy error mapping into Security helpers.
 - Extracted admin invitation and pending account-token action workflows into Security services.
 - Extracted public account-link acceptance mutations into a Security service.
+- Extracted admin user assignment options, account updates, deleted-account status changes, and admin password-reset creation into Security services.
 - Removed separate clear-token context logging from the account-link message-log delivery stub and narrowed the delivery contract to generated action URLs.
 - Split CLI setup database input resolution out of the top-level CLI input factory.
 - Split the web setup wizard render target into focused backend setup partials.
