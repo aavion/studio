@@ -26,6 +26,10 @@ message:
     javascript_syntax_error: 'JavaScript-Syntaxprüfung für "%path%" fehlgeschlagen.'
     scope_invalid: 'Paket-Scope "%scope%" wird nicht unterstützt.'
     template_path_invalid: 'Paket-Template "%path%" ist durch Root-, Provider- oder Makro-Namespace-Regeln für Paket-Scope "%scope%" nicht erlaubt.'
+    policy:
+      blocked_path: 'Paketpfad "%path%" wird durch die Paket-Policy blockiert (%reason%).'
+      warned_path: 'Paketpfad "%path%" sollte durch die Paket-Policy geprüft werden (%reason%).'
+      blocked_php_capability: 'Paket-PHP-Datei "%path%" nutzt die blockierte Capability "%capability%" (%reason%). Nutze stattdessen einen dokumentierten Extension-Point.'
     copy_source_missing: 'Paket-Kopierquelle "%path%" fehlt.'
     copy_source_symlink: 'Paket-Kopierquelle "%path%" darf kein Symlink sein.'
     asset_sync_completed: 'Paket-Asset-Sync hat %assets% Asset(s) aus %packages% Paket(en) gespiegelt.'

@@ -41,6 +41,7 @@ final class PackageZipInstallerTest extends KernelTestCase
         'eeeeeeeeeeeeeeeeeeeeeeee',
         'ffffffffffffffffffffffff',
         '777777777777777777777777',
+        '888888888888888888888888',
         '999999999999999999999999',
     ];
 
@@ -277,6 +278,41 @@ final class PackageZipInstallerTest extends KernelTestCase
         self::assertSame(WorkflowStatus::Invalid, $verify->status());
         self::assertSame('package.install.zip_invalid', $verify->firstIssue()?->code());
         self::assertSame('symlink_entry', $verify->firstIssue()?->context()['reason'] ?? null);
+
+        $this->removePath($root);
+    }
+
+    public function testItRejectsPolicyBlockedPackagePaths(): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            self::markTestSkipped('ZipArchive is required for package ZIP installer tests.');
+        }
+
+        $installId = '888888888888888888888888';
+        $slug = 'zip-install-symlink';
+        $root = $this->installRoot($installId);
+        $this->removePath($root);
+        mkdir($root, 0775, true);
+
+        $zip = new ZipArchive();
+        self::assertTrue(true === $zip->open($root.'/upload.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE));
+        $zip->addFromString($slug.'/.manifest', <<<MANIFEST
+            PACKAGE_AUTHOR=Aavion Test
+            PACKAGE_SLUG={$slug}
+            PACKAGE_NAME=ZIP Install Test
+            PACKAGE_DESCRIPTION=Package ZIP installer test fixture.
+            PACKAGE_VERSION=1.0.0
+            PACKAGE_SCOPE=module
+            PACKAGE_DEPENDENCIES=[]
+            MANIFEST);
+        $zip->addFromString($slug.'/public/index.php', '<?php echo "blocked";');
+        $zip->close();
+
+        $verify = $this->installer()->verify(['install_id' => $installId]);
+
+        self::assertSame(WorkflowStatus::Invalid, $verify->status());
+        self::assertSame('package.policy.blocked_path', $verify->firstIssue()?->code());
+        self::assertSame('reserved_project_path', $verify->firstIssue()?->context()['reason']);
 
         $this->removePath($root);
     }

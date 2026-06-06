@@ -476,6 +476,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Package/PackageActivator.php:112`, `src/Core/Package/PackageActivator.php:156`, `src/Core/Package/PackageRemover.php:61`, `src/Core/Package/PackageRegistryHandler.php:31`, `src/Core/Package/PackageFaultResetter.php:34`, `src/Core/Package/Install/PackageZipInstaller.php:255`, `src/Core/Package/PackagePhpLoader.php:181`, `src/Core/Package/PackageRuntimeFailureHandler.php:23`.
 - **Impact:** The behavior is reasonably defensive today, but lifecycle invariants are hard to audit because rollback, dependent deactivation, state snapshots, and rebuild decisions are repeated in several places.
 - **Recommendation:** Introduce a `PackageLifecycleStateMachine` or small transaction service for status transitions, dependent deactivation, rollback snapshots, and asset rebuild triggers. Keep command/controller/admin facades as thin callers.
+- **Implementation note:** First policy foundation added through `PackageFilePolicy` and `PackagePhpCapabilityPolicy`, both enforced by `PackageValidator` for installable package candidates before ZIP apply or activation-facing validation. The file policy blocks unambiguously unsafe payload paths and emits non-blocking policy warnings for development-only payloads; the PHP capability policy blocks direct filesystem, process, network, request-context, and environment access so packages must use documented extension points. A full lifecycle state machine remains open because activation, removal, registry sync, fault reset, and runtime-fault rollback still have separate orchestration.
 - **Priority:** Before First-party modules / Admin expansion.
 
 ### F-021 Package manifest mini-languages increase parser and documentation cost
@@ -485,6 +486,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Package/PackageDependencyParser.php:9`, `src/Core/Package/PackageScope.php:51`, `src/Core/Package/PackageSchedulerCronInspector.php:23`, `src/Core/Package/PackageValidator.php:67`, `src/Core/Package/PackageManifestSpec.php:11`.
 - **Impact:** The format is lightweight and easy to hand-edit, but each new structured package feature will likely add more custom parsing rules. This makes package-author documentation and validation harder than a typed manifest schema.
 - **Recommendation:** Before documenting third-party package APIs, consider moving structured manifest values to YAML/JSON-compatible arrays or a typed manifest DTO while preserving a migration path for current `.manifest` values.
+- **Implementation note:** Manifest shape remains unchanged for this branch. The new package file and PHP capability policies intentionally live in validation rather than `.manifest`, avoiding a broad capability dump while still giving activation/install a central allow/warn/block decision surface.
 - **Priority:** Before API / First-party modules.
 
 ### F-022 Package PHP loaders need an explicit trusted-code policy
@@ -494,6 +496,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Package/PackagePhpLoader.php:46`, `src/Core/Package/PackagePhpLoader.php:65`, `src/Core/Package/PackagePhpLoader.php:111`, `src/Core/Package/PackagePhpLoader.php:171`, `src/Core/Package/PackageRuntimeContributionRegistry.php:23`.
 - **Impact:** This is powerful and probably appropriate for first-party/trusted packages, but it must not be presented as a sandbox. Package code can execute arbitrary PHP inside the application process.
 - **Recommendation:** Document package PHP loaders as trusted-code extension points, separate them from any future untrusted marketplace/import concept, and consider signed/verified package metadata before external distribution.
+- **Implementation note:** Developer documentation now states that package PHP loaders are trusted administrator-installed code, must use documented extension points instead of direct filesystem/process/network/environment access, and that installable packages pass core-owned file and PHP capability policies before activation/install. Signed/verified package metadata remains deferred to the self-update/release workflow.
 - **Priority:** Before First-party modules / Security.
 
 ### F-023 Log browsing combines source discovery, scanning, filtering, and pagination
