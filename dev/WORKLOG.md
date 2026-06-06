@@ -70,6 +70,7 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-06
+- Split the web setup wizard controller into focused setup services for step transitions, protected session-state persistence, default URI inference, and database test execution while keeping setup apply/live-operation dispatch in the controller adapter.
 - Split ACL group impact cleanup into a tagged provider registry so users, account tokens, content items, schema versions, and site menu items own their group-reference impact and cleanup behavior behind the existing admin review/apply flow.
 - Added package file and PHP capability policy foundations to validation so installable packages block clearly unsafe payload paths, block direct filesystem/process/network/environment PHP access, surface non-blocking warnings for development-only payloads, and document the trusted-code/package-structure boundary for package developers.
 - Split package ZIP installation so upload staging, archive extraction, filesystem mutation, payload validation, staged manifest reading, registry/status access, version gating, dependency preflight, rollback, reactivation planning, verification, and apply execution live in focused services behind the existing public installer facade.

@@ -458,6 +458,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Controller/SetupController.php:55`, `src/Controller/SetupController.php:78`, `src/Controller/SetupController.php:168`, `src/Controller/SetupController.php:204`, `src/Controller/SetupController.php:241`, `src/Controller/SetupController.php:311`, `src/Controller/SetupController.php:373`, `src/Controller/SetupController.php:438`.
 - **Impact:** The setup flow has good coverage but remains expensive to modify because control-flow and persistence details are packed into one HTTP action. This also increases risk when setup logic needs reuse from CLI, dry-run, or support tooling.
 - **Recommendation:** Extract a `SetupWizardFlow` or `SetupWizardStateMachine` for step transitions, state persistence, and live/sync apply branching. Keep the controller as a thin adapter around request input and template variables.
+- **Implementation note:** Split web setup wizard behavior into `SetupWizardFlow` for step transitions, reachability, completion reset, and ordinary advancement; `SetupWizardStateStore` for session persistence, default URI inference, and protected setup-secret state; and `SetupWizardDatabaseTester` for the DB test action. `SetupController` now stays below the context target and remains focused on request/response branching, rendering, locale application, and setup apply/live-operation dispatch.
 - **Priority:** Before Release.
 
 ### F-019 Message code/key catalogues are becoming global cross-domain registries
