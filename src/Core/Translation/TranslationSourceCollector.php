@@ -47,7 +47,7 @@ final readonly class TranslationSourceCollector
 
     public function relativeSourcePath(string $path): string
     {
-        $prefix = rtrim($this->projectDir, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+        $prefix = rtrim($this->projectDir, DIRECTORY_SEPARATOR.'/\\').DIRECTORY_SEPARATOR;
 
         return str_starts_with($path, $prefix) ? substr($path, strlen($prefix)) : $path;
     }

@@ -99,7 +99,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | Reviewed | Process environment, detached process boundaries, filesystem actions, Messenger drain, live-operation start/storage/runner boundaries, PHP CLI resolver/preference validation, and file inventory scanning reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics, S2-030 normalizes live-operation storage roots, and S2-035 normalizes file-inventory roots. |
 | Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, PHP capability policy, runtime contribution registry, and asset registry contributions reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, S2-007 records the remaining lifecycle transaction boundary, S2-010 converts package runtime contribution failures to Message-layer diagnostics, and S2-026 converts asset contribution invariants to Package Message keys. |
 | Core observability | `src/Core/Log`, `Statistics`, `Diagnostics` | Reviewed | Visitor/request ID, access metadata sanitization, statistics recorder/aggregator/store, log parsing/filtering/presentation, audit/operation/message logging, and reduced system diagnostics reviewed. S2-016 hardens snapshot temp-file writes, S2-025 renames internal log channels/files to `system_*`, S2-031 validates statistics trace IDs, and S2-034 normalizes statistics-store paths plus deterministic system-info extension output. Public CSS/UI names remain product-facing. |
-| Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | In progress | Event hook registry reviewed; S2-011 prevents silent public hook descriptor overrides. Translation/runtime paths, catalogue collision handling, lint, manifest, and Message invariants reviewed. S2-019 renames an internal lint temp prefix to `system-*`. Remaining pass: package catalogue conflict docs/tests and broader generated catalogue checks. |
+| Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | Reviewed | Event hook registry, translation/runtime paths, package catalogue collision handling, lint temp files, manifest specs/parsing/validation, and low-level lint/manifest value-object invariants reviewed. S2-011 prevents silent public hook descriptor overrides, S2-019 renames an internal lint temp prefix to `system-*`, and S2-036 stabilizes translation source/runtime path ordering and separator handling. |
 | Database | `src/Database` | Reviewed | Table-prefix coverage, raw DBAL wrapper prefixing, Doctrine metadata prefixing, and migration portability reviewed. `studio_` remains a user-facing/product example prefix, while internal DBAL wrapper params use `system_*`. |
 | Debug and Kernel | `src/Debug`, `src/Kernel.php` | Reviewed | Debug collector naming, output safety, and APP_DEBUG gating reviewed. S2-021 renames the internal collector and debug HTML comment to `system`; public Twig helper names remain `studio_*` as theme-facing API. |
 | Entity and Repository | `src/Entity`, `src/Repository` | Reviewed | Entity inventory, UID storage, statistics indexes, content field locale token compatibility, security/account token entities, state markers, config/package settings, site menus, and repository filtering boundaries reviewed. UUIDv7 RFC 4122 strings remain the portable pre-1.0 tradeoff; S2-031 validates statistics trace IDs, S2-032 moves state marker metadata errors to State messages, and S2-033 validates persisted navigation targets. |
@@ -483,6 +483,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added a root normalizer, a trailing-backslash regression test, and renamed the internal test temp prefix from `studio-*` to `system-*`.
 - **Priority:** Now / Platform polish.
 
+### S2-036 Translation support paths needed deterministic separator and ordering polish
+
+- **Area:** Runtime translation aggregation, source hashing, and generated catalogue discovery.
+- **Finding:** Translation source collection and runtime path logic already separated source catalogues from generated Symfony catalogues, but `relativeSourcePath()` trimmed only the current platform separator from `projectDir`, and generated catalogue discovery returned `glob()` output directly. Test temp naming also still used an internal `studio-*` prefix.
+- **Evidence:** `src/Core/Translation/TranslationSourceCollector.php`, `src/Core/Translation/TranslationRuntimePath.php`, `tests/Core/TranslationCatalogueAggregatorTest.php`.
+- **Impact:** Runtime behavior was already correct for normal project paths, but source hashes and generated catalogue lists should be deterministic and cross-platform wherever possible.
+- **Recommendation:** Normalize project-root separator trimming across both common separators, sort generated catalogue paths explicitly, and keep internal temp/test naming under `system`.
+- **Fix applied:** Updated `relativeSourcePath()`, sorted generated catalogue paths, and renamed the translation aggregation test temp prefix to `system-*`.
+- **Priority:** Now / Determinism and naming consistency.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -528,6 +538,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Navigation entity boundaries reviewed. S2-033 centralizes target type names and validates menu targets before persistence.
 - Observability diagnostics reviewed. S2-034 normalizes statistics-store roots, sorts extension diagnostics, and removes an unused aggregator helper.
 - Core operation filesystem inventory reviewed. S2-035 normalizes scanner roots across separators while preserving root paths.
+- Core support translation paths reviewed. S2-036 stabilizes generated catalogue order and mixed-separator project root handling.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -562,3 +573,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Added entity-level validation for persisted site menu item targets.
 - Normalized statistics snapshot storage roots and made system extension diagnostics deterministic.
 - Normalized file-inventory scanner roots across POSIX and Windows separators.
+- Stabilized translation source/runtime path ordering and internal test naming.

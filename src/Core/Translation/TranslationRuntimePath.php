@@ -62,6 +62,9 @@ final readonly class TranslationRuntimePath
      */
     public function generatedCataloguePaths(): array
     {
-        return glob($this->projectDir.'/'.$this->relativeDirectory().'/messages.*.yaml') ?: [];
+        $paths = glob($this->projectDir.'/'.$this->relativeDirectory().'/messages.*.yaml') ?: [];
+        sort($paths);
+
+        return $paths;
     }
 }

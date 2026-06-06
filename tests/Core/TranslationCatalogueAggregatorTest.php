@@ -22,7 +22,7 @@ final class TranslationCatalogueAggregatorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-package-translations');
+        $this->root = $this->createTemporaryDirectory('system-package-translations');
         $this->writeTestFile($this->root, 'translations/languages/en/ui.yaml', "ui:\n  app:\n    name: Studio\n");
         $this->writeTestFile($this->root, 'translations/languages/de/ui.yaml', "ui:\n  app:\n    name: Studio\n");
         $this->writeTestFile($this->root, 'translations/runtime/test/messages.fr.yaml', "stale: true\n");
