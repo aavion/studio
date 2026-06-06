@@ -215,6 +215,10 @@ services:
             $environment: '%kernel.environment%'
             $validationSpec: null
 
+    App\Core\Package\PackageRegistrySyncFinalizer:
+        arguments:
+            $environment: '%kernel.environment%'
+
     App\Database\DatabaseReadyState:
         arguments:
             $projectDir: '%kernel.project_dir%'

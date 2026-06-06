@@ -6,8 +6,6 @@ namespace App\Core\Package;
 
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
-use App\Core\Package\PackageMessageCode;
-use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use App\View\SystemPackageMetadataProvider;
@@ -15,11 +13,15 @@ use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class PackageDependencyResolver
 {
+    private PackageLifecycleStore $store;
+
     public function __construct(
-        private EntityManagerInterface $entityManager,
+        EntityManagerInterface $entityManager,
         private ?SystemPackageMetadataProvider $systemPackageMetadata = null,
-        private PackageDependencyParser $dependencyParser = new PackageDependencyParser(),
+        private PackageDependencyMetadataReader $dependencyReader = new PackageDependencyMetadataReader(),
+        ?PackageLifecycleStore $store = null,
     ) {
+        $this->store = $store ?? new PackageLifecycleStore($entityManager);
     }
 
     /**
@@ -72,10 +74,9 @@ final readonly class PackageDependencyResolver
         $targetPackageName = $package->packageName();
         $dependents = [];
 
-        foreach ($this->entityManager->getRepository(ExtensionPackage::class)->findBy(['status' => ExtensionPackageStatus::Active]) as $candidate) {
+        foreach ($this->store->activePackages() as $candidate) {
             if (
-                !$candidate instanceof ExtensionPackage
-                || isset($excluded[$candidate->packageName()])
+                isset($excluded[$candidate->packageName()])
             ) {
                 continue;
             }
@@ -138,14 +139,14 @@ final readonly class PackageDependencyResolver
         $packages[$package->packageName()] = $package;
         $stack[] = $package->packageName();
 
-        foreach ($this->dependencies($package, $issues) as [$dependencyName, $minVersion]) {
+        foreach ($this->dependencyReader->dependencies($package, $issues) as [$dependencyName, $minVersion]) {
             if ('system' === $dependencyName) {
                 $this->resolveSystemPackage($package, $minVersion, $dependencies, $issues);
 
                 continue;
             }
 
-            $dependency = $this->package($dependencyName);
+            $dependency = $this->store->package($dependencyName);
             $currentVersion = $dependency?->installedVersion() ?? $dependency?->manifestVersion();
             $status = $dependency?->status();
             $dependencies[] = [
@@ -233,15 +234,6 @@ final readonly class PackageDependencyResolver
         }
     }
 
-    private function package(string $packageName): ?ExtensionPackage
-    {
-        $package = $this->entityManager->getRepository(ExtensionPackage::class)->findOneBy([
-            'packageName' => $packageName,
-        ]);
-
-        return $package instanceof ExtensionPackage ? $package : null;
-    }
-
     /**
      * @param array<string, true> $seen
      */
@@ -254,7 +246,7 @@ final readonly class PackageDependencyResolver
         $seen[$package->packageName()] = true;
         $deepest = null;
 
-        foreach ($this->dependencies($package) as [$dependencyName]) {
+        foreach ($this->dependencyReader->dependencies($package) as [$dependencyName]) {
             if ($dependencyName === $targetPackageName) {
                 $deepest = max($deepest ?? 0, 1);
 
@@ -265,7 +257,7 @@ final readonly class PackageDependencyResolver
                 continue;
             }
 
-            $dependency = $this->package($dependencyName);
+            $dependency = $this->store->package($dependencyName);
 
             if (!$dependency instanceof ExtensionPackage) {
                 continue;
@@ -281,33 +273,4 @@ final readonly class PackageDependencyResolver
         return $deepest;
     }
 
-    /**
-     * @return list<array{0: string, 1: string}>
-     */
-    private function dependencies(ExtensionPackage $package, ?array &$issues = null): array
-    {
-        $metadata = $package->metadata();
-        $manifest = $metadata['manifest'] ?? [];
-        $value = is_array($manifest)
-            ? ($manifest['PACKAGE_DEPENDENCIES'] ?? null)
-            : ($metadata['dependencies'] ?? null);
-
-        $dependencies = $this->dependencyParser->parse($value);
-
-        if (null !== $dependencies) {
-            return $dependencies;
-        }
-
-        if (null !== $issues) {
-            $issues[] = Message::create(
-                PackageMessageCode::PACKAGE_DEPENDENCY_INVALID,
-                PackageMessageKey::PACKAGE_DEPENDENCY_INVALID,
-                ['%package%' => $package->packageName()],
-                ['package' => $package->packageName(), 'value' => $value],
-                MessageLevel::Error,
-            );
-        }
-
-        return [];
-    }
 }
