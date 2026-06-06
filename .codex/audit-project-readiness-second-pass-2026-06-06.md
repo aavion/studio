@@ -91,7 +91,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 
 | Domain | Scope | Status | Notes |
 | --- | --- | --- | --- |
-| Backend | `src/Backend` | In progress | Admin settings/system-info path and backend view context reviewed. System-info uses a reduced admin-only report, not raw `phpinfo()` or `$_SERVER`; S2-021 renames internal backend form request attributes to `system`. Package detail provider size/read-model split still needs final assessment. |
+| Backend | `src/Backend` | In progress | Admin settings/system-info path and backend view context reviewed. System-info uses a reduced admin-only report, not raw `phpinfo()` or `$_SERVER`; S2-021 renames internal backend form request attributes to `system`. S2-027 splits package detail file/link/dependency helpers out of the package detail read-model assembler. Remaining pass: backend route/action naming and controller adapters. |
 | Command | `src/Command` | Reviewed | Commands are small and use `studio:` as intentional product CLI branding. Process-heavy work delegates into services; no immediate command naming drift found. |
 | Content | `src/Content` | In progress | Content read resolution, routing language behavior, and content field locale tokens reviewed. S2-015 hardens regional locale fallback and persisted field locale compatibility. Aggregate/API read-model boundaries still need review. |
 | Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap and S2-009 hardens profile language persistence. Setup/backend leftovers still need review. |
@@ -393,6 +393,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added package asset contribution Message codes/keys, converted the DTO to `MessageException`, updated translations and operation issue docs, and added focused regression coverage.
 - **Priority:** Now / Package extension diagnostics.
 
+### S2-027 Package admin detail provider mixed read-model assembly with file/link parsing
+
+- **Area:** Backend package detail read model and admin package diagnostics.
+- **Finding:** `PackageAdminDetailProvider` was still 370 lines and owned package detail assembly, manifest/README/preview file reads, image MIME/data URI handling, external URL sanitization, GitHub source-channel link construction, and dependency label parsing in one class.
+- **Evidence:** `src/Backend/PackageAdminDetailProvider.php`, `templates/backend/admin/packages/detail.html.twig:30`, `tests/Controller/BackendControllerTest.php`.
+- **Impact:** The behavior was not unsafe because paths already passed through `PathGuard`, previews were size/MIME bounded, and URLs were scheme/host checked. The class still violated the modularity goal and made future package-detail changes more context-expensive than needed.
+- **Recommendation:** Keep `PackageAdminDetailProvider` as the view-model assembler and move IO/link/dependency helpers into focused backend services.
+- **Fix applied:** Added `PackageAdminFileReader`, `PackageAdminLinkResolver`, and `PackageDependencyLabelParser`; reduced `PackageAdminDetailProvider` to 175 lines; added focused unit tests for link and dependency parsing; updated the class map.
+- **Priority:** Now / Modularity.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -429,6 +439,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Template namespace resolution reviewed. S2-024 keeps the invariant hard but exposes unsupported namespace failures through View Message keys.
 - Internal logging/service naming reviewed. S2-025 moves Monolog channel/file names, event/backend view tags, and setup wizard session storage to `system` naming while classifying `studio_*` Twig helpers and CSS classes as public product/theme API.
 - Package asset contribution invariants reviewed. S2-026 moves package author-facing asset contribution failures to Package Message keys.
+- Package admin detail read model reviewed. S2-027 splits file IO, URL sanitization, and dependency label parsing out of the oversized provider.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -455,3 +466,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Converted unsupported template namespace failures from literal exceptions to View Message keys.
 - Renamed internal log channels/files, service tags, and setup wizard session key from `studio` to `system` naming.
 - Converted package asset contribution invariant failures from literal exceptions to Package Message keys.
+- Split package admin detail helper responsibilities into focused backend services.

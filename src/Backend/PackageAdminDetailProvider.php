@@ -4,24 +4,19 @@ declare(strict_types=1);
 
 namespace App\Backend;
 
-use App\Core\Filesystem\PathGuard;
-use App\Core\Manifest\Manifest;
-use App\Core\Manifest\ManifestParser;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Entity\ExtensionPackage;
 use App\View\SystemPackageMetadataProvider;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpKernel\KernelInterface;
-use Throwable;
 
 final readonly class PackageAdminDetailProvider
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
         private SystemPackageMetadataProvider $systemPackageMetadata,
-        private KernelInterface $kernel,
-        private ManifestParser $manifestParser = new ManifestParser(),
-        private PathGuard $pathGuard = new PathGuard(),
+        private PackageAdminFileReader $fileReader,
+        private PackageAdminLinkResolver $linkResolver,
+        private PackageDependencyLabelParser $dependencyLabelParser,
     ) {
     }
 
@@ -58,11 +53,11 @@ final readonly class PackageAdminDetailProvider
             'license' => $metadata['license'] ?? null,
             'dependencies' => [],
             'homepage' => $metadata['homepage'] ?? null,
-            'homepage_url' => $this->safeExternalUrl($metadata['homepage'] ?? null),
+            'homepage_url' => $this->linkResolver->safeExternalUrl($metadata['homepage'] ?? null),
             'source' => $metadata['source'] ?? null,
-            'source_url' => $this->sourceUrl($metadata['source'] ?? null, $metadata['channel'] ?? null),
-            'readme' => $this->readReadme('.'),
-            'preview_image' => $this->previewImageDataUri('.', $metadata['image'] ?? null),
+            'source_url' => $this->linkResolver->sourceUrl($metadata['source'] ?? null, $metadata['channel'] ?? null),
+            'readme' => $this->fileReader->readReadme('.'),
+            'preview_image' => $this->fileReader->previewImageDataUri('.', $metadata['image'] ?? null),
             'actions' => [],
         ];
     }
@@ -70,7 +65,7 @@ final readonly class PackageAdminDetailProvider
     private function extensionPackage(ExtensionPackage $package): array
     {
         $metadata = $package->metadata();
-        $manifest = $this->readManifest($package->path());
+        $manifest = $this->fileReader->readManifest($package->path());
         $label = $this->metadataString($metadata, 'display_name') ?? $package->packageName();
         $dependencies = $manifest?->get('PACKAGE_DEPENDENCIES') ?? $this->metadataString($metadata, 'dependencies');
         $source = $this->metadataString($metadata, 'source') ?? $manifest?->get('PACKAGE_SOURCE');
@@ -90,13 +85,13 @@ final readonly class PackageAdminDetailProvider
             'manifest_version' => $package->manifestVersion(),
             'installed_version' => $package->installedVersion(),
             'license' => $this->metadataString($metadata, 'license') ?? $manifest?->get('PACKAGE_LICENSE'),
-            'dependencies' => $this->dependencies($dependencies),
+            'dependencies' => $this->dependencyLabelParser->parse($dependencies),
             'homepage' => $this->metadataString($metadata, 'homepage') ?? $manifest?->get('PACKAGE_HOMEPAGE'),
-            'homepage_url' => $this->safeExternalUrl($this->metadataString($metadata, 'homepage') ?? $manifest?->get('PACKAGE_HOMEPAGE')),
+            'homepage_url' => $this->linkResolver->safeExternalUrl($this->metadataString($metadata, 'homepage') ?? $manifest?->get('PACKAGE_HOMEPAGE')),
             'source' => $source,
-            'source_url' => $this->sourceUrl($source, $channel),
-            'readme' => $this->readReadme($package->path()),
-            'preview_image' => $this->previewImageDataUri($package->path(), $this->metadataString($metadata, 'image') ?? $manifest?->get('PACKAGE_IMAGE')),
+            'source_url' => $this->linkResolver->sourceUrl($source, $channel),
+            'readme' => $this->fileReader->readReadme($package->path()),
+            'preview_image' => $this->fileReader->previewImageDataUri($package->path(), $this->metadataString($metadata, 'image') ?? $manifest?->get('PACKAGE_IMAGE')),
             'actions' => $this->actions($package),
         ];
     }
@@ -177,194 +172,4 @@ final readonly class PackageAdminDetailProvider
         };
     }
 
-    /**
-     * @return list<string>
-     */
-    private function dependencies(?string $raw): array
-    {
-        if (null === $raw || '' === trim($raw) || '[]' === trim($raw)) {
-            return [];
-        }
-
-        try {
-            $decoded = json_decode($raw, true, flags: JSON_THROW_ON_ERROR);
-        } catch (Throwable) {
-            return [$raw];
-        }
-
-        if (!is_array($decoded)) {
-            return [$raw];
-        }
-
-        $dependencies = [];
-
-        foreach ($decoded as $dependency) {
-            if (is_scalar($dependency)) {
-                $dependencies[] = (string) $dependency;
-
-                continue;
-            }
-
-            if (is_array($dependency)) {
-                $dependencies[] = implode(' ', array_filter(array_map(
-                    static fn (mixed $part): ?string => is_scalar($part) ? (string) $part : null,
-                    $dependency,
-                )));
-            }
-        }
-
-        return array_values(array_filter($dependencies, static fn (string $dependency): bool => '' !== trim($dependency)));
-    }
-
-    private function readManifest(string $basePath): ?Manifest
-    {
-        try {
-            $path = $this->absolutePath($basePath, '.manifest');
-        } catch (Throwable) {
-            return null;
-        }
-
-        if (!is_file($path) || !is_readable($path)) {
-            return null;
-        }
-
-        $contents = file_get_contents($path);
-
-        if (!is_string($contents)) {
-            return null;
-        }
-
-        $result = $this->manifestParser->parse($contents);
-        $manifest = $result->value();
-
-        return $manifest instanceof Manifest ? $manifest : null;
-    }
-
-    private function readReadme(string $basePath): ?string
-    {
-        try {
-            $path = $this->absolutePath($basePath, 'README.md');
-        } catch (Throwable) {
-            return null;
-        }
-
-        if (!is_file($path) || !is_readable($path)) {
-            return null;
-        }
-
-        $contents = file_get_contents($path);
-
-        return is_string($contents) && '' !== trim($contents) ? $contents : null;
-    }
-
-    private function previewImageDataUri(string $basePath, ?string $imagePath): ?string
-    {
-        if (null === $imagePath || '' === trim($imagePath)) {
-            return null;
-        }
-
-        try {
-            $path = $this->absolutePath($basePath, $imagePath);
-        } catch (Throwable) {
-            return null;
-        }
-
-        if (!is_file($path) || !is_readable($path)) {
-            return null;
-        }
-
-        $size = filesize($path);
-
-        if (false === $size || $size > 2_000_000) {
-            return null;
-        }
-
-        $contents = file_get_contents($path);
-
-        if (!is_string($contents)) {
-            return null;
-        }
-
-        $mime = $this->imageMimeType($path);
-
-        if (null === $mime) {
-            return null;
-        }
-
-        return 'data:'.$mime.';base64,'.base64_encode($contents);
-    }
-
-    private function sourceUrl(?string $source, ?string $channel): ?string
-    {
-        if (null === $source || '' === trim($source)) {
-            return null;
-        }
-
-        $source = preg_replace('/\.git$/', '', trim($source)) ?? trim($source);
-        $safeSource = $this->safeExternalUrl($source);
-
-        if (null === $safeSource) {
-            return null;
-        }
-
-        if (null === $channel || '' === trim($channel)) {
-            return $safeSource;
-        }
-
-        if (1 === preg_match('#^https://github\.com/[^/\s]+/[^/\s]+$#', $safeSource)) {
-            return rtrim($safeSource, '/').'/tree/'.rawurlencode(trim($channel));
-        }
-
-        return $safeSource;
-    }
-
-    private function safeExternalUrl(?string $url): ?string
-    {
-        if (null === $url || '' === trim($url)) {
-            return null;
-        }
-
-        $url = trim($url);
-
-        if (1 === preg_match('/[\x00-\x1F\x7F]/', $url)) {
-            return null;
-        }
-
-        $parts = parse_url($url);
-
-        if (!is_array($parts)) {
-            return null;
-        }
-
-        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-
-        if (!in_array($scheme, ['http', 'https'], true)) {
-            return null;
-        }
-
-        $host = $parts['host'] ?? null;
-
-        return is_string($host) && '' !== trim($host) ? $url : null;
-    }
-
-    private function absolutePath(string $basePath, string $relativePath): string
-    {
-        $basePath = '.' === $basePath ? '' : trim($basePath, '/');
-        $relativePath = trim($relativePath, '/');
-        $path = '' === $basePath ? $relativePath : $basePath.'/'.$relativePath;
-
-        return rtrim($this->kernel->getProjectDir(), '/').'/'.$this->pathGuard->relativePath($path);
-    }
-
-    private function imageMimeType(string $path): ?string
-    {
-        return match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
-            'gif' => 'image/gif',
-            'jpg', 'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            'svg' => 'image/svg+xml',
-            'webp' => 'image/webp',
-            default => null,
-        };
-    }
 }
