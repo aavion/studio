@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Core\Message\MessageException;
+use App\Core\Statistics\StatisticsMessageKey;
 use App\Core\Validation\Uid;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
@@ -28,6 +30,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_access_statistic_continent_at', columns: ['continent', 'occurred_at'])]
 class AccessStatisticEvent
 {
+    private const TRACE_ID_PATTERN = '/\A[A-Za-z0-9][A-Za-z0-9._:-]{7,63}\z/';
+
     #[ORM\Id]
     #[ORM\Column(length: 36)]
     private string $uid;
@@ -143,8 +147,8 @@ class AccessStatisticEvent
     ) {
         $this->uid = Uid::assert($uid, 'Access statistic event UID');
         $this->occurredAt = $occurredAt;
-        $this->requestId = substr($requestId, 0, 64);
-        $this->visitorId = $visitorId;
+        $this->requestId = self::assertTraceId($requestId, 'request_id');
+        $this->visitorId = self::assertTraceId($visitorId, 'visitor_id');
         $this->method = substr($method, 0, 16);
         $this->path = substr($path, 0, 1024);
         $this->requestedPath = substr($requestedPath, 0, 1024);
@@ -167,6 +171,19 @@ class AccessStatisticEvent
         $this->country = substr($country, 0, 80);
         $this->continent = substr($continent, 0, 80);
         $this->metadata = $metadata;
+    }
+
+    private static function assertTraceId(string $value, string $label): string
+    {
+        if (1 === preg_match(self::TRACE_ID_PATTERN, $value)) {
+            return $value;
+        }
+
+        throw MessageException::invalidArgument(
+            StatisticsMessageKey::STATISTICS_TRACE_ID_INVALID,
+            ['%label%' => $label],
+            ['label' => $label, 'length' => strlen($value)],
+        );
     }
 
     public function uid(): string

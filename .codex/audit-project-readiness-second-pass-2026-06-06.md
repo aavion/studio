@@ -309,7 +309,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Finding:** A "keep me logged in" option is useful, but it should not be implemented as a bare long-lived identity cookie. A duplicated remember-me cookie has the same trust problem as a duplicated session cookie unless the server can revoke, rotate, and compare it against additional first-party state.
 - **Evidence:** `config/packages/security.yaml`, `src/Security/SessionVisitorBindingSubscriber.php`, `dev/draft/0.2.x-SecurityAccessControl.md`.
 - **Impact:** The current branch intentionally keeps session/visitor binding simple. Adding remember-me now would widen the auth surface before the Security branch can design token storage, revocation, audit logging, and step-up behavior coherently.
-- **Recommendation:** Defer implementation to the Security feature branch and keep the current normal session behavior unchanged here. Prefer Symfony's remember-me architecture with persistent server-side tokens: the browser stores only an opaque selector/token cookie, the server stores the hashed token plus user, expiry, visitor binding, and revocation state, the trust window is 7 days, automatic use rotates the token value without silently extending the original expiry, explicit credential login with the checkbox can issue a fresh 7-day token, successful auto-login creates a fresh Symfony session, token metadata binds to the current `system_visitor` cookie, manual logout/password/security events revoke the token, and visitor mismatch or token reuse is a hard reject plus audit signal. Keep normal session TTL low only after UX and admin workflows are reviewed; `60` minutes is a reasonable candidate but should be decided in Security.
+- **Recommendation:** Defer implementation to the Security feature branch and keep the current normal session behavior unchanged here. Prefer Symfony's remember-me architecture with persistent server-side tokens: the browser stores only an opaque selector/token cookie, the server stores the hashed token plus user, expiry, visitor binding, and revocation state, the trust window is 7 days, automatic use rotates the token value without silently extending the original expiry, explicit credential login with the checkbox can issue a fresh 7-day token, successful auto-login creates a fresh Symfony session, token metadata binds to the current `system_visitor` cookie, manual logout/password/security events revoke the token, and visitor mismatch or token reuse is a hard reject plus audit signal. Backend-calculated signals such as IP buckets, user-agent family, client hints, request cadence, and concurrent use should be soft risk/step-up inputs rather than sole hard identity proof because they change during legitimate use. Keep normal session TTL low only after UX and admin workflows are reviewed; `60` minutes is a reasonable candidate but should be decided in Security.
 - **Fix applied:** Deferred and documented as a Security feature-branch decision.
 - **Priority:** Security feature branch / Before release.
 
@@ -433,6 +433,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Changed the storage directory normalization to `rtrim($projectDir, '/\\')` and added a regression through `LiveOperationRunStore::outputPath()`.
 - **Priority:** Now / Platform polish.
 
+### S2-031 Access statistic trace identifiers accepted free payloads
+
+- **Area:** Access statistics entity boundary, future rate limiting, and audit-log filtering.
+- **Finding:** `AccessStatisticEvent` truncated `request_id` and stored `visitor_id` without validating either value as a compact technical token. The normal recorder path already supplies generated request IDs and HMAC-derived visitor IDs, but the entity boundary still allowed whitespace, control characters, or oversized/free-form payloads into indexed fields that future security tooling will query.
+- **Evidence:** `src/Entity/AccessStatisticEvent.php`, `src/Core/Log/AccessRequestMetadata.php`, `src/Core/Statistics/VisitorIdGenerator.php`, `tests/Entity/AccessStatisticEventTest.php`.
+- **Impact:** Low risk for current first-party writes, but poor hardening for future import/test/admin paths and a likely review edge because these IDs are intended to become rate-limit/audit-friendly technical handles.
+- **Recommendation:** Validate stored request and visitor IDs centrally at the entity boundary as compact URL/log-safe trace tokens, surface invalid values through Statistics Message keys, and keep aggregation readers tolerant of already persisted rows.
+- **Fix applied:** Added a statistics trace-ID validation key, translations, entity validation, operation-issue catalogue documentation, class-map note, and an entity regression test.
+- **Priority:** Now / Security and observability readiness.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -473,6 +483,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Account token/password flows reviewed. S2-028 centralizes pending-token lookup and password-policy UI error mapping outside controllers while leaving the larger account-flow service extraction tracked by S2-003.
 - Core primitive foundations reviewed. S2-029 records that hard exceptions in ActionLog/Diff/DryRun/Message/Workflow are deliberate low-level invariants, while Config runtime failures already use Message diagnostics and central defaults.
 - Live-operation storage reviewed. S2-030 aligns project-root trimming with the rest of the cross-platform process/file storage code.
+- Access statistic entity boundaries reviewed. S2-031 validates request/visitor trace identifiers as compact technical tokens before new rows are created.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -502,3 +513,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Split package admin detail helper responsibilities into focused backend services.
 - Extracted repeated account token lookup and password-policy error mapping into Security helpers.
 - Normalized trailing POSIX and Windows separators for live-operation storage paths.
+- Validated access-statistics request and visitor trace identifiers before persistence.

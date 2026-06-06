@@ -121,6 +121,11 @@ Validation rules:
 | `message.package.translation_namespace_invalid` | Package translation source does not stay under the package-owned namespace. | `%path%`, `%package%` |
 | `message.translation.aggregate_completed` | Translation aggregation completed. | `%files%`, `%locales%`, `%packages%` |
 | `message.translation.aggregate_failed` | Translation aggregation failed. | `%path%` |
+| `message.statistics.record_failed` | Access statistics recorder failed while handling a request. | N/A |
+| `message.statistics.aggregate_failed` | Access statistics aggregation failed. | N/A |
+| `message.statistics.snapshot_store_failed` | Access statistics snapshot storage failed. | N/A |
+| `message.statistics.cleanup_failed` | Access statistics retention cleanup failed. | N/A |
+| `message.statistics.trace_id_invalid` | Access statistics received a malformed compact trace identifier. | `%label%` |
 | `message.view.template_namespace.unsupported` | Template namespace is not supported. | `%namespace%` |
 | `message.package.lifecycle.cleanup_completed` | Package cleanup boundary completed. | `%package%` |
 | `message.package.lifecycle.dependent_deactivated` | Package was automatically deactivated because a dependency became unavailable. | `%package%`, `%dependency%` |

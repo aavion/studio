@@ -99,6 +99,7 @@ message:
     aggregate_failed: 'Zugriffsstatistik-Aggregation ist fehlgeschlagen.'
     snapshot_store_failed: 'Speicherung des Zugriffsstatistik-Snapshots ist fehlgeschlagen.'
     cleanup_failed: 'Aufbewahrungs-Cleanup der Zugriffsstatistiken ist fehlgeschlagen.'
+    trace_id_invalid: 'Zugriffsstatistiken haben eine ungültige %label% erhalten.'
   event:
     hook:
       invalid: 'Event-Hook "%event%" ist keine gültige öffentliche Hook-Definition.'

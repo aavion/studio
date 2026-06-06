@@ -99,6 +99,7 @@ message:
     aggregate_failed: 'Access statistics aggregation failed.'
     snapshot_store_failed: 'Access statistics snapshot storage failed.'
     cleanup_failed: 'Access statistics retention cleanup failed.'
+    trace_id_invalid: 'Access statistics received an invalid %label%.'
   event:
     hook:
       invalid: 'Event hook "%event%" is not a valid public hook definition.'
