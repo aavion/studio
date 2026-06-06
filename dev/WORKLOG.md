@@ -58,17 +58,7 @@
 - ! Keep roadmap sub-items aligned with feature drafts when implementation changes scope, order, or dependencies. Last reviewed: 2026-05-30.
 - ! Before the first stable `1.0.0` release, keep Doctrine migrations consolidated into one current baseline migration.
 - ! Prefer repository/database queries over full-table PHP filtering for lists, pagination, ACL impact checks, and other scalable read paths.
-- Harden database-prefix coverage by keeping Doctrine metadata self-checked against `TablePrefix::TABLES`, validating prefixed ORM metadata, and covering raw DBAL insert/update/join/delete prefix rewriting.
-- Removed hard-coded profile language options so profile language choices are generated from the dynamic translation-language catalog, matching the project rule that future languages must not require template or controller rewrites.
-- Migrated live-operation runner serialization to Symfony Lock while retaining the runner status file for Admin Operations visibility and making stale cleanup respect still-held framework locks.
-- Recorded the child-process environment policy in `.codex/PROJECT_RULES.md` and closed the audit check that application subprocesses use the central Dotenv-preserving, web/CGI-filtering process helpers.
-- Closed the detached-process audit check after verifying live-operation and Messenger-drain process starts share `DetachedProcessStarter`; remaining raw process helpers are confined to tests and script linting.
-- Closed the live JSON route audit note by recording the D18 boundary: `/api/live/**` remains internal application JSON, while external integrations belong under versioned `/api/v1/**` routes.
-- Split scheduler execution into `SchedulerRunner` as a thin facade plus `SchedulerDueTaskSelector`, `SchedulerTaskRunRecorder`, `SchedulerFailurePolicy`, and `SchedulerRunReporter` for due selection, persistent run recording, failure thresholds, and reporting.
-- Replaced the workflow-only console renderer with `ConsoleResultRenderer` so console commands share WorkflowResult text/JSON output, JSON payload writing, and status/exit-code mapping.
-- Added a central config default provider so missing or unreadable database-backed config keys fall back to registered core setting defaults before explicit caller fallbacks, and aligned setup config seeding to the same DB-free default source for non-input settings.
-- Added a shared setup input validator for web setup error-key validation and CLI input assertions, aligning language, URI, database URL/prefix, admin credential, and APP_SECRET length checks while keeping prompt and step filtering transport-specific.
-- Fixed content read fallback reporting so implicit/default language resolution does not emit a language-fallback warning when only the requested variant falls back.
+- [ ] Keep database-prefix coverage hardened by keeping Doctrine metadata self-checked against `TablePrefix::TABLES`, validating prefixed ORM metadata, and covering raw DBAL insert/update/join/delete prefix rewriting.
 - ! Keep Symfony service discovery narrow so DTOs, value objects, messages, events, enums, and other non-services do not bloat the container.
 - [ ] Finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
