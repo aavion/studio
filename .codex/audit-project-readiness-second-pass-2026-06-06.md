@@ -682,12 +682,12 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Core support translation paths reviewed. S2-036 stabilizes generated catalogue order and mixed-separator project root handling.
 - Content custom-Twig rendering reviewed. S2-037 keeps public fallback behavior but reports broken schema templates through content-owned Message diagnostics.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
-- Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
+- Command names reviewed. Product-prefixed `studio:*` commands are now classified as a pre-`1.0.0` naming migration candidate rather than a settled technical namespace; future command names should prefer Symfony-style domain namespaces where no vendor collision exists.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
 - Setup PHP-CLI and Composer preflight reviewed. Cached `APP_DEFAULT_PHP_BINARY` remains validation-first and auto-heal/persistence is limited to controlled setup/preflight flows.
 - Setup CLI input reviewed. S2-039 extracts database input resolution from the CLI input factory and leaves all setup production classes below the 300-line target.
 - Setup wizard templates reviewed. S2-040 moves step-specific rendering into setup partials while preserving the existing controller context, translation keys, form fields, and routes.
-- Asset/template `studio` naming reviewed. Public CSS classes, CSS variables, Twig helper names, and theme-facing IDs remain product/UI surface for now; S2-041 fixes the one internal browser-storage key found in project-owned JavaScript.
+- Asset/template `studio` naming reviewed. Public CSS classes, CSS variables, Twig helper names, and theme-facing IDs are now classified as branding-neutrality migration debt unless deliberately retained as branding; S2-041 fixes the one internal browser-storage key found in project-owned JavaScript.
 - Assets/Templates/Translations reviewed. No active Twig template remains above the 300-line target after S2-040. Source translation key comparison is clean. Focused CSS lint still reports known strict-parser false positives for Tailwind/modern CSS/package stubs, while the authoritative `tailwind:build` check passes.
 - Form builder/submission layer reviewed. No immediate drift found: values cast centrally, option validation is generic, and user-facing errors stay on existing translation keys.
 
@@ -695,11 +695,11 @@ This second pass additionally checks the explicit final-gate rules added during 
 
 - Final production size inventory reviewed after the second implementation wave. No production PHP file remains above `299` lines; the largest files are `ExtensionPackage` and `PackageRegistryHandler`, both at `299`.
 - Final hard-exception scan reviewed. Remaining literal exceptions are classified as low-level value-object invariants, filesystem/checksum/lint/manifest adapters, PHP-parser guards, or unrecoverable storage/process boundaries. Recoverable user/operator flows touched by this branch now use Message/WorkflowResult/MessageException where practical.
-- Final `studio` naming scan reviewed. Remaining `studio-*`, `studio_*`, and `studio:` usages are product/brand, CLI, public Twig helper, CSS/theme, translation, or documented UI surfaces. Refactored system-owned technical identifiers use `system` naming.
+- Final `studio` naming scan reviewed. Remaining `studio-*`, `studio_*`, and `studio:` usages are product/brand, CLI, public Twig helper, CSS/theme, translation, or documented UI surfaces, but the follow-up product decision is to migrate inspectable technical/UI names toward branding-neutral `system`/package-slug ownership where practical before `1.0.0`. Refactored system-owned technical identifiers use `system` naming.
 - Final hardcoded-language scan reviewed. Remaining `en`/`de` hits are dynamic locale defaults, test fixtures, content seed variants, code-editor language names, or localized content behavior. No generic ACL/profile/settings form still asks for fixed English/German variants.
 - Final documentation drift sweep reviewed. `dev/draft/0.2.x-SecurityAccessControl.md`, `dev/draft/0.2.x-PluginModules.md`, `dev/draft/0.4.x-ContactMailLogging.md`, `dev/manual/action-log-audit-snippets.md`, `dev/manual/package-lifecycle-snippets.md`, `dev/manual/setup-init-snippets.md`, class map, and worklog match the current branch-level behavior closely enough for review.
 - Final platform sweep reviewed. PHP subprocesses keep Dotenv/app environment values while filtering web/CGI request context; path normalization and temp/storage handling were hardened across package/filesystem/statistics/live-operation code; Windows-specific CI/session cleanup issues from the previous branch were not reintroduced.
-- Remaining deferred decisions are explicit: S2-007 broader package lifecycle operation journal/coordinator, S2-008 copied session plus copied visitor cookie risk scoring, S2-013 Mail Message/API hardening, S2-018 remember-me persistent-token feature, and S2-020 APP_SECRET rotation idempotency edge.
+- Remaining deferred decisions are explicit: S2-007 broader package lifecycle operation journal/coordinator, S2-008 copied session plus copied visitor cookie risk scoring, S2-013 Mail Message/API hardening, S2-018 remember-me persistent-token feature, S2-020 APP_SECRET rotation idempotency edge, and a pre-`1.0.0` branding-neutral naming migration for CSS/template/helper/CLI/log-path surfaces.
 
 ## Fixes Applied
 
@@ -743,3 +743,5 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Normalized file-inventory scanner roots across POSIX and Windows separators.
 - Stabilized translation source/runtime path ordering and internal test naming.
 - Reported broken content schema custom Twig through the Message layer before falling back to the generic field renderer.
+- Added a short-lived visitor identity store so cookie hashes and IP/user-agent fallback hashes stay separate: valid cookies win, cookie-less requests reuse a stable fallback bucket, and the first issued random visitor cookie can bridge back to the fresh fallback identity without binding later same-network/same-browser cookies.
+- Documented branding-neutral `system`/package-slug selector naming, future branding packages, descriptive environment-scoped log filenames, and Symfony-style CLI command naming as follow-up migration policy.

@@ -333,6 +333,14 @@ services:
         arguments:
             $secret: '%kernel.secret%'
 
+    App\Core\Statistics\VisitorIdentityStoreInterface:
+        alias: App\Core\Statistics\FileVisitorIdentityStore
+
+    App\Core\Statistics\FileVisitorIdentityStore:
+        arguments:
+            $cacheDir: '%kernel.project_dir%/var/cache'
+            $environment: '%kernel.environment%'
+
     App\Core\Security\SecretPayloadProtector:
         arguments:
             $secret: '%kernel.secret%'

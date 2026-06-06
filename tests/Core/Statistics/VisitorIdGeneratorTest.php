@@ -4,13 +4,29 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Statistics;
 
+use App\Core\Statistics\FileVisitorIdentityStore;
 use App\Core\Statistics\VisitorIdGenerator;
+use App\Tests\Support\FilesystemTestHelper;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 final class VisitorIdGeneratorTest extends TestCase
 {
+    use FilesystemTestHelper;
+
+    private string $cacheDir;
+
+    protected function setUp(): void
+    {
+        $this->cacheDir = $this->createTemporaryDirectory('system-visitor-identity');
+    }
+
+    protected function tearDown(): void
+    {
+        $this->removeDirectory($this->cacheDir);
+    }
+
     public function testItGeneratesStableVisitorCookieIds(): void
     {
         $request = Request::create('/docs', server: [
@@ -18,14 +34,14 @@ final class VisitorIdGeneratorTest extends TestCase
             'HTTP_USER_AGENT' => 'Studio Browser/1.0',
             'HTTP_X_FORWARDED_FOR' => '198.51.100.23, 203.0.113.10',
         ]);
-        $generator = new VisitorIdGenerator('test-secret');
+        $generator = $this->generator();
         $response = new Response();
-        $firstId = $generator->generate($request);
         $generator->attachCookie($request, $response);
+        $fallbackId = $generator->generate($request);
         $cookie = $response->headers->getCookies()[0] ?? null;
 
-        self::assertMatchesRegularExpression('/\A[A-Za-z0-9_-]{22}\z/', $firstId);
-        self::assertSame($firstId, $generator->generate($request));
+        self::assertMatchesRegularExpression('/\A[A-Za-z0-9_-]{22}\z/', $fallbackId);
+        self::assertSame($fallbackId, $generator->generate($request));
         self::assertNotNull($cookie);
         self::assertSame(VisitorIdGenerator::COOKIE_NAME, $cookie->getName());
         self::assertTrue($cookie->isHttpOnly());
@@ -38,8 +54,10 @@ final class VisitorIdGeneratorTest extends TestCase
             'HTTP_USER_AGENT' => 'Another Browser/2.0',
         ]);
         $nextRequest->cookies->set(VisitorIdGenerator::COOKIE_NAME, $cookie->getValue());
+        $cookieId = $generator->generate($nextRequest);
 
-        self::assertSame($firstId, $generator->generate($nextRequest));
+        self::assertSame($fallbackId, $cookieId);
+        self::assertSame($cookieId, $generator->generate($nextRequest));
         self::assertSame('203.0.113.10', $generator->sourceIp($request));
         self::assertSame('198.51.100.23', $generator->proxyClientIp($request));
         self::assertSame(['198.51.100.23', '203.0.113.10'], $generator->proxyIpChain($request));
@@ -49,7 +67,7 @@ final class VisitorIdGeneratorTest extends TestCase
     {
         $request = Request::create('/docs');
         $request->cookies->set(VisitorIdGenerator::COOKIE_NAME, 'v1.forged-token.invalid-signature');
-        $generator = new VisitorIdGenerator('test-secret');
+        $generator = $this->generator();
         $visitorId = $generator->generate($request);
         $response = new Response();
         $generator->attachCookie($request, $response);
@@ -60,18 +78,49 @@ final class VisitorIdGeneratorTest extends TestCase
         self::assertNotSame('v1.forged-token.invalid-signature', $cookie->getValue());
     }
 
-    public function testItSeparatesVisitorsThatShareIpAndUserAgentWithoutCookies(): void
+    public function testItKeepsCookieLessVisitorsStableByIpAndUserAgent(): void
     {
-        $generator = new VisitorIdGenerator('test-secret');
+        $generator = $this->generator();
         $server = [
             'REMOTE_ADDR' => '203.0.113.10',
             'HTTP_USER_AGENT' => 'Shared Browser/1.0',
         ];
 
-        self::assertNotSame(
+        self::assertSame(
             $generator->generate(Request::create('/docs', server: $server)),
             $generator->generate(Request::create('/docs', server: $server)),
         );
+    }
+
+    public function testItIssuesUniqueVisitorCookiesForSharedIpAndUserAgentFallbacks(): void
+    {
+        $server = [
+            'REMOTE_ADDR' => '203.0.113.10',
+            'HTTP_USER_AGENT' => 'Shared Browser/1.0',
+        ];
+        $generator = $this->generator();
+        $firstRequest = Request::create('/docs', server: $server);
+        $secondRequest = Request::create('/docs', server: $server);
+        $firstResponse = new Response();
+        $secondResponse = new Response();
+
+        self::assertSame($generator->generate($firstRequest), $generator->generate($secondRequest));
+
+        $generator->attachCookie($firstRequest, $firstResponse);
+        $generator->attachCookie($secondRequest, $secondResponse);
+        $firstCookie = $firstResponse->headers->getCookies()[0] ?? null;
+        $secondCookie = $secondResponse->headers->getCookies()[0] ?? null;
+
+        self::assertNotNull($firstCookie);
+        self::assertNotNull($secondCookie);
+        self::assertNotSame($firstCookie->getValue(), $secondCookie->getValue());
+
+        $firstCookieRequest = Request::create('/docs', server: $server);
+        $secondCookieRequest = Request::create('/docs', server: $server);
+        $firstCookieRequest->cookies->set(VisitorIdGenerator::COOKIE_NAME, $firstCookie->getValue());
+        $secondCookieRequest->cookies->set(VisitorIdGenerator::COOKIE_NAME, $secondCookie->getValue());
+
+        self::assertNotSame($generator->generate($firstCookieRequest), $generator->generate($secondCookieRequest));
     }
 
     public function testItChangesIdsWhenTheSecretChanges(): void
@@ -80,7 +129,7 @@ final class VisitorIdGeneratorTest extends TestCase
             'REMOTE_ADDR' => '203.0.113.10',
             'HTTP_USER_AGENT' => 'Studio Browser/1.0',
         ]);
-        $generator = new VisitorIdGenerator('one-secret');
+        $generator = $this->generator('one-secret');
         $response = new Response();
         $generator->attachCookie($request, $response);
         $cookie = $response->headers->getCookies()[0] ?? null;
@@ -92,7 +141,12 @@ final class VisitorIdGeneratorTest extends TestCase
 
         self::assertNotSame(
             $generator->generate($request),
-            (new VisitorIdGenerator('other-secret'))->generate($nextRequest),
+            $this->generator('other-secret')->generate($nextRequest),
         );
+    }
+
+    private function generator(string $secret = 'test-secret'): VisitorIdGenerator
+    {
+        return new VisitorIdGenerator($secret, new FileVisitorIdentityStore($this->cacheDir, 'test'));
     }
 }
