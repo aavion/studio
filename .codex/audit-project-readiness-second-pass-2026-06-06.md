@@ -323,6 +323,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Renamed the prefix to `system-php-lint-`.
 - **Priority:** Now / Naming consistency.
 
+### S2-020 APP_SECRET rotation guard can repeat owner recovery delivery if fingerprint persistence fails
+
+- **Area:** Secret rotation emergency handling, owner recovery links, and API-key revocation.
+- **Finding:** `AppSecretRotationGuard` revokes active API keys and issues owner password-reset links when the stored APP_SECRET fingerprint changes. If the new fingerprint cannot be persisted after the recovery handling, later requests can detect the same rotation again. API-key revocation is mostly idempotent, but owner password-reset delivery could repeat.
+- **Evidence:** `src/Security/AppSecretRotationGuard.php:81`, `src/Security/AppSecretRotationGuard.php:85`, `src/Security/AppSecretRotationGuard.php:88`, `src/Security/AppSecretRotationGuard.php:175`.
+- **Impact:** This is an uncommon degraded-storage edge, but it affects a sensitive emergency flow and could spam owner recovery messages or create noisy account-token churn after a config write failure.
+- **Recommendation:** In the dedicated Security hardening slice, add a small server-side rotation handling state or attempt journal that records "handling started" and "handling completed" separately from the final fingerprint. Recovery-link issuance should be idempotent per environment/fingerprint pair, and audit logging should include persistence failure context without making normal public requests repeatedly redo emergency handling.
+- **Fix applied:** Deferred; documented as a Security hardening follow-up.
+- **Priority:** Security feature branch / Before release.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -352,6 +362,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Runtime config defaults reviewed. `Config::get()` already falls back to registered core setting defaults when the DB is unavailable, a key is missing, reads fail, or stored JSON is invalid; callers only see their explicit default after no registered seed/default exists.
 - Security tokens reviewed. Account links/recovery tokens are server-side rows storing only SHA-256 token hashes, while API keys use APP_SECRET-rooted HMAC plus encrypted reversible payloads; remember-me should be a separate credential model rather than reusing account-link tokens.
 - Maintenance mode reviewed. The public UI uses translated 503 error-page keys; the literal `ServiceUnavailableHttpException` text is debug-only HTTP control-flow and acceptable as a Symfony-native boundary.
+- APP_SECRET rotation reviewed. S2-020 records the remaining idempotency edge around repeated owner recovery delivery if fingerprint persistence fails.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
