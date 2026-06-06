@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Statistics;
 
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
+use App\Core\Statistics\StatisticsMessageKey;
 
 final readonly class AccessStatisticsSnapshotProvider
 {
@@ -50,8 +50,8 @@ final readonly class AccessStatisticsSnapshotProvider
         }
 
         $this->messageReporter?->report(Message::warning(
-            MessageCode::E_OPERATION_FAILED,
-            MessageKey::STATISTICS_SNAPSHOT_STORE_FAILED,
+            CommonMessageCode::E_OPERATION_FAILED,
+            StatisticsMessageKey::STATISTICS_SNAPSHOT_STORE_FAILED,
             [],
             [
                 'operation' => 'statistics.snapshot.store',

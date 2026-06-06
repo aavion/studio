@@ -6,12 +6,12 @@ namespace App\Core\Package;
 
 use App\Core\Filesystem\PathGuard;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\Filesystem\CopyFileAction;
-use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use InvalidArgumentException;
 
@@ -44,7 +44,7 @@ final readonly class PackageOperationPlanner
             $sourcePath = $this->pathGuard->join($candidate->directory(), $file);
 
             if (is_link($sourcePath)) {
-                $issues[] = Message::create(MessageCode::PACKAGE_COPY_SOURCE_SYMLINK, MessageKey::PACKAGE_COPY_SOURCE_SYMLINK, [
+                $issues[] = Message::create(PackageMessageCode::PACKAGE_COPY_SOURCE_SYMLINK, PackageMessageKey::PACKAGE_COPY_SOURCE_SYMLINK, [
                     '%path%' => $sourcePath,
                 ], [
                     'source' => $candidate->source()->name(),
@@ -53,7 +53,7 @@ final readonly class PackageOperationPlanner
                     'path' => $sourcePath,
                 ], MessageLevel::Error);
             } elseif (!is_file($sourcePath)) {
-                $issues[] = Message::create(MessageCode::PACKAGE_COPY_SOURCE_MISSING, MessageKey::PACKAGE_COPY_SOURCE_MISSING, [
+                $issues[] = Message::create(PackageMessageCode::PACKAGE_COPY_SOURCE_MISSING, PackageMessageKey::PACKAGE_COPY_SOURCE_MISSING, [
                     '%path%' => $sourcePath,
                 ], [
                     'source' => $candidate->source()->name(),
@@ -93,7 +93,7 @@ final readonly class PackageOperationPlanner
         }
 
         return $this->report(WorkflowResult::success($queue, $queue->context(), [
-            Message::create(MessageCode::PACKAGE_COPY_PLAN_CREATED, MessageKey::PACKAGE_COPY_PLAN_CREATED, [
+            Message::create(PackageMessageCode::PACKAGE_COPY_PLAN_CREATED, PackageMessageKey::PACKAGE_COPY_PLAN_CREATED, [
                 '%count%' => count($normalizedFiles),
             ], $queue->context(), MessageLevel::Success),
         ]), $candidate);

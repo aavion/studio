@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 
 final readonly class SetupLanguageSelector
 {
@@ -29,13 +29,13 @@ final readonly class SetupLanguageSelector
         return [
             '_messages' => [
                 Message::info(
-                    MessageCode::SETUP_LANGUAGE_SELECTED,
-                    MessageKey::SETUP_LANGUAGE_SELECTED,
+                    SetupMessageCode::SETUP_LANGUAGE_SELECTED,
+                    SetupMessageKey::SETUP_LANGUAGE_SELECTED,
                     ['%language%' => $input->language()],
                 ),
                 Message::debug(
-                    MessageCode::SETUP_AVAILABLE_LANGUAGES,
-                    MessageKey::SETUP_AVAILABLE_LANGUAGES,
+                    SetupMessageCode::SETUP_AVAILABLE_LANGUAGES,
+                    SetupMessageKey::SETUP_AVAILABLE_LANGUAGES,
                     ['%languages%' => implode(', ', $availableLanguages)],
                 ),
             ],

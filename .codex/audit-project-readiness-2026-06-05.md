@@ -472,6 +472,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Message/MessageCode.php:7`, `src/Core/Message/MessageCode.php:24`, `src/Core/Message/MessageCode.php:62`, `src/Core/Message/MessageKey.php:7`, `src/Core/Message/MessageKey.php:34`, `src/Core/Message/MessageKey.php:89`, `src/Core/Message/MessageKey.php:180`.
 - **Impact:** The current approach keeps translations deterministic, but it weakens modularity as unrelated features edit the same files. Merge conflicts and documentation drift will grow with API/Security/Editor work.
 - **Recommendation:** Keep the `Message` value object, but split message constants by domain or generate a consolidated class from domain catalogues. Public code should remain able to use stable constants without one monolithic file becoming the extension surface.
+- **Implementation note:** Split message constants into domain-owned `*MessageCode` and `*MessageKey` catalogues, kept `App\Core\Message\MessageCode` and `App\Core\Message\MessageKey` as aggregation entry points, migrated production and test call sites to the owning catalogues, and added scope-bound catalogue tests so constant names and values stay aligned with their owner namespace. Future package-owned catalogues should be validated before aggregation; system/core namespaces remain reserved and system wins conflicts.
 - **Priority:** Before API / First-party modules.
 
 ### F-020 Package lifecycle state transitions are spread across several services

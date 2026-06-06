@@ -7,9 +7,9 @@ namespace App\Core\Operation\Process;
 use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\OperationActionInterface;
+use App\Core\Operation\Process\ProcessMessageCode;
+use App\Core\Operation\Process\ProcessMessageKey;
 use App\Core\Workflow\WorkflowResult;
 
 final readonly class PhpCliUnavailableAction implements OperationActionInterface
@@ -55,8 +55,8 @@ final readonly class PhpCliUnavailableAction implements OperationActionInterface
     public static function message(string $subject, string $reason, array $context = []): Message
     {
         return Message::error(
-            MessageCode::PROCESS_PHP_CLI_UNAVAILABLE,
-            MessageKey::PROCESS_PHP_CLI_UNAVAILABLE,
+            ProcessMessageCode::PROCESS_PHP_CLI_UNAVAILABLE,
+            ProcessMessageKey::PROCESS_PHP_CLI_UNAVAILABLE,
             ['%command%' => $subject],
             [
                 ...$context,

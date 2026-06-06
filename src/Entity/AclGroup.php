@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Core\Access\AccessLevel;
+use App\Core\Access\AccessMessageKey;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
 use Doctrine\ORM\Mapping as ORM;
@@ -90,7 +90,7 @@ class AclGroup
         $name = trim($name);
 
         if ('' === $name || mb_strlen($name) > self::MAX_NAME_LENGTH) {
-            throw MessageException::invalidArgument(MessageKey::ACCESS_GROUP_NAME_INVALID, [
+            throw MessageException::invalidArgument(AccessMessageKey::ACCESS_GROUP_NAME_INVALID, [
                 '%name%' => $name,
             ]);
         }

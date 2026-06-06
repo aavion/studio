@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Content\Read;
 
+use App\Content\ContentMessageCode;
+use App\Content\ContentMessageKey;
 use App\Content\ContentStatus;
 use App\Content\ContentVisibility;
+use App\Content\Routing\ContentPathLookup;
+use App\Content\Routing\ContentRoutePath;
 use App\Core\Access\AccessActor;
 use App\Core\Access\AccessCapability;
 use App\Core\Access\AccessResolver;
 use App\Core\Access\AccessRule;
-use App\Content\Routing\ContentPathLookup;
-use App\Content\Routing\ContentRoutePath;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
 use App\Entity\ContentItem;
 use App\Repository\ContentFieldValueRepository;
@@ -115,7 +115,7 @@ final class PublishedContentResolver
         $messages = [];
 
         if ($context->languageFallbackUsed()) {
-            $messages[] = $this->report(Message::warning(MessageCode::CONTENT_LANGUAGE_FALLBACK, MessageKey::CONTENT_LANGUAGE_FALLBACK, [
+            $messages[] = $this->report(Message::warning(ContentMessageCode::CONTENT_LANGUAGE_FALLBACK, ContentMessageKey::CONTENT_LANGUAGE_FALLBACK, [
                 '%requested_language%' => $context->requestedLanguage(),
                 '%resolved_language%' => $context->language(),
             ], [
@@ -127,7 +127,7 @@ final class PublishedContentResolver
         }
 
         if ($context->variantFallbackUsed()) {
-            $messages[] = $this->report(Message::warning(MessageCode::CONTENT_VARIANT_FALLBACK, MessageKey::CONTENT_VARIANT_FALLBACK, [
+            $messages[] = $this->report(Message::warning(ContentMessageCode::CONTENT_VARIANT_FALLBACK, ContentMessageKey::CONTENT_VARIANT_FALLBACK, [
                 '%requested_variant%' => $context->requestedVariant(),
                 '%resolved_variant%' => $context->variant(),
             ], [

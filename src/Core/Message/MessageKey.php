@@ -4,270 +4,69 @@ declare(strict_types=1);
 
 namespace App\Core\Message;
 
+use App\Backend\BackendMessageKey;
+use App\Content\ContentMessageKey;
+use App\Core\Access\AccessMessageKey;
+use App\Core\Asset\AssetMessageKey;
+use App\Core\Config\ConfigMessageKey;
+use App\Core\Event\EventMessageKey;
+use App\Core\Lint\LintMessageKey;
+use App\Core\Manifest\ManifestMessageKey;
+use App\Core\Messenger\MessengerMessageKey;
+use App\Core\Operation\Filesystem\FilesystemMessageKey;
+use App\Core\Operation\OperationMessageKey;
+use App\Core\Operation\Process\ProcessMessageKey;
+use App\Core\Package\PackageMessageKey;
+use App\Core\Routing\RoutingMessageKey;
+use App\Core\Security\SystemSecurityMessageKey;
+use App\Core\State\StateMessageKey;
+use App\Core\Statistics\StatisticsMessageKey;
+use App\Core\Translation\TranslationMessageKey;
+use App\Navigation\NavigationMessageKey;
+use App\Scheduler\SchedulerMessageKey;
+use App\Security\SecurityMessageKey;
+use App\Setup\SetupMessageKey;
+use App\View\ViewMessageKey;
+
 final class MessageKey
 {
-    public const MANIFEST_UNREADABLE = 'message.manifest.unreadable';
-    public const MANIFEST_INVALID_LINE = 'message.manifest.invalid_line';
-    public const MANIFEST_INVALID_KEY = 'message.manifest.invalid_key';
-    public const MANIFEST_DUPLICATE_KEY = 'message.manifest.duplicate_key';
-    public const MANIFEST_MISSING_REQUIRED_KEY = 'message.manifest.missing_required_key';
-    public const MANIFEST_UNKNOWN_KEY = 'message.manifest.unknown_key';
-    public const MANIFEST_PARSED = 'message.manifest.parsed';
-    public const MANIFEST_VALIDATED = 'message.manifest.validated';
+    /**
+     * @return list<class-string>
+     */
+    public static function catalogues(): array
+    {
+        return [
+            AccessMessageKey::class,
+            AssetMessageKey::class,
+            BackendMessageKey::class,
+            ConfigMessageKey::class,
+            ContentMessageKey::class,
+            EventMessageKey::class,
+            FilesystemMessageKey::class,
+            LintMessageKey::class,
+            ManifestMessageKey::class,
+            MessengerMessageKey::class,
+            NavigationMessageKey::class,
+            OperationMessageKey::class,
+            PackageMessageKey::class,
+            ProcessMessageKey::class,
+            RoutingMessageKey::class,
+            SchedulerMessageKey::class,
+            SecurityMessageKey::class,
+            SetupMessageKey::class,
+            StateMessageKey::class,
+            StatisticsMessageKey::class,
+            SystemSecurityMessageKey::class,
+            TranslationMessageKey::class,
+            ViewMessageKey::class,
+        ];
+    }
 
-    public const PACKAGE_MANIFEST_UNREADABLE = 'message.package.manifest_unreadable';
-    public const PACKAGE_REQUIRED_FILE_MISSING = 'message.package.required_file_missing';
-    public const PACKAGE_REQUIRED_DIRECTORY_MISSING = 'message.package.required_directory_missing';
-    public const PACKAGE_FILE_UNREADABLE = 'message.package.file_unreadable';
-    public const PACKAGE_PHP_SYNTAX_ERROR = 'message.package.php_syntax_error';
-    public const PACKAGE_PHP_NAMESPACE_INVALID = 'message.package.php_namespace_invalid';
-    public const PACKAGE_TWIG_SYNTAX_ERROR = 'message.package.twig_syntax_error';
-    public const PACKAGE_TRANSLATION_ENGLISH_MISSING = 'message.package.translation_english_missing';
-    public const PACKAGE_TRANSLATION_NAMESPACE_INVALID = 'message.package.translation_namespace_invalid';
-    public const PACKAGE_JSON_SYNTAX_ERROR = 'message.package.json_syntax_error';
-    public const PACKAGE_YAML_SYNTAX_ERROR = 'message.package.yaml_syntax_error';
-    public const PACKAGE_CSS_SYNTAX_ERROR = 'message.package.css_syntax_error';
-    public const PACKAGE_JAVASCRIPT_SYNTAX_ERROR = 'message.package.javascript_syntax_error';
-    public const PACKAGE_SCOPE_INVALID = 'message.package.scope_invalid';
-    public const PACKAGE_TEMPLATE_PATH_INVALID = 'message.package.template_path_invalid';
-    public const PACKAGE_POLICY_BLOCKED_PATH = 'message.package.policy.blocked_path';
-    public const PACKAGE_POLICY_WARNED_PATH = 'message.package.policy.warned_path';
-    public const PACKAGE_POLICY_BLOCKED_PHP_CAPABILITY = 'message.package.policy.blocked_php_capability';
-    public const PACKAGE_COPY_SOURCE_MISSING = 'message.package.copy_source_missing';
-    public const PACKAGE_COPY_SOURCE_SYMLINK = 'message.package.copy_source_symlink';
-    public const PACKAGE_ASSET_SYNC_COMPLETED = 'message.package.asset_sync_completed';
-    public const PACKAGE_ASSET_SYNC_FAILED = 'message.package.asset_sync_failed';
-    public const TRANSLATION_AGGREGATE_COMPLETED = 'message.translation.aggregate_completed';
-    public const TRANSLATION_AGGREGATE_FAILED = 'message.translation.aggregate_failed';
-    public const STATISTICS_RECORD_FAILED = 'message.statistics.record_failed';
-    public const STATISTICS_AGGREGATE_FAILED = 'message.statistics.aggregate_failed';
-    public const STATISTICS_SNAPSHOT_STORE_FAILED = 'message.statistics.snapshot_store_failed';
-    public const STATISTICS_CLEANUP_FAILED = 'message.statistics.cleanup_failed';
-    public const PACKAGE_ASSET_REBUILD_QUEUED = 'message.package.asset_rebuild_queued';
-    public const PACKAGE_ASSET_REBUILD_QUEUE_FAILED = 'message.package.asset_rebuild_queue_failed';
-    public const PACKAGE_DISCOVERY_QUEUED = 'message.package.discovery_queued';
-    public const PACKAGE_DISCOVERY_QUEUE_FAILED = 'message.package.discovery_queue_failed';
-    public const PACKAGE_DISCOVERY_COMPLETED = 'message.package.discovery_completed';
-    public const MESSENGER_DEFERRED_PROCESS_START_FAILED = 'message.messenger.deferred_process_start_failed';
-    public const PACKAGE_VALIDATION_COMPLETED = 'message.package.validation_completed';
-    public const PACKAGE_COPY_PLAN_CREATED = 'message.package.copy_plan_created';
-    public const PACKAGE_REGISTRY_SYNC_COMPLETED = 'message.package.registry.sync_completed';
-    public const PACKAGE_REGISTRY_PACKAGE_REGISTERED = 'message.package.registry.registered';
-    public const PACKAGE_REGISTRY_PACKAGE_UPDATED = 'message.package.registry.updated';
-    public const PACKAGE_REGISTRY_PACKAGE_REMOVED = 'message.package.registry.removed';
-    public const PACKAGE_REGISTRY_PACKAGE_FAULTY = 'message.package.registry.faulty';
-    public const PACKAGE_INSTALL_UPLOAD_INVALID = 'message.package.install.upload_invalid';
-    public const PACKAGE_INSTALL_ZIP_INVALID = 'message.package.install.zip_invalid';
-    public const PACKAGE_INSTALL_ROOT_INVALID = 'message.package.install.root_invalid';
-    public const PACKAGE_INSTALL_READY = 'message.package.install.ready';
-    public const PACKAGE_INSTALL_OVERWRITE = 'message.package.install.overwrite';
-    public const PACKAGE_INSTALL_VERSION_BLOCKED = 'message.package.install.version_blocked';
-    public const PACKAGE_INSTALL_COMPLETED = 'message.package.install.completed';
-    public const PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND = 'message.package.lifecycle.not_found';
-    public const PACKAGE_LIFECYCLE_STATUS_BLOCKED = 'message.package.lifecycle.status_blocked';
-    public const PACKAGE_LIFECYCLE_ACTIVATED = 'message.package.lifecycle.activated';
-    public const PACKAGE_LIFECYCLE_DEACTIVATED = 'message.package.lifecycle.deactivated';
-    public const PACKAGE_LIFECYCLE_DEPENDENT_DEACTIVATED = 'message.package.lifecycle.dependent_deactivated';
-    public const PACKAGE_LIFECYCLE_CLEANUP_COMPLETED = 'message.package.lifecycle.cleanup_completed';
-    public const PACKAGE_LIFECYCLE_REMOVED = 'message.package.lifecycle.removed';
-    public const PACKAGE_LIFECYCLE_PURGED = 'message.package.lifecycle.purged';
-    public const PACKAGE_LIFECYCLE_FAULT_RESET = 'message.package.lifecycle.fault_reset';
-    public const PACKAGE_LIFECYCLE_RUNTIME_FAILURE = 'message.package.lifecycle.runtime_failure';
-    public const PACKAGE_LIFECYCLE_PHP_LOAD_FAILED = 'message.package.lifecycle.php_load_failed';
-    public const PACKAGE_LIFECYCLE_ROLLED_BACK = 'message.package.lifecycle.rolled_back';
-    public const PACKAGE_SETTING_READ_FAILED = 'message.package.setting.read_failed';
-    public const PACKAGE_SETTING_WRITE_FAILED = 'message.package.setting.write_failed';
-    public const PACKAGE_SETTING_DELETE_FAILED = 'message.package.setting.delete_failed';
-    public const PACKAGE_SETTING_VALUE_INVALID = 'message.package.setting.value_invalid';
-    public const PACKAGE_DEPENDENCY_MISSING = 'message.package.dependency.missing';
-    public const PACKAGE_DEPENDENCY_INVALID = 'message.package.dependency.invalid';
-    public const PACKAGE_SCHEDULER_CRON_INVALID = 'message.package.scheduler.cron_invalid';
-    public const PACKAGE_DEPENDENCY_VERSION_UNSATISFIED = 'message.package.dependency.version_unsatisfied';
-    public const PACKAGE_DEPENDENCY_STATUS_BLOCKED = 'message.package.dependency.status_blocked';
-    public const PACKAGE_DEPENDENCY_CYCLE = 'message.package.dependency.cycle';
-    public const PACKAGE_DEPENDENCY_RESOLVED = 'message.package.dependency.resolved';
-    public const EVENT_HOOK_INVALID = 'message.event.hook.invalid';
-    public const EVENT_HOOK_UNREGISTERED = 'message.event.hook.unregistered';
-    public const EVENT_HOOK_LISTENER_FAILED = 'message.event.hook.listener_failed';
-    public const EVENT_HOOK_VIEW_CONTEXT_SUMMARY = 'message.event.hook.view_context.summary';
-    public const EVENT_HOOK_CONTENT_RENDER_CONTEXT_SUMMARY = 'message.event.hook.content_render_context.summary';
-    public const EVENT_HOOK_CONTENT_RENDERED_SUMMARY = 'message.event.hook.content_rendered.summary';
-    public const EVENT_HOOK_NAVIGATION_BUILDER_SUMMARY = 'message.event.hook.navigation_builder.summary';
-    public const EVENT_HOOK_STATIC_VIEW_INJECTION_REGISTRY_SUMMARY = 'message.event.hook.static_view_injection_registry.summary';
-    public const EVENT_HOOK_DYNAMIC_VIEW_INJECTION_REGISTRY_SUMMARY = 'message.event.hook.dynamic_view_injection_registry.summary';
-    public const EVENT_HOOK_RESPONSE_HEADERS_SUMMARY = 'message.event.hook.response_headers.summary';
-    public const EVENT_HOOK_OUTPUT_GENERATED_SUMMARY = 'message.event.hook.output_generated.summary';
-    public const EVENT_HOOK_PACKAGE_ASSET_SYNC_STARTED_SUMMARY = 'message.event.hook.package_asset_sync_started.summary';
-    public const EVENT_HOOK_PACKAGE_ASSET_REGISTRY_BUILD_SUMMARY = 'message.event.hook.package_asset_registry_build.summary';
-    public const EVENT_HOOK_PACKAGE_ASSET_SYNC_COMPLETED_SUMMARY = 'message.event.hook.package_asset_sync_completed.summary';
-    public const VIEW_DYNAMIC_INJECTION_RENDER_FAILED = 'message.view.dynamic_injection.render_failed';
-
-    public const LINT_PHP_UNREADABLE = 'message.lint.php_unreadable';
-    public const LINT_PHP_SYNTAX_ERROR = 'message.lint.php_syntax_error';
-    public const LINT_TWIG_SYNTAX_ERROR = 'message.lint.twig_syntax_error';
-    public const LINT_JSON_SYNTAX_ERROR = 'message.lint.json_syntax_error';
-    public const LINT_YAML_SYNTAX_ERROR = 'message.lint.yaml_syntax_error';
-    public const LINT_CSS_SYNTAX_ERROR = 'message.lint.css_syntax_error';
-    public const LINT_JAVASCRIPT_SYNTAX_ERROR = 'message.lint.javascript_syntax_error';
-
-    public const FILESYSTEM_SOURCE_MISSING = 'message.filesystem.source_missing';
-    public const FILESYSTEM_SOURCE_SYMLINK = 'message.filesystem.source_symlink';
-    public const FILESYSTEM_TARGET_SYMLINK = 'message.filesystem.target_symlink';
-    public const FILESYSTEM_PARENT_SYMLINK = 'message.filesystem.parent_symlink';
-    public const FILESYSTEM_FILE_EXISTS = 'message.filesystem.file_exists';
-    public const FILESYSTEM_FILE_CONFLICT = 'message.filesystem.file_conflict';
-    public const FILESYSTEM_DIRECTORY_CONFLICT = 'message.filesystem.directory_conflict';
-    public const FILESYSTEM_PARENT_MISSING = 'message.filesystem.parent_missing';
-    public const FILESYSTEM_PARENT_CREATE_FAILED = 'message.filesystem.parent_create_failed';
-    public const FILESYSTEM_FILE_WRITE_FAILED = 'message.filesystem.file_write_failed';
-    public const FILESYSTEM_FILE_COPY_FAILED = 'message.filesystem.file_copy_failed';
-    public const FILESYSTEM_DIRECTORY_CREATE_FAILED = 'message.filesystem.directory_create_failed';
-    public const FILESYSTEM_FILE_WRITTEN = 'message.filesystem.file_written';
-    public const FILESYSTEM_FILE_COPIED = 'message.filesystem.file_copied';
-    public const FILESYSTEM_PATH_REMOVED = 'message.filesystem.path_removed';
-    public const FILESYSTEM_DIRECTORY_READY = 'message.filesystem.directory_ready';
-    public const FILESYSTEM_PARENT_DIRECTORY_READY = 'message.filesystem.parent_directory_ready';
-
-    public const OPERATION_EXCEPTION = 'message.operation.exception';
-    public const OPERATION_UNKNOWN = 'message.operation.unknown';
-    public const OPERATION_STARTED = 'message.operation.started';
-    public const OPERATION_START_FAILED = 'message.operation.start_failed';
-    public const OPERATION_INVALID_PAYLOAD = 'message.operation.invalid_payload';
-    public const OPERATION_STALE = 'message.operation.stale';
-    public const OPERATION_LOCKED = 'message.operation.locked';
-    public const OPERATION_ACTION_REQUIRED = 'message.operation.action_required';
-    public const OPERATION_FINISHED = 'message.operation.finished';
-    public const OPERATION_REQUIRES_REVIEW = 'message.operation.requires_review';
-    public const OPERATION_FAILED = 'message.operation.failed';
-    public const OPERATION_FINISHED_UNKNOWN = 'message.operation.finished_unknown';
-    public const PROCESS_COMMAND_FAILED = 'message.process.command_failed';
-    public const PROCESS_COMMAND_COMPLETED = 'message.process.command_completed';
-    public const PROCESS_PHP_CLI_UNAVAILABLE = 'message.process.php_cli_unavailable';
-    public const TAILWIND_BUILD_DEFERRED = 'message.tailwind.build_deferred';
-
-    public const ACCESS_GRANTED = 'message.access.granted';
-    public const ACCESS_DENIED = 'message.access.denied';
-    public const ACCESS_LOG_FAILED = 'message.access.log_failed';
-    public const SYSTEM_SECRET_PAYLOAD_ROOT_SECRET_EMPTY = 'message.system.secret_payload.root_secret_empty';
-    public const SYSTEM_SECRET_PAYLOAD_CONTEXT_EMPTY = 'message.system.secret_payload.context_empty';
-    public const SYSTEM_SECRET_PAYLOAD_INVALID = 'message.system.secret_payload.invalid';
-    public const SYSTEM_SECRET_PAYLOAD_ENCRYPT_FAILED = 'message.system.secret_payload.encrypt_failed';
-    public const SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED = 'message.system.secret_payload.decrypt_failed';
-    public const SYSTEM_SECRET_PAYLOAD_KEY_DERIVATION_FAILED = 'message.system.secret_payload.key_derivation_failed';
-    public const BACKEND_ROUTE_NOT_FOUND = 'message.backend.route_not_found';
-    public const BACKEND_SETUP_LOCKED = 'message.backend.setup_locked';
-    public const BACKEND_ACTION_UNKNOWN = 'message.backend.action.unknown';
-    public const BACKEND_ACTION_INVALID_CSRF = 'message.backend.action.invalid_csrf';
-    public const BACKEND_ACTION_CACHE_CLEAR_COMPLETED = 'message.backend.action.cache_clear_completed';
-    public const SETUP_STEP_FAILED = 'message.setup.step_failed';
-    public const SETUP_ENVIRONMENT_FILE_UNREADABLE = 'message.setup.environment_file_unreadable';
-    public const SETUP_ENVIRONMENT_FILE_WRITE_FAILED = 'message.setup.environment_file_write_failed';
-    public const SETUP_LANGUAGE_SELECTED = 'message.setup.language_selected';
-    public const SETUP_AVAILABLE_LANGUAGES = 'message.setup.available_languages';
-    public const SETUP_ROLLBACK_COMPLETED = 'message.setup.rollback_completed';
-    public const SETUP_DRY_RUN = 'message.setup.dry_run';
-    public const SETUP_OUTPUT_SUCCESS = 'message.setup.output.success';
-    public const SETUP_OUTPUT_FAILED = 'message.setup.output.failed';
-    public const SETUP_PROMPT_LANGUAGE = 'message.setup.prompt.language';
-    public const SETUP_PROMPT_SITE_TITLE = 'message.setup.prompt.site_title';
-    public const SETUP_PROMPT_DEFAULT_URI = 'message.setup.prompt.default_uri';
-    public const SETUP_PROMPT_DATABASE_DRIVER = 'message.setup.prompt.database_driver';
-    public const SETUP_PROMPT_DATABASE_URL = 'message.setup.prompt.database_url';
-    public const SETUP_PROMPT_DATABASE_HOST = 'message.setup.prompt.database_host';
-    public const SETUP_PROMPT_DATABASE_PORT = 'message.setup.prompt.database_port';
-    public const SETUP_PROMPT_DATABASE_NAME = 'message.setup.prompt.database_name';
-    public const SETUP_PROMPT_DATABASE_USER = 'message.setup.prompt.database_user';
-    public const SETUP_PROMPT_DATABASE_PASSWORD = 'message.setup.prompt.database_password';
-    public const SETUP_PROMPT_ADMIN_USERNAME = 'message.setup.prompt.admin_username';
-    public const SETUP_PROMPT_ADMIN_PASSWORD = 'message.setup.prompt.admin_password';
-    public const SETUP_PROMPT_ADMIN_PASSWORD_CONFIRM = 'message.setup.prompt.admin_password_confirm';
-    public const SETUP_PROMPT_ADMIN_EMAIL = 'message.setup.prompt.admin_email';
-    public const SETUP_PROMPT_APP_SECRET = 'message.setup.prompt.app_secret';
-    public const SETUP_PROMPT_INVALID_CHOICE = 'message.setup.prompt.invalid_choice';
-    public const SETUP_PROMPT_PASSWORD_MISMATCH = 'message.setup.prompt.password_mismatch';
-    public const SETUP_ADMIN_PASSWORD_TOO_SHORT = 'message.setup.admin_password.too_short';
-    public const SETUP_ADMIN_PASSWORD_COMPLEXITY = 'message.setup.admin_password.complexity';
-    public const SETUP_ADMIN_PASSWORD_REPEATED = 'message.setup.admin_password.repeated';
-    public const SETUP_ADMIN_PASSWORD_PERSONAL = 'message.setup.admin_password.personal';
-    public const SETUP_APP_SECRET_TOO_SHORT = 'message.setup.app_secret.too_short';
-    public const SETUP_PROMPT_PASSWORD_RESET_CONTINUE = 'message.setup.prompt.password_reset_continue';
-    public const SETUP_PROMPT_PASSWORD_RESET_NEW_PASSWORD = 'message.setup.prompt.password_reset_new_password';
-    public const SETUP_PROMPT_PASSWORD_RESET_CONFIRM_PASSWORD = 'message.setup.prompt.password_reset_confirm_password';
-    public const SETUP_PASSWORD_RESET_DATABASE_URL_MISSING = 'message.setup.password_reset.database_url_missing';
-    public const SETUP_PASSWORD_RESET_USER_NOT_FOUND = 'message.setup.password_reset.user_not_found';
-    public const SETUP_PASSWORD_RESET_CANCELLED = 'message.setup.password_reset.cancelled';
-    public const SETUP_PASSWORD_RESET_COMPLETED = 'message.setup.password_reset.completed';
-    public const SETUP_PASSWORD_RESET_CONFIRM_REQUIRED = 'message.setup.password_reset.confirm_required';
-    public const ACCESS_LEVEL_INVALID = 'message.access.level.invalid';
-    public const ACCESS_GROUP_IDENTIFIER_INVALID = 'message.access.group_identifier.invalid';
-    public const ACCESS_GROUP_NAME_INVALID = 'message.access.group_name.invalid';
-    public const STATE_SUBJECT_TYPE_INVALID = 'message.state.subject_type.invalid';
-    public const STATE_MARKER_KEY_INVALID = 'message.state.marker_key.invalid';
-    public const CONFIG_KEY_INVALID = 'message.config.key.invalid';
-    public const CONFIG_READ_FAILED = 'message.config.read_failed';
-    public const CONFIG_WRITE_FAILED = 'message.config.write_failed';
-    public const CONFIG_VALUE_INVALID = 'message.config.value_invalid';
-    public const ACL_GROUP_UPDATED = 'message.acl.group_updated';
-    public const ACL_GROUP_DELETED = 'message.acl.group_deleted';
-    public const ACL_GROUP_APPLY_NOT_FOUND = 'message.acl.group_apply.not_found';
-    public const ACL_GROUP_APPLY_ACTION_INVALID = 'message.acl.group_apply.action_invalid';
-    public const ACL_GROUP_APPLY_UPDATE_BLOCKED = 'message.acl.group_apply.update_blocked';
-    public const ACL_GROUP_APPLY_DELETE_BLOCKED = 'message.acl.group_apply.delete_blocked';
-    public const USERNAME_INVALID = 'message.user.username.invalid';
-    public const USER_EMAIL_INVALID = 'message.user.email.invalid';
-    public const USER_EMAIL_DUPLICATE = 'message.user.email.duplicate';
-    public const USER_USERNAME_DUPLICATE = 'message.user.username.duplicate';
-    public const ACCOUNT_TOKEN_HASH_INVALID = 'message.account_token.hash.invalid';
-    public const ACCOUNT_LINK_INVALID = 'message.account_link.invalid';
-    public const ACCOUNT_LINK_STALE_GROUPS = 'message.account_link.stale_groups';
-    public const ACCOUNT_LINK_DELIVERED = 'message.account_link.delivered';
-    public const ACCOUNT_NOTIFICATION_DELIVERED = 'message.account_link.notification_delivered';
-    public const ACCOUNT_MAIL_STUB_QUEUED = 'message.account_mail.stub_queued';
-    public const ABSOLUTE_URI_GENERATION_FAILED = 'message.routing.absolute_uri_generation_failed';
-    public const API_KEY_PREFIX_INVALID = 'message.api_key.prefix.invalid';
-    public const API_KEY_HMAC_HASH_INVALID = 'message.api_key.hmac_hash.invalid';
-    public const API_KEY_ENCRYPTED_KEY_EMPTY = 'message.api_key.encrypted_key.empty';
-    public const API_KEY_STATUS_INVALID = 'message.api_key.status.invalid';
-    public const API_KEY_STATUS_READ_WRITE = 'message.api_key.status.read_write';
-    public const API_KEY_STATUS_READ_ONLY = 'message.api_key.status.read_only';
-    public const API_KEY_STATUS_REVOKED = 'message.api_key.status.revoked';
-    public const API_KEY_CREATED = 'message.api_key.created';
-    public const API_KEY_REVOKED = 'message.api_key.revoked';
-    public const API_KEY_REVEALED = 'message.api_key.revealed';
-    public const API_KEY_NOT_FOUND = 'message.api_key.not_found';
-    public const API_KEY_AUTHENTICATION_FAILED = 'message.api_key.authentication_failed';
-    public const API_KEY_REAUTHENTICATION_REQUIRED = 'message.api_key.reauthentication_required';
-    public const API_KEY_PERMISSION_WRITE_REQUIRED = 'message.api_key.permission.write_required';
-    public const API_KEY_PERMISSION_REVOKED = 'message.api_key.permission.revoked';
-    public const PACKAGE_IDENTIFIER_INVALID = 'message.package.identifier.invalid';
-    public const MENU_IDENTIFIER_INVALID = 'message.menu.identifier.invalid';
-
-    public const CONTENT_SLUG_INVALID = 'message.content.slug.invalid_format';
-    public const CONTENT_SLUG_RESERVED = 'message.content.slug.reserved';
-    public const CONTENT_PATH_EMPTY_OR_PADDED = 'message.content.path.empty_or_padded';
-    public const CONTENT_PATH_UNCLEAN = 'message.content.path.unclean';
-    public const CONTENT_PATH_EMPTY_SEGMENT = 'message.content.path.empty_segment';
-    public const CONTENT_PATH_RESERVED_PREFIX = 'message.content.path.reserved_prefix';
-    public const CONTENT_PATH_TRAVERSAL = 'message.content.path.traversal';
-    public const CONTENT_PATH_VARIANT_INVALID = 'message.content.path.variant_invalid';
-    public const CONTENT_LANGUAGE_FALLBACK = 'message.content.language.fallback';
-    public const CONTENT_VARIANT_FALLBACK = 'message.content.variant.fallback';
-    public const CONTENT_UID_INVALID = 'message.content.uid.invalid_format';
-    public const CONTENT_STRING_LIST_EMPTY = 'message.content.string_list.empty';
-    public const CONTENT_STRING_LIST_INVALID = 'message.content.string_list.invalid';
-    public const CONTENT_METADATA_KEY_EMPTY = 'message.content.metadata.key_empty';
-    public const CONTENT_METADATA_RESERVED_SCHEMA_FIELD = 'message.content.metadata.reserved_schema_field';
-    public const CONTENT_FIELD_VALUE_VERSION_INVALID = 'message.content.field_value.version_invalid';
-    public const CONTENT_LOCALE_TOKEN_INVALID = 'message.content.locale_token.invalid_format';
-    public const CONTENT_FIELD_IDENTIFIER_INVALID = 'message.content.field_identifier.invalid_format';
-    public const CONTENT_SCHEMA_IDENTIFIER_INVALID = 'message.content.schema.identifier_invalid';
-    public const CONTENT_SCHEMA_VERSION_INVALID = 'message.content.schema.version_invalid';
-    public const CONTENT_SCHEMA_REQUIRED_FIELD_MISSING = 'message.content.schema.required_field_missing';
-    public const CONTENT_SCHEMA_FIELD_DUPLICATE = 'message.content.schema.field_duplicate';
-    public const SCHEDULER_RUN_COMPLETED = 'message.scheduler.run_completed';
-    public const SCHEDULER_RUN_FAILED = 'message.scheduler.run_failed';
-    public const SCHEDULER_TASK_FAILED = 'message.scheduler.task_failed';
-    public const SCHEDULER_TASK_DISABLED = 'message.scheduler.task_disabled';
-    public const SCHEDULER_TASK_INVALID_CRON_DISABLED = 'message.scheduler.task_invalid_cron_disabled';
-    public const SCHEDULER_TASK_SOFT_BUDGET_EXCEEDED = 'message.scheduler.task_soft_budget_exceeded';
+    /**
+     * @return array<string, string>
+     */
+    public static function all(): array
+    {
+        return MessageCatalogue::constants(self::catalogues());
+    }
 }

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Core\Event;
 
-use App\Debug\StudioDebugCollector;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Event\EventMessageCode;
+use App\Core\Event\EventMessageKey;
+use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
-use App\Core\Message\Message;
 use App\Core\Workflow\WorkflowResult;
+use App\Debug\StudioDebugCollector;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Throwable;
 
@@ -45,7 +45,7 @@ final readonly class PublicEventDispatcher
             $this->debugCollector?->recordHook($eventClass, 'unknown', 'unknown', false, 'registry_failed', $context, $package, 1);
 
             $issues = [
-                Message::exception(MessageCode::EVENT_HOOK_INVALID, MessageKey::EVENT_HOOK_INVALID, [
+                Message::exception(EventMessageCode::EVENT_HOOK_INVALID, EventMessageKey::EVENT_HOOK_INVALID, [
                     '%event%' => $eventClass,
                 ], [
                     'event' => $eventClass,
@@ -63,7 +63,7 @@ final readonly class PublicEventDispatcher
             $this->debugCollector?->recordHook($eventClass, 'unknown', 'unknown', false, 'unregistered', $context, $package, 1);
 
             $issues = [
-                Message::create(MessageCode::EVENT_HOOK_UNREGISTERED, MessageKey::EVENT_HOOK_UNREGISTERED, [
+                Message::create(EventMessageCode::EVENT_HOOK_UNREGISTERED, EventMessageKey::EVENT_HOOK_UNREGISTERED, [
                     '%event%' => $eventClass,
                 ], [
                     'event' => $eventClass,
@@ -91,7 +91,7 @@ final readonly class PublicEventDispatcher
                 1,
             );
 
-            $issue = Message::exception(MessageCode::EVENT_HOOK_LISTENER_FAILED, MessageKey::EVENT_HOOK_LISTENER_FAILED, [
+            $issue = Message::exception(EventMessageCode::EVENT_HOOK_LISTENER_FAILED, EventMessageKey::EVENT_HOOK_LISTENER_FAILED, [
                 '%event%' => $eventClass,
             ], [
                 'event' => $eventClass,

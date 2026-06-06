@@ -8,9 +8,9 @@ use App\Core\Manifest\ManifestParser;
 use App\Core\Manifest\ManifestSpec;
 use App\Core\Manifest\ManifestValidator;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 
 final readonly class PackageDiscovery
@@ -52,8 +52,8 @@ final readonly class PackageDiscovery
                 $contents = file_get_contents($manifestPath);
                 if (false === $contents) {
                     $issues[] = Message::create(
-                        MessageCode::PACKAGE_MANIFEST_UNREADABLE,
-                        MessageKey::PACKAGE_MANIFEST_UNREADABLE,
+                        PackageMessageCode::PACKAGE_MANIFEST_UNREADABLE,
+                        PackageMessageKey::PACKAGE_MANIFEST_UNREADABLE,
                         ['%path%' => $manifestPath],
                         context: ['path' => $manifestPath, 'source' => $source->name()],
                         level: MessageLevel::Error,
@@ -112,8 +112,8 @@ final readonly class PackageDiscovery
                         PackageScope::fromManifestValue($scopeValue);
                     } catch (\InvalidArgumentException $exception) {
                         $issues[] = Message::create(
-                            MessageCode::PACKAGE_SCOPE_INVALID,
-                            MessageKey::PACKAGE_SCOPE_INVALID,
+                            PackageMessageCode::PACKAGE_SCOPE_INVALID,
+                            PackageMessageKey::PACKAGE_SCOPE_INVALID,
                             ['%scope%' => $scopeValue],
                             ['path' => $manifestPath, 'source' => $source->name(), 'scope' => $scopeValue],
                             MessageLevel::Error,
@@ -135,7 +135,7 @@ final readonly class PackageDiscovery
             'candidate_count' => count($candidates),
         ], [
             ...$messages,
-            Message::create(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+            Message::create(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED, [
                 '%count%' => count($candidates),
             ], [
                 'candidate_count' => count($candidates),

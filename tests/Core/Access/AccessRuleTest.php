@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Core\Access;
 
 use App\Core\Access\AccessLevel;
+use App\Core\Access\AccessMessageKey;
 use App\Core\Access\AccessRule;
-use App\Core\Message\MessageKey;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
@@ -37,7 +37,7 @@ final class AccessRuleTest extends TestCase
     public function testItRejectsInvalidStoredGroupIdentifiers(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
+        $this->expectExceptionMessage(AccessMessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
 
         AccessRule::normalizeGroupIdentifiersOrNull(['Project Team']);
     }

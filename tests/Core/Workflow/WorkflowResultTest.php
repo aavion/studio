@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Workflow;
 
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Operation\OperationMessageKey;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Core\Workflow\WorkflowStatus;
 use InvalidArgumentException;
@@ -17,7 +19,7 @@ final class WorkflowResultTest extends TestCase
 {
     public function testSuccessResultCarriesValueAndContext(): void
     {
-        $message = Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+        $message = Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED, [
             '%count%' => 1,
         ]);
         $result = WorkflowResult::success('theme-default', [
@@ -124,7 +126,7 @@ final class WorkflowResultTest extends TestCase
         $this->expectExceptionMessage('Workflow result status "requires_review" requires a user-facing confirmation prompt issue.');
 
         WorkflowResult::requiresReview(null, [
-            Message::error(MessageCode::E_OPERATION_FAILED, MessageKey::OPERATION_EXCEPTION),
+            Message::error(CommonMessageCode::E_OPERATION_FAILED, OperationMessageKey::OPERATION_EXCEPTION),
         ]);
     }
 

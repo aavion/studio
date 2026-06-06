@@ -8,16 +8,18 @@ use App\Core\ActionLog\ActionLogStatus;
 use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Operation\OperationExecutor;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Core\Workflow\WorkflowStatus;
-use InvalidArgumentException;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -131,7 +133,7 @@ final class OperationExecutorTest extends TestCase
 
     public function testItPreservesReviewRequiredActionContext(): void
     {
-        $issue = Message::info(MessageCode::OPERATION_ACTION_REQUIRED, MessageKey::OPERATION_ACTION_REQUIRED, [
+        $issue = Message::info(OperationMessageCode::OPERATION_ACTION_REQUIRED, OperationMessageKey::OPERATION_ACTION_REQUIRED, [
             '%operation%' => 'Install package',
         ]);
 
@@ -215,7 +217,7 @@ final class OperationExecutorTest extends TestCase
     public function testItPassesActionResultsToTheMessageReporter(): void
     {
         $logger = new RecordingWorkflowResultMessageReporter();
-        $message = Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+        $message = Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED, [
             '%count%' => 1,
         ]);
 

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Backend;
 
+use App\Backend\BackendMessageCode;
+use App\Backend\BackendMessageKey;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationStarter;
@@ -83,8 +83,8 @@ final readonly class BackendActions
             self::CACHE_CLEAR => $this->clearCache(),
             default => WorkflowResult::invalid([
                 Message::warning(
-                    MessageCode::BACKEND_ACTION_UNKNOWN,
-                    MessageKey::BACKEND_ACTION_UNKNOWN,
+                    BackendMessageCode::BACKEND_ACTION_UNKNOWN,
+                    BackendMessageKey::BACKEND_ACTION_UNKNOWN,
                     ['%action%' => $action],
                     ['action' => $action],
                 ),
@@ -115,8 +115,8 @@ final readonly class BackendActions
             ),
             default => WorkflowResult::invalid([
                 Message::warning(
-                    MessageCode::BACKEND_ACTION_UNKNOWN,
-                    MessageKey::BACKEND_ACTION_UNKNOWN,
+                    BackendMessageCode::BACKEND_ACTION_UNKNOWN,
+                    BackendMessageKey::BACKEND_ACTION_UNKNOWN,
                     ['%action%' => $action],
                     ['action' => $action],
                 ),
@@ -163,7 +163,7 @@ final readonly class BackendActions
 
         return WorkflowResult::success($result->value(), $result->context(), [
             Message::success(
-                MessageKey::BACKEND_ACTION_CACHE_CLEAR_COMPLETED,
+                BackendMessageKey::BACKEND_ACTION_CACHE_CLEAR_COMPLETED,
                 context: ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
             ),
         ]);

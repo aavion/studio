@@ -12,9 +12,9 @@ use App\Core\Lint\PhpLinter;
 use App\Core\Lint\TwigLinter;
 use App\Core\Lint\YamlLinter;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 
 final readonly class PackageFileSyntaxValidator
 {
@@ -37,27 +37,27 @@ final readonly class PackageFileSyntaxValidator
         $issues = [];
 
         if ($spec->lintPhpFiles()) {
-            array_push($issues, ...$this->lintFiles($candidate, $inspection->phpFiles(), $this->phpLinter, MessageCode::PACKAGE_PHP_SYNTAX_ERROR, MessageKey::PACKAGE_PHP_SYNTAX_ERROR));
+            array_push($issues, ...$this->lintFiles($candidate, $inspection->phpFiles(), $this->phpLinter, PackageMessageCode::PACKAGE_PHP_SYNTAX_ERROR, PackageMessageKey::PACKAGE_PHP_SYNTAX_ERROR));
         }
 
         if ($spec->lintTwigFiles()) {
-            array_push($issues, ...$this->lintFiles($candidate, $inspection->twigFiles(), $this->twigLinter, MessageCode::PACKAGE_TWIG_SYNTAX_ERROR, MessageKey::PACKAGE_TWIG_SYNTAX_ERROR));
+            array_push($issues, ...$this->lintFiles($candidate, $inspection->twigFiles(), $this->twigLinter, PackageMessageCode::PACKAGE_TWIG_SYNTAX_ERROR, PackageMessageKey::PACKAGE_TWIG_SYNTAX_ERROR));
         }
 
         if ($spec->lintJsonFiles()) {
-            array_push($issues, ...$this->lintFiles($candidate, $inspection->jsonFiles(), $this->jsonLinter, MessageCode::PACKAGE_JSON_SYNTAX_ERROR, MessageKey::PACKAGE_JSON_SYNTAX_ERROR));
+            array_push($issues, ...$this->lintFiles($candidate, $inspection->jsonFiles(), $this->jsonLinter, PackageMessageCode::PACKAGE_JSON_SYNTAX_ERROR, PackageMessageKey::PACKAGE_JSON_SYNTAX_ERROR));
         }
 
         if ($spec->lintYamlFiles()) {
-            array_push($issues, ...$this->lintFiles($candidate, $inspection->yamlFiles(), $this->yamlLinter, MessageCode::PACKAGE_YAML_SYNTAX_ERROR, MessageKey::PACKAGE_YAML_SYNTAX_ERROR));
+            array_push($issues, ...$this->lintFiles($candidate, $inspection->yamlFiles(), $this->yamlLinter, PackageMessageCode::PACKAGE_YAML_SYNTAX_ERROR, PackageMessageKey::PACKAGE_YAML_SYNTAX_ERROR));
         }
 
         if ($spec->lintCssFiles()) {
-            array_push($issues, ...$this->lintFiles($candidate, $inspection->cssFiles(), $this->cssLinter, MessageCode::PACKAGE_CSS_SYNTAX_ERROR, MessageKey::PACKAGE_CSS_SYNTAX_ERROR));
+            array_push($issues, ...$this->lintFiles($candidate, $inspection->cssFiles(), $this->cssLinter, PackageMessageCode::PACKAGE_CSS_SYNTAX_ERROR, PackageMessageKey::PACKAGE_CSS_SYNTAX_ERROR));
         }
 
         if ($spec->lintJavaScriptFiles()) {
-            array_push($issues, ...$this->lintFiles($candidate, $inspection->javaScriptFiles(), $this->javaScriptLinter, MessageCode::PACKAGE_JAVASCRIPT_SYNTAX_ERROR, MessageKey::PACKAGE_JAVASCRIPT_SYNTAX_ERROR));
+            array_push($issues, ...$this->lintFiles($candidate, $inspection->javaScriptFiles(), $this->javaScriptLinter, PackageMessageCode::PACKAGE_JAVASCRIPT_SYNTAX_ERROR, PackageMessageKey::PACKAGE_JAVASCRIPT_SYNTAX_ERROR));
         }
 
         return $issues;

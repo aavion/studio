@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Entity;
 
+use App\Content\ContentMessageKey;
 use App\Content\ContentStatus;
 use App\Content\ContentVisibility;
 use App\Content\Routing\ContentSystemRoute;
 use App\Content\Schema\ContentSchemaSource;
 use App\Core\Access\AccessLevel;
-use App\Core\Message\MessageKey;
+use App\Core\Access\AccessMessageKey;
 use App\Entity\ContentFieldValue;
 use App\Entity\ContentItem;
 use App\Entity\ContentRevision;
@@ -152,7 +153,7 @@ final class ContentItemTest extends TestCase
         $content = new ContentItem('11111111-1111-7111-8111-111111111111', 'private-project');
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
+        $this->expectExceptionMessage(AccessMessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
 
         $content->setViewRule(AccessLevel::AUTHOR, ['Project Team']);
     }
@@ -160,7 +161,7 @@ final class ContentItemTest extends TestCase
     public function testItRejectsInvalidUids(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::CONTENT_UID_INVALID);
+        $this->expectExceptionMessage(ContentMessageKey::CONTENT_UID_INVALID);
 
         new ContentItem('not-a-uuid', 'article');
     }
@@ -168,7 +169,7 @@ final class ContentItemTest extends TestCase
     public function testItRejectsRequiredBaseSchemaFieldsInMetadata(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::CONTENT_METADATA_RESERVED_SCHEMA_FIELD);
+        $this->expectExceptionMessage(ContentMessageKey::CONTENT_METADATA_RESERVED_SCHEMA_FIELD);
 
         new ContentItem(
             '11111111-1111-7111-8111-111111111111',
@@ -182,7 +183,7 @@ final class ContentItemTest extends TestCase
         $content = new ContentItem('11111111-1111-7111-8111-111111111111', 'article');
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::CONTENT_METADATA_RESERVED_SCHEMA_FIELD);
+        $this->expectExceptionMessage(ContentMessageKey::CONTENT_METADATA_RESERVED_SCHEMA_FIELD);
 
         $content->setMetadataValue('subtitle', 'Schema value, not metadata');
     }

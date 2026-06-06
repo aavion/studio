@@ -7,7 +7,7 @@
 
 ## Overview
 
-Issue codes are developer-facing stable identifiers. They are not final UI copy and should not be translated directly in Core. Future UI layers can map translation keys to localized messages while preserving raw codes for logs and debugging. Runtime code should use `App\Core\Message\Message` with `MessageCode` and `MessageKey` constants so logs, output, validation, and future localization share one message shape.
+Issue codes are developer-facing stable identifiers. They are not final UI copy and should not be translated directly in Core. Future UI layers can map translation keys to localized messages while preserving raw codes for logs and debugging. Runtime code should use `App\Core\Message\Message` with domain-owned `*MessageCode` and `*MessageKey` constants so logs, output, validation, and future localization share one message shape.
 
 The transport shape is:
 
@@ -18,12 +18,13 @@ parameters
 context
 ```
 
-Third-party modules and themes may provide their own codes and translation keys as long as they remain deterministic and namespaced.
+Third-party modules and themes may provide their own codes and translation keys as long as they remain deterministic and namespaced. Package-owned catalogues must stay under package-owned namespaces; system/core namespaces are reserved and win conflicts when catalogues are aggregated.
 
 Validation rules:
 
 - Codes use either uppercase generic tokens, for example `E_INVALID_ARGUMENT`, or lowercase namespaced tokens, for example `package.required_file_missing`.
 - Translation keys start with `message.`, for example `message.content.slug.invalid_format`.
+- System constants live in domain-owned catalogues such as `PackageMessageCode`, `SetupMessageKey`, or `ContentMessageKey`; central `MessageCode` and `MessageKey` classes aggregate catalogues for validation and tooling.
 - Translation parameters use placeholder names such as `%slug%`.
 - Non-translated diagnostics, paths, raw output excerpts, and internal class names belong in `context`.
 

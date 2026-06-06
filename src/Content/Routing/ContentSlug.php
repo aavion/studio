@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Content\Routing;
 
+use App\Content\ContentMessageKey;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
 use Stringable;
 
 final readonly class ContentSlug implements Stringable
@@ -19,7 +19,7 @@ final readonly class ContentSlug implements Stringable
     public static function fromString(string $slug): self
     {
         if (!self::isValid($slug)) {
-            throw MessageException::invalidArgument(MessageKey::CONTENT_SLUG_INVALID, [
+            throw MessageException::invalidArgument(ContentMessageKey::CONTENT_SLUG_INVALID, [
                 '%slug%' => $slug,
             ]);
         }

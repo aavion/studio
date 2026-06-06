@@ -6,10 +6,10 @@ namespace App\Tests\Core\Config;
 
 use App\Core\Config\Config;
 use App\Core\Config\ConfigDefaultProviderInterface;
+use App\Core\Config\ConfigMessageCode;
+use App\Core\Config\ConfigMessageKey;
 use App\Core\Config\ConfigValueType;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
 use App\Database\DatabaseReadyState;
 use App\Security\UserFlowConfig;
@@ -131,8 +131,8 @@ final class ConfigTest extends TestCase
         self::assertFalse($config->set('InvalidKey', true));
 
         self::assertCount(2, $reporter->messages);
-        self::assertSame(MessageKey::CONFIG_KEY_INVALID, $reporter->messages[0]->translationKey());
-        self::assertSame(MessageKey::CONFIG_KEY_INVALID, $reporter->messages[1]->translationKey());
+        self::assertSame(ConfigMessageKey::CONFIG_KEY_INVALID, $reporter->messages[0]->translationKey());
+        self::assertSame(ConfigMessageKey::CONFIG_KEY_INVALID, $reporter->messages[1]->translationKey());
         self::assertSame('config.get', $reporter->messages[0]->context()['operation']);
         self::assertSame('config.set', $reporter->messages[1]->context()['operation']);
     }
@@ -151,8 +151,8 @@ final class ConfigTest extends TestCase
         self::assertTrue($config->get('user.menu.enabled', true));
 
         self::assertCount(1, $reporter->messages);
-        self::assertSame(MessageCode::CONFIG_VALUE_INVALID, $reporter->messages[0]->code());
-        self::assertSame(MessageKey::CONFIG_VALUE_INVALID, $reporter->messages[0]->translationKey());
+        self::assertSame(ConfigMessageCode::CONFIG_VALUE_INVALID, $reporter->messages[0]->code());
+        self::assertSame(ConfigMessageKey::CONFIG_VALUE_INVALID, $reporter->messages[0]->translationKey());
         self::assertSame('user.menu.enabled', $reporter->messages[0]->context()['config_key']);
     }
 
@@ -166,8 +166,8 @@ final class ConfigTest extends TestCase
         self::assertFalse($config->set('user.menu.enabled', true));
 
         self::assertCount(2, $reporter->messages);
-        self::assertSame(MessageCode::CONFIG_READ_FAILED, $reporter->messages[0]->code());
-        self::assertSame(MessageCode::CONFIG_WRITE_FAILED, $reporter->messages[1]->code());
+        self::assertSame(ConfigMessageCode::CONFIG_READ_FAILED, $reporter->messages[0]->code());
+        self::assertSame(ConfigMessageCode::CONFIG_WRITE_FAILED, $reporter->messages[1]->code());
     }
 
     private function connection(): \Doctrine\DBAL\Connection

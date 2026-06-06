@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Package\Settings;
 
+use App\Core\Config\ConfigMessageKey;
 use App\Core\Config\ConfigValueType;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Validation\Identifier;
 use App\Form\FormFieldDefinition;
 use App\Form\FormInputType;
@@ -32,7 +33,7 @@ final readonly class PackageSettingDefinition
         private int $sortOrder = 0,
     ) {
         $this->assertPackageName($packageName);
-        Identifier::assertConfigKey($key, MessageKey::CONFIG_KEY_INVALID);
+        Identifier::assertConfigKey($key, ConfigMessageKey::CONFIG_KEY_INVALID);
     }
 
     public function packageName(): string
@@ -159,7 +160,7 @@ final readonly class PackageSettingDefinition
     private function assertPackageName(string $packageName): void
     {
         if (1 !== preg_match('/^[a-z0-9][a-z0-9_.\/-]*$/', $packageName)) {
-            throw MessageException::invalidArgument(MessageKey::PACKAGE_IDENTIFIER_INVALID, [
+            throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_IDENTIFIER_INVALID, [
                 '%identifier%' => $packageName,
             ]);
         }

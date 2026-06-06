@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Core\Package\Install;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Throwable;
@@ -27,8 +27,8 @@ final readonly class PackageUploadStager
         if (!$file instanceof UploadedFile || !$file->isValid()) {
             return WorkflowResult::invalid([
                 Message::warning(
-                    MessageCode::PACKAGE_INSTALL_UPLOAD_INVALID,
-                    MessageKey::PACKAGE_INSTALL_UPLOAD_INVALID,
+                    PackageMessageCode::PACKAGE_INSTALL_UPLOAD_INVALID,
+                    PackageMessageKey::PACKAGE_INSTALL_UPLOAD_INVALID,
                     context: ['reason' => 'missing_or_invalid_upload'],
                 ),
             ]);
@@ -38,8 +38,8 @@ final readonly class PackageUploadStager
         if ('zip' !== $extension) {
             return WorkflowResult::invalid([
                 Message::warning(
-                    MessageCode::PACKAGE_INSTALL_UPLOAD_INVALID,
-                    MessageKey::PACKAGE_INSTALL_UPLOAD_INVALID,
+                    PackageMessageCode::PACKAGE_INSTALL_UPLOAD_INVALID,
+                    PackageMessageKey::PACKAGE_INSTALL_UPLOAD_INVALID,
                     context: ['reason' => 'unsupported_extension', 'extension' => $extension],
                 ),
             ]);
@@ -55,8 +55,8 @@ final readonly class PackageUploadStager
         } catch (Throwable $error) {
             return WorkflowResult::failed([
                 Message::exception(
-                    MessageCode::PACKAGE_INSTALL_UPLOAD_INVALID,
-                    MessageKey::PACKAGE_INSTALL_UPLOAD_INVALID,
+                    PackageMessageCode::PACKAGE_INSTALL_UPLOAD_INVALID,
+                    PackageMessageKey::PACKAGE_INSTALL_UPLOAD_INVALID,
                     context: [
                         'install_id' => $installId,
                         'exception' => $error::class,

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Security;
 
-use App\Entity\UserAccount;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
+use App\Entity\UserAccount;
+use App\Security\SecurityMessageKey;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -67,7 +67,7 @@ final class UserAccountUniquenessGuardTest extends KernelTestCase
         $this->entityManager->persist($duplicate);
 
         $this->expectException(MessageException::class);
-        $this->expectExceptionMessage(MessageKey::USER_EMAIL_DUPLICATE);
+        $this->expectExceptionMessage(SecurityMessageKey::USER_EMAIL_DUPLICATE);
 
         $this->entityManager->flush();
     }
@@ -90,7 +90,7 @@ final class UserAccountUniquenessGuardTest extends KernelTestCase
                 'uniqueguard@example.test',
                 'pending',
             ),
-            MessageKey::USER_EMAIL_DUPLICATE,
+            SecurityMessageKey::USER_EMAIL_DUPLICATE,
         ];
 
         yield 'username' => [
@@ -106,7 +106,7 @@ final class UserAccountUniquenessGuardTest extends KernelTestCase
                 'uniqueguard-name-two@example.test',
                 'pending',
             ),
-            MessageKey::USER_USERNAME_DUPLICATE,
+            SecurityMessageKey::USER_USERNAME_DUPLICATE,
         ];
     }
 }

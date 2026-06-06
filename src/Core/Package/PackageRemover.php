@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
-use App\Core\Operation\Filesystem\RemovePathAction;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Operation\Filesystem\RemovePathAction;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use App\Entity\SchedulerTask;
@@ -141,8 +143,8 @@ final readonly class PackageRemover
         if ($package->markRemoved($this->removedMetadata($package, $filesystem->context()))) {
             $changes[] = $this->change($package, 'removed');
             $messages[] = Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_REMOVED,
-                MessageKey::PACKAGE_LIFECYCLE_REMOVED,
+                PackageMessageCode::PACKAGE_LIFECYCLE_REMOVED,
+                PackageMessageKey::PACKAGE_LIFECYCLE_REMOVED,
                 ['%package%' => $packageName],
                 ['package' => $packageName, 'path' => $package->path()],
                 MessageLevel::Success,
@@ -229,8 +231,8 @@ final readonly class PackageRemover
         ], [
             ...$cleanup->messages(),
             Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_PURGED,
-                MessageKey::PACKAGE_LIFECYCLE_PURGED,
+                PackageMessageCode::PACKAGE_LIFECYCLE_PURGED,
+                PackageMessageKey::PACKAGE_LIFECYCLE_PURGED,
                 ['%package%' => $packageName],
                 ['package' => $packageName],
                 MessageLevel::Success,
@@ -295,8 +297,8 @@ final readonly class PackageRemover
         } catch (Throwable $error) {
             return [
                 Message::exception(
-                    MessageCode::OPERATION_EXCEPTION,
-                    MessageKey::OPERATION_EXCEPTION,
+                    OperationMessageCode::OPERATION_EXCEPTION,
+                    OperationMessageKey::OPERATION_EXCEPTION,
                     context: [
                         'exception' => $error::class,
                         'message' => $error->getMessage(),
@@ -326,8 +328,8 @@ final readonly class PackageRemover
         if (!str_starts_with($package->path(), 'packages/')) {
             return WorkflowResult::blocked([
                 Message::create(
-                    MessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
-                    MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                    PackageMessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                    PackageMessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
                     ['%package%' => $package->packageName(), '%status%' => $package->status()->value],
                     ['package' => $package->packageName(), 'path' => $package->path(), 'reason' => 'not_filesystem_package'],
                     MessageLevel::Warning,
@@ -340,8 +342,8 @@ final readonly class PackageRemover
         } catch (Throwable $error) {
             return WorkflowResult::failed([
                 Message::exception(
-                    MessageCode::OPERATION_EXCEPTION,
-                    MessageKey::OPERATION_EXCEPTION,
+                    OperationMessageCode::OPERATION_EXCEPTION,
+                    OperationMessageKey::OPERATION_EXCEPTION,
                     context: [
                         'package' => $package->packageName(),
                         'path' => $package->path(),
@@ -405,8 +407,8 @@ final readonly class PackageRemover
     {
         return WorkflowResult::invalid([
             Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
-                MessageKey::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
+                PackageMessageCode::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
+                PackageMessageKey::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
                 ['%package%' => $packageName],
                 ['package' => $packageName],
                 MessageLevel::Warning,
@@ -418,8 +420,8 @@ final readonly class PackageRemover
     {
         return WorkflowResult::blocked([
             Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
-                MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                PackageMessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                PackageMessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
                 ['%package%' => $package->packageName(), '%status%' => $package->status()->value],
                 ['package' => $package->packageName(), 'status' => $package->status()->value, 'operation' => $operation],
                 MessageLevel::Warning,

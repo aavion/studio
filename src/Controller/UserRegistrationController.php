@@ -10,13 +10,11 @@ use App\Core\Id\UuidFactory;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
+use App\Core\Routing\AbsoluteUriGenerator;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
-use App\Core\Routing\AbsoluteUriGenerator;
 use App\Core\Validation\EmailAddress;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
@@ -24,12 +22,14 @@ use App\Entity\UserAccount;
 use App\Mail\AccountMailFlow;
 use App\Mail\MailLocaleResolver;
 use App\Security\AccountLinkDeliveryInterface;
+use App\Security\AccountReactivationAccessResolver;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
-use App\Security\AccountReactivationAccessResolver;
 use App\Security\PasswordPolicy;
+use App\Security\SecurityMessageCode;
+use App\Security\SecurityMessageKey;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\Security\UserGroupMembershipManager;
@@ -395,8 +395,8 @@ final class UserRegistrationController extends AbstractController
 
         try {
             $this->messageLogger->log(Message::warning(
-                MessageCode::ACCOUNT_LINK_STALE_GROUPS,
-                MessageKey::ACCOUNT_LINK_STALE_GROUPS,
+                SecurityMessageCode::ACCOUNT_LINK_STALE_GROUPS,
+                SecurityMessageKey::ACCOUNT_LINK_STALE_GROUPS,
                 context: [
                     'token_uid' => $token->uid(),
                     'token_type' => $token->type()->value,
@@ -419,7 +419,7 @@ final class UserRegistrationController extends AbstractController
 
     private function rejectDuplicateEmail(string $email): never
     {
-        throw MessageException::forMessage(MessageCode::USER_EMAIL_DUPLICATE, MessageKey::USER_EMAIL_DUPLICATE, [
+        throw MessageException::forMessage(SecurityMessageCode::USER_EMAIL_DUPLICATE, SecurityMessageKey::USER_EMAIL_DUPLICATE, [
             '%value%' => $email,
         ], [
             'field' => 'email',
@@ -428,7 +428,7 @@ final class UserRegistrationController extends AbstractController
 
     private function rejectDuplicateUsername(string $username): never
     {
-        throw MessageException::forMessage(MessageCode::USER_USERNAME_DUPLICATE, MessageKey::USER_USERNAME_DUPLICATE, [
+        throw MessageException::forMessage(SecurityMessageCode::USER_USERNAME_DUPLICATE, SecurityMessageKey::USER_USERNAME_DUPLICATE, [
             '%value%' => $username,
         ], [
             'field' => 'username',
@@ -440,7 +440,7 @@ final class UserRegistrationController extends AbstractController
      */
     private function rejectAccountLink(string $reason, array $context = []): never
     {
-        throw MessageException::forMessage(MessageCode::ACCOUNT_LINK_INVALID, MessageKey::ACCOUNT_LINK_INVALID, context: [
+        throw MessageException::forMessage(SecurityMessageCode::ACCOUNT_LINK_INVALID, SecurityMessageKey::ACCOUNT_LINK_INVALID, context: [
             'reason' => $reason,
             ...$context,
         ]);

@@ -6,10 +6,10 @@ namespace App\Core\Translation;
 
 use App\Core\Filesystem\PathGuard;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Package\PackageAssetSyncPackage;
+use App\Core\Translation\TranslationMessageCode;
+use App\Core\Translation\TranslationMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use Throwable;
 
@@ -51,7 +51,7 @@ final readonly class TranslationCatalogueAggregator
             ];
 
             return WorkflowResult::failed([
-                Message::exception(MessageCode::TRANSLATION_AGGREGATE_FAILED, MessageKey::TRANSLATION_AGGREGATE_FAILED, [
+                Message::exception(TranslationMessageCode::TRANSLATION_AGGREGATE_FAILED, TranslationMessageKey::TRANSLATION_AGGREGATE_FAILED, [
                     '%path%' => $this->runtimePath->relativeDirectory().'/messages.*.yaml',
                 ], $context),
             ], $context);
@@ -98,7 +98,7 @@ final readonly class TranslationCatalogueAggregator
         ];
 
         return WorkflowResult::success($context, $context, [
-            Message::create(MessageCode::TRANSLATION_AGGREGATE_COMPLETED, MessageKey::TRANSLATION_AGGREGATE_COMPLETED, [
+            Message::create(TranslationMessageCode::TRANSLATION_AGGREGATE_COMPLETED, TranslationMessageKey::TRANSLATION_AGGREGATE_COMPLETED, [
                 '%files%' => (string) $files,
                 '%locales%' => (string) count($catalogues),
                 '%packages%' => (string) count($packages),

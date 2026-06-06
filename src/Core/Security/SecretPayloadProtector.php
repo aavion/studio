@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Core\Security;
 
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
+use App\Core\Security\SystemSecurityMessageCode;
+use App\Core\Security\SystemSecurityMessageKey;
 
 final readonly class SecretPayloadProtector
 {
@@ -18,8 +18,8 @@ final readonly class SecretPayloadProtector
     {
         if ('' === $this->secret) {
             throw MessageException::forMessage(
-                MessageCode::SYSTEM_SECRET_PAYLOAD_ROOT_SECRET_EMPTY,
-                MessageKey::SYSTEM_SECRET_PAYLOAD_ROOT_SECRET_EMPTY,
+                SystemSecurityMessageCode::SYSTEM_SECRET_PAYLOAD_ROOT_SECRET_EMPTY,
+                SystemSecurityMessageKey::SYSTEM_SECRET_PAYLOAD_ROOT_SECRET_EMPTY,
             );
         }
     }
@@ -41,8 +41,8 @@ final readonly class SecretPayloadProtector
 
         if (false === $ciphertext) {
             throw MessageException::forMessage(
-                MessageCode::SYSTEM_SECRET_PAYLOAD_ENCRYPT_FAILED,
-                MessageKey::SYSTEM_SECRET_PAYLOAD_ENCRYPT_FAILED,
+                SystemSecurityMessageCode::SYSTEM_SECRET_PAYLOAD_ENCRYPT_FAILED,
+                SystemSecurityMessageKey::SYSTEM_SECRET_PAYLOAD_ENCRYPT_FAILED,
             );
         }
 
@@ -60,8 +60,8 @@ final readonly class SecretPayloadProtector
 
         if (4 !== count($parts) || self::VERSION !== $parts[0]) {
             throw MessageException::forMessage(
-                MessageCode::SYSTEM_SECRET_PAYLOAD_INVALID,
-                MessageKey::SYSTEM_SECRET_PAYLOAD_INVALID,
+                SystemSecurityMessageCode::SYSTEM_SECRET_PAYLOAD_INVALID,
+                SystemSecurityMessageKey::SYSTEM_SECRET_PAYLOAD_INVALID,
             );
         }
 
@@ -71,8 +71,8 @@ final readonly class SecretPayloadProtector
 
         if (null === $nonce || null === $tag || null === $ciphertext) {
             throw MessageException::forMessage(
-                MessageCode::SYSTEM_SECRET_PAYLOAD_INVALID,
-                MessageKey::SYSTEM_SECRET_PAYLOAD_INVALID,
+                SystemSecurityMessageCode::SYSTEM_SECRET_PAYLOAD_INVALID,
+                SystemSecurityMessageKey::SYSTEM_SECRET_PAYLOAD_INVALID,
             );
         }
 
@@ -88,8 +88,8 @@ final readonly class SecretPayloadProtector
 
         if (!is_string($plaintext)) {
             throw MessageException::forMessage(
-                MessageCode::SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED,
-                MessageKey::SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED,
+                SystemSecurityMessageCode::SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED,
+                SystemSecurityMessageKey::SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED,
             );
         }
 
@@ -105,8 +105,8 @@ final readonly class SecretPayloadProtector
     {
         if ('' === $context) {
             throw MessageException::forMessage(
-                MessageCode::SYSTEM_SECRET_PAYLOAD_CONTEXT_EMPTY,
-                MessageKey::SYSTEM_SECRET_PAYLOAD_CONTEXT_EMPTY,
+                SystemSecurityMessageCode::SYSTEM_SECRET_PAYLOAD_CONTEXT_EMPTY,
+                SystemSecurityMessageKey::SYSTEM_SECRET_PAYLOAD_CONTEXT_EMPTY,
             );
         }
 
@@ -114,8 +114,8 @@ final readonly class SecretPayloadProtector
 
         if (32 !== strlen($key)) {
             throw MessageException::forMessage(
-                MessageCode::SYSTEM_SECRET_PAYLOAD_KEY_DERIVATION_FAILED,
-                MessageKey::SYSTEM_SECRET_PAYLOAD_KEY_DERIVATION_FAILED,
+                SystemSecurityMessageCode::SYSTEM_SECRET_PAYLOAD_KEY_DERIVATION_FAILED,
+                SystemSecurityMessageKey::SYSTEM_SECRET_PAYLOAD_KEY_DERIVATION_FAILED,
             );
         }
 

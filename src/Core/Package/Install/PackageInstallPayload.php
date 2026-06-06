@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Core\Package\Install;
 
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Workflow\WorkflowResult;
 
 final readonly class PackageInstallPayload
@@ -30,8 +30,8 @@ final readonly class PackageInstallPayload
     {
         return WorkflowResult::invalid([
             Message::warning(
-                MessageCode::E_INVALID_ARGUMENT,
-                MessageKey::OPERATION_INVALID_PAYLOAD,
+                CommonMessageCode::E_INVALID_ARGUMENT,
+                OperationMessageKey::OPERATION_INVALID_PAYLOAD,
                 ['%operation%' => 'package.install.'.$stage],
                 ['operation' => 'package.install.'.$stage, 'payload_keys' => array_values($payloadKeys)],
             ),

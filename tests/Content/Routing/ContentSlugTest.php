@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Content\Routing;
 
-use App\Core\Message\MessageKey;
+use App\Content\ContentMessageKey;
 use App\Content\Routing\ContentSlug;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -39,7 +39,7 @@ final class ContentSlugTest extends TestCase
     public function testItRejectsUnsupportedSlugShapes(string $slug): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::CONTENT_SLUG_INVALID);
+        $this->expectExceptionMessage(ContentMessageKey::CONTENT_SLUG_INVALID);
 
         ContentSlug::fromString($slug);
     }

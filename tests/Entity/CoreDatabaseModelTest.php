@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Entity;
 
 use App\Core\Access\AccessLevel;
+use App\Core\Access\AccessMessageKey;
 use App\Core\Config\ConfigValueType;
-use App\Core\Message\MessageKey;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
-use App\Entity\AclGroup;
 use App\Entity\AccountToken;
+use App\Entity\AclGroup;
 use App\Entity\ApiKey;
 use App\Entity\ConfigEntry;
 use App\Entity\ExtensionPackage;
@@ -22,6 +22,7 @@ use App\Entity\UserAccount;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
 use App\Security\ApiKeyStatus;
+use App\Security\SecurityMessageKey;
 use App\Security\UserAccountStatus;
 use App\Security\UserRole;
 use DateTimeImmutable;
@@ -89,9 +90,9 @@ final class CoreDatabaseModelTest extends TestCase
         self::assertSame(UserRole::User, $accountToken->role());
         self::assertSame(['launch_team'], $accountToken->groupIdentifiers());
         self::assertTrue($accountToken->status()->isUsable());
-        self::assertSame(MessageKey::API_KEY_STATUS_READ_WRITE, ApiKeyStatus::ReadWrite->messageKey());
-        self::assertSame(MessageKey::API_KEY_STATUS_READ_ONLY, ApiKeyStatus::ReadOnly->messageKey());
-        self::assertSame(MessageKey::API_KEY_STATUS_REVOKED, ApiKeyStatus::Revoked->messageKey());
+        self::assertSame(SecurityMessageKey::API_KEY_STATUS_READ_WRITE, ApiKeyStatus::ReadWrite->messageKey());
+        self::assertSame(SecurityMessageKey::API_KEY_STATUS_READ_ONLY, ApiKeyStatus::ReadOnly->messageKey());
+        self::assertSame(SecurityMessageKey::API_KEY_STATUS_REVOKED, ApiKeyStatus::Revoked->messageKey());
         self::assertTrue(ApiKeyStatus::ReadWrite->isActive());
         self::assertTrue(ApiKeyStatus::ReadWrite->allowsWrite());
         self::assertTrue(ApiKeyStatus::ReadOnly->isActive());
@@ -113,7 +114,7 @@ final class CoreDatabaseModelTest extends TestCase
     public function testItRejectsShortAclGroupIdentifiers(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
+        $this->expectExceptionMessage(AccessMessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
 
         new AclGroup(
             '11111111-1111-7111-8111-111111111111',
@@ -141,7 +142,7 @@ final class CoreDatabaseModelTest extends TestCase
                 $user->changeUsername($username);
                 self::fail(sprintf('Username "%s" should have been rejected.', $username));
             } catch (InvalidArgumentException $exception) {
-                self::assertStringContainsString(MessageKey::USERNAME_INVALID, $exception->getMessage());
+                self::assertStringContainsString(SecurityMessageKey::USERNAME_INVALID, $exception->getMessage());
             }
         }
     }
@@ -215,7 +216,7 @@ final class CoreDatabaseModelTest extends TestCase
         $menu = new SiteMenu('66666666-6666-7666-8666-666666666666', 'main', ['en' => 'Main']);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
+        $this->expectExceptionMessage(AccessMessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
 
         new SiteMenuItem(
             '77777777-7777-7777-8777-777777777777',
@@ -230,7 +231,7 @@ final class CoreDatabaseModelTest extends TestCase
     public function testItRejectsInvalidAccessLevels(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::ACCESS_LEVEL_INVALID);
+        $this->expectExceptionMessage(AccessMessageKey::ACCESS_LEVEL_INVALID);
 
         new AclGroup('11111111-1111-7111-8111-111111111111', 'bad', 'Bad', 42);
     }

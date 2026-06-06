@@ -6,10 +6,10 @@ namespace App\Scheduler;
 
 use App\Core\Id\UuidFactory;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Entity\SchedulerTask;
 use App\Entity\SchedulerTaskRun;
+use App\Scheduler\SchedulerMessageCode;
+use App\Scheduler\SchedulerMessageKey;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Throwable;
@@ -86,7 +86,7 @@ final readonly class SchedulerTaskRunRecorder
             $this->entityManager->flush();
             $this->reporter->logSoftBudgetIfExceeded($task, $run, $softBudgetMs);
             $this->reporter->logTaskFailure($task, $run, [
-                Message::exception(MessageCode::SCHEDULER_TASK_FAILED, MessageKey::SCHEDULER_TASK_FAILED, [
+                Message::exception(SchedulerMessageCode::SCHEDULER_TASK_FAILED, SchedulerMessageKey::SCHEDULER_TASK_FAILED, [
                     '%task%' => $task->identifier(),
                 ], [
                     'task' => $task->identifier(),

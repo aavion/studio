@@ -7,9 +7,9 @@ namespace App\Tests\Controller;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\Live\LiveOperationRunStore;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -66,8 +66,8 @@ final class LiveOperationControllerTest extends WebTestCase
         $run = $store->create('backend.cache_clear.dry_run', [], 'Cache clear dry-run');
         $result = WorkflowResult::requiresReview(null, [
             Message::info(
-                MessageCode::OPERATION_ACTION_REQUIRED,
-                MessageKey::OPERATION_ACTION_REQUIRED,
+                OperationMessageCode::OPERATION_ACTION_REQUIRED,
+                OperationMessageKey::OPERATION_ACTION_REQUIRED,
                 ['%operation%' => 'Cache clear'],
             ),
         ], [

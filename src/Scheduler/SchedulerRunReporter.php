@@ -6,10 +6,10 @@ namespace App\Scheduler;
 
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Entity\SchedulerTask;
 use App\Entity\SchedulerTaskRun;
+use App\Scheduler\SchedulerMessageCode;
+use App\Scheduler\SchedulerMessageKey;
 
 final readonly class SchedulerRunReporter
 {
@@ -25,8 +25,8 @@ final readonly class SchedulerRunReporter
     public function logRunCompleted(?string $jobIdentifier, bool $force, int $durationMs, array $results): void
     {
         $this->messageLogger->log(Message::debug(
-            MessageCode::SCHEDULER_RUN_COMPLETED,
-            MessageKey::SCHEDULER_RUN_COMPLETED,
+            SchedulerMessageCode::SCHEDULER_RUN_COMPLETED,
+            SchedulerMessageKey::SCHEDULER_RUN_COMPLETED,
             context: [
                 'job' => $jobIdentifier,
                 'force' => $force,
@@ -57,8 +57,8 @@ final readonly class SchedulerRunReporter
         }
 
         $this->messageLogger->log(Message::info(
-            MessageCode::SCHEDULER_TASK_SOFT_BUDGET_EXCEEDED,
-            MessageKey::SCHEDULER_TASK_SOFT_BUDGET_EXCEEDED,
+            SchedulerMessageCode::SCHEDULER_TASK_SOFT_BUDGET_EXCEEDED,
+            SchedulerMessageKey::SCHEDULER_TASK_SOFT_BUDGET_EXCEEDED,
             ['%task%' => $task->identifier()],
             [
                 'task' => $task->identifier(),
@@ -72,8 +72,8 @@ final readonly class SchedulerRunReporter
     public function logInvalidCronDisabled(SchedulerTask $task, SchedulerTaskRun $run): void
     {
         $this->messageLogger->log(Message::exception(
-            MessageCode::SCHEDULER_TASK_INVALID_CRON_DISABLED,
-            MessageKey::SCHEDULER_TASK_INVALID_CRON_DISABLED,
+            SchedulerMessageCode::SCHEDULER_TASK_INVALID_CRON_DISABLED,
+            SchedulerMessageKey::SCHEDULER_TASK_INVALID_CRON_DISABLED,
             ['%task%' => $task->identifier()],
             [
                 'task' => $task->identifier(),
@@ -89,8 +89,8 @@ final readonly class SchedulerRunReporter
     public function logTaskFailure(SchedulerTask $task, SchedulerTaskRun $run, array $messages): void
     {
         $message = $task->failureCount() >= $this->failurePolicy->disableAfterFailures()
-            ? Message::exception(MessageCode::SCHEDULER_TASK_DISABLED, MessageKey::SCHEDULER_TASK_DISABLED, ['%task%' => $task->identifier()])
-            : Message::warning(MessageCode::SCHEDULER_TASK_FAILED, MessageKey::SCHEDULER_TASK_FAILED, ['%task%' => $task->identifier()]);
+            ? Message::exception(SchedulerMessageCode::SCHEDULER_TASK_DISABLED, SchedulerMessageKey::SCHEDULER_TASK_DISABLED, ['%task%' => $task->identifier()])
+            : Message::warning(SchedulerMessageCode::SCHEDULER_TASK_FAILED, SchedulerMessageKey::SCHEDULER_TASK_FAILED, ['%task%' => $task->identifier()]);
 
         $this->messageLogger->log($message->withContext([
             'task' => $task->identifier(),

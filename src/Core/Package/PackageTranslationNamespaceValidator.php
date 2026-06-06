@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use Symfony\Component\Yaml\Yaml;
 use Throwable;
 
@@ -37,8 +37,8 @@ final readonly class PackageTranslationNamespaceValidator
 
         if ([] === array_filter($translationFiles, static fn (string $file): bool => str_starts_with($file, 'languages/en/'))) {
             $issues[] = Message::create(
-                MessageCode::PACKAGE_TRANSLATION_ENGLISH_MISSING,
-                MessageKey::PACKAGE_TRANSLATION_ENGLISH_MISSING,
+                PackageMessageCode::PACKAGE_TRANSLATION_ENGLISH_MISSING,
+                PackageMessageKey::PACKAGE_TRANSLATION_ENGLISH_MISSING,
                 ['%package%' => $packageName],
                 context: $this->issueFactory->fileContext($candidate, 'languages/en', $candidate->directory().DIRECTORY_SEPARATOR.'languages/en', [
                     'package' => $packageName,
@@ -64,8 +64,8 @@ final readonly class PackageTranslationNamespaceValidator
                 || array_keys($data['pkg']) !== [$packageName]
             ) {
                 $issues[] = Message::create(
-                    MessageCode::PACKAGE_TRANSLATION_NAMESPACE_INVALID,
-                    MessageKey::PACKAGE_TRANSLATION_NAMESPACE_INVALID,
+                    PackageMessageCode::PACKAGE_TRANSLATION_NAMESPACE_INVALID,
+                    PackageMessageKey::PACKAGE_TRANSLATION_NAMESPACE_INVALID,
                     ['%path%' => $path, '%package%' => $packageName],
                     context: $this->issueFactory->fileContext($candidate, $file, $path, [
                         'package' => $packageName,

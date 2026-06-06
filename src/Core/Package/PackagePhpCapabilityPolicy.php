@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 
 final readonly class PackagePhpCapabilityPolicy
 {
@@ -268,8 +268,8 @@ final readonly class PackagePhpCapabilityPolicy
     private function issue(PackageCandidate $candidate, string $file, string $path, string $capability, string $reason): Message
     {
         return Message::create(
-            MessageCode::PACKAGE_POLICY_BLOCKED_PHP_CAPABILITY,
-            MessageKey::PACKAGE_POLICY_BLOCKED_PHP_CAPABILITY,
+            PackageMessageCode::PACKAGE_POLICY_BLOCKED_PHP_CAPABILITY,
+            PackageMessageKey::PACKAGE_POLICY_BLOCKED_PHP_CAPABILITY,
             ['%path%' => $path, '%capability%' => $capability, '%reason%' => $reason],
             context: $this->issueFactory->fileContext($candidate, $file, $path, [
                 'capability' => $capability,

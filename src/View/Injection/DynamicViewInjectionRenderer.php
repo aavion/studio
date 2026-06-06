@@ -8,12 +8,12 @@ use App\Content\Read\PublishedContentView;
 use App\Core\Access\AccessActor;
 use App\Core\Access\AccessRule;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
+use App\View\ViewMessageCode;
+use App\View\ViewMessageKey;
 use Symfony\Component\HttpFoundation\Request;
-use Twig\Environment;
 use Throwable;
+use Twig\Environment;
 
 final readonly class DynamicViewInjectionRenderer
 {
@@ -103,8 +103,8 @@ final readonly class DynamicViewInjectionRenderer
         try {
             $this->messageReporter->report(
                 Message::warning(
-                    MessageCode::VIEW_DYNAMIC_INJECTION_RENDER_FAILED,
-                    MessageKey::VIEW_DYNAMIC_INJECTION_RENDER_FAILED,
+                    ViewMessageCode::VIEW_DYNAMIC_INJECTION_RENDER_FAILED,
+                    ViewMessageKey::VIEW_DYNAMIC_INJECTION_RENDER_FAILED,
                     [
                         '%uid%' => $injection->uid(),
                         '%template%' => $injection->template(),

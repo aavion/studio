@@ -6,7 +6,7 @@ namespace App\Core\Event;
 
 use App\Content\Event\ContentRenderContextEvent;
 use App\Content\Event\ContentRenderedEvent;
-use App\Core\Message\MessageKey;
+use App\Core\Event\EventMessageKey;
 use App\Core\Package\Event\PackageAssetRegistryBuildEvent;
 use App\Core\Package\Event\PackageAssetSyncCompletedEvent;
 use App\Core\Package\Event\PackageAssetSyncStartedEvent;
@@ -28,7 +28,7 @@ final readonly class CoreEventHookProvider implements EventHookDescriptorProvide
             ViewContextEvent::class,
             'view',
             EventHookMode::Extend,
-            MessageKey::EVENT_HOOK_VIEW_CONTEXT_SUMMARY,
+            EventMessageKey::EVENT_HOOK_VIEW_CONTEXT_SUMMARY,
             mutable: true,
         );
 
@@ -36,7 +36,7 @@ final readonly class CoreEventHookProvider implements EventHookDescriptorProvide
             ContentRenderContextEvent::class,
             'content',
             EventHookMode::Extend,
-            MessageKey::EVENT_HOOK_CONTENT_RENDER_CONTEXT_SUMMARY,
+            EventMessageKey::EVENT_HOOK_CONTENT_RENDER_CONTEXT_SUMMARY,
             mutable: true,
         );
 
@@ -44,7 +44,7 @@ final readonly class CoreEventHookProvider implements EventHookDescriptorProvide
             ContentRenderedEvent::class,
             'content',
             EventHookMode::Extend,
-            MessageKey::EVENT_HOOK_CONTENT_RENDERED_SUMMARY,
+            EventMessageKey::EVENT_HOOK_CONTENT_RENDERED_SUMMARY,
             mutable: true,
         );
 
@@ -52,7 +52,7 @@ final readonly class CoreEventHookProvider implements EventHookDescriptorProvide
             NavigationBuilderEvent::class,
             'navigation',
             EventHookMode::Extend,
-            MessageKey::EVENT_HOOK_NAVIGATION_BUILDER_SUMMARY,
+            EventMessageKey::EVENT_HOOK_NAVIGATION_BUILDER_SUMMARY,
             mutable: true,
         );
 
@@ -60,7 +60,7 @@ final readonly class CoreEventHookProvider implements EventHookDescriptorProvide
             StaticViewInjectionRegistryEvent::class,
             'view',
             EventHookMode::Extend,
-            MessageKey::EVENT_HOOK_STATIC_VIEW_INJECTION_REGISTRY_SUMMARY,
+            EventMessageKey::EVENT_HOOK_STATIC_VIEW_INJECTION_REGISTRY_SUMMARY,
             mutable: true,
         );
 
@@ -68,7 +68,7 @@ final readonly class CoreEventHookProvider implements EventHookDescriptorProvide
             DynamicViewInjectionRegistryEvent::class,
             'view',
             EventHookMode::Extend,
-            MessageKey::EVENT_HOOK_DYNAMIC_VIEW_INJECTION_REGISTRY_SUMMARY,
+            EventMessageKey::EVENT_HOOK_DYNAMIC_VIEW_INJECTION_REGISTRY_SUMMARY,
             mutable: true,
         );
 
@@ -76,7 +76,7 @@ final readonly class CoreEventHookProvider implements EventHookDescriptorProvide
             ResponseHeadersEvent::class,
             'http',
             EventHookMode::Extend,
-            MessageKey::EVENT_HOOK_RESPONSE_HEADERS_SUMMARY,
+            EventMessageKey::EVENT_HOOK_RESPONSE_HEADERS_SUMMARY,
             mutable: true,
         );
 
@@ -84,7 +84,7 @@ final readonly class CoreEventHookProvider implements EventHookDescriptorProvide
             OutputGeneratedEvent::class,
             'view',
             EventHookMode::Extend,
-            MessageKey::EVENT_HOOK_OUTPUT_GENERATED_SUMMARY,
+            EventMessageKey::EVENT_HOOK_OUTPUT_GENERATED_SUMMARY,
             mutable: true,
         );
 
@@ -92,14 +92,14 @@ final readonly class CoreEventHookProvider implements EventHookDescriptorProvide
             PackageAssetSyncStartedEvent::class,
             'package',
             EventHookMode::Observe,
-            MessageKey::EVENT_HOOK_PACKAGE_ASSET_SYNC_STARTED_SUMMARY,
+            EventMessageKey::EVENT_HOOK_PACKAGE_ASSET_SYNC_STARTED_SUMMARY,
         );
 
         yield new EventHookDescriptor(
             PackageAssetRegistryBuildEvent::class,
             'package',
             EventHookMode::Extend,
-            MessageKey::EVENT_HOOK_PACKAGE_ASSET_REGISTRY_BUILD_SUMMARY,
+            EventMessageKey::EVENT_HOOK_PACKAGE_ASSET_REGISTRY_BUILD_SUMMARY,
             mutable: true,
         );
 
@@ -107,7 +107,7 @@ final readonly class CoreEventHookProvider implements EventHookDescriptorProvide
             PackageAssetSyncCompletedEvent::class,
             'package',
             EventHookMode::Observe,
-            MessageKey::EVENT_HOOK_PACKAGE_ASSET_SYNC_COMPLETED_SUMMARY,
+            EventMessageKey::EVENT_HOOK_PACKAGE_ASSET_SYNC_COMPLETED_SUMMARY,
         );
     }
 }

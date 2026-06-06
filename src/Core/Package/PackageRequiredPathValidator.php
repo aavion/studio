@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 
 final readonly class PackageRequiredPathValidator
 {
@@ -26,8 +26,8 @@ final readonly class PackageRequiredPathValidator
             $absolutePath = $candidate->directory().DIRECTORY_SEPARATOR.$path;
             if (!is_file($absolutePath)) {
                 $issues[] = Message::create(
-                    MessageCode::PACKAGE_REQUIRED_FILE_MISSING,
-                    MessageKey::PACKAGE_REQUIRED_FILE_MISSING,
+                    PackageMessageCode::PACKAGE_REQUIRED_FILE_MISSING,
+                    PackageMessageKey::PACKAGE_REQUIRED_FILE_MISSING,
                     ['%path%' => $absolutePath],
                     context: $this->issueFactory->requirementContext($candidate, $path, $absolutePath),
                     level: MessageLevel::Error,
@@ -39,8 +39,8 @@ final readonly class PackageRequiredPathValidator
             $absolutePath = $candidate->directory().DIRECTORY_SEPARATOR.$path;
             if (!is_dir($absolutePath)) {
                 $issues[] = Message::create(
-                    MessageCode::PACKAGE_REQUIRED_DIRECTORY_MISSING,
-                    MessageKey::PACKAGE_REQUIRED_DIRECTORY_MISSING,
+                    PackageMessageCode::PACKAGE_REQUIRED_DIRECTORY_MISSING,
+                    PackageMessageKey::PACKAGE_REQUIRED_DIRECTORY_MISSING,
                     ['%path%' => $absolutePath],
                     context: $this->issueFactory->requirementContext($candidate, $path, $absolutePath),
                     level: MessageLevel::Error,

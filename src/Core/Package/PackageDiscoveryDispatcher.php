@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Database\TablePrefix;
 use Doctrine\DBAL\Connection;
@@ -35,8 +35,8 @@ final readonly class PackageDiscoveryDispatcher
         if (!$this->messengerStorageReady()) {
             return $this->report(WorkflowResult::failed([
                 Message::warning(
-                    MessageCode::PACKAGE_DISCOVERY_QUEUE_FAILED,
-                    MessageKey::PACKAGE_DISCOVERY_QUEUE_FAILED,
+                    PackageMessageCode::PACKAGE_DISCOVERY_QUEUE_FAILED,
+                    PackageMessageKey::PACKAGE_DISCOVERY_QUEUE_FAILED,
                     ['%trigger%' => $trigger],
                     ['trigger' => $trigger, 'reason' => 'messenger_storage_unavailable'],
                 ),
@@ -51,8 +51,8 @@ final readonly class PackageDiscoveryDispatcher
         } catch (Throwable $error) {
             return $this->report(WorkflowResult::failed([
                 Message::exception(
-                    MessageCode::PACKAGE_DISCOVERY_QUEUE_FAILED,
-                    MessageKey::PACKAGE_DISCOVERY_QUEUE_FAILED,
+                    PackageMessageCode::PACKAGE_DISCOVERY_QUEUE_FAILED,
+                    PackageMessageKey::PACKAGE_DISCOVERY_QUEUE_FAILED,
                     ['%trigger%' => $trigger],
                     [
                         'trigger' => $trigger,
@@ -74,8 +74,8 @@ final readonly class PackageDiscoveryDispatcher
             'deferred' => true,
         ], [
             Message::create(
-                MessageCode::PACKAGE_DISCOVERY_QUEUED,
-                MessageKey::PACKAGE_DISCOVERY_QUEUED,
+                PackageMessageCode::PACKAGE_DISCOVERY_QUEUED,
+                PackageMessageKey::PACKAGE_DISCOVERY_QUEUED,
                 ['%trigger%' => $trigger],
                 ['trigger' => $trigger, 'deferred' => true],
                 MessageLevel::Success,

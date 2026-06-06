@@ -6,13 +6,13 @@ namespace App\Security;
 
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\EmailAddress;
 use App\Entity\AccountToken;
 use App\Mail\AccountMailFlow;
 use App\Mail\MailDeliveryMessage;
 use App\Mail\MailFlowRegistry;
+use App\Security\SecurityMessageCode;
+use App\Security\SecurityMessageKey;
 
 final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliveryInterface
 {
@@ -97,7 +97,7 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
         $recipient = $mailMessage->recipientEmail();
 
         $this->messageLogger->log(
-            Message::debug(MessageCode::ACCOUNT_MAIL_STUB_QUEUED, MessageKey::ACCOUNT_MAIL_STUB_QUEUED, [
+            Message::debug(SecurityMessageCode::ACCOUNT_MAIL_STUB_QUEUED, SecurityMessageKey::ACCOUNT_MAIL_STUB_QUEUED, [
                 '%email%' => $recipient ?? 'configured administrator',
                 '%flow%' => $mailMessage->flowKey(),
             ]),

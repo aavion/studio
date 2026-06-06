@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\View\Injection;
 
+use App\Content\ContentMessageKey;
 use App\Content\ContentStatus;
 use App\Content\ContentVisibility;
 use App\Content\Read\PublishedContentView;
 use App\Content\Routing\ContentSystemRoute;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 
 final readonly class DynamicViewInjectionFilter
@@ -25,7 +25,7 @@ final readonly class DynamicViewInjectionFilter
         private array $visibilities = [],
     ) {
         foreach ($schemaIdentifiers as $identifier) {
-            Identifier::assertSnakeCase($identifier, MessageKey::CONTENT_SCHEMA_IDENTIFIER_INVALID, '%identifier%');
+            Identifier::assertSnakeCase($identifier, ContentMessageKey::CONTENT_SCHEMA_IDENTIFIER_INVALID, '%identifier%');
         }
     }
 

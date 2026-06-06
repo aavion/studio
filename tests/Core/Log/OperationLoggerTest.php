@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Log;
 
-use App\Core\Log\OperationLogger;
 use App\Core\Log\MessageLoggerInterface;
+use App\Core\Log\OperationLogger;
 use App\Core\Message\Message;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporter;
+use App\Core\Operation\OperationMessageKey;
 use PHPUnit\Framework\TestCase;
 
 final class OperationLoggerTest extends TestCase
@@ -35,7 +35,7 @@ final class OperationLoggerTest extends TestCase
         $records = $logger->records;
 
         self::assertCount(1, $records);
-        self::assertSame(MessageKey::OPERATION_FINISHED, $records[0]['message']->translationKey());
+        self::assertSame(OperationMessageKey::OPERATION_FINISHED, $records[0]['message']->translationKey());
         self::assertSame('live_operation.summary', $records[0]['context']['operation']);
         self::assertSame('backend.cache_clear', $records[0]['message']->context()['operation']);
         self::assertSame('success', $records[0]['message']->context()['status']);
@@ -66,9 +66,9 @@ final class OperationLoggerTest extends TestCase
 
         $records = $messageLogger->records;
 
-        self::assertSame(MessageKey::OPERATION_REQUIRES_REVIEW, $records[0]['message']->translationKey());
+        self::assertSame(OperationMessageKey::OPERATION_REQUIRES_REVIEW, $records[0]['message']->translationKey());
         self::assertTrue($records[0]['message']->context()['can_continue']);
-        self::assertSame(MessageKey::OPERATION_FAILED, $records[1]['message']->translationKey());
+        self::assertSame(OperationMessageKey::OPERATION_FAILED, $records[1]['message']->translationKey());
     }
 }
 

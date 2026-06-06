@@ -70,6 +70,7 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-06
+- Split message code/key constants into domain-owned catalogues aggregated by central `MessageCode`/`MessageKey` registries, migrated call sites to owning catalogues, and documented/tested scope-bound naming for future system and package message catalogues.
 - Shared setup/runtime language catalogue discovery through `LanguageCatalogueDiscovery` so setup and application locale availability use the same dynamic translation-source/runtime scan while setup keeps its DB-free default-language fallback.
 - Added authenticated session visitor binding so successful logins and legacy authenticated sessions bind to the current first-party visitor ID, while established sessions with a changed visitor signal are audited, invalidated, and redirected to login to stop copied session cookies from staying usable.
 - Reworked visitor identity from IP/user-agent HMACs to a signed first-party `system_visitor` cookie with compact 128-bit stored visitor IDs, keeping Visitor and IP signals separate for future rate limiting and blocking.

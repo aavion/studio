@@ -6,9 +6,9 @@ namespace App\Core\Package\Install;
 
 use App\Core\Manifest\Manifest;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Package\ExtensionPackageStatus;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 
@@ -43,8 +43,8 @@ final readonly class PackageInstallVersionGuard
 
         return WorkflowResult::blocked([
             Message::warning(
-                MessageCode::PACKAGE_INSTALL_VERSION_BLOCKED,
-                MessageKey::PACKAGE_INSTALL_VERSION_BLOCKED,
+                PackageMessageCode::PACKAGE_INSTALL_VERSION_BLOCKED,
+                PackageMessageKey::PACKAGE_INSTALL_VERSION_BLOCKED,
                 [
                     '%package%' => $slug,
                     '%version%' => '' !== $version ? $version : 'unknown',

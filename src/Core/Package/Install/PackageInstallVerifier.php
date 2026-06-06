@@ -6,13 +6,13 @@ namespace App\Core\Package\Install;
 
 use App\Core\Manifest\ManifestValidator;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageCandidate;
 use App\Core\Package\PackageManifestSpec;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Package\PackageScope;
 use App\Core\Package\PackageSource;
 use App\Core\Package\PackageSpec;
@@ -66,8 +66,8 @@ final readonly class PackageInstallVerifier
         if (null === $packageRoot) {
             return WorkflowResult::invalid([
                 Message::error(
-                    MessageCode::PACKAGE_INSTALL_ROOT_INVALID,
-                    MessageKey::PACKAGE_INSTALL_ROOT_INVALID,
+                    PackageMessageCode::PACKAGE_INSTALL_ROOT_INVALID,
+                    PackageMessageKey::PACKAGE_INSTALL_ROOT_INVALID,
                     context: ['install_id' => $installId, 'stage_path' => $this->filesystem->relativePath($stagePath)],
                 ),
             ]);
@@ -92,8 +92,8 @@ final readonly class PackageInstallVerifier
         if ('system' === $slug || !PackageManifestSpec::isValidSlug($slug)) {
             return WorkflowResult::invalid([
                 Message::warning(
-                    MessageCode::PACKAGE_IDENTIFIER_INVALID,
-                    MessageKey::PACKAGE_IDENTIFIER_INVALID,
+                    PackageMessageCode::PACKAGE_IDENTIFIER_INVALID,
+                    PackageMessageKey::PACKAGE_IDENTIFIER_INVALID,
                     ['%identifier%' => $slug],
                     ['install_id' => $installId, 'slug' => $slug],
                 ),
@@ -105,8 +105,8 @@ final readonly class PackageInstallVerifier
         } catch (\InvalidArgumentException) {
             return WorkflowResult::invalid([
                 Message::error(
-                    MessageCode::PACKAGE_SCOPE_INVALID,
-                    MessageKey::PACKAGE_SCOPE_INVALID,
+                    PackageMessageCode::PACKAGE_SCOPE_INVALID,
+                    PackageMessageKey::PACKAGE_SCOPE_INVALID,
                     ['%scope%' => $scope],
                     ['install_id' => $installId, 'slug' => $slug, 'scope' => $scope],
                 ),
@@ -172,8 +172,8 @@ final readonly class PackageInstallVerifier
 
         $issues = [
             Message::info(
-                MessageCode::PACKAGE_INSTALL_READY,
-                MessageKey::PACKAGE_INSTALL_READY,
+                PackageMessageCode::PACKAGE_INSTALL_READY,
+                PackageMessageKey::PACKAGE_INSTALL_READY,
                 ['%package%' => $name, '%version%' => $version],
                 ['install_id' => $installId, 'package' => $slug, 'version' => $version],
             ),
@@ -181,8 +181,8 @@ final readonly class PackageInstallVerifier
 
         if ($existing instanceof ExtensionPackage) {
             $issues[] = Message::warning(
-                MessageCode::PACKAGE_INSTALL_OVERWRITE,
-                MessageKey::PACKAGE_INSTALL_OVERWRITE,
+                PackageMessageCode::PACKAGE_INSTALL_OVERWRITE,
+                PackageMessageKey::PACKAGE_INSTALL_OVERWRITE,
                 ['%package%' => $slug],
                 ['install_id' => $installId, 'package' => $slug, 'was_active' => $wasActive],
             );

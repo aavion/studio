@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Access;
 
+use App\Core\Access\AccessMessageKey;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 
 final readonly class AccessRule
@@ -102,7 +102,7 @@ final readonly class AccessRule
     {
         foreach ($groupIdentifiers as $identifier) {
             if (!is_string($identifier)) {
-                throw MessageException::invalidArgument(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
+                throw MessageException::invalidArgument(AccessMessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
                     '%identifier%' => 'non-string',
                 ]);
             }

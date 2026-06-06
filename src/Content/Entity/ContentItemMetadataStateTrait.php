@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Content\Entity;
 
+use App\Content\ContentMessageKey;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
 use Doctrine\ORM\Mapping as ORM;
 
 trait ContentItemMetadataStateTrait
@@ -40,7 +40,7 @@ trait ContentItemMetadataStateTrait
     public function setMetadataValue(string $key, mixed $value): void
     {
         if ('' === trim($key)) {
-            throw MessageException::invalidArgument(MessageKey::CONTENT_METADATA_KEY_EMPTY);
+            throw MessageException::invalidArgument(ContentMessageKey::CONTENT_METADATA_KEY_EMPTY);
         }
 
         ContentItemInput::metadataKey($key);

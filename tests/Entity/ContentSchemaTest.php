@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Entity;
 
+use App\Content\ContentMessageKey;
 use App\Content\Schema\ContentSchemaSource;
 use App\Core\Access\AccessLevel;
-use App\Core\Message\MessageKey;
 use App\Entity\ContentSchema;
 use App\Entity\ContentSchemaVersion;
 use InvalidArgumentException;
@@ -69,7 +69,7 @@ final class ContentSchemaTest extends TestCase
         );
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::CONTENT_SCHEMA_REQUIRED_FIELD_MISSING);
+        $this->expectExceptionMessage(ContentMessageKey::CONTENT_SCHEMA_REQUIRED_FIELD_MISSING);
 
         new ContentSchemaVersion(
             'bbbbbbbb-bbbb-7bbb-bbbb-bbbbbbbbbbbb',
@@ -94,7 +94,7 @@ final class ContentSchemaTest extends TestCase
         );
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::CONTENT_SCHEMA_FIELD_DUPLICATE);
+        $this->expectExceptionMessage(ContentMessageKey::CONTENT_SCHEMA_FIELD_DUPLICATE);
 
         new ContentSchemaVersion(
             'bbbbbbbb-bbbb-7bbb-bbbb-bbbbbbbbbbbb',
@@ -121,7 +121,7 @@ final class ContentSchemaTest extends TestCase
         );
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::CONTENT_FIELD_IDENTIFIER_INVALID);
+        $this->expectExceptionMessage(ContentMessageKey::CONTENT_FIELD_IDENTIFIER_INVALID);
 
         new ContentSchemaVersion(
             'bbbbbbbb-bbbb-7bbb-bbbb-bbbbbbbbbbbb',

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Validation;
 
+use App\Core\Access\AccessMessageKey;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
 
 final class Identifier
 {
@@ -23,7 +23,7 @@ final class Identifier
     public static function assertAclGroupIdentifier(string $identifier, string $parameterName = '%identifier%'): string
     {
         if (1 !== preg_match('/^[a-z][a-z0-9_]{2,79}$/', $identifier)) {
-            throw MessageException::invalidArgument(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
+            throw MessageException::invalidArgument(AccessMessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
                 $parameterName => $identifier,
             ]);
         }

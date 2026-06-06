@@ -9,9 +9,9 @@ use App\Core\DryRun\DryRunDiff;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Filesystem\PathGuard;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Operation\Filesystem\FilesystemMessageCode;
+use App\Core\Operation\Filesystem\FilesystemMessageKey;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Workflow\WorkflowResult;
 
@@ -71,7 +71,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (is_link($target)) {
             return WorkflowResult::blocked([
-                Message::create(MessageCode::FILESYSTEM_TARGET_SYMLINK, MessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
+                Message::create(FilesystemMessageCode::FILESYSTEM_TARGET_SYMLINK, FilesystemMessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
                     'path' => $this->relativePath,
                 ], level: MessageLevel::Warning),
             ]);
@@ -79,7 +79,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (is_dir($target)) {
             return WorkflowResult::blocked([
-                Message::create(MessageCode::FILESYSTEM_FILE_CONFLICT, MessageKey::FILESYSTEM_FILE_CONFLICT, context: [
+                Message::create(FilesystemMessageCode::FILESYSTEM_FILE_CONFLICT, FilesystemMessageKey::FILESYSTEM_FILE_CONFLICT, context: [
                     'path' => $this->relativePath,
                 ], level: MessageLevel::Warning),
             ]);
@@ -87,7 +87,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if ($exists && !$this->overwrite) {
             return WorkflowResult::blocked([
-                Message::create(MessageCode::FILESYSTEM_FILE_EXISTS, MessageKey::FILESYSTEM_FILE_EXISTS, context: [
+                Message::create(FilesystemMessageCode::FILESYSTEM_FILE_EXISTS, FilesystemMessageKey::FILESYSTEM_FILE_EXISTS, context: [
                     'path' => $this->relativePath,
                 ], level: MessageLevel::Warning),
             ]);
@@ -103,7 +103,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (false === $bytes) {
             return WorkflowResult::failed([
-                Message::create(MessageCode::FILESYSTEM_FILE_WRITE_FAILED, MessageKey::FILESYSTEM_FILE_WRITE_FAILED, context: [
+                Message::create(FilesystemMessageCode::FILESYSTEM_FILE_WRITE_FAILED, FilesystemMessageKey::FILESYSTEM_FILE_WRITE_FAILED, context: [
                     'path' => $this->relativePath,
                 ], level: MessageLevel::Error),
             ]);
@@ -119,7 +119,7 @@ final readonly class WriteFileAction implements OperationActionInterface
             'overwritten' => $exists,
         ], [
             ...$parentResult->messages(),
-            Message::debug(MessageCode::FILESYSTEM_FILE_WRITTEN, MessageKey::FILESYSTEM_FILE_WRITTEN, [
+            Message::debug(FilesystemMessageCode::FILESYSTEM_FILE_WRITTEN, FilesystemMessageKey::FILESYSTEM_FILE_WRITTEN, [
                 '%path%' => $this->relativePath,
             ], [
                 'path' => $this->relativePath,
@@ -144,7 +144,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (null !== $symlinkAncestor) {
             return WorkflowResult::blocked([
-                Message::create(MessageCode::FILESYSTEM_PARENT_SYMLINK, MessageKey::FILESYSTEM_PARENT_SYMLINK, context: [
+                Message::create(FilesystemMessageCode::FILESYSTEM_PARENT_SYMLINK, FilesystemMessageKey::FILESYSTEM_PARENT_SYMLINK, context: [
                     'path' => $this->relativePath,
                     'parent' => $symlinkAncestor,
                 ], level: MessageLevel::Warning),
@@ -153,7 +153,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (is_dir($parent)) {
             return WorkflowResult::success(messages: [
-                Message::debug(MessageCode::FILESYSTEM_PARENT_DIRECTORY_READY, MessageKey::FILESYSTEM_PARENT_DIRECTORY_READY, [
+                Message::debug(FilesystemMessageCode::FILESYSTEM_PARENT_DIRECTORY_READY, FilesystemMessageKey::FILESYSTEM_PARENT_DIRECTORY_READY, [
                     '%path%' => dirname($this->relativePath),
                 ], [
                     'path' => $this->relativePath,
@@ -165,7 +165,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (!$this->createParentDirectories) {
             return WorkflowResult::blocked([
-                Message::create(MessageCode::FILESYSTEM_PARENT_MISSING, MessageKey::FILESYSTEM_PARENT_MISSING, context: [
+                Message::create(FilesystemMessageCode::FILESYSTEM_PARENT_MISSING, FilesystemMessageKey::FILESYSTEM_PARENT_MISSING, context: [
                     'path' => $this->relativePath,
                     'parent' => dirname($this->relativePath),
                 ], level: MessageLevel::Warning),
@@ -174,7 +174,7 @@ final readonly class WriteFileAction implements OperationActionInterface
 
         if (!mkdir($parent, 0775, true) && !is_dir($parent)) {
             return WorkflowResult::failed([
-                Message::create(MessageCode::FILESYSTEM_PARENT_CREATE_FAILED, MessageKey::FILESYSTEM_PARENT_CREATE_FAILED, context: [
+                Message::create(FilesystemMessageCode::FILESYSTEM_PARENT_CREATE_FAILED, FilesystemMessageKey::FILESYSTEM_PARENT_CREATE_FAILED, context: [
                     'path' => $this->relativePath,
                     'parent' => dirname($this->relativePath),
                 ], level: MessageLevel::Error),
@@ -182,7 +182,7 @@ final readonly class WriteFileAction implements OperationActionInterface
         }
 
         return WorkflowResult::success(messages: [
-            Message::debug(MessageCode::FILESYSTEM_PARENT_DIRECTORY_READY, MessageKey::FILESYSTEM_PARENT_DIRECTORY_READY, [
+            Message::debug(FilesystemMessageCode::FILESYSTEM_PARENT_DIRECTORY_READY, FilesystemMessageKey::FILESYSTEM_PARENT_DIRECTORY_READY, [
                 '%path%' => dirname($this->relativePath),
             ], [
                 'path' => $this->relativePath,

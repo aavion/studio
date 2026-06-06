@@ -7,9 +7,9 @@ namespace App\Core\Package;
 use App\Core\Filesystem\PathGuard;
 use App\Core\Id\UuidFactory;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use Doctrine\ORM\EntityManagerInterface;
@@ -63,8 +63,8 @@ final readonly class PackageRegistryHandler
                 $scopes = PackageScope::fromManifestValue((string) $candidate->manifest()->get('PACKAGE_SCOPE', ''));
             } catch (InvalidArgumentException) {
                 $issues[] = Message::create(
-                    MessageCode::PACKAGE_IDENTIFIER_INVALID,
-                    MessageKey::PACKAGE_IDENTIFIER_INVALID,
+                    PackageMessageCode::PACKAGE_IDENTIFIER_INVALID,
+                    PackageMessageKey::PACKAGE_IDENTIFIER_INVALID,
                     ['%identifier%' => basename($candidate->directory())],
                     ['path' => $candidate->directory(), 'source' => $candidate->source()->name()],
                     MessageLevel::Error,
@@ -103,8 +103,8 @@ final readonly class PackageRegistryHandler
                 if ($changed || $isNew) {
                     $changes[] = $this->change($packageName, 'faulty', ExtensionPackageStatus::Faulty);
                     $messages[] = Message::error(
-                        MessageCode::PACKAGE_REGISTRY_PACKAGE_FAULTY,
-                        MessageKey::PACKAGE_REGISTRY_PACKAGE_FAULTY,
+                        PackageMessageCode::PACKAGE_REGISTRY_PACKAGE_FAULTY,
+                        PackageMessageKey::PACKAGE_REGISTRY_PACKAGE_FAULTY,
                         ['%package%' => $packageName],
                         ['package' => $packageName, 'path' => $path, 'issue_count' => count($validation->issues())],
                     );
@@ -127,8 +127,8 @@ final readonly class PackageRegistryHandler
             if ('unchanged' !== $action) {
                 $changes[] = $this->change($packageName, $action, $package->status());
                 $messages[] = Message::create(
-                    'registered' === $action ? MessageCode::PACKAGE_REGISTRY_PACKAGE_REGISTERED : MessageCode::PACKAGE_REGISTRY_PACKAGE_UPDATED,
-                    'registered' === $action ? MessageKey::PACKAGE_REGISTRY_PACKAGE_REGISTERED : MessageKey::PACKAGE_REGISTRY_PACKAGE_UPDATED,
+                    'registered' === $action ? PackageMessageCode::PACKAGE_REGISTRY_PACKAGE_REGISTERED : PackageMessageCode::PACKAGE_REGISTRY_PACKAGE_UPDATED,
+                    'registered' === $action ? PackageMessageKey::PACKAGE_REGISTRY_PACKAGE_REGISTERED : PackageMessageKey::PACKAGE_REGISTRY_PACKAGE_UPDATED,
                     ['%package%' => $packageName],
                     ['package' => $packageName, 'path' => $path, 'status' => $package->status()->value],
                     MessageLevel::Success,
@@ -150,8 +150,8 @@ final readonly class PackageRegistryHandler
             if ($package->markRemoved($this->removedMetadata($package))) {
                 $changes[] = $this->change($packageName, 'removed', ExtensionPackageStatus::Removed);
                 $messages[] = Message::error(
-                    MessageCode::PACKAGE_REGISTRY_PACKAGE_REMOVED,
-                    MessageKey::PACKAGE_REGISTRY_PACKAGE_REMOVED,
+                    PackageMessageCode::PACKAGE_REGISTRY_PACKAGE_REMOVED,
+                    PackageMessageKey::PACKAGE_REGISTRY_PACKAGE_REMOVED,
                     ['%package%' => $packageName],
                     ['package' => $packageName, 'path' => $package->path()],
                 );
@@ -212,8 +212,8 @@ final readonly class PackageRegistryHandler
         }
 
         $messages[] = Message::create(
-            MessageCode::PACKAGE_REGISTRY_SYNC_COMPLETED,
-            MessageKey::PACKAGE_REGISTRY_SYNC_COMPLETED,
+            PackageMessageCode::PACKAGE_REGISTRY_SYNC_COMPLETED,
+            PackageMessageKey::PACKAGE_REGISTRY_SYNC_COMPLETED,
             ['%count%' => count($changes)],
             ['change_count' => count($changes), 'changes' => $changes],
             MessageLevel::Success,
@@ -247,8 +247,8 @@ final readonly class PackageRegistryHandler
 
             $changes[] = $this->change($dependent->packageName(), 'deactivated', ExtensionPackageStatus::Inactive);
             $messages[] = Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_DEACTIVATED,
-                MessageKey::PACKAGE_LIFECYCLE_DEACTIVATED,
+                PackageMessageCode::PACKAGE_LIFECYCLE_DEACTIVATED,
+                PackageMessageKey::PACKAGE_LIFECYCLE_DEACTIVATED,
                 ['%package%' => $dependent->packageName()],
                 ['package' => $dependent->packageName(), 'required_package' => $package->packageName()],
                 MessageLevel::Success,

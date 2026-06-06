@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Security\PasswordPolicy;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 
 final readonly class SetupRunInputValidator
 {
@@ -28,8 +28,8 @@ final readonly class SetupRunInputValidator
 
         if (null !== $input->appSecret() && strlen($input->appSecret()) < SetupInputValidator::MIN_APP_SECRET_LENGTH) {
             $issues[] = Message::error(
-                MessageCode::SETUP_APP_SECRET_TOO_SHORT,
-                MessageKey::SETUP_APP_SECRET_TOO_SHORT,
+                SetupMessageCode::SETUP_APP_SECRET_TOO_SHORT,
+                SetupMessageKey::SETUP_APP_SECRET_TOO_SHORT,
                 ['%min_length%' => SetupInputValidator::MIN_APP_SECRET_LENGTH],
                 ['field' => 'app_secret', 'min_length' => SetupInputValidator::MIN_APP_SECRET_LENGTH],
             );
@@ -41,10 +41,10 @@ final readonly class SetupRunInputValidator
     private function adminPasswordMessage(string $violation): Message
     {
         [$code, $key] = match ($violation) {
-            PasswordPolicy::VIOLATION_COMPLEXITY => [MessageCode::SETUP_ADMIN_PASSWORD_COMPLEXITY, MessageKey::SETUP_ADMIN_PASSWORD_COMPLEXITY],
-            PasswordPolicy::VIOLATION_REPEATED => [MessageCode::SETUP_ADMIN_PASSWORD_REPEATED, MessageKey::SETUP_ADMIN_PASSWORD_REPEATED],
-            PasswordPolicy::VIOLATION_PERSONAL => [MessageCode::SETUP_ADMIN_PASSWORD_PERSONAL, MessageKey::SETUP_ADMIN_PASSWORD_PERSONAL],
-            default => [MessageCode::SETUP_ADMIN_PASSWORD_TOO_SHORT, MessageKey::SETUP_ADMIN_PASSWORD_TOO_SHORT],
+            PasswordPolicy::VIOLATION_COMPLEXITY => [SetupMessageCode::SETUP_ADMIN_PASSWORD_COMPLEXITY, SetupMessageKey::SETUP_ADMIN_PASSWORD_COMPLEXITY],
+            PasswordPolicy::VIOLATION_REPEATED => [SetupMessageCode::SETUP_ADMIN_PASSWORD_REPEATED, SetupMessageKey::SETUP_ADMIN_PASSWORD_REPEATED],
+            PasswordPolicy::VIOLATION_PERSONAL => [SetupMessageCode::SETUP_ADMIN_PASSWORD_PERSONAL, SetupMessageKey::SETUP_ADMIN_PASSWORD_PERSONAL],
+            default => [SetupMessageCode::SETUP_ADMIN_PASSWORD_TOO_SHORT, SetupMessageKey::SETUP_ADMIN_PASSWORD_TOO_SHORT],
         };
 
         return Message::error(

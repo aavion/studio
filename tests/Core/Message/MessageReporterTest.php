@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Core\Message;
 
 use App\Core\Log\MessageLoggerInterface;
+use App\Core\Manifest\ManifestMessageCode;
+use App\Core\Manifest\ManifestMessageKey;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporter;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use PHPUnit\Framework\TestCase;
 
 final class MessageReporterTest extends TestCase
@@ -17,7 +19,7 @@ final class MessageReporterTest extends TestCase
     {
         $logger = new RecordingMessageLogger();
         $reporter = new MessageReporter($logger);
-        $message = Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED);
+        $message = Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED);
 
         self::assertSame($message, $reporter->report($message, ['operation' => 'package.discovery']));
         self::assertCount(1, $logger->records);
@@ -29,8 +31,8 @@ final class MessageReporterTest extends TestCase
     {
         $logger = new RecordingMessageLogger();
         $reporter = new MessageReporter($logger);
-        $first = Message::debug(MessageCode::MANIFEST_PARSED, MessageKey::MANIFEST_PARSED);
-        $second = Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED);
+        $first = Message::debug(ManifestMessageCode::MANIFEST_PARSED, ManifestMessageKey::MANIFEST_PARSED);
+        $second = Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED);
 
         $messages = $reporter->reportBatch([
             [

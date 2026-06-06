@@ -6,11 +6,11 @@ namespace App\Tests\Core\Operation;
 
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
-use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Log\OperationLoggerInterface;
+use App\Core\Message\Message;
 use App\Core\Operation\Live\LiveOperationRunStore;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Security\SecretPayloadProtector;
 use App\Core\Workflow\WorkflowResult;
 use App\Setup\SetupLiveOperationPayloadProtector;
@@ -147,8 +147,8 @@ final class LiveOperationRunStoreTest extends TestCase
         $run = $store->create('package.install.dry_run', [], 'Install package dry-run');
         $result = WorkflowResult::requiresReview(null, [
             Message::info(
-                MessageCode::OPERATION_ACTION_REQUIRED,
-                MessageKey::OPERATION_ACTION_REQUIRED,
+                OperationMessageCode::OPERATION_ACTION_REQUIRED,
+                OperationMessageKey::OPERATION_ACTION_REQUIRED,
                 ['%operation%' => 'Install package'],
             ),
         ], [

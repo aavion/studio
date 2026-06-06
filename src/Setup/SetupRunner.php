@@ -8,11 +8,11 @@ use App\Core\ActionLog\ActionLog;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
-use App\Core\Operation\ActionQueue;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Operation\ActionQueue;
 use App\Core\Workflow\WorkflowResult;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 use Throwable;
 
 final class SetupRunner
@@ -218,10 +218,10 @@ final class SetupRunner
         $context = ['step' => $step, 'exception' => $throwable::class];
 
         if ($throwable instanceof SetupStepFailedException) {
-            return Message::error(MessageCode::SETUP_STEP_FAILED, MessageKey::SETUP_STEP_FAILED, $parameters, $context);
+            return Message::error(SetupMessageCode::SETUP_STEP_FAILED, SetupMessageKey::SETUP_STEP_FAILED, $parameters, $context);
         }
 
-        return Message::exception(MessageCode::SETUP_STEP_FAILED, MessageKey::SETUP_STEP_FAILED, $parameters, $context);
+        return Message::exception(SetupMessageCode::SETUP_STEP_FAILED, SetupMessageKey::SETUP_STEP_FAILED, $parameters, $context);
     }
 
     private function generateSecret(): string

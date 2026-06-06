@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace App\Tests\Content\Read;
 
-use App\Content\Read\PublishedContentResolver;
+use App\Content\ContentMessageCode;
+use App\Content\ContentMessageKey;
 use App\Content\Read\PublishedContentResolveStatus;
+use App\Content\Read\PublishedContentResolver;
 use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageLevel;
-use App\Core\Message\MessageKey;
 use App\Repository\ContentFieldValueRepository;
 use App\Repository\ContentItemRepository;
+use App\Tests\Support\NullMessageReporter;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
-use App\Tests\Support\NullMessageReporter;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class PublishedContentResolverTest extends KernelTestCase
@@ -71,8 +71,8 @@ final class PublishedContentResolverTest extends KernelTestCase
         self::assertSame('en', $view->context()->language());
         self::assertTrue($view->context()->languageFallbackUsed());
         self::assertSame('About Studio', $view->title());
-        self::assertSame(MessageCode::CONTENT_LANGUAGE_FALLBACK, $this->resolver->resolveBySlug('about', AccessActor::anonymous(), 'fr')->messages()[0]->code());
-        self::assertSame(MessageKey::CONTENT_LANGUAGE_FALLBACK, $this->resolver->resolveBySlug('about', AccessActor::anonymous(), 'fr')->messages()[0]->translationKey());
+        self::assertSame(ContentMessageCode::CONTENT_LANGUAGE_FALLBACK, $this->resolver->resolveBySlug('about', AccessActor::anonymous(), 'fr')->messages()[0]->code());
+        self::assertSame(ContentMessageKey::CONTENT_LANGUAGE_FALLBACK, $this->resolver->resolveBySlug('about', AccessActor::anonymous(), 'fr')->messages()[0]->translationKey());
     }
 
     public function testItFallsBackToDefaultVariantWhenRequestedVariantIsMissing(): void
@@ -86,7 +86,7 @@ final class PublishedContentResolverTest extends KernelTestCase
         self::assertSame('default', $view->context()->variant());
         self::assertFalse($view->context()->languageFallbackUsed());
         self::assertTrue($view->context()->variantFallbackUsed());
-        self::assertSame(MessageCode::CONTENT_VARIANT_FALLBACK, $result->messages()[0]->code());
+        self::assertSame(ContentMessageCode::CONTENT_VARIANT_FALLBACK, $result->messages()[0]->code());
         self::assertSame(MessageLevel::Warning, $result->messages()[0]->level());
     }
 

@@ -6,9 +6,9 @@ namespace App\Setup;
 
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Process\PhpCliBinaryManager;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 
 final readonly class SetupDryRunPlanner
 {
@@ -34,7 +34,7 @@ final readonly class SetupDryRunPlanner
         return [
             ['write_environment', fn (): array => [
                 '_messages' => [
-                    Message::debug(MessageCode::SETUP_DRY_RUN, MessageKey::SETUP_DRY_RUN),
+                    Message::debug(SetupMessageCode::SETUP_DRY_RUN, SetupMessageKey::SETUP_DRY_RUN),
                 ],
                 'dry_run' => true,
                 'path' => '.env.'.$input->appEnv().'.local',

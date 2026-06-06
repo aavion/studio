@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Security;
 
-use App\Core\Message\MessageKey;
 use App\Core\Security\SecretPayloadProtector;
+use App\Core\Security\SystemSecurityMessageKey;
 use PHPUnit\Framework\TestCase;
 
 final class SecretPayloadProtectorTest extends TestCase
@@ -25,7 +25,7 @@ final class SecretPayloadProtectorTest extends TestCase
         $protector = new SecretPayloadProtector('runtime-secret');
         $payload = $protector->protect('plain-secret', 'test.context', 'owner-id');
 
-        $this->expectExceptionMessage(MessageKey::SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED);
+        $this->expectExceptionMessage(SystemSecurityMessageKey::SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED);
 
         $protector->reveal($payload, 'other.context', 'owner-id');
     }
@@ -35,7 +35,7 @@ final class SecretPayloadProtectorTest extends TestCase
         $protector = new SecretPayloadProtector('runtime-secret');
         $payload = $protector->protect('plain-secret', 'test.context', 'owner-id');
 
-        $this->expectExceptionMessage(MessageKey::SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED);
+        $this->expectExceptionMessage(SystemSecurityMessageKey::SYSTEM_SECRET_PAYLOAD_DECRYPT_FAILED);
 
         $protector->reveal($payload, 'test.context', 'other-owner-id');
     }
@@ -44,7 +44,7 @@ final class SecretPayloadProtectorTest extends TestCase
     {
         $protector = new SecretPayloadProtector('runtime-secret');
 
-        $this->expectExceptionMessage(MessageKey::SYSTEM_SECRET_PAYLOAD_INVALID);
+        $this->expectExceptionMessage(SystemSecurityMessageKey::SYSTEM_SECRET_PAYLOAD_INVALID);
 
         $protector->reveal('v1.not-valid', 'test.context');
     }
@@ -59,7 +59,7 @@ final class SecretPayloadProtectorTest extends TestCase
 
     public function testItRejectsEmptyRootSecrets(): void
     {
-        $this->expectExceptionMessage(MessageKey::SYSTEM_SECRET_PAYLOAD_ROOT_SECRET_EMPTY);
+        $this->expectExceptionMessage(SystemSecurityMessageKey::SYSTEM_SECRET_PAYLOAD_ROOT_SECRET_EMPTY);
 
         new SecretPayloadProtector('');
     }
@@ -68,7 +68,7 @@ final class SecretPayloadProtectorTest extends TestCase
     {
         $protector = new SecretPayloadProtector('runtime-secret');
 
-        $this->expectExceptionMessage(MessageKey::SYSTEM_SECRET_PAYLOAD_CONTEXT_EMPTY);
+        $this->expectExceptionMessage(SystemSecurityMessageKey::SYSTEM_SECRET_PAYLOAD_CONTEXT_EMPTY);
 
         $protector->protect('plain-secret', '');
     }

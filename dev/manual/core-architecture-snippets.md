@@ -124,10 +124,17 @@ Intentionally invalid fixture packages live under `tests/Fixtures/packages-inval
 Messages have a stable log level and two stable identifiers:
 
 - `MessageLevel` is log-filterable and uses `SUCCESS`, `EXCEPTION`, `ERROR`, `WARN`, `INFO`, or `DEBUG`.
-- `MessageCode` is machine-readable and useful for logs, branching, API clients, CLI exits, and package integrations.
-- `MessageKey` is translation-facing and should resolve to localized UI, CLI, or log text later.
+- Domain-owned `*MessageCode` catalogues are machine-readable and useful for logs, branching, API clients, CLI exits, and package integrations.
+- Domain-owned `*MessageKey` catalogues are translation-facing and should resolve to localized UI, CLI, or log text later.
 
-Runtime code should use `Message`, `MessageCode`, and `MessageKey` instead of embedding user-facing text in exceptions or operation payloads. Use `Message::invalidArgument()` or `MessageException::invalidArgument()` for hard invariant diagnostics that must still abort the current call.
+Runtime code should use `Message`, domain-owned message code/key catalogues, and the central `MessageCode::all()` / `MessageKey::all()` aggregators instead of embedding user-facing text in exceptions or operation payloads. Use `Message::invalidArgument()` or `MessageException::invalidArgument()` for hard invariant diagnostics that must still abort the current call.
+
+Message catalogues follow an owner/scope convention:
+
+- Constants live close to their owning domain, for example `App\Core\Package\PackageMessageCode` and `App\Core\Package\PackageMessageKey`.
+- Constant names carry the domain scope, for example `PACKAGE_REQUIRED_FILE_MISSING`, `SETUP_PROMPT_LANGUAGE`, or `CONTENT_SLUG_INVALID`.
+- Values stay in the matching machine namespace, for example `package.required_file_missing` or `message.content.slug.invalid_format`.
+- `App\Core\Message\MessageCode` and `App\Core\Message\MessageKey` aggregate the known system catalogues for validation, linting, translation checks, and future package-catalogue adapters.
 
 Core enforces a narrow transport shape:
 
@@ -173,8 +180,8 @@ Later UI layers can map these codes to translated messages while preserving the 
 
 ```php
 $issue = Message::warning(
-    MessageCode::PACKAGE_REQUIRED_FILE_MISSING,
-    MessageKey::PACKAGE_REQUIRED_FILE_MISSING,
+    PackageMessageCode::PACKAGE_REQUIRED_FILE_MISSING,
+    PackageMessageKey::PACKAGE_REQUIRED_FILE_MISSING,
     ['%file%' => 'templates/base.html.twig'],
     ['file' => 'templates/base.html.twig'],
 );

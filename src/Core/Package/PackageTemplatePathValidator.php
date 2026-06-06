@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
-use App\Core\Message\MessageLevel;
 use App\Core\Message\Message;
+use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use InvalidArgumentException;
 
 final readonly class PackageTemplatePathValidator
@@ -37,8 +37,8 @@ final readonly class PackageTemplatePathValidator
         foreach ($templateFiles as $file) {
             if (!$this->isAllowed($file, $packageSlug, $scopes)) {
                 $issues[] = Message::create(
-                    MessageCode::PACKAGE_TEMPLATE_PATH_INVALID,
-                    MessageKey::PACKAGE_TEMPLATE_PATH_INVALID,
+                    PackageMessageCode::PACKAGE_TEMPLATE_PATH_INVALID,
+                    PackageMessageKey::PACKAGE_TEMPLATE_PATH_INVALID,
                     ['%path%' => $file, '%scope%' => $scopeValue],
                     context: [
                         'source' => $candidate->source()->name(),

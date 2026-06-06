@@ -6,32 +6,32 @@ namespace App\Tests\Core\Package;
 
 use App\Core\Event\EventHookDescriptor;
 use App\Core\Event\EventHookMode;
+use App\Core\Event\EventMessageCode;
+use App\Core\Event\EventMessageKey;
 use App\Core\Event\PublicHookFailedEvent;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Message\Message;
 use App\Core\Package\ActivePackageProvider;
+use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageAssetRebuildDispatcher;
 use App\Core\Package\PackageAssetRebuildMessage;
 use App\Core\Package\PackageAssetRebuildMessageHandler;
 use App\Core\Package\PackageFaultResetter;
-use App\Core\Package\PackageLifecycleCleanupRunnerInterface;
 use App\Core\Package\PackageLifecycleAssetRebuilderInterface;
+use App\Core\Package\PackageLifecycleCleanupRunnerInterface;
 use App\Core\Package\PackagePhpLoader;
 use App\Core\Package\PackageRemover;
-use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageRuntimeContributionRegistry;
 use App\Core\Package\PackageRuntimeFailureHandler;
 use App\Core\Package\PackageScope;
-use App\Core\Message\Message;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use App\Tests\Support\FilesystemTestHelper;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use App\Tests\Support\RecordingMessageBus;
 use App\View\ViewContextEvent;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use RuntimeException;
-use App\Tests\Support\NullWorkflowResultMessageReporter;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -103,8 +103,8 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
             'test',
         ))->handleHookFailure(new PublicHookFailedEvent(
             new ViewContextEvent([]),
-            new EventHookDescriptor(ViewContextEvent::class, 'view', EventHookMode::Extend, MessageKey::EVENT_HOOK_VIEW_CONTEXT_SUMMARY, mutable: true),
-            Message::create(MessageCode::EVENT_HOOK_LISTENER_FAILED, MessageKey::EVENT_HOOK_LISTENER_FAILED, ['%event%' => ViewContextEvent::class]),
+            new EventHookDescriptor(ViewContextEvent::class, 'view', EventHookMode::Extend, EventMessageKey::EVENT_HOOK_VIEW_CONTEXT_SUMMARY, mutable: true),
+            Message::create(EventMessageCode::EVENT_HOOK_LISTENER_FAILED, EventMessageKey::EVENT_HOOK_LISTENER_FAILED, ['%event%' => ViewContextEvent::class]),
             new RuntimeException('listener failed'),
             ['route' => 'demo'],
             'demo-module',

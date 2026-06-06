@@ -7,10 +7,10 @@ namespace App\Core\Statistics;
 use App\Core\Geo\GeoIpResolverInterface;
 use App\Core\Id\UuidFactory;
 use App\Core\Log\AccessRequestMetadata;
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
+use App\Core\Statistics\StatisticsMessageKey;
 use App\Database\DatabaseReadyState;
 use DateInterval;
 use DateTimeImmutable;
@@ -97,8 +97,8 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
             ]);
         } catch (Throwable $error) {
             $this->messageReporter?->report(Message::exception(
-                MessageCode::E_OPERATION_FAILED,
-                MessageKey::STATISTICS_CLEANUP_FAILED,
+                CommonMessageCode::E_OPERATION_FAILED,
+                StatisticsMessageKey::STATISTICS_CLEANUP_FAILED,
                 [],
                 [
                     'operation' => 'statistics.cleanup',
@@ -115,8 +115,8 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
     private function report(Throwable $error, Request $request): void
     {
         $this->messageReporter?->report(Message::exception(
-            MessageCode::E_OPERATION_FAILED,
-            MessageKey::STATISTICS_RECORD_FAILED,
+            CommonMessageCode::E_OPERATION_FAILED,
+            StatisticsMessageKey::STATISTICS_RECORD_FAILED,
             [],
             [
                 'operation' => 'statistics.record',

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Entity;
 
+use App\Content\ContentMessageKey;
 use App\Content\Schema\ContentSchemaSource;
-use App\Core\Message\MessageKey;
 use App\Entity\ContentFieldValue;
 use App\Entity\ContentItem;
 use App\Entity\ContentRevision;
@@ -42,7 +42,7 @@ final class ContentFieldValueTest extends TestCase
     public function testItRejectsInvalidFieldIdentifiers(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::CONTENT_FIELD_IDENTIFIER_INVALID);
+        $this->expectExceptionMessage(ContentMessageKey::CONTENT_FIELD_IDENTIFIER_INVALID);
 
         new ContentFieldValue(
             '22222222-2222-7222-8222-222222222222',

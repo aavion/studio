@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 
 final readonly class PackageSourceNamespaceValidator
 {
@@ -127,8 +127,8 @@ final readonly class PackageSourceNamespaceValidator
         string $expectedNamespace,
     ): Message {
         return Message::create(
-            MessageCode::PACKAGE_PHP_NAMESPACE_INVALID,
-            MessageKey::PACKAGE_PHP_NAMESPACE_INVALID,
+            PackageMessageCode::PACKAGE_PHP_NAMESPACE_INVALID,
+            PackageMessageKey::PACKAGE_PHP_NAMESPACE_INVALID,
             ['%path%' => $path, '%expected_namespace%' => $expectedNamespace],
             context: $this->issueFactory->fileContext($candidate, $file, $path, [
                 'namespace' => $namespace,

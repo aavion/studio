@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Core\Config\ConfigMessageKey;
 use App\Core\Config\ConfigValueType;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Validation\Identifier;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
@@ -59,7 +60,7 @@ class PackageSettingEntry
         ?DateTimeImmutable $modifiedAt = null,
     ) {
         $this->packageName = self::assertPackageName($packageName);
-        $this->key = Identifier::assertConfigKey($key, MessageKey::CONFIG_KEY_INVALID);
+        $this->key = Identifier::assertConfigKey($key, ConfigMessageKey::CONFIG_KEY_INVALID);
         $this->value = $value;
         $this->valueType = $valueType;
         $this->metadata = $metadata;
@@ -101,7 +102,7 @@ class PackageSettingEntry
     private static function assertPackageName(string $packageName): string
     {
         if (1 !== preg_match('/^[a-z0-9][a-z0-9_.\/-]*$/', $packageName)) {
-            throw MessageException::invalidArgument(MessageKey::PACKAGE_IDENTIFIER_INVALID, [
+            throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_IDENTIFIER_INVALID, [
                 '%identifier%' => $packageName,
             ]);
         }

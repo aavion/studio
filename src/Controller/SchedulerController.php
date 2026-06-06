@@ -6,9 +6,9 @@ namespace App\Controller;
 
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Scheduler\SchedulerApiAuthenticator;
+use App\Scheduler\SchedulerMessageCode;
+use App\Scheduler\SchedulerMessageKey;
 use App\Scheduler\SchedulerRunner;
 use App\Scheduler\SchedulerTaskDefinition;
 use App\Scheduler\SchedulerTaskRegistry;
@@ -36,8 +36,8 @@ final class SchedulerController extends AbstractController
         } catch (Throwable $error) {
             $job = $request->query->get('job');
             $this->messageLogger->log(Message::exception(
-                MessageCode::SCHEDULER_RUN_FAILED,
-                MessageKey::SCHEDULER_RUN_FAILED,
+                SchedulerMessageCode::SCHEDULER_RUN_FAILED,
+                SchedulerMessageKey::SCHEDULER_RUN_FAILED,
                 context: [
                     'exception' => $error::class,
                     'message' => $error->getMessage(),

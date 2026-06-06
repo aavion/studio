@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Core\Config\ConfigMessageKey;
 use App\Core\Config\ConfigValueType;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
@@ -47,7 +47,7 @@ class ConfigEntry
         ?string $modifiedBy = null,
         ?DateTimeImmutable $modifiedAt = null,
     ) {
-        $this->key = Identifier::assertConfigKey($key, MessageKey::CONFIG_KEY_INVALID);
+        $this->key = Identifier::assertConfigKey($key, ConfigMessageKey::CONFIG_KEY_INVALID);
         $this->value = $value;
         $this->valueType = $valueType;
         $this->sensitive = $sensitive;

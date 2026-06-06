@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Setup;
 
 use App\Core\ActionLog\ActionLog;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Asset\AssetMessageCode;
+use App\Core\Asset\AssetMessageKey;
 use App\Core\Process\PhpCliBinaryPreferenceStore;
 use App\Core\Process\PhpCliBinaryValidator;
 use App\Database\DatabaseReadyState;
@@ -568,8 +568,8 @@ final class SetupRunnerTest extends TestCase
                             'messages' => [
                                 [
                                     'level' => 'WARN',
-                                    'code' => MessageCode::TAILWIND_BUILD_DEFERRED,
-                                    'translation_key' => MessageKey::TAILWIND_BUILD_DEFERRED,
+                                    'code' => AssetMessageCode::TAILWIND_BUILD_DEFERRED,
+                                    'translation_key' => AssetMessageKey::TAILWIND_BUILD_DEFERRED,
                                     'parameters' => [
                                         '%command%' => 'php bin/console tailwind:build',
                                     ],
@@ -609,7 +609,7 @@ final class SetupRunnerTest extends TestCase
         $entries = $log->toArray()['entries'];
 
         self::assertSame('run_asset_rebuild', $entries[10]['name']);
-        self::assertSame(MessageCode::TAILWIND_BUILD_DEFERRED, $entries[10]['messages'][0]['code']);
+        self::assertSame(AssetMessageCode::TAILWIND_BUILD_DEFERRED, $entries[10]['messages'][0]['code']);
     }
 
     public function testDryRunDoesNotCreateMissingSqliteDatabaseDuringPreparation(): void

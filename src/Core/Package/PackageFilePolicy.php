@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 
 final readonly class PackageFilePolicy
 {
@@ -82,8 +82,8 @@ final readonly class PackageFilePolicy
     private function issue(PackageCandidate $candidate, string $path, string $reason, bool $blocked): Message
     {
         return Message::create(
-            $blocked ? MessageCode::PACKAGE_POLICY_BLOCKED_PATH : MessageCode::PACKAGE_POLICY_WARNED_PATH,
-            $blocked ? MessageKey::PACKAGE_POLICY_BLOCKED_PATH : MessageKey::PACKAGE_POLICY_WARNED_PATH,
+            $blocked ? PackageMessageCode::PACKAGE_POLICY_BLOCKED_PATH : PackageMessageCode::PACKAGE_POLICY_WARNED_PATH,
+            $blocked ? PackageMessageKey::PACKAGE_POLICY_BLOCKED_PATH : PackageMessageKey::PACKAGE_POLICY_WARNED_PATH,
             ['%path%' => $path, '%reason%' => $reason],
             [
                 'source' => $candidate->source()->name(),

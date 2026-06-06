@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Core\Package\Install;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use ZipArchive;
 
@@ -27,8 +27,8 @@ final readonly class PackageZipExtractor
         if (!class_exists(ZipArchive::class)) {
             return WorkflowResult::failed([
                 Message::error(
-                    MessageCode::PACKAGE_INSTALL_ZIP_INVALID,
-                    MessageKey::PACKAGE_INSTALL_ZIP_INVALID,
+                    PackageMessageCode::PACKAGE_INSTALL_ZIP_INVALID,
+                    PackageMessageKey::PACKAGE_INSTALL_ZIP_INVALID,
                     context: ['reason' => 'zip_extension_missing'],
                 ),
             ]);
@@ -40,8 +40,8 @@ final readonly class PackageZipExtractor
         if (true !== $opened) {
             return WorkflowResult::invalid([
                 Message::warning(
-                    MessageCode::PACKAGE_INSTALL_ZIP_INVALID,
-                    MessageKey::PACKAGE_INSTALL_ZIP_INVALID,
+                    PackageMessageCode::PACKAGE_INSTALL_ZIP_INVALID,
+                    PackageMessageKey::PACKAGE_INSTALL_ZIP_INVALID,
                     context: ['reason' => 'open_failed', 'zip_error' => $opened],
                 ),
             ]);
@@ -53,8 +53,8 @@ final readonly class PackageZipExtractor
                 if (!is_string($name) || $this->unsafeEntry($name)) {
                     return WorkflowResult::invalid([
                         Message::warning(
-                            MessageCode::PACKAGE_INSTALL_ZIP_INVALID,
-                            MessageKey::PACKAGE_INSTALL_ZIP_INVALID,
+                            PackageMessageCode::PACKAGE_INSTALL_ZIP_INVALID,
+                            PackageMessageKey::PACKAGE_INSTALL_ZIP_INVALID,
                             context: ['reason' => 'unsafe_entry', 'entry' => $name],
                         ),
                     ]);
@@ -63,8 +63,8 @@ final readonly class PackageZipExtractor
                 if ($this->symlinkEntry($zip, $index)) {
                     return WorkflowResult::invalid([
                         Message::warning(
-                            MessageCode::PACKAGE_INSTALL_ZIP_INVALID,
-                            MessageKey::PACKAGE_INSTALL_ZIP_INVALID,
+                            PackageMessageCode::PACKAGE_INSTALL_ZIP_INVALID,
+                            PackageMessageKey::PACKAGE_INSTALL_ZIP_INVALID,
                             context: ['reason' => 'symlink_entry', 'entry' => $name],
                         ),
                     ]);
@@ -77,8 +77,8 @@ final readonly class PackageZipExtractor
             if (!$zip->extractTo($stagePath)) {
                 return WorkflowResult::failed([
                     Message::error(
-                        MessageCode::PACKAGE_INSTALL_ZIP_INVALID,
-                        MessageKey::PACKAGE_INSTALL_ZIP_INVALID,
+                        PackageMessageCode::PACKAGE_INSTALL_ZIP_INVALID,
+                        PackageMessageKey::PACKAGE_INSTALL_ZIP_INVALID,
                         context: ['reason' => 'extract_failed', 'zip_path' => $this->filesystem->relativePath($zipPath)],
                     ),
                 ]);
@@ -88,8 +88,8 @@ final readonly class PackageZipExtractor
             if (null !== $symlink) {
                 return WorkflowResult::invalid([
                     Message::warning(
-                        MessageCode::PACKAGE_INSTALL_ZIP_INVALID,
-                        MessageKey::PACKAGE_INSTALL_ZIP_INVALID,
+                        PackageMessageCode::PACKAGE_INSTALL_ZIP_INVALID,
+                        PackageMessageKey::PACKAGE_INSTALL_ZIP_INVALID,
                         context: [
                             'reason' => 'symlink_entry',
                             'entry' => $this->filesystem->relativePath($symlink),

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Core\Operation\Live;
 
-use App\Core\Operation\ActionQueue;
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Operation\ActionQueue;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Workflow\WorkflowResult;
-use App\Setup\SetupRunner;
 use App\Setup\SetupLiveOperationPayloadProtector;
+use App\Setup\SetupRunner;
 use App\Setup\SetupWebInputFactory;
 
 final readonly class SetupApplyLiveOperationProvider implements LiveOperationQueueProviderInterface
@@ -36,8 +36,8 @@ final readonly class SetupApplyLiveOperationProvider implements LiveOperationQue
         if (!$input->isValid() || null === $input->input()) {
             return WorkflowResult::invalid([
                 Message::warning(
-                    MessageCode::E_INVALID_ARGUMENT,
-                    MessageKey::OPERATION_INVALID_PAYLOAD,
+                    CommonMessageCode::E_INVALID_ARGUMENT,
+                    OperationMessageKey::OPERATION_INVALID_PAYLOAD,
                     context: ['operation' => $this->operation(), 'fields' => array_keys($input->errors())],
                 ),
             ], ['errors' => $input->errors()]);

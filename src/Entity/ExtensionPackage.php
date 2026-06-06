@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Core\Message\MessageKey;
-use App\Core\Package\ExtensionPackageStatus;
-use App\Core\Package\PackageScope;
 use App\Core\Message\MessageException;
+use App\Core\Package\ExtensionPackageStatus;
+use App\Core\Package\PackageMessageKey;
+use App\Core\Package\PackageScope;
 use App\Core\Validation\Uid;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
@@ -297,7 +297,7 @@ class ExtensionPackage
     private static function assertPackageName(string $packageName): string
     {
         if (1 !== preg_match('/^[a-z0-9][a-z0-9_.\/-]*$/', $packageName)) {
-            throw MessageException::invalidArgument(MessageKey::PACKAGE_IDENTIFIER_INVALID, [
+            throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_IDENTIFIER_INVALID, [
                 '%identifier%' => $packageName,
             ]);
         }
@@ -317,7 +317,7 @@ class ExtensionPackage
         foreach ($scopes as $scope) {
             $case = $scope instanceof PackageScope ? $scope : PackageScope::tryFrom($scope);
             if (null === $case) {
-                throw MessageException::invalidArgument(MessageKey::PACKAGE_SCOPE_INVALID, [
+                throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_SCOPE_INVALID, [
                     '%scope%' => is_scalar($scope) ? (string) $scope : get_debug_type($scope),
                 ]);
             }
@@ -326,7 +326,7 @@ class ExtensionPackage
         }
 
         if ([] === $normalized) {
-            throw MessageException::invalidArgument(MessageKey::PACKAGE_SCOPE_INVALID, [
+            throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_SCOPE_INVALID, [
                 '%scope%' => '',
             ]);
         }

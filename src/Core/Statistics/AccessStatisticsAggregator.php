@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Statistics;
 
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
+use App\Core\Statistics\StatisticsMessageKey;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Throwable;
@@ -198,8 +198,8 @@ final readonly class AccessStatisticsAggregator
     private function report(Throwable $error, ?DateTimeImmutable $since): void
     {
         $this->messageReporter?->report(Message::exception(
-            MessageCode::E_OPERATION_FAILED,
-            MessageKey::STATISTICS_AGGREGATE_FAILED,
+            CommonMessageCode::E_OPERATION_FAILED,
+            StatisticsMessageKey::STATISTICS_AGGREGATE_FAILED,
             [],
             [
                 'operation' => 'statistics.aggregate',

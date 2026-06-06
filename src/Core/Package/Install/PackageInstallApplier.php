@@ -6,12 +6,14 @@ namespace App\Core\Package\Install;
 
 use App\Core\Manifest\Manifest;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageDiscoveryRunner;
 use App\Core\Package\PackageManifestSpec;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Package\PackageScope;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
@@ -55,8 +57,8 @@ final readonly class PackageInstallApplier
         if (null === $packageRoot) {
             return WorkflowResult::invalid([
                 Message::error(
-                    MessageCode::PACKAGE_INSTALL_ROOT_INVALID,
-                    MessageKey::PACKAGE_INSTALL_ROOT_INVALID,
+                    PackageMessageCode::PACKAGE_INSTALL_ROOT_INVALID,
+                    PackageMessageKey::PACKAGE_INSTALL_ROOT_INVALID,
                     context: ['install_id' => $installId, 'package' => $slug],
                 ),
             ]);
@@ -66,8 +68,8 @@ final readonly class PackageInstallApplier
         if (null !== $symlink) {
             return WorkflowResult::invalid([
                 Message::warning(
-                    MessageCode::PACKAGE_INSTALL_ZIP_INVALID,
-                    MessageKey::PACKAGE_INSTALL_ZIP_INVALID,
+                    PackageMessageCode::PACKAGE_INSTALL_ZIP_INVALID,
+                    PackageMessageKey::PACKAGE_INSTALL_ZIP_INVALID,
                     context: [
                         'install_id' => $installId,
                         'reason' => 'symlink_entry',
@@ -98,8 +100,8 @@ final readonly class PackageInstallApplier
         } catch (\InvalidArgumentException) {
             return WorkflowResult::invalid([
                 Message::error(
-                    MessageCode::PACKAGE_SCOPE_INVALID,
-                    MessageKey::PACKAGE_SCOPE_INVALID,
+                    PackageMessageCode::PACKAGE_SCOPE_INVALID,
+                    PackageMessageKey::PACKAGE_SCOPE_INVALID,
                     ['%scope%' => (string) $manifestValue->get('PACKAGE_SCOPE', '')],
                     ['install_id' => $installId, 'package' => $slug],
                 ),
@@ -154,8 +156,8 @@ final readonly class PackageInstallApplier
 
             return WorkflowResult::failed([
                 Message::exception(
-                    MessageCode::OPERATION_EXCEPTION,
-                    MessageKey::OPERATION_EXCEPTION,
+                    OperationMessageCode::OPERATION_EXCEPTION,
+                    OperationMessageKey::OPERATION_EXCEPTION,
                     context: [
                         'install_id' => $installId,
                         'package' => $slug,
@@ -198,8 +200,8 @@ final readonly class PackageInstallApplier
 
             return WorkflowResult::failed([
                 Message::error(
-                    MessageCode::PACKAGE_REGISTRY_PACKAGE_FAULTY,
-                    MessageKey::PACKAGE_REGISTRY_PACKAGE_FAULTY,
+                    PackageMessageCode::PACKAGE_REGISTRY_PACKAGE_FAULTY,
+                    PackageMessageKey::PACKAGE_REGISTRY_PACKAGE_FAULTY,
                     ['%package%' => $slug],
                     [
                         'install_id' => $installId,
@@ -262,7 +264,7 @@ final readonly class PackageInstallApplier
         ], [
             ...$messages,
             Message::success(
-                MessageKey::PACKAGE_INSTALL_COMPLETED,
+                PackageMessageKey::PACKAGE_INSTALL_COMPLETED,
                 ['%package%' => $slug],
                 ['package' => $slug, 'was_active' => $wasActive],
             ),

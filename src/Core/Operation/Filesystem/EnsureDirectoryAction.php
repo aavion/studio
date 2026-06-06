@@ -8,9 +8,9 @@ use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Filesystem\PathGuard;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Operation\Filesystem\FilesystemMessageCode;
+use App\Core\Operation\Filesystem\FilesystemMessageKey;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Workflow\WorkflowResult;
 
@@ -61,7 +61,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
 
         if (is_link($target)) {
             return WorkflowResult::blocked([
-                Message::create(MessageCode::FILESYSTEM_TARGET_SYMLINK, MessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
+                Message::create(FilesystemMessageCode::FILESYSTEM_TARGET_SYMLINK, FilesystemMessageKey::FILESYSTEM_TARGET_SYMLINK, context: [
                     'path' => $this->relativePath,
                 ], level: MessageLevel::Warning),
             ]);
@@ -69,7 +69,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
 
         if (null !== $symlinkAncestor) {
             return WorkflowResult::blocked([
-                Message::create(MessageCode::FILESYSTEM_PARENT_SYMLINK, MessageKey::FILESYSTEM_PARENT_SYMLINK, context: [
+                Message::create(FilesystemMessageCode::FILESYSTEM_PARENT_SYMLINK, FilesystemMessageKey::FILESYSTEM_PARENT_SYMLINK, context: [
                     'path' => $this->relativePath,
                     'parent' => $symlinkAncestor,
                 ], level: MessageLevel::Warning),
@@ -78,7 +78,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
 
         if (is_file($target)) {
             return WorkflowResult::blocked([
-                Message::create(MessageCode::FILESYSTEM_DIRECTORY_CONFLICT, MessageKey::FILESYSTEM_DIRECTORY_CONFLICT, context: [
+                Message::create(FilesystemMessageCode::FILESYSTEM_DIRECTORY_CONFLICT, FilesystemMessageKey::FILESYSTEM_DIRECTORY_CONFLICT, context: [
                     'path' => $this->relativePath,
                 ], level: MessageLevel::Warning),
             ]);
@@ -92,7 +92,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
                 'path' => $this->relativePath,
                 'created' => false,
             ], [
-                Message::debug(MessageCode::FILESYSTEM_DIRECTORY_READY, MessageKey::FILESYSTEM_DIRECTORY_READY, [
+                Message::debug(FilesystemMessageCode::FILESYSTEM_DIRECTORY_READY, FilesystemMessageKey::FILESYSTEM_DIRECTORY_READY, [
                     '%path%' => $this->relativePath,
                 ], [
                     'path' => $this->relativePath,
@@ -103,7 +103,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
 
         if (!mkdir($target, $this->mode, true) && !is_dir($target)) {
             return WorkflowResult::failed([
-                Message::create(MessageCode::FILESYSTEM_DIRECTORY_CREATE_FAILED, MessageKey::FILESYSTEM_DIRECTORY_CREATE_FAILED, context: [
+                Message::create(FilesystemMessageCode::FILESYSTEM_DIRECTORY_CREATE_FAILED, FilesystemMessageKey::FILESYSTEM_DIRECTORY_CREATE_FAILED, context: [
                     'path' => $this->relativePath,
                 ], level: MessageLevel::Error),
             ]);
@@ -116,7 +116,7 @@ final readonly class EnsureDirectoryAction implements OperationActionInterface
                 'path' => $this->relativePath,
                 'created' => true,
             ], [
-                Message::create(MessageCode::FILESYSTEM_DIRECTORY_READY, MessageKey::FILESYSTEM_DIRECTORY_READY, [
+                Message::create(FilesystemMessageCode::FILESYSTEM_DIRECTORY_READY, FilesystemMessageKey::FILESYSTEM_DIRECTORY_READY, [
                     '%path%' => $this->relativePath,
                 ], [
                     'path' => $this->relativePath,

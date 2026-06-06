@@ -6,7 +6,7 @@ namespace App\Command;
 
 use App\Core\Console\ConsoleResultRenderer;
 use App\Core\Message\Message;
-use App\Core\Message\MessageKey;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Package\PackageDiscoveryDispatcher;
 use App\Core\Package\PackageDiscoveryRunner;
 use App\Core\Workflow\WorkflowResult;
@@ -111,7 +111,7 @@ final class PackageDiscoveryCommand extends Command
         $issue = $result->firstIssue();
 
         if (null === $issue) {
-            return $this->translator->trans(MessageKey::OPERATION_EXCEPTION);
+            return $this->translator->trans(OperationMessageKey::OPERATION_EXCEPTION);
         }
 
         return $this->formatIssue($issue);

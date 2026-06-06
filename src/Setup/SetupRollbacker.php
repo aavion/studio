@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Database\TablePrefix;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -78,10 +78,10 @@ final readonly class SetupRollbacker
         ];
 
         if ($errors > 0) {
-            return Message::warning(MessageCode::SETUP_ROLLBACK_COMPLETED, MessageKey::SETUP_ROLLBACK_COMPLETED, $parameters, $context);
+            return Message::warning(SetupMessageCode::SETUP_ROLLBACK_COMPLETED, SetupMessageKey::SETUP_ROLLBACK_COMPLETED, $parameters, $context);
         }
 
-        return Message::info(MessageCode::SETUP_ROLLBACK_COMPLETED, MessageKey::SETUP_ROLLBACK_COMPLETED, $parameters, $context);
+        return Message::info(SetupMessageCode::SETUP_ROLLBACK_COMPLETED, SetupMessageKey::SETUP_ROLLBACK_COMPLETED, $parameters, $context);
     }
 
     /**

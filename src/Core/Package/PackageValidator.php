@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Core\Manifest\ManifestMessageCode;
+use App\Core\Manifest\ManifestMessageKey;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 
 final class PackageValidator
@@ -63,7 +65,7 @@ final class PackageValidator
 
         return WorkflowResult::success($candidate, $context, [
             ...$policyMessages,
-            Message::debug(MessageCode::PACKAGE_VALIDATION_COMPLETED, MessageKey::PACKAGE_VALIDATION_COMPLETED, [
+            Message::debug(PackageMessageCode::PACKAGE_VALIDATION_COMPLETED, PackageMessageKey::PACKAGE_VALIDATION_COMPLETED, [
                 '%package%' => $candidate->directory(),
             ], [
                 'source' => $candidate->source()->name(),
@@ -87,8 +89,8 @@ final class PackageValidator
         if ('' === $slug) {
             return [
                 Message::create(
-                    MessageCode::MANIFEST_MISSING_REQUIRED_KEY,
-                    MessageKey::MANIFEST_MISSING_REQUIRED_KEY,
+                    ManifestMessageCode::MANIFEST_MISSING_REQUIRED_KEY,
+                    ManifestMessageKey::MANIFEST_MISSING_REQUIRED_KEY,
                     ['%key%' => 'PACKAGE_SLUG'],
                     ['source' => $candidate->source()->name(), 'path' => $candidate->manifestPath(), 'key' => 'PACKAGE_SLUG'],
                     MessageLevel::Error,
@@ -99,8 +101,8 @@ final class PackageValidator
         if (!PackageManifestSpec::isValidSlug($slug)) {
             return [
                 Message::create(
-                    MessageCode::PACKAGE_IDENTIFIER_INVALID,
-                    MessageKey::PACKAGE_IDENTIFIER_INVALID,
+                    PackageMessageCode::PACKAGE_IDENTIFIER_INVALID,
+                    PackageMessageKey::PACKAGE_IDENTIFIER_INVALID,
                     ['%identifier%' => $slug],
                     ['source' => $candidate->source()->name(), 'path' => $candidate->manifestPath(), 'key' => 'PACKAGE_SLUG', 'slug' => $slug],
                     MessageLevel::Error,
@@ -124,8 +126,8 @@ final class PackageValidator
 
         return [
             Message::create(
-                MessageCode::PACKAGE_DEPENDENCY_INVALID,
-                MessageKey::PACKAGE_DEPENDENCY_INVALID,
+                PackageMessageCode::PACKAGE_DEPENDENCY_INVALID,
+                PackageMessageKey::PACKAGE_DEPENDENCY_INVALID,
                 ['%package%' => trim((string) $candidate->manifest()->get('PACKAGE_SLUG', ''))],
                 [
                     'source' => $candidate->source()->name(),

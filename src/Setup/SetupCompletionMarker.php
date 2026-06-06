@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 
 final readonly class SetupCompletionMarker
 {
@@ -33,7 +33,7 @@ final readonly class SetupCompletionMarker
         ]), LOCK_EX);
 
         if (false === $bytes) {
-            throw $this->failure(MessageCode::SETUP_ENVIRONMENT_FILE_WRITE_FAILED, MessageKey::SETUP_ENVIRONMENT_FILE_WRITE_FAILED, $path);
+            throw $this->failure(SetupMessageCode::SETUP_ENVIRONMENT_FILE_WRITE_FAILED, SetupMessageKey::SETUP_ENVIRONMENT_FILE_WRITE_FAILED, $path);
         }
 
         return ['path' => basename($path), 'keys' => [self::KEY]];
@@ -61,7 +61,7 @@ final readonly class SetupCompletionMarker
         $values = include $path;
 
         if (!is_array($values)) {
-            throw $this->failure(MessageCode::SETUP_ENVIRONMENT_FILE_UNREADABLE, MessageKey::SETUP_ENVIRONMENT_FILE_UNREADABLE, $path);
+            throw $this->failure(SetupMessageCode::SETUP_ENVIRONMENT_FILE_UNREADABLE, SetupMessageKey::SETUP_ENVIRONMENT_FILE_UNREADABLE, $path);
         }
 
         $environment = [];

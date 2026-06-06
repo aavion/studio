@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Core\Log;
 
+use App\Core\Access\AccessMessageKey;
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
 use App\Core\Statistics\AccessStatisticsRecorderInterface;
 use App\Core\Statistics\VisitorIdGenerator;
@@ -96,8 +96,8 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
     {
         try {
             $this->messageReporter?->report(Message::exception(
-                MessageCode::E_OPERATION_FAILED,
-                MessageKey::ACCESS_LOG_FAILED,
+                CommonMessageCode::E_OPERATION_FAILED,
+                AccessMessageKey::ACCESS_LOG_FAILED,
                 [],
                 [
                     'operation' => 'access.log',

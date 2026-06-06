@@ -7,8 +7,8 @@ namespace App\Core\Routing;
 use App\Core\Config\Config;
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Routing\RoutingMessageCode;
+use App\Core\Routing\RoutingMessageKey;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Throwable;
 
@@ -83,7 +83,7 @@ final readonly class AbsoluteUriGenerator
     private function fail(string $caller, bool $routeInvalid, bool $defaultUriInvalid, bool $absoluteInput): null
     {
         $this->messageLogger->log(
-            Message::warning(MessageCode::ABSOLUTE_URI_GENERATION_FAILED, MessageKey::ABSOLUTE_URI_GENERATION_FAILED, [
+            Message::warning(RoutingMessageCode::ABSOLUTE_URI_GENERATION_FAILED, RoutingMessageKey::ABSOLUTE_URI_GENERATION_FAILED, [
                 '%caller%' => $caller,
             ]),
             [

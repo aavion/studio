@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Backend;
 
+use App\Backend\BackendMessageCode;
+use App\Backend\BackendMessageKey;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageFaultResetter;
 use App\Core\Package\PackageRemover;
@@ -36,8 +36,8 @@ final readonly class PackageLifecycleActionHandler
             PackageLifecycleAdmin::ACTION_DELETE => $this->remover->remove($packageName, $this->kernel->getEnvironment()),
             default => WorkflowResult::invalid([
                 Message::warning(
-                    MessageCode::BACKEND_ACTION_UNKNOWN,
-                    MessageKey::BACKEND_ACTION_UNKNOWN,
+                    BackendMessageCode::BACKEND_ACTION_UNKNOWN,
+                    BackendMessageKey::BACKEND_ACTION_UNKNOWN,
                     ['%action%' => $action],
                     ['action' => $action, 'package' => $packageName],
                 ),

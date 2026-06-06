@@ -7,8 +7,8 @@ namespace App\Core\Package\Install;
 use App\Core\Manifest\Manifest;
 use App\Core\Manifest\ManifestParser;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 
 final readonly class PackageInstallStageReader
@@ -32,8 +32,8 @@ final readonly class PackageInstallStageReader
         if (!is_string($contents)) {
             return WorkflowResult::invalid([
                 Message::error(
-                    MessageCode::PACKAGE_MANIFEST_UNREADABLE,
-                    MessageKey::PACKAGE_MANIFEST_UNREADABLE,
+                    PackageMessageCode::PACKAGE_MANIFEST_UNREADABLE,
+                    PackageMessageKey::PACKAGE_MANIFEST_UNREADABLE,
                     ['%path%' => $this->filesystem->relativePath($path)],
                     ['path' => $this->filesystem->relativePath($path)],
                 ),

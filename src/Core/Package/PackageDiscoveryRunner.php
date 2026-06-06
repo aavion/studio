@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
-use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Message\Message;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use Throwable;
 
@@ -118,8 +118,8 @@ final readonly class PackageDiscoveryRunner
     {
         return WorkflowResult::failed([
             Message::exception(
-                MessageCode::OPERATION_EXCEPTION,
-                MessageKey::OPERATION_EXCEPTION,
+                OperationMessageCode::OPERATION_EXCEPTION,
+                OperationMessageKey::OPERATION_EXCEPTION,
                 context: [
                     ...$context,
                     'exception' => $error::class,

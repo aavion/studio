@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Backend;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageActivator;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Package\PackageRemover;
 use App\Core\Workflow\WorkflowResult;
 
@@ -74,8 +74,8 @@ final readonly class PackageLifecycleReviewProvider
         if (ExtensionPackageStatus::Removed->value !== ($package['status'] ?? null)) {
             return WorkflowResult::blocked([
                 Message::create(
-                    MessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
-                    MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                    PackageMessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                    PackageMessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
                     ['%package%' => $package['package_name'], '%status%' => (string) ($package['status'] ?? 'unknown')],
                     ['package' => $package['package_name'], 'status' => $package['status'] ?? null, 'action' => PackageLifecycleAdmin::ACTION_PURGE],
                     MessageLevel::Warning,

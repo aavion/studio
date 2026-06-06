@@ -4,17 +4,39 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Message;
 
+use App\Backend\BackendMessageKey;
+use App\Content\ContentMessageKey;
+use App\Core\Access\AccessMessageKey;
+use App\Core\Asset\AssetMessageKey;
+use App\Core\Config\ConfigMessageKey;
+use App\Core\Event\EventMessageKey;
+use App\Core\Lint\LintMessageKey;
+use App\Core\Manifest\ManifestMessageKey;
 use App\Core\Message\MessageKey;
+use App\Core\Messenger\MessengerMessageKey;
+use App\Core\Operation\Filesystem\FilesystemMessageKey;
+use App\Core\Operation\OperationMessageKey;
+use App\Core\Operation\Process\ProcessMessageKey;
+use App\Core\Package\PackageMessageKey;
+use App\Core\Routing\RoutingMessageKey;
+use App\Core\Security\SystemSecurityMessageKey;
+use App\Core\State\StateMessageKey;
+use App\Core\Statistics\StatisticsMessageKey;
+use App\Core\Translation\TranslationMessageKey;
 use App\Localization\CoreTranslationBootstrapper;
+use App\Navigation\NavigationMessageKey;
+use App\Scheduler\SchedulerMessageKey;
+use App\Security\SecurityMessageKey;
+use App\Setup\SetupMessageKey;
+use App\View\ViewMessageKey;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 use Symfony\Component\Yaml\Yaml;
 
 final class MessageKeyTest extends TestCase
 {
     public function testItDefinesUniqueTranslationReadyKeys(): void
     {
-        $constants = (new ReflectionClass(MessageKey::class))->getConstants();
+        $constants = MessageKey::all();
         $values = array_values($constants);
 
         self::assertNotEmpty($values);
@@ -27,9 +49,19 @@ final class MessageKeyTest extends TestCase
         }
     }
 
+    public function testItKeepsKeysBoundToTheirCatalogueScope(): void
+    {
+        foreach (MessageKey::catalogues() as $class) {
+            foreach ((new \ReflectionClass($class))->getConstants() as $name => $value) {
+                self::assertCatalogueNameMatchesScope($class, $name);
+                self::assertCatalogueValueMatchesScope($class, $value);
+            }
+        }
+    }
+
     public function testItKeepsMessageCataloguesSynchronizedWithKnownKeys(): void
     {
-        $constants = (new ReflectionClass(MessageKey::class))->getConstants();
+        $constants = MessageKey::all();
         $knownKeys = array_values($constants);
         $root = dirname(__DIR__, 3);
         $generation = (new CoreTranslationBootstrapper())->generate($root, 'test');
@@ -66,5 +98,95 @@ final class MessageKeyTest extends TestCase
         }
 
         return $flat;
+    }
+
+    private static function assertCatalogueNameMatchesScope(string $class, string $name): void
+    {
+        foreach (self::namePrefixes()[$class] ?? [] as $prefix) {
+            if (str_starts_with($name, $prefix)) {
+                self::assertTrue(true);
+
+                return;
+            }
+        }
+
+        self::fail(sprintf('%s::%s is not bound to its catalogue scope.', $class, $name));
+    }
+
+    private static function assertCatalogueValueMatchesScope(string $class, string $value): void
+    {
+        foreach (self::valuePrefixes()[$class] ?? [] as $prefix) {
+            if (str_starts_with($value, $prefix)) {
+                self::assertTrue(true);
+
+                return;
+            }
+        }
+
+        self::fail(sprintf('%s contains out-of-scope key "%s".', $class, $value));
+    }
+
+    /**
+     * @return array<class-string, list<string>>
+     */
+    private static function namePrefixes(): array
+    {
+        return [
+            BackendMessageKey::class => ['BACKEND_'],
+            ContentMessageKey::class => ['CONTENT_'],
+            AccessMessageKey::class => ['ACCESS_'],
+            AssetMessageKey::class => ['TAILWIND_'],
+            ConfigMessageKey::class => ['CONFIG_'],
+            EventMessageKey::class => ['EVENT_HOOK_'],
+            LintMessageKey::class => ['LINT_'],
+            ManifestMessageKey::class => ['MANIFEST_'],
+            MessengerMessageKey::class => ['MESSENGER_'],
+            FilesystemMessageKey::class => ['FILESYSTEM_'],
+            OperationMessageKey::class => ['OPERATION_'],
+            ProcessMessageKey::class => ['PROCESS_'],
+            PackageMessageKey::class => ['PACKAGE_'],
+            RoutingMessageKey::class => ['ABSOLUTE_URI_'],
+            SystemSecurityMessageKey::class => ['SYSTEM_'],
+            StateMessageKey::class => ['STATE_'],
+            StatisticsMessageKey::class => ['STATISTICS_'],
+            TranslationMessageKey::class => ['TRANSLATION_'],
+            NavigationMessageKey::class => ['MENU_'],
+            SchedulerMessageKey::class => ['SCHEDULER_'],
+            SecurityMessageKey::class => ['ACL_', 'USER', 'ACCOUNT_', 'API_KEY_'],
+            SetupMessageKey::class => ['SETUP_'],
+            ViewMessageKey::class => ['VIEW_'],
+        ];
+    }
+
+    /**
+     * @return array<class-string, list<string>>
+     */
+    private static function valuePrefixes(): array
+    {
+        return [
+            BackendMessageKey::class => ['message.backend.'],
+            ContentMessageKey::class => ['message.content.'],
+            AccessMessageKey::class => ['message.access.'],
+            AssetMessageKey::class => ['message.tailwind.'],
+            ConfigMessageKey::class => ['message.config.'],
+            EventMessageKey::class => ['message.event.'],
+            LintMessageKey::class => ['message.lint.'],
+            ManifestMessageKey::class => ['message.manifest.'],
+            MessengerMessageKey::class => ['message.messenger.'],
+            FilesystemMessageKey::class => ['message.filesystem.'],
+            OperationMessageKey::class => ['message.operation.'],
+            ProcessMessageKey::class => ['message.process.'],
+            PackageMessageKey::class => ['message.package.'],
+            RoutingMessageKey::class => ['message.routing.'],
+            SystemSecurityMessageKey::class => ['message.system.'],
+            StateMessageKey::class => ['message.state.'],
+            StatisticsMessageKey::class => ['message.statistics.'],
+            TranslationMessageKey::class => ['message.translation.'],
+            NavigationMessageKey::class => ['message.menu.'],
+            SchedulerMessageKey::class => ['message.scheduler.'],
+            SecurityMessageKey::class => ['message.acl.', 'message.user.', 'message.account_', 'message.api_key.'],
+            SetupMessageKey::class => ['message.setup.'],
+            ViewMessageKey::class => ['message.view.'],
+        ];
     }
 }

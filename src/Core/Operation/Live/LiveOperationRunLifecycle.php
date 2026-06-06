@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Core\Operation\Live;
 
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Workflow\WorkflowResult;
 
 final readonly class LiveOperationRunLifecycle
@@ -39,8 +39,8 @@ final readonly class LiveOperationRunLifecycle
         $operation = (string) ($state['operation'] ?? 'unknown');
         $result = WorkflowResult::failed([
             Message::warning(
-                MessageCode::E_OPERATION_FAILED,
-                MessageKey::OPERATION_STALE,
+                CommonMessageCode::E_OPERATION_FAILED,
+                OperationMessageKey::OPERATION_STALE,
                 ['%operation%' => $operation],
                 ['operation' => $operation, 'operation_id' => $operationId],
             ),

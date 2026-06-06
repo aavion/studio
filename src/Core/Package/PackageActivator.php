@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use Doctrine\ORM\EntityManagerInterface;
@@ -134,8 +134,8 @@ final readonly class PackageActivator
             if ($package->activate()) {
                 $changes[] = $this->change($package, 'activated');
                 $messages[] = Message::create(
-                    MessageCode::PACKAGE_LIFECYCLE_ACTIVATED,
-                    MessageKey::PACKAGE_LIFECYCLE_ACTIVATED,
+                    PackageMessageCode::PACKAGE_LIFECYCLE_ACTIVATED,
+                    PackageMessageKey::PACKAGE_LIFECYCLE_ACTIVATED,
                     ['%package%' => $package->packageName()],
                     ['package' => $package->packageName()],
                     MessageLevel::Success,
@@ -418,8 +418,8 @@ final readonly class PackageActivator
             ...$messages,
             ...$rebuild->messages(),
             Message::warning(
-                MessageCode::PACKAGE_LIFECYCLE_ROLLED_BACK,
-                MessageKey::PACKAGE_LIFECYCLE_ROLLED_BACK,
+                PackageMessageCode::PACKAGE_LIFECYCLE_ROLLED_BACK,
+                PackageMessageKey::PACKAGE_LIFECYCLE_ROLLED_BACK,
                 ['%count%' => count($snapshots)],
                 ['package_count' => count($snapshots), 'packages' => array_keys($snapshots)],
             ),
@@ -449,8 +449,8 @@ final readonly class PackageActivator
     {
         return WorkflowResult::invalid([
             Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
-                MessageKey::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
+                PackageMessageCode::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
+                PackageMessageKey::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
                 ['%package%' => $packageName],
                 ['package' => $packageName],
                 MessageLevel::Error,
@@ -465,8 +465,8 @@ final readonly class PackageActivator
     {
         return WorkflowResult::blocked([
             Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
-                MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                PackageMessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                PackageMessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
                 ['%package%' => $package->packageName(), '%status%' => $package->status()->value],
                 ['package' => $package->packageName(), 'status' => $package->status()->value],
                 MessageLevel::Warning,
@@ -489,8 +489,8 @@ final readonly class PackageActivator
     private function deactivatedMessage(ExtensionPackage $package): Message
     {
         return Message::create(
-            MessageCode::PACKAGE_LIFECYCLE_DEACTIVATED,
-            MessageKey::PACKAGE_LIFECYCLE_DEACTIVATED,
+            PackageMessageCode::PACKAGE_LIFECYCLE_DEACTIVATED,
+            PackageMessageKey::PACKAGE_LIFECYCLE_DEACTIVATED,
             ['%package%' => $package->packageName()],
             ['package' => $package->packageName()],
             MessageLevel::Success,

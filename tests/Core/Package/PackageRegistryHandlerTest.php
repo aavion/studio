@@ -4,23 +4,23 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Package;
 
+use App\Core\Message\Message;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageAssetRebuildDispatcher;
 use App\Core\Package\PackageAssetRebuildMessage;
 use App\Core\Package\PackageCandidate;
 use App\Core\Package\PackageDiscovery;
 use App\Core\Package\PackageLifecycleAssetRebuilderInterface;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Package\PackageRegistryHandler;
 use App\Core\Package\PackageSource;
-use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Tests\Support\FilesystemTestHelper;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use App\Tests\Support\RecordingMessageBus;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
-use App\Tests\Support\NullWorkflowResultMessageReporter;
 use RuntimeException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Messenger\Envelope;
@@ -193,8 +193,8 @@ final class PackageRegistryHandlerTest extends KernelTestCase
         $this->writePackageManifest('demo-module', '1.1.0');
         $assetRebuilder = new RegistryHandlerPackageLifecycleAssetRebuilder(WorkflowResult::failed([
             Message::error(
-                MessageCode::PACKAGE_ASSET_SYNC_FAILED,
-                MessageKey::PACKAGE_ASSET_SYNC_FAILED,
+                PackageMessageCode::PACKAGE_ASSET_SYNC_FAILED,
+                PackageMessageKey::PACKAGE_ASSET_SYNC_FAILED,
                 ['%message%' => 'fallback failed'],
             ),
         ]));

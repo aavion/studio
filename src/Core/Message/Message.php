@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Message;
 
+use App\Core\Message\CommonMessageCode;
 use InvalidArgumentException;
 
 final readonly class Message
@@ -53,7 +54,7 @@ final readonly class Message
      */
     public static function invalidArgument(string $translationKey, array $parameters = [], array $context = []): self
     {
-        return new self(MessageCode::E_INVALID_ARGUMENT, $translationKey, $parameters, $context, MessageLevel::Warning);
+        return new self(CommonMessageCode::E_INVALID_ARGUMENT, $translationKey, $parameters, $context, MessageLevel::Warning);
     }
 
     /**
@@ -107,7 +108,7 @@ final readonly class Message
      */
     public static function success(string $translationKey, array $parameters = [], array $context = []): self
     {
-        return new self(MessageCode::SUCCESS, $translationKey, $parameters, $context, MessageLevel::Success);
+        return new self(CommonMessageCode::SUCCESS, $translationKey, $parameters, $context, MessageLevel::Success);
     }
 
     public function code(): string
@@ -168,11 +169,11 @@ final readonly class Message
 
     private static function defaultLevelForCode(string $code): MessageLevel
     {
-        if (MessageCode::SUCCESS === $code) {
+        if (CommonMessageCode::SUCCESS === $code) {
             return MessageLevel::Success;
         }
 
-        if (MessageCode::E_INVALID_ARGUMENT === $code) {
+        if (CommonMessageCode::E_INVALID_ARGUMENT === $code) {
             return MessageLevel::Warning;
         }
 

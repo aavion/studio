@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Core\Access\AccessLevel;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
-use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\Live\LiveOperationRunStore;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
 use App\Core\Workflow\WorkflowResult;
@@ -599,8 +599,8 @@ final class BackendControllerTest extends WebTestCase
         $run = $store->create('package.install.verify', [], 'Install package');
         $result = WorkflowResult::requiresReview(null, [
             Message::info(
-                MessageCode::OPERATION_ACTION_REQUIRED,
-                MessageKey::OPERATION_ACTION_REQUIRED,
+                OperationMessageCode::OPERATION_ACTION_REQUIRED,
+                OperationMessageKey::OPERATION_ACTION_REQUIRED,
                 ['%operation%' => 'Install package'],
             ),
         ], [

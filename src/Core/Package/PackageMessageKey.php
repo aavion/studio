@@ -1,0 +1,74 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Core\Package;
+
+final class PackageMessageKey
+{
+    public const PACKAGE_MANIFEST_UNREADABLE = 'message.package.manifest_unreadable';
+    public const PACKAGE_REQUIRED_FILE_MISSING = 'message.package.required_file_missing';
+    public const PACKAGE_REQUIRED_DIRECTORY_MISSING = 'message.package.required_directory_missing';
+    public const PACKAGE_FILE_UNREADABLE = 'message.package.file_unreadable';
+    public const PACKAGE_PHP_SYNTAX_ERROR = 'message.package.php_syntax_error';
+    public const PACKAGE_PHP_NAMESPACE_INVALID = 'message.package.php_namespace_invalid';
+    public const PACKAGE_TWIG_SYNTAX_ERROR = 'message.package.twig_syntax_error';
+    public const PACKAGE_TRANSLATION_ENGLISH_MISSING = 'message.package.translation_english_missing';
+    public const PACKAGE_TRANSLATION_NAMESPACE_INVALID = 'message.package.translation_namespace_invalid';
+    public const PACKAGE_JSON_SYNTAX_ERROR = 'message.package.json_syntax_error';
+    public const PACKAGE_YAML_SYNTAX_ERROR = 'message.package.yaml_syntax_error';
+    public const PACKAGE_CSS_SYNTAX_ERROR = 'message.package.css_syntax_error';
+    public const PACKAGE_JAVASCRIPT_SYNTAX_ERROR = 'message.package.javascript_syntax_error';
+    public const PACKAGE_SCOPE_INVALID = 'message.package.scope_invalid';
+    public const PACKAGE_TEMPLATE_PATH_INVALID = 'message.package.template_path_invalid';
+    public const PACKAGE_POLICY_BLOCKED_PATH = 'message.package.policy.blocked_path';
+    public const PACKAGE_POLICY_WARNED_PATH = 'message.package.policy.warned_path';
+    public const PACKAGE_POLICY_BLOCKED_PHP_CAPABILITY = 'message.package.policy.blocked_php_capability';
+    public const PACKAGE_COPY_SOURCE_MISSING = 'message.package.copy_source_missing';
+    public const PACKAGE_COPY_SOURCE_SYMLINK = 'message.package.copy_source_symlink';
+    public const PACKAGE_ASSET_SYNC_COMPLETED = 'message.package.asset_sync_completed';
+    public const PACKAGE_ASSET_SYNC_FAILED = 'message.package.asset_sync_failed';
+    public const PACKAGE_ASSET_REBUILD_QUEUED = 'message.package.asset_rebuild_queued';
+    public const PACKAGE_ASSET_REBUILD_QUEUE_FAILED = 'message.package.asset_rebuild_queue_failed';
+    public const PACKAGE_DISCOVERY_QUEUED = 'message.package.discovery_queued';
+    public const PACKAGE_DISCOVERY_QUEUE_FAILED = 'message.package.discovery_queue_failed';
+    public const PACKAGE_DISCOVERY_COMPLETED = 'message.package.discovery_completed';
+    public const PACKAGE_VALIDATION_COMPLETED = 'message.package.validation_completed';
+    public const PACKAGE_COPY_PLAN_CREATED = 'message.package.copy_plan_created';
+    public const PACKAGE_REGISTRY_SYNC_COMPLETED = 'message.package.registry.sync_completed';
+    public const PACKAGE_REGISTRY_PACKAGE_REGISTERED = 'message.package.registry.registered';
+    public const PACKAGE_REGISTRY_PACKAGE_UPDATED = 'message.package.registry.updated';
+    public const PACKAGE_REGISTRY_PACKAGE_REMOVED = 'message.package.registry.removed';
+    public const PACKAGE_REGISTRY_PACKAGE_FAULTY = 'message.package.registry.faulty';
+    public const PACKAGE_INSTALL_UPLOAD_INVALID = 'message.package.install.upload_invalid';
+    public const PACKAGE_INSTALL_ZIP_INVALID = 'message.package.install.zip_invalid';
+    public const PACKAGE_INSTALL_ROOT_INVALID = 'message.package.install.root_invalid';
+    public const PACKAGE_INSTALL_READY = 'message.package.install.ready';
+    public const PACKAGE_INSTALL_OVERWRITE = 'message.package.install.overwrite';
+    public const PACKAGE_INSTALL_VERSION_BLOCKED = 'message.package.install.version_blocked';
+    public const PACKAGE_INSTALL_COMPLETED = 'message.package.install.completed';
+    public const PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND = 'message.package.lifecycle.not_found';
+    public const PACKAGE_LIFECYCLE_STATUS_BLOCKED = 'message.package.lifecycle.status_blocked';
+    public const PACKAGE_LIFECYCLE_ACTIVATED = 'message.package.lifecycle.activated';
+    public const PACKAGE_LIFECYCLE_DEACTIVATED = 'message.package.lifecycle.deactivated';
+    public const PACKAGE_LIFECYCLE_DEPENDENT_DEACTIVATED = 'message.package.lifecycle.dependent_deactivated';
+    public const PACKAGE_LIFECYCLE_CLEANUP_COMPLETED = 'message.package.lifecycle.cleanup_completed';
+    public const PACKAGE_LIFECYCLE_REMOVED = 'message.package.lifecycle.removed';
+    public const PACKAGE_LIFECYCLE_PURGED = 'message.package.lifecycle.purged';
+    public const PACKAGE_LIFECYCLE_FAULT_RESET = 'message.package.lifecycle.fault_reset';
+    public const PACKAGE_LIFECYCLE_RUNTIME_FAILURE = 'message.package.lifecycle.runtime_failure';
+    public const PACKAGE_LIFECYCLE_PHP_LOAD_FAILED = 'message.package.lifecycle.php_load_failed';
+    public const PACKAGE_LIFECYCLE_ROLLED_BACK = 'message.package.lifecycle.rolled_back';
+    public const PACKAGE_SETTING_READ_FAILED = 'message.package.setting.read_failed';
+    public const PACKAGE_SETTING_WRITE_FAILED = 'message.package.setting.write_failed';
+    public const PACKAGE_SETTING_DELETE_FAILED = 'message.package.setting.delete_failed';
+    public const PACKAGE_SETTING_VALUE_INVALID = 'message.package.setting.value_invalid';
+    public const PACKAGE_DEPENDENCY_MISSING = 'message.package.dependency.missing';
+    public const PACKAGE_DEPENDENCY_INVALID = 'message.package.dependency.invalid';
+    public const PACKAGE_SCHEDULER_CRON_INVALID = 'message.package.scheduler.cron_invalid';
+    public const PACKAGE_DEPENDENCY_VERSION_UNSATISFIED = 'message.package.dependency.version_unsatisfied';
+    public const PACKAGE_DEPENDENCY_STATUS_BLOCKED = 'message.package.dependency.status_blocked';
+    public const PACKAGE_DEPENDENCY_CYCLE = 'message.package.dependency.cycle';
+    public const PACKAGE_DEPENDENCY_RESOLVED = 'message.package.dependency.resolved';
+    public const PACKAGE_IDENTIFIER_INVALID = 'message.package.identifier.invalid';
+}

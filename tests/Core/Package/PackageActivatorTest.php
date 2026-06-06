@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Package;
 
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Config\Config;
+use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\ActivePackageProvider;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageDependencyResolver;
 use App\Core\Package\PackageLifecycleAssetRebuilderInterface;
-use App\Core\Message\Message;
-use App\Core\Workflow\WorkflowResult;
-use App\Core\Config\Config;
-use App\Core\Package\ActivePackageProvider;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Package\PackagePhpLoader;
 use App\Core\Package\PackageRuntimeContributionRegistry;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\SchedulerTask;
 use App\Scheduler\SchedulerSettings;
 use App\Scheduler\SchedulerTaskRegistry;
@@ -370,8 +370,8 @@ PHP);
         $this->insertPackage('demo-module', ['module'], 'inactive');
         $this->assetRebuilder->result = WorkflowResult::failed([
             Message::create(
-                MessageCode::PACKAGE_ASSET_SYNC_FAILED,
-                MessageKey::PACKAGE_ASSET_SYNC_FAILED,
+                PackageMessageCode::PACKAGE_ASSET_SYNC_FAILED,
+                PackageMessageKey::PACKAGE_ASSET_SYNC_FAILED,
                 ['%message%' => 'rebuild failed'],
                 level: MessageLevel::Error,
             ),

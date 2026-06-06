@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
-use App\Core\Message\MessageLevel;
 use App\Core\Message\Message;
+use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use App\View\SystemPackageMetadataProvider;
@@ -48,8 +48,8 @@ final readonly class PackageDependencyResolver
             'dependencies' => $dependencies,
         ], [
             Message::debug(
-                MessageCode::PACKAGE_DEPENDENCY_RESOLVED,
-                MessageKey::PACKAGE_DEPENDENCY_RESOLVED,
+                PackageMessageCode::PACKAGE_DEPENDENCY_RESOLVED,
+                PackageMessageKey::PACKAGE_DEPENDENCY_RESOLVED,
                 ['%package%' => $package->packageName(), '%count%' => count($dependencies)],
                 [
                     'package' => $package->packageName(),
@@ -121,8 +121,8 @@ final readonly class PackageDependencyResolver
             $cycle = array_slice($stack, false === $cycleStart ? 0 : $cycleStart);
             $cycle[] = $package->packageName();
             $issues[] = Message::create(
-                MessageCode::PACKAGE_DEPENDENCY_CYCLE,
-                MessageKey::PACKAGE_DEPENDENCY_CYCLE,
+                PackageMessageCode::PACKAGE_DEPENDENCY_CYCLE,
+                PackageMessageKey::PACKAGE_DEPENDENCY_CYCLE,
                 ['%cycle%' => implode(' -> ', $cycle)],
                 ['package' => $package->packageName(), 'cycle' => $cycle],
                 MessageLevel::Error,
@@ -158,8 +158,8 @@ final readonly class PackageDependencyResolver
 
             if (null === $dependency) {
                 $issues[] = Message::create(
-                    MessageCode::PACKAGE_DEPENDENCY_MISSING,
-                    MessageKey::PACKAGE_DEPENDENCY_MISSING,
+                    PackageMessageCode::PACKAGE_DEPENDENCY_MISSING,
+                    PackageMessageKey::PACKAGE_DEPENDENCY_MISSING,
                     ['%package%' => $dependencyName, '%required_by%' => $package->packageName()],
                     ['package' => $dependencyName, 'required_by' => $package->packageName()],
                     MessageLevel::Error,
@@ -173,8 +173,8 @@ final readonly class PackageDependencyResolver
                 ExtensionPackageStatus::Faulty,
             ], true)) {
                 $issues[] = Message::create(
-                    MessageCode::PACKAGE_DEPENDENCY_STATUS_BLOCKED,
-                    MessageKey::PACKAGE_DEPENDENCY_STATUS_BLOCKED,
+                    PackageMessageCode::PACKAGE_DEPENDENCY_STATUS_BLOCKED,
+                    PackageMessageKey::PACKAGE_DEPENDENCY_STATUS_BLOCKED,
                     ['%package%' => $dependencyName, '%status%' => $dependency->status()->value],
                     ['package' => $dependencyName, 'status' => $dependency->status()->value, 'required_by' => $package->packageName()],
                     MessageLevel::Error,
@@ -185,8 +185,8 @@ final readonly class PackageDependencyResolver
 
             if (null === $currentVersion || version_compare($currentVersion, $minVersion, '<')) {
                 $issues[] = Message::create(
-                    MessageCode::PACKAGE_DEPENDENCY_VERSION_UNSATISFIED,
-                    MessageKey::PACKAGE_DEPENDENCY_VERSION_UNSATISFIED,
+                    PackageMessageCode::PACKAGE_DEPENDENCY_VERSION_UNSATISFIED,
+                    PackageMessageKey::PACKAGE_DEPENDENCY_VERSION_UNSATISFIED,
                     ['%package%' => $dependencyName, '%required_version%' => $minVersion, '%installed_version%' => $currentVersion ?? ''],
                     ['package' => $dependencyName, 'required_version' => $minVersion, 'installed_version' => $currentVersion, 'required_by' => $package->packageName()],
                     MessageLevel::Error,
@@ -224,8 +224,8 @@ final readonly class PackageDependencyResolver
 
         if (null === $currentVersion || version_compare($currentVersion, $minVersion, '<')) {
             $issues[] = Message::create(
-                MessageCode::PACKAGE_DEPENDENCY_VERSION_UNSATISFIED,
-                MessageKey::PACKAGE_DEPENDENCY_VERSION_UNSATISFIED,
+                PackageMessageCode::PACKAGE_DEPENDENCY_VERSION_UNSATISFIED,
+                PackageMessageKey::PACKAGE_DEPENDENCY_VERSION_UNSATISFIED,
                 ['%package%' => 'system', '%required_version%' => $minVersion, '%installed_version%' => $currentVersion ?? ''],
                 ['package' => 'system', 'required_version' => $minVersion, 'installed_version' => $currentVersion, 'required_by' => $package->packageName()],
                 MessageLevel::Error,
@@ -300,8 +300,8 @@ final readonly class PackageDependencyResolver
 
         if (null !== $issues) {
             $issues[] = Message::create(
-                MessageCode::PACKAGE_DEPENDENCY_INVALID,
-                MessageKey::PACKAGE_DEPENDENCY_INVALID,
+                PackageMessageCode::PACKAGE_DEPENDENCY_INVALID,
+                PackageMessageKey::PACKAGE_DEPENDENCY_INVALID,
                 ['%package%' => $package->packageName()],
                 ['package' => $package->packageName(), 'value' => $value],
                 MessageLevel::Error,

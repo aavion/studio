@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Core\Operation\Live;
 
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Process\DetachedProcessStarter;
 use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Workflow\WorkflowResult;
@@ -44,8 +44,8 @@ final readonly class LiveOperationStarter
         } catch (Throwable $error) {
             $result = WorkflowResult::failed([
                 Message::exception(
-                    MessageCode::E_OPERATION_FAILED,
-                    MessageKey::OPERATION_START_FAILED,
+                    CommonMessageCode::E_OPERATION_FAILED,
+                    OperationMessageKey::OPERATION_START_FAILED,
                     ['%operation%' => $operation],
                     [
                         'operation' => $operation,
@@ -67,7 +67,7 @@ final readonly class LiveOperationStarter
             'operation_id' => $run['operation_id'],
         ], [
             Message::success(
-                MessageKey::OPERATION_STARTED,
+                OperationMessageKey::OPERATION_STARTED,
                 ['%operation%' => $label],
                 ['operation' => $operation, 'operation_id' => $run['operation_id']],
             ),

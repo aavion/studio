@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Backend;
 
+use App\Backend\BackendMessageKey;
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\Live\LiveOperationHttpResponder;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Form\FormTokenValidator;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -59,8 +60,8 @@ final readonly class BackendActionResponder
     {
         return WorkflowResult::invalid([
             Message::warning(
-                MessageCode::E_INVALID_ARGUMENT,
-                MessageKey::BACKEND_ACTION_INVALID_CSRF,
+                CommonMessageCode::E_INVALID_ARGUMENT,
+                BackendMessageKey::BACKEND_ACTION_INVALID_CSRF,
                 context: ['action' => $action],
             ),
         ], ['action' => $action]);
@@ -84,8 +85,8 @@ final readonly class BackendActionResponder
     private function flashResult(Request $request, WorkflowResult $result): void
     {
         $message = $result->isSuccess()
-            ? ($result->messages()[0] ?? Message::success(MessageKey::BACKEND_ACTION_CACHE_CLEAR_COMPLETED))
-            : ($result->firstIssue() ?? Message::error(MessageCode::E_OPERATION_FAILED, MessageKey::OPERATION_EXCEPTION));
+            ? ($result->messages()[0] ?? Message::success(BackendMessageKey::BACKEND_ACTION_CACHE_CLEAR_COMPLETED))
+            : ($result->firstIssue() ?? Message::error(CommonMessageCode::E_OPERATION_FAILED, OperationMessageKey::OPERATION_EXCEPTION));
 
         $request->getSession()->getFlashBag()->add($result->isSuccess() ? 'success' : 'error', [
             'translation_key' => $message->translationKey(),

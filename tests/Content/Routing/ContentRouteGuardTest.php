@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Content\Routing;
 
+use App\Content\ContentMessageKey;
 use App\Content\Routing\ContentRouteGuard;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
@@ -15,7 +15,7 @@ final class ContentRouteGuardTest extends TestCase
     public function testItRejectsReservedSlugs(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::CONTENT_SLUG_RESERVED);
+        $this->expectExceptionMessage(ContentMessageKey::CONTENT_SLUG_RESERVED);
 
         (new ContentRouteGuard())->assertSlugAllowed('system');
     }
@@ -30,7 +30,7 @@ final class ContentRouteGuardTest extends TestCase
     public function testItRejectsVariantMarkersBeforeTheLastPathSegment(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::CONTENT_PATH_VARIANT_INVALID);
+        $this->expectExceptionMessage(ContentMessageKey::CONTENT_PATH_VARIANT_INVALID);
 
         (new ContentRouteGuard())->assertPathAllowed('/projects/~compact/demo');
     }
@@ -42,7 +42,7 @@ final class ContentRouteGuardTest extends TestCase
                 (new ContentRouteGuard())->assertPathAllowed(sprintf('/%s/example', $prefix));
                 self::fail(sprintf('Expected prefix "%s" to be reserved.', $prefix));
             } catch (InvalidArgumentException $exception) {
-                self::assertStringContainsString(MessageKey::CONTENT_PATH_RESERVED_PREFIX, $exception->getMessage());
+                self::assertStringContainsString(ContentMessageKey::CONTENT_PATH_RESERVED_PREFIX, $exception->getMessage());
             }
         }
     }
@@ -50,7 +50,7 @@ final class ContentRouteGuardTest extends TestCase
     public function testItRejectsReservedApiPathPrefix(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::CONTENT_PATH_RESERVED_PREFIX);
+        $this->expectExceptionMessage(ContentMessageKey::CONTENT_PATH_RESERVED_PREFIX);
 
         (new ContentRouteGuard())->assertPathAllowed('/api/articles');
     }
@@ -61,7 +61,7 @@ final class ContentRouteGuardTest extends TestCase
             (new ContentRouteGuard())->assertPathAllowed('/projects/../secret');
             self::fail('Expected content validation to reject traversal segments.');
         } catch (MessageException $exception) {
-            self::assertSame(MessageKey::CONTENT_PATH_TRAVERSAL, $exception->messageKey());
+            self::assertSame(ContentMessageKey::CONTENT_PATH_TRAVERSAL, $exception->messageKey());
             self::assertSame([
                 '%path%' => '/projects/../secret',
                 '%segment%' => '..',

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Core\Asset;
 
+use App\Core\Asset\AssetMessageCode;
+use App\Core\Asset\AssetMessageKey;
 use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Workflow\WorkflowResult;
@@ -101,7 +101,7 @@ final readonly class TailwindBuildAction implements OperationActionInterface
             'tailwind_executed' => false,
             'manual_command' => self::MANUAL_COMMAND,
         ], $context, [
-            Message::warning(MessageCode::TAILWIND_BUILD_DEFERRED, MessageKey::TAILWIND_BUILD_DEFERRED, [
+            Message::warning(AssetMessageCode::TAILWIND_BUILD_DEFERRED, AssetMessageKey::TAILWIND_BUILD_DEFERRED, [
                 '%command%' => self::MANUAL_COMMAND,
             ], $context),
         ]);

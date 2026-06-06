@@ -7,13 +7,14 @@ namespace App\Controller;
 use App\Backend\AdminControllerContext;
 use App\Backend\BackendActionResponder;
 use App\Backend\BackendArea;
+use App\Backend\BackendMessageKey;
 use App\Backend\PackageLifecycleAdmin;
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\Live\LiveOperationHttpResponder;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationStarter;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Package\Install\PackageZipInstaller;
 use App\Core\Workflow\WorkflowResult;
 use App\Form\FormTokenValidator;
@@ -52,8 +53,8 @@ final class AdminPackageController extends AbstractController
         if (!$validToken) {
             $result = WorkflowResult::invalid([
                 Message::warning(
-                    MessageCode::E_INVALID_ARGUMENT,
-                    MessageKey::BACKEND_ACTION_INVALID_CSRF,
+                    CommonMessageCode::E_INVALID_ARGUMENT,
+                    BackendMessageKey::BACKEND_ACTION_INVALID_CSRF,
                     context: ['action' => 'package_install'],
                 ),
             ]);
@@ -165,7 +166,7 @@ final class AdminPackageController extends AbstractController
 
             if (!$this->formTokenValidator->isValid($formId, $this->stringField($request, '_form_id'), $this->stringField($request, '_csrf_token'))) {
                 $this->addFlash('error', [
-                    'translation_key' => MessageKey::BACKEND_ACTION_INVALID_CSRF,
+                    'translation_key' => BackendMessageKey::BACKEND_ACTION_INVALID_CSRF,
                     'parameters' => [],
                 ]);
 
@@ -233,8 +234,8 @@ final class AdminPackageController extends AbstractController
     private function flashResult(WorkflowResult $result): void
     {
         $message = $result->isSuccess()
-            ? ($result->messages()[0] ?? Message::success(MessageKey::BACKEND_ACTION_CACHE_CLEAR_COMPLETED))
-            : ($result->firstIssue() ?? Message::error(MessageCode::E_OPERATION_FAILED, MessageKey::OPERATION_EXCEPTION));
+            ? ($result->messages()[0] ?? Message::success(BackendMessageKey::BACKEND_ACTION_CACHE_CLEAR_COMPLETED))
+            : ($result->firstIssue() ?? Message::error(CommonMessageCode::E_OPERATION_FAILED, OperationMessageKey::OPERATION_EXCEPTION));
 
         $this->addFlash($result->isSuccess() ? 'success' : 'error', [
             'translation_key' => $message->translationKey(),

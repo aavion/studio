@@ -6,8 +6,8 @@ namespace App\Setup;
 
 use App\Core\Environment\DotenvFileEditor;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 
 final readonly class SetupEnvironmentWriter
 {
@@ -33,14 +33,14 @@ final readonly class SetupEnvironmentWriter
             $contents = file_get_contents($path);
 
             if (false === $contents) {
-                throw $this->failure(MessageCode::SETUP_ENVIRONMENT_FILE_UNREADABLE, MessageKey::SETUP_ENVIRONMENT_FILE_UNREADABLE, $path);
+                throw $this->failure(SetupMessageCode::SETUP_ENVIRONMENT_FILE_UNREADABLE, SetupMessageKey::SETUP_ENVIRONMENT_FILE_UNREADABLE, $path);
             }
         }
 
         $bytes = @file_put_contents($path, $this->editor->merge($contents, $values), LOCK_EX);
 
         if (false === $bytes) {
-            throw $this->failure(MessageCode::SETUP_ENVIRONMENT_FILE_WRITE_FAILED, MessageKey::SETUP_ENVIRONMENT_FILE_WRITE_FAILED, $path);
+            throw $this->failure(SetupMessageCode::SETUP_ENVIRONMENT_FILE_WRITE_FAILED, SetupMessageKey::SETUP_ENVIRONMENT_FILE_WRITE_FAILED, $path);
         }
 
         return ['path' => basename($path), 'keys' => array_keys($values)];

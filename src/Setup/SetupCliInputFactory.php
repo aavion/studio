@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
-use App\Core\Message\MessageKey;
+use App\Setup\SetupMessageKey;
 use App\View\SystemPackageMetadataProvider;
 
 final class SetupCliInputFactory
@@ -42,8 +42,8 @@ final class SetupCliInputFactory
         $interactive = $this->prompter->isInteractive($options);
         $databaseUrl = $this->initialDatabaseUrl($options);
         $language = $this->language($options, $interactive);
-        $siteTitle = $this->prompter->value($options, 'site-title', $this->appName(), $interactive, $language, MessageKey::SETUP_PROMPT_SITE_TITLE);
-        $defaultUri = $this->prompter->value($options, 'url', $this->environment('DEFAULT_URI', 'http://localhost'), $interactive, $language, MessageKey::SETUP_PROMPT_DEFAULT_URI);
+        $siteTitle = $this->prompter->value($options, 'site-title', $this->appName(), $interactive, $language, SetupMessageKey::SETUP_PROMPT_SITE_TITLE);
+        $defaultUri = $this->prompter->value($options, 'url', $this->environment('DEFAULT_URI', 'http://localhost'), $interactive, $language, SetupMessageKey::SETUP_PROMPT_DEFAULT_URI);
         $databaseDriver = $this->databaseDriver($options, $databaseUrl, $interactive, $language);
         $parts = $this->databaseParts($options, $databaseUrl, $databaseDriver, $interactive, $language);
 
@@ -60,18 +60,18 @@ final class SetupCliInputFactory
             databaseUser: $parts['database_user'],
             databasePassword: $parts['database_password'],
             databasePrefix: $this->normalizePrefix($this->databasePrefixOption($options)),
-            adminUsername: $this->prompter->value($options, 'admin-username', 'admin', $interactive, $language, MessageKey::SETUP_PROMPT_ADMIN_USERNAME),
+            adminUsername: $this->prompter->value($options, 'admin-username', 'admin', $interactive, $language, SetupMessageKey::SETUP_PROMPT_ADMIN_USERNAME),
             adminPassword: $this->prompter->confirmedValue(
                 $options,
                 'admin-password',
                 '',
                 $interactive,
                 $language,
-                MessageKey::SETUP_PROMPT_ADMIN_PASSWORD,
-                MessageKey::SETUP_PROMPT_ADMIN_PASSWORD_CONFIRM,
+                SetupMessageKey::SETUP_PROMPT_ADMIN_PASSWORD,
+                SetupMessageKey::SETUP_PROMPT_ADMIN_PASSWORD_CONFIRM,
             ),
-            adminEmail: $this->prompter->value($options, 'admin-email', $this->inputNormalizer->adminEmailFromDefaultUri($defaultUri), $interactive, $language, MessageKey::SETUP_PROMPT_ADMIN_EMAIL),
-            appSecret: $this->prompter->value($options, 'app-secret', '', $interactive, $language, MessageKey::SETUP_PROMPT_APP_SECRET) ?: null,
+            adminEmail: $this->prompter->value($options, 'admin-email', $this->inputNormalizer->adminEmailFromDefaultUri($defaultUri), $interactive, $language, SetupMessageKey::SETUP_PROMPT_ADMIN_EMAIL),
+            appSecret: $this->prompter->value($options, 'app-secret', '', $interactive, $language, SetupMessageKey::SETUP_PROMPT_APP_SECRET) ?: null,
             siteSettings: $this->siteSettings($options),
             dryRun: array_key_exists('dry-run', $options),
         );
@@ -123,7 +123,7 @@ final class SetupCliInputFactory
             return $language;
         }
 
-        return $this->prompter->choice($language, MessageKey::SETUP_PROMPT_LANGUAGE, $this->languageCatalog->availableLanguages($this->projectDir), $default);
+        return $this->prompter->choice($language, SetupMessageKey::SETUP_PROMPT_LANGUAGE, $this->languageCatalog->availableLanguages($this->projectDir), $default);
     }
 
     /**
@@ -139,7 +139,7 @@ final class SetupCliInputFactory
 
         if (DatabaseDriver::SQLite === $driver) {
             $defaultUrl = $this->sqliteDatabaseUrlDefault($options, $databaseUrl);
-            $url = $this->prompter->value($options, 'database-url', $defaultUrl, $interactive, $language, MessageKey::SETUP_PROMPT_DATABASE_URL);
+            $url = $this->prompter->value($options, 'database-url', $defaultUrl, $interactive, $language, SetupMessageKey::SETUP_PROMPT_DATABASE_URL);
 
             return $this->emptyDatabaseParts($url);
         }
@@ -148,11 +148,11 @@ final class SetupCliInputFactory
 
         return [
             'database_url' => null,
-            'database_host' => $this->prompter->value($options, 'db-host', $defaults['host'], $interactive, $language, MessageKey::SETUP_PROMPT_DATABASE_HOST),
-            'database_port' => $this->prompter->value($options, 'db-port', $defaults['port'], $interactive, $language, MessageKey::SETUP_PROMPT_DATABASE_PORT),
-            'database_name' => $this->prompter->value($options, 'db-name', $defaults['name'], $interactive, $language, MessageKey::SETUP_PROMPT_DATABASE_NAME),
-            'database_user' => $this->prompter->value($options, 'db-user', $defaults['user'], $interactive, $language, MessageKey::SETUP_PROMPT_DATABASE_USER),
-            'database_password' => $this->prompter->value($options, 'db-password', $defaults['password'], $interactive, $language, MessageKey::SETUP_PROMPT_DATABASE_PASSWORD),
+            'database_host' => $this->prompter->value($options, 'db-host', $defaults['host'], $interactive, $language, SetupMessageKey::SETUP_PROMPT_DATABASE_HOST),
+            'database_port' => $this->prompter->value($options, 'db-port', $defaults['port'], $interactive, $language, SetupMessageKey::SETUP_PROMPT_DATABASE_PORT),
+            'database_name' => $this->prompter->value($options, 'db-name', $defaults['name'], $interactive, $language, SetupMessageKey::SETUP_PROMPT_DATABASE_NAME),
+            'database_user' => $this->prompter->value($options, 'db-user', $defaults['user'], $interactive, $language, SetupMessageKey::SETUP_PROMPT_DATABASE_USER),
+            'database_password' => $this->prompter->value($options, 'db-password', $defaults['password'], $interactive, $language, SetupMessageKey::SETUP_PROMPT_DATABASE_PASSWORD),
         ];
     }
 
@@ -205,7 +205,7 @@ final class SetupCliInputFactory
         if ($interactive && !isset($options['db-driver'])) {
             $value = $this->prompter->choice(
                 $language,
-                MessageKey::SETUP_PROMPT_DATABASE_DRIVER,
+                SetupMessageKey::SETUP_PROMPT_DATABASE_DRIVER,
                 array_map(static fn (DatabaseDriver $driver): string => $driver->value, $availableDrivers),
                 $default,
             );

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Log;
 
-use App\Core\Log\AccessLoggerInterface;
+use App\Core\Access\AccessMessageKey;
 use App\Core\Log\AccessLogSubscriber;
+use App\Core\Log\AccessLoggerInterface;
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Message\Message;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
 use App\Core\Statistics\AccessStatisticsRecorderInterface;
 use App\Core\Statistics\VisitorIdGenerator;
@@ -46,7 +46,7 @@ final class AccessLogSubscriberTest extends TestCase
         self::assertCount(1, $statisticsRecorder->records);
         self::assertCount(1, $reporter->records);
         self::assertSame(VisitorIdGenerator::COOKIE_NAME, $response->headers->getCookies()[0]?->getName());
-        self::assertSame(MessageKey::ACCESS_LOG_FAILED, $reporter->records[0]['message']->translationKey());
+        self::assertSame(AccessMessageKey::ACCESS_LOG_FAILED, $reporter->records[0]['message']->translationKey());
         self::assertSame('access.log', $reporter->records[0]['context']['operation']);
     }
 

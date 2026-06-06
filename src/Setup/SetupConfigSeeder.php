@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Config\Config;
+use App\Core\Config\ConfigMessageCode;
+use App\Core\Config\ConfigMessageKey;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 
 final readonly class SetupConfigSeeder
 {
@@ -31,8 +31,8 @@ final readonly class SetupConfigSeeder
 
             if (!$config->set($key, $setting['value'], $setting['type'], modifiedBy: 'setup')) {
                 throw SetupStepFailedException::fromMessage(Message::error(
-                    MessageCode::CONFIG_WRITE_FAILED,
-                    MessageKey::CONFIG_WRITE_FAILED,
+                    ConfigMessageCode::CONFIG_WRITE_FAILED,
+                    ConfigMessageKey::CONFIG_WRITE_FAILED,
                     ['%key%' => $key],
                     ['operation' => 'setup.seed_default_settings', 'config_key' => $key],
                 ));

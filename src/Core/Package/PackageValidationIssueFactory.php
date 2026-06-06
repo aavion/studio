@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 
 final readonly class PackageValidationIssueFactory
 {
@@ -43,8 +43,8 @@ final readonly class PackageValidationIssueFactory
     public function unreadableFile(PackageCandidate $candidate, string $file, string $path): Message
     {
         return Message::create(
-            MessageCode::PACKAGE_FILE_UNREADABLE,
-            MessageKey::PACKAGE_FILE_UNREADABLE,
+            PackageMessageCode::PACKAGE_FILE_UNREADABLE,
+            PackageMessageKey::PACKAGE_FILE_UNREADABLE,
             ['%path%' => $path],
             context: $this->fileContext($candidate, $file, $path),
             level: MessageLevel::Error,

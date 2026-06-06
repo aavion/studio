@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Content\ContentMessageKey;
 use App\Content\Schema\ContentSchemaField;
 use App\Core\Access\AccessLevel;
 use App\Core\Access\AccessRule;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
 use Doctrine\ORM\Mapping as ORM;
@@ -239,7 +239,7 @@ class ContentSchemaVersion
     private static function assertVersion(int $version): int
     {
         if ($version < 1) {
-            throw MessageException::invalidArgument(MessageKey::CONTENT_SCHEMA_VERSION_INVALID, [
+            throw MessageException::invalidArgument(ContentMessageKey::CONTENT_SCHEMA_VERSION_INVALID, [
                 '%version%' => $version,
             ]);
         }
@@ -267,10 +267,10 @@ class ContentSchemaVersion
                 continue;
             }
 
-            Identifier::assertSnakeCase($field['identifier'], MessageKey::CONTENT_FIELD_IDENTIFIER_INVALID, '%field_identifier%');
+            Identifier::assertSnakeCase($field['identifier'], ContentMessageKey::CONTENT_FIELD_IDENTIFIER_INVALID, '%field_identifier%');
 
             if (isset($identifiers[$field['identifier']])) {
-                throw MessageException::invalidArgument(MessageKey::CONTENT_SCHEMA_FIELD_DUPLICATE, [
+                throw MessageException::invalidArgument(ContentMessageKey::CONTENT_SCHEMA_FIELD_DUPLICATE, [
                     '%field_identifier%' => $field['identifier'],
                 ]);
             }
@@ -280,7 +280,7 @@ class ContentSchemaVersion
 
         foreach (ContentSchemaField::requiredBaseIdentifiers() as $requiredIdentifier) {
             if (!isset($identifiers[$requiredIdentifier])) {
-                throw MessageException::invalidArgument(MessageKey::CONTENT_SCHEMA_REQUIRED_FIELD_MISSING, [
+                throw MessageException::invalidArgument(ContentMessageKey::CONTENT_SCHEMA_REQUIRED_FIELD_MISSING, [
                     '%field_identifier%' => $requiredIdentifier,
                 ]);
             }
