@@ -126,6 +126,9 @@ Validation rules:
 | `message.statistics.snapshot_store_failed` | Access statistics snapshot storage failed. | N/A |
 | `message.statistics.cleanup_failed` | Access statistics retention cleanup failed. | N/A |
 | `message.statistics.trace_id_invalid` | Access statistics received a malformed compact trace identifier. | `%label%` |
+| `message.state.subject_type.invalid` | State marker subject type failed identifier validation. | `%subject_type%` |
+| `message.state.marker_key.invalid` | State marker key failed identifier validation. | `%marker_key%` |
+| `message.state.metadata.key_empty` | State marker metadata contains an empty key. | N/A |
 | `message.view.template_namespace.unsupported` | Template namespace is not supported. | `%namespace%` |
 | `message.package.lifecycle.cleanup_completed` | Package cleanup boundary completed. | `%package%` |
 | `message.package.lifecycle.dependent_deactivated` | Package was automatically deactivated because a dependency became unavailable. | `%package%`, `%dependency%` |

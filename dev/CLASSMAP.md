@@ -259,7 +259,7 @@
 | Type | Symbol | Purpose | Docs | Tests |
 |------|--------|---------|------|-------|
 | Entity | `App\Entity\ConfigEntry` | Database-backed global configuration key/value entry with typed JSON-compatible values. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Entity/CoreDatabaseModelTest.php` |
-| Entity | `App\Entity\StateMarker` | Reusable current/last state marker for fast UI lookup of lifecycle metadata such as created, modified, published, last login, and password changes. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Entity/CoreDatabaseModelTest.php` |
+| Entity | `App\Entity\StateMarker` | Reusable current/last state marker for fast UI lookup of lifecycle metadata such as created, modified, published, last login, and password changes, with state-owned validation keys for marker identifiers and metadata keys. | `dev/draft/0.1.x-CoreArchitecture.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | Entity | `App\Entity\AclGroup` | Contextual ACL group with a generic administrative name, minimum assignable role, metadata, and many-to-many user membership. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | Entity | `App\Entity\UserAccount` | User account model with profile/settings JSON, account status, exact global role, many-to-many contextual ACL group membership, and Symfony role exposure; lifecycle metadata lives in state markers. | `dev/draft/0.2.x-SecurityAccessControl.md` | `tests/Entity/CoreDatabaseModelTest.php` |
 | Entity | `App\Entity\ApiKey` | API key model storing prefix, HMAC lookup hash, encrypted key payload, owner, and read/write or revoked status. | `dev/draft/0.4.x-ApiLayer.md` | `tests/Entity/CoreDatabaseModelTest.php` |

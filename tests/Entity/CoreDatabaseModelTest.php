@@ -7,8 +7,10 @@ namespace App\Tests\Entity;
 use App\Core\Access\AccessLevel;
 use App\Core\Access\AccessMessageKey;
 use App\Core\Config\ConfigValueType;
+use App\Core\Message\MessageException;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
+use App\Core\State\StateMessageKey;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\ApiKey;
@@ -168,6 +170,21 @@ final class CoreDatabaseModelTest extends TestCase
         self::assertNull($marker->markerBy());
         self::assertSame('127.0.0.1', $marker->markerValue());
         self::assertSame(['source' => 'test'], $marker->metadata());
+    }
+
+    public function testItRejectsEmptyStateMarkerMetadataKeys(): void
+    {
+        $this->expectException(MessageException::class);
+        $this->expectExceptionMessage(StateMessageKey::STATE_METADATA_KEY_EMPTY);
+
+        new StateMarker(
+            '99999999-9999-7999-9999-999999999999',
+            'user_account',
+            '33333333-3333-7333-8333-333333333333',
+            'last_login',
+            new DateTimeImmutable('2026-05-24 12:00:00'),
+            metadata: ['' => 'test'],
+        );
     }
 
     public function testItModelsConfigPackagesAndMenus(): void

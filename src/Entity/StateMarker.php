@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Content\ContentMessageKey;
 use App\Core\Message\MessageException;
 use App\Core\State\StateMessageKey;
 use App\Core\Validation\Identifier;
@@ -137,7 +136,7 @@ class StateMarker
     {
         foreach (array_keys($metadata) as $key) {
             if (!is_string($key) || '' === trim($key)) {
-                throw MessageException::invalidArgument(ContentMessageKey::CONTENT_METADATA_KEY_EMPTY);
+                throw MessageException::invalidArgument(StateMessageKey::STATE_METADATA_KEY_EMPTY);
             }
         }
 

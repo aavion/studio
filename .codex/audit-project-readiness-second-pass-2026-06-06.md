@@ -443,6 +443,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added a statistics trace-ID validation key, translations, entity validation, operation-issue catalogue documentation, class-map note, and an entity regression test.
 - **Priority:** Now / Security and observability readiness.
 
+### S2-032 State marker metadata validation used a Content message key
+
+- **Area:** Entity validation, Message catalogue ownership, and reusable state markers.
+- **Finding:** `StateMarker` correctly validated subject type and marker keys through State-owned Message keys, but empty metadata keys reused `ContentMessageKey::CONTENT_METADATA_KEY_EMPTY`. That made a reusable Core state primitive depend on Content catalogue naming for a non-content invariant.
+- **Evidence:** `src/Entity/StateMarker.php`, `src/Core/State/StateMessageKey.php`, `tests/Entity/CoreDatabaseModelTest.php`.
+- **Impact:** Functional behavior was acceptable, but it violated the domain-owned Message catalogue rule and would make future docs or package-facing diagnostics harder to explain.
+- **Recommendation:** Keep the validation, but move the key to the State catalogue and document it alongside other state marker diagnostics.
+- **Fix applied:** Added `message.state.metadata.key_empty`, translations, issue-catalog documentation, class-map note, and an entity regression test.
+- **Priority:** Now / Message catalogue consistency.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -484,6 +494,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Core primitive foundations reviewed. S2-029 records that hard exceptions in ActionLog/Diff/DryRun/Message/Workflow are deliberate low-level invariants, while Config runtime failures already use Message diagnostics and central defaults.
 - Live-operation storage reviewed. S2-030 aligns project-root trimming with the rest of the cross-platform process/file storage code.
 - Access statistic entity boundaries reviewed. S2-031 validates request/visitor trace identifiers as compact technical tokens before new rows are created.
+- State marker entity validation reviewed. S2-032 moves reusable state metadata validation to State-owned Message keys instead of Content keys.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -514,3 +525,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Extracted repeated account token lookup and password-policy error mapping into Security helpers.
 - Normalized trailing POSIX and Windows separators for live-operation storage paths.
 - Validated access-statistics request and visitor trace identifiers before persistence.
+- Moved state-marker metadata validation to the State Message catalogue.

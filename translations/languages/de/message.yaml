@@ -290,6 +290,8 @@ message:
       invalid: 'State-Subject-Type "%subject_type%" muss lowercase snake_case sein.'
     marker_key:
       invalid: 'State-Marker-Key "%marker_key%" muss lowercase snake_case sein.'
+    metadata:
+      key_empty: 'State-Marker-Metadaten-Keys dürfen nicht leer sein.'
   user:
     username:
       invalid: 'Username "%username%" muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
