@@ -304,6 +304,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Operation/Live/LiveOperationRunStore.php:17`, `src/Core/Operation/Live/LiveOperationRunStore.php:42`, `src/Core/Operation/Live/LiveOperationRunStore.php:114`, `src/Core/Operation/Live/LiveOperationRunStore.php:274`, `src/Core/Operation/Live/LiveOperationRunStore.php:350`, `src/Core/Operation/Live/LiveOperationRunStore.php:571`.
 - **Impact:** Security and portability risk around locks/process handling, plus high context cost for future operation features.
 - **Recommendation:** Split file persistence, lock management, runner supervision, report building, and cleanup into separate services. Evaluate `symfony/lock` for runner locks before adding more cross-process behavior.
+- **Implementation note:** Split live-operation runs into focused creator, storage, progress writer, presenter, lifecycle/cleanup, runner supervisor, and runner process-inspection services. `LiveOperationRunStore` remains a thin facade for callers, while JSON persistence, report shaping, stale-state/retention cleanup, Symfony Lock runner ownership, PID validation, and process termination now have separate review surfaces.
 - **Priority:** Before Security.
 
 ### F-003 Backend controller is still a feature hub

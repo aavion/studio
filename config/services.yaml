@@ -328,6 +328,15 @@ services:
             $environment: '%kernel.environment%'
             $operationLogger: '@App\Core\Log\OperationLoggerInterface'
 
+    App\Core\Operation\Live\LiveOperationRunStorage:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
+    App\Core\Operation\Live\LiveOperationRunnerSupervisor:
+        arguments:
+            $environment: '%kernel.environment%'
+
     App\Core\Operation\Live\LiveOperationQueueFactory:
         arguments:
             $providers: !tagged_iterator { tag: studio.live_operation_queue_provider }
