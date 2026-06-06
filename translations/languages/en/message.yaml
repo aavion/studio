@@ -18,7 +18,7 @@ message:
     php_syntax_error: 'PHP syntax check failed for "%path%".'
     php_namespace_invalid: 'PHP source "%path%" must use package namespace "%expected_namespace%".'
     twig_syntax_error: 'Twig syntax check failed for "%path%".'
-    translation_english_missing: 'Package translation sources for "%package%" must include at least one English catalogue under "languages/en".'
+    translation_fallback_missing: 'Package translation sources for "%package%" must include at least one fallback catalogue under "languages/%locale%".'
     translation_namespace_invalid: 'Package translation file "%path%" must define keys below "pkg.%package%".'
     json_syntax_error: 'JSON syntax check failed for "%path%".'
     yaml_syntax_error: 'YAML syntax check failed for "%path%".'

@@ -56,7 +56,7 @@ Validation rules:
 | `package.copy_source_symlink` | Planned package copy source is a symlink. | `source`, `package`, `file`, `path` |
 | `package.asset_rebuild_queued` | Package asset rebuild was queued for deferred Messenger processing. | `trigger`, `environment`, `deferred` |
 | `package.asset_rebuild_queue_failed` | Package asset rebuild could not be queued for deferred Messenger processing. | `trigger`, `environment`, `exception`, `message` |
-| `package.translation_english_missing` | Package translation sources exist but no English source catalogue is present. | `source`, `package`, `file`, `path` |
+| `package.translation_fallback_missing` | Package translation sources exist but no configured fallback source catalogue is present. | `source`, `package`, `file`, `path`, `fallback_locale`, `fallback_locale_candidates` |
 | `package.translation_namespace_invalid` | Package translation source is outside the package-owned `pkg.<slug>` namespace. | `source`, `package`, `file`, `path`, `expected_prefix` |
 | `translation.aggregate_completed` | Core and active package translation sources were aggregated into runtime catalogues. | `packages`, `locales`, `files`, `targets` |
 | `translation.aggregate_failed` | Translation aggregation could not write runtime catalogues. | `exception`, `message`, `target_pattern` |
@@ -108,7 +108,7 @@ Validation rules:
 | `message.package.validation_completed` | Package validation completed successfully. | `%package%` |
 | `message.package.asset_rebuild_queued` | Package asset rebuild was queued for deferred processing. | `%trigger%` |
 | `message.package.asset_rebuild_queue_failed` | Package asset rebuild could not be queued. | `%trigger%` |
-| `message.package.translation_english_missing` | Package translation sources do not include the required English fallback. | `%package%` |
+| `message.package.translation_fallback_missing` | Package translation sources do not include the required fallback catalogue. | `%package%`, `%locale%` |
 | `message.package.translation_namespace_invalid` | Package translation source does not stay under the package-owned namespace. | `%path%`, `%package%` |
 | `message.translation.aggregate_completed` | Translation aggregation completed. | `%files%`, `%locales%`, `%packages%` |
 | `message.translation.aggregate_failed` | Translation aggregation failed. | `%path%` |

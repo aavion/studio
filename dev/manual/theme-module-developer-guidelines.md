@@ -81,7 +81,7 @@ Area-specific package assets follow the same boundary as template namespaces. A 
 
 Package asset registries control deterministic rebuild order, but Tailwind currently emits one application stylesheet. CSS that belongs to one rendered area should therefore stay scoped to that area's root class, such as `.studio-frontend` or `.studio-backend`, unless the package intentionally contributes global module/provider styling.
 
-Package translations are package-scoped. A package may ship `languages/<locale>/*.yaml`; when it does, `languages/en/*.yaml` is required as the fallback source. Only active package language files are aggregated into the generated runtime `messages` catalogue during the package rebuild queue, so inactive packages cannot override or leak copy. Package-owned translation keys must stay namespaced below `pkg.<package-slug>.*`.
+Package translations are package-scoped. A package may ship `languages/<locale>/*.yaml`; when it does, at least one catalogue for the configured fallback locale or its primary language must be present as the fallback source. Only active package language files are aggregated into the generated runtime `messages` catalogue during the package rebuild queue, so inactive packages cannot override or leak copy. Package-owned translation keys must stay namespaced below `pkg.<package-slug>.*`.
 
 Database-backed schema Twig is not visible to Tailwind file scanning by itself. Schema rendering needs a later aggregation layer that extracts or stores CSS class usage from active schema Twig and exposes it to the Tailwind rebuild before production builds depend on schema-authored classes.
 

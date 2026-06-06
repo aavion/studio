@@ -13,7 +13,7 @@ final class PackageMessageCode
     public const PACKAGE_PHP_SYNTAX_ERROR = 'package.php_syntax_error';
     public const PACKAGE_PHP_NAMESPACE_INVALID = 'package.php_namespace_invalid';
     public const PACKAGE_TWIG_SYNTAX_ERROR = 'package.twig_syntax_error';
-    public const PACKAGE_TRANSLATION_ENGLISH_MISSING = 'package.translation_english_missing';
+    public const PACKAGE_TRANSLATION_FALLBACK_MISSING = 'package.translation_fallback_missing';
     public const PACKAGE_TRANSLATION_NAMESPACE_INVALID = 'package.translation_namespace_invalid';
     public const PACKAGE_JSON_SYNTAX_ERROR = 'package.json_syntax_error';
     public const PACKAGE_YAML_SYNTAX_ERROR = 'package.yaml_syntax_error';

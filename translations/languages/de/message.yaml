@@ -18,7 +18,7 @@ message:
     php_syntax_error: 'PHP-Syntaxprüfung für "%path%" fehlgeschlagen.'
     php_namespace_invalid: 'PHP-Quelle "%path%" muss den Paket-Namespace "%expected_namespace%" verwenden.'
     twig_syntax_error: 'Twig-Syntaxprüfung für "%path%" fehlgeschlagen.'
-    translation_english_missing: 'Paket-Translation-Quellen für "%package%" müssen mindestens einen englischen Katalog unter "languages/en" enthalten.'
+    translation_fallback_missing: 'Paket-Translation-Quellen für "%package%" müssen mindestens einen Fallback-Katalog unter "languages/%locale%" enthalten.'
     translation_namespace_invalid: 'Paket-Translation-Datei "%path%" muss Keys unterhalb von "pkg.%package%" definieren.'
     json_syntax_error: 'JSON-Syntaxprüfung für "%path%" fehlgeschlagen.'
     yaml_syntax_error: 'YAML-Syntaxprüfung für "%path%" fehlgeschlagen.'

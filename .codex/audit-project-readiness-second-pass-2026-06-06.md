@@ -108,7 +108,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Security | `src/Security` | In progress | Session visitor binding, AccountToken issuer/entity behavior, API-key vault/entity behavior, maintenance-mode HTTP flow, and remember-me direction reviewed. S2-008 records the remaining copied-session plus copied-visitor-cookie limitation, and S2-018 captures remember-me as a Security-branch feature candidate using server-side rotating tokens bound to the visitor cookie. ACL groups, account-flow controller extraction, and secret rotation still need broader review. |
 | Setup | `src/Setup` | In progress | PHP-CLI resolver/preference flow, dry-run placeholder behavior, preflight failure mapping, Composer probe, and setup subprocess environment reviewed. Large setup input/runtime classes remain watchlisted, but no immediate review-blocker found in this slice. |
 | View | `src/View` | In progress | Template runtime fallback reviewed; S2-005 removes a hardcoded `en` fallback from the root layout. Twig helper split, response header policy, dynamic injection failure ownership, and technical naming still need broader review. |
-| Assets/Templates/Translations | `assets`, `templates`, `translations` | Pending | Re-check hardcoded copy, translation-key coverage, CSS naming convention, and language variants. |
+| Assets/Templates/Translations | `assets`, `templates`, `translations` | In progress | Hardcoded language variants and package translation fallback policy reviewed. S2-022 replaces the package `languages/en` special case with a configured fallback-locale requirement. Remaining pass: hardcoded user-facing copy and CSS naming classification. |
 | Documentation | `dev/draft`, `dev/manual`, `docs`, `.codex` | Pending | Re-check drift against actual behavior after all second-pass fixes. |
 
 ### Review Method
@@ -309,7 +309,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Finding:** A "keep me logged in" option is useful, but it should not be implemented as a bare long-lived identity cookie. A duplicated remember-me cookie has the same trust problem as a duplicated session cookie unless the server can revoke, rotate, and compare it against additional first-party state.
 - **Evidence:** `config/packages/security.yaml`, `src/Security/SessionVisitorBindingSubscriber.php`, `dev/draft/0.2.x-SecurityAccessControl.md`.
 - **Impact:** The current branch intentionally keeps session/visitor binding simple. Adding remember-me now would widen the auth surface before the Security branch can design token storage, revocation, audit logging, and step-up behavior coherently.
-- **Recommendation:** Defer implementation to the Security feature branch and keep the current normal session behavior unchanged here. Prefer Symfony's remember-me architecture with persistent server-side tokens: 7-day TTL, rotate token on use within the TTL, issue a fresh Symfony session after successful auto-login, bind token metadata to the current `system_visitor` cookie, revoke on manual logout and password/security events, and treat visitor mismatch as a hard reject plus audit signal. Keep normal session TTL low only after UX and admin workflows are reviewed; `60` minutes is a reasonable candidate but should be decided in Security.
+- **Recommendation:** Defer implementation to the Security feature branch and keep the current normal session behavior unchanged here. Prefer Symfony's remember-me architecture with persistent server-side tokens: the browser stores only an opaque selector/token cookie, the server stores the hashed token plus user, expiry, visitor binding, and revocation state, the trust window is 7 days, automatic use rotates the token value without silently extending the original expiry, explicit credential login with the checkbox can issue a fresh 7-day token, successful auto-login creates a fresh Symfony session, token metadata binds to the current `system_visitor` cookie, manual logout/password/security events revoke the token, and visitor mismatch or token reuse is a hard reject plus audit signal. Keep normal session TTL low only after UX and admin workflows are reviewed; `60` minutes is a reasonable candidate but should be decided in Security.
 - **Fix applied:** Deferred and documented as a Security feature-branch decision.
 - **Priority:** Security feature branch / Before release.
 
@@ -343,6 +343,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Renamed the collector class/file/service references, debug HTML comment marker, tests, class map, drafts, and backend form request attributes.
 - **Priority:** Now / Final naming gate.
 
+### S2-022 Package translation fallback validation hardcoded English
+
+- **Area:** Package validation, translation source policy, dynamic language handling.
+- **Finding:** Package translation validation required `languages/en/` whenever a package shipped translations. This preserved a deterministic fallback, but it encoded one concrete language into the package policy while the project rules now require available languages and fallbacks to stay dynamic.
+- **Evidence:** `src/Core/Package/PackageTranslationNamespaceValidator.php:38`, `tests/Core/Package/PackageValidatorTest.php:781`, `dev/manual/theme-module-developer-guidelines.md:84`.
+- **Impact:** Installations with a different configured default/fallback locale would still be forced to ship English package catalogues even when their active language set uses a different fallback. This is not a runtime security bug, but it is platform/product drift and would make future language-package support less coherent.
+- **Recommendation:** Keep the conservative requirement that packages with translations must ship a fallback catalogue, but derive the required locale from configuration and accept regional fallback candidates such as `de_DE`, `de-DE`, or primary `de`.
+- **Fix applied:** Renamed the Message code/key to `package.translation_fallback_missing`, made `PackageTranslationNamespaceValidator` accept a configurable `$fallbackLocale` injected from `%kernel.default_locale%`, added regional/primary fallback candidates, updated tests, translations, operation issue docs, and package/theme drafts.
+- **Priority:** Now / Dynamic language readiness.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -350,7 +360,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Direct hard-exception scan rerun with fixed-string searches. Most remaining hard exceptions are low-level value-object, filesystem, lint, checksum, or manifest invariants; setup input validation remains the first likely Message-layer gap.
 - Setup failure scan rechecked after S2-002: old free setup input/failure texts were removed from primary throw paths. `LiveOperationStarter` still uses local runtime exceptions for unrecoverable process-start adapter failures that are immediately caught and reported as `operation.start_failed`, so it is currently treated as deliberate adapter behavior.
 - Large production class review started with account-flow controllers, package lifecycle activation/removal/registry/install, runtime loader, and package scheduler cron inspection. Account-flow controllers are the first remaining controller-as-adapter gap; package scheduler cron validation is large but conservative and currently blocks dynamic cron bypasses.
-- Hardcoded language scan reviewed. Remaining `en`/`de` references are currently package translation fallback policy, content seed variants, test fixtures, or code-editor language identifiers except for S2-005.
+- Hardcoded language scan reviewed. Remaining `en`/`de` references are currently content seed variants, test fixtures, default bootstrap examples, or code-editor language identifiers except for S2-005 and S2-022.
 - Package policy bypass scan reviewed. Direct file/process/env/network calls, include/require/eval, reserved package paths, source namespaces, translation namespaces, symlink zip entries, scheduler cron literals, and source paths are validated; S2-006 closes the dynamic callable gap.
 - Session visitor binding reviewed. Hard binding works for missing/different visitor cookies, but complete cookie-pair duplication remains a deferred risk-scoring problem rather than a safe hard-termination signal today.
 - User profile language persistence reviewed. S2-009 now validates posted profile language values against the dynamic locale list instead of relying on later resolver fallback.
@@ -374,6 +384,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Maintenance mode reviewed. The public UI uses translated 503 error-page keys; the literal `ServiceUnavailableHttpException` text is debug-only HTTP control-flow and acceptable as a Symfony-native boundary.
 - APP_SECRET rotation reviewed. S2-020 records the remaining idempotency edge around repeated owner recovery delivery if fingerprint persistence fails.
 - Debug/view internal naming reviewed. S2-021 moves internal debug collector/comment and backend form request attributes from `studio` to `system`; `studio_*` Twig helpers and CSS classes remain intentionally public/product-facing.
+- Package translation fallback policy reviewed. S2-022 keeps package fallback validation deterministic while replacing the hardcoded `languages/en` requirement with configured fallback-locale candidates.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -395,3 +406,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Made access statistics snapshot writes use unique temp files with cleanup on failed rename.
 - Converted live-operation runner-start and PHP-CLI-unavailable startup failures to operation-owned Message keys.
 - Renamed the PHP linter internal temp-file prefix from `studio-*` to `system-*`.
+- Replaced the package translation `languages/en` special case with a configured fallback-locale validation rule and neutral Message code/key.

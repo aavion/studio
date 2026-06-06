@@ -9,6 +9,7 @@ use App\Core\Package\PackageCandidate;
 use App\Core\Package\PackageInspection;
 use App\Core\Package\PackageSource;
 use App\Core\Package\PackageSpec;
+use App\Core\Package\PackageTranslationNamespaceValidator;
 use App\Core\Package\PackageValidator;
 use App\Tests\Support\FilesystemTestHelper;
 use InvalidArgumentException;
@@ -778,7 +779,7 @@ PHP);
         self::assertTrue($result->isSuccess());
     }
 
-    public function testItRequiresEnglishWhenPackageTranslationsExist(): void
+    public function testItRequiresFallbackLocaleWhenPackageTranslationsExist(): void
     {
         $this->writeFile('languages/de/messages.yaml', "pkg:\n  system:\n    title: Demo\n");
 
@@ -788,8 +789,24 @@ PHP);
         );
 
         self::assertFalse($result->isSuccess());
-        self::assertSame('package.translation_english_missing', $result->firstIssue()?->code());
+        self::assertSame('package.translation_fallback_missing', $result->firstIssue()?->code());
         self::assertSame('languages/en', $result->firstIssue()?->context()['file']);
+    }
+
+    public function testItAcceptsPrimaryLanguageForRegionalTranslationFallback(): void
+    {
+        $this->writeFile('languages/de/messages.yaml', "pkg:\n  system:\n    title: Demo\n");
+
+        $validator = new PackageValidator(
+            translationNamespaceValidator: new PackageTranslationNamespaceValidator(fallbackLocale: 'de_DE'),
+        );
+
+        $result = $validator->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4)->withYamlLinting(),
+        );
+
+        self::assertTrue($result->isSuccess());
     }
 
     public function testItRejectsPackageTranslationFilesOutsideOwnedNamespace(): void

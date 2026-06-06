@@ -98,6 +98,10 @@ services:
     App\Core\Config\ConfigDefaultProviderInterface:
         alias: App\Core\Config\Settings\CoreConfigDefaultProvider
 
+    App\Core\Package\PackageTranslationNamespaceValidator:
+        arguments:
+            $fallbackLocale: '%kernel.default_locale%'
+
     App\Setup\SetupRunner:
         arguments:
             $projectDir: '%kernel.project_dir%'
