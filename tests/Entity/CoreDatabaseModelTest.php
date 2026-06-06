@@ -21,6 +21,8 @@ use App\Entity\SiteMenu;
 use App\Entity\SiteMenuItem;
 use App\Entity\StateMarker;
 use App\Entity\UserAccount;
+use App\Navigation\NavigationMessageKey;
+use App\Navigation\NavigationTargetType;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
 use App\Security\ApiKeyStatus;
@@ -224,6 +226,7 @@ final class CoreDatabaseModelTest extends TestCase
         self::assertTrue($package->hasScope(PackageScope::FrontendTheme));
         self::assertSame(ExtensionPackageStatus::Active, $package->status());
         self::assertSame('main', $menu->identifier());
+        self::assertSame(NavigationTargetType::CONTENT, $item->targetType());
         self::assertSame(AccessLevel::PUBLIC, $item->viewMinLevel());
         self::assertSame(['project_team'], $item->viewGroupIdentifiers());
     }
@@ -243,6 +246,39 @@ final class CoreDatabaseModelTest extends TestCase
             '88888888-8888-7888-8888-888888888888',
             viewGroupIdentifiers: ['Project Team'],
         );
+    }
+
+    public function testItRejectsInvalidMenuTargets(): void
+    {
+        $menu = new SiteMenu('66666666-6666-7666-8666-666666666666', 'main', ['en' => 'Main']);
+
+        try {
+            new SiteMenuItem(
+                '77777777-7777-7777-8777-777777777777',
+                $menu,
+                ['en' => 'Home'],
+                'script',
+                '/docs',
+            );
+
+            self::fail('Unsupported menu target types should be rejected.');
+        } catch (MessageException $exception) {
+            self::assertSame(NavigationMessageKey::MENU_TARGET_TYPE_INVALID, $exception->messageKey());
+        }
+
+        try {
+            new SiteMenuItem(
+                '77777777-7777-7777-8777-777777777777',
+                $menu,
+                ['en' => 'Home'],
+                NavigationTargetType::URL,
+                "bad\nurl",
+            );
+
+            self::fail('Control characters in menu target values should be rejected.');
+        } catch (MessageException $exception) {
+            self::assertSame(NavigationMessageKey::MENU_TARGET_VALUE_INVALID, $exception->messageKey());
+        }
     }
 
     public function testItRejectsInvalidAccessLevels(): void

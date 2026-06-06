@@ -453,6 +453,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added `message.state.metadata.key_empty`, translations, issue-catalog documentation, class-map note, and an entity regression test.
 - **Priority:** Now / Message catalogue consistency.
 
+### S2-033 Site menu item targets lacked an entity-level boundary
+
+- **Area:** Navigation entity validation, public menu data, and target naming.
+- **Finding:** Navigation URL resolution safely falls back for unsupported target types and unsafe URLs, but `SiteMenuItem` accepted arbitrary `targetType` and `targetValue` values. That left persisted menu data more permissive than the public navigation contract.
+- **Evidence:** `src/Entity/SiteMenuItem.php`, `src/Navigation/NavigationUrlResolver.php`, `src/Navigation/NavigationItem.php`, `tests/Entity/CoreDatabaseModelTest.php`.
+- **Impact:** Runtime rendering was defensive, so this was not an immediate public exploit path. The looser entity boundary still made malformed admin/seed/import data possible and kept target type naming as repeated magic strings.
+- **Recommendation:** Centralize supported navigation target type names and reject unknown, empty, control-character, or oversized targets before persistence.
+- **Fix applied:** Added `NavigationTargetType`, reused it in the entity/DTO/resolver, added Navigation Message keys/translations, documented the keys, and covered invalid targets in entity tests.
+- **Priority:** Now / Entity boundary and naming consistency.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -495,6 +505,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Live-operation storage reviewed. S2-030 aligns project-root trimming with the rest of the cross-platform process/file storage code.
 - Access statistic entity boundaries reviewed. S2-031 validates request/visitor trace identifiers as compact technical tokens before new rows are created.
 - State marker entity validation reviewed. S2-032 moves reusable state metadata validation to State-owned Message keys instead of Content keys.
+- Navigation entity boundaries reviewed. S2-033 centralizes target type names and validates menu targets before persistence.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -526,3 +537,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Normalized trailing POSIX and Windows separators for live-operation storage paths.
 - Validated access-statistics request and visitor trace identifiers before persistence.
 - Moved state-marker metadata validation to the State Message catalogue.
+- Added entity-level validation for persisted site menu item targets.

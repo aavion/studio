@@ -333,6 +333,10 @@ message:
   menu:
     identifier:
       invalid: 'Menu identifier "%identifier%" must be lowercase snake_case.'
+    target_type:
+      invalid: 'Menu target type "%target_type%" is not supported.'
+    target_value:
+      invalid: 'Menu target value must not be empty, too long, or contain control characters.'
   content:
     slug:
       invalid_format: 'Content slug "%slug%" must use lowercase letters, numbers, and hyphens.'

@@ -123,7 +123,7 @@ final readonly class NavigationTreeBuilder
 
         if (
             null !== $activeRoute
-            && 'route' === $item->targetType()
+            && NavigationTargetType::ROUTE === $item->targetType()
             && $item->targetValue() === $activeRoute
             && ([] === $routeParameters || false === is_array($routeParameters))
         ) {

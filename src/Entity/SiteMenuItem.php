@@ -6,7 +6,10 @@ namespace App\Entity;
 
 use App\Core\Access\AccessLevel;
 use App\Core\Access\AccessRule;
+use App\Core\Message\MessageException;
 use App\Core\Validation\Uid;
+use App\Navigation\NavigationMessageKey;
+use App\Navigation\NavigationTargetType;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -15,6 +18,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_site_menu_item_target', columns: ['target_type', 'target_value'])]
 class SiteMenuItem
 {
+    private const MAX_TARGET_VALUE_LENGTH = 512;
+
     #[ORM\Id]
     #[ORM\Column(length: 36)]
     private string $uid;
@@ -76,8 +81,8 @@ class SiteMenuItem
         $this->uid = Uid::assert($uid, 'Site menu item UID');
         $this->menu = $menu;
         $this->labels = $labels;
-        $this->targetType = $targetType;
-        $this->targetValue = $targetValue;
+        $this->targetType = self::assertTargetType($targetType);
+        $this->targetValue = self::assertTargetValue($targetValue);
         $this->parentUid = null === $parentUid ? null : Uid::assert($parentUid, 'Parent site menu item UID');
         $this->sortOrder = $sortOrder;
         $this->setViewRule($viewMinLevel, $viewGroupIdentifiers);
@@ -124,5 +129,31 @@ class SiteMenuItem
     {
         $this->viewMinLevel = AccessLevel::assert($minLevel);
         $this->viewGroupIdentifiers = AccessRule::normalizeGroupIdentifiersOrNull($groupIdentifiers);
+    }
+
+    private static function assertTargetType(string $targetType): string
+    {
+        if (!NavigationTargetType::isSupported($targetType)) {
+            throw MessageException::invalidArgument(NavigationMessageKey::MENU_TARGET_TYPE_INVALID, [
+                '%target_type%' => $targetType,
+            ]);
+        }
+
+        return $targetType;
+    }
+
+    private static function assertTargetValue(string $targetValue): string
+    {
+        $targetValue = trim($targetValue);
+
+        if (
+            '' === $targetValue
+            || strlen($targetValue) > self::MAX_TARGET_VALUE_LENGTH
+            || 1 === preg_match('/[\x00-\x1F\x7F]/', $targetValue)
+        ) {
+            throw MessageException::invalidArgument(NavigationMessageKey::MENU_TARGET_VALUE_INVALID);
+        }
+
+        return $targetValue;
     }
 }

@@ -25,9 +25,9 @@ final readonly class NavigationUrlResolver
 
     private function resolveItem(NavigationItem $item): NavigationItem
     {
-        if ('route' !== $item->targetType()) {
+        if (NavigationTargetType::ROUTE !== $item->targetType()) {
             return $item->withResolvedUrl(match ($item->targetType()) {
-                'url', 'content' => $this->safeNavigationUrl($item->targetValue()),
+                NavigationTargetType::URL, NavigationTargetType::CONTENT => $this->safeNavigationUrl($item->targetValue()),
                 default => '#',
             });
         }

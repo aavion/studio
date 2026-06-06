@@ -129,6 +129,9 @@ Validation rules:
 | `message.state.subject_type.invalid` | State marker subject type failed identifier validation. | `%subject_type%` |
 | `message.state.marker_key.invalid` | State marker key failed identifier validation. | `%marker_key%` |
 | `message.state.metadata.key_empty` | State marker metadata contains an empty key. | N/A |
+| `message.menu.identifier.invalid` | Site menu identifier failed validation. | `%identifier%` |
+| `message.menu.target_type.invalid` | Site menu item target type is unsupported. | `%target_type%` |
+| `message.menu.target_value.invalid` | Site menu item target value is empty, too long, or contains control characters. | N/A |
 | `message.view.template_namespace.unsupported` | Template namespace is not supported. | `%namespace%` |
 | `message.package.lifecycle.cleanup_completed` | Package cleanup boundary completed. | `%package%` |
 | `message.package.lifecycle.dependent_deactivated` | Package was automatically deactivated because a dependency became unavailable. | `%package%`, `%dependency%` |
