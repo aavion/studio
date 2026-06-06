@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Core\Message\MessageException;
+use App\Core\Package\ExtensionPackageIdentity;
 use App\Core\Package\ExtensionPackageStatus;
-use App\Core\Package\PackageMessageKey;
 use App\Core\Package\PackageScope;
 use App\Core\Validation\Uid;
 use DateTimeImmutable;
@@ -72,8 +71,8 @@ class ExtensionPackage
         ?string $availableVersion = null,
     ) {
         $this->uid = Uid::assert($uid, 'Extension package UID');
-        $this->scopeValues = self::normalizeScopes($scopes);
-        $this->packageName = self::assertPackageName($packageName);
+        $this->scopeValues = ExtensionPackageIdentity::normalizeScopes($scopes);
+        $this->packageName = ExtensionPackageIdentity::assertPackageName($packageName);
         $this->path = $path;
         $this->manifestVersion = $manifestVersion;
         $this->installedVersion = $installedVersion;
@@ -82,7 +81,6 @@ class ExtensionPackage
         $this->metadata = $metadata;
         $this->modifiedAt = $modifiedAt ?? new DateTimeImmutable();
     }
-
     public function uid(): string
     {
         return $this->uid;
@@ -170,7 +168,7 @@ class ExtensionPackage
      */
     public function syncRegistryState(array $scopes, string $path, ?string $manifestVersion, array $metadata): bool
     {
-        $scopeValues = self::normalizeScopes($scopes);
+        $scopeValues = ExtensionPackageIdentity::normalizeScopes($scopes);
         $nextStatus = match ($this->status) {
             ExtensionPackageStatus::Removed, ExtensionPackageStatus::Faulty => ExtensionPackageStatus::Inactive,
             default => $this->status,
@@ -292,46 +290,6 @@ class ExtensionPackage
         $this->touch();
 
         return true;
-    }
-
-    private static function assertPackageName(string $packageName): string
-    {
-        if (1 !== preg_match('/^[a-z0-9][a-z0-9_.\/-]*$/', $packageName)) {
-            throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_IDENTIFIER_INVALID, [
-                '%identifier%' => $packageName,
-            ]);
-        }
-
-        return $packageName;
-    }
-
-    /**
-     * @param list<PackageScope|string> $scopes
-     *
-     * @return list<string>
-     */
-    private static function normalizeScopes(array $scopes): array
-    {
-        $normalized = [];
-
-        foreach ($scopes as $scope) {
-            $case = $scope instanceof PackageScope ? $scope : PackageScope::tryFrom($scope);
-            if (null === $case) {
-                throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_SCOPE_INVALID, [
-                    '%scope%' => is_scalar($scope) ? (string) $scope : get_debug_type($scope),
-                ]);
-            }
-
-            $normalized[$case->value] = $case->value;
-        }
-
-        if ([] === $normalized) {
-            throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_SCOPE_INVALID, [
-                '%scope%' => '',
-            ]);
-        }
-
-        return array_values($normalized);
     }
 
     private function touch(): void

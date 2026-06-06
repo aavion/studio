@@ -102,7 +102,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | Reviewed | Event hook registry, translation/runtime paths, package catalogue collision handling, lint temp files, manifest specs/parsing/validation, and low-level lint/manifest value-object invariants reviewed. S2-011 prevents silent public hook descriptor overrides, S2-019 renames an internal lint temp prefix to `system-*`, and S2-036 stabilizes translation source/runtime path ordering and separator handling. |
 | Database | `src/Database` | Reviewed | Table-prefix coverage, raw DBAL wrapper prefixing, Doctrine metadata prefixing, and migration portability reviewed. `studio_` remains a user-facing/product example prefix, while internal DBAL wrapper params use `system_*`. |
 | Debug and Kernel | `src/Debug`, `src/Kernel.php` | Reviewed | Debug collector naming, output safety, and APP_DEBUG gating reviewed. S2-021 renames the internal collector and debug HTML comment to `system`; public Twig helper names remain `studio_*` as theme-facing API. |
-| Entity and Repository | `src/Entity`, `src/Repository` | Reviewed | Entity inventory, UID storage, statistics indexes, content field locale token compatibility, security/account token entities, state markers, config/package settings, site menus, and repository filtering boundaries reviewed. UUIDv7 RFC 4122 strings remain the portable pre-1.0 tradeoff; S2-031 validates statistics trace IDs, S2-032 moves state marker metadata errors to State messages, and S2-033 validates persisted navigation targets. |
+| Entity and Repository | `src/Entity`, `src/Repository` | Reviewed | Entity inventory, UID storage, statistics indexes, content field locale token compatibility, security/account token entities, state markers, config/package settings, site menus, and repository filtering boundaries reviewed. UUIDv7 RFC 4122 strings remain the portable pre-1.0 tradeoff; S2-031 validates statistics trace IDs, S2-032 moves state marker metadata errors to State messages, S2-033 validates persisted navigation targets, and S2-049 moves extension package identity validation out of the oversized entity. |
 | Form, Mail, Navigation, Localization | `src/Form`, `src/Mail`, `src/Navigation`, `src/Localization` | Reviewed | Locale resolver, form builder/submission layer, mail locale behavior, and navigation label fallback reviewed. S2-013 records the deferred Mail Message/API hardening; S2-014 hardens navigation primary-language fallback. |
 | Scheduler | `src/Scheduler` | Reviewed | Scheduler task registry, lock naming, package task policy, run recorder, web-auth settings, task definitions, `/cron/run` controller behavior, direct job triggering, and docs alignment reviewed. S2-012 converts public task definition invariants to Message-layer diagnostics; GET-token auth remains opt-in, Bearer auth stays primary, and only read-write API keys owned by active admin/owner users can trigger web runs. |
 | Security | `src/Security` | Reviewed | Session visitor binding, AccountToken issuer/entity behavior, API-key vault/entity behavior, ACL group policies/apply operations, maintenance-mode HTTP flow, APP_SECRET rotation guard, mail-link delivery stub, and remember-me direction reviewed. S2-008 records the remaining copied-session plus copied-visitor-cookie limitation, S2-018 captures remember-me as a Security-branch feature candidate using server-side rotating tokens bound to the visitor cookie, S2-028 extracts shared account token/password helpers, and S2-038 removes separate plain-token logging from the mail-link debug stub. Account-flow controller extraction remains tracked in the Controller domain by S2-003. |
@@ -613,6 +613,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added `PackageRegistrySyncFinalizer` and `PackageDependencyMetadataReader`, reused `PackageLifecycleStore` in registry/dependency flows, reduced `PackageRegistryHandler` from 378 to 299 lines and `PackageDependencyResolver` from 313 to 276 lines, and verified package registry, activator, validator, discovery, and command tests.
 - **Priority:** Now / Package registry modularity.
 
+### S2-049 Extension package entity still owned identity normalization
+
+- **Area:** Extension package entity construction, package-name validation, package-scope normalization.
+- **Finding:** `ExtensionPackage` was the only remaining production class above the 300-line target and still owned reusable package identity validation in addition to persisted state and lifecycle transitions.
+- **Evidence:** `src/Entity/ExtensionPackage.php`, `tests/Entity/CoreDatabaseModelTest.php`, `tests/Core/Package/PackageRegistryHandlerTest.php`.
+- **Impact:** The entity behavior was correct, but keeping identifier/scope validation private to the entity made the package identity rules harder to reuse or document next to other package-policy helpers.
+- **Recommendation:** Move package identity validation and scope normalization into a small package-owned helper while leaving persistence fields and lifecycle transitions on the Doctrine entity.
+- **Fix applied:** Added `ExtensionPackageIdentity`, moved package-name validation and scope normalization into it, reduced `ExtensionPackage` from 341 to 299 lines, and verified entity plus package tests.
+- **Priority:** Now / Entity modularity.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -661,6 +671,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Package activation/removal lifecycle reviewed. S2-046 splits activation/removal planning, status snapshots/restore, activation finalization, filesystem removal, and purge cleanup into focused services while leaving the broader lifecycle operation journal tracked by S2-007.
 - Package scheduler cron inspection reviewed. S2-047 keeps the public validator behavior but splits call scanning, import/alias resolution, and PHP call-argument parsing into focused collaborators.
 - Package registry/dependency flows reviewed. S2-048 moves registry sync flush/rebuild/fallback completion and dependency metadata extraction into focused collaborators while reusing the lifecycle store for package lookup/path policy.
+- Extension package entity reviewed. S2-049 moves package identity validation and scope normalization into a package-owned helper so the entity stays focused on persisted state and transitions.
 - Core primitive foundations reviewed. S2-029 records that hard exceptions in ActionLog/Diff/DryRun/Message/Workflow are deliberate low-level invariants, while Config runtime failures already use Message diagnostics and central defaults.
 - Live-operation storage reviewed. S2-030 aligns project-root trimming with the rest of the cross-platform process/file storage code.
 - Access statistic entity boundaries reviewed. S2-031 validates request/visitor trace identifiers as compact technical tokens before new rows are created.
@@ -709,6 +720,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Extracted package activation/removal planners, lifecycle status storage, activation finalization, filesystem removal, and package purge cleanup into focused Package services.
 - Split package scheduler cron inspection into a thin facade plus definition-call scanner, import resolver, and PHP call-argument parser.
 - Split package registry sync finalization and dependency metadata reading into focused Package services, reusing the lifecycle store for package lookup and managed package path policy.
+- Moved extension package identity validation and scope normalization into `ExtensionPackageIdentity`.
 - Removed separate clear-token context logging from the account-link message-log delivery stub and narrowed the delivery contract to generated action URLs.
 - Split CLI setup database input resolution out of the top-level CLI input factory.
 - Split the web setup wizard render target into focused backend setup partials.
