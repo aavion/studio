@@ -17,7 +17,7 @@ final class FileInventoryScannerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-file-inventory');
+        $this->root = $this->createTemporaryDirectory('system-file-inventory');
     }
 
     protected function tearDown(): void
@@ -75,6 +75,15 @@ final class FileInventoryScannerTest extends TestCase
         self::assertSame([], $inventory->entries());
     }
 
+    public function testItNormalizesTrailingDirectorySeparators(): void
+    {
+        $this->writeTestFile($this->root, 'src/Example.php', '<?php class Example {}');
+
+        $inventory = (new FileInventoryScanner())->scan($this->root.'\\', 1);
+
+        self::assertSame(['src/', 'src/Example.php'], $inventory->entries());
+    }
+
     public function testItRejectsNegativeDepth(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -82,5 +91,4 @@ final class FileInventoryScannerTest extends TestCase
 
         (new FileInventoryScanner())->scan($this->root, -1);
     }
-
 }

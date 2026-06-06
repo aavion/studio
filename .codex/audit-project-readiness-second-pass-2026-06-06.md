@@ -96,7 +96,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Content | `src/Content` | In progress | Content read resolution, routing language behavior, and content field locale tokens reviewed. S2-015 hardens regional locale fallback and persisted field locale compatibility. Aggregate/API read-model boundaries still need review. |
 | Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap, S2-009 hardens profile language persistence, and S2-028 centralizes repeated token/password helper logic. Setup/backend leftovers still need review. |
 | Core primitives | `src/Core/Access`, `ActionLog`, `Config`, `Diff`, `DryRun`, `Message`, `Workflow` | Reviewed | Config seed/default fallback, domain-owned Message code/key aggregation, access rules, ActionLog, Diff, DryRun, Message, and Workflow value-object invariants reviewed. Hard exceptions in this slice are deliberate low-level invariant guards, while recoverable runtime config failures already report through the Message layer. |
-| Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | In progress | Process environment, detached process boundaries, filesystem actions, Messenger drain, and live-operation start/storage/runner boundaries reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics, and S2-030 normalizes trailing Windows/POSIX project separators in live-operation storage. |
+| Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | Reviewed | Process environment, detached process boundaries, filesystem actions, Messenger drain, live-operation start/storage/runner boundaries, PHP CLI resolver/preference validation, and file inventory scanning reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics, S2-030 normalizes live-operation storage roots, and S2-035 normalizes file-inventory roots. |
 | Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, PHP capability policy, runtime contribution registry, and asset registry contributions reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, S2-007 records the remaining lifecycle transaction boundary, S2-010 converts package runtime contribution failures to Message-layer diagnostics, and S2-026 converts asset contribution invariants to Package Message keys. |
 | Core observability | `src/Core/Log`, `Statistics`, `Diagnostics` | Reviewed | Visitor/request ID, access metadata sanitization, statistics recorder/aggregator/store, log parsing/filtering/presentation, audit/operation/message logging, and reduced system diagnostics reviewed. S2-016 hardens snapshot temp-file writes, S2-025 renames internal log channels/files to `system_*`, S2-031 validates statistics trace IDs, and S2-034 normalizes statistics-store paths plus deterministic system-info extension output. Public CSS/UI names remain product-facing. |
 | Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | In progress | Event hook registry reviewed; S2-011 prevents silent public hook descriptor overrides. Translation/runtime paths, catalogue collision handling, lint, manifest, and Message invariants reviewed. S2-019 renames an internal lint temp prefix to `system-*`. Remaining pass: package catalogue conflict docs/tests and broader generated catalogue checks. |
@@ -473,6 +473,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Updated statistics store path normalization, added a trailing-backslash regression, sorted loaded extensions, and removed the unused aggregator helper.
 - **Priority:** Now / Platform and readability polish.
 
+### S2-035 File inventory roots only trimmed the current platform separator
+
+- **Area:** Reusable filesystem inventory scanning and cross-platform path normalization.
+- **Finding:** `FileInventoryScanner` trimmed only `DIRECTORY_SEPARATOR` from its root before calculating relative paths. A mixed-separator root produced by tests, tooling, or imported configuration could therefore be treated as missing on POSIX or leave avoidable separator drift in relative path calculation.
+- **Evidence:** `src/Core/Filesystem/FileInventoryScanner.php`, `tests/Core/Filesystem/FileInventoryScannerTest.php`, adjacent `PathGuard` and process/live-operation storage helpers already normalize both `/` and `\`.
+- **Impact:** Low-risk portability drift, but this scanner is reusable for package/import/export/debug inventory paths, so it should follow the same separator policy as the rest of Core filesystem code.
+- **Recommendation:** Normalize both common separators before existence checks while preserving filesystem roots such as `/` and drive roots, then keep emitted inventory paths POSIX-style.
+- **Fix applied:** Added a root normalizer, a trailing-backslash regression test, and renamed the internal test temp prefix from `studio-*` to `system-*`.
+- **Priority:** Now / Platform polish.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -517,6 +527,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - State marker entity validation reviewed. S2-032 moves reusable state metadata validation to State-owned Message keys instead of Content keys.
 - Navigation entity boundaries reviewed. S2-033 centralizes target type names and validates menu targets before persistence.
 - Observability diagnostics reviewed. S2-034 normalizes statistics-store roots, sorts extension diagnostics, and removes an unused aggregator helper.
+- Core operation filesystem inventory reviewed. S2-035 normalizes scanner roots across separators while preserving root paths.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -550,3 +561,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Moved state-marker metadata validation to the State Message catalogue.
 - Added entity-level validation for persisted site menu item targets.
 - Normalized statistics snapshot storage roots and made system extension diagnostics deterministic.
+- Normalized file-inventory scanner roots across POSIX and Windows separators.

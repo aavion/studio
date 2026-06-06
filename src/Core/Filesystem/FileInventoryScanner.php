@@ -14,12 +14,14 @@ final class FileInventoryScanner
             throw new InvalidArgumentException('File inventory depth must not be negative.');
         }
 
+        $root = self::normalizeRoot($root);
+
         if (!is_dir($root)) {
             return new FileInventory([]);
         }
 
         $entries = [];
-        $this->collect(rtrim($root, DIRECTORY_SEPARATOR), rtrim($root, DIRECTORY_SEPARATOR), $depth, $entries);
+        $this->collect($root, $root, $depth, $entries);
         sort($entries);
 
         return new FileInventory($entries);
@@ -56,5 +58,20 @@ final class FileInventoryScanner
                 $this->collect($root, $path, $remainingDepth - 1, $entries);
             }
         }
+    }
+
+    private static function normalizeRoot(string $root): string
+    {
+        $normalized = rtrim($root, DIRECTORY_SEPARATOR.'/\\');
+
+        if ('' === $normalized) {
+            return DIRECTORY_SEPARATOR;
+        }
+
+        if (1 === preg_match('/^[A-Za-z]:$/', $normalized)) {
+            return $normalized.DIRECTORY_SEPARATOR;
+        }
+
+        return $normalized;
     }
 }
