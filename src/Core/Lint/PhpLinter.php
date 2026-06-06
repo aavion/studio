@@ -12,7 +12,7 @@ final class PhpLinter implements LinterInterface
 {
     public function lint(string $contents, ?string $path = null): LintResult
     {
-        $temporaryPath = tempnam(sys_get_temp_dir(), 'studio-php-lint-');
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'system-php-lint-');
 
         if (false === $temporaryPath || false === file_put_contents($temporaryPath, $contents)) {
             return LintResult::invalid([

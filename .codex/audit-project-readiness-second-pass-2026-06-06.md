@@ -99,13 +99,13 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | In progress | Process environment, detached process boundaries, filesystem actions, and live-operation start failure handling reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics. Messenger still needs final sweep. |
 | Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, PHP capability policy, and runtime contribution registry reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, S2-007 records the remaining lifecycle transaction boundary, and S2-010 converts package runtime contribution failures to Message-layer diagnostics. |
 | Core observability | `src/Core/Log`, `Statistics`, `Diagnostics` | In progress | Visitor/request ID, access metadata sanitization, statistics recorder/aggregator/store reviewed. S2-016 hardens snapshot temp-file writes. Diagnostics/debug naming still needs review. |
-| Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | In progress | Event hook registry reviewed; S2-011 prevents silent public hook descriptor overrides. Translation/runtime paths, lint, manifest, and package catalogue conflicts still need review. |
-| Database | `src/Database` | Pending | Re-check prefix coverage, raw DBAL paths, and migration portability. |
+| Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | In progress | Event hook registry reviewed; S2-011 prevents silent public hook descriptor overrides. Translation/runtime paths, catalogue collision handling, lint, manifest, and Message invariants reviewed. S2-019 renames an internal lint temp prefix to `system-*`. Remaining pass: package catalogue conflict docs/tests and broader generated catalogue checks. |
+| Database | `src/Database` | Reviewed | Table-prefix coverage, raw DBAL wrapper prefixing, Doctrine metadata prefixing, and migration portability reviewed. `studio_` remains a user-facing/product example prefix, while internal DBAL wrapper params use `system_*`. |
 | Debug and Kernel | `src/Debug`, `src/Kernel.php` | Pending | Re-check debug collector naming, output safety, and APP_DEBUG gating. |
-| Entity and Repository | `src/Entity`, `src/Repository` | In progress | Large entity inventory started; content field locale token compatibility reviewed in S2-015. UID strategy, statistics indexes, package/schema entities, and repository filtering boundaries still need final assessment. |
+| Entity and Repository | `src/Entity`, `src/Repository` | In progress | Entity inventory, UID storage, statistics indexes, and content field locale token compatibility reviewed. UUIDv7 RFC 4122 strings remain the portable pre-1.0 tradeoff; repositories/filtering boundaries still need final assessment. |
 | Form, Mail, Navigation, Localization | `src/Form`, `src/Mail`, `src/Navigation`, `src/Localization` | Reviewed | Locale resolver, form builder/submission layer, mail locale behavior, and navigation label fallback reviewed. S2-013 records the deferred Mail Message/API hardening; S2-014 hardens navigation primary-language fallback. |
 | Scheduler | `src/Scheduler` | In progress | Scheduler task registry, lock naming, package task policy, run recorder, web-auth settings, and task definitions reviewed. S2-012 converts public task definition invariants to Message-layer diagnostics. Remaining pass: route/controller usage and docs alignment. |
-| Security | `src/Security` | In progress | Session visitor binding reviewed; S2-008 records the remaining copied-session plus copied-visitor-cookie limitation. Remember-me was captured as a Security-branch feature candidate using server-side rotating tokens bound to the visitor cookie. Tokens, API keys, ACL groups, account flows, and secret rotation still need broader review. |
+| Security | `src/Security` | In progress | Session visitor binding, AccountToken issuer/entity behavior, API-key vault/entity behavior, maintenance-mode HTTP flow, and remember-me direction reviewed. S2-008 records the remaining copied-session plus copied-visitor-cookie limitation, and S2-018 captures remember-me as a Security-branch feature candidate using server-side rotating tokens bound to the visitor cookie. ACL groups, account-flow controller extraction, and secret rotation still need broader review. |
 | Setup | `src/Setup` | In progress | PHP-CLI resolver/preference flow, dry-run placeholder behavior, preflight failure mapping, Composer probe, and setup subprocess environment reviewed. Large setup input/runtime classes remain watchlisted, but no immediate review-blocker found in this slice. |
 | View | `src/View` | In progress | Template runtime fallback reviewed; S2-005 removes a hardcoded `en` fallback from the root layout. Twig helper split, response header policy, dynamic injection failure ownership, and technical naming still need broader review. |
 | Assets/Templates/Translations | `assets`, `templates`, `translations` | Pending | Re-check hardcoded copy, translation-key coverage, CSS naming convention, and language variants. |
@@ -313,6 +313,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Deferred and documented as a Security feature-branch decision.
 - **Priority:** Security feature branch / Before release.
 
+### S2-019 PHP linter temp files still used product-brand prefix
+
+- **Area:** Core linting support and internal temporary filenames.
+- **Finding:** `PhpLinter` used `studio-php-lint-` as a temp-file prefix. This is not user-facing product branding and falls under the new internal technical naming rule.
+- **Evidence:** `src/Core/Lint/PhpLinter.php:15`.
+- **Impact:** Behavior was unaffected, but review scans for `studio-*` technical identifiers would flag it as avoidable drift.
+- **Recommendation:** Use `system-*` for internal temporary filenames owned by the application core.
+- **Fix applied:** Renamed the prefix to `system-php-lint-`.
+- **Priority:** Now / Naming consistency.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -336,6 +346,12 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Core filesystem actions reviewed. Relative path, absolute path, traversal, target symlink, and parent symlink checks are centralized through `PathGuard` and WorkflowResults; no immediate policy bypass found.
 - Live-operation start failure handling reviewed. S2-017 now uses operation-owned Message keys for runner-start and PHP-CLI-unavailable failures.
 - Remember-me login noted for Security work. S2-018 captures the preferred Symfony-native, server-side persistent-token design with visitor-cookie binding and rotation.
+- Core translation aggregation reviewed. Runtime writer failures remain low-level atomic adapter exceptions, but the aggregator maps them to `message.translation.aggregate_failed`; package catalogue collisions are deliberately rejected instead of silently overridden.
+- Core lint/manifest/message value-object invariants reviewed. Literal exceptions there are low-level construction invariants, not recoverable user workflow failures. S2-019 fixes the one internal product-brand temp prefix found in linting.
+- Database prefixing reviewed. `PrefixedConnection`, `DoctrineTablePrefixListener`, setup/migration support, and table inventory tests cover known application tables; the `APP_DATABASE_PREFIX` value itself is intentionally user-facing and may be product-branded by an installation.
+- Runtime config defaults reviewed. `Config::get()` already falls back to registered core setting defaults when the DB is unavailable, a key is missing, reads fail, or stored JSON is invalid; callers only see their explicit default after no registered seed/default exists.
+- Security tokens reviewed. Account links/recovery tokens are server-side rows storing only SHA-256 token hashes, while API keys use APP_SECRET-rooted HMAC plus encrypted reversible payloads; remember-me should be a separate credential model rather than reusing account-link tokens.
+- Maintenance mode reviewed. The public UI uses translated 503 error-page keys; the literal `ServiceUnavailableHttpException` text is debug-only HTTP control-flow and acceptable as a Symfony-native boundary.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -356,3 +372,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Added regional-locale fallback for content reads and shared locale-token validation for content field values.
 - Made access statistics snapshot writes use unique temp files with cleanup on failed rename.
 - Converted live-operation runner-start and PHP-CLI-unavailable startup failures to operation-owned Message keys.
+- Renamed the PHP linter internal temp-file prefix from `studio-*` to `system-*`.
