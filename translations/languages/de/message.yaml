@@ -352,6 +352,8 @@ message:
       fallback: 'Die angefragte Content-Sprache "%requested_language%" ist nicht verfügbar; stattdessen wird "%resolved_language%" gerendert.'
     variant:
       fallback: 'Die angefragte Content-Variante "%requested_variant%" ist nicht verfügbar; stattdessen wird "%resolved_variant%" gerendert.'
+    render:
+      custom_twig_failed: 'Custom-Twig-Rendering für Content-Schema "%schema%" ist fehlgeschlagen; der generische Feld-Renderer wurde verwendet.'
     uid:
       invalid_format: '%label% "%uid%" muss eine kleingeschriebene UUID sein.'
     string_list:

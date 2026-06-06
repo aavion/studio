@@ -16,6 +16,7 @@ final class ContentMessageKey
     public const CONTENT_PATH_VARIANT_INVALID = 'message.content.path.variant_invalid';
     public const CONTENT_LANGUAGE_FALLBACK = 'message.content.language.fallback';
     public const CONTENT_VARIANT_FALLBACK = 'message.content.variant.fallback';
+    public const CONTENT_CUSTOM_TWIG_FAILED = 'message.content.render.custom_twig_failed';
     public const CONTENT_UID_INVALID = 'message.content.uid.invalid_format';
     public const CONTENT_STRING_LIST_EMPTY = 'message.content.string_list.empty';
     public const CONTENT_STRING_LIST_INVALID = 'message.content.string_list.invalid';

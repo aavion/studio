@@ -164,6 +164,7 @@ Validation rules:
 | `message.content.path.variant_invalid` | Content path contains an invalid variant marker segment. | `%path%`, `%variant%` |
 | `message.content.language.fallback` | Requested content language is unavailable and the resolver rendered another language. | `%requested_language%`, `%resolved_language%` |
 | `message.content.variant.fallback` | Requested content variant is unavailable and the resolver rendered another variant. | `%requested_variant%`, `%resolved_variant%` |
+| `message.content.render.custom_twig_failed` | Schema custom Twig rendering failed and generic field rendering was used. | `%schema%` |
 | `message.content.uid.invalid_format` | Content UID is not a lowercase UUID string. | `%label%`, `%uid%` |
 | `message.content.string_list.empty` | A required string-list value is empty. | `%label%` |
 | `message.content.string_list.invalid` | A string-list value contains a non-string or empty string. | `%label%` |

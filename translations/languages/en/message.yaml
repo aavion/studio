@@ -352,6 +352,8 @@ message:
       fallback: 'Requested content language "%requested_language%" is unavailable; rendering "%resolved_language%" instead.'
     variant:
       fallback: 'Requested content variant "%requested_variant%" is unavailable; rendering "%resolved_variant%" instead.'
+    render:
+      custom_twig_failed: 'Custom Twig rendering failed for content schema "%schema%"; the generic field renderer was used.'
     uid:
       invalid_format: '%label% "%uid%" must be a lowercase UUID.'
     string_list:

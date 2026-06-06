@@ -93,7 +93,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | --- | --- | --- | --- |
 | Backend | `src/Backend` | In progress | Admin settings/system-info path and backend view context reviewed. System-info uses a reduced admin-only report, not raw `phpinfo()` or `$_SERVER`; S2-021 renames internal backend form request attributes to `system`. S2-027 splits package detail file/link/dependency helpers out of the package detail read-model assembler. Remaining pass: backend route/action naming and controller adapters. |
 | Command | `src/Command` | Reviewed | Commands are small and use `studio:` as intentional product CLI branding. Process-heavy work delegates into services; no immediate command naming drift found. |
-| Content | `src/Content` | In progress | Content read resolution, routing language behavior, and content field locale tokens reviewed. S2-015 hardens regional locale fallback and persisted field locale compatibility. Aggregate/API read-model boundaries still need review. |
+| Content | `src/Content` | Reviewed | Content read resolution, routing language behavior, content field locale tokens, public custom-Twig rendering, redirects, schema primitives, and content event payloads reviewed. S2-015 hardens regional locale fallback and persisted field locale compatibility; S2-037 reports custom-Twig render failures through the Message layer before falling back. |
 | Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap, S2-009 hardens profile language persistence, and S2-028 centralizes repeated token/password helper logic. Setup/backend leftovers still need review. |
 | Core primitives | `src/Core/Access`, `ActionLog`, `Config`, `Diff`, `DryRun`, `Message`, `Workflow` | Reviewed | Config seed/default fallback, domain-owned Message code/key aggregation, access rules, ActionLog, Diff, DryRun, Message, and Workflow value-object invariants reviewed. Hard exceptions in this slice are deliberate low-level invariant guards, while recoverable runtime config failures already report through the Message layer. |
 | Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | Reviewed | Process environment, detached process boundaries, filesystem actions, Messenger drain, live-operation start/storage/runner boundaries, PHP CLI resolver/preference validation, and file inventory scanning reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics, S2-030 normalizes live-operation storage roots, and S2-035 normalizes file-inventory roots. |
@@ -493,6 +493,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Updated `relativeSourcePath()`, sorted generated catalogue paths, and renamed the translation aggregation test temp prefix to `system-*`.
 - **Priority:** Now / Determinism and naming consistency.
 
+### S2-037 Custom content Twig failures were silent fallback-only events
+
+- **Area:** Content rendering, schema custom Twig, Message diagnostics.
+- **Finding:** `ContentFieldsetRenderer` intentionally falls back to the generic field renderer when schema `custom_twig` cannot be rendered, but the failure was not reported anywhere. That keeps public content available, which is good, but leaves admins/operators without an actionable diagnostic for a broken trusted schema template.
+- **Evidence:** `src/Content/Render/ContentFieldsetRenderer.php`, `templates/frontend/content/partials/_generic-fields.html.twig`, `dev/draft/0.3.x-SchemaContentFields.md`.
+- **Impact:** A stale or invalid schema template could quietly degrade rendering until someone visually notices the fallback output. Because custom Twig is a trusted-admin feature, this should stay non-fatal for public traffic but visible through the Message/operation issue layer.
+- **Recommendation:** Keep the fallback behavior, inject the Message reporter optionally, and emit a content-owned warning with bounded schema/content context when custom Twig rendering fails.
+- **Fix applied:** Added `content.render.custom_twig_failed` / `message.content.render.custom_twig_failed`, reported invalid custom Twig before falling back, documented the diagnostic, and added focused renderer coverage.
+- **Priority:** Now / Operability and Message-layer consistency.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -539,6 +549,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Observability diagnostics reviewed. S2-034 normalizes statistics-store roots, sorts extension diagnostics, and removes an unused aggregator helper.
 - Core operation filesystem inventory reviewed. S2-035 normalizes scanner roots across separators while preserving root paths.
 - Core support translation paths reviewed. S2-036 stabilizes generated catalogue order and mixed-separator project root handling.
+- Content custom-Twig rendering reviewed. S2-037 keeps public fallback behavior but reports broken schema templates through content-owned Message diagnostics.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -574,3 +585,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Normalized statistics snapshot storage roots and made system extension diagnostics deterministic.
 - Normalized file-inventory scanner roots across POSIX and Windows separators.
 - Stabilized translation source/runtime path ordering and internal test naming.
+- Reported broken content schema custom Twig through the Message layer before falling back to the generic field renderer.
