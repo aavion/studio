@@ -111,7 +111,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **D5:** Custom Twig is a product feature. Schema Twig may be edited by trusted users with explicit permissions and validation; content-body Twig is not allowed or must be strongly sandboxed. Package Twig templates are trusted package code, but package access to sensitive user, ACL, or secret data must go through core-provided providers.
 - **D6:** Replace the custom UUID helper with `symfony/uid` as the unified UID source. Do not introduce a second public ID when the stable UID or a unique slug already covers the reference case. High-write tables may still need storage/index strategy review.
 - **D7:** Visitor identity should use a first-party, server-generated, HMAC-protected, rotatable technical visitor cookie. Statistics recording still honors DNT/opt-out through the statistics policy. Avoid machine IDs, advertising IDs, cross-site identifiers, or fingerprinting.
-- **D8:** Session hardening should use a soft client/visitor binding strategy that can trigger risk scoring or re-authentication rather than blindly logging users out on ordinary network or browser changes.
+- **D8:** Session hardening should bind authenticated Symfony sessions to the first-party visitor signal. Established sessions with a changed or missing visitor signal are treated as likely session duplication and must be terminated, while login requests and legacy sessions without an existing binding initialize the binding to avoid ordinary false positives.
 - **D9:** Current inbound request ID behavior may remain: sanitized `X-Request-ID`/`X-Correlation-ID` values are acceptable and should stay short enough for access-log filtering and later security correlation.
 - **D10:** Add a central payload/secret protection layer that derives context-specific keys from `APP_SECRET` through HKDF/Sodium-compatible labels and payload versions. `APP_SECRET` remains the root secret; rotation is an emergency action handled by the existing guard/recovery model.
 - **D11:** Modularize setup runner, preflight, wizard, and CLI/web input handling. Keep the setup seeder central enough to manage preset content coherently.
@@ -161,7 +161,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 | F-003 | D1, D2, and D33 require controller/action/read-model extraction for backend administration. |
 | F-004 | D11 and D13 require setup runner/preflight modularization while preserving hard requirement blocking. |
 | F-005 | D21 requires behavior/domain-based test-suite modularization. |
-| F-006 | D7, D8, and D42 replace fingerprint-like visitor assumptions with a first-party visitor signal and soft session/security use. |
+| F-006 | D7, D8, and D42 replace fingerprint-like visitor assumptions with a first-party visitor signal, hard session-duplication termination, and visitor/IP risk-signal separation. |
 | F-007 | D9 keeps sanitized inbound request IDs but requires short, filterable values for log/security correlation. |
 | F-008 | D6 selects `symfony/uid` as the unified UID source and defers high-write storage/index optimization to schema work. |
 | F-009 | D28 keeps granular statistics plus later snapshot/compaction read models. |
@@ -255,7 +255,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Content aggregate split (F-027 / D16):** Split routing/redirects, localization/variants, revision activation, ACL links, and tree/sort behavior before the Editor and stable API depend on the current aggregate shape.
 - **ACL role/group model (F-028, F-036 / D15):** Keep Symfony roles native and add a separate group ACL layer with explicit AND/OR semantics, ownership references, impact checks, and cleanup rules.
 - **Visitor and request identity (F-006, F-007 / D7-D9, D42):** Implement first-party signed visitor cookies, preserve short request IDs, and use visitor/IP signals only as risk and rate-limit inputs.
-- **Session hardening (F-006 / D8):** Add soft client/visitor binding that can require re-authentication or raise risk, without fragile logout behavior on ordinary network changes.
+- **Session hardening (F-006 / D8):** Bind authenticated sessions to the first-party visitor signal and terminate established sessions when that signal changes or disappears, while allowing login and legacy unbound sessions to initialize the binding.
 - **Mail debug behavior (F-037 / D30):** Ensure production mail stubs remain impossible without `APP_DEBUG` and clear admin warnings.
 
 ### Phase 6: API and Data Read Models
@@ -344,8 +344,8 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Statistics/VisitorIdGenerator.php:13`, `src/Core/Statistics/VisitorIdGenerator.php:17`, `src/Core/Statistics/VisitorIdGenerator.php:20`, `src/Core/Statistics/VisitorIdGenerator.php:64`.
 - **Impact:** The old shape was privacy-preserving and stable for simple analytics, but it collided for NAT/shared devices and changed when IP or user agent changed. It should not become a session-hijack defense by itself.
 - **Recommendation:** Use a first-party, server-generated, signed visitor cookie as the stable device/browser signal. Keep IP and user-agent as separate soft signals for rate limiting and suspicious-behavior detection. Avoid invasive machine IDs, advertising IDs, or fingerprinting.
-- **Implementation note:** `VisitorIdGenerator` now prefers a signed first-party technical `system_visitor` cookie, generates a random token when no valid cookie exists, stores only a compact 128-bit `APP_SECRET`-derived visitor ID in logs/statistics, and `AccessLogSubscriber` refreshes the HttpOnly SameSite=Lax cookie with a 30-day lifetime on normal responses. This gives future Security features a visitor bucket separate from IP buckets while keeping session binding, external module consent policy, false-positive handling, and re-authentication behavior deferred to the Security slice.
-- **Deferred:** Session/client binding, privacy copy, rate-limit configuration, false-positive recovery, and a possible centralized consent interface where packages can register cookie policies for advertising or external analytics remain in the Security/visitor-identity slice. The visitor ID is a risk/rate-limit signal, not sole proof of identity.
+- **Implementation note:** `VisitorIdGenerator` now prefers a signed first-party technical `system_visitor` cookie, generates a random token when no valid cookie exists, stores only a compact 128-bit `APP_SECRET`-derived visitor ID in logs/statistics, and `AccessLogSubscriber` refreshes the HttpOnly SameSite=Lax cookie with a 30-day lifetime on normal responses. `SessionVisitorBindingSubscriber` binds successful logins and legacy authenticated sessions to that visitor ID, then clears the security token, invalidates the Symfony session, redirects to login, and writes `auth.session_visitor_mismatch_terminated` when an established session appears with a different visitor signal.
+- **Deferred:** Privacy copy, rate-limit configuration, richer false-positive recovery, re-authentication step-up flows, and a possible centralized consent interface where packages can register cookie policies for advertising or external analytics remain in the Security/visitor-identity slice. The visitor ID is a risk/rate-limit signal, not sole proof of identity outside the session-duplication boundary.
 - **Priority:** Before Security.
 
 ### F-007 Request IDs can be externally controlled
