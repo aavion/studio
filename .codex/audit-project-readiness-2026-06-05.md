@@ -365,6 +365,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Entity/UserAccount.php:27`, `src/Entity/ContentItem.php:35`, `src/Entity/AccessStatisticEvent.php:29`, `migrations/Version20260531000000.php:103`.
 - **Impact:** Public references are stable and portable, but high-write/internal tables pay string-index storage costs and fixture/setup code must create IDs manually.
 - **Recommendation:** Keep public UUIDs/slugs where external references matter. Before the next schema expansion, decide whether high-write/internal records should use auto-increment integer primary keys plus public UUIDs where needed. Also evaluate adding `symfony/uid` to replace the custom `UuidFactory`.
+- **Implementation note:** `UuidFactory` now uses Symfony UID-backed UUIDv7 generation as the single project UID boundary. Direct duplicated UUID-v4 generation in statistics recording, package registry/install paths, state markers, account tokens, setup seeding, and setup password reset was migrated to that factory. High-write table storage/index strategy remains deferred to schema/API work.
 - **Priority:** Before API.
 
 ### F-009 Statistics aggregation may become expensive as traffic grows
@@ -383,6 +384,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Package/PackageRuntimeContributionRegistry.php:19`, `src/Core/Package/PackageRuntimeContributionRegistry.php:58`, `src/Core/Package/PackageRuntimeContributionRegistry.php:91`, `src/Core/Package/PackageRuntimeContributionRegistry.php:130`.
 - **Impact:** Package authors may struggle to know the preferred extension API. Validation errors happen at runtime and the documented public surface becomes broad.
 - **Recommendation:** Introduce a documentation-friendly `PackageContributions` builder or explicit contribution collection while keeping provider interfaces as internal adapters. Prefer one obvious package author path.
+- **Implementation note:** `PackageContributions` now provides the preferred readable package-entry builder for grouped view, settings, scheduler task, scheduler callable, and scheduler action-queue contributions. Existing provider interfaces remain supported as advanced/internal adapters inside `PackageRuntimeContributionRegistry`.
 - **Priority:** Before API / First-party modules.
 
 ### F-011 Twig extension is a UI service hub
@@ -658,6 +660,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Security/ApiKeyVault.php:20`, `src/Security/ApiKeyVault.php:25`, `src/Security/ApiKeyVault.php:42`, `src/Security/ApiKeyVault.php:73`, `src/Security/AppSecretRotationGuard.php:27`, `src/Security/AppSecretRotationGuard.php:84`, `src/Security/AppSecretRotationGuard.php:136`, `src/Security/AppSecretRotationGuard.php:142`, `src/Security/AppSecretRotationGuard.php:164`.
 - **Impact:** The current behavior is conservative because key rotation revokes API keys rather than silently failing decryption, but a real API layer will need clearer operational guarantees around key derivation, key versioning, re-encryption, recovery, audit logging, and what happens when mail delivery is unavailable.
 - **Recommendation:** Define key-management policy before API launch: HKDF or Sodium-backed key derivation with context labels, explicit encryption-key versions, documented rotation behavior, and a safe admin recovery path. Keep revocation-on-secret-change unless a tested re-encryption migration exists.
+- **Implementation note:** `SecretPayloadProtector` now centralizes context-labeled, versioned, `APP_SECRET`-rooted reversible payload protection. `ApiKeyVault` uses it for prefix-bound encrypted API-key payloads plus context-labeled HMAC lookup hashes, while `AppSecretRotationGuard` keeps the conservative revoke-and-owner-recovery behavior. Re-encryption and richer key-rotation policy remain deferred to API/Security.
 - **Priority:** Before API / Security.
 
 ### F-039 Admin user list/review factories mix request parsing, queries, sorting, and view arrays
@@ -696,6 +699,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Setup/SetupLiveOperationPayloadProtector.php:13`, `src/Setup/SetupLiveOperationPayloadProtector.php:20`, `src/Setup/SetupLiveOperationPayloadProtector.php:38`, `src/Setup/SetupLiveOperationPayloadProtector.php:63`, `src/Security/ApiKeyVault.php:20`, `src/Security/ApiKeyVault.php:42`.
 - **Impact:** Both flows are careful enough for current local payloads, but independent encryption helpers make key derivation, versioning, associated data, expiry/replay policy, and rotation behavior harder to review consistently.
 - **Recommendation:** Introduce one small `SecretBox`/`PayloadProtector` style service with HKDF context labels, explicit payload versions, optional associated data, and documented rotation behavior. Use it from setup payloads and API key storage.
+- **Implementation note:** `SetupLiveOperationPayloadProtector` now delegates to `SecretPayloadProtector` with setup-specific context and associated data. Setup wizard state storage keeps protected setup secrets out of plaintext session state while sharing the same versioned payload boundary as API-key storage.
 - **Priority:** Before Security / API.
 
 ### F-043 Setup language catalog overlaps with localization catalogues
