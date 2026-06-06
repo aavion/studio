@@ -21,7 +21,7 @@ final class AuditLoggerTest extends TestCase
     public function testItWritesAuditActionsWithActorContext(): void
     {
         $handler = new TestHandler();
-        $monolog = new Logger('studio_audit');
+        $monolog = new Logger('system_audit');
         $monolog->pushHandler($handler);
 
         (new AuditLogger($monolog))->log(
@@ -48,7 +48,7 @@ final class AuditLoggerTest extends TestCase
     public function testItSkipsActionsDeniedByPolicy(): void
     {
         $handler = new TestHandler();
-        $monolog = new Logger('studio_audit');
+        $monolog = new Logger('system_audit');
         $monolog->pushHandler($handler);
 
         (new AuditLogger($monolog, new DenyAllAuditLogPolicy()))->log(
@@ -62,7 +62,7 @@ final class AuditLoggerTest extends TestCase
     public function testItAddsCurrentRequestTraceWhenAvailable(): void
     {
         $handler = new TestHandler();
-        $monolog = new Logger('studio_audit');
+        $monolog = new Logger('system_audit');
         $monolog->pushHandler($handler);
         $request = Request::create('/comments', 'POST', [], [], [], [
             'HTTP_USER_AGENT' => 'Example Browser',

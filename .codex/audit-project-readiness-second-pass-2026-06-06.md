@@ -98,7 +98,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Core primitives | `src/Core/Access`, `ActionLog`, `Config`, `Diff`, `DryRun`, `Message`, `Workflow` | Pending | Re-check config default fallbacks, message catalogues, hard throws, and public naming. |
 | Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | In progress | Process environment, detached process boundaries, filesystem actions, and live-operation start failure handling reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics. Messenger still needs final sweep. |
 | Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, PHP capability policy, and runtime contribution registry reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, S2-007 records the remaining lifecycle transaction boundary, and S2-010 converts package runtime contribution failures to Message-layer diagnostics. |
-| Core observability | `src/Core/Log`, `Statistics`, `Diagnostics` | In progress | Visitor/request ID, access metadata sanitization, statistics recorder/aggregator/store reviewed. S2-016 hardens snapshot temp-file writes. Diagnostics/debug naming still needs review. |
+| Core observability | `src/Core/Log`, `Statistics`, `Diagnostics` | In progress | Visitor/request ID, access metadata sanitization, statistics recorder/aggregator/store reviewed. S2-016 hardens snapshot temp-file writes. S2-025 renames internal log channels/files to `system_*`; public CSS/UI names remain product-facing. Diagnostics/debug naming still needs review. |
 | Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | In progress | Event hook registry reviewed; S2-011 prevents silent public hook descriptor overrides. Translation/runtime paths, catalogue collision handling, lint, manifest, and Message invariants reviewed. S2-019 renames an internal lint temp prefix to `system-*`. Remaining pass: package catalogue conflict docs/tests and broader generated catalogue checks. |
 | Database | `src/Database` | Reviewed | Table-prefix coverage, raw DBAL wrapper prefixing, Doctrine metadata prefixing, and migration portability reviewed. `studio_` remains a user-facing/product example prefix, while internal DBAL wrapper params use `system_*`. |
 | Debug and Kernel | `src/Debug`, `src/Kernel.php` | Reviewed | Debug collector naming, output safety, and APP_DEBUG gating reviewed. S2-021 renames the internal collector and debug HTML comment to `system`; public Twig helper names remain `studio_*` as theme-facing API. |
@@ -373,6 +373,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added `view.template_namespace.unsupported` / `message.view.template_namespace.unsupported`, converted the throw to `MessageException`, updated translations, operation issue docs, and the resolver regression.
 - **Priority:** Now / Message consistency.
 
+### S2-025 Internal log channels, service tags, and setup session key used product-brand naming
+
+- **Area:** Monolog channels/files, service-container tags, setup wizard session storage, admin log source browsing.
+- **Finding:** Several internal technical identifiers still used `studio_*`/`studio.*` naming after earlier naming cleanup: Monolog channels and generated log filenames, event/backend view service tags, and the setup wizard session key.
+- **Evidence:** `config/packages/monolog.yaml:4`, `config/services.yaml:22`, `config/services.yaml:25`, `bin/setup:188`, `src/Core/Log/LogSourceRegistry.php:14`, `src/Setup/SetupWizardState.php:9`.
+- **Impact:** Behavior was not unsafe, but it contradicted the binding naming rule that `studio` is product branding or public UI/API, while system-owned internals should use the `system` owner/scope. It also created a review trap because adjacent tags had already moved to `system.*`.
+- **Recommendation:** Rename internal channels, generated log filenames, service tags, and session keys to `system_*`/`system.*`. Leave product-facing Twig helpers, CLI command names, CSS classes, and installation-chosen DB prefixes untouched.
+- **Fix applied:** Renamed Monolog channels/files to `system_message`, `system_audit`, and `system_access`; updated the manual setup-script logger, service tag names to `system.event_hook_provider` and `system.backend_view_provider`; changed the setup wizard session key to `_system_setup_wizard`; updated log source patterns, docs, and tests.
+- **Priority:** Now / Final naming gate.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -407,6 +417,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Package translation fallback policy reviewed. S2-022 keeps package fallback validation deterministic while replacing the hardcoded `languages/en` requirement with configured fallback-locale candidates.
 - Markdown embed accessibility copy reviewed. S2-023 moves the iframe title to `ui.markdown.embed.video_title` and keeps standalone rendering key-based.
 - Template namespace resolution reviewed. S2-024 keeps the invariant hard but exposes unsupported namespace failures through View Message keys.
+- Internal logging/service naming reviewed. S2-025 moves Monolog channel/file names, event/backend view tags, and setup wizard session storage to `system` naming while classifying `studio_*` Twig helpers and CSS classes as public product/theme API.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -431,3 +442,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Replaced the package translation `languages/en` special case with a configured fallback-locale validation rule and neutral Message code/key.
 - Moved Markdown embed iframe title copy from PHP literal to translated UI keys.
 - Converted unsupported template namespace failures from literal exceptions to View Message keys.
+- Renamed internal log channels/files, service tags, and setup wizard session key from `studio` to `system` naming.

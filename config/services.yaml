@@ -19,10 +19,10 @@ services:
     _instanceof:
         App\Core\Event\EventHookDescriptorProviderInterface:
             tags:
-                - { name: 'studio.event_hook_provider', priority: 0 }
+                - { name: 'system.event_hook_provider', priority: 0 }
         App\Backend\BackendViewProviderInterface:
             tags:
-                - { name: 'studio.backend_view_provider', priority: 0 }
+                - { name: 'system.backend_view_provider', priority: 0 }
         App\View\Injection\StaticViewInjectionProviderInterface:
             tags:
                 - { name: 'system.static_view_injection_provider', priority: 0 }
@@ -143,7 +143,7 @@ services:
 
     App\Backend\BackendViewRegistry:
         arguments:
-            $providers: !tagged_iterator { tag: studio.backend_view_provider }
+            $providers: !tagged_iterator { tag: system.backend_view_provider }
 
     App\View\Injection\ViewInjectionRegistry:
         arguments:
@@ -262,7 +262,7 @@ services:
 
     App\Core\Event\PublicEventHookRegistry:
         arguments:
-            $providers: !tagged_iterator { tag: studio.event_hook_provider }
+            $providers: !tagged_iterator { tag: system.event_hook_provider }
 
     App\Core\Package\ActivePackageAssetProviderInterface:
         alias: App\Core\Package\ActivePackageAssetProvider
@@ -311,15 +311,15 @@ services:
 
     App\Core\Log\MonologMessageLogger:
         arguments:
-            $logger: '@monolog.logger.studio_message'
+            $logger: '@monolog.logger.system_message'
 
     App\Core\Log\AuditLogger:
         arguments:
-            $logger: '@monolog.logger.studio_audit'
+            $logger: '@monolog.logger.system_audit'
 
     App\Core\Log\AccessLogger:
         arguments:
-            $logger: '@monolog.logger.studio_access'
+            $logger: '@monolog.logger.system_access'
 
     App\Core\Statistics\VisitorIdGenerator:
         arguments:

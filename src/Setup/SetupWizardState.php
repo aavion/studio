@@ -6,5 +6,5 @@ namespace App\Setup;
 
 final class SetupWizardState
 {
-    public const SESSION_KEY = '_studio_setup_wizard';
+    public const SESSION_KEY = '_system_setup_wizard';
 }

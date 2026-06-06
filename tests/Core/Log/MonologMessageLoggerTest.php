@@ -30,7 +30,7 @@ final class MonologMessageLoggerTest extends TestCase
     protected function setUp(): void
     {
         $this->handler = new TestHandler();
-        $monolog = new Logger('studio_message');
+        $monolog = new Logger('system_message');
         $monolog->pushHandler($this->handler);
         $this->logger = new MonologMessageLogger($monolog);
     }
@@ -143,7 +143,7 @@ final class MonologMessageLoggerTest extends TestCase
 
     public function testItKeepsMessageLoggingFailuresNonFatal(): void
     {
-        $monolog = new Logger('studio_message');
+        $monolog = new Logger('system_message');
         $monolog->pushHandler(new ThrowingMessageLogHandler());
         $logger = new MonologMessageLogger($monolog);
 

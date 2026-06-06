@@ -16,7 +16,7 @@ final class FileAccessStatisticsStoreTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->statisticsDir = $this->createTemporaryDirectory('studio-access-statistics-store');
+        $this->statisticsDir = $this->createTemporaryDirectory('system-access-statistics-store');
     }
 
     protected function tearDown(): void

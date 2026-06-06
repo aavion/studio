@@ -107,7 +107,7 @@ final class PublicContentRenderingTest extends WebTestCase
 
     public function testItReportsFailedDynamicContentSlotInjections(): void
     {
-        $logPattern = dirname(__DIR__, 2).'/var/log/test.studio-message-*.log';
+        $logPattern = dirname(__DIR__, 2).'/var/log/test.system-message-*.log';
 
         foreach (glob($logPattern) ?: [] as $logFile) {
             unlink($logFile);

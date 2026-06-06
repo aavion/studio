@@ -33,11 +33,11 @@ final class UserControllerTest extends WebTestCase
         $this->loginTestUser($client, $user);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-audit-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -57,11 +57,11 @@ final class UserControllerTest extends WebTestCase
         self::assertInstanceOf(UserAccount::class, $updatedUser);
         self::assertFalse(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($updatedUser, 'current-password'));
         self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($updatedUser, 'NewPassword1!'));
-        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-audit-*.log') ?: []));
         self::assertStringContainsString('auth.password_change_success', $auditLog);
         self::assertStringContainsString('"result_status":"success"', $auditLog);
         self::assertStringNotContainsString('NewPassword1!', $auditLog);
-        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-message-*.log') ?: []));
         self::assertStringContainsString('account.password.changed', $messageLog);
         self::assertStringContainsString('/user/security-review/', $messageLog);
 
@@ -140,7 +140,7 @@ final class UserControllerTest extends WebTestCase
         $entityManager->flush();
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -179,7 +179,7 @@ final class UserControllerTest extends WebTestCase
         self::assertSame(AccountTokenStatus::Revoked, $revokedResetToken->status());
         self::assertInstanceOf(ApiKey::class, $revokedApiKey);
         self::assertSame(ApiKeyStatus::Revoked, $revokedApiKey->status());
-        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-message-*.log') ?: []));
         self::assertStringContainsString('account.password_change.disputed', $messageLog);
         self::assertStringContainsString('"username":"securityreview"', $messageLog);
     }
@@ -284,7 +284,7 @@ final class UserControllerTest extends WebTestCase
         $this->loginTestUser($client, $this->createUserWithLevel(1, 'passworderror', 'current-password'));
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-audit-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -301,7 +301,7 @@ final class UserControllerTest extends WebTestCase
         self::assertSelectorTextContains('.studio-form-errors', 'The current password is not correct.');
         self::assertSelectorTextContains('.studio-form-errors', 'The new password must contain at least 8 characters.');
         self::assertSelectorTextContains('.studio-form-errors', 'The new passwords do not match.');
-        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-audit-*.log') ?: []));
         self::assertStringContainsString('auth.password_change_failed', $auditLog);
         self::assertStringContainsString('ui.user.password.errors.current_password', $auditLog);
         self::assertStringNotContainsString('wrong-password', $auditLog);
@@ -476,7 +476,7 @@ final class UserControllerTest extends WebTestCase
         $client = self::createClient();
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -503,7 +503,7 @@ final class UserControllerTest extends WebTestCase
 
         self::assertInstanceOf(UserAccount::class, $user);
         self::assertSame([], $this->userGroupIdentifiers($user));
-        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-message-*.log') ?: []));
         self::assertStringContainsString('account.link_stale_groups', $messageLog);
         self::assertStringContainsString('deleted_between_get_and_post', $messageLog);
 
@@ -626,7 +626,7 @@ final class UserControllerTest extends WebTestCase
         self::assertInstanceOf(UserAccount::class, $admin);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -644,7 +644,7 @@ final class UserControllerTest extends WebTestCase
                 ->findOneBy(['email' => $admin->email(), 'type' => AccountTokenType::Registration]);
 
             self::assertNull($token);
-            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-message-*.log') ?: []));
             self::assertStringContainsString('account.registration.existing_account', $messageLog);
             self::assertStringContainsString('"username":"admin"', $messageLog);
         } finally {
@@ -665,7 +665,7 @@ final class UserControllerTest extends WebTestCase
         $config->set('user.registration.mode', 'auto_approval');
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -688,7 +688,7 @@ final class UserControllerTest extends WebTestCase
             self::assertSame($deletedUser->uid(), $token->user()?->uid());
             self::assertSame(UserRole::Admin, $token->role());
             self::assertSame([], $token->groupIdentifiers());
-            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-message-*.log') ?: []));
             self::assertStringContainsString('account.registration.approval_requested', $messageLog);
             self::assertStringNotContainsString('https://example.test/user/invitation/', $messageLog);
             self::assertStringNotContainsString('account.registration.existing_account', $messageLog);
@@ -711,7 +711,7 @@ final class UserControllerTest extends WebTestCase
         $config->set('user.registration.mode', 'auto_approval');
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -733,7 +733,7 @@ final class UserControllerTest extends WebTestCase
             self::assertInstanceOf(AccountToken::class, $token);
             self::assertSame($deletedUser->uid(), $token->user()?->uid());
             self::assertSame(UserRole::Author, $token->role());
-            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-message-*.log') ?: []));
             self::assertStringContainsString('account.registration.approval_requested', $messageLog);
             self::assertStringNotContainsString('https://example.test/user/invitation/', $messageLog);
         } finally {
@@ -755,7 +755,7 @@ final class UserControllerTest extends WebTestCase
         $config->set('user.registration.mode', 'auto_approval');
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -777,7 +777,7 @@ final class UserControllerTest extends WebTestCase
             self::assertInstanceOf(AccountToken::class, $token);
             self::assertSame($deletedUser->uid(), $token->user()?->uid());
             self::assertSame(UserRole::User, $token->role());
-            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-message-*.log') ?: []));
             self::assertStringContainsString('account.registration.link', $messageLog);
             self::assertStringContainsString('https://example.test/user/invitation/', $messageLog);
         } finally {
@@ -997,7 +997,7 @@ final class UserControllerTest extends WebTestCase
         self::assertInstanceOf(UserAccount::class, $user);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -1020,7 +1020,7 @@ final class UserControllerTest extends WebTestCase
             'type' => AccountTokenType::PasswordReset,
         ]);
         $statuses = array_map(static fn (AccountToken $token): AccountTokenStatus => $token->status(), $tokens);
-        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-message-*.log') ?: []));
 
         self::assertCount(2, $tokens);
         self::assertCount(1, array_filter($statuses, static fn (AccountTokenStatus $status): bool => AccountTokenStatus::Pending === $status));
@@ -1137,7 +1137,7 @@ final class UserControllerTest extends WebTestCase
         $originalRetention = $config->get('user.deleted_user_retention_days', 7);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -1175,7 +1175,7 @@ final class UserControllerTest extends WebTestCase
             self::assertSame(ApiKeyStatus::Revoked, $revokedApiKey->status());
             self::assertInstanceOf(AccountToken::class, $revokedToken);
             self::assertSame(AccountTokenStatus::Revoked, $revokedToken->status());
-            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-message-*.log') ?: []));
             self::assertStringContainsString('account.closed', $messageLog);
             self::assertStringContainsString('retention_days', $messageLog);
             self::assertStringContainsString('21', $messageLog);

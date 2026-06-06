@@ -56,8 +56,8 @@ final class SetupScriptTest extends TestCase
         $output = [];
         $exitCode = 1;
         $projectDir = dirname(__DIR__, 2);
-        $testLogPattern = $projectDir.'/var/log/test.studio-message-*.log';
-        $devLogPattern = $projectDir.'/var/log/dev.studio-message-*.log';
+        $testLogPattern = $projectDir.'/var/log/test.system-message-*.log';
+        $devLogPattern = $projectDir.'/var/log/dev.system-message-*.log';
         $devLogFiles = glob($devLogPattern) ?: [];
 
         foreach (glob($testLogPattern) ?: [] as $testLog) {

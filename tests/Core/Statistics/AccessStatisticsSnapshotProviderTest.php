@@ -24,7 +24,7 @@ final class AccessStatisticsSnapshotProviderTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-access-statistics-provider');
+        $this->root = $this->createTemporaryDirectory('system-access-statistics-provider');
     }
 
     protected function tearDown(): void

@@ -158,7 +158,7 @@ final class AdminUserControllerTest extends WebTestCase
         $this->markDeletedAt($deactivatedUser, 'status-admin', '2026-05-10 10:00:00');
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -174,7 +174,7 @@ final class AdminUserControllerTest extends WebTestCase
             self::assertInstanceOf(UserAccount::class, $restoredUser);
             self::assertSame(UserAccountStatus::Active, $restoredUser->status());
             self::assertSame(['qa_members'], $this->userGroupIdentifiers($restoredUser));
-            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-message-*.log') ?: []));
             self::assertStringContainsString('account.restored', $messageLog);
             self::assertStringContainsString('"username":"deletedactivate"', $messageLog);
 
@@ -365,7 +365,7 @@ final class AdminUserControllerTest extends WebTestCase
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
         $this->contextUserGroup();
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test.system-message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -387,7 +387,7 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSame(AccountTokenStatus::Pending, $token->status());
         self::assertSame(UserRole::User, $token->role());
         self::assertSame(['qa_members'], $token->groupIdentifiers());
-        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.system-message-*.log') ?: []));
         self::assertStringContainsString('https://example.test/user/invitation/', $messageLog);
         $entityManager->remove($token);
         $entityManager->flush();
