@@ -107,7 +107,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Scheduler | `src/Scheduler` | In progress | Scheduler task registry, lock naming, package task policy, run recorder, web-auth settings, and task definitions reviewed. S2-012 converts public task definition invariants to Message-layer diagnostics. Remaining pass: route/controller usage and docs alignment. |
 | Security | `src/Security` | In progress | Session visitor binding, AccountToken issuer/entity behavior, API-key vault/entity behavior, maintenance-mode HTTP flow, and remember-me direction reviewed. S2-008 records the remaining copied-session plus copied-visitor-cookie limitation, and S2-018 captures remember-me as a Security-branch feature candidate using server-side rotating tokens bound to the visitor cookie. ACL groups, account-flow controller extraction, and secret rotation still need broader review. |
 | Setup | `src/Setup` | In progress | PHP-CLI resolver/preference flow, dry-run placeholder behavior, preflight failure mapping, Composer probe, and setup subprocess environment reviewed. Large setup input/runtime classes remain watchlisted, but no immediate review-blocker found in this slice. |
-| View | `src/View` | In progress | Template runtime fallback reviewed; S2-005 removes a hardcoded `en` fallback from the root layout. S2-023 moves Markdown embed accessibility copy to translations. Twig helper split, response header policy, dynamic injection failure ownership, and technical naming still need broader review. |
+| View | `src/View` | In progress | Template runtime fallback reviewed; S2-005 removes a hardcoded `en` fallback from the root layout. S2-023 moves Markdown embed accessibility copy to translations. S2-024 converts unsupported template namespace failures to View Message keys. Twig helper split, response header policy, dynamic injection failure ownership, and technical naming still need broader review. |
 | Assets/Templates/Translations | `assets`, `templates`, `translations` | In progress | Hardcoded language variants and package translation fallback policy reviewed. S2-022 replaces the package `languages/en` special case with a configured fallback-locale requirement. S2-023 fixes Markdown embed UI copy. Remaining pass: broader CSS naming classification. |
 | Documentation | `dev/draft`, `dev/manual`, `docs`, `.codex` | Pending | Re-check drift against actual behavior after all second-pass fixes. |
 
@@ -363,6 +363,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added `ui.markdown.embed.video_title` to UI translation sources, injected the translator-backed title into `MarkdownEmbedAdapter`, escaped the title attribute, and added a focused renderer regression.
 - **Priority:** Now / Translation readiness.
 
+### S2-024 Unsupported template namespaces used literal exceptions
+
+- **Area:** Template namespace resolution and View extension boundary.
+- **Finding:** `TemplateNamespace::fromName()` rejected unknown namespace strings with a literal `InvalidArgumentException`.
+- **Evidence:** `src/View/Template/TemplateNamespace.php:21`, `src/View/Template/PackageTemplatePathResolver.php:26`, `tests/View/Template/PackageTemplatePathResolverTest.php:85`.
+- **Impact:** The hard invariant is appropriate because only `frontend`, `backend`, and `root` are supported, but the failure is part of the View extension/configuration boundary and should expose a stable Message key for diagnostics.
+- **Recommendation:** Preserve `InvalidArgumentException` compatibility through `MessageException` while moving the reason to a View-owned Message code/key.
+- **Fix applied:** Added `view.template_namespace.unsupported` / `message.view.template_namespace.unsupported`, converted the throw to `MessageException`, updated translations, operation issue docs, and the resolver regression.
+- **Priority:** Now / Message consistency.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -396,6 +406,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Debug/view internal naming reviewed. S2-021 moves internal debug collector/comment and backend form request attributes from `studio` to `system`; `studio_*` Twig helpers and CSS classes remain intentionally public/product-facing.
 - Package translation fallback policy reviewed. S2-022 keeps package fallback validation deterministic while replacing the hardcoded `languages/en` requirement with configured fallback-locale candidates.
 - Markdown embed accessibility copy reviewed. S2-023 moves the iframe title to `ui.markdown.embed.video_title` and keeps standalone rendering key-based.
+- Template namespace resolution reviewed. S2-024 keeps the invariant hard but exposes unsupported namespace failures through View Message keys.
 - Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
@@ -419,3 +430,4 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Renamed the PHP linter internal temp-file prefix from `studio-*` to `system-*`.
 - Replaced the package translation `languages/en` special case with a configured fallback-locale validation rule and neutral Message code/key.
 - Moved Markdown embed iframe title copy from PHP literal to translated UI keys.
+- Converted unsupported template namespace failures from literal exceptions to View Message keys.

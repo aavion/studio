@@ -82,7 +82,7 @@ final class PackageTemplatePathResolverTest extends TestCase
     public function testItRejectsUnknownNamespaces(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Unsupported template namespace "unknown".');
+        $this->expectExceptionMessage('message.view.template_namespace.unsupported');
 
         (new PackageTemplatePathResolver('/project'))->pathsForNamespace('unknown', []);
     }

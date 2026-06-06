@@ -124,6 +124,8 @@ message:
   view:
     dynamic_injection:
       render_failed: 'Dynamic view injection "%uid%" failed while rendering "%template%".'
+    template_namespace:
+      unsupported: 'Template namespace "%namespace%" is not supported.'
   lint:
     php_unreadable: 'PHP source cannot be read.'
     php_syntax_error: 'PHP syntax check failed.'

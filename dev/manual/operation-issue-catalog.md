@@ -60,6 +60,7 @@ Validation rules:
 | `package.translation_namespace_invalid` | Package translation source is outside the package-owned `pkg.<slug>` namespace. | `source`, `package`, `file`, `path`, `expected_prefix` |
 | `translation.aggregate_completed` | Core and active package translation sources were aggregated into runtime catalogues. | `packages`, `locales`, `files`, `targets` |
 | `translation.aggregate_failed` | Translation aggregation could not write runtime catalogues. | `exception`, `message`, `target_pattern` |
+| `view.template_namespace.unsupported` | A template namespace string does not map to a supported root, frontend, or backend namespace. | `namespace` |
 | `package.discovery_queued` | Package discovery was queued for deferred Messenger processing. | `trigger`, `deferred` |
 | `package.discovery_queue_failed` | Package discovery could not be queued for deferred Messenger processing. | `trigger`, `exception`, `message` |
 | `package.discovery_completed` | Package discovery completed successfully. | `candidate_count` |
@@ -112,6 +113,7 @@ Validation rules:
 | `message.package.translation_namespace_invalid` | Package translation source does not stay under the package-owned namespace. | `%path%`, `%package%` |
 | `message.translation.aggregate_completed` | Translation aggregation completed. | `%files%`, `%locales%`, `%packages%` |
 | `message.translation.aggregate_failed` | Translation aggregation failed. | `%path%` |
+| `message.view.template_namespace.unsupported` | Template namespace is not supported. | `%namespace%` |
 | `message.package.lifecycle.cleanup_completed` | Package cleanup boundary completed. | `%package%` |
 | `message.package.lifecycle.dependent_deactivated` | Package was automatically deactivated because a dependency became unavailable. | `%package%`, `%dependency%` |
 | `message.package.lifecycle.removed` | Package directory was removed and the registry row was marked removed. | `%package%` |
