@@ -91,22 +91,22 @@ This second pass additionally checks the explicit final-gate rules added during 
 
 | Domain | Scope | Status | Notes |
 | --- | --- | --- | --- |
-| Backend | `src/Backend` | Pending | Re-check read-model split, package detail provider size, dynamic context naming, and hard exceptions. |
-| Command | `src/Command` | Pending | Re-check command names, output renderer usage, subprocess boundaries, and `studio:` command branding decision. |
+| Backend | `src/Backend` | In progress | Admin settings/system-info path and backend view context reviewed. System-info uses a reduced admin-only report, not raw `phpinfo()` or `$_SERVER`; package detail provider size/read-model split still needs final assessment. |
+| Command | `src/Command` | Reviewed | Commands are small and use `studio:` as intentional product CLI branding. Process-heavy work delegates into services; no immediate command naming drift found. |
 | Content | `src/Content` | In progress | Content read resolution, routing language behavior, and content field locale tokens reviewed. S2-015 hardens regional locale fallback and persisted field locale compatibility. Aggregate/API read-model boundaries still need review. |
 | Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap and S2-009 hardens profile language persistence. Setup/backend leftovers still need review. |
 | Core primitives | `src/Core/Access`, `ActionLog`, `Config`, `Diff`, `DryRun`, `Message`, `Workflow` | Pending | Re-check config default fallbacks, message catalogues, hard throws, and public naming. |
-| Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | Pending | Re-check central process policy, filesystem/symlink handling, Windows edges, and operation message usage. |
+| Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | In progress | Process environment, detached process boundaries, filesystem actions, and live-operation start failure handling reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics. Messenger still needs final sweep. |
 | Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, PHP capability policy, and runtime contribution registry reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, S2-007 records the remaining lifecycle transaction boundary, and S2-010 converts package runtime contribution failures to Message-layer diagnostics. |
-| Core observability | `src/Core/Log`, `Statistics`, `Diagnostics` | Pending | Re-check visitor/request IDs, privacy boundaries, log retention assumptions, and `studio` channel naming. |
+| Core observability | `src/Core/Log`, `Statistics`, `Diagnostics` | In progress | Visitor/request ID, access metadata sanitization, statistics recorder/aggregator/store reviewed. S2-016 hardens snapshot temp-file writes. Diagnostics/debug naming still needs review. |
 | Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | In progress | Event hook registry reviewed; S2-011 prevents silent public hook descriptor overrides. Translation/runtime paths, lint, manifest, and package catalogue conflicts still need review. |
 | Database | `src/Database` | Pending | Re-check prefix coverage, raw DBAL paths, and migration portability. |
 | Debug and Kernel | `src/Debug`, `src/Kernel.php` | Pending | Re-check debug collector naming, output safety, and APP_DEBUG gating. |
 | Entity and Repository | `src/Entity`, `src/Repository` | In progress | Large entity inventory started; content field locale token compatibility reviewed in S2-015. UID strategy, statistics indexes, package/schema entities, and repository filtering boundaries still need final assessment. |
 | Form, Mail, Navigation, Localization | `src/Form`, `src/Mail`, `src/Navigation`, `src/Localization` | Reviewed | Locale resolver, form builder/submission layer, mail locale behavior, and navigation label fallback reviewed. S2-013 records the deferred Mail Message/API hardening; S2-014 hardens navigation primary-language fallback. |
 | Scheduler | `src/Scheduler` | In progress | Scheduler task registry, lock naming, package task policy, run recorder, web-auth settings, and task definitions reviewed. S2-012 converts public task definition invariants to Message-layer diagnostics. Remaining pass: route/controller usage and docs alignment. |
-| Security | `src/Security` | In progress | Session visitor binding reviewed; S2-008 records the remaining copied-session plus copied-visitor-cookie limitation. Tokens, API keys, ACL groups, account flows, and secret rotation still need broader review. |
-| Setup | `src/Setup` | Pending | Re-check setup runner/preflight split, dry-run behavior, config defaults, CLI/web input, and setup subprocess handling. |
+| Security | `src/Security` | In progress | Session visitor binding reviewed; S2-008 records the remaining copied-session plus copied-visitor-cookie limitation. Remember-me was captured as a Security-branch feature candidate using server-side rotating tokens bound to the visitor cookie. Tokens, API keys, ACL groups, account flows, and secret rotation still need broader review. |
+| Setup | `src/Setup` | In progress | PHP-CLI resolver/preference flow, dry-run placeholder behavior, preflight failure mapping, Composer probe, and setup subprocess environment reviewed. Large setup input/runtime classes remain watchlisted, but no immediate review-blocker found in this slice. |
 | View | `src/View` | In progress | Template runtime fallback reviewed; S2-005 removes a hardcoded `en` fallback from the root layout. Twig helper split, response header policy, dynamic injection failure ownership, and technical naming still need broader review. |
 | Assets/Templates/Translations | `assets`, `templates`, `translations` | Pending | Re-check hardcoded copy, translation-key coverage, CSS naming convention, and language variants. |
 | Documentation | `dev/draft`, `dev/manual`, `docs`, `.codex` | Pending | Re-check drift against actual behavior after all second-pass fixes. |
@@ -283,6 +283,36 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added normalized, underscore, and primary-language fallback to `ContentReadContextResolver`, switched `ContentFieldValue` validation to `LocaleToken::isValid()`, and added regressions for `de_DE` content reads and `en_US` field values.
 - **Priority:** Now / Platform/language compatibility.
 
+### S2-016 Statistics snapshot store uses a fixed temp filename
+
+- **Area:** Access statistics snapshot storage and file-based operational state.
+- **Finding:** `FileAccessStatisticsStore` wrote snapshots through a fixed `latest.json.tmp` path before renaming to `latest.json`.
+- **Evidence:** `src/Core/Statistics/FileAccessStatisticsStore.php:26`, `tests/Core/Statistics/FileAccessStatisticsStoreTest.php:29`.
+- **Impact:** A single writer is fine, but concurrent requests or scheduler/admin refreshes could collide on the same temp file. Failed renames could also leave stale shared temp files behind.
+- **Recommendation:** Use a unique temp path per write and clean it up if the final rename fails, matching the existing pattern used by translation and package asset writers.
+- **Fix applied:** Added a random suffix to the temporary snapshot path and unlink cleanup on failed rename.
+- **Priority:** Now / Platform and concurrency hardening.
+
+### S2-017 Live-operation start failure reasons still used literal exceptions
+
+- **Area:** Live-operation runner startup, PHP CLI resolution, and admin/API operation feedback.
+- **Finding:** `LiveOperationStarter` caught startup failures and returned a Message-backed `WorkflowResult`, but the private failure paths still created literal `RuntimeException` messages for runner-start and PHP-CLI-unavailable states.
+- **Evidence:** `src/Core/Operation/Live/LiveOperationStarter.php:95`, `src/Core/Operation/Live/LiveOperationStarter.php:107`.
+- **Impact:** User-facing behavior was already graceful, but the concrete failure reason was not domain-keyed. Review could reasonably flag this as a convenience throw at a recoverable operational boundary.
+- **Recommendation:** Keep the outer `WorkflowResult` contract, but make the inner failure reasons domain-owned MessageExceptions so API/admin polling can receive deterministic translation keys and structured context.
+- **Fix applied:** Added `message.operation.runner_start_failed` and `message.operation.php_cli_unavailable`, converted the private startup failures to `MessageException`, and preserved the existing generic fallback for unexpected exceptions.
+- **Priority:** Now / Review readiness.
+
+### S2-018 Remember-me login needs server-side token rotation and visitor binding
+
+- **Area:** Login/session hardening and future Security feature work.
+- **Finding:** A "keep me logged in" option is useful, but it should not be implemented as a bare long-lived identity cookie. A duplicated remember-me cookie has the same trust problem as a duplicated session cookie unless the server can revoke, rotate, and compare it against additional first-party state.
+- **Evidence:** `config/packages/security.yaml`, `src/Security/SessionVisitorBindingSubscriber.php`, `dev/draft/0.2.x-SecurityAccessControl.md`.
+- **Impact:** The current branch intentionally keeps session/visitor binding simple. Adding remember-me now would widen the auth surface before the Security branch can design token storage, revocation, audit logging, and step-up behavior coherently.
+- **Recommendation:** Defer implementation to the Security feature branch and keep the current normal session behavior unchanged here. Prefer Symfony's remember-me architecture with persistent server-side tokens: 7-day TTL, rotate token on use within the TTL, issue a fresh Symfony session after successful auto-login, bind token metadata to the current `system_visitor` cookie, revoke on manual logout and password/security events, and treat visitor mismatch as a hard reject plus audit signal. Keep normal session TTL low only after UX and admin workflows are reviewed; `60` minutes is a reasonable candidate but should be decided in Security.
+- **Fix applied:** Deferred and documented as a Security feature-branch decision.
+- **Priority:** Security feature branch / Before release.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -300,6 +330,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Mail locale resolution reviewed. S2-013 records deferred Mail Message/API hardening; current locale behavior matches the documented recipient-first policy.
 - Navigation labels reviewed. S2-014 now handles regional locale tokens through normalized/primary-language fallback.
 - Content read language behavior reviewed. S2-015 aligns regional locale fallback and persisted content field token validation with the dynamic language catalogue.
+- UID strategy reviewed. `UuidFactory` centrally uses Symfony `Uuid::v7()`, while entities store RFC 4122 strings in portable `VARCHAR(36)` columns. This remains an intentional platform-compatibility tradeoff; binary UUID storage can be reconsidered only if a future DB abstraction makes it portable.
+- Visitor/request identity reviewed. Visitor IDs are 22-character HMAC-derived IDs backed by a signed 30-day first-party cookie; request IDs are 24 hex chars. No hard IP/UA binding was added in this pass.
+- Statistics snapshot storage reviewed. S2-016 now avoids fixed temp-file collisions.
+- Core filesystem actions reviewed. Relative path, absolute path, traversal, target symlink, and parent symlink checks are centralized through `PathGuard` and WorkflowResults; no immediate policy bypass found.
+- Live-operation start failure handling reviewed. S2-017 now uses operation-owned Message keys for runner-start and PHP-CLI-unavailable failures.
+- Remember-me login noted for Security work. S2-018 captures the preferred Symfony-native, server-side persistent-token design with visitor-cookie binding and rotation.
+- Admin system-info page reviewed. It exposes reduced, admin-panel-only preflight/server/PHP capability data and avoids raw `$_SERVER`/full `phpinfo()` output.
+- Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
+- Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
+- Setup PHP-CLI and Composer preflight reviewed. Cached `APP_DEFAULT_PHP_BINARY` remains validation-first and auto-heal/persistence is limited to controlled setup/preflight flows.
 - Form builder/submission layer reviewed. No immediate drift found: values cast centrally, option validation is generic, and user-facing errors stay on existing translation keys.
 
 ## Fixes Applied
@@ -314,3 +354,5 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Converted Scheduler task definition invariant failures to structured Scheduler Message keys while preserving InvalidArgument-compatible behavior.
 - Added normalized and primary-language fallback for persisted navigation labels.
 - Added regional-locale fallback for content reads and shared locale-token validation for content field values.
+- Made access statistics snapshot writes use unique temp files with cleanup on failed rename.
+- Converted live-operation runner-start and PHP-CLI-unavailable startup failures to operation-owned Message keys.

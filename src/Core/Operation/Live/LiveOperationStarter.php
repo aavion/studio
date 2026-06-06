@@ -6,6 +6,7 @@ namespace App\Core\Operation\Live;
 
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
+use App\Core\Message\MessageException;
 use App\Core\Operation\OperationMessageKey;
 use App\Core\Process\DetachedProcessStarter;
 use App\Core\Process\PhpCliBinaryManager;
@@ -40,10 +41,14 @@ final readonly class LiveOperationStarter
             }
 
             $run = $this->runStore->create($operation, $payload, $label);
-            $this->startProcess($run['operation_id'], $run['token']);
+            $this->startProcess($operation, $run['operation_id'], $run['token']);
         } catch (Throwable $error) {
-            $result = WorkflowResult::failed([
-                Message::exception(
+            $issue = $error instanceof MessageException
+                ? $error->message()->withContext([
+                    'operation' => $operation,
+                    'exception' => $error::class,
+                ])
+                : Message::exception(
                     CommonMessageCode::E_OPERATION_FAILED,
                     OperationMessageKey::OPERATION_START_FAILED,
                     ['%operation%' => $operation],
@@ -52,7 +57,9 @@ final readonly class LiveOperationStarter
                         'exception' => $error::class,
                         'message' => $error->getMessage(),
                     ],
-                ),
+                );
+            $result = WorkflowResult::failed([
+                $issue,
             ], ['operation' => $operation]);
 
             if (is_array($run) && isset($run['operation_id'])) {
@@ -74,10 +81,10 @@ final readonly class LiveOperationStarter
         ]);
     }
 
-    private function startProcess(string $operationId, string $token): void
+    private function startProcess(string $operation, string $operationId, string $token): void
     {
         $command = [
-            ...$this->phpCliCommandPrefix(),
+            ...$this->phpCliCommandPrefix($operation),
             $this->kernel->getProjectDir().'/bin/console',
             'studio:operations:run',
             $operationId,
@@ -92,19 +99,29 @@ final readonly class LiveOperationStarter
             $this->runStore->pidPath($operationId),
             ['APP_ENV' => $this->kernel->getEnvironment()],
         )) {
-            throw new \RuntimeException('Live operation runner could not be started.');
+            throw MessageException::forMessage(
+                CommonMessageCode::E_OPERATION_FAILED,
+                OperationMessageKey::OPERATION_RUNNER_START_FAILED,
+                ['%operation%' => $operation],
+                ['operation' => $operation, 'operation_id' => $operationId],
+            );
         }
     }
 
     /**
      * @return list<string>
      */
-    private function phpCliCommandPrefix(): array
+    private function phpCliCommandPrefix(string $operation): array
     {
         $resolution = $this->phpCliBinaryManager->resolve($this->kernel->getProjectDir(), $this->kernel->getEnvironment(), persistPreference: true);
 
         if (!$resolution->isAvailable()) {
-            throw new \RuntimeException('PHP CLI binary could not be resolved: '.$resolution->reason().'.');
+            throw MessageException::forMessage(
+                CommonMessageCode::E_OPERATION_FAILED,
+                OperationMessageKey::OPERATION_PHP_CLI_UNAVAILABLE,
+                ['%operation%' => $operation, '%reason%' => $resolution->reason()],
+                [...$resolution->context(), 'operation' => $operation, 'reason' => $resolution->reason()],
+            );
         }
 
         return $resolution->commandPrefix();

@@ -155,6 +155,8 @@ message:
     unknown: 'Operation "%operation%" ist nicht verfügbar.'
     started: 'Operation "%operation%" wurde gestartet.'
     start_failed: 'Operation "%operation%" konnte nicht gestartet werden.'
+    runner_start_failed: 'Operation "%operation%" konnte den Hintergrund-Runner nicht starten.'
+    php_cli_unavailable: 'Operation "%operation%" kann nicht starten, weil PHP-CLI nicht verfügbar ist: %reason%.'
     invalid_payload: 'Operation "%operation%" hat ungültige Eingabedaten erhalten.'
     stale: 'Operation "%operation%" hat nicht rechtzeitig Fortschritt gemeldet und wurde als fehlgeschlagen markiert.'
     locked: 'Operation "%operation%" konnte nicht ausgeführt werden, weil bereits eine andere Live-Operation läuft.'

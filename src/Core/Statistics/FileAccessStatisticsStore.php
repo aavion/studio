@@ -25,13 +25,19 @@ final readonly class FileAccessStatisticsStore implements AccessStatisticsStoreI
             }
 
             $encoded = json_encode($snapshot, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
-            $temporaryPath = $path.'.tmp';
+            $temporaryPath = $path.'.tmp-'.bin2hex(random_bytes(8));
 
             if (false === file_put_contents($temporaryPath, $encoded.PHP_EOL, LOCK_EX)) {
                 return false;
             }
 
-            return rename($temporaryPath, $path);
+            if (!rename($temporaryPath, $path)) {
+                @unlink($temporaryPath);
+
+                return false;
+            }
+
+            return true;
         } catch (Throwable) {
             return false;
         }
