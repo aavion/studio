@@ -17,13 +17,13 @@
         title: report.label ?: report.operation,
     } only %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.operations.detail.overview'|trans }}</h2>
-        <dl class="studio-definition-list">
+        <dl class="system-definition-list">
             <div>
                 <dt>{{ 'admin.operations.table.status'|trans }}</dt>
                 <dd>
-                    <span class="studio-badge studio-badge-{{ report.status == 'success' ? 'success' : (report.status == 'failed' ? 'error' : (report.status == 'requires_review' ? 'warning' : 'neutral')) }}">
+                    <span class="system-badge system-badge-{{ report.status == 'success' ? 'success' : (report.status == 'failed' ? 'error' : (report.status == 'requires_review' ? 'warning' : 'neutral')) }}">
                         {{ ('ui.operations.action_log.statuses.' ~ report.status)|trans }}
                     </span>
                 </dd>
@@ -51,14 +51,14 @@
         </dl>
     </section>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.operations.detail.entries'|trans }}</h2>
         {% if report.entries is not empty %}
-            <ol class="studio-action-log-list">
+            <ol class="system-backend-action-log-list">
                 {% for entry in report.entries %}
-                    <li class="studio-action-log-entry">
+                    <li class="system-backend-action-log-entry">
                         <strong>[{{ entry.index }}/{{ entry.total }}] {{ entry.name }}</strong>
-                        <span class="studio-badge studio-badge-{{ entry.status == 'success' ? 'success' : (entry.status == 'failed' ? 'error' : (entry.status == 'warning' ? 'warning' : 'neutral')) }}">
+                        <span class="system-badge system-badge-{{ entry.status == 'success' ? 'success' : (entry.status == 'failed' ? 'error' : (entry.status == 'warning' ? 'warning' : 'neutral')) }}">
                             {{ ('ui.operations.action_log.statuses.' ~ entry.status)|trans }}
                         </span>
                         {% for issue in entry.issues %}
@@ -71,26 +71,26 @@
                 {% endfor %}
             </ol>
         {% else %}
-            <p class="studio-muted">{{ 'admin.operations.detail.entries_empty'|trans }}</p>
+            <p class="system-muted">{{ 'admin.operations.detail.entries_empty'|trans }}</p>
         {% endif %}
     </section>
 
     {% if report.result %}
-        <section class="studio-panel">
+        <section class="system-panel">
             <h2>{{ 'admin.operations.detail.result'|trans }}</h2>
             {% for issue in report.result.issues %}
-                <p class="studio-alert studio-alert-warning">{{ issue.translation_key ? issue.translation_key|trans(issue.parameters) : issue.code }}</p>
+                <p class="system-alert system-alert-warning">{{ issue.translation_key ? issue.translation_key|trans(issue.parameters) : issue.code }}</p>
             {% endfor %}
             {% for message in report.result.messages %}
-                <p class="studio-alert studio-alert-info">{{ message.translation_key ? message.translation_key|trans(message.parameters) : message.code }}</p>
+                <p class="system-alert system-alert-info">{{ message.translation_key ? message.translation_key|trans(message.parameters) : message.code }}</p>
             {% endfor %}
             {% if report.result.issues is empty and report.result.messages is empty %}
-                <p class="studio-muted">{{ 'admin.operations.detail.result_empty'|trans }}</p>
+                <p class="system-muted">{{ 'admin.operations.detail.result_empty'|trans }}</p>
             {% endif %}
             {% if report.result.can_continue|default(false) %}
                 <form method="post" action="/admin/operations/{{ report.operation_id }}/continue">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-operations') }}">
-                    <button class="studio-backend-button studio-button-primary" type="submit">
+                    <button class="system-backend-button system-button-primary" type="submit">
                         {{ 'admin.operations.actions.continue'|trans }}
                     </button>
                 </form>

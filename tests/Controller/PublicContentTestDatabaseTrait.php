@@ -25,8 +25,8 @@ trait PublicContentTestDatabaseTrait
         $parentUid = $this->systemErrorUid($statusCode, 0);
         $contentUid = $this->systemErrorUid($statusCode, 1);
         $revisionUid = $this->systemErrorUid($statusCode, 2);
-        $schemaUid = '10000000-0000-0000-0000-000000000001';
-        $schemaVersionUid = '10000000-0000-0000-0000-000000000101';
+        $schemaUid = '10000000-0000-7000-8000-000000000001';
+        $schemaVersionUid = '10000000-0000-7000-8000-000000000101';
 
         $connection->insert('content_item', [
             'uid' => $parentUid,
@@ -119,6 +119,6 @@ trait PublicContentTestDatabaseTrait
 
     private function systemErrorUid(int $statusCode, int $suffix): string
     {
-        return sprintf('90000000-0000-0000-0000-%012d', ($statusCode * 10) + $suffix);
+        return sprintf('90000000-0000-7000-8000-%012d', ($statusCode * 10) + $suffix);
     }
 }

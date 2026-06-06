@@ -19,34 +19,37 @@ services:
     _instanceof:
         App\Core\Event\EventHookDescriptorProviderInterface:
             tags:
-                - { name: 'studio.event_hook_provider', priority: 0 }
+                - { name: 'system.event_hook_provider', priority: 0 }
         App\Backend\BackendViewProviderInterface:
             tags:
-                - { name: 'studio.backend_view_provider', priority: 0 }
+                - { name: 'system.backend_view_provider', priority: 0 }
         App\View\Injection\StaticViewInjectionProviderInterface:
             tags:
-                - { name: 'studio.static_view_injection_provider', priority: 0 }
+                - { name: 'system.static_view_injection_provider', priority: 0 }
         App\View\Injection\DynamicViewInjectionProviderInterface:
             tags:
-                - { name: 'studio.dynamic_view_injection_provider', priority: 0 }
+                - { name: 'system.dynamic_view_injection_provider', priority: 0 }
         App\Core\Package\Settings\PackageSettingProviderInterface:
             tags:
-                - { name: 'studio.package_setting_provider', priority: 0 }
+                - { name: 'system.package_setting_provider', priority: 0 }
         App\Core\Operation\Live\LiveOperationQueueProviderInterface:
             tags:
-                - { name: 'studio.live_operation_queue_provider', priority: 0 }
+                - { name: 'system.live_operation_queue_provider', priority: 0 }
         App\Scheduler\SchedulerTaskProviderInterface:
             tags:
-                - { name: 'studio.scheduler_task_provider', priority: 0 }
+                - { name: 'system.scheduler_task_provider', priority: 0 }
         App\Scheduler\SchedulerTaskExecutorInterface:
             tags:
-                - { name: 'studio.scheduler_task_executor', priority: 0 }
+                - { name: 'system.scheduler_task_executor', priority: 0 }
         App\Scheduler\SchedulerActionQueueProviderInterface:
             tags:
-                - { name: 'studio.scheduler_action_queue_provider', priority: 0 }
+                - { name: 'system.scheduler_action_queue_provider', priority: 0 }
         App\Scheduler\SchedulerCallableProviderInterface:
             tags:
-                - { name: 'studio.scheduler_callable_provider', priority: 0 }
+                - { name: 'system.scheduler_callable_provider', priority: 0 }
+        App\Security\AclGroupReferenceProviderInterface:
+            tags:
+                - { name: 'system.acl_group_reference_provider', priority: 0 }
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -84,10 +87,20 @@ services:
             - '../src/**/*Spec.php'
             - '../src/**/*Status.php'
             - '../src/**/*Type.php'
+            - '../src/Security/AdminGroupListQuery.php'
+            - '../src/Security/AdminUserListQuery.php'
+            - '../src/Security/AdminUserReviewQuery.php'
             - '../src/Kernel.php'
 
     App\Setup\SetupCommandExecutorInterface:
         alias: App\Setup\ProcessSetupCommandExecutor
+
+    App\Core\Config\ConfigDefaultProviderInterface:
+        alias: App\Core\Config\Settings\CoreConfigDefaultProvider
+
+    App\Core\Package\PackageTranslationNamespaceValidator:
+        arguments:
+            $fallbackLocale: '%kernel.default_locale%'
 
     App\Setup\SetupRunner:
         arguments:
@@ -99,6 +112,16 @@ services:
             $environment: '%kernel.environment%'
 
     App\Setup\SetupWebInputFactory:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
+    App\Setup\SetupWizardFlow:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
+    App\Setup\SetupWizardDatabaseTester:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
@@ -120,28 +143,27 @@ services:
 
     App\Backend\BackendViewRegistry:
         arguments:
-            $providers: !tagged_iterator { tag: studio.backend_view_provider }
+            $providers: !tagged_iterator { tag: system.backend_view_provider }
 
     App\View\Injection\ViewInjectionRegistry:
         arguments:
-            $staticProviders: !tagged_iterator { tag: studio.static_view_injection_provider }
-            $dynamicProviders: !tagged_iterator { tag: studio.dynamic_view_injection_provider }
+            $staticProviders: !tagged_iterator { tag: system.static_view_injection_provider }
+            $dynamicProviders: !tagged_iterator { tag: system.dynamic_view_injection_provider }
 
     App\Core\Package\Settings\PackageSettingRegistry:
         arguments:
-            $providers: !tagged_iterator { tag: studio.package_setting_provider }
+            $providers: !tagged_iterator { tag: system.package_setting_provider }
 
     App\Scheduler\SchedulerTaskRegistry:
         arguments:
-            $providers: !tagged_iterator { tag: studio.scheduler_task_provider }
+            $providers: !tagged_iterator { tag: system.scheduler_task_provider }
 
-    App\Scheduler\SchedulerRunner:
+    App\Scheduler\SchedulerTaskRunRecorder:
         arguments:
-            $executors: !tagged_iterator { tag: studio.scheduler_task_executor }
+            $executors: !tagged_iterator { tag: system.scheduler_task_executor }
 
     App\Scheduler\SchedulerLockFactory:
         arguments:
-            $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
 
     App\Scheduler\CommandSchedulerTaskExecutor:
@@ -151,20 +173,33 @@ services:
 
     App\Scheduler\ActionQueueSchedulerTaskExecutor:
         arguments:
-            $providers: !tagged_iterator { tag: studio.scheduler_action_queue_provider }
+            $providers: !tagged_iterator { tag: system.scheduler_action_queue_provider }
 
     App\Scheduler\CallableSchedulerTaskExecutor:
         arguments:
-            $providers: !tagged_iterator { tag: studio.scheduler_callable_provider }
+            $providers: !tagged_iterator { tag: system.scheduler_callable_provider }
+
+    App\Security\AclGroupImpactService:
+        arguments:
+            $providers: !tagged_iterator { tag: system.acl_group_reference_provider }
 
     App\Localization\TranslationLanguageCatalog:
         arguments:
             $projectDir: '%kernel.project_dir%'
+            $preferredDefaultLanguage: '%kernel.default_locale%'
 
     App\Core\Translation\TranslationRuntimePath:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
+
+    App\Core\Translation\TranslationSourceCollector:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Core\Translation\TranslationRuntimeWriter:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
 
     App\Core\Package\PackageAssetSyncer:
         arguments:
@@ -180,6 +215,10 @@ services:
             $environment: '%kernel.environment%'
             $validationSpec: null
 
+    App\Core\Package\PackageRegistrySyncFinalizer:
+        arguments:
+            $environment: '%kernel.environment%'
+
     App\Database\DatabaseReadyState:
         arguments:
             $projectDir: '%kernel.project_dir%'
@@ -194,9 +233,24 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Package\Install\PackageZipInstaller:
+    App\Core\Package\PackageFilesystemRemover:
         arguments:
             $projectDir: '%kernel.project_dir%'
+
+    App\Core\Package\Install\PackageInstallFilesystem:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Core\Package\Install\PackageUploadStager:
+        arguments:
+            $environment: '%kernel.environment%'
+
+    App\Core\Package\Install\PackageInstallVerifier:
+        arguments:
+            $environment: '%kernel.environment%'
+
+    App\Core\Package\Install\PackageInstallApplier:
+        arguments:
             $environment: '%kernel.environment%'
 
     App\Core\Package\PackageFaultResetter:
@@ -216,7 +270,7 @@ services:
 
     App\Core\Event\PublicEventHookRegistry:
         arguments:
-            $providers: !tagged_iterator { tag: studio.event_hook_provider }
+            $providers: !tagged_iterator { tag: system.event_hook_provider }
 
     App\Core\Package\ActivePackageAssetProviderInterface:
         alias: App\Core\Package\ActivePackageAssetProvider
@@ -265,30 +319,35 @@ services:
 
     App\Core\Log\MonologMessageLogger:
         arguments:
-            $logger: '@monolog.logger.studio_message'
+            $logger: '@monolog.logger.message'
 
     App\Core\Log\AuditLogger:
         arguments:
-            $logger: '@monolog.logger.studio_audit'
+            $logger: '@monolog.logger.audit'
 
     App\Core\Log\AccessLogger:
         arguments:
-            $logger: '@monolog.logger.studio_access'
+            $logger: '@monolog.logger.access'
 
     App\Core\Statistics\VisitorIdGenerator:
         arguments:
             $secret: '%kernel.secret%'
 
-    App\Security\ApiKeyVault:
-        arguments:
-            $secret: '%kernel.secret%'
+    App\Core\Statistics\VisitorIdentityStoreInterface:
+        alias: App\Core\Statistics\FileVisitorIdentityStore
 
-    App\Setup\SetupLiveOperationPayloadProtector:
+    App\Core\Statistics\FileVisitorIdentityStore:
+        arguments:
+            $cacheDir: '%kernel.project_dir%/var/cache'
+            $environment: '%kernel.environment%'
+
+    App\Core\Security\SecretPayloadProtector:
         arguments:
             $secret: '%kernel.secret%'
 
     App\Security\AppSecretRotationGuard:
         arguments:
+            $projectDir: '%kernel.project_dir%'
             $secret: '%kernel.secret%'
             $environment: '%kernel.environment%'
 
@@ -321,9 +380,18 @@ services:
             $environment: '%kernel.environment%'
             $operationLogger: '@App\Core\Log\OperationLoggerInterface'
 
+    App\Core\Operation\Live\LiveOperationRunStorage:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
+    App\Core\Operation\Live\LiveOperationRunnerSupervisor:
+        arguments:
+            $environment: '%kernel.environment%'
+
     App\Core\Operation\Live\LiveOperationQueueFactory:
         arguments:
-            $providers: !tagged_iterator { tag: studio.live_operation_queue_provider }
+            $providers: !tagged_iterator { tag: system.live_operation_queue_provider }
 
     App\Security\MaintenanceModeSubscriber:
         arguments:
@@ -333,7 +401,7 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Debug\StudioDebugCollector:
+    App\Debug\SystemDebugCollector:
         arguments:
             $debug: '%kernel.debug%'
 

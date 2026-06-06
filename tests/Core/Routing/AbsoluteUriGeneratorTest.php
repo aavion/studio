@@ -8,8 +8,8 @@ use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
 use App\Core\Routing\AbsoluteUriGenerator;
+use App\Core\Routing\RoutingMessageCode;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
@@ -59,7 +59,7 @@ final class AbsoluteUriGeneratorTest extends KernelTestCase
         }
 
         self::assertCount(2, $logger->records);
-        self::assertSame(MessageCode::ABSOLUTE_URI_GENERATION_FAILED, $logger->records[0]['message']->code());
+        self::assertSame(RoutingMessageCode::ABSOLUTE_URI_GENERATION_FAILED, $logger->records[0]['message']->code());
         self::assertSame('test.invalid_site_url', $logger->records[0]['context']['caller']);
         self::assertFalse($logger->records[0]['context']['route_invalid']);
         self::assertTrue($logger->records[0]['context']['default_uri_invalid']);

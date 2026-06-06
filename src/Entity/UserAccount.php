@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\EmailAddress;
 use App\Core\Validation\Uid;
 use App\Repository\UserAccountRepository;
 use App\Security\AccessLevelAwareUserInterface;
+use App\Security\SecurityMessageKey;
 use App\Security\UserAccountStatus;
 use App\Security\UserRole;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -226,7 +226,7 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
     private static function assertUsername(string $username): string
     {
         if (!self::isValidUsername($username)) {
-            throw MessageException::invalidArgument(MessageKey::USERNAME_INVALID, [
+            throw MessageException::invalidArgument(SecurityMessageKey::USER_USERNAME_INVALID, [
                 '%username%' => $username,
             ]);
         }

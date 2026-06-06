@@ -36,7 +36,7 @@ final class PackageSettingRegistryTest extends TestCase
             ])],
             new StaticActivePackageProvider([
                 new ExtensionPackage(
-                    '10000000-0000-0000-0000-000000000601',
+                    '10000000-0000-7000-8000-000000000601',
                     [PackageScope::Module],
                     'active-module',
                     'packages/active-module',

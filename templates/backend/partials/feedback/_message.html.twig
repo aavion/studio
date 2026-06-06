@@ -7,7 +7,7 @@
         'ERROR': 'error',
         'EXCEPTION': 'exception',
     }[message.level]|default('info') %}
-    <section class="studio-alert studio-alert-{{ alert_level }}">
+    <section class="system-alert system-alert-{{ alert_level }}">
         <p>{{ message.translation_key|trans(message.parameters) }}</p>
     </section>
 {% endif %}

@@ -4,28 +4,23 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Core\Access\AccessLevel;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
-use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\Live\LiveOperationRunStore;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\AclGroup;
 use App\Entity\ExtensionPackage;
-use App\Entity\SchedulerTask;
-use App\Entity\UserAccount;
-use App\Scheduler\SchedulerTaskDefinition;
-use App\Scheduler\SchedulerTaskStatus;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
-use App\Security\UserRole;
 use App\Setup\SetupCompletionMarker;
 use App\Setup\SetupWizardState;
 use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
@@ -35,11 +30,11 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Component\Routing\RouterInterface;
 
 final class BackendControllerTest extends WebTestCase
 {
+    use BackendAuthenticatedClientTrait;
+
     public function testSetupWizardRendersUsesSelectedLanguageAndAdvancesPastGreenPreflight(): void
     {
         $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
@@ -291,7 +286,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertResponseIsSuccessful();
             self::assertResponseHeaderSame('content-type', 'text/html; charset=UTF-8');
             self::assertSelectorTextContains('h1', 'Setup result');
-            self::assertSelectorTextContains('.studio-panel', 'Setup completed');
+            self::assertSelectorTextContains('.system-panel', 'Setup completed');
             $storedState = $client->getRequest()->getSession()->get(SetupWizardState::SESSION_KEY);
             $encodedState = json_encode($storedState, JSON_THROW_ON_ERROR);
             self::assertIsString($encodedState);
@@ -343,7 +338,7 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(401);
         self::assertSelectorTextContains('h1', 'Sign in');
-        self::assertSelectorTextContains('.studio-auth-notice', 'This content is only available after signing in with sufficient access.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'This content is only available after signing in with sufficient access.');
         self::assertSelectorExists('input[name="_target_path"][value="/admin"]');
     }
 
@@ -366,32 +361,32 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Package management');
-        self::assertSelectorExists('.studio-page-actions form input[name="_backend_action"][value="package_discovery"]');
-        self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="asset_rebuild"]');
-        self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="cache_clear"]');
-        self::assertSelectorNotExists('.studio-page-actions form input[name="_backend_action"][value="asset_rebuild"]');
-        self::assertSelectorTextContains('.studio-table', $manifest['APP_NAME']);
-        self::assertSelectorTextContains('.studio-table', $manifest['APP_VERSION']);
-        self::assertSelectorTextContains('.studio-table', 'Active');
-        self::assertSelectorExists('.studio-table a[href="/admin/packages/system"]');
+        self::assertSelectorExists('.system-page-actions form input[name="_backend_action"][value="package_discovery"]');
+        self::assertSelectorExists('.system-backend-topbar form input[name="_backend_action"][value="asset_rebuild"]');
+        self::assertSelectorExists('.system-backend-topbar form input[name="_backend_action"][value="cache_clear"]');
+        self::assertSelectorNotExists('.system-page-actions form input[name="_backend_action"][value="asset_rebuild"]');
+        self::assertSelectorTextContains('.system-table', $manifest['APP_NAME']);
+        self::assertSelectorTextContains('.system-table', $manifest['APP_VERSION']);
+        self::assertSelectorTextContains('.system-table', 'Active');
+        self::assertSelectorExists('.system-table a[href="/admin/packages/system"]');
 
         $client->request('GET', '/admin/themes');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Theme management');
-        self::assertSelectorNotExists('.studio-page-actions form input[name="_backend_action"][value="package_discovery"]');
-        self::assertSelectorExists('.studio-backend-topbar form input[name="_backend_action"][value="asset_rebuild"]');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'Frontend themes');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', $manifest['APP_NAME']);
-        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] a[href="/admin/packages/system"]');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', 'Backend themes');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="backend"]', $manifest['APP_NAME']);
+        self::assertSelectorNotExists('.system-page-actions form input[name="_backend_action"][value="package_discovery"]');
+        self::assertSelectorExists('.system-backend-topbar form input[name="_backend_action"][value="asset_rebuild"]');
+        self::assertSelectorTextContains('.system-backend-theme-overview[data-theme-section="frontend"]', 'Frontend themes');
+        self::assertSelectorTextContains('.system-backend-theme-overview[data-theme-section="frontend"]', $manifest['APP_NAME']);
+        self::assertSelectorExists('.system-backend-theme-overview[data-theme-section="frontend"] a[href="/admin/packages/system"]');
+        self::assertSelectorTextContains('.system-backend-theme-overview[data-theme-section="backend"]', 'Backend themes');
+        self::assertSelectorTextContains('.system-backend-theme-overview[data-theme-section="backend"]', $manifest['APP_NAME']);
 
         $this->removePackageByName('test-frontend-theme');
         $this->removePackageByName('test-removed-theme');
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $frontendTheme = new ExtensionPackage(
-            '00000000-0000-0000-0000-000000000499',
+            '00000000-0000-7000-8000-000000000499',
             [PackageScope::FrontendTheme],
             'test-frontend-theme',
             'packages/test-frontend-theme',
@@ -400,7 +395,7 @@ final class BackendControllerTest extends WebTestCase
             manifestVersion: '1.0.0',
         );
         $removedTheme = new ExtensionPackage(
-            '00000000-0000-0000-0000-000000000497',
+            '00000000-0000-7000-8000-000000000497',
             [PackageScope::FrontendTheme],
             'test-removed-theme',
             'packages/test-removed-theme',
@@ -415,8 +410,8 @@ final class BackendControllerTest extends WebTestCase
         $client->request('GET', '/admin/themes');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.studio-theme-overview[data-theme-section="frontend"] a[href="/admin/packages/test-frontend-theme/deactivate"]');
-        self::assertSelectorTextContains('.studio-theme-overview[data-theme-section="frontend"]', 'Test Frontend Theme');
+        self::assertSelectorExists('.system-backend-theme-overview[data-theme-section="frontend"] a[href="/admin/packages/test-frontend-theme/deactivate"]');
+        self::assertSelectorTextContains('.system-backend-theme-overview[data-theme-section="frontend"]', 'Test Frontend Theme');
         self::assertStringNotContainsString('Test Removed Theme', (string) $client->getResponse()->getContent());
         $this->removePackageByName('test-frontend-theme');
         $this->removePackageByName('test-removed-theme');
@@ -468,7 +463,7 @@ final class BackendControllerTest extends WebTestCase
         $this->loginUserWithLevel($client, 8);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -479,7 +474,7 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/admin/operations');
 
-        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
         self::assertStringContainsString('operations.cleanup', $auditLog);
         self::assertStringContainsString('"ttl_seconds":3600', $auditLog);
         self::assertStringContainsString('"result_status":"success"', $auditLog);
@@ -505,9 +500,9 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Cache clear');
-            self::assertSelectorTextContains('.studio-panel', 'Operation overview');
-            self::assertSelectorTextContains('.studio-action-log-list', 'Clear cache');
-            self::assertSelectorTextContains('.studio-action-log-list', 'Successful');
+            self::assertSelectorTextContains('.system-panel', 'Operation overview');
+            self::assertSelectorTextContains('.system-backend-action-log-list', 'Clear cache');
+            self::assertSelectorTextContains('.system-backend-action-log-list', 'Successful');
         } finally {
             @unlink(dirname($store->outputPath($run['operation_id'])).'/'.$run['operation_id'].'.json');
             @unlink($store->outputPath($run['operation_id']));
@@ -520,19 +515,19 @@ final class BackendControllerTest extends WebTestCase
         $client = self::createClient();
         $this->loginUserWithLevel($client, 8);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
-        $logFile = $logDir.'/test.studio-access-2099-01-01.log';
+        $logFile = $logDir.'/test/access-2099-01-01.log';
 
-        if (!is_dir($logDir)) {
-            mkdir($logDir, 0775, true);
+        if (!is_dir($logDir.'/test')) {
+            mkdir($logDir.'/test', 0775, true);
         }
-        foreach (glob($logDir.'/test.studio-access-*.log') ?: [] as $existingLogFile) {
+        foreach (glob($logDir.'/test/access-*.log') ?: [] as $existingLogFile) {
             @unlink($existingLogFile);
         }
-        file_put_contents($logFile, '[2099-01-01T10:00:00.000000+00:00] studio_access.INFO: access.request {"method":"GET","path":"/admin/logs","route":"backend_admin_route","http_status":200,"ip":"127.0.0.1","city":"n/a","state":"n/a","country":"n/a","continent":"n/a"} []'.PHP_EOL);
+        file_put_contents($logFile, '[2099-01-01T10:00:00.000000+00:00] access.INFO: access.request {"method":"GET","path":"/admin/logs","route":"backend_admin_route","http_status":200,"ip":"127.0.0.1","city":"n/a","state":"n/a","country":"n/a","continent":"n/a"} []'.PHP_EOL);
         $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
         $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);
         $connection->insert('access_statistic_event', [
-            'uid' => '99999999-0000-0000-0000-000000000901',
+            'uid' => '99999999-0000-7000-8000-000000000901',
             'occurred_at' => '2099-01-01 10:00:00',
             'request_id' => 'request-admin-logs',
             'visitor_id' => hash('sha256', 'test-visitor'),
@@ -565,15 +560,15 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Logs');
-            self::assertSelectorTextContains('.studio-log-table', 'GET /admin/logs');
-            self::assertSelectorTextContains('.studio-log-table', 'Details');
+            self::assertSelectorTextContains('.system-backend-log-table', 'GET /admin/logs');
+            self::assertSelectorTextContains('.system-backend-log-table', 'Details');
 
             $client->clickLink('Details');
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Log event');
             self::assertSelectorTextContains('body', '127.0.0.1');
-            self::assertSelectorTextContains('.studio-code-block', 'access.request');
+            self::assertSelectorTextContains('.system-code-block', 'access.request');
 
             $client->request('GET', '/admin/statistics?statistics_window=all');
 
@@ -598,8 +593,8 @@ final class BackendControllerTest extends WebTestCase
         $run = $store->create('package.install.verify', [], 'Install package');
         $result = WorkflowResult::requiresReview(null, [
             Message::info(
-                MessageCode::OPERATION_ACTION_REQUIRED,
-                MessageKey::OPERATION_ACTION_REQUIRED,
+                OperationMessageCode::OPERATION_ACTION_REQUIRED,
+                OperationMessageKey::OPERATION_ACTION_REQUIRED,
                 ['%operation%' => 'Install package'],
             ),
         ], [
@@ -633,7 +628,7 @@ final class BackendControllerTest extends WebTestCase
         foreach ($demoPackages as $packageName) {
             $this->removePackageByName($packageName);
         }
-        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -641,7 +636,7 @@ final class BackendControllerTest extends WebTestCase
             $this->loginUserWithLevel($client, 8);
             $crawler = $client->request('GET', '/admin/packages');
 
-            self::assertSelectorNotExists('.studio-table tr[data-package-name="demo-module"]');
+            self::assertSelectorNotExists('.system-table tr[data-package-name="demo-module"]');
 
             $form = $crawler->selectButton('Update registry')->form();
 
@@ -649,18 +644,18 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseRedirects('/admin/packages');
 
-            $client->followRedirect();
+            $this->followAdminRedirect($client);
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorExists('.studio-alert-success');
-            self::assertSelectorExists('.studio-table tr[data-package-name="demo-module"]');
+            self::assertSelectorExists('.system-alert-success');
+            self::assertSelectorExists('.system-table tr[data-package-name="demo-module"]');
 
             $entityManager = self::getContainer()->get(EntityManagerInterface::class);
             self::assertInstanceOf(
                 ExtensionPackage::class,
                 $entityManager->getRepository(ExtensionPackage::class)->findOneBy(['packageName' => 'demo-module']),
             );
-            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
             self::assertStringContainsString('backend.action.package_discovery', $auditLog);
             self::assertStringContainsString('"result_status":"success"', $auditLog);
         } finally {
@@ -668,27 +663,6 @@ final class BackendControllerTest extends WebTestCase
                 $this->removePackageByName($packageName);
             }
         }
-    }
-
-    public function testAdminTopbarActionsHandlePackageDetailPosts(): void
-    {
-        $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
-        $crawler = $client->request('GET', '/admin/packages/system');
-
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Studio');
-
-        $form = $crawler->filter('.studio-backend-topbar form')->first()->form();
-
-        $client->submit($form);
-
-        self::assertResponseRedirects('/admin/packages/system');
-
-        $client->followRedirect();
-
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Studio');
     }
 
     public function testAdminPackageDetailAndLifecycleReviewRoutesRender(): void
@@ -720,7 +694,7 @@ final class BackendControllerTest extends WebTestCase
         $this->loginUserWithLevel($client, 8);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $package = new ExtensionPackage(
-            '00000000-0000-0000-0000-000000000498',
+            '00000000-0000-7000-8000-000000000498',
             [PackageScope::Module],
             'test-lifecycle',
             'packages/test-lifecycle',
@@ -752,12 +726,12 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Test Lifecycle');
-            self::assertSelectorTextContains('.studio-table', 'Lifecycle package fixture');
-            self::assertSelectorTextContains('.studio-table', 'MIT');
-            self::assertSelectorTextContains('.studio-table', 'demo-base >=1.0');
+            self::assertSelectorTextContains('.system-table', 'Lifecycle package fixture');
+            self::assertSelectorTextContains('.system-table', 'MIT');
+            self::assertSelectorTextContains('.system-table', 'demo-base >=1.0');
             self::assertSelectorExists('a[href="https://github.com/example/test-lifecycle/tree/main"]');
             self::assertSelectorTextContains('a[href="https://github.com/example/test-lifecycle/tree/main"]', 'https://github.com/example/test-lifecycle/tree/main');
-            self::assertSelectorTextContains('.studio-markdown h1', 'Lifecycle README');
+            self::assertSelectorTextContains('.system-markdown h1', 'Lifecycle README');
             self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/activate"]');
             self::assertSelectorNotExists('a[href="/admin/packages/test-lifecycle/purge"]');
             self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/delete"]');
@@ -766,7 +740,7 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Activate Test Lifecycle');
-            self::assertSelectorTextContains('.studio-table', 'activated');
+            self::assertSelectorTextContains('.system-table', 'activated');
             self::assertSelectorExists('button[type="submit"]');
 
             $client->request('GET', '/admin/packages/test-lifecycle/purge');
@@ -777,14 +751,14 @@ final class BackendControllerTest extends WebTestCase
                 'Package &quot;test-lifecycle&quot; cannot change lifecycle state while it is &quot;inactive&quot;.',
                 (string) $client->getResponse()->getContent(),
             );
-            self::assertSelectorNotExists('button.studio-button-danger[type="submit"]');
+            self::assertSelectorNotExists('button.system-button-danger[type="submit"]');
 
             $client->request('GET', '/admin/packages/test-lifecycle/delete');
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Delete Test Lifecycle');
-            self::assertSelectorTextContains('.studio-table', 'removed');
-            self::assertSelectorTextContains('.studio-alert-warning', 'This step is irreversible.');
+            self::assertSelectorTextContains('.system-table', 'removed');
+            self::assertSelectorTextContains('.system-alert-warning', 'This step is irreversible.');
             self::assertSelectorExists('button[type="submit"]');
         } finally {
             $this->removePackageByName('test-lifecycle');
@@ -805,7 +779,7 @@ final class BackendControllerTest extends WebTestCase
         $this->loginUserWithLevel($client, 8);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $theme = new ExtensionPackage(
-            '00000000-0000-0000-0000-000000000596',
+            '00000000-0000-7000-8000-000000000596',
             [PackageScope::FrontendTheme],
             'test-dependent-theme',
             'packages/test-dependent-theme',
@@ -814,7 +788,7 @@ final class BackendControllerTest extends WebTestCase
             manifestVersion: '1.0.0',
         );
         $captcha = new ExtensionPackage(
-            '00000000-0000-0000-0000-000000000597',
+            '00000000-0000-7000-8000-000000000597',
             [PackageScope::CaptchaProvider],
             'test-dependent-captcha',
             'packages/test-dependent-captcha',
@@ -835,8 +809,8 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Deactivate Test Dependent Theme');
-            self::assertSelectorTextContains('.studio-table', 'test-dependent-captcha');
-            self::assertSelectorTextContains('.studio-table', 'test-dependent-theme');
+            self::assertSelectorTextContains('.system-table', 'test-dependent-captcha');
+            self::assertSelectorTextContains('.system-table', 'test-dependent-theme');
         } finally {
             $this->removePackageByName('test-dependent-captcha');
             $this->removePackageByName('test-dependent-theme');
@@ -851,7 +825,7 @@ final class BackendControllerTest extends WebTestCase
         $this->loginUserWithLevel($client, 8);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $package = new ExtensionPackage(
-            '00000000-0000-0000-0000-000000000598',
+            '00000000-0000-7000-8000-000000000598',
             [PackageScope::Module],
             'test-unsafe-metadata',
             'packages/test-unsafe-metadata',
@@ -871,8 +845,8 @@ final class BackendControllerTest extends WebTestCase
             $client->request('GET', '/admin/packages/test-unsafe-metadata');
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-table', 'javascript:alert(1)');
-            self::assertSelectorTextContains('.studio-table', 'data:text/plain,package');
+            self::assertSelectorTextContains('.system-table', 'javascript:alert(1)');
+            self::assertSelectorTextContains('.system-table', 'data:text/plain,package');
 
             $content = (string) $client->getResponse()->getContent();
             self::assertStringNotContainsString('href="javascript:alert(1)"', $content);
@@ -890,7 +864,7 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/admin/settings/general');
 
-        $client->followRedirect();
+        $this->followAdminRedirect($client);
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'General settings');
@@ -938,103 +912,9 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'System information');
-        self::assertSelectorTextContains('.studio-panel', PHP_VERSION);
+        self::assertSelectorTextContains('.system-panel', PHP_VERSION);
         self::assertStringContainsString('GD', (string) $client->getResponse()->getContent());
         self::assertStringNotContainsString('$_SERVER', (string) $client->getResponse()->getContent());
-    }
-
-    public function testAdminSchedulerListsEditsAndRunsRegisteredJobs(): void
-    {
-        $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
-
-        try {
-            $crawler = $client->request('GET', '/admin/scheduler');
-
-            self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('h1', 'Scheduler');
-            self::assertStringContainsString('Live operation cleanup', (string) $client->getResponse()->getContent());
-            self::assertStringContainsString('Cron syntax', (string) $client->getResponse()->getContent());
-
-            $this->loginUserWithLevel($client, 8);
-            $crawler = $client->request('GET', '/admin/scheduler/system.live_operation_cleanup');
-
-            self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('h1', 'Live operation cleanup');
-            self::assertStringContainsString('Cron syntax', (string) $client->getResponse()->getContent());
-            self::assertStringContainsString('Activate this job before running it manually.', (string) $client->getResponse()->getContent());
-
-            $form = $crawler->filter('form.studio-form')->form([
-                'cron_expression' => '*/10 * * * *',
-            ]);
-            $form['enabled']->tick();
-            $client->submit($form);
-            self::assertResponseRedirects('/admin/scheduler/system.live_operation_cleanup');
-
-            $this->assertSchedulerTaskStatus('system.live_operation_cleanup', SchedulerTaskStatus::Active, '*/10 * * * *');
-
-            $crawler = $client->followRedirect();
-            $client->submit($crawler->selectButton('Run now')->form());
-            self::assertResponseRedirects('/admin/scheduler/system.live_operation_cleanup');
-
-            $client->followRedirect();
-            self::assertResponseIsSuccessful();
-            self::assertStringContainsString('Scheduler run completed with status completed.', (string) $client->getResponse()->getContent());
-        } finally {
-            $this->removeSchedulerTasks();
-        }
-    }
-
-    public function testAdminSchedulerRunNowSurfacesFailedTaskResults(): void
-    {
-        $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $definition = SchedulerTaskDefinition::command(
-            'system.live_operation_cleanup',
-            'admin.scheduler.tasks.live_operation_cleanup.label',
-            'admin.scheduler.tasks.live_operation_cleanup.description',
-            'studio:operations:cleanup',
-            '*/15 * * * *',
-        );
-        $task = $entityManager->find(SchedulerTask::class, 'system.live_operation_cleanup') ?? new SchedulerTask($definition);
-        $task->syncDefinition($definition, new \DateTimeImmutable());
-        $task->activate('not a cron');
-        $entityManager->persist($task);
-        $entityManager->flush();
-
-        try {
-            $crawler = $client->request('GET', '/admin/scheduler/system.live_operation_cleanup');
-            self::assertResponseIsSuccessful();
-
-            $client->submit($crawler->selectButton('Run now')->form());
-            self::assertResponseRedirects('/admin/scheduler/system.live_operation_cleanup');
-
-            $client->followRedirect();
-            self::assertResponseIsSuccessful();
-            self::assertStringContainsString(
-                'The scheduler run completed, but the selected job failed.',
-                (string) $client->getResponse()->getContent(),
-            );
-        } finally {
-            $this->removeSchedulerTasks();
-        }
-    }
-
-    public function testSchedulerCronRouteGenerationIncludesBasePath(): void
-    {
-        self::bootKernel();
-
-        $router = self::getContainer()->get(RouterInterface::class);
-        $context = $router->getContext();
-        $context->setScheme('https');
-        $context->setHost('example.test');
-        $context->setBaseUrl('/studio');
-
-        self::assertSame(
-            'https://example.test/studio/cron/run',
-            $router->generate('scheduler_cron_run', [], UrlGeneratorInterface::ABSOLUTE_URL),
-        );
     }
 
     public function testAdminSettingsFormsPersistCoreSettings(): void
@@ -1044,7 +924,7 @@ final class BackendControllerTest extends WebTestCase
         $config = self::getContainer()->get(Config::class);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -1064,16 +944,16 @@ final class BackendControllerTest extends WebTestCase
             self::assertSame('https://example.test', $config->get('site.url'));
             self::assertSame('/saved-home', $config->get('content.home_path'));
 
-            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
             self::assertStringContainsString('settings.core.save', $auditLog);
             self::assertStringContainsString('"section":"general"', $auditLog);
             self::assertStringContainsString('"setting_keys":["content.home_path","localization.default_language","localization.route_prefixes_enabled","site.footer_copyright","site.title","site.url"]', $auditLog);
             self::assertStringNotContainsString('Saved Admin Title', $auditLog);
             self::assertStringNotContainsString('https://example.test', $auditLog);
 
-            $client->followRedirect();
+            $this->followAdminRedirect($client);
 
-            self::assertSelectorTextContains('.studio-alert-success', 'Settings saved.');
+            self::assertSelectorTextContains('.system-alert-success', 'Settings saved.');
             self::assertStringContainsString('value="Saved Admin Title"', (string) $client->getResponse()->getContent());
         } finally {
             $config->set('site.title', 'Studio', ConfigValueType::String, modifiedBy: 'test');
@@ -1139,7 +1019,7 @@ final class BackendControllerTest extends WebTestCase
         $client->submit($form);
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-backend-form-errors', 'Enter an existing ACL group with minimum role User or lower, or leave the field empty.');
+        self::assertSelectorTextContains('.system-backend-form-errors', 'Enter an existing ACL group with minimum role User or lower, or leave the field empty.');
         self::assertSame($originalDefaultGroup, $config->get('user.default_acl_group', ''));
     }
 
@@ -1155,7 +1035,7 @@ final class BackendControllerTest extends WebTestCase
         $originalRegistrationEmail = $config->get(UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, '');
         $originalSecurityEmail = $config->get(UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, '');
         $originalMenuSortOrder = $config->get(UserFlowConfig::MENU_SORT_ORDER_KEY, 900);
-        $group = new AclGroup('66000000-0000-0000-0000-000000000001', 'settings_clear_default', ['en' => 'Settings clear default'], AccessLevel::USER);
+        $group = new AclGroup('66000000-0000-7000-8000-000000000001', 'settings_clear_default', 'Settings clear default', AccessLevel::USER);
         $entityManager->persist($group);
         $entityManager->flush();
         $config->set('user.default_acl_group', $group->identifier(), ConfigValueType::String, modifiedBy: 'test');
@@ -1213,7 +1093,7 @@ final class BackendControllerTest extends WebTestCase
             $client->submit($form);
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-backend-form-errors', 'Enter a valid email address or leave the field empty.');
+            self::assertSelectorTextContains('.system-backend-form-errors', 'Enter a valid email address or leave the field empty.');
             self::assertSame($originalRegistrationEmail, $config->get(UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, ''));
             self::assertSame($originalSecurityEmail, $config->get(UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, ''));
         } finally {
@@ -1257,7 +1137,7 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(401);
         self::assertSelectorTextContains('h1', 'Sign in required');
-        self::assertSelectorNotExists('.studio-auth-panel');
+        self::assertSelectorNotExists('.system-frontend-auth-panel');
     }
 
     public function testAuthenticatedBackendAreaReturnsMessageForUnknownRoute(): void
@@ -1267,39 +1147,7 @@ final class BackendControllerTest extends WebTestCase
         $client->request('GET', '/admin/missing');
 
         self::assertResponseStatusCodeSame(404);
-        self::assertSelectorTextContains('.studio-alert', 'Backend route "/admin/missing" is not registered.');
-    }
-
-    private function createUserWithLevel(int $level): UserAccount
-    {
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $existingUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'testuser'.$level]);
-
-        if ($existingUser instanceof UserAccount) {
-            $existingUser->changeStatus(UserAccountStatus::Active);
-            $existingUser->changeRole(UserRole::fromAccessLevel($level));
-            $entityManager->flush();
-
-            return $existingUser;
-        }
-
-        $user = new UserAccount(
-            '10000000-0000-0000-0000-00000000000'.$level,
-            'testuser'.$level,
-            'testuser'.$level.'@example.test',
-            'hash',
-            role: UserRole::fromAccessLevel($level),
-        );
-        $entityManager->persist($user);
-        $entityManager->flush();
-
-        return $user;
-    }
-
-    private function loginUserWithLevel(KernelBrowser $client, int $level): void
-    {
-        $client->disableReboot();
-        $client->loginUser($this->createUserWithLevel($level));
+        self::assertSelectorTextContains('.system-alert', 'Backend route "/admin/missing" is not registered.');
     }
 
     private function removePackageByName(string $packageName): void
@@ -1313,24 +1161,6 @@ final class BackendControllerTest extends WebTestCase
 
         $entityManager->remove($package);
         $entityManager->flush();
-    }
-
-    private function assertSchedulerTaskStatus(string $identifier, SchedulerTaskStatus $status, string $cronExpression): void
-    {
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $entityManager->clear();
-        $task = $entityManager->find(SchedulerTask::class, $identifier);
-
-        self::assertInstanceOf(SchedulerTask::class, $task);
-        self::assertSame($status, $task->status());
-        self::assertSame($cronExpression, $task->cronExpression());
-    }
-
-    private function removeSchedulerTasks(): void
-    {
-        $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
-        $connection->executeStatement("DELETE FROM scheduler_task_run WHERE task_identifier LIKE 'system.%'");
-        $connection->executeStatement("DELETE FROM scheduler_task WHERE source = 'system'");
     }
 
     /**

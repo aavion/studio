@@ -14,7 +14,7 @@ final class SetupComposerCommandResolverTest extends TestCase
 {
     public function testItPrefersBundledComposerWhenAvailable(): void
     {
-        $root = sys_get_temp_dir().'/studio-composer-resolver-'.bin2hex(random_bytes(6));
+        $root = sys_get_temp_dir().'/system-composer-resolver-'.bin2hex(random_bytes(6));
         mkdir($root.'/bin', 0775, true);
         touch($root.'/bin/console');
         touch($root.'/bin/composer');
@@ -47,7 +47,7 @@ final class SetupComposerCommandResolverTest extends TestCase
 
     public function testItAcceptsReadableBundledComposerWithoutExecutableBit(): void
     {
-        $root = sys_get_temp_dir().'/studio-composer-resolver-'.bin2hex(random_bytes(6));
+        $root = sys_get_temp_dir().'/system-composer-resolver-'.bin2hex(random_bytes(6));
         mkdir($root.'/bin', 0775, true);
         touch($root.'/bin/console');
         touch($root.'/bin/composer');
@@ -80,7 +80,7 @@ final class SetupComposerCommandResolverTest extends TestCase
 
     public function testItFallsBackToPathComposerWhenBundledComposerIsMissing(): void
     {
-        $root = sys_get_temp_dir().'/studio-composer-resolver-'.bin2hex(random_bytes(6));
+        $root = sys_get_temp_dir().'/system-composer-resolver-'.bin2hex(random_bytes(6));
         mkdir($root.'/bin', 0775, true);
         touch($root.'/bin/console');
 
@@ -110,7 +110,7 @@ final class SetupComposerCommandResolverTest extends TestCase
 
     public function testItUsesProjectLocalComposerEnvironment(): void
     {
-        $root = sys_get_temp_dir().'/studio-composer-resolver-'.bin2hex(random_bytes(6));
+        $root = sys_get_temp_dir().'/system-composer-resolver-'.bin2hex(random_bytes(6));
         mkdir($root.'/bin', 0775, true);
         touch($root.'/bin/console');
         touch($root.'/bin/composer');
@@ -153,7 +153,7 @@ final class SetupComposerCommandResolverTest extends TestCase
 
     public function testItFallsBackWhenBundledComposerCannotRun(): void
     {
-        $root = sys_get_temp_dir().'/studio-composer-resolver-'.bin2hex(random_bytes(6));
+        $root = sys_get_temp_dir().'/system-composer-resolver-'.bin2hex(random_bytes(6));
         mkdir($root.'/bin', 0775, true);
         touch($root.'/bin/console');
         touch($root.'/bin/composer');
@@ -193,7 +193,7 @@ final class SetupComposerCommandResolverTest extends TestCase
 
     public function testItRejectsSuccessfulNonComposerOutput(): void
     {
-        $root = sys_get_temp_dir().'/studio-composer-resolver-'.bin2hex(random_bytes(6));
+        $root = sys_get_temp_dir().'/system-composer-resolver-'.bin2hex(random_bytes(6));
         mkdir($root.'/bin', 0775, true);
         touch($root.'/bin/console');
         touch($root.'/bin/composer');

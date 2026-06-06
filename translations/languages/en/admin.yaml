@@ -424,8 +424,6 @@ admin:
     fields:
       identifier: 'Identifier'
       name: 'Name'
-      name_en: 'English name'
-      name_de: 'German name'
       min_role: 'Minimum role'
     actions:
       create: 'Create group'

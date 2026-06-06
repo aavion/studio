@@ -6,11 +6,12 @@ namespace App\Tests\Core\Operation;
 
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
-use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Log\OperationLoggerInterface;
+use App\Core\Message\Message;
 use App\Core\Operation\Live\LiveOperationRunStore;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
+use App\Core\Security\SecretPayloadProtector;
 use App\Core\Workflow\WorkflowResult;
 use App\Setup\SetupLiveOperationPayloadProtector;
 use App\Tests\Support\FilesystemTestHelper;
@@ -47,6 +48,16 @@ final class LiveOperationRunStoreTest extends TestCase
         self::assertNull($store->pollingPayload($run['operation_id'], 'wrong-token'));
     }
 
+    public function testItNormalizesTrailingDirectorySeparatorsForOperationPaths(): void
+    {
+        $projectDir = rtrim($this->createTemporaryDirectory('live-operation-path'), '/\\').'/\\';
+        $store = new LiveOperationRunStore($projectDir, 'test');
+        $run = $store->create('backend.cache_clear', [], 'Cache clear');
+
+        self::assertStringNotContainsString('/\\/var/', $store->outputPath($run['operation_id']));
+        self::assertStringEndsWith('/var/operations/test/'.$run['operation_id'].'.out', $store->outputPath($run['operation_id']));
+    }
+
     public function testItReportsFinishedOperationsToOperationLogger(): void
     {
         $projectDir = $this->createTemporaryDirectory('live-operation-logger');
@@ -68,7 +79,7 @@ final class LiveOperationRunStoreTest extends TestCase
     {
         $projectDir = $this->createTemporaryDirectory('live-operation-protected-setup');
         $store = new LiveOperationRunStore($projectDir, 'test');
-        $protector = new SetupLiveOperationPayloadProtector('runtime-secret');
+        $protector = new SetupLiveOperationPayloadProtector(new SecretPayloadProtector('runtime-secret'));
         $payload = $protector->protect([
             'values' => [
                 'admin_password' => 'Secret1!password',
@@ -146,8 +157,8 @@ final class LiveOperationRunStoreTest extends TestCase
         $run = $store->create('package.install.dry_run', [], 'Install package dry-run');
         $result = WorkflowResult::requiresReview(null, [
             Message::info(
-                MessageCode::OPERATION_ACTION_REQUIRED,
-                MessageKey::OPERATION_ACTION_REQUIRED,
+                OperationMessageCode::OPERATION_ACTION_REQUIRED,
+                OperationMessageKey::OPERATION_ACTION_REQUIRED,
                 ['%operation%' => 'Install package'],
             ),
         ], [
@@ -222,12 +233,35 @@ final class LiveOperationRunStoreTest extends TestCase
             'operation_id' => $run['operation_id'],
             'updated_at' => (new \DateTimeImmutable('-2 hours'))->format(DATE_ATOM),
         ]);
+        $lock->release();
 
         $store->cleanup(3600);
 
         $nextLock = $store->acquireRunnerLock($run['operation_id']);
         self::assertNotNull($nextLock);
         $nextLock->release();
+    }
+
+    public function testItKeepsStaleRunnerStateWhileSymfonyLockIsStillHeld(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('live-operation-runner-lock-held');
+        $store = new LiveOperationRunStore($projectDir, 'test');
+        $run = $store->create('backend.cache_clear', [], 'Cache clear');
+        $lock = $store->acquireRunnerLock($run['operation_id']);
+
+        self::assertNotNull($lock);
+        $this->rewriteRunnerLock($store, [
+            'owner' => 'stale-owner',
+            'operation_id' => $run['operation_id'],
+            'updated_at' => (new \DateTimeImmutable('-2 hours'))->format(DATE_ATOM),
+        ]);
+
+        $store->cleanup(3600);
+
+        self::assertNotNull($store->runnerLockStatus());
+        self::assertNull($store->acquireRunnerLock($run['operation_id']));
+
+        $lock->release();
     }
 
     public function testItClearsStaleEmergencyKillWithoutStoredPid(): void
@@ -243,6 +277,7 @@ final class LiveOperationRunStoreTest extends TestCase
             'operation_id' => $run['operation_id'],
             'updated_at' => (new \DateTimeImmutable('-2 hours'))->format(DATE_ATOM),
         ]);
+        $lock->release();
 
         $result = $store->killStaleRunner(3600);
 

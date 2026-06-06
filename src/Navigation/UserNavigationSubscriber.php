@@ -34,7 +34,7 @@ final readonly class UserNavigationSubscriber implements EventSubscriberInterfac
         $event->addItem(new NavigationItem(
             self::LOGIN_ROOT_UID,
             'ui.user.login.title',
-            'route',
+            NavigationTargetType::ROUTE,
             'user_login',
             sortOrder: $this->config->menuSortOrder(),
             metadata: ['anonymous_only' => true],
@@ -43,7 +43,7 @@ final readonly class UserNavigationSubscriber implements EventSubscriberInterfac
         $event->addItem(new NavigationItem(
             self::PROFILE_ROOT_UID,
             'ui.user.profile.title',
-            'route',
+            NavigationTargetType::ROUTE,
             'user_profile',
             sortOrder: $this->config->menuSortOrder(),
             metadata: ['min_access_level' => AccessLevel::USER],
@@ -75,7 +75,7 @@ final readonly class UserNavigationSubscriber implements EventSubscriberInterfac
         $event->addItem(new NavigationItem(
             'virtual-user-'.$uid,
             $label,
-            'route',
+            NavigationTargetType::ROUTE,
             $route,
             self::PROFILE_ROOT_UID,
             $sortOrder,

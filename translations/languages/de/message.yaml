@@ -18,20 +18,31 @@ message:
     php_syntax_error: 'PHP-Syntaxprüfung für "%path%" fehlgeschlagen.'
     php_namespace_invalid: 'PHP-Quelle "%path%" muss den Paket-Namespace "%expected_namespace%" verwenden.'
     twig_syntax_error: 'Twig-Syntaxprüfung für "%path%" fehlgeschlagen.'
-    translation_english_missing: 'Paket-Translation-Quellen für "%package%" müssen mindestens einen englischen Katalog unter "languages/en" enthalten.'
+    translation_fallback_missing: 'Paket-Translation-Quellen für "%package%" müssen mindestens einen Fallback-Katalog unter "languages/%locale%" enthalten.'
     translation_namespace_invalid: 'Paket-Translation-Datei "%path%" muss Keys unterhalb von "pkg.%package%" definieren.'
     json_syntax_error: 'JSON-Syntaxprüfung für "%path%" fehlgeschlagen.'
     yaml_syntax_error: 'YAML-Syntaxprüfung für "%path%" fehlgeschlagen.'
     css_syntax_error: 'CSS-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    css_namespace_invalid: 'CSS-Klasse "%class%" in "%path%" muss den paket-eigenen Prefix "%expected_prefix%" verwenden.'
     javascript_syntax_error: 'JavaScript-Syntaxprüfung für "%path%" fehlgeschlagen.'
     scope_invalid: 'Paket-Scope "%scope%" wird nicht unterstützt.'
     template_path_invalid: 'Paket-Template "%path%" ist durch Root-, Provider- oder Makro-Namespace-Regeln für Paket-Scope "%scope%" nicht erlaubt.'
+    template_reference_invalid: 'Paket-Template "%path%" darf Template "%reference%" außerhalb des eigenen Template-Scopes nicht referenzieren.'
+    policy:
+      blocked_path: 'Paketpfad "%path%" wird durch die Paket-Policy blockiert (%reason%).'
+      warned_path: 'Paketpfad "%path%" sollte durch die Paket-Policy geprüft werden (%reason%).'
+      blocked_php_capability: 'Paket-PHP-Datei "%path%" nutzt die blockierte Capability "%capability%" (%reason%). Nutze stattdessen einen dokumentierten Extension-Point.'
     copy_source_missing: 'Paket-Kopierquelle "%path%" fehlt.'
     copy_source_symlink: 'Paket-Kopierquelle "%path%" darf kein Symlink sein.'
     asset_sync_completed: 'Paket-Asset-Sync hat %assets% Asset(s) aus %packages% Paket(en) gespiegelt.'
     asset_sync_failed: 'Paket-Asset-Sync fehlgeschlagen: %message%'
     asset_rebuild_queued: 'Paket-Asset-Rebuild wurde durch "%trigger%" eingereiht.'
     asset_rebuild_queue_failed: 'Paket-Asset-Rebuild konnte durch "%trigger%" nicht eingereiht werden.'
+    asset:
+      contribution_package_invalid: 'Paket-Asset-Contribution benötigt einen Paket-Identifier.'
+      contribution_type_invalid: 'Paket-Asset-Contribution-Typ "%type%" wird nicht unterstützt.'
+      contribution_path_invalid: 'Paket-Asset-Pfad "%path%" muss projektrelativ sein.'
+      contribution_path_traversal: 'Paket-Asset-Pfad "%path%" darf keine übergeordneten Verzeichnisse durchlaufen.'
     discovery_queued: 'Paket-Discovery wurde durch "%trigger%" eingereiht.'
     discovery_queue_failed: 'Paket-Discovery konnte durch "%trigger%" nicht eingereiht werden.'
     discovery_completed: 'Paket-Discovery hat %count% Kandidat(en) gefunden.'
@@ -64,6 +75,8 @@ message:
       runtime_failure: 'Paket "%package%" wurde nach einem Runtime-Fehler als fehlerhaft markiert.'
       php_load_failed: 'PHP-Loader für Paket "%package%" ist fehlgeschlagen und das Paket wurde als fehlerhaft markiert.'
       rolled_back: 'Paket-Lifecycle-Änderungen wurden für %count% Paket(e) zurückgerollt.'
+    runtime:
+      contribution_unsupported: 'Paket "%package%" hat einen nicht unterstützten Runtime-Contribution-Typ "%type%" zurückgegeben.'
     setting:
       read_failed: 'Paket-Einstellung "%package%:%key%" konnte nicht gelesen werden.'
       write_failed: 'Paket-Einstellung "%package%:%key%" konnte nicht geschrieben werden.'
@@ -78,6 +91,8 @@ message:
       resolved: 'Paket "%package%" hat %count% Abhängigkeits-Eintrag(e) aufgelöst.'
     scheduler:
       cron_invalid: 'Paket "%package%" deklariert einen ungültigen Scheduler-Cron-Ausdruck.'
+      source_invalid: 'Paket-Scheduler-Task "%task%" aus "%package%" muss den Paketnamen als Source verwenden, nicht "%source%".'
+      trusted_blocked: 'Paket-Scheduler-Task "%task%" aus "%package%" darf keine vertrauenswürdige Ausführung anfordern.'
   translation:
     aggregate_completed: 'Translation-Aggregation hat %files% Datei(en) für %locales% Locale(s) aus Core und %packages% aktiven Paket(en) zusammengeführt.'
     aggregate_failed: 'Translation-Aggregation konnte "%path%" nicht schreiben.'
@@ -86,6 +101,9 @@ message:
     aggregate_failed: 'Zugriffsstatistik-Aggregation ist fehlgeschlagen.'
     snapshot_store_failed: 'Speicherung des Zugriffsstatistik-Snapshots ist fehlgeschlagen.'
     cleanup_failed: 'Aufbewahrungs-Cleanup der Zugriffsstatistiken ist fehlgeschlagen.'
+    trace_id_invalid: 'Zugriffsstatistiken haben eine ungültige %label% erhalten.'
+  account_app_secret_rotation:
+    manual_owner_reset_required: 'APP_SECRET-Rotation-Recovery konnte nicht alle Owner-Reset-Links zustellen. Nutze die Emergency-Recovery-Datei, sofern vorhanden, oder führe "%command%" für die gelisteten Owner manuell aus.'
   event:
     hook:
       invalid: 'Event-Hook "%event%" ist keine gültige öffentliche Hook-Definition.'
@@ -113,6 +131,11 @@ message:
         summary: 'Ergänzt Paket-Asset-Registry-Beiträge, bevor CSS- und JavaScript-Registries geschrieben werden.'
       package_asset_sync_completed:
         summary: 'Beobachtet Paket-Asset-Sync-Metriken nach dem Schreiben der Registries.'
+  view:
+    dynamic_injection:
+      render_failed: 'Dynamische View-Injection "%uid%" ist beim Rendern von "%template%" fehlgeschlagen.'
+    template_namespace:
+      unsupported: 'Template-Namespace "%namespace%" wird nicht unterstützt.'
   lint:
     php_unreadable: 'PHP-Quelle kann nicht gelesen werden.'
     php_syntax_error: 'PHP-Syntaxprüfung fehlgeschlagen.'
@@ -144,6 +167,8 @@ message:
     unknown: 'Operation "%operation%" ist nicht verfügbar.'
     started: 'Operation "%operation%" wurde gestartet.'
     start_failed: 'Operation "%operation%" konnte nicht gestartet werden.'
+    runner_start_failed: 'Operation "%operation%" konnte den Hintergrund-Runner nicht starten.'
+    php_cli_unavailable: 'Operation "%operation%" kann nicht starten, weil PHP-CLI nicht verfügbar ist: %reason%.'
     invalid_payload: 'Operation "%operation%" hat ungültige Eingabedaten erhalten.'
     stale: 'Operation "%operation%" hat nicht rechtzeitig Fortschritt gemeldet und wurde als fehlgeschlagen markiert.'
     locked: 'Operation "%operation%" konnte nicht ausgeführt werden, weil bereits eine andere Live-Operation läuft.'
@@ -166,6 +191,16 @@ message:
       invalid: 'Access-Level %level% muss zwischen 0 und 9 liegen.'
     group_identifier:
       invalid: 'ACL-Gruppen-Identifier "%identifier%" muss lowercase snake_case sein und mindestens 3 Zeichen enthalten.'
+    group_name:
+      invalid: 'ACL-Gruppenname muss 1 bis 160 Zeichen enthalten.'
+  system:
+    secret_payload:
+      root_secret_empty: 'Secret-Payload-Schutz benötigt ein Root-Secret.'
+      context_empty: 'Secret-Payload-Schutz benötigt ein Kontext-Label.'
+      invalid: 'Das Secret-Payload-Format ist ungültig.'
+      encrypt_failed: 'Secret-Payload-Verschlüsselung ist fehlgeschlagen.'
+      decrypt_failed: 'Secret-Payload-Entschlüsselung ist fehlgeschlagen.'
+      key_derivation_failed: 'Secret-Payload-Key-Derivation ist fehlgeschlagen.'
   backend:
     route_not_found: 'Backend-Route "%path%" ist nicht registriert.'
     setup_locked: 'Setup ist bereits abgeschlossen und nicht mehr verfügbar.'
@@ -181,9 +216,27 @@ message:
     available_languages: 'Verfügbare Installer-Sprachen: %languages%'
     rollback_completed: 'Rollback hat %tables_removed% Datenbanktabellen entfernt, %env_removed% generierte Environment-Dateien entfernt, %env_restored% vorhandene Environment-Dateien wiederhergestellt und %errors% Aufräumfehler gemeldet.'
     dry_run: 'Nur Dry-Run; es wurden keine Änderungen geschrieben.'
+    composer_unavailable: 'Composer ist nicht verfügbar. Installiere Composer oder stelle bin/composer wieder her.'
+    runtime_command_failed: 'Setup-Befehl fehlgeschlagen: %message%'
+    php_cli_unavailable: 'PHP-CLI-Binary konnte nicht aufgelöst werden: %reason%.'
+    database_url:
+      scheme_missing: 'Datenbank-URL muss ein unterstütztes Schema enthalten.'
+      sqlite_format_invalid: 'SQLite-Datenbank-URLs müssen das Format sqlite:///path/to/database.db verwenden.'
+      scheme_unsupported: 'Nicht unterstütztes Datenbank-URL-Schema "%scheme%".'
     output:
       success: 'Setup erfolgreich abgeschlossen.'
       failed: 'Setup fehlgeschlagen.'
+    input:
+      app_env_empty: 'Setup-APP_ENV darf nicht leer sein.'
+      language_invalid: 'Setup-Sprache "%language%" muss ein gültiger Locale-Token sein.'
+      language_unavailable: 'Setup-Sprache "%language%" ist nicht verfügbar.'
+      site_title_empty: 'Setup-Seitentitel darf nicht leer sein.'
+      default_uri_empty: 'Setup-Standard-URI darf nicht leer sein.'
+      default_uri_invalid: 'Setup-Standard-URI "%uri%" muss eine gültige URL sein.'
+      database_url_driver_mismatch: 'Setup-Datenbank-URL muss zum ausgewählten Datenbanktreiber "%driver%" passen.'
+      database_prefix_invalid: 'Setup-Datenbankpräfix "%prefix%" muss mit einem Kleinbuchstaben beginnen und darf nur Kleinbuchstaben, Ziffern oder Unterstriche enthalten.'
+      admin_username_invalid: 'Setup-Admin-Username "%username%" muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
+      admin_email_invalid: 'Setup-Admin-E-Mail "%email%" muss gültig sein.'
     prompt:
       language: 'Installer-Sprache (%choices%)'
       site_title: 'Seitentitel'
@@ -241,6 +294,8 @@ message:
       invalid: 'State-Subject-Type "%subject_type%" muss lowercase snake_case sein.'
     marker_key:
       invalid: 'State-Marker-Key "%marker_key%" muss lowercase snake_case sein.'
+    metadata:
+      key_empty: 'State-Marker-Metadaten-Keys dürfen nicht leer sein.'
   user:
     username:
       invalid: 'Username "%username%" muss mit einem Buchstaben beginnen und 5 bis 30 Buchstaben, Ziffern, Bindestriche oder Unterstriche enthalten.'
@@ -282,6 +337,10 @@ message:
   menu:
     identifier:
       invalid: 'Menü-Identifier "%identifier%" muss lowercase snake_case sein.'
+    target_type:
+      invalid: 'Menü-Zieltyp "%target_type%" wird nicht unterstützt.'
+    target_value:
+      invalid: 'Menü-Zielwert darf nicht leer oder zu lang sein und keine Steuerzeichen enthalten.'
   content:
     slug:
       invalid_format: 'Content-Slug "%slug%" darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.'
@@ -297,6 +356,8 @@ message:
       fallback: 'Die angefragte Content-Sprache "%requested_language%" ist nicht verfügbar; stattdessen wird "%resolved_language%" gerendert.'
     variant:
       fallback: 'Die angefragte Content-Variante "%requested_variant%" ist nicht verfügbar; stattdessen wird "%resolved_variant%" gerendert.'
+    render:
+      custom_twig_failed: 'Custom-Twig-Rendering für Content-Schema "%schema%" ist fehlgeschlagen; der generische Feld-Renderer wurde verwendet.'
     uid:
       invalid_format: '%label% "%uid%" muss eine kleingeschriebene UUID sein.'
     string_list:
@@ -323,3 +384,11 @@ message:
     task_disabled: 'Scheduler-Task "%task%" wurde nach wiederholten Fehlern deaktiviert.'
     task_invalid_cron_disabled: 'Scheduler-Task "%task%" wurde deaktiviert, weil sein Cron-Ausdruck ungültig ist.'
     task_soft_budget_exceeded: 'Scheduler-Task "%task%" hat sein weiches Ausführungsbudget überschritten.'
+    task_definition:
+      target_invalid: 'Scheduler-Task "%task%" darf kein leeres Target verwenden und muss innerhalb der unterstützten Länge bleiben.'
+      cron_empty: 'Scheduler-Task "%task%" darf keinen leeren Cron-Ausdruck verwenden und muss innerhalb der unterstützten Länge bleiben.'
+      cron_invalid: 'Scheduler-Task "%task%" verwendet den ungültigen Cron-Ausdruck "%cron%".'
+      metadata_invalid: '%label% muss als JSON kodierbar sein.'
+      identifier_invalid: '%label% "%value%" ist ungültig.'
+      source_invalid: 'Scheduler-Task-Source "%source%" ist ungültig.'
+      translation_key_invalid: '%label% "%value%" muss ein gültiger Translation-Key sein.'

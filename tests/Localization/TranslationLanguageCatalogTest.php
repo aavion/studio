@@ -21,7 +21,7 @@ final class TranslationLanguageCatalogTest extends TestCase
         touch($root.'/translations/runtime/test/messages.de.yaml');
         touch($root.'/translations/validators.en.yaml');
 
-        $catalog = new TranslationLanguageCatalog($root, new TranslationRuntimePath($root, 'test'));
+        $catalog = new TranslationLanguageCatalog($root, new TranslationRuntimePath($root, 'test'), 'en');
 
         self::assertSame(['de', 'en'], $catalog->availableLanguages());
         self::assertSame('en', $catalog->defaultLanguage());

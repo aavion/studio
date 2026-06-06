@@ -1,10 +1,10 @@
 {% extends '@root/base.html.twig' %}
 
 {% block title %}{{ 'ui.error.429.title'|trans }}{% endblock %}
-{% block body_class %}studio-body studio-frontend studio-frontend-lightweight{% endblock %}
+{% block body_class %}system-body system-frontend system-frontend-lightweight{% endblock %}
 
 {% block body %}
-    <main class="studio-error-page studio-error-lightweight">
+    <main class="system-frontend-error-page system-frontend-error-lightweight">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             kicker: '429',
             title: 'ui.error.429.title'|trans,

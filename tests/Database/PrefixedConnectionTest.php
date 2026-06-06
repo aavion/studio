@@ -50,6 +50,34 @@ final class PrefixedConnectionTest extends TestCase
         self::assertFalse($connection->fetchOne("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'user_account'"));
     }
 
+    public function testItPrefixesRawSqlStatementsForKnownTables(): void
+    {
+        $connection = DriverManager::getConnection([
+            'driver' => 'pdo_sqlite',
+            'memory' => true,
+            'wrapperClass' => PrefixedConnection::class,
+        ]);
+
+        $connection->executeStatement('CREATE TABLE user_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL)');
+        $connection->executeStatement('CREATE TABLE acl_group (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(80) NOT NULL)');
+        $connection->executeStatement('CREATE TABLE user_acl_group (user_uid VARCHAR(36) NOT NULL, group_uid VARCHAR(36) NOT NULL)');
+        $connection->executeStatement("INSERT INTO user_account (uid, username) VALUES ('user-1', 'admin')");
+        $connection->executeStatement("INSERT INTO acl_group (uid, identifier) VALUES ('group-1', 'administrators')");
+        $connection->executeStatement("INSERT INTO user_acl_group (user_uid, group_uid) VALUES ('user-1', 'group-1')");
+        $connection->executeStatement("UPDATE user_account SET username = 'owner' WHERE uid = 'user-1'");
+
+        $identifier = $connection->fetchOne(
+            'SELECT g.identifier FROM user_account u INNER JOIN acl_group g ON g.uid = ? INNER JOIN user_acl_group ug ON ug.user_uid = u.uid WHERE u.username = ?',
+            ['group-1', 'owner'],
+        );
+
+        self::assertSame('administrators', $identifier);
+
+        $connection->executeStatement("DELETE FROM user_acl_group WHERE user_uid = 'user-1'");
+
+        self::assertSame(0, (int) $connection->fetchOne("SELECT COUNT(*) FROM user_acl_group WHERE user_uid = 'user-1'"));
+    }
+
     public function testItLeavesDoctrineMigrationMetadataUnprefixed(): void
     {
         $connection = DriverManager::getConnection([

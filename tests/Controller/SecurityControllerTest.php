@@ -11,9 +11,12 @@ use App\Security\UserRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Uid\Uuid;
 
 final class SecurityControllerTest extends WebTestCase
 {
+    use AuthenticatedClientTrait;
+
     public function testLoginRouteRendersLoginForm(): void
     {
         $client = self::createClient();
@@ -24,7 +27,7 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorExists('form[action="/user/login"][method="post"]');
         self::assertSelectorExists('input[name="_csrf_token"]');
         self::assertSelectorTextContains('a[href="/user/reset-password"]', 'Forgot password?');
-        self::assertSelectorNotExists('.studio-error-reference');
+        self::assertSelectorNotExists('.system-frontend-error-reference');
         self::assertSelectorNotExists('a[href="/user/register"]');
     }
 
@@ -54,7 +57,7 @@ final class SecurityControllerTest extends WebTestCase
         $client = self::createClient();
         $user = $this->createUserWithLevel(8, 'logoutadmin', 'correct-password');
 
-        $client->loginUser($user);
+        $this->loginTestUser($client, $user);
         $client->request('GET', '/user/logout');
 
         self::assertResponseIsSuccessful();
@@ -120,7 +123,7 @@ final class SecurityControllerTest extends WebTestCase
         $client->submit($form);
         $client->followRedirect();
 
-        self::assertSelectorTextContains('.studio-auth-notice', 'The username or password is not valid.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'The username or password is not valid.');
     }
 
     public function testLoginFormRejectsInactiveAndDeletedAccounts(): void
@@ -139,7 +142,7 @@ final class SecurityControllerTest extends WebTestCase
             $client->submit($form);
             $client->followRedirect();
 
-            self::assertSelectorTextContains('.studio-auth-notice', 'The username or password is not valid.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'The username or password is not valid.');
 
             $client->request('GET', '/admin');
 
@@ -236,12 +239,6 @@ final class SecurityControllerTest extends WebTestCase
 
     private function testUserUid(string $username): string
     {
-        $hash = md5($username);
-
-        return substr($hash, 0, 8)
-            .'-'.substr($hash, 8, 4)
-            .'-'.substr($hash, 12, 4)
-            .'-'.substr($hash, 16, 4)
-            .'-'.substr($hash, 20, 12);
+        return Uuid::v5(Uuid::fromString(Uuid::NAMESPACE_DNS), $username)->toRfc4122();
     }
 }

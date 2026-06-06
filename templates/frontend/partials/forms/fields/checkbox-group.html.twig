@@ -1,13 +1,13 @@
 {% set field_id = id|default(name|default('field')) %}
 {% set selected_values = values|default([]) %}
-<fieldset id="{{ field_id }}" class="studio-choice-group">
-    <legend class="studio-form-label">{{ label }}</legend>
+<fieldset id="{{ field_id }}" class="system-choice-group">
+    <legend class="system-form-label">{{ label }}</legend>
     {% for option_value, option_label in options|default({}) %}
         {% set option_id = field_id ~ '-' ~ loop.index %}
-        <label class="studio-checkbox-label" for="{{ option_id }}">
+        <label class="system-checkbox-label" for="{{ option_id }}">
             <input
                 id="{{ option_id }}"
-                class="studio-checkbox"
+                class="system-checkbox"
                 type="checkbox"
                 name="{{ name }}[]"
                 value="{{ option_value }}"

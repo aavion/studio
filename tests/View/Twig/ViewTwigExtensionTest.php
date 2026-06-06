@@ -14,12 +14,10 @@ final class ViewTwigExtensionTest extends KernelTestCase
         self::bootKernel();
 
         $twig = self::getContainer()->get(Environment::class);
-        $globals = $twig->getGlobals();
         $html = $twig->createTemplate(
-            '{{ studio_view_context().system_package.name }}|{{ studio_macro_template("core", "ui") }}|{{ studio_event_hooks()|length }}|{{ studio_navigation("main")|length }}|{{ studio_debug_info().hooks is defined ? "debug" : "missing" }}|{{ studio_package_setting("demo-module", "missing.key", "fallback") }}|{{ studio_footer_copyright("backend") }}|{{ "**ok**"|studio_markdown }}',
+            '{{ view_context().system_package.name }}|{{ macro_template("core", "ui") }}|{{ event_hooks()|length }}|{{ navigation("main")|length }}|{{ debug_info().hooks is defined ? "debug" : "missing" }}|{{ package_setting("demo-module", "missing.key", "fallback") }}|{{ footer_copyright("backend") }}|{{ "**ok**"|render_markdown }}',
         )->render();
 
-        self::assertArrayHasKey('studio_view', $globals);
         self::assertSame('Studio|@root/macros/core/ui.html.twig|11|4|debug|fallback|Powered by [Studio](https://www.aavion.media) 0.2.0|<p><strong>ok</strong></p>', $html);
     }
 
@@ -29,7 +27,7 @@ final class ViewTwigExtensionTest extends KernelTestCase
 
         $twig = self::getContainer()->get(Environment::class);
         $html = $twig->createTemplate(
-            '{{ studio_html_attributes({"class": "is-immutable", "data-action": "save", "aria-expanded": false, "title": "A & B", "maxlength": 120, "pattern": "^/.*$", "onclick": "alert(1)", "style": "display:none", "data-active": true}) }}',
+            '{{ html_attributes({"class": "is-immutable", "data-action": "save", "aria-expanded": false, "title": "A & B", "maxlength": 120, "pattern": "^/.*$", "onclick": "alert(1)", "style": "display:none", "data-active": true}) }}',
         )->render();
 
         self::assertSame('class="is-immutable" data-action="save" title="A &amp; B" maxlength="120" pattern="^/.*$" data-active', $html);
@@ -83,8 +81,8 @@ final class ViewTwigExtensionTest extends KernelTestCase
 
         self::assertStringContainsString('type="email"', $html);
         self::assertStringContainsString('type="radio"', $html);
-        self::assertStringContainsString('studio-button-group', $html);
-        self::assertStringContainsString('studio-backend-select', $html);
+        self::assertStringContainsString('system-button-group', $html);
+        self::assertStringContainsString('system-backend-select', $html);
         self::assertStringContainsString('data-code-editor-language-value="html"', $html);
     }
 }

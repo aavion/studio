@@ -40,6 +40,6 @@ final class SchedulerScriptTest extends TestCase
         self::assertIsString($contents);
         self::assertStringContainsString('CliProcessEnvironment', $contents);
         self::assertStringContainsString('CliProcessEnvironment::fromCurrentProcess()', $contents);
-        self::assertStringContainsString('studio:scheduler:run', $contents);
+        self::assertStringContainsString('scheduler:run', $contents);
     }
 }

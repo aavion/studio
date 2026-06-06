@@ -6,33 +6,34 @@ namespace App\Tests\Core\Package;
 
 use App\Core\Event\EventHookDescriptor;
 use App\Core\Event\EventHookMode;
+use App\Core\Event\EventMessageCode;
+use App\Core\Event\EventMessageKey;
 use App\Core\Event\PublicHookFailedEvent;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Message\Message;
 use App\Core\Package\ActivePackageProvider;
+use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageAssetRebuildDispatcher;
 use App\Core\Package\PackageAssetRebuildMessage;
 use App\Core\Package\PackageAssetRebuildMessageHandler;
 use App\Core\Package\PackageFaultResetter;
-use App\Core\Package\PackageLifecycleCleanupRunnerInterface;
 use App\Core\Package\PackageLifecycleAssetRebuilderInterface;
+use App\Core\Package\PackageLifecycleCleanupRunnerInterface;
 use App\Core\Package\PackagePhpLoader;
 use App\Core\Package\PackageRemover;
-use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageRuntimeContributionRegistry;
 use App\Core\Package\PackageRuntimeFailureHandler;
 use App\Core\Package\PackageScope;
-use App\Core\Message\Message;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use App\Tests\Support\FilesystemTestHelper;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use App\Tests\Support\RecordingMessageBus;
 use App\View\ViewContextEvent;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use RuntimeException;
-use App\Tests\Support\NullWorkflowResultMessageReporter;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Uid\Uuid;
 
 final class PackageLifecycleBoundaryTest extends KernelTestCase
 {
@@ -52,7 +53,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         $this->connection = $this->entityManager->getConnection();
         $this->assetRebuilder = new BoundaryPackageLifecycleAssetRebuilder();
         $this->cleanupRunner = new RecordingPackageLifecycleCleanupRunner();
-        $this->projectDir = $this->createTemporaryDirectory('studio-package-lifecycle-boundary');
+        $this->projectDir = $this->createTemporaryDirectory('system-package-lifecycle-boundary');
         $this->connection->beginTransaction();
     }
 
@@ -102,8 +103,8 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
             'test',
         ))->handleHookFailure(new PublicHookFailedEvent(
             new ViewContextEvent([]),
-            new EventHookDescriptor(ViewContextEvent::class, 'view', EventHookMode::Extend, MessageKey::EVENT_HOOK_VIEW_CONTEXT_SUMMARY, mutable: true),
-            Message::create(MessageCode::EVENT_HOOK_LISTENER_FAILED, MessageKey::EVENT_HOOK_LISTENER_FAILED, ['%event%' => ViewContextEvent::class]),
+            new EventHookDescriptor(ViewContextEvent::class, 'view', EventHookMode::Extend, EventMessageKey::EVENT_HOOK_VIEW_CONTEXT_SUMMARY, mutable: true),
+            Message::create(EventMessageCode::EVENT_HOOK_LISTENER_FAILED, EventMessageKey::EVENT_HOOK_LISTENER_FAILED, ['%event%' => ViewContextEvent::class]),
             new RuntimeException('listener failed'),
             ['route' => 'demo'],
             'demo-module',
@@ -165,6 +166,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         $this->writeTestFile($this->projectDir, 'packages/demo-module/package.php', <<<'PHP'
             <?php
 
+            use App\Core\Package\PackageContributions;
             use App\Core\Package\Settings\PackageSettingDefinition;
             use App\View\Injection\ConfigurableStaticViewInjectionRoute;
             use App\View\Injection\ConfigurableStaticViewInjectionSet;
@@ -173,15 +175,15 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
             use App\View\Injection\StaticViewInjection;
             use App\View\Injection\ViewSurface;
 
-            return [
-                new StaticViewInjection(
+            return PackageContributions::create()
+                ->staticView(new StaticViewInjection(
                     'pkg-demo-module-route',
                     ViewSurface::Public,
                     'demo-module',
                     'pkg.demo-module.widget',
                     '@frontend/demo-module/frontend.html.twig',
-                ),
-                new ConfigurableStaticViewInjectionSet(
+                ))
+                ->configurableStaticViews(new ConfigurableStaticViewInjectionSet(
                     'demo-module',
                     'demo.route',
                     ViewSurface::Public,
@@ -194,20 +196,19 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
                             '@frontend/demo-module/frontend.html.twig',
                         ),
                     ],
-                ),
-                new DynamicViewInjection(
+                ))
+                ->dynamicView(new DynamicViewInjection(
                     'pkg-demo-module-after-content',
                     ViewSurface::Public,
                     DynamicViewInjectionSlot::AfterContent,
                     '@frontend/demo-module/after-content.html.twig',
-                ),
-                new PackageSettingDefinition(
+                ))
+                ->setting(new PackageSettingDefinition(
                     'demo-module',
                     'display.mode',
                     'pkg.demo-module.settings.display_mode.label',
                     'compact',
-                ),
-            ];
+                ));
             PHP);
         $registry = new PackageRuntimeContributionRegistry();
 
@@ -263,6 +264,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
 
         self::assertFalse($result->isSuccess());
         self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame('message.package.runtime.contribution_unsupported', $result->firstIssue()?->context()['previous_message']['key'] ?? null);
         self::assertSame([], $registry->staticViewInjections());
         self::assertSame('faulty', $this->packageStatus('broken-module'));
     }
@@ -279,7 +281,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
                 'scheduler-module.cleanup',
                 'pkg.scheduler_module.cleanup.label',
                 'pkg.scheduler_module.cleanup.description',
-                'studio:demo:cleanup',
+                'demo:cleanup',
                 '*/15 * * * *',
                 'system',
                 true,
@@ -297,6 +299,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
 
         self::assertFalse($result->isSuccess());
         self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame('message.package.scheduler.source_invalid', $result->firstIssue()?->context()['previous_message']['key'] ?? null);
         self::assertSame([], $registry->schedulerTasks());
         self::assertSame('faulty', $this->packageStatus('scheduler-module'));
     }
@@ -701,11 +704,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
 
     private function uuid(): string
     {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+        return Uuid::v7()->toRfc4122();
     }
 }
 

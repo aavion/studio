@@ -20,11 +20,12 @@ final class AccessLoggerTest extends TestCase
     public function testItWritesAccessEntriesWithGeoPlaceholders(): void
     {
         $handler = new TestHandler();
-        $monolog = new Logger('studio_access');
+        $monolog = new Logger('access');
         $monolog->pushHandler($handler);
         $request = Request::create('/admin/logs?level=error&reset_token=hidden&filter[code]=oauth-code&auth=api-secret', 'POST', server: [
             'REMOTE_ADDR' => '203.0.113.10',
             'HTTP_USER_AGENT' => 'Studio Browser/1.0',
+            'HTTP_X_REQUEST_ID' => 'edge-request-1',
             'HTTP_X_FORWARDED_FOR' => '198.51.100.23, 203.0.113.10',
             'HTTP_REFERER' => 'https://example.org/source?token=hidden',
             'HTTP_ACCEPT_LANGUAGE' => 'de-DE,de;q=0.9,en;q=0.8',
@@ -56,6 +57,8 @@ final class AccessLoggerTest extends TestCase
         );
         self::assertSame(401, $records[0]->context['http_status']);
         self::assertIsString($records[0]->context['request_id']);
+        self::assertNotSame('edge-request-1', $records[0]->context['request_id']);
+        self::assertSame('edge-request-1', $records[0]->context['correlation_id']);
         self::assertIsInt($records[0]->context['duration_ms']);
         self::assertSame($visitorIdGenerator->generate($request), $records[0]->context['visitor_id']);
         self::assertSame('http', $records[0]->context['scheme']);
@@ -81,7 +84,7 @@ final class AccessLoggerTest extends TestCase
     public function testItRedactsTokenizedPathSegments(): void
     {
         $handler = new TestHandler();
-        $monolog = new Logger('studio_access');
+        $monolog = new Logger('access');
         $monolog->pushHandler($handler);
         $request = Request::create('/user/invitation/test-token', 'GET', server: [
             'REMOTE_ADDR' => '203.0.113.10',
@@ -104,7 +107,7 @@ final class AccessLoggerTest extends TestCase
     public function testItRedactsTokenizedReferrerPathSegments(): void
     {
         $handler = new TestHandler();
-        $monolog = new Logger('studio_access');
+        $monolog = new Logger('access');
         $monolog->pushHandler($handler);
         $request = Request::create('/docs', 'GET', server: [
             'REMOTE_ADDR' => '203.0.113.10',

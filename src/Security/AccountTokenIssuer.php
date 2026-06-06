@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Security;
 
+use App\Core\Id\UuidFactory;
 use App\Entity\AccountToken;
 use App\Entity\UserAccount;
 use DateTimeImmutable;
 
 final readonly class AccountTokenIssuer
 {
+    public function __construct(private UuidFactory $uuidFactory = new UuidFactory())
+    {
+    }
+
     /**
      * @param list<string> $groupIdentifiers
      * @param array<string, mixed> $metadata
@@ -31,7 +36,7 @@ final readonly class AccountTokenIssuer
 
         return [
             new AccountToken(
-                self::uuid(),
+                $this->uuidFactory->generate(),
                 $this->hash($plainToken),
                 $type,
                 $email,
@@ -58,22 +63,5 @@ final readonly class AccountTokenIssuer
         $token->rotateTokenHash($this->hash($plainToken), (new DateTimeImmutable())->modify($ttl));
 
         return $plainToken;
-    }
-
-    private static function uuid(): string
-    {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-        $hex = bin2hex($bytes);
-
-        return sprintf(
-            '%s-%s-%s-%s-%s',
-            substr($hex, 0, 8),
-            substr($hex, 8, 4),
-            substr($hex, 12, 4),
-            substr($hex, 16, 4),
-            substr($hex, 20),
-        );
     }
 }

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Setup;
 
 use App\Core\ActionLog\ActionLog;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Asset\AssetMessageCode;
+use App\Core\Asset\AssetMessageKey;
 use App\Core\Process\PhpCliBinaryPreferenceStore;
 use App\Core\Process\PhpCliBinaryValidator;
 use App\Database\DatabaseReadyState;
@@ -28,11 +28,13 @@ final class SetupRunnerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = sys_get_temp_dir().'/studio-setup-test-'.bin2hex(random_bytes(6));
+        $this->root = sys_get_temp_dir().'/system-backend-setup-test-'.bin2hex(random_bytes(6));
         mkdir($this->root.'/bin', 0777, true);
+        mkdir($this->root.'/config/packages', 0777, true);
         mkdir($this->root.'/translations/runtime/test', 0777, true);
         mkdir($this->root.'/var', 0777, true);
         touch($this->root.'/bin/console');
+        file_put_contents($this->root.'/config/packages/translation.yaml', "framework:\n    default_locale: en\n");
         file_put_contents($this->root.'/translations/runtime/test/messages.en.yaml', "message: []\n");
         file_put_contents($this->root.'/translations/runtime/test/messages.de.yaml', "message: []\n");
     }
@@ -54,7 +56,7 @@ final class SetupRunnerTest extends TestCase
                 $composerEnvironments[] = $environment;
             }
 
-            if (in_array('studio:assets:rebuild', $command, true)) {
+            if (in_array('assets:rebuild', $command, true)) {
                 $assetRebuildEnvironment = $environment;
             }
         });
@@ -108,8 +110,8 @@ final class SetupRunnerTest extends TestCase
             ['composer', 'dump-env', 'test'],
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test', '--json'],
+            [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
         ], $executor->commands);
 
         $pdo = new PDO('sqlite:'.$databasePath);
@@ -118,8 +120,8 @@ final class SetupRunnerTest extends TestCase
         $adminUser = $pdo->query("SELECT password_hash, role FROM user_account WHERE username = 'admin'")->fetch(PDO::FETCH_ASSOC);
         $stateMarkers = $pdo->query("SELECT marker_key, marker_value FROM state_marker WHERE subject_type = 'user_account' ORDER BY marker_key")->fetchAll(PDO::FETCH_KEY_PAIR);
         $groups = $pdo->query("SELECT g.identifier FROM acl_group g INNER JOIN user_acl_group ug ON ug.group_uid = g.uid INNER JOIN user_account u ON u.uid = ug.user_uid WHERE u.username = 'admin' ORDER BY g.min_role")->fetchAll(PDO::FETCH_COLUMN);
-        $home = $pdo->query(sprintf("SELECT ci.slug, ci.status, ci.visibility, ci.active_revision_uid, cs.identifier AS schema_identifier FROM content_item ci INNER JOIN content_schema cs ON cs.uid = ci.schema_uid WHERE ci.slug = '%s'", $seed->homeContentItem()['slug']))->fetch(PDO::FETCH_ASSOC);
-        $homeTitle = $pdo->query(sprintf("SELECT field_content FROM content_field_value WHERE revision_uid = '%s' AND field_identifier = 'title' AND language = 'en'", $seed->homeContentRevision()['uid']))->fetchColumn();
+        $home = $pdo->query(sprintf("SELECT ci.slug, ci.status, ci.visibility, ci.active_revision_uid, ci.available_languages, cs.identifier AS schema_identifier FROM content_item ci INNER JOIN content_schema cs ON cs.uid = ci.schema_uid WHERE ci.slug = '%s'", $seed->homeContentItem([$input->language()])['slug']))->fetch(PDO::FETCH_ASSOC);
+        $homeTitle = $pdo->query(sprintf("SELECT field_content FROM content_field_value WHERE revision_uid = '%s' AND field_identifier = 'title' AND language = '%s'", $seed->homeContentRevision()['uid'], $input->language()))->fetchColumn();
 
         self::assertSame($seed->configMap($input), $this->decodedConfigRows($configRows, array_keys($seed->configMap($input))));
         self::assertSame(array_map(static fn (array $group): array => [
@@ -138,7 +140,7 @@ final class SetupRunnerTest extends TestCase
             'status_changed' => 'active',
         ], $stateMarkers);
         self::assertSame([], $groups);
-        $homeContent = $seed->homeContentItem();
+        $homeContent = $seed->homeContentItem([$input->language()]);
         $homeRevision = $seed->homeContentRevision();
         $schema = $seed->contentSchema();
         self::assertSame([
@@ -146,9 +148,10 @@ final class SetupRunnerTest extends TestCase
             'status' => $homeContent['status'],
             'visibility' => $homeContent['visibility'],
             'active_revision_uid' => $homeRevision['uid'],
+            'available_languages' => json_encode($homeContent['available_languages'], JSON_THROW_ON_ERROR),
             'schema_identifier' => $schema['identifier'],
         ], $home);
-        self::assertSame($seed->homeContentFields($input)['title']['en'], json_decode((string) $homeTitle, true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame($seed->homeContentFields($input)['title'][$input->language()], json_decode((string) $homeTitle, true, flags: JSON_THROW_ON_ERROR));
     }
 
     public function testItRejectsShortAdminPasswordBeforeSetupSteps(): void
@@ -466,8 +469,8 @@ final class SetupRunnerTest extends TestCase
             ['composer', 'dump-env', 'test'],
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test', '--json'],
+            [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
         ], $executor->commands);
     }
 
@@ -514,9 +517,9 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('clear_cache', $entries[7]['name']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'], $entries[7]['context']['command']);
         self::assertSame('run_package_discovery', $entries[8]['name']);
-        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env=test'], $entries[8]['context']['command']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'], $entries[8]['context']['command']);
         self::assertSame('run_asset_rebuild', $entries[9]['name']);
-        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env=test', '--json'], $entries[9]['context']['command']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'], $entries[9]['context']['command']);
         self::assertSame('mark_setup_completed', $entries[10]['name']);
     }
 
@@ -552,7 +555,7 @@ final class SetupRunnerTest extends TestCase
         $databasePath = $this->root.'/var/setup.db';
         $this->createSchema($databasePath);
         $executor = new RecordingSetupCommandExecutor(onRun: static function (array $command, string $_cwd, array $_environment): ?SetupCommandResult {
-            if (!in_array('studio:assets:rebuild', $command, true)) {
+            if (!in_array('assets:rebuild', $command, true)) {
                 return null;
             }
 
@@ -565,8 +568,8 @@ final class SetupRunnerTest extends TestCase
                             'messages' => [
                                 [
                                     'level' => 'WARN',
-                                    'code' => MessageCode::TAILWIND_BUILD_DEFERRED,
-                                    'translation_key' => MessageKey::TAILWIND_BUILD_DEFERRED,
+                                    'code' => AssetMessageCode::TAILWIND_BUILD_DEFERRED,
+                                    'translation_key' => AssetMessageKey::TAILWIND_BUILD_DEFERRED,
                                     'parameters' => [
                                         '%command%' => 'php bin/console tailwind:build',
                                     ],
@@ -606,7 +609,7 @@ final class SetupRunnerTest extends TestCase
         $entries = $log->toArray()['entries'];
 
         self::assertSame('run_asset_rebuild', $entries[10]['name']);
-        self::assertSame(MessageCode::TAILWIND_BUILD_DEFERRED, $entries[10]['messages'][0]['code']);
+        self::assertSame(AssetMessageCode::TAILWIND_BUILD_DEFERRED, $entries[10]['messages'][0]['code']);
     }
 
     public function testDryRunDoesNotCreateMissingSqliteDatabaseDuringPreparation(): void
@@ -701,11 +704,8 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('prepare_setup', $result->context()['failed_step']);
         self::assertSame([], $executor->commands);
         self::assertFileDoesNotExist($this->root.'/.env.test.local');
-        self::assertSame('message.setup.step_failed', $result->issues()[0]->translationKey());
-        self::assertSame(
-            'SQLite database URLs must use the sqlite:///path/to/database.db format.',
-            $result->issues()[0]->parameters()['%message%'],
-        );
+        self::assertSame('message.setup.database_url.sqlite_format_invalid', $result->issues()[0]->translationKey());
+        self::assertSame('prepare_setup', $result->issues()[0]->context()['step'] ?? null);
     }
 
     public function testDryRunRollbackHandlesStepFailuresAfterPreparation(): void
@@ -785,7 +785,7 @@ final class SetupRunnerTest extends TestCase
         $pdo = new PDO('sqlite:'.$databasePath);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec(sprintf('CREATE TABLE %sconfig_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL, modified_at DATETIME NOT NULL, modified_by VARCHAR(180) DEFAULT NULL)', $prefix));
-        $pdo->exec(sprintf('CREATE TABLE %sacl_group (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(80) NOT NULL UNIQUE, name CLOB NOT NULL, min_role INTEGER NOT NULL, metadata CLOB NOT NULL)', $prefix));
+        $pdo->exec(sprintf('CREATE TABLE %sacl_group (uid VARCHAR(36) NOT NULL PRIMARY KEY, identifier VARCHAR(80) NOT NULL UNIQUE, name VARCHAR(160) NOT NULL, min_role INTEGER NOT NULL, metadata CLOB NOT NULL)', $prefix));
         $pdo->exec(sprintf('CREATE TABLE %sstate_marker (uid VARCHAR(36) NOT NULL PRIMARY KEY, subject_type VARCHAR(80) NOT NULL, subject_uid VARCHAR(36) NOT NULL, marker_key VARCHAR(80) NOT NULL, marker_at DATETIME NOT NULL, marker_by VARCHAR(180) DEFAULT NULL, marker_value VARCHAR(255) DEFAULT NULL, metadata CLOB NOT NULL, UNIQUE(subject_type, subject_uid, marker_key))', $prefix));
         $pdo->exec(sprintf("CREATE TABLE %suser_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(180) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, profile CLOB NOT NULL, settings CLOB NOT NULL, status VARCHAR(32) NOT NULL, role VARCHAR(40) NOT NULL DEFAULT 'user')", $prefix));
         $pdo->exec(sprintf('CREATE TABLE %suser_acl_group (user_uid VARCHAR(36) NOT NULL, group_uid VARCHAR(36) NOT NULL, PRIMARY KEY(user_uid, group_uid))', $prefix));

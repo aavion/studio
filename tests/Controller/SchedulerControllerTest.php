@@ -53,7 +53,7 @@ final class SchedulerControllerTest extends WebTestCase
         $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
 
         try {
-            $connection->update('user_account', ['role' => 'user'], ['uid' => '00000000-0000-0000-0000-000000000201']);
+            $connection->update('user_account', ['role' => 'user'], ['uid' => '00000000-0000-7000-8000-000000000201']);
 
             $client->request('GET', '/cron/run', server: [
                 'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
@@ -61,7 +61,7 @@ final class SchedulerControllerTest extends WebTestCase
 
             self::assertResponseStatusCodeSame(401);
         } finally {
-            $connection->update('user_account', ['role' => 'owner'], ['uid' => '00000000-0000-0000-0000-000000000201']);
+            $connection->update('user_account', ['role' => 'owner'], ['uid' => '00000000-0000-7000-8000-000000000201']);
         }
     }
 
@@ -162,7 +162,7 @@ final class SchedulerControllerTest extends WebTestCase
             'system.live_operation_cleanup',
             'admin.scheduler.tasks.live_operation_cleanup.label',
             'admin.scheduler.tasks.live_operation_cleanup.description',
-            'studio:operations:cleanup',
+            'operations:cleanup',
             '*/15 * * * *',
         );
         $task = $entityManager->find(SchedulerTask::class, 'system.live_operation_cleanup') ?? new SchedulerTask($definition);
@@ -193,7 +193,7 @@ final class SchedulerControllerTest extends WebTestCase
             'system.live_operation_cleanup',
             'admin.scheduler.tasks.live_operation_cleanup.label',
             'admin.scheduler.tasks.live_operation_cleanup.description',
-            'studio:operations:cleanup',
+            'operations:cleanup',
             '*/15 * * * *',
         );
         $task = $entityManager->find(SchedulerTask::class, 'system.live_operation_cleanup') ?? new SchedulerTask($definition);

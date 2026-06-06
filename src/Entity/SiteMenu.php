@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
+use App\Navigation\NavigationMessageKey;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -51,7 +51,7 @@ class SiteMenu
     public function __construct(string $uid, string $identifier, array $labels, array $metadata = [])
     {
         $this->uid = Uid::assert($uid, 'Site menu UID');
-        $this->identifier = Identifier::assertSnakeCase($identifier, MessageKey::MENU_IDENTIFIER_INVALID, '%identifier%');
+        $this->identifier = Identifier::assertSnakeCase($identifier, NavigationMessageKey::MENU_IDENTIFIER_INVALID, '%identifier%');
         $this->labels = $labels;
         $this->metadata = $metadata;
         $this->items = new ArrayCollection();

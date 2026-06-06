@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Access;
 
+use App\Core\Access\AccessMessageKey;
+use App\Core\Message\MessageException;
 use App\Core\Validation\Identifier;
 
 final readonly class AccessRule
@@ -96,14 +98,30 @@ final readonly class AccessRule
      *
      * @return list<string>
      */
-    private static function normalizeGroupIdentifiers(array $groupIdentifiers): array
+    public static function normalizeGroupIdentifiers(array $groupIdentifiers): array
     {
         foreach ($groupIdentifiers as $identifier) {
+            if (!is_string($identifier)) {
+                throw MessageException::invalidArgument(AccessMessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
+                    '%identifier%' => 'non-string',
+                ]);
+            }
+
             Identifier::assertAclGroupIdentifier($identifier);
         }
 
         sort($groupIdentifiers);
 
         return array_values(array_unique($groupIdentifiers));
+    }
+
+    /**
+     * @param list<string>|null $groupIdentifiers
+     *
+     * @return list<string>|null
+     */
+    public static function normalizeGroupIdentifiersOrNull(?array $groupIdentifiers): ?array
+    {
+        return null === $groupIdentifiers ? null : self::normalizeGroupIdentifiers($groupIdentifiers);
     }
 }

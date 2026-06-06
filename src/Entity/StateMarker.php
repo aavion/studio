@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
+use App\Core\State\StateMessageKey;
 use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
 use DateTimeImmutable;
@@ -62,9 +62,9 @@ class StateMarker
         array $metadata = [],
     ) {
         $this->uid = Uid::assert($uid, 'State marker UID');
-        $this->subjectType = Identifier::assertSnakeCase($subjectType, MessageKey::STATE_SUBJECT_TYPE_INVALID, '%subject_type%');
+        $this->subjectType = Identifier::assertSnakeCase($subjectType, StateMessageKey::STATE_SUBJECT_TYPE_INVALID, '%subject_type%');
         $this->subjectUid = Uid::assert($subjectUid, 'State marker subject UID');
-        $this->markerKey = Identifier::assertSnakeCase($markerKey, MessageKey::STATE_MARKER_KEY_INVALID, '%marker_key%');
+        $this->markerKey = Identifier::assertSnakeCase($markerKey, StateMessageKey::STATE_MARKER_KEY_INVALID, '%marker_key%');
         $this->markerAt = $markerAt;
         $this->markerBy = $markerBy;
         $this->markerValue = $markerValue;
@@ -136,7 +136,7 @@ class StateMarker
     {
         foreach (array_keys($metadata) as $key) {
             if (!is_string($key) || '' === trim($key)) {
-                throw MessageException::invalidArgument(MessageKey::CONTENT_METADATA_KEY_EMPTY);
+                throw MessageException::invalidArgument(StateMessageKey::STATE_METADATA_KEY_EMPTY);
             }
         }
 

@@ -1,9 +1,9 @@
-<header class="studio-page-header">
+<header class="system-page-header">
     <div>
-        <div class="studio-kicker">{{ eyebrow|default('ui.admin.area'|trans) }}</div>
+        <div class="system-kicker">{{ eyebrow|default('ui.admin.area'|trans) }}</div>
         <h1>{{ title }}</h1>
     </div>
     {% if actions is defined and actions is not empty %}
-        <div class="studio-page-actions">{{ actions|raw }}</div>
+        <div class="system-page-actions">{{ actions|raw }}</div>
     {% endif %}
 </header>

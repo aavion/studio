@@ -1,8 +1,8 @@
 {% extends '@backend/admin.html.twig' %}
 
 {% set package_name = view.context.package_name|default('') %}
-{% set package_settings = studio_package_settings(package_name) %}
-{% set package_form = studio_package_settings_form(package_name) %}
+{% set package_settings = package_settings(package_name) %}
+{% set package_form = package_settings_form(package_name) %}
 
 {% block title %}{{ 'admin.settings.package.title'|trans({'%package%': view.label|default(package_name)}) }}{% endblock %}
 
@@ -19,10 +19,10 @@
     } only %}
 
     {% if view.context.description|default(null) %}
-        <p class="studio-muted">{{ view.context.description }}</p>
+        <p class="system-muted">{{ view.context.description }}</p>
     {% endif %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.settings.package.foundation_title'|trans }}</h2>
         {% include '@backend/partials/forms/_dynamic.html.twig' with {form: package_form} only %}
         {% if package_settings|length > 0 %}
@@ -31,22 +31,22 @@
                     <dt>{{ setting.label|trans }}</dt>
                     <dd>
                         <code>{{ setting.key }}</code>
-                        <span class="studio-muted">{{ setting.type }}</span>
-                        <span class="studio-muted">{{ setting.input_type }}</span>
+                        <span class="system-muted">{{ setting.type }}</span>
+                        <span class="system-muted">{{ setting.input_type }}</span>
                         {% if setting.description %}
-                            <p class="studio-muted">{{ setting.description|trans }}</p>
+                            <p class="system-muted">{{ setting.description|trans }}</p>
                         {% endif %}
                         {% if setting.options|length > 0 %}
-                            <p class="studio-muted">{{ 'admin.settings.package.options'|trans({'%count%': setting.options|length}) }}</p>
+                            <p class="system-muted">{{ 'admin.settings.package.options'|trans({'%count%': setting.options|length}) }}</p>
                         {% endif %}
                         {% if setting.validation|length > 0 %}
-                            <p class="studio-muted">{{ 'admin.settings.package.validation'|trans({'%count%': setting.validation|length}) }}</p>
+                            <p class="system-muted">{{ 'admin.settings.package.validation'|trans({'%count%': setting.validation|length}) }}</p>
                         {% endif %}
                     </dd>
                 {% endfor %}
             </dl>
         {% else %}
-            <p class="studio-muted">{{ 'admin.settings.package.empty'|trans }}</p>
+            <p class="system-muted">{{ 'admin.settings.package.empty'|trans }}</p>
         {% endif %}
     </section>
 {% endblock %}

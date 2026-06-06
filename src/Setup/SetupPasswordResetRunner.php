@@ -7,15 +7,17 @@ namespace App\Setup;
 use App\Core\ActionLog\ActionLog;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
+use App\Core\Id\UuidFactory;
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageLevel;
-use App\Core\Message\MessageKey;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateSubjectType;
 use App\Core\Workflow\WorkflowResult;
 use App\Security\PasswordPolicy;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 use Doctrine\DBAL\Connection;
 use Throwable;
 
@@ -25,8 +27,8 @@ final readonly class SetupPasswordResetRunner
         private WorkflowResultMessageReporterInterface $messageReporter,
         private SetupDatabaseConnectionFactory $connectionFactory = new SetupDatabaseConnectionFactory(),
         private PasswordPolicy $passwordPolicy = new PasswordPolicy(),
-    )
-    {
+        private UuidFactory $uuidFactory = new UuidFactory(),
+    ) {
     }
 
     public function findUser(string $projectDir, string $databaseUrl, string $username, ?string $databasePrefix = null): ?SetupPasswordResetUser
@@ -71,8 +73,8 @@ final readonly class SetupPasswordResetRunner
 
         if (!$user instanceof SetupPasswordResetUser) {
             $issue = Message::create(
-                MessageCode::E_INVALID_ARGUMENT,
-                MessageKey::SETUP_PASSWORD_RESET_USER_NOT_FOUND,
+                CommonMessageCode::E_INVALID_ARGUMENT,
+                SetupMessageKey::SETUP_PASSWORD_RESET_USER_NOT_FOUND,
                 ['%username%' => $username],
                 ['username' => $username],
                 MessageLevel::Warning,
@@ -101,7 +103,7 @@ final readonly class SetupPasswordResetRunner
         $this->upsertStateMarker($connection, $user->uid(), StateMarkerKey::PASSWORD_CHANGED, $now, $actor);
         $this->upsertStateMarker($connection, $user->uid(), StateMarkerKey::MODIFIED, $now, $actor, 'password');
 
-        $message = Message::success(MessageKey::SETUP_PASSWORD_RESET_COMPLETED, ['%username%' => $user->username()]);
+        $message = Message::success(SetupMessageKey::SETUP_PASSWORD_RESET_COMPLETED, ['%username%' => $user->username()]);
         $log = $log->add($entry->finish(ActionLogStatus::Success, context: $user->toArray(), messages: [$message]));
 
         return $this->report(WorkflowResult::success($log, [
@@ -134,10 +136,10 @@ final readonly class SetupPasswordResetRunner
     private function passwordIssue(string $violation): Message
     {
         [$code, $key] = match ($violation) {
-            PasswordPolicy::VIOLATION_COMPLEXITY => [MessageCode::SETUP_ADMIN_PASSWORD_COMPLEXITY, MessageKey::SETUP_ADMIN_PASSWORD_COMPLEXITY],
-            PasswordPolicy::VIOLATION_REPEATED => [MessageCode::SETUP_ADMIN_PASSWORD_REPEATED, MessageKey::SETUP_ADMIN_PASSWORD_REPEATED],
-            PasswordPolicy::VIOLATION_PERSONAL => [MessageCode::SETUP_ADMIN_PASSWORD_PERSONAL, MessageKey::SETUP_ADMIN_PASSWORD_PERSONAL],
-            default => [MessageCode::SETUP_ADMIN_PASSWORD_TOO_SHORT, MessageKey::SETUP_ADMIN_PASSWORD_TOO_SHORT],
+            PasswordPolicy::VIOLATION_COMPLEXITY => [SetupMessageCode::SETUP_ADMIN_PASSWORD_COMPLEXITY, SetupMessageKey::SETUP_ADMIN_PASSWORD_COMPLEXITY],
+            PasswordPolicy::VIOLATION_REPEATED => [SetupMessageCode::SETUP_ADMIN_PASSWORD_REPEATED, SetupMessageKey::SETUP_ADMIN_PASSWORD_REPEATED],
+            PasswordPolicy::VIOLATION_PERSONAL => [SetupMessageCode::SETUP_ADMIN_PASSWORD_PERSONAL, SetupMessageKey::SETUP_ADMIN_PASSWORD_PERSONAL],
+            default => [SetupMessageCode::SETUP_ADMIN_PASSWORD_TOO_SHORT, SetupMessageKey::SETUP_ADMIN_PASSWORD_TOO_SHORT],
         };
 
         return Message::error(
@@ -172,10 +174,6 @@ final readonly class SetupPasswordResetRunner
 
     private function uuid(): string
     {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+        return $this->uuidFactory->generate();
     }
 }

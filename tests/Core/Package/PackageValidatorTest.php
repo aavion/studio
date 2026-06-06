@@ -9,6 +9,7 @@ use App\Core\Package\PackageCandidate;
 use App\Core\Package\PackageInspection;
 use App\Core\Package\PackageSource;
 use App\Core\Package\PackageSpec;
+use App\Core\Package\PackageTranslationNamespaceValidator;
 use App\Core\Package\PackageValidator;
 use App\Tests\Support\FilesystemTestHelper;
 use InvalidArgumentException;
@@ -22,7 +23,7 @@ final class PackageValidatorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->packageDir = $this->createTemporaryDirectory('studio-package-validator');
+        $this->packageDir = $this->createTemporaryDirectory('system-package-validator');
         $this->writeFile('.manifest', 'PACKAGE_NAME=System');
     }
 
@@ -58,8 +59,8 @@ final class PackageValidatorTest extends TestCase
         $this->writeFile('assets/app.js', 'export default true;');
         $this->writeFile('assets/images/logo.svg', '<svg></svg>');
         $this->writeFile('assets/fonts/demo.woff2', 'font');
-        $this->writeFile('config/package.yaml', 'enabled: true');
-        $this->writeFile('config/package.json', '{"enabled": true}');
+        $this->writeFile('data/package.yaml', 'enabled: true');
+        $this->writeFile('data/package.json', '{"enabled": true}');
         $this->writeFile('src/PackageExtension.php', '<?php class PackageExtension {}');
         $this->writeFile('tools/helper.php', '<?php return true;');
 
@@ -85,8 +86,8 @@ final class PackageValidatorTest extends TestCase
         self::assertSame(['assets/app.css', 'assets/app.js', 'assets/fonts/demo.woff2', 'assets/images/logo.svg'], $inspection->assetFiles());
         self::assertSame(['src/PackageExtension.php'], $inspection->sourcePhpFiles());
         self::assertSame(['src/PackageExtension.php', 'tools/helper.php'], $inspection->phpFiles());
-        self::assertSame(['config/package.json'], $inspection->jsonFiles());
-        self::assertSame(['config/package.yaml'], $inspection->yamlFiles());
+        self::assertSame(['data/package.json'], $inspection->jsonFiles());
+        self::assertSame(['data/package.yaml'], $inspection->yamlFiles());
         self::assertSame(['assets/app.css'], $inspection->cssFiles());
         self::assertSame(['assets/app.js'], $inspection->javaScriptFiles());
         self::assertSame(['assets/fonts/demo.woff2', 'assets/images/logo.svg'], $inspection->staticAssetFiles());
@@ -162,7 +163,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -188,7 +189,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -213,7 +214,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -233,14 +234,14 @@ PHP);
 
 use App\Scheduler\SchedulerTaskDefinition;
 
-// Example only: SchedulerTaskDefinition::command('demo.bad', 'label', 'description', 'studio:bad', 'not a cron');
+// Example only: SchedulerTaskDefinition::command('demo.bad', 'label', 'description', 'demo:bad', 'not a cron');
 
 return [
     SchedulerTaskDefinition::command(
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         '*/10 * * * *',
     ),
 ];
@@ -258,14 +259,14 @@ PHP);
 
 use App\Scheduler\SchedulerTaskDefinition;
 
-$documentation = "Example only: SchedulerTaskDefinition::command('demo.bad', 'label', 'description', 'studio:bad', 'not a cron')";
+$documentation = "Example only: SchedulerTaskDefinition::command('demo.bad', 'label', 'description', 'demo:bad', 'not a cron')";
 
 return [
     SchedulerTaskDefinition::command(
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         '*/10 * * * *',
     ),
 ];
@@ -285,7 +286,7 @@ use App\Scheduler\SchedulerTaskDefinition;
 
 return [
     SchedulerTaskDefinition::command(
-        command: 'studio:demo:cleanup',
+        command: 'demo:cleanup',
         identifier: 'demo.cleanup',
         labelKey: 'pkg.demo.cleanup.label',
         descriptionKey: 'pkg.demo.cleanup.description',
@@ -308,7 +309,7 @@ use App\Scheduler\SchedulerTaskDefinition;
 
 return [
     SchedulerTaskDefinition::command(
-        command: 'studio:demo --label="defaultCronExpression: \'not a cron\'"',
+        command: 'demo --label="defaultCronExpression: \'not a cron\'"',
         identifier: 'demo.cleanup',
         labelKey: 'pkg.demo.cleanup.label',
         descriptionKey: 'pkg.demo.cleanup.description',
@@ -335,7 +336,7 @@ return [
         'pkg.demo.cleanup.label',
         // Example only, with comma: defaultCronExpression: 'not a cron',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         '*/10 * * * *',
     ),
 ];
@@ -358,7 +359,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -379,7 +380,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -403,7 +404,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -427,7 +428,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         'not a cron',
     ),
 ];
@@ -456,7 +457,7 @@ final class DemoSchedulerTasks implements SchedulerTaskProviderInterface
                 'demo.cleanup',
                 'pkg.demo.cleanup.label',
                 'pkg.demo.cleanup.description',
-                'studio:demo:cleanup',
+                'demo:cleanup',
                 '*/15 * * * *',
                 'demo-module',
                 false,
@@ -488,7 +489,7 @@ final class DemoSchedulerTasks implements SchedulerTaskProviderInterface
                 'demo.cleanup',
                 'pkg.demo.cleanup.label',
                 'pkg.demo.cleanup.description',
-                'studio:demo:cleanup',
+                'demo:cleanup',
                 '*/15 * * * *',
                 'ai',
                 false,
@@ -523,7 +524,7 @@ return [
         TaskIds::CLEANUP,
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo cleanup',
+        'demo cleanup',
         '*/15 * * * *',
         'demo-module',
         false,
@@ -550,7 +551,7 @@ return [
         'demo.cleanup',
         'pkg.demo.cleanup.label',
         'pkg.demo.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         $cron,
     ),
 ];
@@ -741,8 +742,8 @@ PHP);
     {
         $this->writeFile('src/Valid.php', '<?php class ValidPackageLintPhp {}');
         $this->writeFile('templates/valid.html.twig', '<main>{{ title }}</main>');
-        $this->writeFile('config/valid.json', '{"enabled": true}');
-        $this->writeFile('config/valid.yaml', 'enabled: true');
+        $this->writeFile('data/valid.json', '{"enabled": true}');
+        $this->writeFile('data/valid.yaml', 'enabled: true');
         $this->writeFile('assets/valid.css', 'body { color: red; }');
         $this->writeFile('assets/valid.js', 'export default true;');
 
@@ -752,6 +753,48 @@ PHP);
         );
 
         self::assertTrue($result->isSuccess());
+    }
+
+    public function testItAcceptsPackageOwnedCssClasses(): void
+    {
+        $this->writeFile('assets/module.css', <<<'CSS'
+.system-panel .demo-module-card,
+.demo-module-card,
+.demo-module-card.demo-module-card-active {
+    color: red;
+    background-image: url("../images/icon.svg");
+}
+CSS);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module']),
+            PackageSpec::create(),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItRejectsCssRulesTargetingClassesOutsidePackageNamespace(): void
+    {
+        $this->writeFile('assets/module.css', <<<'CSS'
+.system-panel,
+.other-package-card {
+    color: red;
+}
+CSS);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module']),
+            PackageSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame(
+            ['system-panel', 'other-package-card'],
+            array_map(static fn ($issue): string => $issue->context()['class'], $result->issues()),
+        );
+        self::assertSame('package.css_namespace_invalid', $result->firstIssue()?->code());
+        self::assertSame('demo-module-', $result->firstIssue()?->context()['expected_prefix']);
     }
 
     public function testItAcceptsPackageTranslationFilesInOwnedNamespace(): void
@@ -778,7 +821,7 @@ PHP);
         self::assertTrue($result->isSuccess());
     }
 
-    public function testItRequiresEnglishWhenPackageTranslationsExist(): void
+    public function testItRequiresFallbackLocaleWhenPackageTranslationsExist(): void
     {
         $this->writeFile('languages/de/messages.yaml', "pkg:\n  system:\n    title: Demo\n");
 
@@ -788,8 +831,24 @@ PHP);
         );
 
         self::assertFalse($result->isSuccess());
-        self::assertSame('package.translation_english_missing', $result->firstIssue()?->code());
+        self::assertSame('package.translation_fallback_missing', $result->firstIssue()?->code());
         self::assertSame('languages/en', $result->firstIssue()?->context()['file']);
+    }
+
+    public function testItAcceptsPrimaryLanguageForRegionalTranslationFallback(): void
+    {
+        $this->writeFile('languages/de/messages.yaml', "pkg:\n  system:\n    title: Demo\n");
+
+        $validator = new PackageValidator(
+            translationNamespaceValidator: new PackageTranslationNamespaceValidator(fallbackLocale: 'de_DE'),
+        );
+
+        $result = $validator->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4)->withYamlLinting(),
+        );
+
+        self::assertTrue($result->isSuccess());
     }
 
     public function testItRejectsPackageTranslationFilesOutsideOwnedNamespace(): void
@@ -806,10 +865,49 @@ PHP);
         self::assertSame('languages/en/messages.yaml', $result->firstIssue()?->context()['file']);
     }
 
+    public function testItRejectsPackageCssTargetClassesOutsideTheAssetScope(): void
+    {
+        $this->writeFile('assets/frontend/app.css', <<<'CSS'
+.demo-module-card,
+.system-panel .demo-module-backend-card {
+    color: red;
+}
+CSS);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module', 'PACKAGE_SCOPE' => 'frontend-theme']),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame(['demo-module-card', 'demo-module-backend-card'], array_map(
+            static fn ($issue): string => $issue->context()['class'],
+            $result->issues(),
+        ));
+        self::assertSame('demo-module-frontend-', $result->firstIssue()?->context()['expected_prefix']);
+    }
+
+    public function testItRejectsTemplateReferencesOutsideTheTemplateScope(): void
+    {
+        $this->writeFile('templates/frontend/page.html.twig', <<<'TWIG'
+{% extends '@backend/admin.html.twig' %}
+{% include '@root/partials/brand/_brand.html.twig' %}
+TWIG);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithScope('module'),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.template_reference_invalid', $result->firstIssue()?->code());
+        self::assertSame('@backend/admin.html.twig', $result->firstIssue()?->context()['reference']);
+    }
+
     public function testItReportsStructuredSyntaxErrors(): void
     {
-        $this->writeFile('config/broken.json', '{');
-        $this->writeFile('config/broken.yaml', 'enabled: [');
+        $this->writeFile('data/broken.json', '{');
+        $this->writeFile('data/broken.yaml', 'enabled: [');
         $this->writeFile('assets/broken.css', 'body { color: ; }');
         $this->writeFile('assets/broken.js', 'const = ;');
 
@@ -829,7 +927,7 @@ PHP);
 
     public function testItCanRunIndividualLintingChecks(): void
     {
-        $this->writeFile('config/broken.json', '{');
+        $this->writeFile('data/broken.json', '{');
         $this->writeFile('assets/broken.js', 'const = ;');
 
         $result = (new PackageValidator())->validate(
@@ -840,6 +938,131 @@ PHP);
         self::assertFalse($result->isSuccess());
         self::assertCount(1, $result->issues());
         self::assertSame('package.json_syntax_error', $result->firstIssue()?->code());
+    }
+
+    public function testItBlocksReservedPackagePaths(): void
+    {
+        $this->writeFile('.env.local', 'APP_SECRET=leaked');
+        $this->writeFile('public/index.php', '<?php echo "no";');
+        $this->writeFile('vendor/autoload.php', '<?php return true;');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertNotEmpty($result->issues());
+        self::assertSame(
+            ['package.policy.blocked_path'],
+            array_values(array_unique(array_map(static fn ($issue): string => $issue->code(), $result->issues()))),
+        );
+
+        $reasons = array_values(array_unique(array_map(static fn ($issue): string => $issue->context()['reason'], $result->issues())));
+        self::assertContains('environment_file', $reasons);
+        self::assertContains('reserved_project_path', $reasons);
+    }
+
+    public function testItWarnsAboutNonRuntimePackagePaths(): void
+    {
+        $this->writeFile('docs/readme.md', 'notes');
+        $this->writeFile('tests/PackageTest.php', '<?php');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertTrue($result->isSuccess());
+        self::assertGreaterThanOrEqual(2, count($result->messages()));
+        self::assertSame([
+            'package.policy.warned_path',
+            'package.policy.warned_path',
+        ], array_map(static fn ($message): string => $message->code(), array_slice($result->messages(), 0, 2)));
+        self::assertSame('non_runtime_payload', $result->messages()[0]->context()['reason']);
+    }
+
+    public function testItBlocksDirectPhpCapabilitiesForInstallablePackages(): void
+    {
+        $this->writeFile('package.php', <<<'PHP'
+            <?php
+
+            $secret = file_get_contents('/etc/passwd');
+            putenv('APP_DEBUG=1');
+
+            return [];
+            PHP);
+        $this->writeFile('src/Runner.php', <<<'PHP'
+            <?php
+
+            namespace DemoPackage;
+
+            final class Runner
+            {
+                public function run(): void
+                {
+                    exec('whoami');
+                    new \ZipArchive();
+                }
+            }
+            PHP);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+
+        $policyIssues = array_values(array_filter(
+            $result->issues(),
+            static fn ($issue): bool => 'package.policy.blocked_php_capability' === $issue->code(),
+        ));
+
+        self::assertCount(4, $policyIssues);
+        self::assertSame(['file_get_contents', 'putenv', 'exec', '\ZipArchive'], array_map(
+            static fn ($issue): string => $issue->context()['capability'],
+            $policyIssues,
+        ));
+        self::assertSame(['direct_filesystem', 'direct_environment', 'direct_process', 'direct_filesystem'], array_map(
+            static fn ($issue): string => $issue->context()['reason'],
+            $policyIssues,
+        ));
+    }
+
+    public function testItBlocksDynamicPhpCapabilityBypassesForInstallablePackages(): void
+    {
+        $this->writeFile('package.php', <<<'PHP'
+            <?php
+
+            $reader = 'file_get_contents';
+            $reader('/etc/passwd');
+            call_user_func('exec', 'whoami');
+            new ReflectionFunction('file_get_contents');
+
+            return [];
+            PHP);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+
+        $policyIssues = array_values(array_filter(
+            $result->issues(),
+            static fn ($issue): bool => 'package.policy.blocked_php_capability' === $issue->code(),
+        ));
+
+        self::assertSame(['$reader()', 'call_user_func', 'ReflectionFunction'], array_map(
+            static fn ($issue): string => $issue->context()['capability'],
+            $policyIssues,
+        ));
+        self::assertSame(['dynamic_callable', 'dynamic_callable', 'dynamic_introspection'], array_map(
+            static fn ($issue): string => $issue->context()['reason'],
+            $policyIssues,
+        ));
     }
 
     private function candidate(): PackageCandidate

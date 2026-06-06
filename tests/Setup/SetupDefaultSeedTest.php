@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Setup;
 
+use App\Core\Config\ConfigDefaultProviderInterface;
 use App\Setup\DatabaseDriver;
 use App\Setup\SetupDefaultSeed;
 use App\Setup\SetupInput;
+use App\Scheduler\SchedulerSettings;
 use App\Security\UserFlowConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -25,6 +27,59 @@ final class SetupDefaultSeedTest extends TestCase
         self::assertSame(UserFlowConfig::DEFAULT_DELETED_USER_RETENTION_DAYS, $settings[UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY]);
     }
 
+    public function testItUsesCentralConfigDefaultsForSetupSeededSettings(): void
+    {
+        $seed = new SetupDefaultSeed(new SetupSeedConfigDefaultProvider([
+            'content.home_path' => '/start',
+            UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY => 48,
+            SchedulerSettings::ENABLED_KEY => false,
+        ]));
+        $settings = $seed->configMap($this->input(siteSettings: [
+            SchedulerSettings::ENABLED_KEY => true,
+        ]));
+
+        self::assertSame('/start', $settings['content.home_path']);
+        self::assertSame(48, $settings[UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY]);
+        self::assertTrue($settings[SchedulerSettings::ENABLED_KEY]);
+    }
+
+    public function testEverySetupConfigKeyHasACentralDefaultExceptSetupInputValues(): void
+    {
+        $defaultKeys = [
+            'content.home_path',
+            'localization.route_prefixes_enabled',
+            'site.footer_copyright',
+            UserFlowConfig::DEFAULT_ACL_GROUP_KEY,
+            UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY,
+            UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY,
+            UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY,
+            UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY,
+            UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY,
+            'user.menu.enabled',
+            'user.menu.sort_order',
+            UserFlowConfig::REGISTRATION_MODE_KEY,
+            \App\Core\Log\ConfigAuditLogPolicy::ENABLED_KEY,
+            \App\Core\Log\ConfigAuditLogPolicy::EVENTS_KEY,
+            \App\Core\Statistics\AccessStatisticsPolicy::ENABLED_KEY,
+            \App\Core\Statistics\AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY,
+            SchedulerSettings::ENABLED_KEY,
+            SchedulerSettings::GET_AUTH_ENABLED_KEY,
+            SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY,
+            SchedulerSettings::WEB_TRIGGER_ENABLED_KEY,
+        ];
+        $inputOnlyKeys = [
+            'site.title',
+            'site.url',
+            'localization.default_language',
+        ];
+        $seedKeys = array_keys((new SetupDefaultSeed())->configMap($this->input()));
+        sort($seedKeys);
+        $expectedKeys = [...$defaultKeys, ...$inputOnlyKeys];
+        sort($expectedKeys);
+
+        self::assertSame($expectedKeys, $seedKeys);
+    }
+
     public function testItUsesValidLocalhostAdminEmailDefault(): void
     {
         self::assertSame('admin@localhost.local', SetupInput::withDefaults(defaultUri: 'http://localhost')->adminEmail());
@@ -33,20 +88,22 @@ final class SetupDefaultSeedTest extends TestCase
     public function testItDefinesSetupAclAndContentDefaults(): void
     {
         $seed = new SetupDefaultSeed();
-        $input = $this->input(siteTitle: 'Seeded Studio');
+        $input = $this->input(siteTitle: 'Seeded Studio', language: 'de');
 
         self::assertSame([], $seed->aclGroups());
         self::assertSame('/home', $seed->homePath());
         self::assertSame('static_page', $seed->contentSchema()['identifier']);
         self::assertSame(['title', 'subtitle', 'body', 'seo_title'], array_column($seed->contentSchemaVersion()['definition']['fields'], 'identifier'));
-        self::assertSame('home', $seed->homeContentItem()['slug']);
-        self::assertSame('Seeded Studio', $seed->homeContentFields($input)['title']['en']);
+        self::assertSame('home', $seed->homeContentItem([$input->language()])['slug']);
+        self::assertSame(['de'], $seed->homeContentItem([$input->language()])['available_languages']);
+        self::assertSame('Seeded Studio', $seed->homeContentFields($input)['title']['de']);
     }
 
     private function input(
         string $siteTitle = 'Test Studio',
         string $defaultUri = 'https://example.test',
         string $language = 'en',
+        array $siteSettings = [],
     ): SetupInput {
         return new SetupInput(
             appEnv: 'test',
@@ -58,6 +115,27 @@ final class SetupDefaultSeedTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
+            siteSettings: $siteSettings,
         );
+    }
+}
+
+final readonly class SetupSeedConfigDefaultProvider implements ConfigDefaultProviderInterface
+{
+    /**
+     * @param array<string, mixed> $defaults
+     */
+    public function __construct(private array $defaults)
+    {
+    }
+
+    public function hasDefault(string $key): bool
+    {
+        return array_key_exists($key, $this->defaults);
+    }
+
+    public function defaultValue(string $key): mixed
+    {
+        return $this->defaults[$key] ?? null;
     }
 }

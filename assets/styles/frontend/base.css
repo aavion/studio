@@ -1,4 +1,4 @@
-.studio-frontend-shell {
+.system-frontend-shell {
     display: grid;
     min-height: 100vh;
     grid-template-rows: auto 1fr auto;
@@ -7,36 +7,36 @@
         var(--color-surface);
 }
 
-.studio-frontend-lightweight {
+.system-frontend-lightweight {
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
     background: var(--color-paper);
 }
 
-.studio-skip-link {
+.system-skip-link {
     position: fixed;
     z-index: 50;
     top: 0.75rem;
     left: 0.75rem;
     transform: translateY(-140%);
     padding: 0.625rem 0.875rem;
-    border-radius: var(--studio-radius);
+    border-radius: var(--system-radius);
     background: var(--color-ink);
     color: #ffffff;
     font-weight: 800;
-    transition: transform var(--studio-transition-fast);
+    transition: transform var(--system-transition-fast);
 }
 
-.studio-skip-link:focus {
+.system-skip-link:focus {
     transform: translateY(0);
 }
 
-.studio-frontend-header {
-    width: min(100% - 2rem, var(--studio-container));
+.system-frontend-header {
+    width: min(100% - 2rem, var(--system-container));
     margin-inline: auto;
 }
 
-.studio-frontend-header {
+.system-frontend-header {
     display: flex;
     gap: 1rem;
     align-items: center;
@@ -44,7 +44,7 @@
     padding-block: 1rem;
 }
 
-.studio-frontend-navigation-list {
+.system-frontend-navigation-list {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
@@ -54,173 +54,180 @@
     list-style: none;
 }
 
-.studio-frontend-navigation-list .studio-frontend-navigation-list {
+.system-frontend-navigation-list .system-frontend-navigation-list {
     margin-top: 0.35rem;
     padding-left: 0.75rem;
 }
 
-.studio-frontend-navigation-link {
+.system-frontend-navigation-link {
     display: inline-flex;
     min-height: 2.25rem;
     align-items: center;
     padding: 0.4rem 0.65rem;
-    border-radius: var(--studio-radius);
+    border-radius: var(--system-radius);
     color: var(--color-gray-700);
-    font-size: var(--studio-text-sm);
+    font-size: var(--system-text-sm);
     font-weight: 750;
     text-decoration: none;
 }
 
-.studio-frontend-navigation-link:hover {
+.system-frontend-navigation-link:hover {
     background: var(--color-primary-soft);
     color: var(--color-primary-strong);
 }
 
-.studio-frontend-main {
+.system-frontend-main {
     min-width: 0;
 }
 
-.studio-error-page,
-.studio-auth-panel {
+.system-frontend-error-page,
+.system-frontend-auth-panel {
     display: grid;
     gap: 0.75rem;
     width: min(100%, clamp(20rem, 92vw, 40rem));
     margin: 0 auto;
     padding: clamp(1.25rem, 8vw, 5rem);
     overflow: hidden;
+    min-width: 0;
+    border: var(--system-border);
+    border-radius: var(--system-radius);
+    background: var(--color-paper);
+    box-shadow: var(--system-shadow-panel);
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
 
-.studio-error-lightweight {
+.system-frontend-error-lightweight {
     min-height: 100vh;
     place-content: center;
     border: 0;
     box-shadow: none;
 }
 
-.studio-error-page h1,
-.studio-auth-panel h1 {
+.system-frontend-error-page h1,
+.system-frontend-auth-panel h1 {
     margin: 0;
     font-family: var(--font-display);
     font-size: clamp(1.75rem, 4vw, 3rem);
-    line-height: var(--studio-leading-tight);
+    line-height: var(--system-leading-tight);
 }
 
-.studio-error-page p,
-.studio-auth-panel p {
+.system-frontend-error-page p,
+.system-frontend-auth-panel p {
     margin: 0;
     color: var(--color-muted);
-    line-height: var(--studio-leading-copy);
+    line-height: var(--system-leading-copy);
 }
 
-.studio-error-diagnostics {
+.system-frontend-error-diagnostics {
     display: grid;
     gap: 0.4rem;
     margin-top: clamp(1rem, 6vw, 2.5rem);
     padding-top: 0.75rem;
-    border-top: var(--studio-border);
+    border-top: var(--system-border);
     color: var(--color-muted);
-    font-size: var(--studio-text-xs);
+    font-size: var(--system-text-xs);
     line-height: 1.45;
 }
 
-.studio-error-diagnostics dl {
+.system-frontend-error-diagnostics dl {
     display: block;
     margin: 0;
 }
 
-.studio-error-reference-item,
-.studio-debug-trace dl {
+.system-frontend-error-reference-item,
+.system-debug-trace dl {
     display: grid;
     min-width: 0;
     gap: 0.15rem;
 }
 
-.studio-error-reference-item {
+.system-frontend-error-reference-item {
     grid-template-columns: max-content minmax(0, 1fr);
     align-items: baseline;
     gap: 0.35rem 0.5rem;
     padding-block: 0.2rem;
 }
 
-.studio-error-diagnostics dt {
+.system-frontend-error-diagnostics dt {
     min-width: 0;
     font-weight: 750;
 }
 
-.studio-error-diagnostics dd {
+.system-frontend-error-diagnostics dd {
     min-width: 0;
     margin: 0;
 }
 
-.studio-error-diagnostics code,
-.studio-error-diagnostics pre,
-.studio-error-diagnostics summary {
+.system-frontend-error-diagnostics code,
+.system-frontend-error-diagnostics pre,
+.system-frontend-error-diagnostics summary {
     font-size: inherit;
 }
 
-.studio-error-diagnostics code {
+.system-frontend-error-diagnostics code {
     display: block;
     max-width: 100%;
     overflow-wrap: anywhere;
     word-break: break-word;
 }
 
-.studio-error-token {
+.system-frontend-error-token {
     display: inline-block;
     padding: 0.25rem 0.4rem;
     overflow-x: auto;
     border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
-    border-radius: var(--studio-radius-sm);
+    border-radius: var(--system-radius-sm);
     background: color-mix(in srgb, var(--color-surface-muted) 76%, transparent);
     font-size: 0.7rem;
     line-height: 1.35;
     white-space: nowrap;
 }
 
-.studio-debug-trace {
+.system-debug-trace {
     min-width: 0;
 }
 
-.studio-debug-trace summary {
+.system-debug-trace summary {
     cursor: pointer;
 }
 
-.studio-debug-trace .studio-code-block {
+.system-debug-trace .system-code-block {
     max-height: 12rem;
     margin-top: 0.5rem;
     padding: 0.65rem;
     white-space: pre-wrap;
 }
 
-.studio-user-summary {
+.system-frontend-user-summary {
     display: grid;
     gap: 0.75rem;
     margin: 0;
 }
 
-.studio-user-summary div {
+.system-frontend-user-summary div {
     display: grid;
     gap: 0.25rem;
     padding-block: 0.75rem;
-    border-bottom: var(--studio-border);
+    border-bottom: var(--system-border);
 }
 
-.studio-user-summary dt {
+.system-frontend-user-summary dt {
     color: var(--color-muted);
-    font-size: var(--studio-text-sm);
+    font-size: var(--system-text-sm);
     font-weight: 750;
 }
 
-.studio-user-summary dd {
+.system-frontend-user-summary dd {
     margin: 0;
 }
 
-.studio-api-key-list {
+.system-frontend-api-key-list {
     display: grid;
     gap: 0.75rem;
 }
 
-.studio-api-key-toggle {
+.system-frontend-api-key-toggle {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -229,49 +236,49 @@
     white-space: nowrap;
 }
 
-.studio-api-key-toggle-label {
+.system-frontend-api-key-toggle-label {
     display: inline-flex;
     width: fit-content;
     min-height: 2.25rem;
     align-items: center;
     padding: 0.4rem 0.65rem;
-    border: var(--studio-border);
-    border-radius: var(--studio-radius);
+    border: var(--system-border);
+    border-radius: var(--system-radius);
     background: var(--color-paper);
     color: var(--color-gray-700);
     cursor: pointer;
-    font-size: var(--studio-text-sm);
+    font-size: var(--system-text-sm);
     font-weight: 750;
 }
 
-.studio-api-key-toggle:focus-visible + .studio-api-key-toggle-label,
-.studio-api-key-toggle-label:hover {
+.system-frontend-api-key-toggle:focus-visible + .system-frontend-api-key-toggle-label,
+.system-frontend-api-key-toggle-label:hover {
     border-color: var(--color-primary-action);
     color: var(--color-primary-strong);
 }
 
-.studio-api-key-toggle:not(:checked) ~ .studio-field-table .studio-api-key-row-revoked {
+.system-frontend-api-key-toggle:not(:checked) ~ .system-field-table .system-frontend-api-key-row-revoked {
     display: none;
 }
 
-.studio-content-page {
+.system-frontend-content-page {
     width: min(100% - 2rem, 960px);
     margin: 0 auto;
     padding: clamp(2rem, 5vw, 5rem) 0;
 }
 
-.studio-content-article {
+.system-frontend-content-article {
     display: grid;
     gap: 2rem;
 }
 
-.studio-content-header {
+.system-content-header {
     display: grid;
     gap: 0.75rem;
     max-width: 720px;
 }
 
-.studio-content-header h1 {
+.system-content-header h1 {
     margin: 0;
     color: var(--color-ink);
     font-family: var(--font-display);
@@ -280,61 +287,56 @@
     line-height: 1;
 }
 
-.studio-content-subtitle {
+.system-content-subtitle {
     margin: 0;
     color: var(--color-muted);
-    font-size: var(--studio-text-lg);
-    line-height: var(--studio-leading-copy);
+    font-size: var(--system-text-lg);
+    line-height: var(--system-leading-copy);
 }
 
-.studio-content-body {
+.system-frontend-content-body {
     max-width: 760px;
-    font-size: var(--studio-text-base);
+    font-size: var(--system-text-base);
     line-height: 1.75;
 }
 
-.studio-content-fields {
+.system-frontend-content-fields {
     display: grid;
     gap: 1rem;
 }
 
-.studio-content-fields h2 {
+.system-frontend-content-fields h2 {
     margin: 0;
     font-size: 1rem;
 }
 
-.studio-field-table {
+.system-field-table {
     width: 100%;
     border-collapse: collapse;
-    border: var(--studio-border);
+    border: var(--system-border);
     background: var(--color-paper);
 }
 
-.studio-field-table th,
-.studio-field-table td {
+.system-field-table th,
+.system-field-table td {
     padding: 0.875rem 1rem;
-    border-bottom: var(--studio-border);
+    border-bottom: var(--system-border);
     text-align: left;
     vertical-align: top;
 }
 
-.studio-field-table tbody tr:last-child th,
-.studio-field-table tbody tr:last-child td {
+.system-field-table tbody tr:last-child th,
+.system-field-table tbody tr:last-child td {
     border-bottom: 0;
 }
 
-.studio-frontend-demo {
-    display: grid;
-    gap: 1.5rem;
-}
-
 @media (max-width: 760px) {
-    .studio-frontend-header {
+    .system-frontend-header {
         display: grid;
         justify-items: start;
     }
 
-    .studio-frontend-navigation-list {
+    .system-frontend-navigation-list {
         align-items: flex-start;
     }
 }

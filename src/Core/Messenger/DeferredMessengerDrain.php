@@ -6,8 +6,8 @@ namespace App\Core\Messenger;
 
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Messenger\MessengerMessageCode;
+use App\Core\Messenger\MessengerMessageKey;
 use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Process\PhpCliBinaryManager;
 use App\Scheduler\SchedulerSettings;
@@ -186,8 +186,8 @@ final readonly class DeferredMessengerDrain
         }
 
         $this->messageLogger?->log(Message::error(
-            MessageCode::MESSENGER_DEFERRED_PROCESS_START_FAILED,
-            MessageKey::MESSENGER_DEFERRED_PROCESS_START_FAILED,
+            MessengerMessageCode::MESSENGER_DEFERRED_PROCESS_START_FAILED,
+            MessengerMessageKey::MESSENGER_DEFERRED_PROCESS_START_FAILED,
             [],
             [
                 'command' => $command,
@@ -242,7 +242,7 @@ final readonly class DeferredMessengerDrain
             .DIRECTORY_SEPARATOR.'var'
             .DIRECTORY_SEPARATOR.'cache'
             .DIRECTORY_SEPARATOR.$this->safeEnvironment()
-            .DIRECTORY_SEPARATOR.'studio-messenger-drain.lock';
+            .DIRECTORY_SEPARATOR.'system-messenger-drain.lock';
     }
 
     private function outputPath(): string
@@ -260,7 +260,7 @@ final readonly class DeferredMessengerDrain
             .DIRECTORY_SEPARATOR.'var'
             .DIRECTORY_SEPARATOR.'cache'
             .DIRECTORY_SEPARATOR.$this->safeEnvironment()
-            .DIRECTORY_SEPARATOR.'studio-messenger-drain.pid';
+            .DIRECTORY_SEPARATOR.'system-messenger-drain.pid';
     }
 
     private function schedulerOutputPath(): string
@@ -278,7 +278,7 @@ final readonly class DeferredMessengerDrain
             .DIRECTORY_SEPARATOR.'var'
             .DIRECTORY_SEPARATOR.'cache'
             .DIRECTORY_SEPARATOR.$this->safeEnvironment()
-            .DIRECTORY_SEPARATOR.'studio-scheduler-web-trigger.pid';
+            .DIRECTORY_SEPARATOR.'system-scheduler-web-trigger.pid';
     }
 
     private function safeEnvironment(): string

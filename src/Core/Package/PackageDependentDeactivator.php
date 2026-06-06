@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Entity\ExtensionPackage;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -43,8 +43,8 @@ final readonly class PackageDependentDeactivator
                 'reason' => $reason,
             ];
             $messages[] = Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_DEPENDENT_DEACTIVATED,
-                MessageKey::PACKAGE_LIFECYCLE_DEPENDENT_DEACTIVATED,
+                PackageMessageCode::PACKAGE_LIFECYCLE_DEPENDENT_DEACTIVATED,
+                PackageMessageKey::PACKAGE_LIFECYCLE_DEPENDENT_DEACTIVATED,
                 ['%package%' => $dependent->packageName(), '%dependency%' => $package->packageName()],
                 ['package' => $dependent->packageName(), 'dependency' => $package->packageName(), 'reason' => $reason],
                 MessageLevel::Warning,

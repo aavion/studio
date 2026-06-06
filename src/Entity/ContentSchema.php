@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Content\ContentMessageKey;
 use App\Content\Schema\ContentSchemaSource;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -75,7 +75,7 @@ class ContentSchema
         array $metadata = [],
     ) {
         $this->uid = Uid::assert($uid, 'Content schema UID');
-        $this->identifier = Identifier::assertSnakeCase($identifier, MessageKey::CONTENT_SCHEMA_IDENTIFIER_INVALID, '%identifier%');
+        $this->identifier = Identifier::assertSnakeCase($identifier, ContentMessageKey::CONTENT_SCHEMA_IDENTIFIER_INVALID, '%identifier%');
         $this->source = $source;
         $this->labels = $labels;
         $this->locked = $locked;
@@ -144,5 +144,4 @@ class ContentSchema
     {
         return $this->versions;
     }
-
 }

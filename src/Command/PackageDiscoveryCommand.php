@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Core\Console\ConsoleResultRenderer;
 use App\Core\Message\Message;
-use App\Core\Message\MessageKey;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Package\PackageDiscoveryDispatcher;
 use App\Core\Package\PackageDiscoveryRunner;
 use App\Core\Workflow\WorkflowResult;
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsCommand(
-    name: 'studio:packages:discover',
+    name: 'packages:discover',
     description: 'Discover packages, validate them, and synchronize the package registry.',
 )]
 final class PackageDiscoveryCommand extends Command
@@ -27,6 +28,7 @@ final class PackageDiscoveryCommand extends Command
         private readonly PackageDiscoveryDispatcher $dispatcher,
         private readonly PackageDiscoveryRunner $runner,
         private readonly TranslatorInterface $translator,
+        private readonly ConsoleResultRenderer $resultRenderer,
     ) {
         parent::__construct();
     }
@@ -49,9 +51,7 @@ final class PackageDiscoveryCommand extends Command
             : $this->dispatcher->dispatch((string) $input->getOption('trigger'));
 
         if ($json) {
-            $output->writeln($this->json($result->toArray()));
-
-            return $result->isSuccess() ? Command::SUCCESS : Command::FAILURE;
+            return $this->resultRenderer->writeWorkflow($output, $result, true);
         }
 
         $io->title('Package discovery');
@@ -65,16 +65,16 @@ final class PackageDiscoveryCommand extends Command
             $io->writeln(sprintf('Registry changes: %d', $value['change_count']));
             $this->writeChanges($io, $value['changes']);
 
-            return Command::SUCCESS;
+            return $this->resultRenderer->workflowExitCode($result);
         }
 
         if ($result->isSuccess()) {
-            return Command::SUCCESS;
+            return $this->resultRenderer->workflowExitCode($result);
         }
 
         $io->error($this->formatFailure($result));
 
-        return Command::FAILURE;
+        return $this->resultRenderer->workflowExitCode($result);
     }
 
     /**
@@ -111,7 +111,7 @@ final class PackageDiscoveryCommand extends Command
         $issue = $result->firstIssue();
 
         if (null === $issue) {
-            return $this->translator->trans(MessageKey::OPERATION_EXCEPTION);
+            return $this->translator->trans(OperationMessageKey::OPERATION_EXCEPTION);
         }
 
         return $this->formatIssue($issue);
@@ -128,11 +128,4 @@ final class PackageDiscoveryCommand extends Command
         }
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
-    private function json(array $payload): string
-    {
-        return (string) json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    }
 }

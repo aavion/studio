@@ -14,22 +14,21 @@
         title: 'admin.groups.title'|trans,
     } only %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.groups.create.title'|trans }}</h2>
-        <form method="post" class="studio-backend-form">
+        <form method="post" class="system-backend-form">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_create') }}">
             {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_identifier', name: 'identifier', label: 'admin.groups.fields.identifier'|trans, required: true} only %}
-            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name_en', name: 'name_en', label: 'admin.groups.fields.name_en'|trans, required: true} only %}
-            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name_de', name: 'name_de', label: 'admin.groups.fields.name_de'|trans} only %}
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name', name: 'name', label: 'admin.groups.fields.name'|trans, required: true, attributes: {maxlength: 160}} only %}
             {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_min_role', name: 'min_role', label: 'admin.groups.fields.min_role'|trans, type: 'number', required: true, attributes: {min: 0, max: 9}} only %}
             {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.groups.actions.create'|trans} only %}
         </form>
     </section>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.groups.list.title'|trans }}</h2>
-        <form method="get" class="studio-form studio-log-filter-form">
-            <div class="studio-form-grid">
+        <form method="get" class="system-form system-backend-log-filter-form">
+            <div class="system-form-grid">
                 <label>
                     <span>{{ 'admin.groups.filters.search'|trans }}</span>
                     <input type="search" name="q" value="{{ groups_view.filters.search }}" maxlength="120">
@@ -59,9 +58,9 @@
                 </label>
             </div>
             <input type="hidden" name="page" value="1">
-            <button type="submit" class="studio-button">{{ 'admin.groups.filters.apply'|trans }}</button>
+            <button type="submit" class="system-button">{{ 'admin.groups.filters.apply'|trans }}</button>
         </form>
-        <table class="studio-field-table">
+        <table class="system-field-table">
             <thead>
                 <tr>
                     <th scope="col">{{ 'admin.groups.fields.identifier'|trans }}</th>
@@ -74,20 +73,20 @@
                 {% for group in groups %}
                     <tr>
                         <td>{{ group.identifier }}</td>
-                        <td>{{ group.name.en|default(group.identifier) }}</td>
+                        <td>{{ group.name }}</td>
                         <td>{{ group.minRole }}</td>
                         <td><a href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">{{ 'admin.users.actions.details'|trans }}</a></td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-        <div class="studio-toolbar">
-            <span class="studio-muted">{{ 'admin.groups.pagination.page_summary'|trans({'%page%': groups_view.pagination.page, '%pages%': groups_view.pagination.total_pages, '%total%': groups_view.pagination.total}) }}</span>
+        <div class="system-toolbar">
+            <span class="system-muted">{{ 'admin.groups.pagination.page_summary'|trans({'%page%': groups_view.pagination.page, '%pages%': groups_view.pagination.total_pages, '%total%': groups_view.pagination.total}) }}</span>
             {% if groups_view.pagination.has_previous %}
-                <a class="studio-button" href="?{{ app.request.query.all|merge({page: groups_view.pagination.previous_page})|url_encode }}">{{ 'admin.groups.pagination.previous'|trans }}</a>
+                <a class="system-button" href="?{{ app.request.query.all|merge({page: groups_view.pagination.previous_page})|url_encode }}">{{ 'admin.groups.pagination.previous'|trans }}</a>
             {% endif %}
             {% if groups_view.pagination.has_next %}
-                <a class="studio-button" href="?{{ app.request.query.all|merge({page: groups_view.pagination.next_page})|url_encode }}">{{ 'admin.groups.pagination.next'|trans }}</a>
+                <a class="system-button" href="?{{ app.request.query.all|merge({page: groups_view.pagination.next_page})|url_encode }}">{{ 'admin.groups.pagination.next'|trans }}</a>
             {% endif %}
         </div>
     </section>

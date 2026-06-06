@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Core\Log;
 
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\MessageReporterInterface;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
 
 final readonly class OperationLogger implements OperationLoggerInterface
 {
@@ -41,10 +42,10 @@ final readonly class OperationLogger implements OperationLoggerInterface
 
         $parameters = ['%operation%' => $context['operation']];
         $message = match ($status) {
-            'success' => Message::info(MessageCode::SUCCESS, MessageKey::OPERATION_FINISHED, $parameters, $context),
-            'requires_review' => Message::create(MessageCode::OPERATION_ACTION_REQUIRED, MessageKey::OPERATION_REQUIRES_REVIEW, $parameters, $context, MessageLevel::Warning),
-            'failed' => Message::error(MessageCode::E_OPERATION_FAILED, MessageKey::OPERATION_FAILED, $parameters, $context),
-            default => Message::warning(MessageCode::E_OPERATION_FAILED, MessageKey::OPERATION_FINISHED_UNKNOWN, $parameters, $context),
+            'success' => Message::info(CommonMessageCode::SUCCESS, OperationMessageKey::OPERATION_FINISHED, $parameters, $context),
+            'requires_review' => Message::create(OperationMessageCode::OPERATION_ACTION_REQUIRED, OperationMessageKey::OPERATION_REQUIRES_REVIEW, $parameters, $context, MessageLevel::Warning),
+            'failed' => Message::error(CommonMessageCode::E_OPERATION_FAILED, OperationMessageKey::OPERATION_FAILED, $parameters, $context),
+            default => Message::warning(CommonMessageCode::E_OPERATION_FAILED, OperationMessageKey::OPERATION_FINISHED_UNKNOWN, $parameters, $context),
         };
 
         $this->messageReporter->report($message, [

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Package\Settings;
 
+use App\Form\FormErrorKey;
 use App\Form\FormSubmissionHandler;
 use App\Form\FormSubmissionResult;
 
@@ -34,7 +35,7 @@ final readonly class PackageSettingsFormHandler
         foreach ($definitions as $definition) {
             if (!$this->settings->set($packageName, $definition->key(), $result->value($definition->key()), $definition->valueType(), $modifiedBy)) {
                 return new FormSubmissionResult($result->values(), [
-                    '__form' => ['admin.settings.form.errors.save_failed'],
+                    '__form' => [FormErrorKey::SAVE_FAILED],
                 ]);
             }
         }

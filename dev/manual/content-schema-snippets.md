@@ -117,10 +117,10 @@ Localized titles live in revision field values. For portable list views across M
 
 ## Validation messages
 
-Content-domain validation should not throw free-form user-facing sentences. Use a structured `Message` shape: a machine-readable `MessageCode`, a translatable `MessageKey`, parameters for translators, and optional context for logs or diagnostics.
+Content-domain validation should not throw free-form user-facing sentences. Use a structured `Message` shape with a domain-owned machine-readable message code, a translatable message key, parameters for translators, and optional context for logs or diagnostics.
 
 ```php
-throw MessageException::invalidArgument(MessageKey::CONTENT_SLUG_INVALID, [
+throw MessageException::invalidArgument(ContentMessageKey::CONTENT_SLUG_INVALID, [
     '%slug%' => $slug,
 ], [
     'field' => 'slug',

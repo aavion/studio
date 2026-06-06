@@ -9,6 +9,8 @@ use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Log\AuditLoggerInterface;
+use App\Core\Log\MessageLoggerInterface;
+use App\Core\Message\Message;
 use App\Core\Routing\AbsoluteUriGenerator;
 use App\Database\DatabaseReadyState;
 use App\Entity\AccountToken;
@@ -34,6 +36,8 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
         private MailLocaleResolver $mailLocaleResolver,
         private AbsoluteUriGenerator $absoluteUris,
         private AuditLoggerInterface $auditLogger,
+        private MessageLoggerInterface $messageLogger,
+        private string $projectDir,
         private string $secret,
         private string $environment,
         private ?DatabaseReadyState $databaseReadyState = null,
@@ -83,16 +87,32 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
 
         $apiKeysRevoked = $this->revokeActiveApiKeys();
         $resetLinks = $this->issueOwnerPasswordResetLinks();
-
-        if (0 === $resetLinks['owners'] || $resetLinks['issued'] === $resetLinks['owners']) {
-            $this->storeFingerprint($fingerprints, $environmentKey, $currentFingerprint);
-        }
+        $this->storeFingerprint($fingerprints, $environmentKey, $currentFingerprint);
 
         $this->auditLogger->log(AccessActor::fromAccess(9, [], username: 'system'), 'security.app_secret_rotated', [
             'environment' => $this->environment,
             'api_keys_revoked' => $apiKeysRevoked,
+            'password_reset_link_owners' => $resetLinks['owners'],
             'password_reset_links_issued' => $resetLinks['issued'],
+            'emergency_recovery_file' => $resetLinks['emergency_recovery_file'],
         ]);
+
+        if ([] !== $resetLinks['failed_submissions']) {
+            $this->messageLogger->log(
+                Message::warning(
+                SecurityMessageCode::ACCOUNT_APP_SECRET_ROTATION_MANUAL_OWNER_RESET_REQUIRED,
+                SecurityMessageKey::ACCOUNT_APP_SECRET_ROTATION_MANUAL_OWNER_RESET_REQUIRED,
+                    ['%command%' => 'bin/setup --reset-password'],
+                ),
+                [
+                    'component' => self::class,
+                    'environment' => $this->environment,
+                    'manual_command' => 'bin/setup --reset-password',
+                    'emergency_recovery_file' => $resetLinks['emergency_recovery_file'],
+                    'failed_submissions' => $resetLinks['failed_submissions'],
+                ],
+            );
+        }
     }
 
     private function schemaReady(): bool
@@ -159,12 +179,19 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
     }
 
     /**
-     * @return array{owners: int, issued: int}
+     * @return array{
+     *     owners: int,
+     *     issued: int,
+     *     failed_submissions: list<array{user_uid: string, username: string, email: string, reason: string}>,
+     *     emergency_recovery_file: string|null
+     * }
      */
     private function issueOwnerPasswordResetLinks(): array
     {
         $owners = 0;
         $issued = 0;
+        $failedSubmissions = [];
+        $emergencyEntries = [];
 
         foreach ($this->entityManager->getRepository(UserAccount::class)->findBy(['status' => UserAccountStatus::Active]) as $user) {
             if (!$user instanceof UserAccount || AccessLevel::OWNER !== $user->accessLevel()) {
@@ -183,24 +210,126 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
             $url = $this->absoluteUris->generateUri(__METHOD__, 'user_password_reset_token', ['token' => $plainToken]);
 
             if (null === $url) {
+                $failedSubmissions[] = $this->failedSubmission($user, 'action_url_unavailable');
+                $this->persistEmergencyResetToken($user, $token);
+                $emergencyEntries[] = $this->emergencyEntry($user, $token, $plainToken, 'action_url_unavailable');
                 continue;
             }
 
-            $this->revokePendingPasswordResetTokens($user);
-            $this->entityManager->persist($token);
-            $this->linkDelivery->deliver(
-                $token,
-                AccountMailFlow::PasswordResetLink,
-                $plainToken,
-                $url,
-                $this->mailLocaleResolver->forAdminAction($user),
-            );
-            ++$issued;
+            try {
+                $this->linkDelivery->deliver(
+                    $token,
+                    AccountMailFlow::PasswordResetLink,
+                    $url,
+                    $this->mailLocaleResolver->forAdminAction($user),
+                );
+                $this->revokePendingPasswordResetTokens($user);
+                $this->entityManager->persist($token);
+                ++$issued;
+            } catch (Throwable) {
+                $failedSubmissions[] = $this->failedSubmission($user, 'delivery_failed');
+                $this->persistEmergencyResetToken($user, $token);
+                $emergencyEntries[] = $this->emergencyEntry($user, $token, $plainToken, 'delivery_failed', $url);
+            }
         }
 
+        $recoveryFile = [] === $emergencyEntries ? null : $this->writeEmergencyRecoveryFile($emergencyEntries);
         $this->entityManager->flush();
 
-        return ['owners' => $owners, 'issued' => $issued];
+        return [
+            'owners' => $owners,
+            'issued' => $issued,
+            'failed_submissions' => $failedSubmissions,
+            'emergency_recovery_file' => $recoveryFile,
+        ];
+    }
+
+    /**
+     * @return array{user_uid: string, username: string, email: string, reason: string}
+     */
+    private function failedSubmission(UserAccount $user, string $reason): array
+    {
+        return [
+            'user_uid' => $user->uid(),
+            'username' => $user->username(),
+            'email' => $user->email(),
+            'reason' => $reason,
+        ];
+    }
+
+    private function persistEmergencyResetToken(UserAccount $user, AccountToken $token): void
+    {
+        $this->revokePendingPasswordResetTokens($user);
+        $this->entityManager->persist($token);
+    }
+
+    /**
+     * @return array{
+     *     user_uid: string,
+     *     username: string,
+     *     email: string,
+     *     reason: string,
+     *     token_uid: string,
+     *     expires_at: string,
+     *     reset_path: string,
+     *     reset_url?: string
+     * }
+     */
+    private function emergencyEntry(UserAccount $user, AccountToken $token, string $plainToken, string $reason, ?string $url = null): array
+    {
+        $entry = [
+            'user_uid' => $user->uid(),
+            'username' => $user->username(),
+            'email' => $user->email(),
+            'reason' => $reason,
+            'token_uid' => $token->uid(),
+            'expires_at' => $token->expiresAt()->format(DATE_ATOM),
+            'reset_path' => '/user/reset-password/'.$plainToken,
+        ];
+
+        if (null !== $url) {
+            $entry['reset_url'] = $url;
+        }
+
+        return $entry;
+    }
+
+    /**
+     * @param list<array<string, string>> $entries
+     */
+    private function writeEmergencyRecoveryFile(array $entries): ?string
+    {
+        $relativePath = sprintf(
+            'var/recovery/%s/app-secret-rotation-%s.json',
+            $this->environmentKey(),
+            gmdate('Ymd-His'),
+        );
+        $path = rtrim($this->projectDir, '/\\').'/'.$relativePath;
+        $directory = dirname($path);
+
+        try {
+            if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
+                return null;
+            }
+
+            @chmod($directory, 0700);
+            $written = file_put_contents($path, json_encode([
+                'created_at' => gmdate(DATE_ATOM),
+                'environment' => $this->environment,
+                'manual_command' => 'bin/setup --reset-password',
+                'entries' => $entries,
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+
+            if (false === $written) {
+                return null;
+            }
+
+            @chmod($path, 0600);
+
+            return $relativePath;
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     private function revokePendingPasswordResetTokens(UserAccount $user): void
@@ -220,7 +349,7 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
 
     private function fingerprint(): string
     {
-        return hash_hmac('sha256', 'studio.app_secret_rotation.'.$this->environmentKey(), $this->secret);
+        return hash_hmac('sha256', 'system.app_secret_rotation.'.$this->environmentKey(), $this->secret);
     }
 
     private function environmentKey(): string

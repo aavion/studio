@@ -12,12 +12,12 @@ interface AccountLinkDeliveryInterface
     /**
      * @param array<string, mixed> $parameters
      */
-    public function deliver(AccountToken $token, AccountMailFlow $flow, string $plainToken, string $url, string $locale, array $parameters = []): void;
+    public function deliver(AccountToken $token, AccountMailFlow $flow, string $url, string $locale, array $parameters = []): void;
 
     /**
      * @param array<string, mixed> $parameters
      */
-    public function notify(AccountToken $token, AccountMailFlow $flow, ?string $recipientEmail = null, string $locale = 'en', array $parameters = []): void;
+    public function notify(AccountToken $token, AccountMailFlow $flow, ?string $recipientEmail = null, string $locale = '', array $parameters = []): void;
 
     /**
      * @param array<string, mixed> $parameters

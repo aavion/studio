@@ -6,6 +6,7 @@ namespace App\Tests\Setup;
 
 use App\Setup\DatabaseDriver;
 use App\Setup\SetupCliInputFactory;
+use App\Setup\SetupMessageKey;
 use PHPUnit\Framework\TestCase;
 
 final class SetupCliInputFactoryTest extends TestCase
@@ -28,7 +29,7 @@ final class SetupCliInputFactoryTest extends TestCase
             'admin-username' => 'owner',
             'admin-password' => 'Safe1!pass',
             'admin-email' => 'owner@example.test',
-            'app-secret' => 'app-secret',
+            'app-secret' => 'app-secret-12',
             'dry-run' => false,
         ]);
 
@@ -148,7 +149,7 @@ final class SetupCliInputFactoryTest extends TestCase
         );
 
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Setup admin username must start with a letter');
+        $this->expectExceptionMessage(SetupMessageKey::SETUP_INPUT_ADMIN_USERNAME_INVALID);
 
         $factory->create([
             'env' => 'test',
@@ -206,6 +207,66 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertSame('', $input->adminPassword());
     }
 
+    public function testItUsesEnvironmentNameForDefaultSqliteDatabaseUrl(): void
+    {
+        $previous = [
+            'APP_ENV' => $_SERVER['APP_ENV'] ?? null,
+            'DATABASE_URL' => $_SERVER['DATABASE_URL'] ?? null,
+            '_ENV_APP_ENV' => $_ENV['APP_ENV'] ?? null,
+            '_ENV_DATABASE_URL' => $_ENV['DATABASE_URL'] ?? null,
+        ];
+
+        $_SERVER['APP_ENV'] = 'staging';
+        unset($_SERVER['DATABASE_URL']);
+        $_ENV['APP_ENV'] = 'staging';
+        unset($_ENV['DATABASE_URL']);
+
+        try {
+            $factory = new SetupCliInputFactory(
+                dirname(__DIR__, 2),
+                extensionAvailability: [
+                    'pdo_sqlite' => true,
+                    'pdo_mysql' => true,
+                    'pdo_pgsql' => true,
+                ],
+                input: $this->stream(''),
+                output: $this->stream(''),
+                interactive: false,
+            );
+
+            $input = $factory->create([
+                'language' => 'en',
+                'site-title' => 'Env SQLite Studio',
+                'url' => 'https://env.example.test',
+                'admin-username' => 'owner',
+                'admin-password' => 'Safe1!pass',
+                'admin-email' => 'owner@example.test',
+            ]);
+        } finally {
+            foreach (['APP_ENV', 'DATABASE_URL'] as $key) {
+                $value = $previous[$key];
+                if (null === $value) {
+                    unset($_SERVER[$key]);
+                    continue;
+                }
+
+                $_SERVER[$key] = $value;
+            }
+            foreach (['APP_ENV' => '_ENV_APP_ENV', 'DATABASE_URL' => '_ENV_DATABASE_URL'] as $key => $previousKey) {
+                $value = $previous[$previousKey];
+                if (null === $value) {
+                    unset($_ENV[$key]);
+                    continue;
+                }
+
+                $_ENV[$key] = $value;
+            }
+        }
+
+        self::assertSame('staging', $input->appEnv());
+        self::assertSame('sqlite:///%kernel.project_dir%/var/data_staging.db', $input->databaseUrl());
+    }
+
     public function testItRejectsExplicitDatabaseUrlDriverMismatches(): void
     {
         $factory = new SetupCliInputFactory(
@@ -252,7 +313,7 @@ final class SetupCliInputFactoryTest extends TestCase
             'Safe1!pass',
             'Safe1!pass',
             'owner@example.test',
-            'app-secret',
+            'app-secret-12',
             '',
         ]));
         $outputStream = $this->stream('');
@@ -280,7 +341,7 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertSame('db.example.test', $input->databaseHost());
         self::assertSame(3307, $input->databasePort());
         self::assertSame('owner@example.test', $input->adminEmail());
-        self::assertSame('app-secret', $input->appSecret());
+        self::assertSame('app-secret-12', $input->appSecret());
         self::assertStringContainsString('Installer language', $output);
         self::assertStringContainsString('Seitentitel', $output);
         self::assertStringContainsString('Datenbank-Treiber', $output);

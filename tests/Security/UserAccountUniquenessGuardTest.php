@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Security;
 
-use App\Entity\UserAccount;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
+use App\Entity\UserAccount;
+use App\Security\SecurityMessageKey;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -50,7 +50,7 @@ final class UserAccountUniquenessGuardTest extends KernelTestCase
     public function testItRejectsDuplicateUserAccountIdentifiersAlreadyInStorage(): void
     {
         $existing = new UserAccount(
-            '68000000-0000-0000-0000-000000000010',
+            '68000000-0000-7000-8000-000000000010',
             'uniqueguardstored',
             'UniqueGuardStored@Example.Test',
             'pending',
@@ -59,7 +59,7 @@ final class UserAccountUniquenessGuardTest extends KernelTestCase
         $this->entityManager->flush();
 
         $duplicate = new UserAccount(
-            '68000000-0000-0000-0000-000000000011',
+            '68000000-0000-7000-8000-000000000011',
             'uniqueguardfresh',
             'uniqueguardstored@example.test',
             'pending',
@@ -67,7 +67,7 @@ final class UserAccountUniquenessGuardTest extends KernelTestCase
         $this->entityManager->persist($duplicate);
 
         $this->expectException(MessageException::class);
-        $this->expectExceptionMessage(MessageKey::USER_EMAIL_DUPLICATE);
+        $this->expectExceptionMessage(SecurityMessageKey::USER_EMAIL_DUPLICATE);
 
         $this->entityManager->flush();
     }
@@ -79,34 +79,34 @@ final class UserAccountUniquenessGuardTest extends KernelTestCase
     {
         yield 'email' => [
             new UserAccount(
-                '68000000-0000-0000-0000-000000000001',
+                '68000000-0000-7000-8000-000000000001',
                 'uniqueguardone',
                 'UniqueGuard@Example.Test',
                 'pending',
             ),
             new UserAccount(
-                '68000000-0000-0000-0000-000000000002',
+                '68000000-0000-7000-8000-000000000002',
                 'uniqueguardtwo',
                 'uniqueguard@example.test',
                 'pending',
             ),
-            MessageKey::USER_EMAIL_DUPLICATE,
+            SecurityMessageKey::USER_EMAIL_DUPLICATE,
         ];
 
         yield 'username' => [
             new UserAccount(
-                '68000000-0000-0000-0000-000000000003',
+                '68000000-0000-7000-8000-000000000003',
                 'uniqueguardname',
                 'uniqueguard-name-one@example.test',
                 'pending',
             ),
             new UserAccount(
-                '68000000-0000-0000-0000-000000000004',
+                '68000000-0000-7000-8000-000000000004',
                 'uniqueguardname',
                 'uniqueguard-name-two@example.test',
                 'pending',
             ),
-            MessageKey::USER_USERNAME_DUPLICATE,
+            SecurityMessageKey::USER_USERNAME_DUPLICATE,
         ];
     }
 }

@@ -11,9 +11,9 @@
 {% block admin_body %}
     {% set package_actions %}
         {% if package.actions is not empty %}
-            <div class="studio-backend-button-group">
+            <div class="system-backend-button-group">
                 {% for action in package.actions %}
-                    <a class="studio-backend-button studio-button-{{ action.variant }}" href="{{ action.path }}">
+                    <a class="system-backend-button system-button-{{ action.variant }}" href="{{ action.path }}">
                         {{ action.label_key|trans }}
                     </a>
                 {% endfor %}
@@ -28,21 +28,21 @@
     } only %}
 
     {% if package.preview_image %}
-        <figure class="studio-package-hero">
+        <figure class="system-backend-package-hero">
             <img src="{{ package.preview_image }}" alt="">
         </figure>
     {% endif %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.packages.detail.overview_title'|trans }}</h2>
-        <table class="studio-table">
+        <table class="system-table">
             <tbody>
                 <tr>
                     <th scope="row">{{ 'admin.packages.table.status'|trans }}</th>
                     <td>
-                        <span class="studio-badge studio-badge-{{ package.status_tone }}">{{ package.status_label_key|trans }}</span>
+                        <span class="system-badge system-badge-{{ package.status_tone }}">{{ package.status_label_key|trans }}</span>
                         {% if package.immutable %}
-                            <span class="studio-badge studio-badge-info">{{ 'admin.packages.detail.immutable'|trans }}</span>
+                            <span class="system-badge system-badge-info">{{ 'admin.packages.detail.immutable'|trans }}</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -50,7 +50,7 @@
                     <th scope="row">{{ 'admin.packages.table.scopes'|trans }}</th>
                     <td>
                         {% for scope in package.scopes %}
-                            <span class="studio-badge studio-badge-neutral">{{ scope.label_key|trans }}</span>
+                            <span class="system-badge system-badge-neutral">{{ scope.label_key|trans }}</span>
                         {% endfor %}
                     </td>
                 </tr>
@@ -85,10 +85,10 @@
                     <td>
                         {% if package.dependencies is not empty %}
                             {% for dependency in package.dependencies %}
-                                <span class="studio-badge studio-badge-neutral">{{ dependency }}</span>
+                                <span class="system-badge system-badge-neutral">{{ dependency }}</span>
                             {% endfor %}
                         {% else %}
-                            <span class="studio-muted">{{ 'admin.packages.detail.dependencies_empty'|trans }}</span>
+                            <span class="system-muted">{{ 'admin.packages.detail.dependencies_empty'|trans }}</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -121,9 +121,9 @@
     </section>
 
     {% if package.readme %}
-        <section class="studio-panel studio-markdown">
+        <section class="system-panel system-markdown">
             <h2>{{ 'admin.packages.detail.readme_title'|trans }}</h2>
-            {{ package.readme|studio_markdown('readme')|raw }}
+            {{ package.readme|render_markdown('readme')|raw }}
         </section>
     {% endif %}
 {% endblock %}

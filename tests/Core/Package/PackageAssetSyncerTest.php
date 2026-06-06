@@ -29,7 +29,7 @@ final class PackageAssetSyncerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-package-assets');
+        $this->root = $this->createTemporaryDirectory('system-package-assets');
         $this->writeTestFile($this->root, 'assets/packages/.gitignore', "*\n!.gitignore\n!README.md\n");
         $this->writeTestFile($this->root, 'assets/packages/README.md', "Package asset mirror.\n");
         $this->writeTestFile($this->root, 'assets/packages/stale/old.css', 'old');
@@ -73,7 +73,7 @@ final class PackageAssetSyncerTest extends TestCase
 
     public function testRegistryWriterCreatesMissingEmptyRegistries(): void
     {
-        $root = $this->createTemporaryDirectory('studio-package-registry-writer');
+        $root = $this->createTemporaryDirectory('system-package-registry-writer');
 
         try {
             $writer = new PackageAssetRegistryWriter(new PackageAssetFilesystem($root));

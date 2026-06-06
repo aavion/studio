@@ -1,0 +1,12 @@
+{% set setup_alerts = [] %}
+{% for error in setup_errors.__form|default([]) %}
+    {% set setup_alerts = setup_alerts|merge([{level: 'error', message: error|trans}]) %}
+{% endfor %}
+{% if setup_database_test %}
+    {% set setup_alerts = setup_alerts|merge([{
+        level: setup_database_test.success ? 'success' : 'error',
+        message: setup_database_test.key|trans,
+    }]) %}
+{% endif %}
+
+{% include '@root/partials/feedback/_alert-stack.html.twig' with {alerts: setup_alerts} only %}

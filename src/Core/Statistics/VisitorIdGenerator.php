@@ -4,19 +4,67 @@ declare(strict_types=1);
 
 namespace App\Core\Statistics;
 
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 final readonly class VisitorIdGenerator
 {
+    public const COOKIE_NAME = 'system_visitor';
+    private const ATTRIBUTE_PENDING_TOKEN = '_system_visitor_pending_token';
+    private const ATTRIBUTE_ID = '_system_visitor_id';
     private const PLACEHOLDER = 'n/a';
+    private const COOKIE_VERSION = 'v1';
+    private const COOKIE_LIFETIME_SECONDS = 2_592_000;
+    private const VISITOR_ID_BYTES = 16;
 
-    public function __construct(private string $secret)
-    {
+    public function __construct(
+        private string $secret,
+        private ?VisitorIdentityStoreInterface $identityStore = null,
+    ) {
     }
 
     public function generate(Request $request): string
     {
-        return hash_hmac('sha256', $this->sourceIp($request).'|'.$this->normalizedUserAgent($request), $this->secret);
+        $existing = $request->attributes->get(self::ATTRIBUTE_ID);
+
+        if (is_string($existing) && '' !== $existing) {
+            return $existing;
+        }
+
+        $visitorId = $this->resolveVisitorId($request);
+        $request->attributes->set(self::ATTRIBUTE_ID, $visitorId);
+
+        return $visitorId;
+    }
+
+    public function attachCookie(Request $request, Response $response): void
+    {
+        $token = $this->cookieToken($request) ?? $this->pendingTokenIfPresent($request);
+
+        if (null === $token) {
+            $resolvedVisitorId = $request->attributes->get(self::ATTRIBUTE_ID);
+
+            if (null === $this->identityStore && is_string($resolvedVisitorId) && '' !== $resolvedVisitorId) {
+                return;
+            }
+
+            $token = $this->pendingToken($request);
+        }
+
+        $cookie = Cookie::create(
+            self::COOKIE_NAME,
+            $this->packCookieValue($token),
+            time() + self::COOKIE_LIFETIME_SECONDS,
+            '/',
+            null,
+            $request->isSecure(),
+            true,
+            false,
+            Cookie::SAMESITE_LAX,
+        );
+
+        $response->headers->setCookie($cookie);
     }
 
     public function sourceIp(Request $request): string
@@ -82,5 +130,142 @@ final readonly class VisitorIdGenerator
         }
 
         return array_values(array_filter(array_map('trim', preg_split('/,/', $value) ?: [])));
+    }
+
+    private function cookieToken(Request $request): ?string
+    {
+        return $this->unpackCookieValue((string) $request->cookies->get(self::COOKIE_NAME, ''));
+    }
+
+    private function pendingToken(Request $request): string
+    {
+        $token = $request->attributes->get(self::ATTRIBUTE_PENDING_TOKEN);
+
+        if (is_string($token) && '' !== $token) {
+            return $token;
+        }
+
+        $token = $this->generateToken();
+        $request->attributes->set(self::ATTRIBUTE_PENDING_TOKEN, $token);
+
+        return $token;
+    }
+
+    private function pendingTokenIfPresent(Request $request): ?string
+    {
+        $token = $request->attributes->get(self::ATTRIBUTE_PENDING_TOKEN);
+
+        return is_string($token) && '' !== $token ? $token : null;
+    }
+
+    private function resolveVisitorId(Request $request): string
+    {
+        $cookieToken = $this->cookieToken($request);
+
+        if (null === $this->identityStore) {
+            if (null !== $cookieToken) {
+                return $this->visitorId($cookieToken);
+            }
+
+            $pendingToken = $this->pendingTokenIfPresent($request);
+
+            return null === $pendingToken ? $this->fallbackVisitorId($request) : $this->visitorId($pendingToken);
+        }
+
+        if (null !== $cookieToken) {
+            $visitorId = $this->identityStore->resolve(
+                $this->cookieHash($cookieToken),
+                $this->fallbackHash($request),
+                null,
+                $this->visitorId($cookieToken),
+            );
+
+            return $visitorId ?? $this->visitorId($cookieToken);
+        }
+
+        $pendingToken = $this->pendingToken($request);
+        $visitorId = $this->identityStore->resolve(
+            null,
+            $this->fallbackHash($request),
+            $this->cookieHash($pendingToken),
+            $this->visitorId($pendingToken),
+        );
+
+        return $visitorId ?? $this->fallbackVisitorId($request);
+    }
+
+    private function generateToken(): string
+    {
+        return $this->base64Url(random_bytes(32));
+    }
+
+    private function fallbackVisitorId(Request $request): string
+    {
+        return $this->base64Url(substr(hash_hmac(
+            'sha256',
+            implode('|', [
+                'visitor-fallback-id',
+                $this->sourceIp($request),
+                $this->normalizedUserAgent($request),
+            ]),
+            $this->secret,
+            true,
+        ), 0, self::VISITOR_ID_BYTES));
+    }
+
+    private function visitorId(string $token): string
+    {
+        return $this->base64Url(substr(hash_hmac('sha256', 'visitor-id|'.$token, $this->secret, true), 0, self::VISITOR_ID_BYTES));
+    }
+
+    private function cookieHash(string $token): string
+    {
+        return $this->base64Url(hash_hmac('sha256', 'visitor-cookie|'.$token, $this->secret, true));
+    }
+
+    private function fallbackHash(Request $request): string
+    {
+        return $this->base64Url(hash_hmac(
+            'sha256',
+            implode('|', [
+                'visitor-fallback',
+                $this->sourceIp($request),
+                $this->normalizedUserAgent($request),
+            ]),
+            $this->secret,
+            true,
+        ));
+    }
+
+    private function packCookieValue(string $token): string
+    {
+        return self::COOKIE_VERSION.'.'.$token.'.'.$this->signature($token);
+    }
+
+    private function unpackCookieValue(string $value): ?string
+    {
+        $parts = explode('.', trim($value));
+
+        if (3 !== count($parts) || self::COOKIE_VERSION !== $parts[0]) {
+            return null;
+        }
+
+        $token = $parts[1];
+
+        if (1 !== preg_match('/\A[A-Za-z0-9_-]{32,128}\z/', $token)) {
+            return null;
+        }
+
+        return hash_equals($this->signature($token), $parts[2]) ? $token : null;
+    }
+
+    private function signature(string $token): string
+    {
+        return hash_hmac('sha256', self::COOKIE_VERSION.'|'.$token, $this->secret);
+    }
+
+    private function base64Url(string $value): string
+    {
+        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
     }
 }

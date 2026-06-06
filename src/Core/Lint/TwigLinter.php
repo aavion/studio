@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Lint;
 
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Lint\LintMessageCode;
+use App\Core\Lint\LintMessageKey;
 use Twig\Environment;
 use Twig\Error\SyntaxError;
 use Twig\Loader\ArrayLoader;
@@ -29,8 +29,8 @@ final class TwigLinter implements LinterInterface
         } catch (SyntaxError $error) {
             return LintResult::invalid([
                 LintIssue::create(
-                    MessageCode::LINT_TWIG_SYNTAX_ERROR,
-                    MessageKey::LINT_TWIG_SYNTAX_ERROR,
+                    LintMessageCode::LINT_TWIG_SYNTAX_ERROR,
+                    LintMessageKey::LINT_TWIG_SYNTAX_ERROR,
                     $error->getTemplateLine(),
                     details: ['error' => $error->getRawMessage(), 'path' => $path],
                 ),

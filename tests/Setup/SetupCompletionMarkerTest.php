@@ -17,7 +17,7 @@ final class SetupCompletionMarkerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = sys_get_temp_dir().'/studio-setup-marker-'.bin2hex(random_bytes(6));
+        $this->root = sys_get_temp_dir().'/system-backend-setup-marker-'.bin2hex(random_bytes(6));
         mkdir($this->root, 0777, true);
         $this->previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
         $this->previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;

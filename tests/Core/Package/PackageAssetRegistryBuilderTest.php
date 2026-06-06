@@ -43,9 +43,25 @@ final class PackageAssetRegistryBuilderTest extends TestCase
     public function testItRejectsUnsafeAssetPaths(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('must not traverse parent directories');
+        $this->expectExceptionMessage('message.package.asset.contribution_path_traversal');
 
         PackageAssetContribution::css('demo-module', PackageScope::Module, '../outside.css');
+    }
+
+    public function testItRejectsAssetContributionsWithoutPackageIdentifier(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('message.package.asset.contribution_package_invalid');
+
+        PackageAssetContribution::css('', PackageScope::Module, 'assets/packages/demo-module/module.css');
+    }
+
+    public function testItRejectsUnsupportedAssetContributionTypes(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('message.package.asset.contribution_type_invalid');
+
+        new PackageAssetContribution('demo-module', PackageScope::Module, 'image', 'assets/packages/demo-module/logo.svg');
     }
 
     public function testItAcceptsStaticAssetContributionsWithoutRegistryOutput(): void

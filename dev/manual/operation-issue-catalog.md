@@ -7,7 +7,7 @@
 
 ## Overview
 
-Issue codes are developer-facing stable identifiers. They are not final UI copy and should not be translated directly in Core. Future UI layers can map translation keys to localized messages while preserving raw codes for logs and debugging. Runtime code should use `App\Core\Message\Message` with `MessageCode` and `MessageKey` constants so logs, output, validation, and future localization share one message shape.
+Issue codes are developer-facing stable identifiers. They are not final UI copy and should not be translated directly in Core. Future UI layers can map translation keys to localized messages while preserving raw codes for logs and debugging. Runtime code should use `App\Core\Message\Message` with domain-owned `*MessageCode` and `*MessageKey` constants so logs, output, validation, and future localization share one message shape.
 
 The transport shape is:
 
@@ -18,12 +18,13 @@ parameters
 context
 ```
 
-Third-party modules and themes may provide their own codes and translation keys as long as they remain deterministic and namespaced.
+Third-party modules and themes may provide their own codes and translation keys as long as they remain deterministic and namespaced. Package-owned catalogues must stay under package-owned namespaces; system/core namespaces are reserved and win conflicts when catalogues are aggregated.
 
 Validation rules:
 
 - Codes use either uppercase generic tokens, for example `E_INVALID_ARGUMENT`, or lowercase namespaced tokens, for example `package.required_file_missing`.
 - Translation keys start with `message.`, for example `message.content.slug.invalid_format`.
+- System constants live in domain-owned catalogues such as `PackageMessageCode`, `SetupMessageKey`, or `ContentMessageKey`; central `MessageCode` and `MessageKey` classes aggregate catalogues for validation and tooling.
 - Translation parameters use placeholder names such as `%slug%`.
 - Non-translated diagnostics, paths, raw output excerpts, and internal class names belong in `context`.
 
@@ -55,10 +56,15 @@ Validation rules:
 | `package.copy_source_symlink` | Planned package copy source is a symlink. | `source`, `package`, `file`, `path` |
 | `package.asset_rebuild_queued` | Package asset rebuild was queued for deferred Messenger processing. | `trigger`, `environment`, `deferred` |
 | `package.asset_rebuild_queue_failed` | Package asset rebuild could not be queued for deferred Messenger processing. | `trigger`, `environment`, `exception`, `message` |
-| `package.translation_english_missing` | Package translation sources exist but no English source catalogue is present. | `source`, `package`, `file`, `path` |
+| `package.asset.contribution_package_invalid` | Package asset contribution has no package identifier. | `package` |
+| `package.asset.contribution_type_invalid` | Package asset contribution declares an unsupported contribution type. | `package`, `type` |
+| `package.asset.contribution_path_invalid` | Package asset contribution path is empty, absolute, or contains null bytes. | `path` |
+| `package.asset.contribution_path_traversal` | Package asset contribution path traverses parent directories. | `path` |
+| `package.translation_fallback_missing` | Package translation sources exist but no configured fallback source catalogue is present. | `source`, `package`, `file`, `path`, `fallback_locale`, `fallback_locale_candidates` |
 | `package.translation_namespace_invalid` | Package translation source is outside the package-owned `pkg.<slug>` namespace. | `source`, `package`, `file`, `path`, `expected_prefix` |
 | `translation.aggregate_completed` | Core and active package translation sources were aggregated into runtime catalogues. | `packages`, `locales`, `files`, `targets` |
 | `translation.aggregate_failed` | Translation aggregation could not write runtime catalogues. | `exception`, `message`, `target_pattern` |
+| `view.template_namespace.unsupported` | A template namespace string does not map to a supported root, frontend, or backend namespace. | `namespace` |
 | `package.discovery_queued` | Package discovery was queued for deferred Messenger processing. | `trigger`, `deferred` |
 | `package.discovery_queue_failed` | Package discovery could not be queued for deferred Messenger processing. | `trigger`, `exception`, `message` |
 | `package.discovery_completed` | Package discovery completed successfully. | `candidate_count` |
@@ -107,10 +113,26 @@ Validation rules:
 | `message.package.validation_completed` | Package validation completed successfully. | `%package%` |
 | `message.package.asset_rebuild_queued` | Package asset rebuild was queued for deferred processing. | `%trigger%` |
 | `message.package.asset_rebuild_queue_failed` | Package asset rebuild could not be queued. | `%trigger%` |
-| `message.package.translation_english_missing` | Package translation sources do not include the required English fallback. | `%package%` |
+| `message.package.asset.contribution_package_invalid` | Package asset contribution has no package identifier. | `%package%` |
+| `message.package.asset.contribution_type_invalid` | Package asset contribution type is unsupported. | `%type%` |
+| `message.package.asset.contribution_path_invalid` | Package asset contribution path is not project-relative. | `%path%` |
+| `message.package.asset.contribution_path_traversal` | Package asset contribution path traverses parent directories. | `%path%` |
+| `message.package.translation_fallback_missing` | Package translation sources do not include the required fallback catalogue. | `%package%`, `%locale%` |
 | `message.package.translation_namespace_invalid` | Package translation source does not stay under the package-owned namespace. | `%path%`, `%package%` |
 | `message.translation.aggregate_completed` | Translation aggregation completed. | `%files%`, `%locales%`, `%packages%` |
 | `message.translation.aggregate_failed` | Translation aggregation failed. | `%path%` |
+| `message.statistics.record_failed` | Access statistics recorder failed while handling a request. | N/A |
+| `message.statistics.aggregate_failed` | Access statistics aggregation failed. | N/A |
+| `message.statistics.snapshot_store_failed` | Access statistics snapshot storage failed. | N/A |
+| `message.statistics.cleanup_failed` | Access statistics retention cleanup failed. | N/A |
+| `message.statistics.trace_id_invalid` | Access statistics received a malformed compact trace identifier. | `%label%` |
+| `message.state.subject_type.invalid` | State marker subject type failed identifier validation. | `%subject_type%` |
+| `message.state.marker_key.invalid` | State marker key failed identifier validation. | `%marker_key%` |
+| `message.state.metadata.key_empty` | State marker metadata contains an empty key. | N/A |
+| `message.menu.identifier.invalid` | Site menu identifier failed validation. | `%identifier%` |
+| `message.menu.target_type.invalid` | Site menu item target type is unsupported. | `%target_type%` |
+| `message.menu.target_value.invalid` | Site menu item target value is empty, too long, or contains control characters. | N/A |
+| `message.view.template_namespace.unsupported` | Template namespace is not supported. | `%namespace%` |
 | `message.package.lifecycle.cleanup_completed` | Package cleanup boundary completed. | `%package%` |
 | `message.package.lifecycle.dependent_deactivated` | Package was automatically deactivated because a dependency became unavailable. | `%package%`, `%dependency%` |
 | `message.package.lifecycle.removed` | Package directory was removed and the registry row was marked removed. | `%package%` |
@@ -142,6 +164,7 @@ Validation rules:
 | `message.content.path.variant_invalid` | Content path contains an invalid variant marker segment. | `%path%`, `%variant%` |
 | `message.content.language.fallback` | Requested content language is unavailable and the resolver rendered another language. | `%requested_language%`, `%resolved_language%` |
 | `message.content.variant.fallback` | Requested content variant is unavailable and the resolver rendered another variant. | `%requested_variant%`, `%resolved_variant%` |
+| `message.content.render.custom_twig_failed` | Schema custom Twig rendering failed and generic field rendering was used. | `%schema%` |
 | `message.content.uid.invalid_format` | Content UID is not a lowercase UUID string. | `%label%`, `%uid%` |
 | `message.content.string_list.empty` | A required string-list value is empty. | `%label%` |
 | `message.content.string_list.invalid` | A string-list value contains a non-string or empty string. | `%label%` |
@@ -158,6 +181,12 @@ Validation rules:
 | `message.access.denied` | ACL resolver denied the requested capability. | `%capability%`, `%required_level%`, `%actor_level%` |
 | `message.access.level.invalid` | Access level is outside the supported 0-9 range. | `%level%` |
 | `message.access.group_identifier.invalid` | ACL group identifier is not lowercase snake_case or shorter than 3 characters. | `%identifier%` |
+| `message.system.secret_payload.root_secret_empty` | Secret payload protection was initialized without a root secret. | N/A |
+| `message.system.secret_payload.context_empty` | Secret payload protection was called without a context label. | N/A |
+| `message.system.secret_payload.invalid` | Secret payload format or encoding is invalid. | N/A |
+| `message.system.secret_payload.encrypt_failed` | Secret payload encryption failed. | N/A |
+| `message.system.secret_payload.decrypt_failed` | Secret payload decryption failed. | N/A |
+| `message.system.secret_payload.key_derivation_failed` | Secret payload key derivation failed. | N/A |
 | `message.config.key.invalid` | Configuration key does not use dotted lowercase segments. | `%key%` |
 | `message.config.read_failed` | Configuration storage could not read a key. | `%key%` |
 | `message.config.write_failed` | Configuration storage could not write a key. | `%key%` |

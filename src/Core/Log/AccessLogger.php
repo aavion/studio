@@ -31,6 +31,7 @@ final readonly class AccessLogger implements AccessLoggerInterface
 
         $this->logger->info('access.request', [
             'request_id' => $this->accessRequestMetadata->requestId($request),
+            'correlation_id' => $this->accessRequestMetadata->correlationId($request),
             'method' => $request->getMethod(),
             'path' => $path,
             'requested_path' => $path,

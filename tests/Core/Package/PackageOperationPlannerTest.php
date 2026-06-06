@@ -25,8 +25,8 @@ final class PackageOperationPlannerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->packageDir = $this->createTemporaryDirectory('studio-package-planner-source');
-        $this->targetDir = $this->createTemporaryDirectory('studio-package-planner-target');
+        $this->packageDir = $this->createTemporaryDirectory('system-package-planner-source');
+        $this->targetDir = $this->createTemporaryDirectory('system-package-planner-target');
         $this->writePackageFile('.manifest', 'PACKAGE_NAME=Demo');
     }
 

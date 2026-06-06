@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Asset;
 
+use App\Core\Asset\AssetMessageCode;
 use App\Core\Asset\TailwindBuildAction;
-use App\Core\Message\MessageCode;
+use App\Core\Operation\Process\ProcessMessageCode;
 use App\Tests\Support\FilesystemTestHelper;
 use PHPUnit\Framework\TestCase;
 
@@ -17,7 +18,7 @@ final class TailwindBuildActionTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-tailwind-action');
+        $this->root = $this->createTemporaryDirectory('system-tailwind-action');
     }
 
     protected function tearDown(): void
@@ -39,7 +40,7 @@ final class TailwindBuildActionTest extends TestCase
         $result = (new TailwindBuildAction([PHP_BINARY, '-r', 'fwrite(STDERR, "blocked"); exit(1);'], $this->root))->execute();
 
         self::assertFalse($result->isSuccess());
-        self::assertSame(MessageCode::PROCESS_COMMAND_FAILED, $result->firstIssue()?->code());
+        self::assertSame(ProcessMessageCode::PROCESS_COMMAND_FAILED, $result->firstIssue()?->code());
         self::assertFalse($result->context()['tailwind_executed'] ?? true);
         self::assertSame('php bin/console tailwind:build', $result->context()['manual_command'] ?? null);
     }
@@ -50,6 +51,6 @@ final class TailwindBuildActionTest extends TestCase
 
         self::assertTrue($result->isSuccess());
         self::assertFalse($result->value()['tailwind_executed'] ?? true);
-        self::assertSame(MessageCode::TAILWIND_BUILD_DEFERRED, $result->messages()[0]->code());
+        self::assertSame(AssetMessageCode::TAILWIND_BUILD_DEFERRED, $result->messages()[0]->code());
     }
 }

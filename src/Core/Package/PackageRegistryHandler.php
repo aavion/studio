@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Filesystem\PathGuard;
+use App\Core\Id\UuidFactory;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
@@ -18,22 +17,34 @@ final readonly class PackageRegistryHandler
 {
     private PackageSpec $validationSpec;
     private PackageDependencyResolver $dependencyResolver;
+    private PackageLifecycleStore $store;
+    private PackageRegistrySyncFinalizer $syncFinalizer;
 
     public function __construct(
         private EntityManagerInterface $entityManager,
         private string $projectDir,
         private PackageValidator $validator = new PackageValidator(),
         private PathGuard $pathGuard = new PathGuard(),
-        private ?PackageAssetRebuildDispatcher $assetRebuildDispatcher = null,
-        private ?PackageLifecycleAssetRebuilderInterface $assetRebuildFallback = null,
-        private string $environment = 'test',
+        ?PackageAssetRebuildDispatcher $assetRebuildDispatcher = null,
+        ?PackageLifecycleAssetRebuilderInterface $assetRebuildFallback = null,
+        string $environment = 'test',
+        private UuidFactory $uuidFactory = new UuidFactory(),
         ?PackageSpec $validationSpec = null,
         ?PackageDependencyResolver $dependencyResolver = null,
+        ?PackageLifecycleStore $store = null,
+        ?PackageRegistrySyncFinalizer $syncFinalizer = null,
     ) {
         $this->validationSpec = $validationSpec ?? PackageSpec::create()
             ->withInventoryDepth(4)
             ->withLintingChecks();
         $this->dependencyResolver = $dependencyResolver ?? new PackageDependencyResolver($entityManager);
+        $this->store = $store ?? new PackageLifecycleStore($entityManager);
+        $this->syncFinalizer = $syncFinalizer ?? new PackageRegistrySyncFinalizer(
+            $entityManager,
+            $assetRebuildDispatcher,
+            $assetRebuildFallback,
+            $environment,
+        );
     }
 
     /**
@@ -43,7 +54,7 @@ final readonly class PackageRegistryHandler
      */
     public function synchronize(iterable $candidates): WorkflowResult
     {
-        $packages = $this->indexedPackages();
+        $packages = $this->store->indexedPackages();
         $seen = [];
         $changes = [];
         $messages = [];
@@ -61,8 +72,8 @@ final readonly class PackageRegistryHandler
                 $scopes = PackageScope::fromManifestValue((string) $candidate->manifest()->get('PACKAGE_SCOPE', ''));
             } catch (InvalidArgumentException) {
                 $issues[] = Message::create(
-                    MessageCode::PACKAGE_IDENTIFIER_INVALID,
-                    MessageKey::PACKAGE_IDENTIFIER_INVALID,
+                    PackageMessageCode::PACKAGE_IDENTIFIER_INVALID,
+                    PackageMessageKey::PACKAGE_IDENTIFIER_INVALID,
                     ['%identifier%' => basename($candidate->directory())],
                     ['path' => $candidate->directory(), 'source' => $candidate->source()->name()],
                     MessageLevel::Error,
@@ -75,7 +86,7 @@ final readonly class PackageRegistryHandler
             $isNew = !isset($packages[$packageName]);
             $manifestVersion = $candidate->manifest()->get('PACKAGE_VERSION');
             $package = $packages[$packageName] ?? new ExtensionPackage(
-                $this->uuid(),
+                $this->uuidFactory->generate(),
                 $scopes,
                 $packageName,
                 $path,
@@ -101,8 +112,8 @@ final readonly class PackageRegistryHandler
                 if ($changed || $isNew) {
                     $changes[] = $this->change($packageName, 'faulty', ExtensionPackageStatus::Faulty);
                     $messages[] = Message::error(
-                        MessageCode::PACKAGE_REGISTRY_PACKAGE_FAULTY,
-                        MessageKey::PACKAGE_REGISTRY_PACKAGE_FAULTY,
+                        PackageMessageCode::PACKAGE_REGISTRY_PACKAGE_FAULTY,
+                        PackageMessageKey::PACKAGE_REGISTRY_PACKAGE_FAULTY,
                         ['%package%' => $packageName],
                         ['package' => $packageName, 'path' => $path, 'issue_count' => count($validation->issues())],
                     );
@@ -125,8 +136,8 @@ final readonly class PackageRegistryHandler
             if ('unchanged' !== $action) {
                 $changes[] = $this->change($packageName, $action, $package->status());
                 $messages[] = Message::create(
-                    'registered' === $action ? MessageCode::PACKAGE_REGISTRY_PACKAGE_REGISTERED : MessageCode::PACKAGE_REGISTRY_PACKAGE_UPDATED,
-                    'registered' === $action ? MessageKey::PACKAGE_REGISTRY_PACKAGE_REGISTERED : MessageKey::PACKAGE_REGISTRY_PACKAGE_UPDATED,
+                    'registered' === $action ? PackageMessageCode::PACKAGE_REGISTRY_PACKAGE_REGISTERED : PackageMessageCode::PACKAGE_REGISTRY_PACKAGE_UPDATED,
+                    'registered' === $action ? PackageMessageKey::PACKAGE_REGISTRY_PACKAGE_REGISTERED : PackageMessageKey::PACKAGE_REGISTRY_PACKAGE_UPDATED,
                     ['%package%' => $packageName],
                     ['package' => $packageName, 'path' => $path, 'status' => $package->status()->value],
                     MessageLevel::Success,
@@ -137,9 +148,8 @@ final readonly class PackageRegistryHandler
                 $assetRebuildTriggers[] = $this->assetRebuildTrigger($packageName, 'package_registry_active_updated');
             }
         }
-
         foreach ($packages as $packageName => $package) {
-            if (isset($seen[$packageName]) || !$this->isManagedFilesystemPackage($package)) {
+            if (isset($seen[$packageName]) || !$this->store->isManagedFilesystemPackage($package)) {
                 continue;
             }
 
@@ -148,8 +158,8 @@ final readonly class PackageRegistryHandler
             if ($package->markRemoved($this->removedMetadata($package))) {
                 $changes[] = $this->change($packageName, 'removed', ExtensionPackageStatus::Removed);
                 $messages[] = Message::error(
-                    MessageCode::PACKAGE_REGISTRY_PACKAGE_REMOVED,
-                    MessageKey::PACKAGE_REGISTRY_PACKAGE_REMOVED,
+                    PackageMessageCode::PACKAGE_REGISTRY_PACKAGE_REMOVED,
+                    PackageMessageKey::PACKAGE_REGISTRY_PACKAGE_REMOVED,
                     ['%package%' => $packageName],
                     ['package' => $packageName, 'path' => $package->path()],
                 );
@@ -168,61 +178,7 @@ final readonly class PackageRegistryHandler
             return WorkflowResult::invalid($issues, ['changes' => $changes], $messages);
         }
 
-        $this->entityManager->flush();
-
-        $assetRebuild = null;
-        if ([] !== $assetRebuildTriggers) {
-            $assetRebuild = $this->assetRebuildDispatcher?->dispatch($this->environment, 'package_registry_state_exit');
-            $messages = [...$messages, ...($assetRebuild?->messages() ?? [])];
-
-            if (null !== $assetRebuild && !$assetRebuild->isSuccess()) {
-                $dispatchFailure = $assetRebuild;
-                $fallback = $this->assetRebuildFallback?->rebuild($this->environment);
-                $fallbackCompleted = null !== $fallback && $fallback->isSuccess();
-                $messages = [
-                    ...$messages,
-                    ...$dispatchFailure->issues(),
-                    ...($fallback?->messages() ?? []),
-                    ...($fallback?->issues() ?? []),
-                ];
-                $assetRebuild = WorkflowResult::success([
-                    'deferred' => false,
-                    'dispatch' => $dispatchFailure->toArray(),
-                    'fallback' => $fallback?->toArray(),
-                    'fallback_completed' => $fallbackCompleted,
-                ], [
-                    'deferred' => false,
-                    'dispatch' => $dispatchFailure->toArray(),
-                    'fallback' => $fallback?->toArray(),
-                    'fallback_completed' => $fallbackCompleted,
-                    'stale_risk' => !$fallbackCompleted,
-                ]);
-
-                if (!$fallbackCompleted) {
-                    return WorkflowResult::failed($fallback?->issues() ?: $dispatchFailure->issues(), [
-                        'change_count' => count($changes),
-                        'changes' => $changes,
-                        'asset_rebuild' => $assetRebuild->toArray(),
-                        'asset_rebuild_triggers' => array_values(array_unique($assetRebuildTriggers)),
-                    ], $messages);
-                }
-            }
-        }
-
-        $messages[] = Message::create(
-            MessageCode::PACKAGE_REGISTRY_SYNC_COMPLETED,
-            MessageKey::PACKAGE_REGISTRY_SYNC_COMPLETED,
-            ['%count%' => count($changes)],
-            ['change_count' => count($changes), 'changes' => $changes],
-            MessageLevel::Success,
-        );
-
-        return WorkflowResult::success($changes, [
-            'change_count' => count($changes),
-            'changes' => $changes,
-            'asset_rebuild' => $assetRebuild?->toArray(),
-            'asset_rebuild_triggers' => array_values(array_unique($assetRebuildTriggers)),
-        ], $messages);
+        return $this->syncFinalizer->finalize($changes, $messages, $assetRebuildTriggers);
     }
 
     /**
@@ -245,8 +201,8 @@ final readonly class PackageRegistryHandler
 
             $changes[] = $this->change($dependent->packageName(), 'deactivated', ExtensionPackageStatus::Inactive);
             $messages[] = Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_DEACTIVATED,
-                MessageKey::PACKAGE_LIFECYCLE_DEACTIVATED,
+                PackageMessageCode::PACKAGE_LIFECYCLE_DEACTIVATED,
+                PackageMessageKey::PACKAGE_LIFECYCLE_DEACTIVATED,
                 ['%package%' => $dependent->packageName()],
                 ['package' => $dependent->packageName(), 'required_package' => $package->packageName()],
                 MessageLevel::Success,
@@ -259,22 +215,6 @@ final readonly class PackageRegistryHandler
             'messages' => $messages,
             'asset_rebuild_triggers' => $assetRebuildTriggers,
         ];
-    }
-
-    /**
-     * @return array<string, ExtensionPackage>
-     */
-    private function indexedPackages(): array
-    {
-        $packages = [];
-
-        foreach ($this->entityManager->getRepository(ExtensionPackage::class)->findAll() as $package) {
-            if ($package instanceof ExtensionPackage) {
-                $packages[$package->packageName()] = $package;
-            }
-        }
-
-        return $packages;
     }
 
     private function packageName(PackageCandidate $candidate): string
@@ -327,9 +267,6 @@ final readonly class PackageRegistryHandler
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     private function removedMetadata(ExtensionPackage $package): array
     {
         return [
@@ -339,17 +276,6 @@ final readonly class PackageRegistryHandler
         ];
     }
 
-    private function isManagedFilesystemPackage(ExtensionPackage $package): bool
-    {
-        if (!$this->pathGuard->isRelativePath($package->path())) {
-            return false;
-        }
-
-        $path = $this->pathGuard->relativePath($package->path());
-
-        return 'packages' !== $path && str_starts_with($path, 'packages/');
-    }
-
     private function keepsExistingFaultyState(ExtensionPackage $package, string $path, ?string $manifestVersion): bool
     {
         return ExtensionPackageStatus::Faulty === $package->status()
@@ -357,9 +283,6 @@ final readonly class PackageRegistryHandler
             && $package->manifestVersion() === $manifestVersion;
     }
 
-    /**
-     * @return array{package: string, action: string, status: string}
-     */
     private function change(string $packageName, string $action, ExtensionPackageStatus $status): array
     {
         return [
@@ -367,15 +290,6 @@ final readonly class PackageRegistryHandler
             'action' => $action,
             'status' => $status->value,
         ];
-    }
-
-    private function uuid(): string
-    {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 
     private function assetRebuildTrigger(string $packageName, string $trigger): string

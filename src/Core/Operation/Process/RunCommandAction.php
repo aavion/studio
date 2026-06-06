@@ -7,10 +7,10 @@ namespace App\Core\Operation\Process;
 use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationActionInterface;
+use App\Core\Operation\Process\ProcessMessageCode;
+use App\Core\Operation\Process\ProcessMessageKey;
 use App\Core\Process\CliProcessEnvironment;
 use App\Core\Workflow\WorkflowResult;
 use InvalidArgumentException;
@@ -104,7 +104,7 @@ final readonly class RunCommandAction implements OperationActionInterface
 
         if (!$process->isSuccessful()) {
             return WorkflowResult::failed([
-                Message::create(MessageCode::PROCESS_COMMAND_FAILED, MessageKey::PROCESS_COMMAND_FAILED, [
+                Message::create(ProcessMessageCode::PROCESS_COMMAND_FAILED, ProcessMessageKey::PROCESS_COMMAND_FAILED, [
                     '%command%' => $this->messageSubject(),
                     '%exit_code%' => $process->getExitCode() ?? 'unknown',
                 ], $context, MessageLevel::Error),
@@ -116,7 +116,7 @@ final readonly class RunCommandAction implements OperationActionInterface
             'output_excerpt' => $context['output_excerpt'],
             'error_excerpt' => $context['error_excerpt'],
         ], $context, [
-            Message::create(MessageCode::PROCESS_COMMAND_COMPLETED, MessageKey::PROCESS_COMMAND_COMPLETED, [
+            Message::create(ProcessMessageCode::PROCESS_COMMAND_COMPLETED, ProcessMessageKey::PROCESS_COMMAND_COMPLETED, [
                 '%command%' => $this->messageSubject(),
                 '%exit_code%' => $process->getExitCode() ?? 'unknown',
             ], $context, MessageLevel::Success),

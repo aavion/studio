@@ -29,6 +29,36 @@ final class NavigationBuilderTest extends KernelTestCase
         self::assertSame(['/', '/about', '/news/first-update', '/user/login'], array_column($navigation, 'url'));
     }
 
+    public function testItFallsBackToPrimaryLanguageForNavigationLabels(): void
+    {
+        self::bootKernel();
+        $connection = self::getContainer()->get(Connection::class);
+        self::assertInstanceOf(Connection::class, $connection);
+        $uid = '30000000-0000-7000-8000-000000000970';
+
+        try {
+            $connection->insert('site_menu_item', [
+                'uid' => $uid,
+                'menu_uid' => '30000000-0000-7000-8000-000000000001',
+                'parent_uid' => null,
+                'sort_order' => 5,
+                'labels' => json_encode(['en' => 'English label', 'de' => 'Deutsches Label'], JSON_THROW_ON_ERROR),
+                'target_type' => 'url',
+                'target_value' => '/language-test',
+                'view_min_level' => null,
+                'view_group_identifiers' => null,
+                'metadata' => json_encode(['test' => true], JSON_THROW_ON_ERROR),
+            ]);
+
+            $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'de_DE', actor: AccessActor::anonymous());
+            $labelsByUrl = array_column($navigation, 'label', 'url');
+
+            self::assertSame('Deutsches Label', $labelsByUrl['/language-test']);
+        } finally {
+            $connection->delete('site_menu_item', ['uid' => $uid]);
+        }
+    }
+
     public function testStaticPublicInjectionsSkipReservedRoutePrefixesInNavigation(): void
     {
         self::bootKernel();
@@ -75,7 +105,7 @@ final class NavigationBuilderTest extends KernelTestCase
                     'root_uid' => $event->rootUid(),
                 ];
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000999',
+                    '30000000-0000-7000-8000-000000000999',
                     'Docs',
                     'url',
                     '/docs',
@@ -96,20 +126,20 @@ final class NavigationBuilderTest extends KernelTestCase
         self::bootKernel();
         $connection = self::getContainer()->get(Connection::class);
         self::assertInstanceOf(Connection::class, $connection);
-        $persistedUid = '30000000-0000-0000-0000-000000000960';
+        $persistedUid = '30000000-0000-7000-8000-000000000960';
 
         self::getContainer()->get(EventDispatcherInterface::class)->addListener(
             NavigationBuilderEvent::class,
             static function (NavigationBuilderEvent $event): void {
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000959',
+                    '30000000-0000-7000-8000-000000000959',
                     'Hook Script',
                     'url',
                     'javascript:alert(1)',
                     sortOrder: 34,
                 ));
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000958',
+                    '30000000-0000-7000-8000-000000000958',
                     'External Docs',
                     'url',
                     'https://example.test/docs',
@@ -140,34 +170,34 @@ final class NavigationBuilderTest extends KernelTestCase
             NavigationBuilderEvent::class,
             static function (NavigationBuilderEvent $event): void {
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000991',
+                    '30000000-0000-7000-8000-000000000991',
                     'Beta',
                     'url',
                     '/about/beta',
-                    '30000000-0000-0000-0000-000000000102',
+                    '30000000-0000-7000-8000-000000000102',
                     20,
                 ));
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000992',
+                    '30000000-0000-7000-8000-000000000992',
                     'Alpha',
                     'url',
                     '/about/alpha',
-                    '30000000-0000-0000-0000-000000000102',
+                    '30000000-0000-7000-8000-000000000102',
                     10,
                 ));
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000993',
+                    '30000000-0000-7000-8000-000000000993',
                     'Packages',
                     'url',
                     '/packages',
                     sortOrder: 25,
                 ));
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000994',
+                    '30000000-0000-7000-8000-000000000994',
                     'Package Child',
                     'url',
                     '/packages/child',
-                    '30000000-0000-0000-0000-000000000993',
+                    '30000000-0000-7000-8000-000000000993',
                     10,
                 ));
             },
@@ -188,18 +218,18 @@ final class NavigationBuilderTest extends KernelTestCase
             NavigationBuilderEvent::class,
             static function (NavigationBuilderEvent $event): void {
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000995',
+                    '30000000-0000-7000-8000-000000000995',
                     'Module Root',
                     'url',
                     '/module',
                     sortOrder: 40,
                 ));
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000996',
+                    '30000000-0000-7000-8000-000000000996',
                     'Module Child',
                     'url',
                     '/module/child',
-                    '30000000-0000-0000-0000-000000000995',
+                    '30000000-0000-7000-8000-000000000995',
                     10,
                 ));
             },
@@ -213,7 +243,7 @@ final class NavigationBuilderTest extends KernelTestCase
             $items,
             static fn (NavigationItem $item): bool => 'Module Child' === $item->label(),
         ))[0];
-        self::assertSame('30000000-0000-0000-0000-000000000995', $moduleChild->parentUid());
+        self::assertSame('30000000-0000-7000-8000-000000000995', $moduleChild->parentUid());
         self::assertSame([], $moduleChild->children());
     }
 
@@ -260,7 +290,7 @@ final class NavigationBuilderTest extends KernelTestCase
             'main',
             'en',
             maxDepth: 2,
-            rootUid: '30000000-0000-0000-0000-000000000102',
+            rootUid: '30000000-0000-7000-8000-000000000102',
         );
 
         self::assertSame(['Team'], array_column($navigation, 'label'));
@@ -294,7 +324,7 @@ final class NavigationBuilderTest extends KernelTestCase
             NavigationBuilderEvent::class,
             static function (NavigationBuilderEvent $event): void {
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000971',
+                    '30000000-0000-7000-8000-000000000971',
                     'Admin',
                     'route',
                     'backend_admin_index',
@@ -372,28 +402,28 @@ final class NavigationBuilderTest extends KernelTestCase
             NavigationBuilderEvent::class,
             static function (NavigationBuilderEvent $event): void {
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000972',
+                    '30000000-0000-7000-8000-000000000972',
                     'Allowed',
                     'url',
                     '/allowed',
                     metadata: ['min_access_level' => 3],
                 ));
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000973',
+                    '30000000-0000-7000-8000-000000000973',
                     'Blocked',
                     'url',
                     '/blocked',
                     metadata: ['min_access_level' => 8],
                 ));
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000974',
+                    '30000000-0000-7000-8000-000000000974',
                     'Group Allowed',
                     'url',
                     '/group-allowed',
                     metadata: ['access_groups' => ['content_team']],
                 ));
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000975',
+                    '30000000-0000-7000-8000-000000000975',
                     'Group Blocked',
                     'url',
                     '/group-blocked',
@@ -419,8 +449,8 @@ final class NavigationBuilderTest extends KernelTestCase
         $connection = self::getContainer()->get(Connection::class);
         self::assertInstanceOf(Connection::class, $connection);
         $uids = [
-            '30000000-0000-0000-0000-000000000961',
-            '30000000-0000-0000-0000-000000000962',
+            '30000000-0000-7000-8000-000000000961',
+            '30000000-0000-7000-8000-000000000962',
         ];
 
         try {
@@ -472,7 +502,7 @@ final class NavigationBuilderTest extends KernelTestCase
 
         $editorNavigation = self::getContainer()->get(NavigationBuilder::class)->build(
             'main',
-            actor: AccessActor::fromAccess(3, userUid: '10000000-0000-0000-0000-000000000001'),
+            actor: AccessActor::fromAccess(3, userUid: '10000000-0000-7000-8000-000000000001'),
         );
         $account = $editorNavigation[3];
 
@@ -487,7 +517,7 @@ final class NavigationBuilderTest extends KernelTestCase
 
         $adminNavigation = self::getContainer()->get(NavigationBuilder::class)->build(
             'main',
-            actor: AccessActor::fromAccess(8, userUid: '10000000-0000-0000-0000-000000000002'),
+            actor: AccessActor::fromAccess(8, userUid: '10000000-0000-7000-8000-000000000002'),
         );
         $account = $adminNavigation[3];
 
@@ -517,27 +547,27 @@ final class NavigationBuilderTest extends KernelTestCase
             NavigationBuilderEvent::class,
             static function (NavigationBuilderEvent $event): void {
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000981',
+                    '30000000-0000-7000-8000-000000000981',
                     'Team',
                     'url',
                     '/about/team',
-                    '30000000-0000-0000-0000-000000000102',
+                    '30000000-0000-7000-8000-000000000102',
                     10,
                 ));
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000982',
+                    '30000000-0000-7000-8000-000000000982',
                     'Profile',
                     'url',
                     '/about/team/profile',
-                    '30000000-0000-0000-0000-000000000981',
+                    '30000000-0000-7000-8000-000000000981',
                     10,
                 ));
                 $event->addItem(new NavigationItem(
-                    '30000000-0000-0000-0000-000000000983',
+                    '30000000-0000-7000-8000-000000000983',
                     'Deep',
                     'url',
                     '/about/team/profile/deep',
-                    '30000000-0000-0000-0000-000000000982',
+                    '30000000-0000-7000-8000-000000000982',
                     10,
                 ));
             },
@@ -563,7 +593,7 @@ final class NavigationBuilderTest extends KernelTestCase
     ): void {
         $connection->insert('site_menu_item', [
             'uid' => $uid,
-            'menu_uid' => '30000000-0000-0000-0000-000000000001',
+            'menu_uid' => '30000000-0000-7000-8000-000000000001',
             'parent_uid' => null,
             'sort_order' => $sortOrder,
             'labels' => json_encode(['en' => $label], JSON_THROW_ON_ERROR),

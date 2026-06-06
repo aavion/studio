@@ -18,8 +18,8 @@ final class PublicContentErrorPageTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(404);
         self::assertSelectorTextContains('h1', 'Page not found');
-        self::assertSelectorTextContains('.studio-error-reference', 'Request ID');
-        self::assertSelectorNotExists('.studio-error-reference dd:nth-of-type(2)');
+        self::assertSelectorTextContains('.system-frontend-error-reference', 'Request ID');
+        self::assertSelectorNotExists('.system-frontend-error-reference dd:nth-of-type(2)');
     }
 
     public function testItReturnsForbiddenForReservedCronPrefix(): void

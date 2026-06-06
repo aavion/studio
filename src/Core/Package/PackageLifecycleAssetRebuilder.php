@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Asset\AssetRebuildQueueFactory;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
-use App\Core\Operation\OperationExecutor;
-use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Message\Message;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Operation\OperationExecutor;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use Throwable;
 
@@ -30,8 +30,8 @@ final readonly class PackageLifecycleAssetRebuilder implements PackageLifecycleA
         } catch (Throwable $error) {
             return $this->report(WorkflowResult::failed([
                 Message::exception(
-                    MessageCode::PACKAGE_ASSET_SYNC_FAILED,
-                    MessageKey::PACKAGE_ASSET_SYNC_FAILED,
+                    PackageMessageCode::PACKAGE_ASSET_SYNC_FAILED,
+                    PackageMessageKey::PACKAGE_ASSET_SYNC_FAILED,
                     ['%message%' => $error->getMessage()],
                     [
                         'environment' => $environment,

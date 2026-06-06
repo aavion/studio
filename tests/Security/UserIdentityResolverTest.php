@@ -18,7 +18,7 @@ final class UserIdentityResolverTest extends KernelTestCase
         self::bootKernel();
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $user = new UserAccount(
-            '67000000-0000-0000-0000-000000000001',
+            '67000000-0000-7000-8000-000000000001',
             'identityuser',
             'identityuser@example.test',
             'pending',
@@ -41,10 +41,10 @@ final class UserIdentityResolverTest extends KernelTestCase
     {
         self::bootKernel();
 
-        $identity = $this->resolver()->resolve('67000000-0000-0000-0000-000000000999');
+        $identity = $this->resolver()->resolve('67000000-0000-7000-8000-000000000999');
 
         self::assertFalse($identity->exists());
-        self::assertSame('67000000-0000-0000-0000-000000000999', $identity->uid());
+        self::assertSame('67000000-0000-7000-8000-000000000999', $identity->uid());
         self::assertSame('Deleted user', $identity->username());
         self::assertNull($identity->email());
         self::assertSame('Deleted user', $identity->displayName());
@@ -55,7 +55,7 @@ final class UserIdentityResolverTest extends KernelTestCase
     {
         self::bootKernel();
 
-        $identity = $this->resolver()->resolve('67000000-0000-0000-0000-000000000998', 'de');
+        $identity = $this->resolver()->resolve('67000000-0000-7000-8000-000000000998', 'de');
 
         self::assertFalse($identity->exists());
         self::assertSame('Gelöschter Benutzer', $identity->username());

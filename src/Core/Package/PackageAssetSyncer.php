@@ -7,12 +7,12 @@ namespace App\Core\Package;
 use App\Core\Event\PublicEventDispatcher;
 use App\Core\Filesystem\PathGuard;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Package\Event\PackageAssetRegistryBuildEvent;
 use App\Core\Package\Event\PackageAssetSyncCompletedEvent;
 use App\Core\Package\Event\PackageAssetSyncStartedEvent;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use RuntimeException;
 use Throwable;
@@ -53,7 +53,7 @@ final readonly class PackageAssetSyncer
             ];
 
             return WorkflowResult::failed([
-                Message::exception(MessageCode::PACKAGE_ASSET_SYNC_FAILED, MessageKey::PACKAGE_ASSET_SYNC_FAILED, [
+                Message::exception(PackageMessageCode::PACKAGE_ASSET_SYNC_FAILED, PackageMessageKey::PACKAGE_ASSET_SYNC_FAILED, [
                     '%message%' => $error->getMessage(),
                 ], $context),
             ], $context);
@@ -166,7 +166,7 @@ final readonly class PackageAssetSyncer
         }
 
         return WorkflowResult::success($context, $context, [
-            Message::create(MessageCode::PACKAGE_ASSET_SYNC_COMPLETED, MessageKey::PACKAGE_ASSET_SYNC_COMPLETED, [
+            Message::create(PackageMessageCode::PACKAGE_ASSET_SYNC_COMPLETED, PackageMessageKey::PACKAGE_ASSET_SYNC_COMPLETED, [
                 '%assets%' => (string) $mirroredAssets,
                 '%packages%' => (string) count($packages),
             ], $context, MessageLevel::Success),

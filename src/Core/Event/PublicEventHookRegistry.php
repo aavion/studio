@@ -24,14 +24,16 @@ final readonly class PublicEventHookRegistry
             $providers[] = $provider;
         }
 
-        if ([] === $providers) {
-            $providers[] = new CoreEventHookProvider();
-        }
+        $providers = [] === $providers ? SystemEventHookProviders::defaults() : $providers;
 
         $hooks = [];
 
         foreach ($providers as $provider) {
             foreach ($provider->hooks() as $hook) {
+                if (isset($hooks[$hook->eventClass()])) {
+                    continue;
+                }
+
                 $hooks[$hook->eventClass()] = $hook;
             }
         }

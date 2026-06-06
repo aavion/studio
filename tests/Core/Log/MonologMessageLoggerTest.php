@@ -6,8 +6,14 @@ namespace App\Tests\Core\Log;
 
 use App\Core\Log\MonologMessageLogger;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
+use App\Core\Operation\Process\ProcessMessageCode;
+use App\Core\Operation\Process\ProcessMessageKey;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 use Monolog\Handler\AbstractHandler;
 use Monolog\Handler\TestHandler;
 use Monolog\Level;
@@ -24,7 +30,7 @@ final class MonologMessageLoggerTest extends TestCase
     protected function setUp(): void
     {
         $this->handler = new TestHandler();
-        $monolog = new Logger('studio_message');
+        $monolog = new Logger('message');
         $monolog->pushHandler($this->handler);
         $this->logger = new MonologMessageLogger($monolog);
     }
@@ -32,14 +38,14 @@ final class MonologMessageLoggerTest extends TestCase
     public function testItWritesMessagesToMonologWithStructuredContext(): void
     {
         $error = Message::error(
-            MessageCode::PROCESS_COMMAND_FAILED,
-            MessageKey::PROCESS_COMMAND_FAILED,
+            ProcessMessageCode::PROCESS_COMMAND_FAILED,
+            ProcessMessageKey::PROCESS_COMMAND_FAILED,
             ['%command%' => 'bin/console demo'],
             ['exit_code' => 1, 'database_password' => 'secret'],
         );
         $message = Message::info(
-            MessageCode::PACKAGE_DISCOVERY_COMPLETED,
-            MessageKey::PACKAGE_DISCOVERY_COMPLETED,
+            PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED,
+            PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED,
             ['%count%' => 1],
             ['api_token' => 'abc123'],
         );
@@ -75,10 +81,10 @@ final class MonologMessageLoggerTest extends TestCase
 
     public function testItMapsSuccessAndExceptionLevelsToPsrLevels(): void
     {
-        $this->logger->log(Message::success(MessageKey::PACKAGE_DISCOVERY_COMPLETED));
+        $this->logger->log(Message::success(PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED));
         $this->logger->log(Message::exception(
-            MessageCode::OPERATION_EXCEPTION,
-            MessageKey::OPERATION_EXCEPTION,
+            OperationMessageCode::OPERATION_EXCEPTION,
+            OperationMessageKey::OPERATION_EXCEPTION,
             context: ['exception' => 'RuntimeException'],
         ));
 
@@ -97,7 +103,7 @@ final class MonologMessageLoggerTest extends TestCase
 
     public function testItLogsSingleMessages(): void
     {
-        $this->logger->log(Message::info(MessageCode::SETUP_LANGUAGE_SELECTED, MessageKey::SETUP_LANGUAGE_SELECTED, [
+        $this->logger->log(Message::info(SetupMessageCode::SETUP_LANGUAGE_SELECTED, SetupMessageKey::SETUP_LANGUAGE_SELECTED, [
             '%language%' => 'en',
         ]), [
             'operation' => 'setup.run',
@@ -113,7 +119,7 @@ final class MonologMessageLoggerTest extends TestCase
 
     public function testItDeduplicatesIdenticalMessageEntries(): void
     {
-        $message = Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+        $message = Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED, [
             '%count%' => 1,
         ]);
 
@@ -137,11 +143,11 @@ final class MonologMessageLoggerTest extends TestCase
 
     public function testItKeepsMessageLoggingFailuresNonFatal(): void
     {
-        $monolog = new Logger('studio_message');
+        $monolog = new Logger('message');
         $monolog->pushHandler(new ThrowingMessageLogHandler());
         $logger = new MonologMessageLogger($monolog);
 
-        $logger->log(Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED));
+        $logger->log(Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED));
 
         self::assertTrue(true);
     }

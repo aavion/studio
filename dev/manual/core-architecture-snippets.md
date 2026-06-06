@@ -68,7 +68,7 @@ $execution = $executor->executeQueue($queue);
 
 Use the dry-run plan for previews. Use the execution result and action log for final status, diagnostics, UI summaries, and level-filtered log inspection. Completed high-level actions should generally emit `SUCCESS`; informational progress should emit `INFO`; noisy per-file or per-manifest details should emit `DEBUG`.
 
-Live UI operations use the same `ActionQueue`/`OperationExecutor` path, but the queue is reconstructed by a detached `studio:operations:run` console process instead of being executed inside the page request. The web request only creates a tokenized run record below `var/operations/{APP_ENV}`; `/api/live/operations/{id}?token=...` returns cursor-based ActionLog polling payloads for the overlay UI. Keep this route public but unguessable through the run token, because long operations may outlive the original authenticated browser session. The runner claims staged runs atomically, so duplicate console invocations cannot execute the same operation twice. Add new live operation types through `LiveOperationQueueProviderInterface` providers instead of extending the runner directly. Use `studio:operations:cleanup` to remove expired terminal and stale run files.
+Live UI operations use the same `ActionQueue`/`OperationExecutor` path, but the queue is reconstructed by a detached `operations:run` console process instead of being executed inside the page request. The web request only creates a tokenized run record below `var/operations/{APP_ENV}`; `/api/live/operations/{id}?token=...` returns cursor-based ActionLog polling payloads for the overlay UI. Keep this route public but unguessable through the run token, because long operations may outlive the original authenticated browser session. The runner claims staged runs atomically, so duplicate console invocations cannot execute the same operation twice. Add new live operation types through `LiveOperationQueueProviderInterface` providers instead of extending the runner directly. Use `operations:cleanup` to remove expired terminal and stale run files.
 
 Live operation providers must keep payloads small, serializable, and safe to persist temporarily. Validate payload shape inside the provider, resolve the actor or capability at the web entry point, and never place secrets, CSRF tokens, or raw request bodies in the payload, ActionLog context, or continuation data.
 
@@ -124,10 +124,17 @@ Intentionally invalid fixture packages live under `tests/Fixtures/packages-inval
 Messages have a stable log level and two stable identifiers:
 
 - `MessageLevel` is log-filterable and uses `SUCCESS`, `EXCEPTION`, `ERROR`, `WARN`, `INFO`, or `DEBUG`.
-- `MessageCode` is machine-readable and useful for logs, branching, API clients, CLI exits, and package integrations.
-- `MessageKey` is translation-facing and should resolve to localized UI, CLI, or log text later.
+- Domain-owned `*MessageCode` catalogues are machine-readable and useful for logs, branching, API clients, CLI exits, and package integrations.
+- Domain-owned `*MessageKey` catalogues are translation-facing and should resolve to localized UI, CLI, or log text later.
 
-Runtime code should use `Message`, `MessageCode`, and `MessageKey` instead of embedding user-facing text in exceptions or operation payloads. Use `Message::invalidArgument()` or `MessageException::invalidArgument()` for hard invariant diagnostics that must still abort the current call.
+Runtime code should use `Message`, domain-owned message code/key catalogues, and the central `MessageCode::all()` / `MessageKey::all()` aggregators instead of embedding user-facing text in exceptions or operation payloads. Use `Message::invalidArgument()` or `MessageException::invalidArgument()` for hard invariant diagnostics that must still abort the current call.
+
+Message catalogues follow an owner/scope convention:
+
+- Constants live close to their owning domain, for example `App\Core\Package\PackageMessageCode` and `App\Core\Package\PackageMessageKey`.
+- Constant names carry the domain scope, for example `PACKAGE_REQUIRED_FILE_MISSING`, `SETUP_PROMPT_LANGUAGE`, or `CONTENT_SLUG_INVALID`.
+- Values stay in the matching machine namespace, for example `package.required_file_missing` or `message.content.slug.invalid_format`.
+- `App\Core\Message\MessageCode` and `App\Core\Message\MessageKey` aggregate the known system catalogues for validation, linting, translation checks, and future package-catalogue adapters.
 
 Core enforces a narrow transport shape:
 
@@ -173,8 +180,8 @@ Later UI layers can map these codes to translated messages while preserving the 
 
 ```php
 $issue = Message::warning(
-    MessageCode::PACKAGE_REQUIRED_FILE_MISSING,
-    MessageKey::PACKAGE_REQUIRED_FILE_MISSING,
+    PackageMessageCode::PACKAGE_REQUIRED_FILE_MISSING,
+    PackageMessageKey::PACKAGE_REQUIRED_FILE_MISSING,
     ['%file%' => 'templates/base.html.twig'],
     ['file' => 'templates/base.html.twig'],
 );

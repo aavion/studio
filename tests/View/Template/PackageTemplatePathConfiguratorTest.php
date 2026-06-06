@@ -11,6 +11,7 @@ use App\Tests\Support\FilesystemTestHelper;
 use App\View\Template\PackageTemplatePathConfigurator;
 use App\View\Template\PackageTemplatePathResolver;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
@@ -22,7 +23,7 @@ final class PackageTemplatePathConfiguratorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-template-paths');
+        $this->root = $this->createTemporaryDirectory('system-template-paths');
     }
 
     protected function tearDown(): void
@@ -125,11 +126,7 @@ final class PackageTemplatePathConfiguratorTest extends TestCase
 
     private function uuid(): string
     {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+        return Uuid::v7()->toRfc4122();
     }
 }
 

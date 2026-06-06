@@ -1,9 +1,9 @@
-<section class="studio-panel">
+<section class="system-panel">
     <h2>{{ 'admin.groups.review.users_title'|trans }}</h2>
     {% if impact.users is empty %}
-        <p class="studio-muted">{{ 'admin.groups.review.empty'|trans }}</p>
+        <p class="system-muted">{{ 'admin.groups.review.empty'|trans }}</p>
     {% else %}
-        <table class="studio-field-table">
+        <table class="system-field-table">
             <thead>
                 <tr>
                     <th scope="col">{{ 'admin.users.fields.username'|trans }}</th>
@@ -34,12 +34,12 @@
 } %}
 
 {% for key, title_key in sections %}
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ title_key|trans }}</h2>
         {% if impact[key] is empty %}
-            <p class="studio-muted">{{ 'admin.groups.review.empty'|trans }}</p>
+            <p class="system-muted">{{ 'admin.groups.review.empty'|trans }}</p>
         {% else %}
-            <table class="studio-field-table">
+            <table class="system-field-table">
                 <thead>
                     <tr>
                         <th scope="col">{{ 'admin.groups.review.fields.item'|trans }}</th>

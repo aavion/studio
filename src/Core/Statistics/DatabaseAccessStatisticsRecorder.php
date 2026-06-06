@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Core\Statistics;
 
 use App\Core\Geo\GeoIpResolverInterface;
+use App\Core\Id\UuidFactory;
 use App\Core\Log\AccessRequestMetadata;
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
+use App\Core\Statistics\StatisticsMessageKey;
 use App\Database\DatabaseReadyState;
 use DateInterval;
 use DateTimeImmutable;
@@ -32,6 +33,7 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
         private ?AccessStatisticsPolicy $policy = null,
         private ?MessageReporterInterface $messageReporter = null,
         private ?DatabaseReadyState $databaseReadyState = null,
+        private UuidFactory $uuidFactory = new UuidFactory(),
     ) {
     }
 
@@ -53,7 +55,7 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
             $path = $this->accessRequestMetadata->sanitizedPath($request);
 
             $this->connection->insert('access_statistic_event', [
-                'uid' => $this->uuid(),
+                'uid' => $this->uuidFactory->generate(),
                 'occurred_at' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
                 'request_id' => $this->accessRequestMetadata->requestId($request),
                 'visitor_id' => $this->visitorIdGenerator->generate($request),
@@ -95,8 +97,8 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
             ]);
         } catch (Throwable $error) {
             $this->messageReporter?->report(Message::exception(
-                MessageCode::E_OPERATION_FAILED,
-                MessageKey::STATISTICS_CLEANUP_FAILED,
+                CommonMessageCode::E_OPERATION_FAILED,
+                StatisticsMessageKey::STATISTICS_CLEANUP_FAILED,
                 [],
                 [
                     'operation' => 'statistics.cleanup',
@@ -113,26 +115,17 @@ final readonly class DatabaseAccessStatisticsRecorder implements AccessStatistic
     private function report(Throwable $error, Request $request): void
     {
         $this->messageReporter?->report(Message::exception(
-            MessageCode::E_OPERATION_FAILED,
-            MessageKey::STATISTICS_RECORD_FAILED,
+            CommonMessageCode::E_OPERATION_FAILED,
+            StatisticsMessageKey::STATISTICS_RECORD_FAILED,
             [],
-                [
-                    'operation' => 'statistics.record',
-                    'path' => $this->accessRequestMetadata->sanitizedPath($request),
-                    'exception' => $error::class,
-                    'message' => $error->getMessage(),
-                ],
+            [
+                'operation' => 'statistics.record',
+                'path' => $this->accessRequestMetadata->sanitizedPath($request),
+                'exception' => $error::class,
+                'message' => $error->getMessage(),
+            ],
         ), [
             'operation' => 'statistics.record',
         ]);
-    }
-
-    private function uuid(): string
-    {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 }

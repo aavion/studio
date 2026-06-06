@@ -14,10 +14,10 @@
         title: 'admin.logs.title'|trans,
     } only %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.logs.filters.title'|trans }}</h2>
-        <form method="get" class="studio-form studio-log-filter-form">
-            <div class="studio-form-grid">
+        <form method="get" class="system-form system-backend-log-filter-form">
+            <div class="system-form-grid">
                 <label>
                     <span>{{ 'admin.logs.filters.source'|trans }}</span>
                     <select name="source">
@@ -69,20 +69,20 @@
                 </label>
             </div>
             <input type="hidden" name="page" value="1">
-            <button type="submit" class="studio-button">{{ 'admin.logs.filters.apply'|trans }}</button>
+            <button type="submit" class="system-button">{{ 'admin.logs.filters.apply'|trans }}</button>
         </form>
     </section>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.logs.entries.title'|trans }}</h2>
         {% if log_view.files is empty %}
-            <p class="studio-muted">{{ 'admin.logs.entries.no_files'|trans }}</p>
+            <p class="system-muted">{{ 'admin.logs.entries.no_files'|trans }}</p>
         {% elseif log_view.entries is empty %}
-            <p class="studio-muted">{{ 'admin.logs.entries.empty'|trans }}</p>
+            <p class="system-muted">{{ 'admin.logs.entries.empty'|trans }}</p>
         {% else %}
-            <p class="studio-muted">{{ 'admin.logs.entries.files'|trans({'%files%': log_view.files|join(', ')}) }}</p>
-            <div class="studio-table-wrapper">
-                <table class="studio-table studio-log-table">
+            <p class="system-muted">{{ 'admin.logs.entries.files'|trans({'%files%': log_view.files|join(', ')}) }}</p>
+            <div class="system-table-wrapper">
+                <table class="system-table system-backend-log-table">
                     <thead>
                         <tr>
                             <th>{{ 'admin.logs.columns.timestamp'|trans }}</th>
@@ -103,12 +103,12 @@
                         {% for entry in log_view.entries %}
                             <tr>
                                 <td>{{ entry.timestamp|default('') }}</td>
-                                <td><span class="studio-badge">{{ entry.level|default('') }}</span></td>
+                                <td><span class="system-badge">{{ entry.level|default('') }}</span></td>
                                 {% if log_view.selected_source == 'access' %}
-                                    <td>{{ entry.context.method|default('admin.logs.empty_value'|trans) }} {{ entry.context.requested_path|default(entry.context.path|default('admin.logs.empty_value'|trans)) }}<br><span class="studio-muted">{{ entry.context.resolved_route|default(entry.context.route|default('admin.logs.empty_value'|trans)) }}</span></td>
+                                    <td>{{ entry.context.method|default('admin.logs.empty_value'|trans) }} {{ entry.context.requested_path|default(entry.context.path|default('admin.logs.empty_value'|trans)) }}<br><span class="system-muted">{{ entry.context.resolved_route|default(entry.context.route|default('admin.logs.empty_value'|trans)) }}</span></td>
                                     <td>{{ entry.context.http_status|default('admin.logs.empty_value'|trans) }}</td>
                                 {% elseif log_view.selected_source == 'audit' %}
-                                    <td>{{ entry.context.user|default('admin.logs.empty_value'|trans) }}<br><span class="studio-muted">{{ entry.context.user_access_level|default('0') }}</span></td>
+                                    <td>{{ entry.context.user|default('admin.logs.empty_value'|trans) }}<br><span class="system-muted">{{ entry.context.user_access_level|default('0') }}</span></td>
                                     <td>{{ entry.context.action|default(entry.message) }}</td>
                                 {% else %}
                                     <td>{{ entry.summary|default(entry.message|default(entry.raw)) }}</td>
@@ -119,13 +119,13 @@
                     </tbody>
                 </table>
             </div>
-            <div class="studio-toolbar">
-                <span class="studio-muted">{{ 'admin.logs.entries.page_summary'|trans({'%page%': log_view.pagination.page, '%pages%': log_view.pagination.total_pages, '%total%': log_view.pagination.total}) }}</span>
+            <div class="system-toolbar">
+                <span class="system-muted">{{ 'admin.logs.entries.page_summary'|trans({'%page%': log_view.pagination.page, '%pages%': log_view.pagination.total_pages, '%total%': log_view.pagination.total}) }}</span>
                 {% if log_view.pagination.has_previous %}
-                    <a class="studio-button" href="?{{ app.request.query.all|merge({page: log_view.pagination.previous_page})|url_encode }}">{{ 'admin.logs.entries.previous'|trans }}</a>
+                    <a class="system-button" href="?{{ app.request.query.all|merge({page: log_view.pagination.previous_page})|url_encode }}">{{ 'admin.logs.entries.previous'|trans }}</a>
                 {% endif %}
                 {% if log_view.pagination.has_next %}
-                    <a class="studio-button" href="?{{ app.request.query.all|merge({page: log_view.pagination.next_page})|url_encode }}">{{ 'admin.logs.entries.next'|trans }}</a>
+                    <a class="system-button" href="?{{ app.request.query.all|merge({page: log_view.pagination.next_page})|url_encode }}">{{ 'admin.logs.entries.next'|trans }}</a>
                 {% endif %}
             </div>
         {% endif %}

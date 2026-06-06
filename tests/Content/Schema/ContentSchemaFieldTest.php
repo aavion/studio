@@ -25,15 +25,15 @@ final class ContentSchemaFieldTest extends TestCase
 
     public function testRequiredBaseFieldIdentifiersCanBeStoredAsFieldValues(): void
     {
-        $content = new ContentItem('11111111-1111-1111-1111-111111111111', 'article');
+        $content = new ContentItem('11111111-1111-7111-8111-111111111111', 'article');
         $schema = new ContentSchema(
-            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'aaaaaaaa-aaaa-7aaa-aaaa-aaaaaaaaaaaa',
             'article',
             ContentSchemaSource::Custom,
             ['en' => 'Article'],
         );
         $schemaVersion = new ContentSchemaVersion(
-            'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+            'bbbbbbbb-bbbb-7bbb-bbbb-bbbbbbbbbbbb',
             $schema,
             1,
             ['en' => 'Article schema'],
@@ -44,11 +44,11 @@ final class ContentSchemaFieldTest extends TestCase
                 ],
             ],
         );
-        $revision = new ContentRevision('33333333-3333-3333-3333-333333333333', $content, 1, $schemaVersion);
+        $revision = new ContentRevision('33333333-3333-7333-8333-333333333333', $content, 1, $schemaVersion);
 
         foreach (ContentSchemaField::requiredBaseIdentifiers() as $index => $fieldIdentifier) {
             $fieldValue = new ContentFieldValue(
-                sprintf('22222222-2222-2222-2222-%012d', $index + 1),
+                sprintf('22222222-2222-7222-8222-%012d', $index + 1),
                 $revision,
                 'en',
                 'default',

@@ -8,16 +8,11 @@ use App\Core\ActionLog\ActionLog;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
-use App\Core\Message\MessageLevel;
-use App\Core\Operation\ActionQueue;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
-use App\Core\Process\PhpCliBinaryManager;
+use App\Core\Operation\ActionQueue;
 use App\Core\Workflow\WorkflowResult;
-use App\Database\DatabaseReadyState;
-use App\Security\PasswordPolicy;
-use JsonException;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 use Throwable;
 
 final class SetupRunner
@@ -32,11 +27,11 @@ final class SetupRunner
         private readonly SetupCompletionMarker $completionMarker = new SetupCompletionMarker(),
         private readonly SetupLanguageCatalog $languageCatalog = new SetupLanguageCatalog(),
         private readonly SetupLanguageSelector $languageSelector = new SetupLanguageSelector(),
-        private readonly SetupComposerCommandResolver $composerCommandResolver = new SetupComposerCommandResolver(),
         private readonly SetupDryRunPlanner $dryRunPlanner = new SetupDryRunPlanner(),
-        private readonly SetupPasswordPolicy $passwordPolicy = new SetupPasswordPolicy(),
         private readonly SetupRollbacker $rollbacker = new SetupRollbacker(),
-        private readonly PhpCliBinaryManager $phpCliBinaryManager = new PhpCliBinaryManager(),
+        private readonly SetupRuntimeCommandRunner $runtimeCommands = new SetupRuntimeCommandRunner(),
+        private readonly SetupDatabaseEnvironmentScope $databaseEnvironmentScope = new SetupDatabaseEnvironmentScope(),
+        private readonly SetupRunInputValidator $inputValidator = new SetupRunInputValidator(),
     ) {
     }
 
@@ -128,7 +123,7 @@ final class SetupRunner
     private function prepare(SetupInput $input, ActionLog $log): array|WorkflowResult
     {
         try {
-            $validationIssues = $this->validate($input);
+            $validationIssues = $this->inputValidator->validate($input);
 
             if ([] !== $validationIssues) {
                 return WorkflowResult::invalid($validationIssues, [
@@ -160,45 +155,6 @@ final class SetupRunner
     }
 
     /**
-     * @return list<Message>
-     */
-    private function validate(SetupInput $input): array
-    {
-        $issues = array_map(
-            fn (string $violation): Message => $this->adminPasswordMessage($violation),
-            $this->passwordPolicy->violationCodes($input->adminPassword(), $input->adminUsername(), $input->adminEmail()),
-        );
-
-        if (null !== $input->appSecret() && strlen($input->appSecret()) < SetupWebInputFactory::MIN_APP_SECRET_LENGTH) {
-            $issues[] = Message::error(
-                MessageCode::SETUP_APP_SECRET_TOO_SHORT,
-                MessageKey::SETUP_APP_SECRET_TOO_SHORT,
-                ['%min_length%' => SetupWebInputFactory::MIN_APP_SECRET_LENGTH],
-                ['field' => 'app_secret', 'min_length' => SetupWebInputFactory::MIN_APP_SECRET_LENGTH],
-            );
-        }
-
-        return $issues;
-    }
-
-    private function adminPasswordMessage(string $violation): Message
-    {
-        [$code, $key] = match ($violation) {
-            PasswordPolicy::VIOLATION_COMPLEXITY => [MessageCode::SETUP_ADMIN_PASSWORD_COMPLEXITY, MessageKey::SETUP_ADMIN_PASSWORD_COMPLEXITY],
-            PasswordPolicy::VIOLATION_REPEATED => [MessageCode::SETUP_ADMIN_PASSWORD_REPEATED, MessageKey::SETUP_ADMIN_PASSWORD_REPEATED],
-            PasswordPolicy::VIOLATION_PERSONAL => [MessageCode::SETUP_ADMIN_PASSWORD_PERSONAL, MessageKey::SETUP_ADMIN_PASSWORD_PERSONAL],
-            default => [MessageCode::SETUP_ADMIN_PASSWORD_TOO_SHORT, MessageKey::SETUP_ADMIN_PASSWORD_TOO_SHORT],
-        };
-
-        return Message::error(
-            $code,
-            $key,
-            ['%min_length%' => SetupPasswordPolicy::MIN_ADMIN_PASSWORD_LENGTH],
-            ['field' => 'admin_password', 'min_length' => SetupPasswordPolicy::MIN_ADMIN_PASSWORD_LENGTH, 'violation' => $violation],
-        );
-    }
-
-    /**
      * @param array<string, string> $environment
      *
      * @return list<array{0: string, 1: callable(): array<string, mixed>, 2?: ActionLogStatus}>
@@ -213,7 +169,7 @@ final class SetupRunner
                     $input,
                     $appSecret,
                     $databaseUrl,
-                    $this->dryRunMigrationCommand($input),
+                    $this->runtimeCommands->dryRunMigrationCommand($this->projectDir, $input),
                 ),
             ];
         }
@@ -221,376 +177,16 @@ final class SetupRunner
         return [
             ['select_language', fn (): array => $this->languageSelector->select($this->projectDir, $input)],
             ['write_environment', fn (): array => $this->environmentWriter->write($this->projectDir, $input, $appSecret, $databaseUrl)],
-            ['resolve_php_cli', fn (): array => $this->resolvePhpCli($input, $environment)],
-            ['dump_environment', fn (): array => $this->dumpEnvironment($input, $environment)],
-            ['run_migrations', fn (): array => $this->runMigrations($input, $environment)],
-            ['seed_default_settings', fn (): array => $this->withDatabaseEnvironment($environment, fn (): array => $this->databaseSeeder->seedDefaultSettings($this->projectDir, $input, $databaseUrl))],
-            ['seed_admin_user', fn (): array => $this->withDatabaseEnvironment($environment, fn (): array => $this->databaseSeeder->seedAdminUser($this->projectDir, $input, $databaseUrl))],
-            ['seed_initial_content', fn (): array => $this->withDatabaseEnvironment($environment, fn (): array => $this->databaseSeeder->seedInitialContent($this->projectDir, $input, $databaseUrl))],
-            ['clear_cache', fn (): array => $this->clearCache($input, $environment)],
-            ['run_package_discovery', fn (): array => $this->runPackageDiscovery($input, $environment)],
-            ['run_asset_rebuild', fn (): array => $this->runAssetRebuild($input, $environment)],
+            ['resolve_php_cli', fn (): array => $this->runtimeCommands->resolvePhpCli($this->projectDir, $input, $environment)],
+            ['dump_environment', fn (): array => $this->runtimeCommands->dumpEnvironment($this->projectDir, $input, $environment, $this->commandExecutor)],
+            ['run_migrations', fn (): array => $this->runtimeCommands->runMigrations($this->projectDir, $input, $environment, $this->commandExecutor)],
+            ['seed_default_settings', fn (): array => $this->databaseEnvironmentScope->run($environment, fn (): array => $this->databaseSeeder->seedDefaultSettings($this->projectDir, $input, $databaseUrl))],
+            ['seed_admin_user', fn (): array => $this->databaseEnvironmentScope->run($environment, fn (): array => $this->databaseSeeder->seedAdminUser($this->projectDir, $input, $databaseUrl))],
+            ['seed_initial_content', fn (): array => $this->databaseEnvironmentScope->run($environment, fn (): array => $this->databaseSeeder->seedInitialContent($this->projectDir, $input, $databaseUrl))],
+            ['clear_cache', fn (): array => $this->runtimeCommands->clearCache($this->projectDir, $input, $environment, $this->commandExecutor)],
+            ['run_package_discovery', fn (): array => $this->runtimeCommands->runPackageDiscovery($this->projectDir, $input, $environment, $this->commandExecutor)],
+            ['run_asset_rebuild', fn (): array => $this->runtimeCommands->runAssetRebuild($this->projectDir, $input, $environment, $this->commandExecutor)],
             ['mark_setup_completed', fn (): array => $this->completionMarker->markComplete($this->projectDir, $input->appEnv())],
-        ];
-    }
-
-    /**
-     * @param array<string, string> $environment
-     *
-     * @return array<string, mixed>
-     */
-    private function dumpEnvironment(SetupInput $input, array $environment): array
-    {
-        $composerEnvironment = $this->composerCommandResolver->environment($this->projectDir, $environment);
-        $composer = $this->composerCommandResolver->resolve($this->projectDir, $this->commandExecutor, $composerEnvironment);
-        $command = [...$composer, 'dump-env', $input->appEnv()];
-        $result = $this->commandExecutor->run($command, $this->projectDir, $composerEnvironment);
-
-        if (!$result->isSuccessful()) {
-            throw new SetupStepFailedException($this->commandError($result));
-        }
-
-        return ['command' => $command];
-    }
-
-    /**
-     * @param array<string, string> $environment
-     *
-     * @return array<string, mixed>
-     */
-    private function runMigrations(SetupInput $input, array $environment): array
-    {
-        $command = $this->migrationCommand($input);
-        $result = $this->commandExecutor->run($command, $this->projectDir, $this->databaseCommandEnvironment($environment));
-
-        if (!$result->isSuccessful()) {
-            throw new SetupStepFailedException($this->commandError($result));
-        }
-
-        return ['command' => $command];
-    }
-
-    /**
-     * @param array<string, string> $environment
-     *
-     * @return array<string, mixed>
-     */
-    private function clearCache(SetupInput $input, array $environment): array
-    {
-        $command = $this->cacheClearCommand($input);
-        $result = $this->commandExecutor->run($command, $this->projectDir, $this->databaseCommandEnvironment($environment));
-
-        if (!$result->isSuccessful()) {
-            throw new SetupStepFailedException($this->commandError($result));
-        }
-
-        return ['command' => $command];
-    }
-
-    /**
-     * @param array<string, string> $environment
-     *
-     * @return array<string, mixed>
-     */
-    private function runPackageDiscovery(SetupInput $input, array $environment): array
-    {
-        $command = [
-            ...$this->phpCliCommandPrefix($input, $environment, true),
-            $this->projectDir.'/bin/console',
-            'studio:packages:discover',
-            '--run-now',
-            '--trigger=setup',
-            '--env='.$input->appEnv(),
-        ];
-        $result = $this->commandExecutor->run($command, $this->projectDir, $this->databaseCommandEnvironment($environment));
-
-        if (!$result->isSuccessful()) {
-            throw new SetupStepFailedException($this->commandError($result));
-        }
-
-        return ['command' => $command];
-    }
-
-    /**
-     * @param array<string, string> $environment
-     *
-     * @return array<string, mixed>
-     */
-    private function runAssetRebuild(SetupInput $input, array $environment): array
-    {
-        $phpResolutionEnvironment = $this->phpResolutionEnvironment($environment);
-        $commandEnvironment = $this->assetRebuildCommandEnvironment($input, $phpResolutionEnvironment);
-        $command = [
-            ...$this->phpCliCommandPrefix($input, $phpResolutionEnvironment, true),
-            $this->projectDir.'/bin/console',
-            'studio:assets:rebuild',
-            '--trigger=setup',
-            '--env='.$input->appEnv(),
-            '--json',
-        ];
-        $result = $this->commandExecutor->run($command, $this->projectDir, $commandEnvironment);
-
-        if (!$result->isSuccessful()) {
-            throw new SetupStepFailedException($this->commandError($result));
-        }
-
-        return [
-            'command' => $command,
-            ...$this->assetRebuildContext($result),
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function assetRebuildContext(SetupCommandResult $result): array
-    {
-        $payload = $this->jsonPayload($result->output());
-
-        if (null === $payload) {
-            return [];
-        }
-
-        $messages = $this->importantMessagesFromOperationPayload($payload);
-
-        if ([] === $messages) {
-            return [];
-        }
-
-        return [
-            '_messages' => $messages,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function jsonPayload(string $output): ?array
-    {
-        $output = trim($output);
-
-        if ('' === $output) {
-            return null;
-        }
-
-        try {
-            $payload = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            return null;
-        }
-
-        return is_array($payload) ? $payload : null;
-    }
-
-    /**
-     * @param array<string, mixed> $payload
-     *
-     * @return list<Message>
-     */
-    private function importantMessagesFromOperationPayload(array $payload): array
-    {
-        $messages = [];
-
-        foreach (($payload['action_log']['entries'] ?? []) as $entry) {
-            if (!is_array($entry)) {
-                continue;
-            }
-
-            foreach (($entry['messages'] ?? []) as $message) {
-                $message = is_array($message) ? $this->messageFromPayload($message) : null;
-                if (null !== $message && $this->shouldSurfaceNestedMessage($message)) {
-                    $messages[] = $message;
-                }
-            }
-        }
-
-        foreach (($payload['result']['messages'] ?? []) as $message) {
-            $message = is_array($message) ? $this->messageFromPayload($message) : null;
-            if (null !== $message && $this->shouldSurfaceNestedMessage($message)) {
-                $messages[] = $message;
-            }
-        }
-
-        return $this->uniqueMessages($messages);
-    }
-
-    /**
-     * @param array<string, mixed> $payload
-     */
-    private function messageFromPayload(array $payload): ?Message
-    {
-        $code = $payload['code'] ?? null;
-        $translationKey = $payload['translation_key'] ?? null;
-
-        if (!is_string($code) || !is_string($translationKey)) {
-            return null;
-        }
-
-        $level = is_string($payload['level'] ?? null) ? MessageLevel::tryFrom($payload['level']) : null;
-
-        try {
-            return Message::create(
-                $code,
-                $translationKey,
-                is_array($payload['parameters'] ?? null) ? $payload['parameters'] : [],
-                is_array($payload['context'] ?? null) ? $payload['context'] : [],
-                $level,
-            );
-        } catch (Throwable) {
-            return null;
-        }
-    }
-
-    private function shouldSurfaceNestedMessage(Message $message): bool
-    {
-        return in_array($message->level(), [
-            MessageLevel::Exception,
-            MessageLevel::Error,
-            MessageLevel::Warning,
-        ], true);
-    }
-
-    /**
-     * @param list<Message> $messages
-     *
-     * @return list<Message>
-     */
-    private function uniqueMessages(array $messages): array
-    {
-        $unique = [];
-        $seen = [];
-
-        foreach ($messages as $message) {
-            $key = hash('sha256', serialize($message->toArray()));
-
-            if (isset($seen[$key])) {
-                continue;
-            }
-
-            $seen[$key] = true;
-            $unique[] = $message;
-        }
-
-        return $unique;
-    }
-
-    /**
-     * @param array<string, string> $environment
-     *
-     * @return array<string, string|false>
-     */
-    private function assetRebuildCommandEnvironment(SetupInput $input, array $environment): array
-    {
-        return [
-            ...$environment,
-            'APP_ENV' => $input->appEnv(),
-            'APP_DEBUG' => false,
-            'APP_SECRET' => false,
-            'DATABASE_URL' => false,
-            'APP_DATABASE_PREFIX' => false,
-            'DEFAULT_URI' => false,
-            'SHELL_VERBOSITY' => '0',
-            DatabaseReadyState::ALLOW_UNREADY_KEY => '1',
-        ];
-    }
-
-    /**
-     * @param array<string, string> $environment
-     *
-     * @return array<string, string>
-     */
-    private function phpResolutionEnvironment(array $environment): array
-    {
-        $phpResolutionEnvironment = [];
-        foreach (['PATH', 'SystemRoot', 'WINDIR'] as $name) {
-            if (array_key_exists($name, $environment)) {
-                $phpResolutionEnvironment[$name] = $environment[$name];
-            }
-        }
-
-        return $phpResolutionEnvironment;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function migrationCommand(SetupInput $input): array
-    {
-        return [
-            ...$this->phpCliCommandPrefix($input),
-            $this->projectDir.'/bin/console',
-            'doctrine:migrations:migrate',
-            '--no-interaction',
-            '--env='.$input->appEnv(),
-        ];
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function dryRunMigrationCommand(SetupInput $input): array
-    {
-        $resolution = $this->phpCliBinaryManager->resolve($this->projectDir, $input->appEnv());
-
-        return [
-            ...($resolution->isAvailable() ? $resolution->commandPrefix() : ['php-cli-unavailable:'.$resolution->reason()]),
-            $this->projectDir.'/bin/console',
-            'doctrine:migrations:migrate',
-            '--no-interaction',
-            '--env='.$input->appEnv(),
-        ];
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function cacheClearCommand(SetupInput $input): array
-    {
-        return [
-            ...$this->phpCliCommandPrefix($input),
-            $this->projectDir.'/bin/console',
-            'cache:clear',
-            '--env='.$input->appEnv(),
-        ];
-    }
-
-    /**
-     * @param array<string, string> $environment
-     *
-     * @return list<string>
-     */
-    private function phpCliCommandPrefix(SetupInput $input, array $environment = [], bool $persistPreference = false): array
-    {
-        $resolution = $this->phpCliBinaryManager->resolve($this->projectDir, $input->appEnv(), $environment, $persistPreference);
-
-        if (!$resolution->isAvailable()) {
-            throw new SetupStepFailedException('PHP CLI binary could not be resolved: '.$resolution->reason().'.');
-        }
-
-        return $resolution->commandPrefix();
-    }
-
-    /**
-     * @param array<string, string> $environment
-     *
-     * @return array<string, mixed>
-     */
-    private function resolvePhpCli(SetupInput $input, array $environment): array
-    {
-        $resolution = $this->phpCliBinaryManager->resolve(
-            $this->projectDir,
-            $input->appEnv(),
-            $this->phpResolutionEnvironment($environment),
-            true,
-        );
-
-        if (!$resolution->isAvailable()) {
-            throw new SetupStepFailedException('PHP CLI binary could not be resolved: '.$resolution->reason().'.');
-        }
-
-        return [
-            'command_prefix' => $resolution->commandPrefix(),
-            ...$resolution->context(),
         ];
     }
 
@@ -610,73 +206,6 @@ final class SetupRunner
         ];
     }
 
-    /**
-     * @param array<string, string> $environment
-     *
-     * @return array<string, string>
-     */
-    private function databaseCommandEnvironment(array $environment): array
-    {
-        return [
-            ...$environment,
-            DatabaseReadyState::ALLOW_UNREADY_KEY => '1',
-        ];
-    }
-
-    /**
-     * @param array<string, string> $environment
-     * @param callable(): array<string, mixed> $callback
-     *
-     * @return array<string, mixed>
-     */
-    private function withDatabaseEnvironment(array $environment, callable $callback): array
-    {
-        $environment = $this->databaseCommandEnvironment($environment);
-        $previous = [];
-
-        foreach ($environment as $name => $value) {
-            $previous[$name] = [
-                'server_exists' => array_key_exists($name, $_SERVER),
-                'server_value' => $_SERVER[$name] ?? null,
-                'env_exists' => array_key_exists($name, $_ENV),
-                'env_value' => $_ENV[$name] ?? null,
-                'process_value' => getenv($name),
-            ];
-            $_SERVER[$name] = $value;
-            $_ENV[$name] = $value;
-            putenv($name.'='.$value);
-        }
-
-        try {
-            return $callback();
-        } finally {
-            foreach ($previous as $name => $state) {
-                if ($state['server_exists']) {
-                    $_SERVER[$name] = $state['server_value'];
-                } else {
-                    unset($_SERVER[$name]);
-                }
-
-                if ($state['env_exists']) {
-                    $_ENV[$name] = $state['env_value'];
-                } else {
-                    unset($_ENV[$name]);
-                }
-
-                if (false === $state['process_value']) {
-                    putenv($name);
-                } else {
-                    putenv($name.'='.$state['process_value']);
-                }
-            }
-        }
-    }
-
-    private function commandError(SetupCommandResult $result): string
-    {
-        return trim($result->output().PHP_EOL.$result->errorOutput()) ?: 'Setup command failed.';
-    }
-
     private function failureMessage(string $step, Throwable $throwable): Message
     {
         if ($throwable instanceof SetupStepFailedException && null !== $throwable->messageObject()) {
@@ -689,10 +218,10 @@ final class SetupRunner
         $context = ['step' => $step, 'exception' => $throwable::class];
 
         if ($throwable instanceof SetupStepFailedException) {
-            return Message::error(MessageCode::SETUP_STEP_FAILED, MessageKey::SETUP_STEP_FAILED, $parameters, $context);
+            return Message::error(SetupMessageCode::SETUP_STEP_FAILED, SetupMessageKey::SETUP_STEP_FAILED, $parameters, $context);
         }
 
-        return Message::exception(MessageCode::SETUP_STEP_FAILED, MessageKey::SETUP_STEP_FAILED, $parameters, $context);
+        return Message::exception(SetupMessageCode::SETUP_STEP_FAILED, SetupMessageKey::SETUP_STEP_FAILED, $parameters, $context);
     }
 
     private function generateSecret(): string

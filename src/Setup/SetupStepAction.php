@@ -7,10 +7,10 @@ namespace App\Setup;
 use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Workflow\WorkflowResult;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 use Closure;
 use Throwable;
 
@@ -104,9 +104,9 @@ final readonly class SetupStepAction implements OperationActionInterface
         $context = ['step' => $this->name, 'exception' => $throwable::class];
 
         if ($throwable instanceof SetupStepFailedException) {
-            return Message::error(MessageCode::SETUP_STEP_FAILED, MessageKey::SETUP_STEP_FAILED, $parameters, $context);
+            return Message::error(SetupMessageCode::SETUP_STEP_FAILED, SetupMessageKey::SETUP_STEP_FAILED, $parameters, $context);
         }
 
-        return Message::exception(MessageCode::SETUP_STEP_FAILED, MessageKey::SETUP_STEP_FAILED, $parameters, $context);
+        return Message::exception(SetupMessageCode::SETUP_STEP_FAILED, SetupMessageKey::SETUP_STEP_FAILED, $parameters, $context);
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
-use InvalidArgumentException;
+use App\Core\Message\MessageException;
 
 final readonly class PackageAssetContribution
 {
@@ -20,11 +20,21 @@ final readonly class PackageAssetContribution
         private string $path,
     ) {
         if ('' === trim($package)) {
-            throw new InvalidArgumentException('Package asset contribution requires a package identifier.');
+            throw MessageException::forMessage(
+                PackageMessageCode::PACKAGE_ASSET_CONTRIBUTION_PACKAGE_INVALID,
+                PackageMessageKey::PACKAGE_ASSET_CONTRIBUTION_PACKAGE_INVALID,
+                ['%package%' => $package],
+                ['package' => $package],
+            );
         }
 
         if (!in_array($type, [self::TYPE_CSS, self::TYPE_JAVASCRIPT, self::TYPE_STATIC_ASSET, self::TYPE_TAILWIND_SOURCE], true)) {
-            throw new InvalidArgumentException(sprintf('Package asset contribution type "%s" is not supported.', $type));
+            throw MessageException::forMessage(
+                PackageMessageCode::PACKAGE_ASSET_CONTRIBUTION_TYPE_INVALID,
+                PackageMessageKey::PACKAGE_ASSET_CONTRIBUTION_TYPE_INVALID,
+                ['%type%' => $type],
+                ['package' => $package, 'type' => $type],
+            );
         }
 
         self::assertSafePath($path);
@@ -73,12 +83,22 @@ final readonly class PackageAssetContribution
     private static function assertSafePath(string $path): void
     {
         if ('' === trim($path) || str_starts_with($path, '/') || str_contains($path, "\0")) {
-            throw new InvalidArgumentException(sprintf('Package asset path "%s" must be project-relative.', $path));
+            throw MessageException::forMessage(
+                PackageMessageCode::PACKAGE_ASSET_CONTRIBUTION_PATH_INVALID,
+                PackageMessageKey::PACKAGE_ASSET_CONTRIBUTION_PATH_INVALID,
+                ['%path%' => $path],
+                ['path' => $path],
+            );
         }
 
         foreach (explode('/', str_replace('\\', '/', $path)) as $segment) {
             if ('..' === $segment) {
-                throw new InvalidArgumentException(sprintf('Package asset path "%s" must not traverse parent directories.', $path));
+                throw MessageException::forMessage(
+                    PackageMessageCode::PACKAGE_ASSET_CONTRIBUTION_PATH_TRAVERSAL,
+                    PackageMessageKey::PACKAGE_ASSET_CONTRIBUTION_PATH_TRAVERSAL,
+                    ['%path%' => $path],
+                    ['path' => $path],
+                );
             }
         }
     }

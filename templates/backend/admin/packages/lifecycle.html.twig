@@ -18,19 +18,19 @@
         title: ('admin.packages.lifecycle.' ~ action_key ~ '.title')|trans({'%package%': package.label}),
     } only %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.packages.lifecycle.review_title'|trans }}</h2>
-        <p class="studio-muted">{{ ('admin.packages.lifecycle.' ~ action_key ~ '.text')|trans({'%package%': package.label}) }}</p>
+        <p class="system-muted">{{ ('admin.packages.lifecycle.' ~ action_key ~ '.text')|trans({'%package%': package.label}) }}</p>
         {% if action_key in ['purge', 'delete'] %}
-            <p class="studio-alert studio-alert-warning">{{ ('admin.packages.lifecycle.' ~ action_key ~ '.warning')|trans({'%package%': package.label}) }}</p>
+            <p class="system-alert system-alert-warning">{{ ('admin.packages.lifecycle.' ~ action_key ~ '.warning')|trans({'%package%': package.label}) }}</p>
         {% endif %}
 
         {% if package.immutable %}
-            <p class="studio-alert studio-alert-warning">{{ 'admin.packages.lifecycle.immutable'|trans }}</p>
+            <p class="system-alert system-alert-warning">{{ 'admin.packages.lifecycle.immutable'|trans }}</p>
         {% elseif plan and plan.success %}
             {% set changes = plan.value.changes|default([]) %}
             {% if changes is not empty %}
-                <table class="studio-table">
+                <table class="system-table">
                     <thead>
                         <tr>
                             <th scope="col">{{ 'admin.packages.table.package'|trans }}</th>
@@ -49,7 +49,7 @@
                     </tbody>
                 </table>
             {% else %}
-                <p class="studio-muted">{{ 'admin.packages.lifecycle.no_changes'|trans }}</p>
+                <p class="system-muted">{{ 'admin.packages.lifecycle.no_changes'|trans }}</p>
             {% endif %}
 
             <form
@@ -62,20 +62,20 @@
             >
                 <input type="hidden" name="_form_id" value="package-lifecycle-{{ review.action }}-{{ package.package_name }}">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('package-lifecycle-' ~ review.action ~ '-' ~ package.package_name) }}">
-                <button class="studio-backend-button studio-button-{{ action_key in ['purge', 'delete'] ? 'danger' : 'primary' }}" type="submit">
+                <button class="system-backend-button system-button-{{ action_key in ['purge', 'delete'] ? 'danger' : 'primary' }}" type="submit">
                     {{ ('admin.packages.lifecycle.' ~ action_key ~ '.submit')|trans }}
                 </button>
-                <a class="studio-backend-button studio-button-secondary" href="/admin/packages/{{ package.package_name }}">
+                <a class="system-backend-button system-button-secondary" href="/admin/packages/{{ package.package_name }}">
                     {{ 'admin.packages.lifecycle.cancel'|trans }}
                 </a>
             </form>
         {% else %}
             {% for issue in plan.issues|default([]) %}
-                <p class="studio-alert studio-alert-warning">{{ issue.translation_key|trans(issue.parameters) }}</p>
+                <p class="system-alert system-alert-warning">{{ issue.translation_key|trans(issue.parameters) }}</p>
             {% else %}
-                <p class="studio-alert studio-alert-warning">{{ 'admin.packages.lifecycle.unavailable'|trans }}</p>
+                <p class="system-alert system-alert-warning">{{ 'admin.packages.lifecycle.unavailable'|trans }}</p>
             {% endfor %}
-            <a class="studio-backend-button studio-button-secondary" href="/admin/packages/{{ package.package_name }}">
+            <a class="system-backend-button system-button-secondary" href="/admin/packages/{{ package.package_name }}">
                 {{ 'admin.packages.lifecycle.cancel'|trans }}
             </a>
         {% endif %}

@@ -5,6 +5,9 @@
 > **Owner**: Dominik Letica, OpenAI/Codex  
 > **Purpose:** Provide practical, repository-specific instructions for coding agents working on this Symfony application.  
 
+## Binding Project Rules
+- `.codex/PROJECT_RULES.md` is the binding project-wide rule source for architecture, naming, process, security, localization, and audit decisions. Check it before feature work, refactors, audits, and review-finding fixes.
+
 ## Operating Principles
 - Read the existing code and documentation before changing behavior. Prefer local patterns over new abstractions.
 - Make use of Symfony native packages and features whenever applicable and keep the codebase as lightweight, compatible and clean as possible.

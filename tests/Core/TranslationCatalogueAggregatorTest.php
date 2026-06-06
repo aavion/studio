@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Core;
 
-use App\Core\Message\MessageKey;
 use App\Core\Package\PackageAssetSyncPackage;
 use App\Core\Package\PackageScope;
 use App\Core\Translation\TranslationCatalogueAggregator;
 use App\Core\Translation\TranslationCatalogueCollisionException;
+use App\Core\Translation\TranslationMessageKey;
 use App\Core\Translation\TranslationRuntimePath;
 use App\Tests\Support\FilesystemTestHelper;
 use PHPUnit\Framework\TestCase;
@@ -22,7 +22,7 @@ final class TranslationCatalogueAggregatorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-package-translations');
+        $this->root = $this->createTemporaryDirectory('system-package-translations');
         $this->writeTestFile($this->root, 'translations/languages/en/ui.yaml', "ui:\n  app:\n    name: Studio\n");
         $this->writeTestFile($this->root, 'translations/languages/de/ui.yaml', "ui:\n  app:\n    name: Studio\n");
         $this->writeTestFile($this->root, 'translations/runtime/test/messages.fr.yaml', "stale: true\n");
@@ -47,7 +47,7 @@ final class TranslationCatalogueAggregatorTest extends TestCase
         self::assertTrue($result->isSuccess());
         self::assertSame(2, $result->context()['locales']);
         self::assertSame(4, $result->context()['files']);
-        self::assertSame(MessageKey::TRANSLATION_AGGREGATE_COMPLETED, $result->messages()[0]->translationKey());
+        self::assertSame(TranslationMessageKey::TRANSLATION_AGGREGATE_COMPLETED, $result->messages()[0]->translationKey());
         self::assertFileExists($this->root.'/translations/runtime/test/messages.en.yaml');
         self::assertFileExists($this->root.'/translations/runtime/test/messages.de.yaml');
         self::assertFileDoesNotExist($this->root.'/translations/runtime/test/messages.fr.yaml');
@@ -81,7 +81,7 @@ final class TranslationCatalogueAggregatorTest extends TestCase
         ]);
 
         self::assertFalse($result->isSuccess());
-        self::assertSame(MessageKey::TRANSLATION_AGGREGATE_FAILED, $result->firstIssue()?->translationKey());
+        self::assertSame(TranslationMessageKey::TRANSLATION_AGGREGATE_FAILED, $result->firstIssue()?->translationKey());
         self::assertSame(TranslationCatalogueCollisionException::class, $result->context()['exception']);
         self::assertFileExists($this->root.'/translations/runtime/test/messages.fr.yaml');
     }

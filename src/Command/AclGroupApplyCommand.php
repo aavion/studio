@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Core\Console\ConsoleResultRenderer;
 use App\Security\AclGroupApplyService;
 use JsonException;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -14,13 +15,15 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
-    name: 'studio:acl-groups:apply',
+    name: 'acl-groups:apply',
     description: 'Apply a reviewed ACL group update or delete operation.',
 )]
 final class AclGroupApplyCommand extends Command
 {
-    public function __construct(private readonly AclGroupApplyService $applyService)
-    {
+    public function __construct(
+        private readonly AclGroupApplyService $applyService,
+        private readonly ConsoleResultRenderer $resultRenderer,
+    ) {
         parent::__construct();
     }
 
@@ -42,15 +45,7 @@ final class AclGroupApplyCommand extends Command
             $this->payload((string) ($input->getOption('payload') ?? '')),
         );
 
-        foreach ($result->issues() as $issue) {
-            $output->writeln(sprintf('[%s] %s', $issue->level()->value, $issue->translationKey()));
-        }
-
-        foreach ($result->messages() as $message) {
-            $output->writeln(sprintf('[%s] %s', $message->level()->value, $message->translationKey()));
-        }
-
-        return $result->isSuccess() ? Command::SUCCESS : Command::FAILURE;
+        return $this->resultRenderer->writeWorkflow($output, $result);
     }
 
     /**

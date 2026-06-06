@@ -7,11 +7,11 @@ namespace App\Tests\Core\Access;
 use App\Core\Access\AccessActor;
 use App\Core\Access\AccessCapability;
 use App\Core\Access\AccessLevel;
+use App\Core\Access\AccessMessageCode;
+use App\Core\Access\AccessMessageKey;
 use App\Core\Access\AccessResolver;
 use App\Core\Access\AccessRule;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\MessageReporterInterface;
 use App\Entity\AclGroup;
@@ -32,13 +32,13 @@ final class AccessResolverTest extends TestCase
 
         self::assertTrue($viewDecision->isGranted());
         self::assertSame('default', $viewDecision->ruleSource());
-        self::assertSame(MessageCode::ACCESS_GRANTED, $viewDecision->message()->code());
-        self::assertSame(MessageKey::ACCESS_GRANTED, $viewDecision->message()->translationKey());
+        self::assertSame(AccessMessageCode::ACCESS_GRANTED, $viewDecision->message()->code());
+        self::assertSame(AccessMessageKey::ACCESS_GRANTED, $viewDecision->message()->translationKey());
         self::assertSame(MessageLevel::Debug, $viewDecision->message()->level());
 
         self::assertFalse($editDecision->isGranted());
         self::assertSame(AccessLevel::AUTHOR, $editDecision->rule()->minLevel());
-        self::assertSame(MessageCode::ACCESS_DENIED, $editDecision->message()->code());
+        self::assertSame(AccessMessageCode::ACCESS_DENIED, $editDecision->message()->code());
         self::assertSame(MessageLevel::Warning, $editDecision->message()->level());
     }
 
@@ -86,10 +86,10 @@ final class AccessResolverTest extends TestCase
 
     public function testItBuildsActorsFromUserAccounts(): void
     {
-        $contentAuthorGroup = new AclGroup('11111111-1111-1111-1111-111111111111', 'content_authors', ['en' => 'Content authors'], AccessLevel::AUTHOR);
-        $projectGroup = new AclGroup('22222222-2222-2222-2222-222222222222', 'project_team', ['en' => 'Project'], AccessLevel::PUBLIC);
-        $adminGroup = new AclGroup('44444444-4444-4444-4444-444444444444', 'admin_room', ['en' => 'Admin room'], AccessLevel::ADMIN);
-        $user = new UserAccount('33333333-3333-3333-3333-333333333333', 'dominik', 'dom@example.test', 'hash', role: UserRole::Author);
+        $contentAuthorGroup = new AclGroup('11111111-1111-7111-8111-111111111111', 'content_authors', 'Content authors', AccessLevel::AUTHOR);
+        $projectGroup = new AclGroup('22222222-2222-7222-8222-222222222222', 'project_team', 'Project', AccessLevel::PUBLIC);
+        $adminGroup = new AclGroup('44444444-4444-7444-8444-444444444444', 'admin_room', 'Admin room', AccessLevel::ADMIN);
+        $user = new UserAccount('33333333-3333-7333-8333-333333333333', 'dominik', 'dom@example.test', 'hash', role: UserRole::Author);
         $user->addGroup($projectGroup);
         $user->addGroup($contentAuthorGroup);
         $user->addGroup($adminGroup);

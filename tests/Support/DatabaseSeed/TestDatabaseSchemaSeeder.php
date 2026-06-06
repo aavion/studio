@@ -21,8 +21,8 @@ final class TestDatabaseSchemaSeeder
                 'descriptions' => $writer->json($schema['description']),
                 'metadata' => $writer->json(['seed' => true]),
             ]);
-            $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000092%d', $index * 3), 'content_schema', $schema['schema_uid'], 'created', 'system', null, ['identifier' => $schema['identifier']]);
-            $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000092%d', $index * 3 + 1), 'content_schema', $schema['schema_uid'], 'modified', 'system', null, ['identifier' => $schema['identifier']]);
+            $writer->seedStateMarker(sprintf('00000000-0000-7000-8000-00000000092%d', $index * 3), 'content_schema', $schema['schema_uid'], 'created', 'system', null, ['identifier' => $schema['identifier']]);
+            $writer->seedStateMarker(sprintf('00000000-0000-7000-8000-00000000092%d', $index * 3 + 1), 'content_schema', $schema['schema_uid'], 'modified', 'system', null, ['identifier' => $schema['identifier']]);
 
             $writer->insert('content_schema_version', [
                 'uid' => $schema['version_uid'],
@@ -41,7 +41,7 @@ final class TestDatabaseSchemaSeeder
                 'manage_group_identifiers' => null,
                 'metadata' => $writer->json(['seed' => true]),
             ]);
-            $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000092%d', $index * 3 + 2), 'content_schema_version', $schema['version_uid'], 'activated', 'system', '1', ['schema_uid' => $schema['schema_uid']]);
+            $writer->seedStateMarker(sprintf('00000000-0000-7000-8000-00000000092%d', $index * 3 + 2), 'content_schema_version', $schema['version_uid'], 'activated', 'system', '1', ['schema_uid' => $schema['schema_uid']]);
 
             $writer->update('content_schema', ['active_version_uid' => $schema['version_uid']], ['uid' => $schema['schema_uid']]);
         }
@@ -75,8 +75,8 @@ final class TestDatabaseSchemaSeeder
                 'definition' => $setupVersion['definition'],
             ],
             [
-                'schema_uid' => '10000000-0000-0000-0000-000000000002',
-                'version_uid' => '10000000-0000-0000-0000-000000000102',
+                'schema_uid' => '10000000-0000-7000-8000-000000000002',
+                'version_uid' => '10000000-0000-7000-8000-000000000102',
                 'identifier' => 'article',
                 'labels' => ['en' => 'Article', 'de' => 'Artikel'],
                 'title' => ['en' => 'Article schema', 'de' => 'Artikelschema'],

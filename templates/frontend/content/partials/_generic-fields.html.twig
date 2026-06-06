@@ -3,15 +3,15 @@
 {% set visible_fields = fields|filter((value, field) => field not in ['title', 'subtitle', 'body']) %}
 
 {% if body is not empty %}
-    <section class="studio-content-body">
+    <section class="system-frontend-content-body">
         {% include '@frontend/content/partials/_field-value.html.twig' with {value: body} only %}
     </section>
 {% endif %}
 
 {% if visible_fields is not empty %}
-    <section class="studio-content-fields" aria-labelledby="studio-content-fields-heading">
-        <h2 id="studio-content-fields-heading">{{ 'ui.content.fields'|trans }}</h2>
-        <table class="studio-field-table">
+    <section class="system-frontend-content-fields" aria-labelledby="system-frontend-content-fields-heading">
+        <h2 id="system-frontend-content-fields-heading">{{ 'ui.content.fields'|trans }}</h2>
+        <table class="system-field-table">
             <thead>
                 <tr>
                     <th scope="col">{{ 'ui.content.field'|trans }}</th>

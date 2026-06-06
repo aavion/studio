@@ -4,10 +4,10 @@
 }
 
 :root {
-    --studio-text-xs: 0.75rem;
-    --studio-text-sm: 0.875rem;
-    --studio-text-base: 1rem;
-    --studio-text-lg: 1.125rem;
-    --studio-leading-tight: 1.15;
-    --studio-leading-copy: 1.7;
+    --system-text-xs: 0.75rem;
+    --system-text-sm: 0.875rem;
+    --system-text-base: 1rem;
+    --system-text-lg: 1.125rem;
+    --system-leading-tight: 1.15;
+    --system-leading-copy: 1.7;
 }

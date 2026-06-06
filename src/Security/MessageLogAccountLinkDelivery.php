@@ -6,13 +6,13 @@ namespace App\Security;
 
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\EmailAddress;
 use App\Entity\AccountToken;
 use App\Mail\AccountMailFlow;
 use App\Mail\MailDeliveryMessage;
 use App\Mail\MailFlowRegistry;
+use App\Security\SecurityMessageCode;
+use App\Security\SecurityMessageKey;
 
 final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliveryInterface
 {
@@ -22,7 +22,7 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
     ) {
     }
 
-    public function deliver(AccountToken $token, AccountMailFlow $flow, string $plainToken, string $url, string $locale, array $parameters = []): void
+    public function deliver(AccountToken $token, AccountMailFlow $flow, string $url, string $locale, array $parameters = []): void
     {
         $this->logMailMessage(
             new MailDeliveryMessage(
@@ -35,7 +35,6 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
                     'action_url' => $url,
                 ],
                 actionUrl: $url,
-                debugPlainToken: $plainToken,
                 tokenUid: $token->uid(),
                 tokenType: $token->type()->value,
             ),
@@ -43,7 +42,7 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
         );
     }
 
-    public function notify(AccountToken $token, AccountMailFlow $flow, ?string $recipientEmail = null, string $locale = 'en', array $parameters = []): void
+    public function notify(AccountToken $token, AccountMailFlow $flow, ?string $recipientEmail = null, string $locale = '', array $parameters = []): void
     {
         $adminFacing = in_array($flow, [
             AccountMailFlow::RegistrationApprovalRequested,
@@ -97,7 +96,7 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
         $recipient = $mailMessage->recipientEmail();
 
         $this->messageLogger->log(
-            Message::debug(MessageCode::ACCOUNT_MAIL_STUB_QUEUED, MessageKey::ACCOUNT_MAIL_STUB_QUEUED, [
+            Message::debug(SecurityMessageCode::ACCOUNT_MAIL_STUB_QUEUED, SecurityMessageKey::ACCOUNT_MAIL_STUB_QUEUED, [
                 '%email%' => $recipient ?? 'configured administrator',
                 '%flow%' => $mailMessage->flowKey(),
             ]),
@@ -113,7 +112,6 @@ final readonly class MessageLogAccountLinkDelivery implements AccountLinkDeliver
                 'parameters' => $mailMessage->parameters(),
                 'available_parameters' => $definition->parameterKeys(),
                 'action_url' => $mailMessage->actionUrl(),
-                'debug_plain_token' => $mailMessage->debugPlainToken(),
                 'token_uid' => $mailMessage->tokenUid(),
                 'token_type' => $mailMessage->tokenType(),
             ],

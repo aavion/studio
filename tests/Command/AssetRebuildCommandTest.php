@@ -7,6 +7,7 @@ namespace App\Tests\Command;
 use App\Command\AssetRebuildCommand;
 use App\Command\PackageAssetSyncCommand;
 use App\Core\Asset\AssetRebuildQueueFactory;
+use App\Core\Console\ConsoleResultRenderer;
 use App\Core\Operation\OperationExecutor;
 use App\Core\Package\ActivePackageAssetProviderInterface;
 use App\Core\Package\PackageAssetRebuildDispatcher;
@@ -32,7 +33,7 @@ final class AssetRebuildCommandTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-asset-command');
+        $this->root = $this->createTemporaryDirectory('system-asset-command');
         $this->writeTestFile($this->root, 'bin/console', "#!/usr/bin/env php\n<?php echo \"Studio test\";\n");
     }
 
@@ -53,6 +54,7 @@ final class AssetRebuildCommandTest extends TestCase
             ),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
             $this->assetRebuildDispatcher(),
+            new ConsoleResultRenderer(),
         );
         $tester = new CommandTester($command);
 
@@ -72,6 +74,7 @@ final class AssetRebuildCommandTest extends TestCase
             new FailingPackageAssetProvider(),
             new PackageAssetSyncer($this->root),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
+            new ConsoleResultRenderer(),
         );
         $tester = new CommandTester($command);
 
@@ -93,6 +96,7 @@ final class AssetRebuildCommandTest extends TestCase
             ]),
             new PackageAssetSyncer($this->root),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
+            new ConsoleResultRenderer(),
         );
         $tester = new CommandTester($command);
 
@@ -122,6 +126,7 @@ final class AssetRebuildCommandTest extends TestCase
             ),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
             $this->assetRebuildDispatcher(),
+            new ConsoleResultRenderer(),
         );
         $tester = new CommandTester($command);
 
@@ -154,6 +159,7 @@ final class AssetRebuildCommandTest extends TestCase
             ),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
             $this->assetRebuildDispatcher($messageBus),
+            new ConsoleResultRenderer(),
         );
         $tester = new CommandTester($command);
 

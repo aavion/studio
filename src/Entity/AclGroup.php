@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Core\Access\AccessLevel;
+use App\Core\Access\AccessMessageKey;
+use App\Core\Message\MessageException;
 use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
 use Doctrine\ORM\Mapping as ORM;
@@ -15,6 +17,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_acl_group_min_role', columns: ['min_role'])]
 class AclGroup
 {
+    public const MAX_NAME_LENGTH = 160;
+
     #[ORM\Id]
     #[ORM\Column(length: 36)]
     private string $uid;
@@ -22,11 +26,8 @@ class AclGroup
     #[ORM\Column(length: 80)]
     private string $identifier;
 
-    /**
-     * @var array<string, string>
-     */
-    #[ORM\Column(type: 'json')]
-    private array $name;
+    #[ORM\Column(length: self::MAX_NAME_LENGTH)]
+    private string $name;
 
     #[ORM\Column]
     private int $minRole;
@@ -38,19 +39,18 @@ class AclGroup
     private array $metadata = [];
 
     /**
-     * @param array<string, string> $name
      * @param array<string, mixed> $metadata
      */
     public function __construct(
         string $uid,
         string $identifier,
-        array $name,
+        string $name,
         int $minRole,
         array $metadata = [],
     ) {
         $this->uid = Uid::assert($uid, 'ACL group UID');
         $this->identifier = Identifier::assertAclGroupIdentifier($identifier);
-        $this->name = $name;
+        $this->name = $this->normalizeName($name);
         $this->minRole = AccessLevel::assert($minRole);
         $this->metadata = $metadata;
     }
@@ -65,10 +65,7 @@ class AclGroup
         return $this->identifier;
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function name(): array
+    public function name(): string
     {
         return $this->name;
     }
@@ -78,16 +75,26 @@ class AclGroup
         return $this->minRole;
     }
 
-    /**
-     * @param array<string, string> $name
-     */
-    public function rename(array $name): void
+    public function rename(string $name): void
     {
-        $this->name = $name;
+        $this->name = $this->normalizeName($name);
     }
 
     public function changeMinRole(int $minRole): void
     {
         $this->minRole = AccessLevel::assert($minRole);
+    }
+
+    private function normalizeName(string $name): string
+    {
+        $name = trim($name);
+
+        if ('' === $name || mb_strlen($name) > self::MAX_NAME_LENGTH) {
+            throw MessageException::invalidArgument(AccessMessageKey::ACCESS_GROUP_NAME_INVALID, [
+                '%name%' => $name,
+            ]);
+        }
+
+        return $name;
     }
 }

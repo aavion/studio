@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace App\Core\Lint;
 
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Lint\LintMessageCode;
+use App\Core\Lint\LintMessageKey;
 use Symfony\Component\Process\Process;
 
 final class PhpLinter implements LinterInterface
 {
     public function lint(string $contents, ?string $path = null): LintResult
     {
-        $temporaryPath = tempnam(sys_get_temp_dir(), 'studio-php-lint-');
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'system-php-lint-');
 
         if (false === $temporaryPath || false === file_put_contents($temporaryPath, $contents)) {
             return LintResult::invalid([
                 LintIssue::create(
-                    MessageCode::LINT_PHP_UNREADABLE,
-                    MessageKey::LINT_PHP_UNREADABLE,
+                    LintMessageCode::LINT_PHP_UNREADABLE,
+                    LintMessageKey::LINT_PHP_UNREADABLE,
                     details: ['path' => $path],
                 ),
             ]);
@@ -33,8 +33,8 @@ final class PhpLinter implements LinterInterface
 
             return LintResult::invalid([
                 LintIssue::create(
-                    MessageCode::LINT_PHP_SYNTAX_ERROR,
-                    MessageKey::LINT_PHP_SYNTAX_ERROR,
+                    LintMessageCode::LINT_PHP_SYNTAX_ERROR,
+                    LintMessageKey::LINT_PHP_SYNTAX_ERROR,
                     details: ['error' => $output, 'output' => $output, 'path' => $path],
                 ),
             ]);

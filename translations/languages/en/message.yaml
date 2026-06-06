@@ -18,20 +18,31 @@ message:
     php_syntax_error: 'PHP syntax check failed for "%path%".'
     php_namespace_invalid: 'PHP source "%path%" must use package namespace "%expected_namespace%".'
     twig_syntax_error: 'Twig syntax check failed for "%path%".'
-    translation_english_missing: 'Package translation sources for "%package%" must include at least one English catalogue under "languages/en".'
+    translation_fallback_missing: 'Package translation sources for "%package%" must include at least one fallback catalogue under "languages/%locale%".'
     translation_namespace_invalid: 'Package translation file "%path%" must define keys below "pkg.%package%".'
     json_syntax_error: 'JSON syntax check failed for "%path%".'
     yaml_syntax_error: 'YAML syntax check failed for "%path%".'
     css_syntax_error: 'CSS syntax check failed for "%path%".'
+    css_namespace_invalid: 'CSS class "%class%" in "%path%" must use the package-owned prefix "%expected_prefix%".'
     javascript_syntax_error: 'JavaScript syntax check failed for "%path%".'
     scope_invalid: 'Package scope "%scope%" is not supported.'
     template_path_invalid: 'Package template "%path%" is not allowed by root, provider, or macro namespace rules for package scope "%scope%".'
+    template_reference_invalid: 'Package template "%path%" must not reference template "%reference%" outside its own template scope.'
+    policy:
+      blocked_path: 'Package path "%path%" is blocked by package policy (%reason%).'
+      warned_path: 'Package path "%path%" should be reviewed by package policy (%reason%).'
+      blocked_php_capability: 'Package PHP file "%path%" uses blocked capability "%capability%" (%reason%). Use a documented extension point instead.'
     copy_source_missing: 'Package copy source "%path%" is missing.'
     copy_source_symlink: 'Package copy source "%path%" must not be a symlink.'
     asset_sync_completed: 'Package asset sync mirrored %assets% asset(s) from %packages% package(s).'
     asset_sync_failed: 'Package asset sync failed: %message%'
     asset_rebuild_queued: 'Package asset rebuild was queued by "%trigger%".'
     asset_rebuild_queue_failed: 'Package asset rebuild could not be queued by "%trigger%".'
+    asset:
+      contribution_package_invalid: 'Package asset contribution requires a package identifier.'
+      contribution_type_invalid: 'Package asset contribution type "%type%" is not supported.'
+      contribution_path_invalid: 'Package asset path "%path%" must be project-relative.'
+      contribution_path_traversal: 'Package asset path "%path%" must not traverse parent directories.'
     discovery_queued: 'Package discovery was queued by "%trigger%".'
     discovery_queue_failed: 'Package discovery could not be queued by "%trigger%".'
     discovery_completed: 'Package discovery found %count% candidate(s).'
@@ -64,6 +75,8 @@ message:
       runtime_failure: 'Package "%package%" was marked faulty after a runtime failure.'
       php_load_failed: 'Package "%package%" PHP loader failed and the package was marked faulty.'
       rolled_back: 'Package lifecycle changes were rolled back for %count% package(s).'
+    runtime:
+      contribution_unsupported: 'Package "%package%" returned unsupported runtime contribution type "%type%".'
     setting:
       read_failed: 'Package setting "%package%:%key%" could not be read.'
       write_failed: 'Package setting "%package%:%key%" could not be written.'
@@ -78,6 +91,8 @@ message:
       resolved: 'Package "%package%" resolved %count% dependency item(s).'
     scheduler:
       cron_invalid: 'Package "%package%" declares an invalid scheduler cron expression.'
+      source_invalid: 'Package scheduler task "%task%" from "%package%" must use the package name as source instead of "%source%".'
+      trusted_blocked: 'Package scheduler task "%task%" from "%package%" must not request trusted execution.'
   translation:
     aggregate_completed: 'Translation aggregation merged %files% file(s) for %locales% locale(s) from core and %packages% active package(s).'
     aggregate_failed: 'Translation aggregation could not write "%path%".'
@@ -86,6 +101,9 @@ message:
     aggregate_failed: 'Access statistics aggregation failed.'
     snapshot_store_failed: 'Access statistics snapshot storage failed.'
     cleanup_failed: 'Access statistics retention cleanup failed.'
+    trace_id_invalid: 'Access statistics received an invalid %label%.'
+  account_app_secret_rotation:
+    manual_owner_reset_required: 'APP_SECRET rotation recovery could not deliver every owner reset link. Use the emergency recovery file when available, or run "%command%" manually for the listed owners.'
   event:
     hook:
       invalid: 'Event hook "%event%" is not a valid public hook definition.'
@@ -113,6 +131,11 @@ message:
         summary: 'Add package asset registry contributions before CSS and JavaScript registries are written.'
       package_asset_sync_completed:
         summary: 'Observe package asset synchronization metrics after registries are written.'
+  view:
+    dynamic_injection:
+      render_failed: 'Dynamic view injection "%uid%" failed while rendering "%template%".'
+    template_namespace:
+      unsupported: 'Template namespace "%namespace%" is not supported.'
   lint:
     php_unreadable: 'PHP source cannot be read.'
     php_syntax_error: 'PHP syntax check failed.'
@@ -144,6 +167,8 @@ message:
     unknown: 'Operation "%operation%" is not available.'
     started: 'Operation "%operation%" was started.'
     start_failed: 'Operation "%operation%" could not be started.'
+    runner_start_failed: 'Operation "%operation%" could not start its background runner.'
+    php_cli_unavailable: 'Operation "%operation%" cannot start because PHP CLI is unavailable: %reason%.'
     invalid_payload: 'Operation "%operation%" received an invalid payload.'
     stale: 'Operation "%operation%" did not report progress in time and was marked as failed.'
     locked: 'Operation "%operation%" could not run because another live operation is already running.'
@@ -166,6 +191,16 @@ message:
       invalid: 'Access level %level% must be between 0 and 9.'
     group_identifier:
       invalid: 'ACL group identifier "%identifier%" must be lowercase snake_case with at least 3 characters.'
+    group_name:
+      invalid: 'ACL group name must contain 1 to 160 characters.'
+  system:
+    secret_payload:
+      root_secret_empty: 'Secret payload protection requires a root secret.'
+      context_empty: 'Secret payload protection requires a context label.'
+      invalid: 'Secret payload format is invalid.'
+      encrypt_failed: 'Secret payload encryption failed.'
+      decrypt_failed: 'Secret payload decryption failed.'
+      key_derivation_failed: 'Secret payload key derivation failed.'
   backend:
     route_not_found: 'Backend route "%path%" is not registered.'
     setup_locked: 'Setup is already completed and is no longer available.'
@@ -181,9 +216,27 @@ message:
     available_languages: 'Available installer languages: %languages%'
     rollback_completed: 'Rollback removed %tables_removed% database tables, removed %env_removed% generated environment files, restored %env_restored% pre-existing environment files, and reported %errors% cleanup errors.'
     dry_run: 'Dry run only; no changes were written.'
+    composer_unavailable: 'Composer is unavailable. Install Composer or restore bin/composer.'
+    runtime_command_failed: 'Setup command failed: %message%'
+    php_cli_unavailable: 'PHP CLI binary could not be resolved: %reason%.'
+    database_url:
+      scheme_missing: 'Database URL must include a supported scheme.'
+      sqlite_format_invalid: 'SQLite database URLs must use the sqlite:///path/to/database.db format.'
+      scheme_unsupported: 'Unsupported database URL scheme "%scheme%".'
     output:
       success: 'Setup completed successfully.'
       failed: 'Setup failed.'
+    input:
+      app_env_empty: 'Setup APP_ENV must not be empty.'
+      language_invalid: 'Setup language "%language%" must be a valid locale token.'
+      language_unavailable: 'Setup language "%language%" is not available.'
+      site_title_empty: 'Setup site title must not be empty.'
+      default_uri_empty: 'Setup default URI must not be empty.'
+      default_uri_invalid: 'Setup default URI "%uri%" must be a valid URL.'
+      database_url_driver_mismatch: 'Setup database URL must match the selected "%driver%" database driver.'
+      database_prefix_invalid: 'Setup database prefix "%prefix%" must start with a lowercase letter and contain only lowercase letters, digits, or underscores.'
+      admin_username_invalid: 'Setup admin username "%username%" must start with a letter and contain 5 to 30 letters, digits, hyphens, or underscores.'
+      admin_email_invalid: 'Setup admin email "%email%" must be valid.'
     prompt:
       language: 'Installer language (%choices%)'
       site_title: 'Site title'
@@ -241,6 +294,8 @@ message:
       invalid: 'State subject type "%subject_type%" must be lowercase snake_case.'
     marker_key:
       invalid: 'State marker key "%marker_key%" must be lowercase snake_case.'
+    metadata:
+      key_empty: 'State marker metadata keys must not be empty.'
   user:
     username:
       invalid: 'Username "%username%" must start with a letter and contain 5 to 30 letters, digits, hyphens, or underscores.'
@@ -282,6 +337,10 @@ message:
   menu:
     identifier:
       invalid: 'Menu identifier "%identifier%" must be lowercase snake_case.'
+    target_type:
+      invalid: 'Menu target type "%target_type%" is not supported.'
+    target_value:
+      invalid: 'Menu target value must not be empty, too long, or contain control characters.'
   content:
     slug:
       invalid_format: 'Content slug "%slug%" must use lowercase letters, numbers, and hyphens.'
@@ -297,6 +356,8 @@ message:
       fallback: 'Requested content language "%requested_language%" is unavailable; rendering "%resolved_language%" instead.'
     variant:
       fallback: 'Requested content variant "%requested_variant%" is unavailable; rendering "%resolved_variant%" instead.'
+    render:
+      custom_twig_failed: 'Custom Twig rendering failed for content schema "%schema%"; the generic field renderer was used.'
     uid:
       invalid_format: '%label% "%uid%" must be a lowercase UUID.'
     string_list:
@@ -323,3 +384,11 @@ message:
     task_disabled: 'Scheduler task "%task%" was disabled after repeated failures.'
     task_invalid_cron_disabled: 'Scheduler task "%task%" was disabled because its cron expression is invalid.'
     task_soft_budget_exceeded: 'Scheduler task "%task%" exceeded its soft execution budget.'
+    task_definition:
+      target_invalid: 'Scheduler task "%task%" target must not be empty and must fit the supported length.'
+      cron_empty: 'Scheduler task "%task%" cron expression must not be empty and must fit the supported length.'
+      cron_invalid: 'Scheduler task "%task%" cron expression "%cron%" is invalid.'
+      metadata_invalid: '%label% must be JSON-encodable.'
+      identifier_invalid: '%label% "%value%" is invalid.'
+      source_invalid: 'Scheduler task source "%source%" is invalid.'
+      translation_key_invalid: '%label% "%value%" must be a valid translation key.'

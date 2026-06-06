@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Backend\PackageLifecycleAdmin;
+use App\Core\Console\ConsoleResultRenderer;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,13 +13,15 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
-    name: 'studio:packages:lifecycle',
+    name: 'packages:lifecycle',
     description: 'Apply a package lifecycle action.',
 )]
 final class PackageLifecycleCommand extends Command
 {
-    public function __construct(private readonly PackageLifecycleAdmin $packageLifecycleAdmin)
-    {
+    public function __construct(
+        private readonly PackageLifecycleAdmin $packageLifecycleAdmin,
+        private readonly ConsoleResultRenderer $resultRenderer,
+    ) {
         parent::__construct();
     }
 
@@ -35,14 +38,6 @@ final class PackageLifecycleCommand extends Command
         $action = (string) $input->getArgument('action');
         $result = $this->packageLifecycleAdmin->apply($packageName, $action);
 
-        foreach ($result->issues() as $issue) {
-            $output->writeln(sprintf('[%s] %s', $issue->level()->value, $issue->translationKey()));
-        }
-
-        foreach ($result->messages() as $message) {
-            $output->writeln(sprintf('[%s] %s', $message->level()->value, $message->translationKey()));
-        }
-
-        return $result->isSuccess() ? Command::SUCCESS : Command::FAILURE;
+        return $this->resultRenderer->writeWorkflow($output, $result);
     }
 }

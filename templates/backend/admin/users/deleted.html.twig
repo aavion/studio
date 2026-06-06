@@ -14,13 +14,13 @@
         title: 'admin.users.deleted.title'|trans,
     } only %}
 
-    <section class="studio-panel">
-        <div class="studio-toolbar">
-            <a class="studio-button" href="{{ path('backend_admin_users') }}">{{ 'admin.users.deleted.back'|trans }}</a>
-            <span class="studio-muted">{{ 'admin.users.deleted.retention'|trans({'%days%': retention_days, '%cutoff%': cleanup_cutoff|date('Y-m-d H:i')}) }}</span>
-            <form method="post" action="{{ path('backend_admin_deleted_users_cleanup') }}" class="studio-inline-form">
+    <section class="system-panel">
+        <div class="system-toolbar">
+            <a class="system-button" href="{{ path('backend_admin_users') }}">{{ 'admin.users.deleted.back'|trans }}</a>
+            <span class="system-muted">{{ 'admin.users.deleted.retention'|trans({'%days%': retention_days, '%cutoff%': cleanup_cutoff|date('Y-m-d H:i')}) }}</span>
+            <form method="post" action="{{ path('backend_admin_deleted_users_cleanup') }}" class="system-inline-form">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_deleted_users_cleanup') }}">
-                <button type="submit" class="studio-button studio-button-secondary">{{ 'admin.users.deleted.cleanup'|trans }}</button>
+                <button type="submit" class="system-button system-button-secondary">{{ 'admin.users.deleted.cleanup'|trans }}</button>
             </form>
         </div>
 
@@ -30,7 +30,7 @@
                 message: 'admin.users.deleted.empty_message'|trans,
             } only %}
         {% else %}
-            <table class="studio-field-table">
+            <table class="system-field-table">
                 <thead>
                     <tr>
                         <th scope="col">{{ 'admin.users.fields.username'|trans }}</th>
@@ -56,13 +56,13 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <form method="post" action="{{ path('backend_admin_deleted_user_activate', {uid: row.user.uid}) }}" class="studio-inline-form">
+                                <form method="post" action="{{ path('backend_admin_deleted_user_activate', {uid: row.user.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_deleted_user_status_' ~ row.user.uid) }}">
-                                    <button type="submit" class="studio-link-button">{{ 'admin.users.deleted.activate'|trans }}</button>
+                                    <button type="submit" class="system-link-button">{{ 'admin.users.deleted.activate'|trans }}</button>
                                 </form>
-                                <form method="post" action="{{ path('backend_admin_deleted_user_deactivate', {uid: row.user.uid}) }}" class="studio-inline-form">
+                                <form method="post" action="{{ path('backend_admin_deleted_user_deactivate', {uid: row.user.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_deleted_user_status_' ~ row.user.uid) }}">
-                                    <button type="submit" class="studio-link-button">{{ 'admin.users.deleted.deactivate'|trans }}</button>
+                                    <button type="submit" class="system-link-button">{{ 'admin.users.deleted.deactivate'|trans }}</button>
                                 </form>
                             </td>
                         </tr>

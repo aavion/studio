@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Package;
 
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Config\Config;
+use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
+use App\Core\Package\ActivePackageProvider;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageActivator;
 use App\Core\Package\PackageDependencyResolver;
 use App\Core\Package\PackageLifecycleAssetRebuilderInterface;
-use App\Core\Message\Message;
-use App\Core\Workflow\WorkflowResult;
-use App\Core\Config\Config;
-use App\Core\Package\ActivePackageProvider;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Package\PackagePhpLoader;
 use App\Core\Package\PackageRuntimeContributionRegistry;
+use App\Core\Workflow\WorkflowResult;
 use App\Entity\SchedulerTask;
 use App\Scheduler\SchedulerSettings;
 use App\Scheduler\SchedulerTaskRegistry;
@@ -29,6 +29,7 @@ use App\View\SystemPackageMetadataProvider;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Uid\Uuid;
 
 final class PackageActivatorTest extends KernelTestCase
 {
@@ -81,7 +82,7 @@ final class PackageActivatorTest extends KernelTestCase
 
     public function testActivatedPackageSchedulerTaskCanBeRegisteredAndEnabled(): void
     {
-        $this->temporaryProjectDir = $this->createTemporaryDirectory('studio-package-scheduler');
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-package-scheduler');
         $this->insertPackage('demo-module', ['module'], 'inactive');
         $this->writeTestFile($this->temporaryProjectDir, 'packages/demo-module/package.php', <<<'PHP'
 <?php
@@ -93,7 +94,7 @@ return [
         'demo-module.cleanup',
         'pkg.demo_module.scheduler.cleanup.label',
         'pkg.demo_module.scheduler.cleanup.description',
-        'studio:demo:cleanup',
+        'demo:cleanup',
         '*/20 * * * *',
         'demo-module',
         false,
@@ -369,8 +370,8 @@ PHP);
         $this->insertPackage('demo-module', ['module'], 'inactive');
         $this->assetRebuilder->result = WorkflowResult::failed([
             Message::create(
-                MessageCode::PACKAGE_ASSET_SYNC_FAILED,
-                MessageKey::PACKAGE_ASSET_SYNC_FAILED,
+                PackageMessageCode::PACKAGE_ASSET_SYNC_FAILED,
+                PackageMessageKey::PACKAGE_ASSET_SYNC_FAILED,
                 ['%message%' => 'rebuild failed'],
                 level: MessageLevel::Error,
             ),
@@ -448,11 +449,7 @@ PHP);
 
     private function uuid(): string
     {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+        return Uuid::v7()->toRfc4122();
     }
 }
 

@@ -88,7 +88,7 @@ final class DemoControllerTest extends WebTestCase
         $this->client->request('GET', '/demo2');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.studio-button-primary[href="/demo2/backend"]');
+        self::assertSelectorExists('.system-button-primary[href="/demo2/backend"]');
 
         $this->client->request('GET', '/demo');
 
@@ -112,7 +112,7 @@ final class DemoControllerTest extends WebTestCase
     {
         $this->connection?->delete('extension_package', ['package_name' => 'demo-module']);
         $this->connection?->insert('extension_package', [
-            'uid' => '00000000-0000-4000-8000-000000000101',
+            'uid' => '00000000-0000-7000-8000-000000000101',
             'package_name' => 'demo-module',
             'path' => 'packages/demo-module',
             'package_scopes' => json_encode(['module'], JSON_THROW_ON_ERROR),

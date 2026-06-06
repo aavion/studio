@@ -14,9 +14,9 @@
         title: 'admin.logs.detail.title'|trans,
     } only %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ log_entry.summary|default(log_entry.message|default('admin.logs.detail.title'|trans)) }}</h2>
-        <table class="studio-field-table">
+        <table class="system-field-table">
             <tbody>
                 <tr><th>{{ 'admin.logs.columns.timestamp'|trans }}</th><td>{{ log_entry.timestamp|default('admin.logs.empty_value'|trans) }}</td></tr>
                 <tr><th>{{ 'admin.logs.columns.level'|trans }}</th><td>{{ log_entry.level|default('admin.logs.empty_value'|trans) }}</td></tr>
@@ -27,12 +27,12 @@
         </table>
     </section>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.logs.detail.context'|trans }}</h2>
         {% if log_entry.context|default({}) is empty %}
-            <p class="studio-muted">{{ 'admin.logs.detail.no_context'|trans }}</p>
+            <p class="system-muted">{{ 'admin.logs.detail.no_context'|trans }}</p>
         {% else %}
-            <table class="studio-field-table">
+            <table class="system-field-table">
                 <tbody>
                     {% for key, value in log_entry.context %}
                         <tr>
@@ -45,8 +45,8 @@
         {% endif %}
     </section>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.logs.detail.raw'|trans }}</h2>
-        <pre class="studio-code-block">{{ log_entry.raw|default('') }}</pre>
+        <pre class="system-code-block">{{ log_entry.raw|default('') }}</pre>
     </section>
 {% endblock %}

@@ -5,27 +5,17 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Backend\AdminControllerContext;
-use App\Core\Message\MessageException;
-use App\Core\Routing\AbsoluteUriGenerator;
-use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
 use App\Entity\AccountToken;
-use App\Entity\AclGroup;
 use App\Entity\UserAccount;
-use App\Mail\AccountMailFlow;
-use App\Mail\MailLocaleResolver;
-use App\Security\AccountLinkDeliveryInterface;
-use App\Security\AccountTokenIssuer;
-use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenStatus;
-use App\Security\AccountTokenType;
-use App\Security\AdminUserAccessPolicy;
+use App\Security\AdminUserAccountUpdateService;
+use App\Security\AdminUserAssignmentOptions;
 use App\Security\AdminUserListViewFactory;
+use App\Security\AdminUserPasswordResetService;
 use App\Security\DeletedUserCleanup;
-use App\Security\UserAccountLifecycle;
 use App\Security\UserAccountStatus;
-use App\Security\UserGroupMembershipManager;
 use App\Security\UserRole;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
@@ -40,17 +30,12 @@ final class AdminUserController extends AbstractController
         private readonly AdminControllerContext $adminContext,
         private readonly HttpErrorRenderer $httpError,
         private readonly EntityManagerInterface $entityManager,
-        private readonly AccountTokenIssuer $tokenIssuer,
-        private readonly AccountTokenMaintenance $tokenMaintenance,
-        private readonly AccountLinkDeliveryInterface $linkDelivery,
-        private readonly AbsoluteUriGenerator $absoluteUris,
-        private readonly MailLocaleResolver $mailLocaleResolver,
-        private readonly UserAccountLifecycle $userLifecycle,
-        private readonly AdminUserAccessPolicy $adminUserPolicy,
+        private readonly AdminUserAccountUpdateService $accountUpdateService,
+        private readonly AdminUserAssignmentOptions $assignmentOptions,
+        private readonly AdminUserPasswordResetService $passwordResetService,
         private readonly AdminUserListViewFactory $adminUserLists,
         private readonly StateMarkerRecorder $stateMarkers,
         private readonly DeletedUserCleanup $deletedUserCleanup,
-        private readonly UserGroupMembershipManager $userGroups,
     ) {
     }
 
@@ -67,9 +52,9 @@ final class AdminUserController extends AbstractController
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
             'users' => $usersView['items'],
             'users_view' => $usersView,
-            'groups' => $this->assignableGroups(UserRole::User),
-            'invite_groups_by_role' => $this->assignableGroupOptionsByRole(),
-            'role_options' => $this->assignableRoles(),
+            'groups' => $this->assignmentOptions->groups($this->adminContext->actor($this->getUser()), UserRole::User),
+            'invite_groups_by_role' => $this->assignmentOptions->groupOptionsByRole($this->adminContext->actor($this->getUser())),
+            'role_options' => $this->assignmentOptions->roles($this->adminContext->actor($this->getUser())),
             'pending_tokens' => $this->entityManager->getRepository(AccountToken::class)->findBy(
                 ['status' => [AccountTokenStatus::Pending, AccountTokenStatus::PendingApproval]],
                 ['createdAt' => 'DESC'],
@@ -151,8 +136,8 @@ final class AdminUserController extends AbstractController
         return $this->render('@backend/admin/users/detail.html.twig', [
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
             'user_account' => $user,
-            'groups' => $this->assignableGroups($user->role()),
-            'role_options' => $this->assignableRoles(),
+            'groups' => $this->assignmentOptions->groups($this->adminContext->actor($this->getUser()), $user->role()),
+            'role_options' => $this->assignmentOptions->roles($this->adminContext->actor($this->getUser())),
             'login_possible' => $user->status()->isUsable(),
             'state_history' => $this->stateMarkers->history(StateSubjectType::USER_ACCOUNT, $user->uid()),
             'audit_log_url' => $this->generateUrl('backend_admin_route', [
@@ -178,39 +163,14 @@ final class AdminUserController extends AbstractController
             return $this->httpError->notFound($request);
         }
 
-        if (!$user->status()->isUsable()) {
-            $this->addFlash('error', 'admin.users.invitation.unavailable');
-
-            return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
-        }
-
         if (!$this->isCsrfTokenValid('admin_user_password_reset_'.$uid, $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
         }
 
-        if ($error = $this->adminUserPolicy->validateUserAction($this->adminContext->actor($this->getUser()), $user)) {
-            $this->addFlash('error', $error);
-
-            return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
-        }
-
-        $this->tokenMaintenance->revokePendingForUser($user, [AccountTokenType::PasswordReset]);
-        [$token, $plainToken] = $this->tokenIssuer->issue(AccountTokenType::PasswordReset, $user->email(), [], $user, ttl: UserFlowConfig::PASSWORD_RESET_TTL);
-        $url = $this->absoluteUris->generateUri(__METHOD__, 'user_password_reset_token', ['token' => $plainToken]);
-
-        if (null === $url) {
-            $this->addFlash('error', 'admin.users.form.errors.mail_delivery_failed');
-
-            return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
-        }
-
-        $this->entityManager->persist($token);
-        $this->entityManager->flush();
-        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $url, $this->mailLocaleResolver->forAdminAction($user));
-        $this->adminContext->audit($this->getUser(), 'user.password_reset_created', ['target_user' => $user->uid(), 'token_uid' => $token->uid()]);
-        $this->addFlash('success', 'admin.users.password_reset.created');
+        $result = $this->passwordResetService->create($this->adminContext->actor($this->getUser()), $user);
+        $this->addFlash($result->successLevel(), $result->flashKey());
 
         return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
     }
@@ -240,50 +200,16 @@ final class AdminUserController extends AbstractController
             return;
         }
 
-        if ($error = $this->adminUserPolicy->validateUserUpdate($this->adminContext->actor($this->getUser()), $user, $status, $role, $newGroupIdentifiers)) {
-            $this->addFlash('error', $error);
-
-            return;
-        }
-
-        $oldStatus = $user->status()->value;
-        $oldRole = $user->role()->value;
-        $oldGroups = $this->userGroups->identifiers($user);
-        $oldAccessLevel = $user->accessLevel();
-        $effects = $this->userLifecycle->changeStatus($user, $status, $this->adminContext->actorName($this->getUser()));
-        $user->changeRole($role);
-        $this->userGroups->replaceExisting($user, $newGroupIdentifiers);
-        $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::MODIFIED, $this->adminContext->actorName($this->getUser()), 'admin_update', [
-            'old_role' => $oldRole,
-            'new_role' => $role->value,
-            'old_groups' => $oldGroups,
-            'new_groups' => $newGroupIdentifiers,
-        ]);
-        try {
-            $this->entityManager->flush();
-        } catch (MessageException $exception) {
-            $this->addFlash('error', $exception->messageKey());
-            $this->adminContext->audit($this->getUser(), 'user.account_update_failed', [
-                'target_user' => $user->uid(),
-                'error_key' => $exception->messageKey(),
-            ]);
-
-            return;
-        }
-
-        $this->adminContext->audit($this->getUser(), 'user.account_updated', [
-            'target_user' => $user->uid(),
-            'old_status' => $oldStatus,
-            'new_status' => $status->value,
-            'old_role' => $oldRole,
-            'new_role' => $role->value,
-            'old_groups' => $oldGroups,
-            'new_groups' => $this->userGroups->identifiers($user),
-            'old_access_level' => $oldAccessLevel,
-            'new_access_level' => $user->accessLevel(),
-            ...$effects,
-        ]);
-        $this->addFlash('success', 'admin.users.saved');
+        $result = $this->accountUpdateService->update(
+            $this->adminContext->actor($this->getUser()),
+            $this->adminContext->actorName($this->getUser()),
+            $user,
+            $status,
+            $role,
+            $newGroupIdentifiers,
+        );
+        $this->adminContext->audit($this->getUser(), $result->auditAction(), $result->auditContext());
+        $this->addFlash($result->flashLevel(), $result->flashKey());
     }
 
     private function changeDeletedUserStatus(Request $request, string $uid, UserAccountStatus $status): Response
@@ -310,90 +236,16 @@ final class AdminUserController extends AbstractController
             return $this->redirectToRoute('backend_admin_deleted_users');
         }
 
-        $groups = $this->userGroups->identifiers($user);
-        $role = UserAccountStatus::Active === $status && UserRole::Public === $user->role()
-            ? UserRole::User
-            : $user->role();
-        $error = $this->adminUserPolicy->validateUserUpdate($this->adminContext->actor($this->getUser()), $user, $status, $role, $groups);
-
-        if (null !== $error) {
-            $this->addFlash('error', $error);
-
-            return $this->redirectToRoute('backend_admin_deleted_users');
-        }
-
-        $oldStatus = $user->status()->value;
-        $oldRole = $user->role()->value;
-        $oldGroups = $this->userGroups->identifiers($user);
-        $effects = $this->userLifecycle->changeStatus($user, $status, $this->adminContext->actorName($this->getUser()));
-        $user->changeRole($role);
-
-        $this->entityManager->flush();
-
-        if (UserAccountStatus::Active === $status) {
-            $this->linkDelivery->notifyAddress($user->email(), AccountMailFlow::AccountRestored, $this->mailLocaleResolver->forAdminAction($user), [
-                'username' => $user->username(),
-                'user_uid' => $user->uid(),
-            ]);
-        }
-
-        $this->adminContext->audit($this->getUser(), UserAccountStatus::Active === $status ? 'user.deleted_account_activated' : 'user.deleted_account_deactivated', [
-            'target_user' => $user->uid(),
-            'old_status' => $oldStatus,
-            'new_status' => $status->value,
-            'old_role' => $oldRole,
-            'new_role' => $role->value,
-            'old_groups' => $oldGroups,
-            'new_groups' => $this->userGroups->identifiers($user),
-            ...$effects,
-        ]);
-        $this->addFlash('success', UserAccountStatus::Active === $status ? 'admin.users.deleted.activated' : 'admin.users.deleted.deactivated');
+        $result = $this->accountUpdateService->changeDeletedStatus(
+            $this->adminContext->actor($this->getUser()),
+            $this->adminContext->actorName($this->getUser()),
+            $user,
+            $status,
+        );
+        $this->adminContext->audit($this->getUser(), $result->auditAction(), $result->auditContext());
+        $this->addFlash($result->flashLevel(), $result->flashKey());
 
         return $this->redirectToRoute('backend_admin_deleted_users');
-    }
-
-    /**
-     * @return list<AclGroup>
-     */
-    private function assignableGroups(?UserRole $targetRole = null): array
-    {
-        return array_values(array_filter(
-            $this->entityManager->getRepository(AclGroup::class)->findBy([], ['minRole' => 'ASC', 'identifier' => 'ASC']),
-            fn (mixed $group): bool => $group instanceof AclGroup && $this->adminUserPolicy->canAssignGroup($this->adminContext->actor($this->getUser()), $group, $targetRole),
-        ));
-    }
-
-    /**
-     * @return list<UserRole>
-     */
-    private function assignableRoles(): array
-    {
-        $actor = $this->adminContext->actor($this->getUser());
-
-        return array_values(array_filter(
-            UserRole::assignable(),
-            fn (UserRole $role): bool => null === $this->adminUserPolicy->validateRoleAssignment($actor, $role),
-        ));
-    }
-
-    /**
-     * @return array<string, list<array{identifier: string, label: string}>>
-     */
-    private function assignableGroupOptionsByRole(): array
-    {
-        $groupsByRole = [];
-
-        foreach ($this->assignableRoles() as $role) {
-            $groupsByRole[$role->value] = array_map(
-                fn (AclGroup $group): array => [
-                    'identifier' => $group->identifier(),
-                    'label' => $group->name()['en'] ?? $group->identifier(),
-                ],
-                $this->assignableGroups($role),
-            );
-        }
-
-        return $groupsByRole;
     }
 
     /**

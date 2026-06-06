@@ -34,12 +34,12 @@
 
 :root {
     color-scheme: light;
-    --color-studio-ink: var(--color-ink);
-    --color-studio-muted: var(--color-muted);
-    --color-studio-line: var(--color-line);
-    --color-studio-surface: var(--color-surface);
-    --color-studio-paper: var(--color-paper);
-    --color-studio-danger: var(--color-error);
-    --color-studio-warning: var(--color-warning);
+    --color-system-ink: var(--color-ink);
+    --color-system-muted: var(--color-muted);
+    --color-system-line: var(--color-line);
+    --color-system-surface: var(--color-surface);
+    --color-system-paper: var(--color-paper);
+    --color-system-danger: var(--color-error);
+    --color-system-warning: var(--color-warning);
     --primary-svg-color: var(--color-primary);
 }

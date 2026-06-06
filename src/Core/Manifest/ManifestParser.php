@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Manifest;
 
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Manifest\ManifestMessageCode;
+use App\Core\Manifest\ManifestMessageKey;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Workflow\WorkflowResult;
@@ -23,7 +23,7 @@ final class ManifestParser
 
         if (false === $lines) {
             return WorkflowResult::invalid([
-                Message::create(MessageCode::MANIFEST_UNREADABLE, MessageKey::MANIFEST_UNREADABLE, level: MessageLevel::Error),
+                Message::create(ManifestMessageCode::MANIFEST_UNREADABLE, ManifestMessageKey::MANIFEST_UNREADABLE, level: MessageLevel::Error),
             ]);
         }
 
@@ -37,8 +37,8 @@ final class ManifestParser
 
             if (!str_contains($line, '=')) {
                 $issues[] = Message::create(
-                    MessageCode::MANIFEST_INVALID_LINE,
-                    MessageKey::MANIFEST_INVALID_LINE,
+                    ManifestMessageCode::MANIFEST_INVALID_LINE,
+                    ManifestMessageKey::MANIFEST_INVALID_LINE,
                     ['%line%' => $lineNumber],
                     context: ['line' => $lineNumber],
                     level: MessageLevel::Error,
@@ -53,8 +53,8 @@ final class ManifestParser
 
             if (!ManifestKey::isValid($key)) {
                 $issues[] = Message::create(
-                    MessageCode::MANIFEST_INVALID_KEY,
-                    MessageKey::MANIFEST_INVALID_KEY,
+                    ManifestMessageCode::MANIFEST_INVALID_KEY,
+                    ManifestMessageKey::MANIFEST_INVALID_KEY,
                     ['%key%' => $key],
                     context: ['line' => $lineNumber, 'key' => $key],
                     level: MessageLevel::Error,
@@ -65,8 +65,8 @@ final class ManifestParser
 
             if (array_key_exists($key, $values)) {
                 $issues[] = Message::create(
-                    MessageCode::MANIFEST_DUPLICATE_KEY,
-                    MessageKey::MANIFEST_DUPLICATE_KEY,
+                    ManifestMessageCode::MANIFEST_DUPLICATE_KEY,
+                    ManifestMessageKey::MANIFEST_DUPLICATE_KEY,
                     ['%key%' => $key],
                     context: ['line' => $lineNumber, 'key' => $key],
                     level: MessageLevel::Error,
@@ -86,7 +86,7 @@ final class ManifestParser
             'keys' => array_keys($values),
             'key_count' => count($values),
         ], [
-            Message::debug(MessageCode::MANIFEST_PARSED, MessageKey::MANIFEST_PARSED, context: [
+            Message::debug(ManifestMessageCode::MANIFEST_PARSED, ManifestMessageKey::MANIFEST_PARSED, context: [
                 'keys' => array_keys($values),
                 'key_count' => count($values),
             ]),

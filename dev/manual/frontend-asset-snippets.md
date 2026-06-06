@@ -19,7 +19,7 @@ Composer auto-scripts currently handle:
 
 `bin/init` should avoid duplicating those commands and only run `asset-map:compile` in `prod`.
 
-The global package-aware rebuild entry point is `php bin/console studio:assets:rebuild`. Package lifecycle workflows and manual admin recovery actions should call this command through the operational ActionLog runner, not rebuild assets during normal page requests.
+The global package-aware rebuild entry point is `php bin/console assets:rebuild`. Package lifecycle workflows and manual admin recovery actions should call this command through the operational ActionLog runner, not rebuild assets during normal page requests.
 
 The command publishes a planned step count in dry-run mode and reports current step progress during execution. The order is:
 
@@ -33,7 +33,7 @@ The command publishes a planned step count in dry-run mode and reports current s
 
 `cache:clear` intentionally runs last. The rebuild should run in a CLI worker or subprocess with persisted ActionLog entries, while the UI reads progress through streaming or `/api/live/operations/{operationId}/log?cursor=<number>`. If clearing the cache briefly interrupts polling, the UI can resume from the stored cursor. The command must not depend on the current HTTP request continuing after cache invalidation.
 
-Use `php bin/console studio:packages:assets:sync` when only the active package mirror and generated registry files need to be refreshed without running the full Symfony asset lifecycle.
+Use `php bin/console packages:assets:sync` when only the active package mirror and generated registry files need to be refreshed without running the full Symfony asset lifecycle.
 
 Package asset sync and translation aggregation should preserve the previous generated state until the replacement is ready. Package assets are mirrored into a temporary `assets/.packages.tmp-*` directory before `assets/packages` is swapped, generated CSS/JavaScript registries are replaced through temporary files, and runtime translation catalogues are aggregated into a temporary `translations/runtime/{APP_ENV}.tmp-*` directory before the environment runtime directory is replaced. Production rebuilds still remove `public/assets` before `asset-map:compile` because AssetMapper writes versioned files and repeated compiles would otherwise leave stale compiled assets behind.
 
@@ -52,7 +52,7 @@ Packages should keep assets namespaced. Active package assets are not loaded dir
 
 The package asset mirror and generated registries are runtime build artifacts. Git tracks only the package asset directories, their `.gitignore` files, and their README anchors. `bin/init`, the Composer install/update hook, and package asset sync all ensure the six registry files exist before Tailwind or AssetMapper can require them, so clean checkouts work while local package activation does not dirty the Git index.
 
-Database-backed schema Twig is not part of Tailwind's normal filesystem scan. Before schema-authored CSS classes are supported in production, the schema renderer needs a build input layer that aggregates class usage from active custom schema Twig and exposes it to `tailwind:build`, for example through a generated safelist/source artifact written during `studio:assets:rebuild`.
+Database-backed schema Twig is not part of Tailwind's normal filesystem scan. Before schema-authored CSS classes are supported in production, the schema renderer needs a build input layer that aggregates class usage from active custom schema Twig and exposes it to `tailwind:build`, for example through a generated safelist/source artifact written during `assets:rebuild`.
 
 The deterministic order is:
 
@@ -64,7 +64,7 @@ The deterministic order is:
 
 Template and asset scopes should mirror each other. Frontend-specific package assets belong under `assets/frontend/**` and are written to the frontend-theme bucket only when the package has `frontend-theme`. Backend-specific package assets belong under `assets/backend/**` and are written to the backend-theme bucket only when the package has `backend-theme`. Package assets outside those folders are shared/global and are written to the extension bucket only when the package has a global runtime scope such as `module`, `captcha-provider`, `editor-provider`, or `system-template`. A frontend-theme-only package must not inject shared CSS/JS into the extension bucket because that would affect backend rendering after Tailwind aggregates everything into one CSS build.
 
-The generated buckets are imported into the native Tailwind build in a deterministic order, but they do not create a browser-level CSS sandbox. Package CSS that should affect only one shell should use area root selectors, for example `.studio-frontend` for public rendering and `.studio-backend` for admin/editor/setup rendering. A later package validator may enforce selector namespaces if practical testing shows that package CSS leakage is a recurring risk.
+The generated buckets are imported into the native Tailwind build in a deterministic order, but they do not create a browser-level CSS sandbox. Package CSS that should affect only one shell should use area root selectors, for example `.system-frontend` for public rendering and `.system-backend` for admin/editor/setup rendering. A later package validator may enforce selector namespaces if practical testing shows that package CSS leakage is a recurring risk.
 
 Packages may ship self-contained third-party CSS or JavaScript inside their own `assets/` directory. The lifecycle mirrors those files as package assets instead of injecting package-managed third-party dependencies into the global importmap.
 

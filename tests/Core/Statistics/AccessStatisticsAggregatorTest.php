@@ -51,9 +51,9 @@ final class AccessStatisticsAggregatorTest extends TestCase
 
     public function testItAggregatesDatabaseStatisticsWithoutExposingVisitorIds(): void
     {
-        $this->insertEvent('00000000-0000-0000-0000-000000000001', 'request-a', 'visitor-a', 'GET', '/', 'content_home', 'public', 200, 20, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2026-05-27 10:00:00');
-        $this->insertEvent('00000000-0000-0000-0000-000000000002', 'request-b', 'visitor-a', 'GET', '/missing', 'content_view', 'public', 404, 40, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2026-05-27 10:00:00', true);
-        $this->insertEvent('00000000-0000-0000-0000-000000000003', 'request-c', 'visitor-b', 'POST', '/admin', 'backend_admin_index', 'admin', 302, 60, 'n/a', 'bot', 'bot', true, 'n/a', 'en-us', '2026-05-27 10:00:00');
+        $this->insertEvent('00000000-0000-7000-8000-000000000001', 'request-a', 'visitor-a', 'GET', '/', 'content_home', 'public', 200, 20, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2026-05-27 10:00:00');
+        $this->insertEvent('00000000-0000-7000-8000-000000000002', 'request-b', 'visitor-a', 'GET', '/missing', 'content_view', 'public', 404, 40, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2026-05-27 10:00:00', true);
+        $this->insertEvent('00000000-0000-7000-8000-000000000003', 'request-c', 'visitor-b', 'POST', '/admin', 'backend_admin_index', 'admin', 302, 60, 'n/a', 'bot', 'bot', true, 'n/a', 'en-us', '2026-05-27 10:00:00');
 
         $snapshot = (new AccessStatisticsAggregator($this->connection, new AccessStatisticsWindow()))->snapshot('all');
         $encoded = json_encode($snapshot, JSON_THROW_ON_ERROR);
@@ -82,7 +82,7 @@ final class AccessStatisticsAggregatorTest extends TestCase
 
     public function testItFiltersStatisticsByWindow(): void
     {
-        $this->insertEvent('00000000-0000-0000-0000-000000000001', 'request-a', 'visitor-a', 'GET', '/', 'content_home', 'public', 200, 20, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2000-01-01 10:00:00');
+        $this->insertEvent('00000000-0000-7000-8000-000000000001', 'request-a', 'visitor-a', 'GET', '/', 'content_home', 'public', 200, 20, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2000-01-01 10:00:00');
 
         $snapshot = (new AccessStatisticsAggregator($this->connection, new AccessStatisticsWindow()))->snapshot('24h');
 
@@ -98,7 +98,7 @@ final class AccessStatisticsAggregatorTest extends TestCase
         try {
             for ($index = 0; $index < 10005; ++$index) {
                 $this->insertEvent(
-                    sprintf('10000000-0000-0000-0000-%012d', $index),
+                    sprintf('10000000-0000-7000-8000-%012d', $index),
                     'request-'.$index,
                     'visitor-'.$index,
                     'GET',

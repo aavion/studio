@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Config;
 
+use App\Core\Config\ConfigMessageCode;
+use App\Core\Config\ConfigMessageKey;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
 use App\Core\Validation\Identifier;
 use App\Database\DatabaseReadyState;
@@ -22,13 +22,14 @@ final readonly class Config
         private Connection $connection,
         private ?MessageReporterInterface $messageReporter = null,
         private ?DatabaseReadyState $databaseReadyState = null,
+        private ?ConfigDefaultProviderInterface $defaultProvider = null,
     ) {
     }
 
     public function get(string $key, mixed $default = null): mixed
     {
         if (!$this->databaseIsReady()) {
-            return $default;
+            return $this->fallbackValue($key, $default);
         }
 
         if (!$this->validateKey($key, 'config.get')) {
@@ -39,30 +40,30 @@ final readonly class Config
             $value = $this->connection->fetchOne('SELECT value FROM config_entry WHERE config_key = ?', [$key]);
         } catch (Throwable $error) {
             $this->report(Message::exception(
-                MessageCode::CONFIG_READ_FAILED,
-                MessageKey::CONFIG_READ_FAILED,
+                ConfigMessageCode::CONFIG_READ_FAILED,
+                ConfigMessageKey::CONFIG_READ_FAILED,
                 ['%key%' => $key],
                 $this->errorContext($error, 'config.get', $key),
             ));
 
-            return $default;
+            return $this->fallbackValue($key, $default);
         }
 
         if (!is_string($value)) {
-            return $default;
+            return $this->fallbackValue($key, $default);
         }
 
         try {
             return json_decode($value, true, flags: JSON_THROW_ON_ERROR);
         } catch (JsonException $error) {
             $this->report(Message::warning(
-                MessageCode::CONFIG_VALUE_INVALID,
-                MessageKey::CONFIG_VALUE_INVALID,
+                ConfigMessageCode::CONFIG_VALUE_INVALID,
+                ConfigMessageKey::CONFIG_VALUE_INVALID,
                 ['%key%' => $key],
                 $this->errorContext($error, 'config.get', $key),
             ));
 
-            return $default;
+            return $this->fallbackValue($key, $default);
         }
     }
 
@@ -97,8 +98,8 @@ final readonly class Config
             return true;
         } catch (Throwable $error) {
             $this->report(Message::exception(
-                MessageCode::CONFIG_WRITE_FAILED,
-                MessageKey::CONFIG_WRITE_FAILED,
+                ConfigMessageCode::CONFIG_WRITE_FAILED,
+                ConfigMessageKey::CONFIG_WRITE_FAILED,
                 ['%key%' => $key],
                 $this->errorContext($error, 'config.set', $key),
             ));
@@ -118,6 +119,15 @@ final readonly class Config
         };
     }
 
+    private function fallbackValue(string $key, mixed $default): mixed
+    {
+        if (null !== $this->defaultProvider && $this->defaultProvider->hasDefault($key)) {
+            return $this->defaultProvider->defaultValue($key);
+        }
+
+        return $default;
+    }
+
     private function databaseIsReady(): bool
     {
         return null === $this->databaseReadyState || $this->databaseReadyState->isReady();
@@ -126,7 +136,7 @@ final readonly class Config
     private function validateKey(string $key, string $operation): bool
     {
         try {
-            Identifier::assertConfigKey($key, MessageKey::CONFIG_KEY_INVALID);
+            Identifier::assertConfigKey($key, ConfigMessageKey::CONFIG_KEY_INVALID);
 
             return true;
         } catch (MessageException $exception) {

@@ -6,11 +6,11 @@ namespace App\Security;
 
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\EmailAddress;
 use App\Entity\UserAccount;
+use App\Security\SecurityMessageCode;
+use App\Security\SecurityMessageKey;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Events;
@@ -46,11 +46,11 @@ final readonly class UserAccountUniquenessGuard
             $username = $user->username();
 
             if (isset($seenEmails[$email]) && $seenEmails[$email] !== $user->uid()) {
-                $this->rejectDuplicate(MessageCode::USER_EMAIL_DUPLICATE, MessageKey::USER_EMAIL_DUPLICATE, 'email', $email);
+                $this->rejectDuplicate(SecurityMessageCode::USER_EMAIL_DUPLICATE, SecurityMessageKey::USER_EMAIL_DUPLICATE, 'email', $email);
             }
 
             if (isset($seenUsernames[$username]) && $seenUsernames[$username] !== $user->uid()) {
-                $this->rejectDuplicate(MessageCode::USER_USERNAME_DUPLICATE, MessageKey::USER_USERNAME_DUPLICATE, 'username', $username);
+                $this->rejectDuplicate(SecurityMessageCode::USER_USERNAME_DUPLICATE, SecurityMessageKey::USER_USERNAME_DUPLICATE, 'username', $username);
             }
 
             $seenEmails[$email] = $user->uid();
@@ -64,14 +64,14 @@ final readonly class UserAccountUniquenessGuard
                 'SELECT uid FROM user_account WHERE LOWER(email) = ? AND uid <> ? LIMIT 1',
                 [EmailAddress::normalize($user->email()), $user->uid()],
             )) {
-                $this->rejectDuplicate(MessageCode::USER_EMAIL_DUPLICATE, MessageKey::USER_EMAIL_DUPLICATE, 'email', $user->email());
+                $this->rejectDuplicate(SecurityMessageCode::USER_EMAIL_DUPLICATE, SecurityMessageKey::USER_EMAIL_DUPLICATE, 'email', $user->email());
             }
 
             if (false !== $connection->fetchOne(
                 'SELECT uid FROM user_account WHERE username = ? AND uid <> ? LIMIT 1',
                 [$user->username(), $user->uid()],
             )) {
-                $this->rejectDuplicate(MessageCode::USER_USERNAME_DUPLICATE, MessageKey::USER_USERNAME_DUPLICATE, 'username', $user->username());
+                $this->rejectDuplicate(SecurityMessageCode::USER_USERNAME_DUPLICATE, SecurityMessageKey::USER_USERNAME_DUPLICATE, 'username', $user->username());
             }
         }
     }

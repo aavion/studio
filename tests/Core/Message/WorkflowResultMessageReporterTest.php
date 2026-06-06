@@ -8,11 +8,15 @@ use App\Core\ActionLog\ActionLog;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
 use App\Core\Message\WorkflowResultMessageReporter;
+use App\Core\Operation\Process\ProcessMessageCode;
+use App\Core\Operation\Process\ProcessMessageKey;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 use PHPUnit\Framework\TestCase;
 
 final class WorkflowResultMessageReporterTest extends TestCase
@@ -22,14 +26,14 @@ final class WorkflowResultMessageReporterTest extends TestCase
         $messageReporter = new RecordingMessageReporter();
         $reporter = new WorkflowResultMessageReporter($messageReporter);
         $result = WorkflowResult::success(messages: [
-            Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+            Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED, [
                 '%count%' => 1,
             ]),
         ]);
 
         self::assertSame($result, $reporter->report($result, ['operation' => 'test']));
         self::assertCount(1, $messageReporter->records);
-        self::assertSame(MessageKey::PACKAGE_DISCOVERY_COMPLETED, $messageReporter->records[0]['message']->translationKey());
+        self::assertSame(PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED, $messageReporter->records[0]['message']->translationKey());
         self::assertSame(['operation' => 'test'], $messageReporter->records[0]['context']['operation_context']);
         self::assertSame('message', $messageReporter->records[0]['context']['kind']);
     }
@@ -39,7 +43,7 @@ final class WorkflowResultMessageReporterTest extends TestCase
         $messageReporter = new RecordingMessageReporter();
         $reporter = new WorkflowResultMessageReporter($messageReporter);
         $result = WorkflowResult::success(messages: [
-            Message::info(MessageCode::PACKAGE_DISCOVERY_COMPLETED, MessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+            Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED, [
                 '%count%' => 1,
             ]),
         ]);
@@ -55,8 +59,8 @@ final class WorkflowResultMessageReporterTest extends TestCase
     {
         $messageReporter = new RecordingMessageReporter();
         $reporter = new WorkflowResultMessageReporter($messageReporter);
-        $issue = Message::create(MessageCode::PROCESS_COMMAND_FAILED, MessageKey::PROCESS_COMMAND_FAILED);
-        $message = Message::info(MessageCode::SETUP_LANGUAGE_SELECTED, MessageKey::SETUP_LANGUAGE_SELECTED, [
+        $issue = Message::create(ProcessMessageCode::PROCESS_COMMAND_FAILED, ProcessMessageKey::PROCESS_COMMAND_FAILED);
+        $message = Message::info(SetupMessageCode::SETUP_LANGUAGE_SELECTED, SetupMessageKey::SETUP_LANGUAGE_SELECTED, [
             '%language%' => 'en',
         ]);
         $log = ActionLog::create()->add(
@@ -68,9 +72,9 @@ final class WorkflowResultMessageReporterTest extends TestCase
         $reporter->report(WorkflowResult::requiresReview($log, [$issue]), ['operation' => 'setup.run']);
 
         self::assertCount(2, $messageReporter->records);
-        self::assertSame(MessageKey::PROCESS_COMMAND_FAILED, $messageReporter->records[0]['message']->translationKey());
+        self::assertSame(ProcessMessageKey::PROCESS_COMMAND_FAILED, $messageReporter->records[0]['message']->translationKey());
         self::assertSame('issue', $messageReporter->records[0]['context']['kind']);
-        self::assertSame(MessageKey::SETUP_LANGUAGE_SELECTED, $messageReporter->records[1]['message']->translationKey());
+        self::assertSame(SetupMessageKey::SETUP_LANGUAGE_SELECTED, $messageReporter->records[1]['message']->translationKey());
         self::assertSame('action_log_message', $messageReporter->records[1]['context']['kind']);
         self::assertSame('select_language', $messageReporter->records[1]['context']['action_log_entry']['name']);
     }

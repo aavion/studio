@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
-use App\Core\Message\MessageKey;
+use App\Setup\SetupMessageKey;
+
 
 final class SetupCliPrompter
 {
@@ -71,7 +72,7 @@ final class SetupCliPrompter
                 return $value;
             }
 
-            $this->write($this->translator->translate($this->projectDir, $language, MessageKey::SETUP_PROMPT_PASSWORD_MISMATCH));
+            $this->write($this->translator->translate($this->projectDir, $language, SetupMessageKey::SETUP_PROMPT_PASSWORD_MISMATCH));
             $value = $this->prompt($language, $key, '');
         } while (true);
     }
@@ -94,7 +95,7 @@ final class SetupCliPrompter
                 return false;
             }
 
-            $this->write($this->translator->translate($this->projectDir, $language, MessageKey::SETUP_PROMPT_INVALID_CHOICE, [
+            $this->write($this->translator->translate($this->projectDir, $language, SetupMessageKey::SETUP_PROMPT_INVALID_CHOICE, [
                 '%choices%' => 'yes, no',
             ]));
         } while (true);
@@ -111,7 +112,7 @@ final class SetupCliPrompter
                 return $value;
             }
 
-            $this->write($this->translator->translate($this->projectDir, $language, MessageKey::SETUP_PROMPT_INVALID_CHOICE, [
+            $this->write($this->translator->translate($this->projectDir, $language, SetupMessageKey::SETUP_PROMPT_INVALID_CHOICE, [
                 '%choices%' => implode(', ', $choices),
             ]));
         } while (true);

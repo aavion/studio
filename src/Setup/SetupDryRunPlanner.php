@@ -6,9 +6,9 @@ namespace App\Setup;
 
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Process\PhpCliBinaryManager;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 
 final readonly class SetupDryRunPlanner
 {
@@ -34,7 +34,7 @@ final readonly class SetupDryRunPlanner
         return [
             ['write_environment', fn (): array => [
                 '_messages' => [
-                    Message::debug(MessageCode::SETUP_DRY_RUN, MessageKey::SETUP_DRY_RUN),
+                    Message::debug(SetupMessageCode::SETUP_DRY_RUN, SetupMessageKey::SETUP_DRY_RUN),
                 ],
                 'dry_run' => true,
                 'path' => '.env.'.$input->appEnv().'.local',
@@ -77,11 +77,11 @@ final readonly class SetupDryRunPlanner
             ], ActionLogStatus::Skipped],
             ['run_package_discovery', fn (): array => [
                 'dry_run' => true,
-                'command' => [...$phpCommand, $projectDir.'/bin/console', 'studio:packages:discover', '--run-now', '--trigger=setup', '--env='.$input->appEnv()],
+                'command' => [...$phpCommand, $projectDir.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env='.$input->appEnv()],
             ], ActionLogStatus::Skipped],
             ['run_asset_rebuild', fn (): array => [
                 'dry_run' => true,
-                'command' => [...$phpCommand, $projectDir.'/bin/console', 'studio:assets:rebuild', '--trigger=setup', '--env='.$input->appEnv(), '--json'],
+                'command' => [...$phpCommand, $projectDir.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env='.$input->appEnv(), '--json'],
             ], ActionLogStatus::Skipped],
             ['mark_setup_completed', fn (): array => [
                 'dry_run' => true,

@@ -1,28 +1,28 @@
 monolog:
     channels:
         - deprecation # Deprecations are logged in the dedicated "deprecation" channel when it exists
-        - studio_message
-        - studio_audit
-        - studio_access
+        - message
+        - audit
+        - access
     handlers:
-        studio_message:
+        message:
             type: rotating_file
-            path: "%kernel.logs_dir%/%kernel.environment%.studio-message.log"
+            path: "%kernel.logs_dir%/%kernel.environment%/message.log"
             level: debug
             max_files: 30
-            channels: ["studio_message"]
-        studio_audit:
+            channels: ["message"]
+        audit:
             type: rotating_file
-            path: "%kernel.logs_dir%/%kernel.environment%.studio-audit.log"
+            path: "%kernel.logs_dir%/%kernel.environment%/audit.log"
             level: info
             max_files: 30
-            channels: ["studio_audit"]
-        studio_access:
+            channels: ["audit"]
+        access:
             type: rotating_file
-            path: "%kernel.logs_dir%/%kernel.environment%.studio-access.log"
+            path: "%kernel.logs_dir%/%kernel.environment%/access.log"
             level: info
             max_files: 30
-            channels: ["studio_access"]
+            channels: ["access"]
 
 when@dev:
     monolog:
@@ -31,11 +31,11 @@ when@dev:
                 type: stream
                 path: "%kernel.logs_dir%/%kernel.environment%.log"
                 level: debug
-                channels: ["!event", "!studio_message", "!studio_audit", "!studio_access"]
+                channels: ["!event", "!message", "!audit", "!access"]
             console:
                 type: console
                 process_psr_3_messages: false
-                channels: ["!event", "!doctrine", "!console", "!studio_message", "!studio_audit", "!studio_access"]
+                channels: ["!event", "!doctrine", "!console", "!message", "!audit", "!access"]
 
 when@test:
     monolog:
@@ -45,7 +45,7 @@ when@test:
                 action_level: error
                 handler: nested
                 excluded_http_codes: [404, 405]
-                channels: ["!event", "!studio_message", "!studio_audit", "!studio_access"]
+                channels: ["!event", "!message", "!audit", "!access"]
                 buffer_size: 50
             nested:
                 type: stream
@@ -60,7 +60,7 @@ when@prod:
                 action_level: error
                 handler: nested
                 excluded_http_codes: [404, 405]
-                channels: ["!deprecation", "!studio_message", "!studio_audit", "!studio_access"]
+                channels: ["!deprecation", "!message", "!audit", "!access"]
                 buffer_size: 50 # How many messages should be saved? Prevent memory leaks
             nested:
                 type: stream
@@ -70,7 +70,7 @@ when@prod:
             console:
                 type: console
                 process_psr_3_messages: false
-                channels: ["!event", "!doctrine", "!studio_message", "!studio_audit", "!studio_access"]
+                channels: ["!event", "!doctrine", "!message", "!audit", "!access"]
             deprecation:
                 type: stream
                 channels: [deprecation]

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Setup;
 
+use App\Core\Security\SecretPayloadProtector;
 use App\Setup\SetupLiveOperationPayloadProtector;
 use PHPUnit\Framework\TestCase;
 
@@ -11,7 +12,7 @@ final class SetupLiveOperationPayloadProtectorTest extends TestCase
 {
     public function testItEncryptsSetupSecretsBeforePersistingLiveOperationPayload(): void
     {
-        $protector = new SetupLiveOperationPayloadProtector('runtime-secret');
+        $protector = new SetupLiveOperationPayloadProtector(new SecretPayloadProtector('runtime-secret'));
         $payload = [
             'trigger' => 'setup_wizard',
             'values' => [
@@ -37,7 +38,7 @@ final class SetupLiveOperationPayloadProtectorTest extends TestCase
 
     public function testItLeavesPlainPayloadsReadableForExistingInternalCallers(): void
     {
-        $protector = new SetupLiveOperationPayloadProtector('runtime-secret');
+        $protector = new SetupLiveOperationPayloadProtector(new SecretPayloadProtector('runtime-secret'));
         $payload = ['values' => ['admin_password' => 'Secret1!password']];
 
         self::assertSame($payload, $protector->unprotect($payload));

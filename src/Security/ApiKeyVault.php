@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Security;
 
-use RuntimeException;
+use App\Core\Security\SecretPayloadProtector;
 
 final readonly class ApiKeyVault
 {
-    public function __construct(private string $secret)
+    private const HMAC_CONTEXT = 'security.api_key.hmac';
+    private const PAYLOAD_CONTEXT = 'security.api_key.payload';
+
+    public function __construct(private SecretPayloadProtector $protector)
     {
     }
 
@@ -19,66 +22,20 @@ final readonly class ApiKeyVault
 
     public function hmac(string $plainKey): string
     {
-        return hash_hmac('sha256', $plainKey, $this->secret);
+        return $this->protector->hmac($plainKey, self::HMAC_CONTEXT);
     }
 
-    public function encrypt(string $plainKey): string
+    public function encrypt(string $plainKey, string $prefix): string
     {
-        $nonce = random_bytes(12);
-        $tag = '';
-        $ciphertext = openssl_encrypt(
-            $plainKey,
-            'aes-256-gcm',
-            $this->key(),
-            OPENSSL_RAW_DATA,
-            $nonce,
-            $tag,
-        );
-
-        if (false === $ciphertext) {
-            throw new RuntimeException('Unable to encrypt API key.');
-        }
-
-        return 'v1.'.base64_encode($nonce).'.'.base64_encode($tag).'.'.base64_encode($ciphertext);
+        return $this->protector->protect($plainKey, self::PAYLOAD_CONTEXT, $prefix);
     }
 
-    public function decrypt(string $payload): ?string
+    public function decrypt(string $payload, string $prefix): ?string
     {
-        $parts = explode('.', $payload);
-
-        if (4 !== count($parts) || 'v1' !== $parts[0]) {
+        try {
+            return $this->protector->reveal($payload, self::PAYLOAD_CONTEXT, $prefix);
+        } catch (\RuntimeException|\InvalidArgumentException) {
             return null;
         }
-
-        $nonce = $this->decode($parts[1]);
-        $tag = $this->decode($parts[2]);
-        $ciphertext = $this->decode($parts[3]);
-
-        if (null === $nonce || null === $tag || null === $ciphertext) {
-            return null;
-        }
-
-        $plaintext = openssl_decrypt(
-            $ciphertext,
-            'aes-256-gcm',
-            $this->key(),
-            OPENSSL_RAW_DATA,
-            $nonce,
-            $tag,
-        );
-
-        return is_string($plaintext) ? $plaintext : null;
-    }
-
-    private function key(): string
-    {
-        return hash('sha256', $this->secret, true);
-    }
-
-    private function decode(string $value): ?string
-    {
-        $decoded = base64_decode($value, true);
-
-        return is_string($decoded) ? $decoded : null;
     }
 }

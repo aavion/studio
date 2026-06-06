@@ -3,7 +3,7 @@
 {% set input_control %}
     <input
         id="{{ field_id }}"
-        class="studio-input"
+        class="system-input"
         type="{{ input_type }}"
         name="{{ name }}"
         value="{{ value|default('') }}"
@@ -11,7 +11,7 @@
         {% if required|default(false) %}required{% endif %}
         {% if disabled|default(false) %}disabled{% endif %}
         {% if autocomplete|default(null) %}autocomplete="{{ autocomplete }}"{% endif %}
-        {{ studio_html_attributes(attributes|default({})) }}
+        {{ html_attributes(attributes|default({})) }}
     >
 {% endset %}
 {% include '@frontend/partials/forms/_field.html.twig' with {

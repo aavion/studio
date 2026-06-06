@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Core\Console\ConsoleResultRenderer;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Core\Statistics\AccessStatisticsSnapshotProvider;
 use App\Core\Statistics\AccessStatisticsWindow;
@@ -14,7 +15,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
-    name: 'studio:statistics:snapshot',
+    name: 'statistics:snapshot',
     description: 'Refresh the stored access statistics snapshot.',
 )]
 final class AccessStatisticsSnapshotCommand extends Command
@@ -23,6 +24,7 @@ final class AccessStatisticsSnapshotCommand extends Command
         private readonly AccessStatisticsSnapshotProvider $snapshotProvider,
         private readonly AccessStatisticsPolicy $policy,
         private readonly AccessStatisticsWindow $window,
+        private readonly ConsoleResultRenderer $resultRenderer,
     ) {
         parent::__construct();
     }
@@ -72,12 +74,11 @@ final class AccessStatisticsSnapshotCommand extends Command
      */
     private function writeResult(OutputInterface $output, bool $json, array $payload): int
     {
-        $exitCode = 'failed' === $payload['status'] ? Command::FAILURE : Command::SUCCESS;
+        $status = is_string($payload['status'] ?? null) ? $payload['status'] : 'failed';
+        $exitCode = $this->resultRenderer->statusExitCode($status);
 
         if ($json) {
-            $output->writeln(json_encode($payload, JSON_THROW_ON_ERROR));
-
-            return $exitCode;
+            return $this->resultRenderer->writePayload($output, $payload, $exitCode);
         }
 
         if ('skipped' === $payload['status']) {

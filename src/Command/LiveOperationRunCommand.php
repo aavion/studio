@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
-use App\Core\Operation\Live\LiveOperationRunLock;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
+use App\Core\Operation\Live\LiveOperationRunLock;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Operation\OperationExecutor;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Core\Workflow\WorkflowStatus;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -23,7 +24,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
 #[AsCommand(
-    name: 'studio:operations:run',
+    name: 'operations:run',
     description: 'Run a staged live operation and write ActionLog progress.',
 )]
 final class LiveOperationRunCommand extends Command
@@ -60,8 +61,8 @@ final class LiveOperationRunCommand extends Command
         if (null === $lock) {
             $result = WorkflowResult::failed([
                 Message::warning(
-                    MessageCode::E_OPERATION_FAILED,
-                    MessageKey::OPERATION_LOCKED,
+                    CommonMessageCode::E_OPERATION_FAILED,
+                    OperationMessageKey::OPERATION_LOCKED,
                     ['%operation%' => $operation],
                     ['operation' => $operation, 'operation_id' => $operationId],
                 ),
@@ -98,8 +99,8 @@ final class LiveOperationRunCommand extends Command
         } catch (Throwable $error) {
             $result = WorkflowResult::failed([
                 Message::exception(
-                    MessageCode::OPERATION_EXCEPTION,
-                    MessageKey::OPERATION_EXCEPTION,
+                    OperationMessageCode::OPERATION_EXCEPTION,
+                    OperationMessageKey::OPERATION_EXCEPTION,
                     context: [
                         'operation' => $operation,
                         'operation_id' => $operationId,

@@ -1,6 +1,6 @@
 {% extends '@backend/admin.html.twig' %}
 
-{% set theme_sections = studio_themes() %}
+{% set theme_sections = themes() %}
 
 {% block title %}{{ 'admin.themes.title'|trans }}{% endblock %}
 
@@ -17,40 +17,40 @@
     } only %}
 
     {% for section in theme_sections %}
-        <section class="studio-panel studio-theme-overview" data-theme-section="{{ section.key }}">
+        <section class="system-panel system-backend-theme-overview" data-theme-section="{{ section.key }}">
             <h2>{{ section.title_key|trans }}</h2>
 
             {% if section.themes|length > 0 %}
-                <div class="studio-theme-grid">
+                <div class="system-backend-theme-grid">
                     {% for theme in section.themes %}
-                        <article {{ studio_html_attributes({
-                            class: theme.immutable ? 'studio-theme-card is-immutable' : 'studio-theme-card',
+                        <article {{ html_attributes({
+                            class: theme.immutable ? 'system-backend-theme-card is-immutable' : 'system-backend-theme-card',
                             'data-package-name': theme.package_name,
                             'data-immutable': theme.immutable ? 'true' : null,
                             'data-theme-status': theme.status,
                         }) }}>
                             {% set theme_version = theme.version|default(null) %}
-                            <header class="studio-theme-card-header">
+                            <header class="system-backend-theme-card-header">
                                 <h3>
                                     <strong>
                                         <a href="{{ theme.detail_path }}">{{ theme.label_key ? theme.label_key|trans : theme.label }}</a>
                                     </strong>
                                     {% if theme_version %}
-                                        <span class="studio-muted">{{ theme_version }}</span>
+                                        <span class="system-muted">{{ theme_version }}</span>
                                     {% endif %}
                                 </h3>
                             </header>
 
-                            <div class="studio-theme-preview" aria-hidden="true"></div>
+                            <div class="system-backend-theme-preview" aria-hidden="true"></div>
 
-                            <footer class="studio-theme-card-footer">
+                            <footer class="system-backend-theme-card-footer">
                                 {% if theme.quick_action %}
                                     {% if theme.quick_action.disabled %}
-                                        <span class="studio-backend-button studio-button-{{ theme.quick_action.variant }}" aria-disabled="true">
+                                        <span class="system-backend-button system-button-{{ theme.quick_action.variant }}" aria-disabled="true">
                                             {{ theme.quick_action.label_key|trans }}
                                         </span>
                                     {% else %}
-                                        <a class="studio-backend-button studio-button-{{ theme.quick_action.variant }}" href="{{ theme.quick_action.path }}">
+                                        <a class="system-backend-button system-button-{{ theme.quick_action.variant }}" href="{{ theme.quick_action.path }}">
                                             {{ theme.quick_action.label_key|trans }}
                                         </a>
                                     {% endif %}
@@ -60,7 +60,7 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="studio-muted">{{ 'admin.themes.empty'|trans }}</p>
+                <p class="system-muted">{{ 'admin.themes.empty'|trans }}</p>
             {% endif %}
         </section>
     {% endfor %}

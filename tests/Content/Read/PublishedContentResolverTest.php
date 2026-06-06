@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace App\Tests\Content\Read;
 
-use App\Content\Read\PublishedContentResolver;
+use App\Content\ContentMessageCode;
+use App\Content\ContentMessageKey;
 use App\Content\Read\PublishedContentResolveStatus;
+use App\Content\Read\PublishedContentResolver;
 use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
-use App\Core\Message\MessageCode;
 use App\Core\Message\MessageLevel;
-use App\Core\Message\MessageKey;
 use App\Repository\ContentFieldValueRepository;
 use App\Repository\ContentItemRepository;
+use App\Tests\Support\NullMessageReporter;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
-use App\Tests\Support\NullMessageReporter;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class PublishedContentResolverTest extends KernelTestCase
@@ -71,8 +71,19 @@ final class PublishedContentResolverTest extends KernelTestCase
         self::assertSame('en', $view->context()->language());
         self::assertTrue($view->context()->languageFallbackUsed());
         self::assertSame('About Studio', $view->title());
-        self::assertSame(MessageCode::CONTENT_LANGUAGE_FALLBACK, $this->resolver->resolveBySlug('about', AccessActor::anonymous(), 'fr')->messages()[0]->code());
-        self::assertSame(MessageKey::CONTENT_LANGUAGE_FALLBACK, $this->resolver->resolveBySlug('about', AccessActor::anonymous(), 'fr')->messages()[0]->translationKey());
+        self::assertSame(ContentMessageCode::CONTENT_LANGUAGE_FALLBACK, $this->resolver->resolveBySlug('about', AccessActor::anonymous(), 'fr')->messages()[0]->code());
+        self::assertSame(ContentMessageKey::CONTENT_LANGUAGE_FALLBACK, $this->resolver->resolveBySlug('about', AccessActor::anonymous(), 'fr')->messages()[0]->translationKey());
+    }
+
+    public function testItFallsBackToPrimaryContentLanguageForRegionalLocales(): void
+    {
+        $view = $this->resolver->findByPath('/home', AccessActor::anonymous(), 'de_DE');
+
+        self::assertNotNull($view);
+        self::assertSame('de_DE', $view->context()->requestedLanguage());
+        self::assertSame('de', $view->context()->language());
+        self::assertTrue($view->context()->languageFallbackUsed());
+        self::assertSame('Willkommen in Studio', $view->title());
     }
 
     public function testItFallsBackToDefaultVariantWhenRequestedVariantIsMissing(): void
@@ -84,8 +95,9 @@ final class PublishedContentResolverTest extends KernelTestCase
         self::assertNotNull($view);
         self::assertSame('compact', $view->context()->requestedVariant());
         self::assertSame('default', $view->context()->variant());
+        self::assertFalse($view->context()->languageFallbackUsed());
         self::assertTrue($view->context()->variantFallbackUsed());
-        self::assertSame(MessageCode::CONTENT_VARIANT_FALLBACK, $result->messages()[0]->code());
+        self::assertSame(ContentMessageCode::CONTENT_VARIANT_FALLBACK, $result->messages()[0]->code());
         self::assertSame(MessageLevel::Warning, $result->messages()[0]->level());
     }
 
@@ -128,7 +140,7 @@ final class PublishedContentResolverTest extends KernelTestCase
             'available_variants' => json_encode(['default', 'compact'], JSON_THROW_ON_ERROR),
         ], ['slug' => 'home']);
         $this->connection->insert('content_field_value', [
-            'uid' => '40000000-0000-0000-0000-000000000401',
+            'uid' => '40000000-0000-7000-8000-000000000401',
             'revision_uid' => $revisionUid,
             'language' => 'en',
             'variant' => 'compact',

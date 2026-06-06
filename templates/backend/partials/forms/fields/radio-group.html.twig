@@ -1,12 +1,12 @@
 {% set field_id = id|default(name|default('field')) %}
-<fieldset id="{{ field_id }}" class="studio-backend-choice-group">
-    <legend class="studio-backend-form-label">{{ label }}</legend>
+<fieldset id="{{ field_id }}" class="system-backend-choice-group">
+    <legend class="system-backend-form-label">{{ label }}</legend>
     {% for option_value, option_label in options|default({}) %}
         {% set option_id = field_id ~ '-' ~ loop.index %}
-        <label class="studio-backend-radio-label" for="{{ option_id }}">
+        <label class="system-backend-radio-label" for="{{ option_id }}">
             <input
                 id="{{ option_id }}"
-                class="studio-backend-radio"
+                class="system-backend-radio"
                 type="radio"
                 name="{{ name }}"
                 value="{{ option_value }}"

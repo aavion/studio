@@ -8,10 +8,10 @@ use App\Core\ActionLog\ActionLog;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\DryRun\DryRunPlan;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
-use App\Core\Message\WorkflowResultMessageReporterInterface;
 use App\Core\Message\Message;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Core\Workflow\WorkflowStatus;
 use Throwable;
@@ -56,7 +56,7 @@ final class OperationExecutor
                 $result = $action->execute();
             } catch (Throwable $error) {
                 $result = WorkflowResult::failed([
-                    Message::exception(MessageCode::OPERATION_EXCEPTION, MessageKey::OPERATION_EXCEPTION, context: [
+                    Message::exception(OperationMessageCode::OPERATION_EXCEPTION, OperationMessageKey::OPERATION_EXCEPTION, context: [
                         'action' => $action->label(),
                         'type' => $action->type(),
                         'exception' => $error::class,

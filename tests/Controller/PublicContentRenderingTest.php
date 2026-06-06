@@ -105,6 +105,41 @@ final class PublicContentRenderingTest extends WebTestCase
         self::assertSelectorTextContains('[data-injection="test-after-content"]', 'Content fields');
     }
 
+    public function testItReportsFailedDynamicContentSlotInjections(): void
+    {
+        $logPattern = dirname(__DIR__, 2).'/var/log/test/message-*.log';
+
+        foreach (glob($logPattern) ?: [] as $logFile) {
+            unlink($logFile);
+        }
+
+        $client = self::createClient();
+        $eventDispatcher = self::getContainer()->get(EventDispatcherInterface::class);
+        $eventDispatcher->addListener(DynamicViewInjectionRegistryEvent::class, static function (DynamicViewInjectionRegistryEvent $event): void {
+            $event->addInjection(new DynamicViewInjection(
+                'broken-dynamic-injection',
+                ViewSurface::Public,
+                DynamicViewInjectionSlot::AfterContent,
+                '@frontend/content/injections/missing.html.twig',
+                DynamicViewInjectionFilter::realContent(['article']),
+                label: 'ui.content.fields',
+            ));
+        });
+
+        $client->request('GET', '/news/first-update');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorNotExists('[data-injection="broken-dynamic-injection"]');
+
+        $messageLog = '';
+        foreach (glob($logPattern) ?: [] as $logFile) {
+            $messageLog .= (string) file_get_contents($logFile);
+        }
+
+        self::assertStringContainsString('message.view.dynamic_injection.render_failed', $messageLog);
+        self::assertStringContainsString('broken-dynamic-injection', $messageLog);
+    }
+
     public function testSchemaCustomTwigReplacesOnlyInnerFieldset(): void
     {
         $client = self::createClient();
@@ -141,7 +176,7 @@ final class PublicContentRenderingTest extends WebTestCase
             self::assertSelectorExists('.schema-custom-fieldset[data-schema="article"]');
             self::assertSelectorTextContains('.schema-custom-fieldset', 'The test database includes a complete article.');
             self::assertSelectorExists('[data-injection="test-after-custom-fieldset"]');
-            self::assertSelectorNotExists('.studio-content-fields');
+            self::assertSelectorNotExists('.system-frontend-content-fields');
 
             $html = (string) $client->getResponse()->getContent();
             self::assertLessThan(
@@ -153,7 +188,7 @@ final class PublicContentRenderingTest extends WebTestCase
                 strpos($html, 'schema-custom-fieldset'),
             );
         } finally {
-            $connection->update('content_schema_version', ['custom_twig' => null], ['uid' => '10000000-0000-0000-0000-000000000102']);
+            $connection->update('content_schema_version', ['custom_twig' => null], ['uid' => '10000000-0000-7000-8000-000000000102']);
         }
     }
 
@@ -168,10 +203,10 @@ final class PublicContentRenderingTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'First seeded article');
-            self::assertSelectorExists('.studio-content-fields');
-            self::assertSelectorTextContains('.studio-content-fields', 'Content fields');
+            self::assertSelectorExists('.system-frontend-content-fields');
+            self::assertSelectorTextContains('.system-frontend-content-fields', 'Content fields');
         } finally {
-            $connection->update('content_schema_version', ['custom_twig' => null], ['uid' => '10000000-0000-0000-0000-000000000102']);
+            $connection->update('content_schema_version', ['custom_twig' => null], ['uid' => '10000000-0000-7000-8000-000000000102']);
         }
     }
 
@@ -238,9 +273,9 @@ final class PublicContentRenderingTest extends WebTestCase
         $client->request('GET', '/');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-frontend-navigation', 'Home');
-        self::assertSelectorTextContains('.studio-frontend-navigation', 'About');
-        self::assertSelectorTextContains('.studio-frontend-navigation', 'News');
+        self::assertSelectorTextContains('.system-frontend-navigation', 'Home');
+        self::assertSelectorTextContains('.system-frontend-navigation', 'About');
+        self::assertSelectorTextContains('.system-frontend-navigation', 'News');
     }
 
     public function testItFallsBackToDefaultForMissingVariant(): void
@@ -266,7 +301,7 @@ final class PublicContentRenderingTest extends WebTestCase
         self::getContainer()->get(Connection::class)->update(
             'content_schema_version',
             ['custom_twig' => $customTwig],
-            ['uid' => '10000000-0000-0000-0000-000000000102'],
+            ['uid' => '10000000-0000-7000-8000-000000000102'],
         );
     }
 }

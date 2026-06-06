@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Operation\Live;
 
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\ActionQueue;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
 use App\Core\Process\PhpCliBinaryManager;
@@ -41,8 +41,8 @@ final readonly class PackageLifecycleLiveOperationProvider implements LiveOperat
         if (!is_string($packageName) || '' === trim($packageName) || !is_string($action) || '' === trim($action)) {
             return WorkflowResult::invalid([
                 Message::warning(
-                    MessageCode::E_INVALID_ARGUMENT,
-                    MessageKey::OPERATION_INVALID_PAYLOAD,
+                    CommonMessageCode::E_INVALID_ARGUMENT,
+                    OperationMessageKey::OPERATION_INVALID_PAYLOAD,
                     ['%operation%' => $this->operation()],
                     ['operation' => $this->operation(), 'payload_keys' => array_keys($payload)],
                 ),
@@ -55,7 +55,7 @@ final readonly class PackageLifecycleLiveOperationProvider implements LiveOperat
 
         if (!$resolution->isAvailable()) {
             return WorkflowResult::failed([
-                PhpCliUnavailableAction::message('studio:packages:lifecycle', $resolution->reason(), [
+                PhpCliUnavailableAction::message('packages:lifecycle', $resolution->reason(), [
                     'operation' => $this->operation(),
                     'package' => trim($packageName),
                     'action' => trim($action),
@@ -75,7 +75,7 @@ final readonly class PackageLifecycleLiveOperationProvider implements LiveOperat
             new RunCommandAction([
                 ...$resolution->commandPrefix(),
                 $this->kernel->getProjectDir().'/bin/console',
-                'studio:packages:lifecycle',
+                'packages:lifecycle',
                 trim($packageName),
                 trim($action),
                 '--env='.$environment,

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Security;
 
-use App\Core\Message\MessageKey;
+use App\Core\Access\AccessMessageKey;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenType;
 use App\Security\UserFlowConfig;
@@ -75,7 +75,7 @@ final class AccountTokenIssuerTest extends TestCase
     public function testItRejectsShortAclGroupIdentifiers(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
+        $this->expectExceptionMessage(AccessMessageKey::ACCESS_GROUP_IDENTIFIER_INVALID);
 
         (new AccountTokenIssuer())->issue(
             AccountTokenType::Invitation,

@@ -3,25 +3,25 @@
 {% block title %}{{ 'ui.user.api_keys.reveal.title'|trans }}{% endblock %}
 
 {% block frontend_body %}
-    <section class="studio-auth-panel">
+    <section class="system-frontend-auth-panel">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             title: 'ui.user.api_keys.reveal.title'|trans,
             subtitle: 'ui.user.api_keys.reveal.subtitle'|trans,
         } only %}
         {% if plain_api_key|default(null) %}
-            <section class="studio-panel">
+            <section class="system-panel">
                 <h2>{{ api_key.prefix }}</h2>
-                <code class="studio-code">{{ plain_api_key }}</code>
+                <code class="system-code">{{ plain_api_key }}</code>
             </section>
         {% else %}
             {% if errors|default([]) is not empty %}
-                <ul class="studio-form-errors">
+                <ul class="system-form-errors">
                     {% for error in errors %}
                         <li>{{ error|trans }}</li>
                     {% endfor %}
                 </ul>
             {% endif %}
-            <form method="post" class="studio-auth-form">
+            <form method="post" class="system-frontend-auth-form">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_api_key_reveal_' ~ api_key.uid) }}">
                 {% include '@frontend/partials/forms/fields/input.html.twig' with {
                     name: 'password',

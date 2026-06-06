@@ -69,18 +69,19 @@ Current constraints:
 - Packages with frontend or admin assets must participate in the asset rebuild workflow.
 - Packages need uninstall/remove behavior, including explicit confirmation before deleting package-owned data.
 - Failed activation or deactivation should roll back to the previous state where practical.
+- Installable packages are checked against core-owned package policies before activation or ZIP apply. The file policy blocks clearly unsafe payload paths such as `.env*`, VCS metadata, `bin/`, `node_modules/`, `public/`, `var/`, `vendor/`, and root `composer.json`/`composer.lock`; it warns about development-only payloads such as `docs/`, `tests/`, `.github/`, `.idea/`, or `.vscode/`. Package-local `config/` remains allowed for package-owned data until a stricter package configuration contract is decided. The PHP capability policy blocks direct filesystem, process, network, request-context, and environment access from package PHP; packages should request work through documented extension points instead.
 
 `package.php` is optional. It must never be included during discovery and should only be loaded after a package is valid and active. Packages are trusted code; only administrators may install them. A package should use a package-owned root namespace derived from or declared for the package slug.
 
-When `PACKAGE_NAMESPACE` is declared, PHP files below `src/` must use that namespace or one of its child namespaces. The active runtime loader includes only `package.php`; that file may define a flat bootstrap class, return a callable, require further files below `src/`, or return simple contribution DTOs/providers. Supported direct contributions currently include static view injections, configurable static route sets, dynamic view injections, and package setting definitions. Loader failures are caught by the lifecycle layer, recorded as structured diagnostics, and mark the package `faulty` so a broken active package does not keep breaking requests. Contribution iterables are staged before registry mutation, so one unsupported item rejects the full package contribution for the current request.
+When `PACKAGE_NAMESPACE` is declared, PHP files below `src/` must use that namespace or one of its child namespaces. The active runtime loader includes only `package.php`; that file may return simple contribution DTOs/providers or a callable that returns them, but it must not directly include files, read or write files, spawn processes, open network sockets, read raw environment/request globals, or bypass package extension points. For multiple contributions, prefer `App\Core\Package\PackageContributions::create()` so the package entry point remains readable and each contribution type is named. Supported direct contributions currently include static view injections, configurable static route sets, dynamic view injections, package setting definitions, and scheduler task definitions. Loader failures are caught by the lifecycle layer, recorded as structured diagnostics, and mark the package `faulty` so a broken active package does not keep breaking requests. Contribution iterables are staged before registry mutation, so one unsupported item rejects the full package contribution for the current request.
 
 Package assets must be self-contained. Packages should vendor their external dependencies inside their own package directory instead of requiring the project importmap to manage third-party dependency lifecycles across packages. Active package CSS and JavaScript are aggregated through the generated package asset registries; packages should not expect templates to add arbitrary direct `<link>` or `<script>` tags for package-level assets. Static assets such as images, fonts, videos, and SVGs should be referenced from package CSS, JavaScript, or templates after the lifecycle mirrors them into the AssetMapper-visible package path.
 
 Area-specific package assets follow the same boundary as template namespaces. A package with `frontend-theme` should put frontend-only entrypoints under `assets/frontend/**`; a package with `backend-theme` should put backend-only entrypoints under `assets/backend/**`. Root-level package assets and other package asset subdirectories are shared/global and enter the extension registry only when the package also declares a global scope such as `module`, `captcha-provider`, `editor-provider`, or `system-template`.
 
-Package asset registries control deterministic rebuild order, but Tailwind currently emits one application stylesheet. CSS that belongs to one rendered area should therefore stay scoped to that area's root class, such as `.studio-frontend` or `.studio-backend`, unless the package intentionally contributes global module/provider styling.
+Package asset registries control deterministic rebuild order, but Tailwind currently emits one application stylesheet. CSS that belongs to one rendered area should therefore stay scoped to that area's root class, such as `.system-frontend` or `.system-backend`, unless the package intentionally contributes global module/provider styling. Root/shared templates use `{system|package-slug}-{class}` selectors, provider templates use `{system|package-slug}-{provider-scope}-{class}`, and frontend/backend templates use `{system|package-slug}-{frontend|backend}-{class}`. A template may use its own namespace classes and root classes, but not classes from another rendered area.
 
-Package translations are package-scoped. A package may ship `languages/<locale>/*.yaml`; when it does, `languages/en/*.yaml` is required as the fallback source. Only active package language files are aggregated into the generated runtime `messages` catalogue during the package rebuild queue, so inactive packages cannot override or leak copy. Package-owned translation keys must stay namespaced below `pkg.<package-slug>.*`.
+Package translations are package-scoped. A package may ship `languages/<locale>/*.yaml`; when it does, at least one catalogue for the configured fallback locale or its primary language must be present as the fallback source. Only active package language files are aggregated into the generated runtime `messages` catalogue during the package rebuild queue, so inactive packages cannot override or leak copy. Package-owned translation keys must stay namespaced below `pkg.<package-slug>.*`.
 
 Database-backed schema Twig is not visible to Tailwind file scanning by itself. Schema rendering needs a later aggregation layer that extracts or stores CSS class usage from active schema Twig and exposes it to the Tailwind rebuild before production builds depend on schema-authored classes.
 
@@ -98,7 +99,7 @@ Packages must not write macro files directly under `templates/macros/`, under an
 
 ## Event Hooks
 
-Packages may subscribe only to public hooks surfaced by `App\Core\Event\PublicEventHookRegistry`. The registry is the source of truth for stable package extension contracts. Other Symfony events can still exist inside the application, but they are internal unless listed there.
+Packages may subscribe only to public hooks surfaced by `App\Core\Event\PublicEventHookRegistry`. The registry aggregates domain-owned hook providers and is the source of truth for stable package extension contracts. Other Symfony events can still exist inside the application, but they are internal unless listed there.
 
 Core dispatch points use `App\Core\Event\PublicEventDispatcher`, which converts listener failures into structured operation issues and emits the internal `App\Core\Event\PublicHookFailedEvent`. Package subscribers should still avoid throwing where a recoverable result is possible. Unrecoverable package listener failures may cause the package lifecycle to mark the package `faulty` once package ownership can be resolved safely.
 
@@ -136,11 +137,11 @@ final class PackageSubscriber implements EventSubscriberInterface
 }
 ```
 
-Developers can inspect the currently surfaced hooks through `studio_event_hooks()` in Twig. This helper is intended for debug comments and future admin diagnostics, not for package control flow.
+Developers can inspect the currently surfaced hooks through `event_hooks()` in Twig. This helper is intended for debug comments and future admin diagnostics, not for package control flow.
 
 Output hooks should stay narrow. Prefer Twig context hooks and templates for normal rendering work; use `OutputGeneratedEvent` only when the final HTML string is the correct boundary.
 
-Do not expect package hooks for template path collection or runtime asset collection. Template namespaces are resolved through the package/theme lifecycle, and active package assets are mirrored and compiled through AssetSync and `studio:assets:rebuild`.
+Do not expect package hooks for template path collection or runtime asset collection. Template namespaces are resolved through the package/theme lifecycle, and active package assets are mirrored and compiled through AssetSync and `assets:rebuild`.
 
 Packages must not define new core permission rules dynamically. A package can require existing ACL levels, groups, roles, or manifest capabilities for its routes and UI, but the security model itself stays core-owned.
 
@@ -150,7 +151,7 @@ Dynamic public content contributions should use dynamic view injections with dec
 
 Schema `custom_twig` belongs to the inner content fieldset only. The native public content template keeps the page header, package injection slots, and outer content chrome stable, then delegates the variable fieldset to schema Twig with a generic fallback when custom Twig is empty or invalid. Custom schema Twig receives `content_view`, `content`, `revision`, `schema`, `schema_version`, `fields`, `language`, and `variant`.
 
-Markdown rendering is profile-aware through the `studio_markdown` Twig filter. The default profile is `allrounder`, which enables rich Markdown features, heading anchors, task lists, tables, footnotes, description lists, highlights, safe attributes, and external-link handling while escaping raw HTML and omitting embeds. Package README rendering uses `readme`, which maps to GitHub-Flavored Markdown for developer-authored package documentation. Trusted schema or admin-controlled design fields may explicitly call `studio_markdown('design')`; that profile allows raw HTML, controlled attributes, rich Markdown, and YouTube embeds through the native no-cookie embed adapter. Public untrusted inputs such as future comments should call `studio_markdown('basic')`, which keeps the CommonMark baseline plus autolinks while escaping HTML and excluding richer layout controls.
+Markdown rendering is profile-aware through the `render_markdown` Twig filter. The default profile is `allrounder`, which enables rich Markdown features, heading anchors, task lists, tables, footnotes, description lists, highlights, safe attributes, and external-link handling while escaping raw HTML and omitting embeds. Package README rendering uses `readme`, which maps to GitHub-Flavored Markdown for developer-authored package documentation. Trusted schema or admin-controlled design fields may explicitly call `render_markdown('design')`; that profile allows raw HTML, controlled attributes, rich Markdown, and YouTube embeds through the native no-cookie embed adapter. Public untrusted inputs such as future comments should call `render_markdown('basic')`, which keeps the CommonMark baseline plus autolinks while escaping HTML and excluding richer layout controls.
 
 ## Admin UI and UX guidelines
 
@@ -213,7 +214,7 @@ Run relevant verification commands once the implementation exists:
 
 ```bash
 php bin/console lint:container
-php bin/console studio:assets:rebuild
+php bin/console assets:rebuild
 php bin/phpunit
 php .codex/compare_translations.php
 ```

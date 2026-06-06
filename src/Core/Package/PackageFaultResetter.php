@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Filesystem\PathGuard;
-use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
-use App\Core\Message\MessageLevel;
 use App\Core\Manifest\ManifestSpec;
+use App\Core\Message\Message;
+use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use DateTimeImmutable;
@@ -90,8 +90,8 @@ final readonly class PackageFaultResetter
         } catch (InvalidArgumentException) {
             return WorkflowResult::invalid([
                 Message::create(
-                    MessageCode::PACKAGE_IDENTIFIER_INVALID,
-                    MessageKey::PACKAGE_IDENTIFIER_INVALID,
+                    PackageMessageCode::PACKAGE_IDENTIFIER_INVALID,
+                    PackageMessageKey::PACKAGE_IDENTIFIER_INVALID,
                     ['%identifier%' => $packageName],
                     ['package' => $packageName, 'path' => $package->path()],
                     MessageLevel::Error,
@@ -124,8 +124,8 @@ final readonly class PackageFaultResetter
         ], [
             ...$validation->messages(),
             Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_FAULT_RESET,
-                MessageKey::PACKAGE_LIFECYCLE_FAULT_RESET,
+                PackageMessageCode::PACKAGE_LIFECYCLE_FAULT_RESET,
+                PackageMessageKey::PACKAGE_LIFECYCLE_FAULT_RESET,
                 ['%package%' => $packageName],
                 ['package' => $packageName, 'path' => $package->path()],
                 MessageLevel::Success,
@@ -165,8 +165,8 @@ final readonly class PackageFaultResetter
 
             return WorkflowResult::invalid([
                 Message::create(
-                    MessageCode::PACKAGE_REQUIRED_FILE_MISSING,
-                    MessageKey::PACKAGE_REQUIRED_FILE_MISSING,
+                    PackageMessageCode::PACKAGE_REQUIRED_FILE_MISSING,
+                    PackageMessageKey::PACKAGE_REQUIRED_FILE_MISSING,
                     ['%path%' => $manifestPath],
                     ['package' => $package->packageName(), 'path' => $manifestPath],
                     MessageLevel::Error,
@@ -258,8 +258,8 @@ final readonly class PackageFaultResetter
     {
         return WorkflowResult::invalid([
             Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
-                MessageKey::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
+                PackageMessageCode::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
+                PackageMessageKey::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
                 ['%package%' => $packageName],
                 ['package' => $packageName],
                 MessageLevel::Warning,
@@ -274,8 +274,8 @@ final readonly class PackageFaultResetter
     {
         return WorkflowResult::blocked([
             Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
-            MessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                PackageMessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
+                PackageMessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
                 ['%package%' => $package->packageName(), '%status%' => $package->status()->value],
                 ['package' => $package->packageName(), 'status' => $package->status()->value, 'reason' => $reason],
                 MessageLevel::Warning,

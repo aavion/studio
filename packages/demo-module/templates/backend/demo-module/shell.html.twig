@@ -3,11 +3,11 @@
 {% block title %}{{ 'pkg.demo-module.demo.backend.title'|trans }}{% endblock %}
 
 {% block admin_sidebar %}
-    {% set demo_base = studio_package_setting('demo-module', 'demo.route', 'demo')|default('demo')|trim('/') %}
+    {% set demo_base = package_setting('demo-module', 'demo.route', 'demo')|default('demo')|trim('/') %}
     {% set demo_base = demo_base == '' ? 'demo' : demo_base %}
 
     <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
-        <ul class="studio-backend-nav">
+        <ul class="system-backend-nav">
             <li><a href="{{ path('content_show', {path: demo_base ~ '/backend'}) }}" aria-current="page">{{ 'pkg.demo-module.demo.backend.nav_overview'|trans }}</a></li>
             <li><a href="#editor-demo">{{ 'ui.editor.area'|trans }}</a></li>
             <li><a href="#setup-demo">{{ 'ui.setup.area'|trans }}</a></li>
@@ -17,7 +17,7 @@
 {% endblock %}
 
 {% block admin_body %}
-    {% set demo_base = studio_package_setting('demo-module', 'demo.route', 'demo')|default('demo')|trim('/') %}
+    {% set demo_base = package_setting('demo-module', 'demo.route', 'demo')|default('demo')|trim('/') %}
     {% set demo_base = demo_base == '' ? 'demo' : demo_base %}
 
     {% set action_buttons %}
@@ -35,14 +35,14 @@
         actions: action_buttons,
     } only %}
 
-    <div class="studio-demo-grid">
-        <section class="studio-panel">
+    <div class="demo-module-grid">
+        <section class="system-panel">
             <h2>{{ 'pkg.demo-module.demo.backend.overview_title'|trans }}</h2>
-            <p class="studio-muted">{{ 'pkg.demo-module.demo.backend.overview_text'|trans }}</p>
-            <div class="studio-page-actions">
-                <span class="studio-badge studio-badge-success">{{ 'pkg.demo-module.demo.badges.success'|trans }}</span>
-                <span class="studio-badge studio-badge-warning">{{ 'pkg.demo-module.demo.badges.warning'|trans }}</span>
-                <span class="studio-badge studio-badge-exception">{{ 'pkg.demo-module.demo.badges.exception'|trans }}</span>
+            <p class="system-muted">{{ 'pkg.demo-module.demo.backend.overview_text'|trans }}</p>
+            <div class="system-page-actions">
+                <span class="system-badge system-badge-success">{{ 'pkg.demo-module.demo.badges.success'|trans }}</span>
+                <span class="system-badge system-badge-warning">{{ 'pkg.demo-module.demo.badges.warning'|trans }}</span>
+                <span class="system-badge system-badge-exception">{{ 'pkg.demo-module.demo.badges.exception'|trans }}</span>
             </div>
         </section>
 
@@ -52,9 +52,9 @@
         } only %}
     </div>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'pkg.demo-module.demo.table.title'|trans }}</h2>
-        <table class="studio-table">
+        <table class="system-table">
             <thead>
                 <tr>
                     <th>{{ 'pkg.demo-module.demo.table.name'|trans }}</th>
@@ -65,53 +65,53 @@
             <tbody>
                 <tr>
                     <td>{{ 'pkg.demo-module.demo.table.system'|trans }}</td>
-                    <td><span class="studio-badge studio-badge-neutral">system-template</span></td>
-                    <td><span class="studio-badge studio-badge-success">{{ 'pkg.demo-module.demo.badges.success'|trans }}</span></td>
+                    <td><span class="system-badge system-badge-neutral">system-template</span></td>
+                    <td><span class="system-badge system-badge-success">{{ 'pkg.demo-module.demo.badges.success'|trans }}</span></td>
                 </tr>
                 <tr>
                     <td>{{ 'pkg.demo-module.demo.table.theme'|trans }}</td>
-                    <td><span class="studio-badge studio-badge-info">frontend-theme</span></td>
-                    <td><span class="studio-badge studio-badge-warning">{{ 'pkg.demo-module.demo.badges.warning'|trans }}</span></td>
+                    <td><span class="system-badge system-badge-info">frontend-theme</span></td>
+                    <td><span class="system-badge system-badge-warning">{{ 'pkg.demo-module.demo.badges.warning'|trans }}</span></td>
                 </tr>
             </tbody>
         </table>
     </section>
 
-    <section id="editor-demo" class="studio-editor-workspace">
-        <aside class="studio-editor-panel">
+    <section id="editor-demo" class="system-backend-editor-workspace">
+        <aside class="system-backend-editor-panel">
             {% include '@backend/editor/partials/_workspace-header.html.twig' with {
                 title: 'pkg.demo-module.demo.editor.title'|trans,
                 status: 'pkg.demo-module.demo.badges.info'|trans,
             } only %}
         </aside>
-        <div class="studio-editor-canvas">
+        <div class="system-backend-editor-canvas">
             {% include '@backend/partials/forms/_field.html.twig' with {
                 id: 'demo_backend_title',
                 label: 'pkg.demo-module.demo.form.title_label'|trans,
                 required: true,
                 help: 'pkg.demo-module.demo.form.help'|trans,
-                control: '<input id="demo_backend_title" class="studio-control" value="' ~ ('pkg.demo-module.demo.form.value'|trans|e('html_attr')) ~ '">',
+                control: '<input id="demo_backend_title" class="system-control" value="' ~ ('pkg.demo-module.demo.form.value'|trans|e('html_attr')) ~ '">',
             } only %}
             {% include '@backend/partials/forms/_field.html.twig' with {
                 id: 'demo_backend_body',
                 label: 'pkg.demo-module.demo.form.body_label'|trans,
-                control: '<textarea id="demo_backend_body" class="studio-control" rows="5">' ~ ('pkg.demo-module.demo.form.body_value'|trans|e) ~ '</textarea>',
+                control: '<textarea id="demo_backend_body" class="system-control" rows="5">' ~ ('pkg.demo-module.demo.form.body_value'|trans|e) ~ '</textarea>',
             } only %}
         </div>
     </section>
 
-    <section id="setup-demo" class="studio-panel">
+    <section id="setup-demo" class="system-panel">
         {% include '@backend/setup/partials/_step-header.html.twig' with {
             title: 'pkg.demo-module.demo.setup.title'|trans,
             step: 'pkg.demo-module.demo.setup.step'|trans,
         } only %}
-        <ol class="studio-setup-steps">
-            <li class="studio-setup-step">
-                <span class="studio-badge studio-badge-success">{{ 'pkg.demo-module.demo.badges.success'|trans }}</span>
+        <ol class="system-backend-setup-steps">
+            <li class="system-backend-setup-step">
+                <span class="system-badge system-badge-success">{{ 'pkg.demo-module.demo.badges.success'|trans }}</span>
                 <span>{{ 'pkg.demo-module.demo.setup.item_environment'|trans }}</span>
             </li>
-            <li class="studio-setup-step">
-                <span class="studio-badge studio-badge-info">{{ 'pkg.demo-module.demo.badges.info'|trans }}</span>
+            <li class="system-backend-setup-step">
+                <span class="system-badge system-badge-info">{{ 'pkg.demo-module.demo.badges.info'|trans }}</span>
                 <span>{{ 'pkg.demo-module.demo.setup.item_packages'|trans }}</span>
             </li>
         </ol>

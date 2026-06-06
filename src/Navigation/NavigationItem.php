@@ -171,7 +171,7 @@ final readonly class NavigationItem
         }
 
         return match ($this->targetType) {
-            'url', 'content' => $this->targetValue,
+            NavigationTargetType::URL, NavigationTargetType::CONTENT => $this->targetValue,
             default => '#',
         };
     }

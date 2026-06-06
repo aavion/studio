@@ -146,7 +146,7 @@ pkg:
 
                 Die Ueberschrift erhaelt einen Anchor.
 
-                ## Hervorgehobener Abschnitt {.studio-demo-attribute}
+                ## Hervorgehobener Abschnitt {.demo-module-frontend-attribute}
 
                 Sichere Attribute koennen angehaengt werden, wenn das Profil sie erlaubt.
         design:
@@ -157,7 +157,7 @@ pkg:
 
             Design Markdown ist fuer trusted Schema-, Admin- oder Editor-gesteuerte Bloecke gedacht, bei denen mehr Layout-Kontrolle akzeptabel ist.
 
-            <aside class="studio-demo-callout" data-demo="design">
+            <aside class="demo-module-frontend-callout" data-demo="design">
                 <strong>Trusted HTML:</strong> Dieser Block wird im Design-Profil absichtlich als HTML gerendert.
             </aside>
 
@@ -166,12 +166,12 @@ pkg:
             ## Attribut-gesteuerte Bloecke
 
             Absaetze koennen kontrollierte Attribute nutzen, wenn das Profil sie erlaubt.
-            {.studio-demo-attribute}
+            {.demo-module-frontend-attribute}
           examples:
             trusted_html:
               title: 'Trusted HTML'
               markdown: |
-                <section class="studio-demo-callout">
+                <section class="demo-module-frontend-callout">
                     <strong>Trusted HTML</strong> kann in Design-Markdown gemischt werden.
                 </section>
 
@@ -185,10 +185,10 @@ pkg:
             attributes:
               title: 'Custom Attributes'
               markdown: |
-                ## Eine gestaltete Ueberschrift {.studio-demo-attribute}
+                ## Eine gestaltete Ueberschrift {.demo-module-frontend-attribute}
 
                 Auch Absaetze koennen Attribute erhalten.
-                {.studio-demo-callout data-demo="typography"}
+                {.demo-module-frontend-callout data-demo="typography"}
       backend:
         title: 'Backend-Shell-Demo'
         nav_overview: 'Uebersicht'

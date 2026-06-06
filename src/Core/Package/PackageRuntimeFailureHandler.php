@@ -6,10 +6,10 @@ namespace App\Core\Package;
 
 use App\Core\Event\PublicHookFailedEvent;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
 use Doctrine\ORM\EntityManagerInterface;
@@ -113,8 +113,8 @@ final readonly class PackageRuntimeFailureHandler
             'deactivated_dependents' => $dependentChanges,
         ], [
             Message::create(
-                MessageCode::PACKAGE_LIFECYCLE_RUNTIME_FAILURE,
-                MessageKey::PACKAGE_LIFECYCLE_RUNTIME_FAILURE,
+                PackageMessageCode::PACKAGE_LIFECYCLE_RUNTIME_FAILURE,
+                PackageMessageKey::PACKAGE_LIFECYCLE_RUNTIME_FAILURE,
                 ['%package%' => $packageName],
                 ['package' => $packageName, 'faulty' => $faulty],
                 $faulty ? MessageLevel::Error : MessageLevel::Warning,

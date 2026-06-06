@@ -8,6 +8,7 @@ use App\Core\Config\Config;
 use App\Core\Id\UuidFactory;
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
+use App\Core\Message\MessageException;
 use App\Core\Package\ActivePackageProviderInterface;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
@@ -15,8 +16,11 @@ use App\Entity\ExtensionPackage;
 use App\Entity\SchedulerTask;
 use App\Entity\SchedulerTaskRun;
 use App\Scheduler\SchedulerLockFactory;
+use App\Scheduler\SchedulerDueTaskSelector;
+use App\Scheduler\SchedulerRunReporter;
 use App\Scheduler\SchedulerRunner;
 use App\Scheduler\SchedulerSettings;
+use App\Scheduler\SchedulerTaskRunRecorder;
 use App\Scheduler\SchedulerTaskDefinition;
 use App\Scheduler\SchedulerTaskExecution;
 use App\Scheduler\SchedulerTaskExecutorInterface;
@@ -28,6 +32,9 @@ use App\Scheduler\SchedulerTaskSynchronizer;
 use App\Scheduler\SchedulerTaskType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Lock\LockFactory;
+use Symfony\Component\Lock\Store\FlockStore;
+use Symfony\Component\Uid\Uuid;
 
 final class SchedulerRunnerTest extends KernelTestCase
 {
@@ -113,7 +120,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'admin.scheduler.tasks.demo.description',
             'demo-package',
             SchedulerTaskType::Command,
-            'studio:test',
+            'demo:test',
             '* * * * *',
             false,
         ));
@@ -308,7 +315,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'system.failed_task',
             'admin.scheduler.tasks.failed.label',
             'admin.scheduler.tasks.failed.description',
-            'studio:test',
+            'demo:test',
             '* * * * *',
         ));
         $now = new \DateTimeImmutable();
@@ -328,7 +335,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'system.sync_task',
             'admin.scheduler.tasks.sync.label',
             'admin.scheduler.tasks.sync.description',
-            'studio:test',
+            'demo:test',
             '* * * * *',
         ));
         $task->seedNextDue(new \DateTimeImmutable('+1 hour'));
@@ -337,7 +344,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'system.sync_task',
             'admin.scheduler.tasks.sync.label',
             'admin.scheduler.tasks.sync.description',
-            'studio:test',
+            'demo:test',
             '*/5 * * * *',
         ), new \DateTimeImmutable());
 
@@ -351,7 +358,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'demo.sync_task',
             'admin.scheduler.tasks.sync.label',
             'admin.scheduler.tasks.sync.description',
-            'studio:test',
+            'demo:test',
             '* * * * *',
             'demo-package',
             false,
@@ -408,13 +415,14 @@ final class SchedulerRunnerTest extends KernelTestCase
 
     public function testTaskDefinitionsRejectInvalidTranslationKeys(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(MessageException::class);
+        $this->expectExceptionMessage('message.scheduler.task_definition.translation_key_invalid');
 
         SchedulerTaskDefinition::command(
             'system.bad_task',
             '<script>alert(1)</script>',
             'admin.scheduler.tasks.bad.description',
-            'studio:test',
+            'demo:test',
             '* * * * *',
         );
     }
@@ -427,7 +435,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'system.bad_cron',
             'admin.scheduler.tasks.bad.label',
             'admin.scheduler.tasks.bad.description',
-            'studio:test',
+            'demo:test',
             'not a cron',
         );
     }
@@ -438,7 +446,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'ai.cleanup',
             'admin.scheduler.tasks.test.label',
             'admin.scheduler.tasks.test.description',
-            'studio:test',
+            'demo:test',
             '* * * * *',
             'ai',
             false,
@@ -457,7 +465,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'admin.scheduler.tasks.bad.description',
             'system',
             SchedulerTaskType::Command,
-            'studio:test',
+            'demo:test',
             '* * * * *',
             true,
             ['resource' => fopen('php://memory', 'r')],
@@ -479,15 +487,21 @@ final class SchedulerRunnerTest extends KernelTestCase
         ?ActivePackageProviderInterface $activePackageProvider = null,
     ): SchedulerRunner
     {
+        $settings = new SchedulerSettings(new Config($this->entityManager->getConnection()));
+        $activePackages = $activePackageProvider ?? new TestActivePackageProvider();
+        $messageLogger = new TestSchedulerMessageLogger();
+        $reporter = new SchedulerRunReporter($messageLogger);
+
         return new SchedulerRunner(
-            new SchedulerSettings(new Config($this->entityManager->getConnection())),
+            $settings,
             $this->synchronizer($provider),
-            $this->entityManager,
-            [$executor],
-            new SchedulerLockFactory(sys_get_temp_dir().'/studio-scheduler-test-'.bin2hex(random_bytes(4)), 'test'),
-            new UuidFactory(),
-            new TestSchedulerMessageLogger(),
-            $activePackageProvider ?? new TestActivePackageProvider(),
+            new SchedulerLockFactory(
+                new LockFactory(new FlockStore(sys_get_temp_dir().'/system-scheduler-test-'.bin2hex(random_bytes(4)))),
+                'test',
+            ),
+            new SchedulerDueTaskSelector($settings, $activePackages),
+            new SchedulerTaskRunRecorder($this->entityManager, [$executor], new UuidFactory(), $reporter),
+            $reporter,
         );
     }
 }
@@ -501,7 +515,7 @@ final readonly class TestSchedulerTaskProvider implements SchedulerTaskProviderI
                 'system.test_task',
                 'admin.scheduler.tasks.test.label',
                 'admin.scheduler.tasks.test.description',
-                'studio:test',
+                'demo:test',
                 '* * * * *',
             ),
         ];
@@ -517,14 +531,14 @@ final readonly class TestMultipleSchedulerTaskProvider implements SchedulerTaskP
                 'system.first_task',
                 'admin.scheduler.tasks.test.label',
                 'admin.scheduler.tasks.test.description',
-                'studio:test',
+                'demo:test',
                 '* * * * *',
             ),
             SchedulerTaskDefinition::command(
                 'system.second_task',
                 'admin.scheduler.tasks.test.label',
                 'admin.scheduler.tasks.test.description',
-                'studio:test',
+                'demo:test',
                 '* * * * *',
             ),
         ];
@@ -540,7 +554,7 @@ final readonly class TestMixedSchedulerTaskProvider implements SchedulerTaskProv
                 'system.first_task',
                 'admin.scheduler.tasks.test.label',
                 'admin.scheduler.tasks.test.description',
-                'studio:test',
+                'demo:test',
                 '* * * * *',
             ),
             new SchedulerTaskDefinition(
@@ -549,7 +563,7 @@ final readonly class TestMixedSchedulerTaskProvider implements SchedulerTaskProv
                 'admin.scheduler.tasks.demo.description',
                 'demo-package',
                 SchedulerTaskType::Command,
-                'studio:test',
+                'demo:test',
                 '* * * * *',
                 false,
             ),
@@ -657,7 +671,7 @@ final readonly class TestPackageCommandSchedulerTaskProvider implements Schedule
                 'admin.scheduler.tasks.demo.description',
                 'demo-package',
                 SchedulerTaskType::Command,
-                'studio:test',
+                'demo:test',
                 '* * * * *',
                 false,
             ),
@@ -676,7 +690,7 @@ final readonly class TestCollidingPackageSchedulerTaskProvider implements Schedu
                 'admin.scheduler.tasks.demo.description',
                 'demo-package',
                 SchedulerTaskType::Command,
-                'studio:demo:test',
+                'demo:test',
                 '* * * * *',
                 false,
             ),
@@ -749,15 +763,6 @@ final class MutableActivePackageProvider implements ActivePackageProviderInterfa
 
     private static function uuidFor(string $value): string
     {
-        $hash = md5($value);
-
-        return sprintf(
-            '%s-%s-%s-%s-%s',
-            substr($hash, 0, 8),
-            substr($hash, 8, 4),
-            substr($hash, 12, 4),
-            substr($hash, 16, 4),
-            substr($hash, 20, 12),
-        );
+        return Uuid::v5(Uuid::fromString(Uuid::NAMESPACE_DNS), $value)->toRfc4122();
     }
 }

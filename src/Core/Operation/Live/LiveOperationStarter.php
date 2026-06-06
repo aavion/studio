@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Core\Operation\Live;
 
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
-use App\Core\Process\CliProcessEnvironment;
+use App\Core\Message\MessageException;
+use App\Core\Operation\OperationMessageKey;
+use App\Core\Process\DetachedProcessStarter;
 use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Workflow\WorkflowResult;
 use App\Setup\SetupLiveOperationPayloadProtector;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Process\Process;
 use Throwable;
 
 final readonly class LiveOperationStarter
@@ -22,6 +22,7 @@ final readonly class LiveOperationStarter
         private LiveOperationRunStore $runStore,
         private SetupLiveOperationPayloadProtector $setupPayloadProtector,
         private PhpCliBinaryManager $phpCliBinaryManager,
+        private DetachedProcessStarter $detachedProcessStarter,
     ) {
     }
 
@@ -40,19 +41,25 @@ final readonly class LiveOperationStarter
             }
 
             $run = $this->runStore->create($operation, $payload, $label);
-            $this->startProcess($run['operation_id'], $run['token']);
+            $this->startProcess($operation, $run['operation_id'], $run['token']);
         } catch (Throwable $error) {
-            $result = WorkflowResult::failed([
-                Message::exception(
-                    MessageCode::E_OPERATION_FAILED,
-                    MessageKey::OPERATION_START_FAILED,
+            $issue = $error instanceof MessageException
+                ? $error->message()->withContext([
+                    'operation' => $operation,
+                    'exception' => $error::class,
+                ])
+                : Message::exception(
+                    CommonMessageCode::E_OPERATION_FAILED,
+                    OperationMessageKey::OPERATION_START_FAILED,
                     ['%operation%' => $operation],
                     [
                         'operation' => $operation,
                         'exception' => $error::class,
                         'message' => $error->getMessage(),
                     ],
-                ),
+                );
+            $result = WorkflowResult::failed([
+                $issue,
             ], ['operation' => $operation]);
 
             if (is_array($run) && isset($run['operation_id'])) {
@@ -67,89 +74,54 @@ final readonly class LiveOperationStarter
             'operation_id' => $run['operation_id'],
         ], [
             Message::success(
-                MessageKey::OPERATION_STARTED,
+                OperationMessageKey::OPERATION_STARTED,
                 ['%operation%' => $label],
                 ['operation' => $operation, 'operation_id' => $run['operation_id']],
             ),
         ]);
     }
 
-    private function startProcess(string $operationId, string $token): void
+    private function startProcess(string $operation, string $operationId, string $token): void
     {
         $command = [
-            ...$this->phpCliCommandPrefix(),
+            ...$this->phpCliCommandPrefix($operation),
             $this->kernel->getProjectDir().'/bin/console',
-            'studio:operations:run',
+            'operations:run',
             $operationId,
             '--token='.$token,
             '--env='.$this->kernel->getEnvironment(),
             '--no-interaction',
         ];
-        $outputPath = $this->runStore->outputPath($operationId);
-        $pidPath = $this->runStore->pidPath($operationId);
-        if ('\\' === DIRECTORY_SEPARATOR) {
-            $this->startWindowsProcess($command, $outputPath, $pidPath);
-
-            return;
-        }
-
-        $shellCommand = implode(' ', array_map('escapeshellarg', $command))
-            .' > '.escapeshellarg($outputPath).' 2>&1 & echo $! > '.escapeshellarg($pidPath);
-
-        // Symfony Process stops async children on destruction, so we only use it
-        // to ask the shell to detach the actual runner.
-        $process = Process::fromShellCommandline(
-            $shellCommand,
+        if (!$this->detachedProcessStarter->start(
+            $command,
             $this->kernel->getProjectDir(),
-            CliProcessEnvironment::fromCurrentProcess(['APP_ENV' => $this->kernel->getEnvironment()]),
-            timeout: 5.0,
-        );
-        $process->run();
-
-        if (!$process->isSuccessful()) {
-            throw new \RuntimeException('Live operation runner could not be started.');
+            $this->runStore->outputPath($operationId),
+            $this->runStore->pidPath($operationId),
+            ['APP_ENV' => $this->kernel->getEnvironment()],
+        )) {
+            throw MessageException::forMessage(
+                CommonMessageCode::E_OPERATION_FAILED,
+                OperationMessageKey::OPERATION_RUNNER_START_FAILED,
+                ['%operation%' => $operation],
+                ['operation' => $operation, 'operation_id' => $operationId],
+            );
         }
-    }
-
-    /**
-     * @param list<string> $command
-     */
-    private function startWindowsProcess(array $command, string $outputPath, string $pidPath): void
-    {
-        if (false === file_put_contents($pidPath, 'started '.gmdate('c').PHP_EOL, LOCK_EX)) {
-            throw new \RuntimeException('Live operation runner pid marker could not be written.');
-        }
-
-        $shellCommand = 'start "" /B '.implode(' ', array_map($this->windowsArgument(...), $command))
-            .' > '.$this->windowsArgument($outputPath).' 2>&1';
-
-        $process = Process::fromShellCommandline(
-            'cmd /C '.$shellCommand,
-            $this->kernel->getProjectDir(),
-            CliProcessEnvironment::fromCurrentProcess(['APP_ENV' => $this->kernel->getEnvironment()]),
-            timeout: 5.0,
-        );
-        $process->run();
-
-        if (!$process->isSuccessful()) {
-            throw new \RuntimeException('Live operation runner could not be started.');
-        }
-    }
-
-    private function windowsArgument(string $argument): string
-    {
-        return '"'.str_replace('"', '\"', $argument).'"';
     }
 
     /**
      * @return list<string>
      */
-    private function phpCliCommandPrefix(): array
+    private function phpCliCommandPrefix(string $operation): array
     {
         $resolution = $this->phpCliBinaryManager->resolve($this->kernel->getProjectDir(), $this->kernel->getEnvironment(), persistPreference: true);
 
         if (!$resolution->isAvailable()) {
-            throw new \RuntimeException('PHP CLI binary could not be resolved: '.$resolution->reason().'.');
+            throw MessageException::forMessage(
+                CommonMessageCode::E_OPERATION_FAILED,
+                OperationMessageKey::OPERATION_PHP_CLI_UNAVAILABLE,
+                ['%operation%' => $operation, '%reason%' => $resolution->reason()],
+                [...$resolution->context(), 'operation' => $operation, 'reason' => $resolution->reason()],
+            );
         }
 
         return $resolution->commandPrefix();

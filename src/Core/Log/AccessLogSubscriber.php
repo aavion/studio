@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Core\Log;
 
+use App\Core\Access\AccessMessageKey;
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
 use App\Core\Statistics\AccessStatisticsRecorderInterface;
+use App\Core\Statistics\VisitorIdGenerator;
 use App\Database\DatabaseReadyState;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -22,6 +23,7 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
         private AccessLoggerInterface $accessLogger,
         private AccessStatisticsRecorderInterface $accessStatisticsRecorder,
         private AccessRequestMetadata $accessRequestMetadata,
+        private VisitorIdGenerator $visitorIdGenerator,
         private ?MessageReporterInterface $messageReporter = null,
         private ?DatabaseReadyState $databaseReadyState = null,
     ) {
@@ -49,6 +51,8 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
         if (!$event->isMainRequest() || $this->shouldSkipAccessLog($event->getRequest()->getPathInfo())) {
             return;
         }
+
+        $this->visitorIdGenerator->attachCookie($event->getRequest(), $event->getResponse());
 
         try {
             $this->accessLogger->log($event->getRequest(), $event->getResponse());
@@ -92,8 +96,8 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
     {
         try {
             $this->messageReporter?->report(Message::exception(
-                MessageCode::E_OPERATION_FAILED,
-                MessageKey::ACCESS_LOG_FAILED,
+                CommonMessageCode::E_OPERATION_FAILED,
+                AccessMessageKey::ACCESS_LOG_FAILED,
                 [],
                 [
                     'operation' => 'access.log',

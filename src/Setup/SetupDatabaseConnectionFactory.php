@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Message\Message;
 use App\Database\PrefixedConnection;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
@@ -19,7 +20,7 @@ final readonly class SetupDatabaseConnectionFactory
         ));
 
         if (null !== $databasePrefix) {
-            $parameters['studio_database_prefix'] = $databasePrefix;
+            $parameters['system_database_prefix'] = $databasePrefix;
         }
 
         return DriverManager::getConnection($parameters);
@@ -35,7 +36,7 @@ final readonly class SetupDatabaseConnectionFactory
                 'driver' => 'pdo_sqlite',
                 'path' => $this->sqlitePath($databaseUrl),
                 'wrapperClass' => PrefixedConnection::class,
-                'studio_allow_unready_database' => true,
+                'system_allow_unready_database' => true,
             ];
         }
 
@@ -44,11 +45,15 @@ final readonly class SetupDatabaseConnectionFactory
         return [
             'url' => $databaseUrl,
             'wrapperClass' => PrefixedConnection::class,
-            'studio_allow_unready_database' => true,
+            'system_allow_unready_database' => true,
             'driver' => match ($scheme) {
                 'mysql', 'mariadb' => 'pdo_mysql',
                 'pgsql', 'postgres', 'postgresql' => 'pdo_pgsql',
-                default => throw new SetupStepFailedException(sprintf('Unsupported database URL scheme "%s".', $scheme)),
+                default => throw SetupStepFailedException::fromMessage(Message::error(
+                    SetupMessageCode::SETUP_DATABASE_URL_SCHEME_UNSUPPORTED,
+                    SetupMessageKey::SETUP_DATABASE_URL_SCHEME_UNSUPPORTED,
+                    ['%scheme%' => $scheme],
+                )),
             },
         ];
     }

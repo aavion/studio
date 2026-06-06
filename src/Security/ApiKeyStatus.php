@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Security;
 
-use App\Core\Message\MessageKey;
+use App\Security\SecurityMessageKey;
+
 
 enum ApiKeyStatus: string
 {
@@ -15,9 +16,9 @@ enum ApiKeyStatus: string
     public function messageKey(): string
     {
         return match ($this) {
-            self::ReadWrite => MessageKey::API_KEY_STATUS_READ_WRITE,
-            self::ReadOnly => MessageKey::API_KEY_STATUS_READ_ONLY,
-            self::Revoked => MessageKey::API_KEY_STATUS_REVOKED,
+            self::ReadWrite => SecurityMessageKey::API_KEY_STATUS_READ_WRITE,
+            self::ReadOnly => SecurityMessageKey::API_KEY_STATUS_READ_ONLY,
+            self::Revoked => SecurityMessageKey::API_KEY_STATUS_REVOKED,
         };
     }
 

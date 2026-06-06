@@ -3,12 +3,12 @@
 {% block title %}{{ 'ui.user.logout.title'|trans }}{% endblock %}
 
 {% block frontend_body %}
-    <section class="studio-auth-panel">
+    <section class="system-frontend-auth-panel">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             title: 'ui.user.logout.title'|trans,
             subtitle: 'ui.user.logout.placeholder'|trans,
         } only %}
-        <form action="{{ path('user_logout_perform') }}" method="post" class="studio-auth-form" data-turbo="false">
+        <form action="{{ path('user_logout_perform') }}" method="post" class="system-frontend-auth-form" data-turbo="false">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
             {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.logout.submit'|trans} only %}
         </form>

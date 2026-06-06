@@ -6,7 +6,7 @@ namespace App\Tests\View\Http;
 
 use App\Core\Event\PublicEventDispatcher;
 use App\Core\Event\PublicEventHookRegistry;
-use App\Debug\StudioDebugCollector;
+use App\Debug\SystemDebugCollector;
 use App\View\Event\OutputGeneratedEvent;
 use App\View\Event\ResponseHeadersEvent;
 use App\View\Http\ResponseHookSubscriber;
@@ -38,11 +38,37 @@ final class ResponseHookSubscriberTest extends TestCase
         self::assertFalse($response->headers->has('X-Remove-Me'));
     }
 
+    public function testItRejectsUnsafeResponseHeaderHookChanges(): void
+    {
+        $dispatcher = new EventDispatcher();
+        $dispatcher->addListener(ResponseHeadersEvent::class, static function (ResponseHeadersEvent $event): void {
+            $event->setHeader('Set-Cookie', 'session=package-owned');
+            $event->setHeader('X-Bad-Value', "first\r\nsecond");
+            $event->setHeader('X-Frame-Options', 'ALLOWALL');
+            $event->removeHeader('Content-Security-Policy');
+            $event->removeHeader('X-Remove-Me');
+        });
+        $response = new Response('<html></html>', 200, [
+            'Content-Security-Policy' => "default-src 'self'",
+            'Content-Type' => 'text/html',
+            'X-Frame-Options' => 'DENY',
+            'X-Remove-Me' => 'yes',
+        ]);
+
+        $this->subscriber($dispatcher)->onKernelResponse($this->responseEvent($response));
+
+        self::assertFalse($response->headers->has('Set-Cookie'));
+        self::assertFalse($response->headers->has('X-Bad-Value'));
+        self::assertSame('DENY', $response->headers->get('X-Frame-Options'));
+        self::assertSame("default-src 'self'", $response->headers->get('Content-Security-Policy'));
+        self::assertFalse($response->headers->has('X-Remove-Me'));
+    }
+
     public function testItAppliesHtmlOutputHookChanges(): void
     {
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(OutputGeneratedEvent::class, static function (OutputGeneratedEvent $event): void {
-            $event->appendContent('<!-- studio-debug -->');
+            $event->appendContent('<!-- package-output-hook -->');
         });
         $response = new Response('<html></html>', 200, [
             'Content-Type' => 'text/html; charset=UTF-8',
@@ -51,7 +77,7 @@ final class ResponseHookSubscriberTest extends TestCase
 
         $this->subscriber($dispatcher)->onKernelResponse($this->responseEvent($response));
 
-        self::assertSame('<html></html><!-- studio-debug -->', $response->getContent());
+        self::assertSame('<html></html><!-- package-output-hook -->', $response->getContent());
         self::assertFalse($response->headers->has('Content-Length'));
     }
 
@@ -89,7 +115,7 @@ final class ResponseHookSubscriberTest extends TestCase
     public function testItAppendsDebugCommentWhenCollectorIsEnabled(): void
     {
         $dispatcher = new EventDispatcher();
-        $collector = new StudioDebugCollector(true);
+        $collector = new SystemDebugCollector(true);
         $response = new Response('<html></html>', 200, [
             'Content-Type' => 'text/html',
         ]);
@@ -99,7 +125,7 @@ final class ResponseHookSubscriberTest extends TestCase
             $collector,
         ))->onKernelResponse($this->responseEvent($response));
 
-        self::assertStringContainsString('<!-- studio-debug', (string) $response->getContent());
+        self::assertStringContainsString('<!-- system-debug', (string) $response->getContent());
         self::assertStringContainsString('ResponseHeadersEvent', (string) $response->getContent());
         self::assertStringContainsString('OutputGeneratedEvent', (string) $response->getContent());
     }

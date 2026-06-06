@@ -18,7 +18,7 @@ final readonly class AccessStatisticsPolicy
 
     public function isDisplayEnabled(): bool
     {
-        return true === $this->config->get(self::ENABLED_KEY, true);
+        return true === ($this->config->get(self::ENABLED_KEY) ?? true);
     }
 
     public function isRecordingEnabled(Request $request): bool
@@ -37,6 +37,6 @@ final readonly class AccessStatisticsPolicy
 
     private function respectsDoNotTrack(): bool
     {
-        return true === $this->config->get(self::RESPECT_DO_NOT_TRACK_KEY, true);
+        return true === ($this->config->get(self::RESPECT_DO_NOT_TRACK_KEY) ?? true);
     }
 }

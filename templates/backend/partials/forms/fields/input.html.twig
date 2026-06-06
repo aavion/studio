@@ -2,12 +2,12 @@
 {% set input_control %}
     <input
         id="{{ field_id }}"
-        class="studio-backend-input"
+        class="system-backend-input"
         type="{{ type|default('text') }}"
         name="{{ name }}"
         value="{{ value|default('') }}"
         {% if required|default(false) %}required{% endif %}
-        {{ studio_html_attributes(attributes|default({})) }}
+        {{ html_attributes(attributes|default({})) }}
     >
 {% endset %}
 {% include '@backend/partials/forms/_field.html.twig' with {

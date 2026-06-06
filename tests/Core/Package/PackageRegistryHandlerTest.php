@@ -4,27 +4,28 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Package;
 
+use App\Core\Message\Message;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageAssetRebuildDispatcher;
 use App\Core\Package\PackageAssetRebuildMessage;
 use App\Core\Package\PackageCandidate;
 use App\Core\Package\PackageDiscovery;
 use App\Core\Package\PackageLifecycleAssetRebuilderInterface;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Package\PackageRegistryHandler;
 use App\Core\Package\PackageSource;
-use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Tests\Support\FilesystemTestHelper;
+use App\Tests\Support\NullWorkflowResultMessageReporter;
 use App\Tests\Support\RecordingMessageBus;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
-use App\Tests\Support\NullWorkflowResultMessageReporter;
 use RuntimeException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Uid\Uuid;
 
 final class PackageRegistryHandlerTest extends KernelTestCase
 {
@@ -38,7 +39,7 @@ final class PackageRegistryHandlerTest extends KernelTestCase
     {
         self::bootKernel();
 
-        $this->projectDir = $this->createTemporaryDirectory('studio-package-registry');
+        $this->projectDir = $this->createTemporaryDirectory('system-package-registry');
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $this->connection = $this->entityManager->getConnection();
         $this->connection->beginTransaction();
@@ -192,8 +193,8 @@ final class PackageRegistryHandlerTest extends KernelTestCase
         $this->writePackageManifest('demo-module', '1.1.0');
         $assetRebuilder = new RegistryHandlerPackageLifecycleAssetRebuilder(WorkflowResult::failed([
             Message::error(
-                MessageCode::PACKAGE_ASSET_SYNC_FAILED,
-                MessageKey::PACKAGE_ASSET_SYNC_FAILED,
+                PackageMessageCode::PACKAGE_ASSET_SYNC_FAILED,
+                PackageMessageKey::PACKAGE_ASSET_SYNC_FAILED,
                 ['%message%' => 'fallback failed'],
             ),
         ]));
@@ -373,11 +374,7 @@ final class PackageRegistryHandlerTest extends KernelTestCase
 
     private function uuid(): string
     {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+        return Uuid::v7()->toRfc4122();
     }
 }
 

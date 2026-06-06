@@ -36,7 +36,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
         $user = $runner->findUser($this->root, $databaseUrl, 'admin');
 
         self::assertNotNull($user);
-        self::assertSame('00000000-0000-0000-0000-000000000201', $user->uid());
+        self::assertSame('00000000-0000-7000-8000-000000000201', $user->uid());
         self::assertSame('admin@example.test', $user->email());
 
         $result = $runner->reset($this->root, $databaseUrl, 'admin', 'NewPassword1!', 'test');
@@ -49,7 +49,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
             ->query("SELECT password_hash FROM user_account WHERE username = 'admin'")
             ->fetch(PDO::FETCH_ASSOC);
         $marker = $pdo
-            ->query("SELECT marker_by FROM state_marker WHERE subject_type = 'user_account' AND subject_uid = '00000000-0000-0000-0000-000000000201' AND marker_key = 'password_changed'")
+            ->query("SELECT marker_by FROM state_marker WHERE subject_type = 'user_account' AND subject_uid = '00000000-0000-7000-8000-000000000201' AND marker_key = 'password_changed'")
             ->fetchColumn();
 
         self::assertIsArray($row);
@@ -109,7 +109,7 @@ final class SetupPasswordResetRunnerTest extends TestCase
         $pdo->exec(sprintf('CREATE TABLE %suser_account (uid VARCHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(180) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, profile CLOB NOT NULL, settings CLOB NOT NULL, status VARCHAR(32) NOT NULL)', $prefix));
         $statement = $pdo->prepare(sprintf('INSERT INTO %suser_account (uid, username, email, password_hash, profile, settings, status) VALUES (:uid, :username, :email, :password_hash, :profile, :settings, :status)', $prefix));
         $statement->execute([
-            'uid' => '00000000-0000-0000-0000-000000000201',
+            'uid' => '00000000-0000-7000-8000-000000000201',
             'username' => 'admin',
             'email' => 'admin@example.test',
             'password_hash' => password_hash('old-password', PASSWORD_DEFAULT),

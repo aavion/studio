@@ -6,10 +6,13 @@ namespace App\Core\Package;
 
 use App\Core\Filesystem\PathGuard;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Message\MessageException;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Operation\OperationMessageCode;
+use App\Core\Operation\OperationMessageKey;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Database\DatabaseReadyState;
 use App\Entity\ExtensionPackage;
@@ -122,8 +125,8 @@ final class PackagePhpLoader implements EventSubscriberInterface
                 $issue = $this->phpLoadIssue($package, $loaderPath, $error);
                 $issues[] = $issue;
                 $messages[] = Message::exception(
-                    MessageCode::PACKAGE_LIFECYCLE_PHP_LOAD_FAILED,
-                    MessageKey::PACKAGE_LIFECYCLE_PHP_LOAD_FAILED,
+                    PackageMessageCode::PACKAGE_LIFECYCLE_PHP_LOAD_FAILED,
+                    PackageMessageKey::PACKAGE_LIFECYCLE_PHP_LOAD_FAILED,
                     ['%package%' => $package->packageName()],
                     $issue->context(),
                 );
@@ -188,6 +191,7 @@ final class PackagePhpLoader implements EventSubscriberInterface
                 'loader' => $this->projectRelativePath($loaderPath),
                 'exception' => $error::class,
                 'message' => $error->getMessage(),
+                ...$this->messageExceptionContext($error),
             ],
         ]);
         $dependentChanges = [];
@@ -210,8 +214,8 @@ final class PackagePhpLoader implements EventSubscriberInterface
     private function phpLoadIssue(ExtensionPackage $package, string $loaderPath, Throwable $error): Message
     {
         return Message::create(
-            MessageCode::PACKAGE_LIFECYCLE_PHP_LOAD_FAILED,
-            MessageKey::PACKAGE_LIFECYCLE_PHP_LOAD_FAILED,
+            PackageMessageCode::PACKAGE_LIFECYCLE_PHP_LOAD_FAILED,
+            PackageMessageKey::PACKAGE_LIFECYCLE_PHP_LOAD_FAILED,
             ['%package%' => $package->packageName()],
             [
                 'package' => $package->packageName(),
@@ -219,6 +223,7 @@ final class PackagePhpLoader implements EventSubscriberInterface
                 'loader' => $this->projectRelativePath($loaderPath),
                 'exception' => $error::class,
                 'message' => $error->getMessage(),
+                ...$this->messageExceptionContext($error),
             ],
             MessageLevel::Exception,
         );
@@ -230,8 +235,8 @@ final class PackagePhpLoader implements EventSubscriberInterface
     private function exceptionIssue(Throwable $error, array $context): Message
     {
         return Message::create(
-            MessageCode::OPERATION_EXCEPTION,
-            MessageKey::OPERATION_EXCEPTION,
+            OperationMessageCode::OPERATION_EXCEPTION,
+            OperationMessageKey::OPERATION_EXCEPTION,
             context: [
                 ...$context,
                 'exception' => $error::class,
@@ -246,5 +251,24 @@ final class PackagePhpLoader implements EventSubscriberInterface
         $projectDir = rtrim($this->projectDir, '/').'/';
 
         return str_starts_with($path, $projectDir) ? substr($path, strlen($projectDir)) : $path;
+    }
+
+    /**
+     * @return array{previous_message?: array{code: string, key: string, parameters: array<string, mixed>, context: array<string, mixed>}}
+     */
+    private function messageExceptionContext(Throwable $error): array
+    {
+        if (!$error instanceof MessageException) {
+            return [];
+        }
+
+        return [
+            'previous_message' => [
+                'code' => $error->code(),
+                'key' => $error->messageKey(),
+                'parameters' => $error->parameters(),
+                'context' => $error->context(),
+            ],
+        ];
     }
 }

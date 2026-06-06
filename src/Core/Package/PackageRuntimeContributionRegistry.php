@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Core\Message\MessageException;
 use App\Core\Package\Settings\PackageSettingDefinition;
 use App\Core\Package\Settings\PackageSettingProviderInterface;
 use App\Core\Package\Settings\PackageSettings;
@@ -18,7 +19,6 @@ use App\View\Injection\DynamicViewInjection;
 use App\View\Injection\DynamicViewInjectionProviderInterface;
 use App\View\Injection\StaticViewInjection;
 use App\View\Injection\StaticViewInjectionProviderInterface;
-use InvalidArgumentException;
 
 final class PackageRuntimeContributionRegistry implements StaticViewInjectionProviderInterface, DynamicViewInjectionProviderInterface, PackageSettingProviderInterface, SchedulerTaskProviderInterface, SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface
 {
@@ -160,10 +160,10 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
             return;
         }
 
-        throw new InvalidArgumentException(sprintf(
-            'Unsupported runtime contribution returned by package "%s".',
-            $package->packageName(),
-        ));
+        throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+            '%package%' => $package->packageName(),
+            '%type%' => get_debug_type($contribution),
+        ]);
     }
 
     private function replaceWith(self $registry): void
@@ -180,19 +180,18 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
     private function addSchedulerTaskDefinition(ExtensionPackage $package, SchedulerTaskDefinition $definition): void
     {
         if ($definition->source() !== $package->packageName()) {
-            throw new InvalidArgumentException(sprintf(
-                'Scheduler task "%s" returned by package "%s" must use the package name as source.',
-                $definition->identifier(),
-                $package->packageName(),
-            ));
+            throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_SCHEDULER_SOURCE_INVALID, [
+                '%task%' => $definition->identifier(),
+                '%package%' => $package->packageName(),
+                '%source%' => $definition->source(),
+            ]);
         }
 
         if ($definition->trusted()) {
-            throw new InvalidArgumentException(sprintf(
-                'Scheduler task "%s" returned by package "%s" must not be trusted.',
-                $definition->identifier(),
-                $package->packageName(),
-            ));
+            throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_SCHEDULER_TRUSTED_BLOCKED, [
+                '%task%' => $definition->identifier(),
+                '%package%' => $package->packageName(),
+            ]);
         }
 
         $this->schedulerTaskDefinitions[] = $definition;

@@ -21,11 +21,11 @@ final class AuditLoggerTest extends TestCase
     public function testItWritesAuditActionsWithActorContext(): void
     {
         $handler = new TestHandler();
-        $monolog = new Logger('studio_audit');
+        $monolog = new Logger('audit');
         $monolog->pushHandler($handler);
 
         (new AuditLogger($monolog))->log(
-            AccessActor::fromAccess(9, ['site_operations'], '10000000-0000-0000-0000-000000000001', 'admin'),
+            AccessActor::fromAccess(9, ['site_operations'], '10000000-0000-7000-8000-000000000001', 'admin'),
             'package.activate',
             [
                 'package' => 'demo-module',
@@ -48,11 +48,11 @@ final class AuditLoggerTest extends TestCase
     public function testItSkipsActionsDeniedByPolicy(): void
     {
         $handler = new TestHandler();
-        $monolog = new Logger('studio_audit');
+        $monolog = new Logger('audit');
         $monolog->pushHandler($handler);
 
         (new AuditLogger($monolog, new DenyAllAuditLogPolicy()))->log(
-            AccessActor::fromAccess(9, ['site_operations'], '10000000-0000-0000-0000-000000000001', 'admin'),
+            AccessActor::fromAccess(9, ['site_operations'], '10000000-0000-7000-8000-000000000001', 'admin'),
             'settings.core.save',
         );
 
@@ -62,7 +62,7 @@ final class AuditLoggerTest extends TestCase
     public function testItAddsCurrentRequestTraceWhenAvailable(): void
     {
         $handler = new TestHandler();
-        $monolog = new Logger('studio_audit');
+        $monolog = new Logger('audit');
         $monolog->pushHandler($handler);
         $request = Request::create('/comments', 'POST', [], [], [], [
             'HTTP_USER_AGENT' => 'Example Browser',
@@ -89,7 +89,8 @@ final class AuditLoggerTest extends TestCase
 
         self::assertCount(1, $records);
         self::assertSame('content-1', $records[0]->context['context']['content_uid']);
-        self::assertSame('comment-request-1', $records[0]->context['context']['request_id']);
+        self::assertMatchesRegularExpression('/\A[a-f0-9]{24}\z/', $records[0]->context['context']['request_id']);
+        self::assertNotSame('comment-request-1', $records[0]->context['context']['request_id']);
         self::assertSame($visitorIdGenerator->generate($request), $records[0]->context['context']['visitor_id']);
         self::assertSame('/comments', $records[0]->context['context']['requested_path']);
         self::assertSame('comment_create', $records[0]->context['context']['resolved_route']);

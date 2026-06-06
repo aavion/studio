@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Core\Package;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Database\TablePrefix;
 use Doctrine\DBAL\Connection;
@@ -21,8 +21,7 @@ final readonly class PackageAssetRebuildDispatcher
         private MessageBusInterface $messageBus,
         private WorkflowResultMessageReporterInterface $messageReporter,
         private ?Connection $connection = null,
-    )
-    {
+    ) {
     }
 
     /**
@@ -37,8 +36,8 @@ final readonly class PackageAssetRebuildDispatcher
         if (!$this->messengerStorageReady()) {
             return $this->report(WorkflowResult::failed([
                 Message::warning(
-                    MessageCode::PACKAGE_ASSET_REBUILD_QUEUE_FAILED,
-                    MessageKey::PACKAGE_ASSET_REBUILD_QUEUE_FAILED,
+                    PackageMessageCode::PACKAGE_ASSET_REBUILD_QUEUE_FAILED,
+                    PackageMessageKey::PACKAGE_ASSET_REBUILD_QUEUE_FAILED,
                     ['%trigger%' => $trigger],
                     ['trigger' => $trigger, 'environment' => $environment, 'reason' => 'messenger_storage_unavailable'],
                 ),
@@ -54,8 +53,8 @@ final readonly class PackageAssetRebuildDispatcher
         } catch (Throwable $error) {
             return $this->report(WorkflowResult::failed([
                 Message::exception(
-                    MessageCode::PACKAGE_ASSET_REBUILD_QUEUE_FAILED,
-                    MessageKey::PACKAGE_ASSET_REBUILD_QUEUE_FAILED,
+                    PackageMessageCode::PACKAGE_ASSET_REBUILD_QUEUE_FAILED,
+                    PackageMessageKey::PACKAGE_ASSET_REBUILD_QUEUE_FAILED,
                     ['%trigger%' => $trigger],
                     [
                         'trigger' => $trigger,
@@ -81,8 +80,8 @@ final readonly class PackageAssetRebuildDispatcher
             'deferred' => true,
         ], [
             Message::create(
-                MessageCode::PACKAGE_ASSET_REBUILD_QUEUED,
-                MessageKey::PACKAGE_ASSET_REBUILD_QUEUED,
+                PackageMessageCode::PACKAGE_ASSET_REBUILD_QUEUED,
+                PackageMessageKey::PACKAGE_ASSET_REBUILD_QUEUED,
                 ['%trigger%' => $trigger],
                 ['trigger' => $trigger, 'environment' => $environment, 'deferred' => true],
                 MessageLevel::Success,

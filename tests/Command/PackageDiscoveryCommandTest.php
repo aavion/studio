@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Command;
 
 use App\Command\PackageDiscoveryCommand;
+use App\Core\Console\ConsoleResultRenderer;
 use App\Core\Package\PackageDiscovery;
 use App\Core\Package\PackageDiscoveryDispatcher;
 use App\Core\Package\PackageDiscoveryMessage;
@@ -32,7 +33,7 @@ final class PackageDiscoveryCommandTest extends KernelTestCase
     {
         self::bootKernel();
 
-        $this->projectDir = $this->createTemporaryDirectory('studio-package-discovery-command');
+        $this->projectDir = $this->createTemporaryDirectory('system-package-discovery-command');
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $this->connection = $this->entityManager->getConnection();
         $this->connection->beginTransaction();
@@ -107,6 +108,7 @@ final class PackageDiscoveryCommandTest extends KernelTestCase
                 new NullWorkflowResultMessageReporter(),
             ),
             new IdentityTranslator(),
+            new ConsoleResultRenderer(),
         );
     }
 }

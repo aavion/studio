@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Operation\Live;
 
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\ActionQueue;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Package\Install\PackageZipApplyAction;
 use App\Core\Package\Install\PackageZipInstaller;
 use App\Core\Workflow\WorkflowResult;
@@ -36,8 +36,8 @@ final readonly class PackageInstallApplyLiveOperationProvider implements LiveOpe
         if (!is_string($installId) || '' === trim($installId) || !is_string($package) || '' === trim($package)) {
             return WorkflowResult::invalid([
                 Message::warning(
-                    MessageCode::E_INVALID_ARGUMENT,
-                    MessageKey::OPERATION_INVALID_PAYLOAD,
+                    CommonMessageCode::E_INVALID_ARGUMENT,
+                    OperationMessageKey::OPERATION_INVALID_PAYLOAD,
                     ['%operation%' => $this->operation()],
                     ['operation' => $this->operation(), 'payload_keys' => array_keys($payload)],
                 ),

@@ -1,0 +1,16 @@
+<section class="system-panel">
+    <h2>{{ 'setup.review.title'|trans }}</h2>
+    <p class="system-muted">{{ 'setup.review.text'|trans }}</p>
+    <dl class="system-definition-list">
+        <dt>{{ 'setup.form.language.label'|trans }}</dt><dd>{{ setup_values.language }}</dd>
+        <dt>{{ 'setup.form.site_title.label'|trans }}</dt><dd>{{ setup_values.site_title }}</dd>
+        <dt>{{ 'setup.form.default_uri.label'|trans }}</dt><dd>{{ setup_values.default_uri }}</dd>
+        <dt>{{ 'setup.form.registration_mode.label'|trans }}</dt><dd>{{ ('admin.settings.options.registration.' ~ setup_values.registration_mode)|trans }}</dd>
+        <dt>{{ 'setup.form.route_prefixes_enabled.label'|trans }}</dt><dd>{{ (setup_values.route_prefixes_enabled ? 'setup.review.enabled' : 'setup.review.disabled')|trans }}</dd>
+        <dt>{{ 'setup.form.statistics_enabled.label'|trans }}</dt><dd>{{ (setup_values.statistics_enabled ? 'setup.review.enabled' : 'setup.review.disabled')|trans }}</dd>
+        <dt>{{ 'setup.form.database_driver.label'|trans }}</dt><dd>{{ ('setup.form.database_driver.options.' ~ setup_values.database_driver)|trans }}</dd>
+        <dt>{{ 'setup.form.database_prefix.label'|trans }}</dt><dd>{{ setup_values.database_prefix ?: 'setup.review.none'|trans }}</dd>
+        <dt>{{ 'setup.form.admin_username.label'|trans }}</dt><dd>{{ setup_values.admin_username }}</dd>
+        <dt>{{ 'setup.form.admin_email.label'|trans }}</dt><dd>{{ setup_values.admin_email }}</dd>
+    </dl>
+</section>

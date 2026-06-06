@@ -31,12 +31,12 @@ final readonly class UserFlowConfig
 
     public function menuEnabled(): bool
     {
-        return true === $this->config->get(self::MENU_ENABLED_KEY, true);
+        return true === ($this->config->get(self::MENU_ENABLED_KEY) ?? true);
     }
 
     public function menuSortOrder(): int
     {
-        $sortOrder = $this->config->get(self::MENU_SORT_ORDER_KEY, 900);
+        $sortOrder = $this->config->get(self::MENU_SORT_ORDER_KEY) ?? 900;
 
         return is_int($sortOrder) ? $sortOrder : 900;
     }
@@ -48,12 +48,12 @@ final readonly class UserFlowConfig
 
     public function usernameChangeEnabled(): bool
     {
-        return true === $this->config->get(self::USERNAME_CHANGE_ENABLED_KEY, false);
+        return true === ($this->config->get(self::USERNAME_CHANGE_ENABLED_KEY) ?? false);
     }
 
     public function registrationMode(): string
     {
-        $mode = $this->config->get(self::REGISTRATION_MODE_KEY, self::REGISTRATION_DISABLED);
+        $mode = $this->config->get(self::REGISTRATION_MODE_KEY) ?? self::REGISTRATION_DISABLED;
 
         return in_array($mode, [
             self::REGISTRATION_DISABLED,
@@ -64,7 +64,7 @@ final readonly class UserFlowConfig
 
     public function defaultAclGroupIdentifier(): ?string
     {
-        $identifier = $this->config->get(self::DEFAULT_ACL_GROUP_KEY, '');
+        $identifier = $this->config->get(self::DEFAULT_ACL_GROUP_KEY) ?? '';
 
         return is_string($identifier) && '' !== trim($identifier) ? trim($identifier) : null;
     }
@@ -76,7 +76,7 @@ final readonly class UserFlowConfig
 
     public function accountLinkTtlHours(): int
     {
-        $hours = $this->config->get(self::ACCOUNT_LINK_TTL_HOURS_KEY, self::DEFAULT_ACCOUNT_LINK_TTL_HOURS);
+        $hours = $this->config->get(self::ACCOUNT_LINK_TTL_HOURS_KEY) ?? self::DEFAULT_ACCOUNT_LINK_TTL_HOURS;
 
         if (!is_int($hours)) {
             return self::DEFAULT_ACCOUNT_LINK_TTL_HOURS;
@@ -87,7 +87,7 @@ final readonly class UserFlowConfig
 
     public function deletedUserRetentionDays(): int
     {
-        $days = $this->config->get(self::DELETED_USER_RETENTION_DAYS_KEY, self::DEFAULT_DELETED_USER_RETENTION_DAYS);
+        $days = $this->config->get(self::DELETED_USER_RETENTION_DAYS_KEY) ?? self::DEFAULT_DELETED_USER_RETENTION_DAYS;
 
         if (!is_int($days)) {
             return self::DEFAULT_DELETED_USER_RETENTION_DAYS;
@@ -108,7 +108,7 @@ final readonly class UserFlowConfig
 
     private function normalizedEmailSetting(string $key): ?string
     {
-        $email = $this->config->get($key, '');
+        $email = $this->config->get($key) ?? '';
 
         if (!is_string($email)) {
             return null;

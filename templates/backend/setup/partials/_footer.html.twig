@@ -1,0 +1,39 @@
+<div class="system-backend-setup-footer">
+    <nav class="system-backend-setup-progress" aria-label="{{ 'setup.navigation.label'|trans }}">
+        <ol>
+            {% for step in setup_steps %}
+                {% set unlocked = loop.first or setup_steps[loop.index0 - 1] in setup_completed_steps %}
+                {% set active = step == setup_step %}
+                {% set completed = step in setup_completed_steps %}
+                <li class="{{ completed ? 'is-completed' : (active ? 'is-active' : 'is-open') }}">
+                    {% if unlocked %}
+                        <a href="{{ path('backend_setup_step', {step}) }}"{% if active %} aria-current="step"{% endif %}>
+                            <span aria-hidden="true">{{ completed ? '✓' : '' }}</span>
+                            {{ ('setup.steps.' ~ step)|trans }}
+                        </a>
+                    {% else %}
+                        <span>
+                            <span aria-hidden="true"></span>
+                            {{ ('setup.steps.' ~ step)|trans }}
+                        </span>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <div class="system-form-actions">
+        {% if setup_previous_step %}
+            <a class="system-backend-setup-nav-button is-back" href="{{ path('backend_setup_step', {step: setup_previous_step}) }}" aria-label="{{ 'setup.navigation.back'|trans }}" title="{{ 'setup.navigation.back'|trans }}">
+                <span class="ti ti-arrow-left" aria-hidden="true"></span>
+                <span class="system-visually-hidden">{{ 'setup.navigation.back'|trans }}</span>
+            </a>
+        {% endif %}
+        {% if setup_step != 'result' %}
+            <button class="system-backend-setup-nav-button is-next" type="submit" {% if setup_step == 'review' %}name="_setup_action" value="apply"{% endif %} aria-label="{{ (setup_step == 'review' ? 'setup.form.apply' : 'setup.navigation.next')|trans }}" title="{{ (setup_step == 'review' ? 'setup.form.apply' : 'setup.navigation.next')|trans }}">
+                <span class="ti {{ setup_step == 'review' ? 'ti-check' : 'ti-arrow-right' }}" aria-hidden="true"></span>
+                <span class="system-visually-hidden">{{ (setup_step == 'review' ? 'setup.form.apply' : 'setup.navigation.next')|trans }}</span>
+            </button>
+        {% endif %}
+    </div>
+</div>

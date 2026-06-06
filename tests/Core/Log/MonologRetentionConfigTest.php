@@ -9,12 +9,12 @@ use Symfony\Component\Yaml\Yaml;
 
 final class MonologRetentionConfigTest extends TestCase
 {
-    public function testStudioFileChannelsKeepThirtyDailyFiles(): void
+    public function testBuiltInFileChannelsKeepThirtyDailyFiles(): void
     {
         $config = Yaml::parseFile(dirname(__DIR__, 3).'/config/packages/monolog.yaml');
         $handlers = $config['monolog']['handlers'] ?? [];
 
-        foreach (['studio_message', 'studio_audit', 'studio_access'] as $handler) {
+        foreach (['message', 'audit', 'access'] as $handler) {
             self::assertSame('rotating_file', $handlers[$handler]['type'] ?? null);
             self::assertSame(30, $handlers[$handler]['max_files'] ?? null);
         }

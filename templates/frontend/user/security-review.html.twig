@@ -3,21 +3,21 @@
 {% block title %}{{ 'ui.user.security_review.title'|trans }}{% endblock %}
 
 {% block frontend_body %}
-    <section class="studio-auth-panel">
+    <section class="system-frontend-auth-panel">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             title: 'ui.user.security_review.title'|trans,
             subtitle: confirm|default(false) ? 'ui.user.security_review.confirm_subtitle'|trans : (locked ? 'ui.user.security_review.locked_subtitle'|trans : 'ui.user.security_review.unavailable_subtitle'|trans),
         } only %}
         {% for error in errors|default([]) %}
-            <p class="studio-auth-error">{{ error|trans }}</p>
+            <p class="system-frontend-auth-error">{{ error|trans }}</p>
         {% endfor %}
-        <p class="studio-auth-notice">
+        <p class="system-frontend-auth-notice">
             {{ confirm|default(false) ? 'ui.user.security_review.confirm_message'|trans : (locked ? 'ui.user.security_review.locked_message'|trans : 'ui.user.security_review.unavailable_message'|trans) }}
         </p>
         {% if confirm|default(false) and account_token is not null %}
-            <form method="post" class="studio-auth-form">
+            <form method="post" class="system-frontend-auth-form">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_security_review_' ~ account_token.uid) }}">
-                <button class="studio-button studio-button-danger" type="submit">{{ 'ui.user.security_review.confirm_submit'|trans }}</button>
+                <button class="system-button system-button-danger" type="submit">{{ 'ui.user.security_review.confirm_submit'|trans }}</button>
             </form>
         {% endif %}
     </section>

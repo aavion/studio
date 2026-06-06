@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Core\Access\AccessMessageKey;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
 use App\Core\Validation\EmailAddress;
 use App\Core\Validation\Identifier;
 use App\Core\Validation\Uid;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\SecurityMessageKey;
 use App\Security\UserRole;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
@@ -212,7 +213,7 @@ class AccountToken
     private static function assertTokenHash(string $tokenHash): string
     {
         if (1 !== preg_match('/^[a-f0-9]{64}$/', $tokenHash)) {
-            throw MessageException::invalidArgument(MessageKey::ACCOUNT_TOKEN_HASH_INVALID);
+            throw MessageException::invalidArgument(SecurityMessageKey::ACCOUNT_TOKEN_HASH_INVALID);
         }
 
         return $tokenHash;
@@ -234,7 +235,7 @@ class AccountToken
 
         foreach ($groupIdentifiers as $identifier) {
             if (!is_string($identifier)) {
-                throw MessageException::invalidArgument(MessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
+                throw MessageException::invalidArgument(AccessMessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
                     '%identifier%' => (string) $identifier,
                 ]);
             }

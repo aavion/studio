@@ -55,7 +55,7 @@ final class PublicContentAccessTest extends WebTestCase
 
             self::assertResponseStatusCodeSame(401);
             self::assertSelectorTextContains('h1', 'Sign in');
-            self::assertSelectorTextContains('.studio-auth-notice', 'This content is only available after signing in with sufficient access.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'This content is only available after signing in with sufficient access.');
         } finally {
             $connection->update('content_item', ['view_min_level' => AccessLevel::PUBLIC], ['slug' => 'home']);
         }

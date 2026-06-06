@@ -22,10 +22,10 @@ export default class extends Controller {
             const input = document.createElement('input');
             const text = document.createElement('span');
 
-            label.className = 'studio-backend-checkbox-label';
+            label.className = 'system-backend-checkbox-label';
             label.setAttribute('for', optionId);
             input.id = optionId;
-            input.className = 'studio-backend-checkbox';
+            input.className = 'system-backend-checkbox';
             input.type = 'checkbox';
             input.name = 'groups[]';
             input.value = group.identifier;

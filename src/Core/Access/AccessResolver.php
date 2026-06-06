@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Core\Access;
 
+use App\Core\Access\AccessMessageCode;
+use App\Core\Access\AccessMessageKey;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\MessageReporterInterface;
 
@@ -67,10 +67,10 @@ final class AccessResolver
         ];
 
         if ($granted) {
-            return $this->report(Message::debug(MessageCode::ACCESS_GRANTED, MessageKey::ACCESS_GRANTED, $parameters, $context));
+            return $this->report(Message::debug(AccessMessageCode::ACCESS_GRANTED, AccessMessageKey::ACCESS_GRANTED, $parameters, $context));
         }
 
-        return $this->report(Message::create(MessageCode::ACCESS_DENIED, MessageKey::ACCESS_DENIED, $parameters, $context, MessageLevel::Warning));
+        return $this->report(Message::create(AccessMessageCode::ACCESS_DENIED, AccessMessageKey::ACCESS_DENIED, $parameters, $context, MessageLevel::Warning));
     }
 
     private function report(Message $message): Message

@@ -3,24 +3,24 @@
 {% block title %}{{ 'ui.user.register.title'|trans }}{% endblock %}
 
 {% block frontend_body %}
-    <section class="studio-auth-panel">
+    <section class="system-frontend-auth-panel">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             title: 'ui.user.register.title'|trans,
             subtitle: 'ui.user.register.subtitle'|trans,
         } only %}
         {% if success|default(false) %}
-            <p class="studio-auth-notice">
+            <p class="system-frontend-auth-notice">
                 {{ requires_approval|default(false) ? 'ui.user.register.success_approval'|trans : 'ui.user.register.success'|trans }}
             </p>
         {% else %}
             {% if errors|default([]) is not empty %}
-                <ul class="studio-form-errors">
+                <ul class="system-form-errors">
                     {% for error in errors %}
                         <li>{{ error|trans }}</li>
                     {% endfor %}
                 </ul>
             {% endif %}
-            <form method="post" class="studio-auth-form">
+            <form method="post" class="system-frontend-auth-form">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_register') }}">
                 {% include '@frontend/partials/forms/fields/email.html.twig' with {
                     name: 'email',

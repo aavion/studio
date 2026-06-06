@@ -24,7 +24,7 @@ final class AccessStatisticsSnapshotProviderTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-access-statistics-provider');
+        $this->root = $this->createTemporaryDirectory('system-access-statistics-provider');
     }
 
     protected function tearDown(): void
@@ -36,7 +36,7 @@ final class AccessStatisticsSnapshotProviderTest extends TestCase
     {
         $connection = $this->connection();
         $connection->insert('access_statistic_event', [
-            'uid' => '00000000-0000-0000-0000-000000000001',
+            'uid' => '00000000-0000-7000-8000-000000000001',
             'occurred_at' => '2026-05-27 10:00:00',
             'request_id' => 'request-a',
             'visitor_id' => 'visitor-a',

@@ -41,7 +41,7 @@ final class DeferredMessengerDrainTest extends TestCase
         self::assertContains('async', $starter->starts[0]['command']);
         self::assertContains('--env=test', $starter->starts[0]['command']);
         self::assertStringEndsWith('/var/log/test/messenger-drain.log', $this->portablePath($starter->starts[0]['output_path']));
-        self::assertStringEndsWith('/var/cache/test/studio-messenger-drain.pid', $this->portablePath($starter->starts[0]['pid_path']));
+        self::assertStringEndsWith('/var/cache/test/system-messenger-drain.pid', $this->portablePath($starter->starts[0]['pid_path']));
 
         $this->removeDirectory($projectDir);
     }
@@ -92,7 +92,7 @@ final class DeferredMessengerDrainTest extends TestCase
         self::assertContains('--json', $starter->starts[0]['command']);
         self::assertContains('--env=test', $starter->starts[0]['command']);
         self::assertStringEndsWith('/var/log/test/scheduler-web-trigger.log', $this->portablePath($starter->starts[0]['output_path']));
-        self::assertStringEndsWith('/var/cache/test/studio-scheduler-web-trigger.pid', $this->portablePath($starter->starts[0]['pid_path']));
+        self::assertStringEndsWith('/var/cache/test/system-scheduler-web-trigger.pid', $this->portablePath($starter->starts[0]['pid_path']));
 
         $this->removeDirectory($projectDir);
     }

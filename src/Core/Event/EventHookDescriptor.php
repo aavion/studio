@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Core\Event;
 
-use App\Core\Message\MessageCode;
+use App\Core\Event\EventMessageCode;
+use App\Core\Event\EventMessageKey;
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
 
 final readonly class EventHookDescriptor
 {
@@ -89,7 +89,7 @@ final readonly class EventHookDescriptor
 
     private function invalidDefinition(string $eventClass, string $field): MessageException
     {
-        return MessageException::forMessage(MessageCode::EVENT_HOOK_INVALID, MessageKey::EVENT_HOOK_INVALID, [
+        return MessageException::forMessage(EventMessageCode::EVENT_HOOK_INVALID, EventMessageKey::EVENT_HOOK_INVALID, [
             '%event%' => $eventClass,
         ], [
             'event' => $eventClass,

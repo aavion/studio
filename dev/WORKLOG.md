@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-06-05  
+> **Updated**: 2026-06-06  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -58,99 +58,90 @@
 - ! Keep roadmap sub-items aligned with feature drafts when implementation changes scope, order, or dependencies. Last reviewed: 2026-05-30.
 - ! Before the first stable `1.0.0` release, keep Doctrine migrations consolidated into one current baseline migration.
 - ! Prefer repository/database queries over full-table PHP filtering for lists, pagination, ACL impact checks, and other scalable read paths.
+- [ ] Keep database-prefix coverage hardened by keeping Doctrine metadata self-checked against `TablePrefix::TABLES`, validating prefixed ORM metadata, and covering raw DBAL insert/update/join/delete prefix rewriting.
 - ! Keep Symfony service discovery narrow so DTOs, value objects, messages, events, enums, and other non-services do not bloat the container.
 - [ ] Finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.
+- [x] Migrate inspectable/user-facing native CSS classes, template identifiers, Twig helper names, browser-storage keys, and package-facing generated asset names from hardcoded `studio` branding toward the documented `system` owner and package-slug namespace convention; keep runtime branding sourced from `.manifest`, branding assets, and branding tokens.
+- [x] Review existing `system` and `studio` identifiers one more time after the naming migration and keep `system` only where it protects a shared namespace; prefer plain domain names such as `visitor_id` where ownership is already clear.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
 - [ ] Before production readiness, review public package/developer-facing class, interface, function, and Twig helper names for clarity and ergonomics; decide whether to rename directly or provide stable aliases so extension APIs read as intentional rather than provisional.
+- [x] Before PR review for the audit branch, repeat the full project-rules drift audit against the optimized branch state, including namespace/class placement, whether finding decisions were fully applied where possible, and whether the implementation covered related paths beyond the obvious candidates.
+- [ ] Audit follow-up: add a durable package lifecycle operation journal/coordinator for multi-step activation, deactivation, install, rollback, and cleanup flows.
+- [ ] Audit follow-up: design copied-session plus copied-visitor-cookie risk scoring in the Security branch; current hard session binding intentionally covers visitor changes, not complete cookie-pair duplication.
+- [ ] Audit follow-up: implement remember-me with Symfony-style persistent server-side tokens, visitor binding, explicit revocation, token rotation, and audit signals in the Security branch.
+- [ ] Audit follow-up: replace the debug account-link mail/message-log delivery stub with the real Mailer delivery contract and a dedicated Mail Message/API catalogue.
+- [ ] Audit follow-up: decide whether optional branding packages need capabilities beyond `system-template`; package CSS class namespace validation is now enforced for package-owned selectors.
 - [ ] Evaluate whether the documented minimum memory requirement should become 256M after PHPUnit 13.2/full-suite runs needed a higher CLI memory limit; do not fix this requirement until setup/init/lint/runtime memory behavior has been reviewed across target hosting platforms.
 
 ## Session Logs
-**Usage:** Create a new log-entry at the top for every coding session roughly describing every change that's being committed.
+**Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
+
+### 2026-06-06
+- Made APP_SECRET rotation handling idempotent for the synchronous recovery guard by storing the new environment fingerprint after one recovery attempt even when owner reset URLs cannot all be generated; audit context now records owner and issued-link counts, and failed owner submissions now persist owner-bound reset tokens, write a private `var/recovery/{APP_ENV}/` emergency recovery file, and emit a message-log warning with `bin/setup --reset-password` plus affected owner context.
+- Added package CSS target class namespace validation and template-reference scope validation so installable package styles must define classes in their package/scope prefix while still using external classes as context, and package templates can reference only `@root` plus their own template scope; updated package draft, message catalogue, translations, class map, fixtures, and focused validator tests.
+- Fixed PR CI regressions by keeping pending visitor-cookie IDs stable for session binding when no visitor identity store is available, binding newly issued visitor cookies to recent IP/user-agent fallback identities to avoid first-cookie double counting, and normalized console renderer output assertions across Windows CRLF and Unix LF line endings.
+- Migrated native inspectable CSS classes, template IDs, and CSS tokens from `studio-*`/`--studio-*` to branding-neutral `system-*`/`--system-*`; aligned template CSS with root/frontend/backend/provider scope rules, moved Demo package-specific selectors to `demo-module-*`/`demo-module-frontend-*`, updated package templates/translations, Tailwind inputs, tests, and audit notes accordingly.
+- Renamed built-in Monolog channels and file handlers to descriptive `message`, `audit`, and `access` names, moved their rotating log files under `var/log/{APP_ENV}/`, updated the Admin Logs source registry, webserver sample log name, tests, class map, and logging documentation.
+- Migrated native Symfony console commands from product-prefixed `studio:*` names to branding-neutral domain names such as `assets:rebuild`, `packages:discover`, `operations:run`, `scheduler:run`, `account-tokens:cleanup`, and `acl-groups:apply`; updated setup subprocesses, live-operation launches, scheduler task definitions, package command examples, docs, class map, audit notes, and tests accordingly.
+- Prepared the branding-neutral naming migration plan in `.codex/branding-naming-migration-plan-2026-06-06.md`, including CSS/template namespace rules, neutral CLI command candidates, system-template rebranding direction, log path migration, package validation follow-up, and naming interview candidates to resolve before broad edits.
+- Documented the branding-neutral technical naming decision across project rules, system-theme/package/logging drafts, and audit manual snippets; recorded follow-ups for CSS/template/helper/CLI/log-path migration, and added a short-lived visitor identity store so cookie hashes and IP/user-agent fallback hashes stay separate while first no-cookie requests can bridge to the first issued random visitor cookie.
+- Continued the second project-readiness audit pass through Content/Scheduler/Security/Setup, setup-template/assets, package lifecycle/registry/validation, entity modularity, and account-controller follow-ups, reported broken content schema custom Twig through the Message layer before fallback, completed the Scheduler domain review notes, removed separate clear-token context logging from the account-link message-log delivery stub while keeping action-url based local delivery until real mailer delivery exists, split CLI setup database input resolution out of the top-level CLI input factory, split the web setup wizard render target into focused backend setup partials, renamed the operation-overlay resumable-run browser storage key to the `system` owner prefix, completed the Assets/Templates/Translations audit classification, moved admin invitation/account-token actions into Security workflow services, extracted public account-link acceptance mutations into a Security service, moved admin account update/password-reset mutations into Security services, moved authenticated user password-change, account-closure, and profile-locale workflows into focused services, split package activation/removal lifecycle planning, status storage, finalization, filesystem removal, and purge cleanup into focused services, split package scheduler cron inspection into call-scanner, import-resolver, and argument-parser collaborators, split package registry sync finalization plus dependency metadata reading into focused services, and moved extension package identity validation into a package-owned helper.
+- Completed the second project-readiness audit final gate by rechecking large-file inventory, hard exceptions, internal `studio` naming, hardcoded language variants, documentation drift, platform notes, and deferred lifecycle/security/mail decisions in `.codex/audit-project-readiness-second-pass-2026-06-06.md`.
+- Started the second project-readiness audit pass in `.codex/audit-project-readiness-second-pass-2026-06-06.md`, captured a fresh optimized-branch inventory, renamed internal system-owned technical identifiers away from `studio` to `system`, and converted setup input/setup-step failure boundaries to domain-owned Message-layer diagnostics.
+- Rechecked feature drafts and manual snippets against the current audit-branch behavior for visitor/session identity, package translation aggregation, message catalogues, public hook providers, config defaults, setup, scheduler, admin read models, and removed domain READMEs; fixed stale environment-less runtime translation paths in drafts.
+- Split controller tests toward workflow-owned files for Admin Scheduler, Admin User Review, User Profile, and User API-key behavior; added shared authenticated-client and fixture traits, stabilized visitor-cookie/session handling for BrowserKit logins, and removed a redundant topbar action test that could leak cache/asset state into later controller tests.
+- Split admin user, group, and review list request parsing into query value objects, kept the existing factories focused on read-model/view-model assembly, and explicitly excluded those request-query values from Symfony service discovery so non-service values do not bloat the container.
+- Tightened the project rule and catalogue test for namespace/scope-bound message key/code constants and aligned the user username validation key name to the stricter convention.
+- Removed temporary `src/**/README.md` orientation files so domain ownership is documented through the class map, drafts, manuals, and audit log instead of shallow duplicate summaries.
+- Split public hook descriptors into domain-owned event hook providers for content, navigation, package, view, and view-injection hooks while keeping `PublicEventHookRegistry` as the central package-contract aggregator.
+- Split message code/key constants into domain-owned catalogues aggregated by central `MessageCode`/`MessageKey` registries, migrated call sites to owning catalogues, and documented/tested scope-bound naming for future system and package message catalogues.
+- Shared setup/runtime language catalogue discovery through `LanguageCatalogueDiscovery` so setup and application locale availability use the same dynamic translation-source/runtime scan while setup keeps its DB-free default-language fallback.
+- Added authenticated session visitor binding so successful logins and legacy authenticated sessions bind to the current first-party visitor ID, while established sessions with a changed visitor signal are audited, invalidated, and redirected to login to stop copied session cookies from staying usable.
+- Reworked visitor identity from IP/user-agent HMACs to a signed first-party `system_visitor` cookie with compact 128-bit stored visitor IDs, keeping Visitor and IP signals separate for future rate limiting and blocking.
+- Hardened access request tracing so internal request IDs are always generated by the application and safe inbound request/correlation headers are stored only as optional access-log correlation metadata.
+- Split the web setup wizard controller into focused setup services for step transitions, protected session-state persistence, default URI inference, and database test execution while keeping setup apply/live-operation dispatch in the controller adapter.
+- Split ACL group impact cleanup into a tagged provider registry so users, account tokens, content items, schema versions, and site menu items own their group-reference impact and cleanup behavior behind the existing admin review/apply flow.
+- Added package file and PHP capability policy foundations to validation so installable packages block clearly unsafe payload paths, block direct filesystem/process/network/environment PHP access, surface non-blocking warnings for development-only payloads, and document the trusted-code/package-structure boundary for package developers.
+- Split package ZIP installation so upload staging, archive extraction, filesystem mutation, payload validation, staged manifest reading, registry/status access, version gating, dependency preflight, rollback, reactivation planning, verification, and apply execution live in focused services behind the existing public installer facade.
+- Split backend admin route handling so package install/detail/lifecycle and operation maintenance/detail/continuation routes live in focused controllers, dynamic admin view context is built by a dedicated provider, backend maintenance actions share one responder, and admin form CSRF checks use a shared validator.
+- Split generated form submission into separate value casting, field validation, and centralized error-key services while keeping the existing settings-form API and translation keys stable.
+- Centralized stored ACL group identifier normalization in the existing `AccessRule` value object and aligned content item, schema version, and menu item ACL setters to the shared rule path.
+- Split `ContentItem` into a small Doctrine aggregate facade plus focused routing, localization, access-rule, metadata, and revision-state traits with shared input validation, preserving existing columns and public behavior.
+- Split live-operation run handling into focused creator, storage, progress writer, presenter, lifecycle/cleanup, runner supervisor, and process-inspection services while keeping `LiveOperationRunStore` as the compatibility facade under the context-size target.
+- Split setup execution internals so `SetupRunner` stays under the context target and delegates runtime subprocesses, database-ready environment scoping, nested operation-message extraction, and run-input policy validation to focused services.
+- Split setup preflight internals into a thin checklist facade plus focused Composer, Tailwind, process probe, row factory, requirement catalog, detail-row builder, and PHP CLI failure-key mapper services.
+- Compacted branch-external worklog sessions into `dev/WORKLOG_HISTORY.md` and shortened the recent pre-audit history block so the active worklog stays focused on the current audit branch.
 
 ### 2026-06-05
-- Addressed the latest review findings by preserving real Tailwind build failures and honoring supported URL locale prefixes before stored language preferences.
-- Refreshed the backend scheduler controller test login before the Windows-sensitive detail/form segment to keep the full-suite mock session stable across compatibility runners.
-- Centralized synthetic backend admin test logins behind a reboot-stable BrowserKit helper after Linux ARM CI exposed another session loss on the settings validation form.
-- Addressed review findings by making request, mail, and profile locale selection skip unsupported candidates, keeping setup dry-run command planning independent from throwing PHP CLI resolution, and translating PHP CLI validation failure reasons in setup preflight output.
-- Added an Admin Settings System Information diagnostic page with current preflight status, cross-platform server/PHP/Composer summaries, reduced PHP configuration output, GD/Imagick capability reporting, and an explicit `ext-gd` platform requirement while keeping Imagick optional for hosting portability.
-- Applied the P4 drift-audit checkpoint to the current branch and aligned the System Information Composer diagnostic with the managed PHP CLI resolver instead of invoking bundled Composer through `PHP_BINARY` directly.
-- Hardened the shared backend controller test user helper so full-suite runs recover a reusable admin test account back to an active status before logging it in, covering the Linux ARM CI session-refresh failure.
-- Made the logout confirmation controller test deterministic by using Symfony's test login helper for the already-covered authenticated session setup.
-- Aligned pull request verification on a PHP 8.5 Linux lint baseline plus PHP 8.4 compatibility jobs for macOS, Windows, and Linux ARM, added curl, JSON, and XML as explicit Composer platform requirements, and covered required-extension preflight failure naming.
-- Hardened Windows cleanup retries after CI showed that directory symlinks can fail `is_dir()` checks while still requiring `rmdir()`, so test-suite and package cleanup helpers now try the Windows directory-link removal path directly before falling back to `unlink()`.
-- Audited additional Windows-sensitive filesystem and process helpers, replacing hardcoded lint null-device usage and making recursive cleanup paths handle Windows directory links safely across init, package assets, package ZIP installs, translation runtime aggregation, operation removal, and test helpers.
-- Finished the remaining Windows CI hardening for live-operation detached startup, package-source path assertions, setup CLI driver-default tests, and Windows directory-link cleanup.
-- Hardened Windows PHPUnit compatibility by adding Windows-aware detached Messenger drain startup, platform-safe setup SQLite path handling, symlink-safe test cleanup, and portable path/executable-bit assertions for cross-platform CI.
-- Made the `bin/init` command runner Windows-safe by streaming child-process output directly instead of polling non-blocking pipes, and by quietly falling back when a system Composer executable is not available.
-- Expanded pull request verification to run the full PHPUnit suite on Ubuntu, macOS, and Windows with PHP 8.4.1 while keeping linting on the Ubuntu runner.
-- Updated the pull request verification workflow to Node 24-compatible GitHub Actions versions for checkout and dependency caching, and aligned setup subprocess/PHP CLI resolver environment handling on the shared Dotenv-aware child-process filter so explicit web request variables cannot be forwarded accidentally.
-- Added a cache-first PHP CLI manager around `APP_DEFAULT_PHP_BINARY`, with validation for CLI SAPI, project PHP/version/extension requirements, project console readability, controlled preference refreshes, and Dotenv-aware child-process environment forwarding that still strips web request context.
-- Reviewed `feat-php-cli-resolver` against `dev-latest` and hardened the scheduler wrapper so its console child process uses the shared web-context environment filter instead of inheriting request/server variables.
-- Updated composer and dependencies to their latest stable version.
+- Removed the unused optional string-list helper from `ContentItem`; content UID validation already uses the shared `Uid::assert()` helper.
+- Split translation catalogue aggregation into source collection, YAML merge/collision handling, and runtime-directory writer services behind the existing aggregate facade/action.
+- Documented deferred audit boundaries for visitor/session hardening, custom Twig trust policy, public API content DTOs, and the debug account-link mail stub that cannot be production-hardened until real Symfony Mailer delivery exists.
+- Split Admin Logs browsing into a small facade plus source registry, reverse-line reader, entry filter, entry presenter, and pagination helpers.
+- Added a shared setup input normalizer for CLI/web database driver, URL, prefix, boolean, and default admin-email handling while leaving step-scoped web validation and interactive CLI prompts transport-specific.
+- Split setup database seeding into a small facade plus focused config, admin-account, initial-content, and state-marker writers while keeping seed data centralized in `SetupDefaultSeed`.
+- Split package lifecycle admin handling into a thin facade plus focused detail-provider, review-provider, and action-handler services so package metadata presentation and lifecycle mutations no longer share one class.
+- Split navigation building internals into focused repository, access-filter, URL-resolver, and tree/slice services while preserving `NavigationBuilder::build()` and `NavigationBuilder::collectItems()` as the public facade for themes and packages.
+- Added a shared console workflow result renderer and migrated package lifecycle plus ACL group apply commands to the common issue/message and exit-code rendering path.
+- Moved scheduler run locking behind Symfony Lock while keeping the existing scheduler lock adapter and contention behavior intact for cron/API callers.
+- Replaced the custom UUID generator with Symfony UID-backed UUIDv7 generation, centralized UID validation through Symfony's UUID parser, normalized UUID-shaped fixtures to valid RFC UUIDs, and hardened package ZIP installer test cleanup so discovery side effects do not leak into later package lifecycle tests.
+- Added a central context-labeled secret payload protector for `APP_SECRET`-derived reversible payloads and migrated setup live-operation secret payload protection onto it as the first low-risk path.
+- Migrated API key lookup hashes and reversible encrypted payloads onto the shared secret payload protector, including context labels, prefix-bound payload reveal, and aligned seeded test credentials.
+- Clarified project rules for `system`-owned technical naming and structured Message-layer diagnostics, then aligned the new secret payload protector with translated system message keys.
+- Added a final audit roadmap gate for Message-layer diagnostics, translation-key coverage, deliberate hard throws, and `system` owner naming compliance.
+- Added a project rule and final audit gate for dynamic language handling: runtime logic and administrative forms should avoid hardcoded language variants, while intentionally localized Content entities remain allowed to store per-language variants.
+- Hardened access request id handling so internal request IDs stay application-generated, short safe upstream request/correlation headers are stored separately as correlation metadata, and internal request metadata attributes use the `system` owner prefix.
+- Extracted a shared cross-platform detached process starter for Live Operations and deferred Messenger drains so output files, PID markers, command quoting, and filtered Dotenv-aware environments share one boundary.
+- Added a central locale preference resolver for request, profile, and mail flows so dynamically discovered languages, stale user settings, session/request fallbacks, and default-language behavior share one supported-language policy.
+- Flattened ACL group names from fixed English/German maps into one generic administrative name, updated group forms/review/apply flows, and made setup home content seed its available language from setup input rather than a fixed language list.
+- Added a `PackageContributions` runtime loader builder so package entry points can group view, settings, and scheduler contributions through named helper methods instead of anonymous mixed arrays.
+- Split the monolithic Twig helper extension into context, runtime, and admin helper families while preserving the existing Twig function/filter names.
+- Added a response-header hook policy so public package hooks can mutate ordinary safe headers while invalid values and cookie, authentication, transport, content-length, or core security header mutations are blocked.
+- Reported failed dynamic view injection rendering through the message layer with bounded context while keeping public rendering graceful for visitors.
+- Hardened the dynamic injection diagnostics path so failed message reporting cannot break rendering, and removed the implicit English language default from new `ContentItem` entities.
+- Added a phased implementation plan for the project-readiness audit, covering shared runtime foundations, setup and operations, package boundaries, admin/presentation modularity, content/ACL/security foundations, API/data read models, documentation alignment, and suggested commit slices.
+- Ran the project-readiness decision interview for audit findings F-001 through F-047, recorded product decisions D1 through D47 in the audit log, and aligned the owning feature drafts for architecture, setup, content, system UI, admin, events, packages, security, navigation, API, scheduler, mailer, and operational workflows.
+- Started the issue #57 project-readiness drift audit with a complete production-domain pass across `src/`, recorded architecture/modularity/naming/security/performance/Symfony-alignment findings in `.codex/audit-project-readiness-2026-06-05.md`, and added cross-cutting scans for public entry points, large files, UUID generation, child processes, and filesystem mutation zones.
+- Centralized remaining duplicated UUID-v4 generation in statistics recording, package registry/install paths, state markers, account tokens, setup seeding, and setup password reset through the shared `UuidFactory`, with small PSR-12 cleanups discovered during the audit.
 
-### 2026-06-04
-- Continued `feat-php-cli-resolver`: prefilled the setup site URL from the current HTTP host when no stored wizard value exists; propagated nested asset-rebuild warnings from setup-triggered JSON output into the setup action log, kept direct asset-rebuild text output aware of warning messages, aligned the setup dry-run plan/manual notes with the JSON-backed asset rebuild call, and documented Apache `mod_remoteip` as the preferred reverse-proxy client-IP integration.
-- Restored application locale handling after setup by applying the configured default language, session locale, or authenticated user language to main requests; changed profile settings saves to redirect-after-post with the shared alert stack so language changes and success feedback are immediately visible.
-
-### 2026-06-03
-- Started `feat-php-cli-resolver`: added a shared PHP CLI resolver for web-hosted setup and background processes, with explicit preflight diagnostics for safe mode, disabled process functions, server-config-blocked CLI, and unresolved PHP binaries; wired setup preflight, setup runner, Composer phar execution, live operations, Messenger drain, scheduler command execution, and asset/backend command queues to use the resolved PHP CLI command prefix, failing command queues with a Message instead of falling back to an unverified `php` binary; aligned Composer preflight/setup checks on project-local Composer environment paths with non-silent Composer output; hardened CLI output assertions against terminal-width wrapping.
-- Kept setup subprocess recovery narrow by making Composer diagnostics verbose while isolating the setup-triggered asset rebuild from transient setup secrets and direct database environment values after `dump-env` has persisted the install configuration; added a shared CLI process environment filter so web/CGI request variables are not inherited by Symfony Process children.
-- Documented Apache/systemd native-binary hardening for automatic Tailwind rebuilds, removed temporary public process diagnostics, added a non-blocking setup preflight warning for blocked Tailwind native builds, and wrapped Tailwind asset rebuilds so setup/package maintenance can continue while instructing operators to run `php bin/console tailwind:build` through CLI/SSH when the web server policy blocks the binary.
-
-### 2026-06-01
-- Updated tailwind-binary to v4.3.0 and composer dependencies
-- Started `feat-scheduler`: aligned the Scheduler draft with `/cron/run`, API-key triggering, `job={job_id}` direct runs, cron expressions, Symfony Scheduler/Messenger integration, DB-backed task/run state, package task policy, admin UI expectations, and failure/logging behavior; added `symfony/scheduler` plus cron-expression support, built the first runner/endpoint/Admin-view foundation, then hardened run-now, lock/GET-auth behavior, soft-budget diagnostics, cron validation, public endpoint failure handling, stale task direct access, task default/reactivation state, package-provided task registration via the central scheduler registry, compact cron syntax help, CLI command coverage, focused Admin scheduler UI coverage, stricter cron API-key authorization, core maintenance tasks for statistics snapshots/cache/package discovery/cache clearing, opt-in web-traffic triggering through the post-response Messenger drain, and review-reported operational edges around forced runs, package policy/provider retention, metadata encoding, CLI/web failure status, route-generated cron URLs, detached drain failures, scheduler-route drain skips, aliased cron validation, and setup PHP/extension preflight checks.
-- Hardened late scheduler review edges around exact cron-call parsing, namespace aliases, unrelated scheduler-definition class names, in-call comment handling, Admin run-now feedback, statistics snapshot storage failures, web-triggered PHP invocation, package ActionQueue confirmation resets including target changes, and Composer preflight recovery.
-- Completed setup-wizard review hardening: made rollback/env/database-prefix/live-operation/session-secret/no-JS/dry-run/database-driver paths safer, kept generated package registry stubs available before asset scripts, and verified setup flows through focused and full-suite checks.
-- Completed the test-suite audit branch: documented the audit in `.codex`, narrowed PHPUnit discovery, removed `.codex` helper-script tests from the project suite, trimmed UI/CSS/Stimulus-heavy assertions, consolidated duplicate route-smoke coverage, hardened ZIP-installer test cleanup, and measured the suite at `791 tests`, `4876 assertions`, peak `121 MB`; package-installer fixture strategy remains deferred.
-
-### 2026-05-31
-- Built and refined `feat-setup-wizard`: DB-free step gating, preserved wizard state, live language switching, preflight checks/auto-heal, driver-aware database input, optional table prefixing, site/default settings, OWNER creation, review/apply, LiveOperation execution, rollback cleanup, and completion marking only after successful apply.
-- Hardened setup/security/runtime boundaries: no incidental Doctrine before completion, only DB test/apply as pre-completion DB opt-ins, `/api/live/*` polling allowed, shared password/hash-salt validation, deterministic prefixing, prefixed setup seed/reset behavior, message-backed failure paths, and guarded setup rollback.
-- Polished setup/system UX and shell behavior: responsive setup landing, tabular preflight details, compact step navigation, footer/system partials, alert stack, responsive error-shell fixes, and manifest-backed `Studio` branding.
-- Improved operational build paths: moved package discovery/translation aggregation out of cache warmers, narrowed service discovery to reduce cold-container pressure, kept `bin/init` under the default memory limit, and cleaned generated package assets/registries out of Git while preserving recovery stubs.
-- Closed remaining user-management/setup review follow-ups, updated docs/class map/translations/tests, and kept focused plus full-suite verification green.
-
-### 2026-05-30
-- Finished the ACL role refactor: one exact account role plus optional groups with minimum-role floors, Symfony hierarchy/firewalls, owner guardrails, optional default groups, no obsolete locked-group behavior, updated migrations/setup/UI/translations/docs/class map, and regression coverage.
-- Hardened user-management flows end to end: invitation, registration, approval, recovery, security review, deleted-account reactivation, profile uniqueness, API keys, APP_SECRET rotation, enumeration boundaries, token delivery, and structured message/reporting paths.
-- Improved developer tooling with focused `bin/lint` targets, environment-scoped generated translation catalogues, runtime catalogue cleanup, deterministic low-memory `bin/init`, Composer 2.10.0, README updates, and full-suite verification.
-
-### 2026-05-29
-- Updated Symfony and related dependencies to 8.1-era versions, fixed exposed test-suite drift, and identified container/init memory pressure as the main blocker before continuing the user-management review.
-
-### 2026-05-28
-- Built and reviewed the user-management foundation: invitation-first onboarding, registration modes, profile/password/API-key management, password reset, account-link acceptance, self-service closure, deleted-account retention/reactivation, admin review queues, searchable user/group management, and token lifecycle maintenance.
-- Split large user-management controllers into focused controllers and shared helpers, then hardened review-reported security edges around last-owner policy, token delivery/reissue/revocation, stale disputes, deleted users, revoked API keys, secret rotation, duplicate identities, ACL cleanup warnings, and defensive state metadata recording.
-- Verified the slice with full PHPUnit plus focused controller/settings/setup/entity/command/mail/security/backend route coverage, syntax, Twig/YAML/container linting, translation comparison, and documentation/class-map updates.
-
-### 2026-05-27
-- Completed package/design review hardening, staged ZIP install/update boundaries, live-operation ActionLog execution, deferred Messenger drains, setup/vendor recovery, and package registry refresh through operations.
-- Added the logging/statistics/audit foundation with dedicated message/audit/access channels, redaction, admin log/statistics views, security settings, trusted-client-IP handling, DNT/statistics controls, and support IDs on error pages.
-- Kept migrations, docs, class map, translations, and verification aligned with full PHPUnit plus targeted migration/setup/container/schema/syntax checks.
-
-### 2026-05-26
-- Completed backend/package/admin foundations: setup/admin/editor/user surfaces, access-aware backend registry, Admin Settings, package settings/metadata, package contribution surfaces, demo packages/routes, theme/package management, lifecycle review flows, and generated runtime translations.
-- Verified backend/package behavior with targeted tests, syntax, Twig, translation, container, and full PHPUnit checks.
-
-### 2026-05-25
-- Built the first system UI/design-system shells, package lifecycle registry, package hook/event surface, scoped package assets/translations, structured diagnostics, and operations logging conventions.
-- Split early large helpers/tests, updated docs/class map/drafts/translations, and hardened setup/content review findings.
-
-### 2026-05-24
-- Completed first-run setup, deterministic test bootstrap, initial public content delivery, shared security/message primitives, package lifecycle scoping, package asset pipeline commands, and ActionLog/live-operation foundations.
-
-### 2026-05-23
-- Added the first persistent Core/content database baseline, schema/content primitives, shared `Message` model, SQLite PHPUnit bootstrap, pre-`1.0.0` migration rules, class-map/docs updates, and baseline verification.
-
-### 2026-05-22
-- Prepared the Core architecture baseline: init/setup scripts, web-server templates, package discovery/validation, lint providers, filesystem/process/operation helpers, package operation planning, fixtures, docs, and early review hardening.
-
-### 2026-05-20
-- Created the initial feature-draft roadmap, Symfony-first architecture decisions, package/theme/module lifecycle drafts, resolver/security inspiration notes, developer documentation entry points, release-readiness checklist, and bundled Composer fallback.
-
-### 2026-05-19
-- Removed Symfony skeleton demo code, moved ApexCharts/CodeMirror into dedicated lazy Stimulus controllers, and added documentation templates/guidelines.
-
-### 2026-05-15
-- Initialized the repository.
+### Archived Compacted Session History
+- [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

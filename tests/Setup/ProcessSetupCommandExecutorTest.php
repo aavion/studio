@@ -28,7 +28,7 @@ final class ProcessSetupCommandExecutorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = sys_get_temp_dir().'/studio-setup-process-test-'.bin2hex(random_bytes(6));
+        $this->root = sys_get_temp_dir().'/system-backend-setup-process-test-'.bin2hex(random_bytes(6));
         mkdir($this->root.'/var', 0777, true);
         $this->backupEnvironmentValue('COMPOSER_HOME');
         $this->backupEnvironmentValue('DATABASE_URL');

@@ -6,10 +6,10 @@ namespace App\Core\Operation\Live;
 
 use App\Core\Asset\AssetRebuildQueueFactory;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Operation\ActionQueue;
 use App\Core\Package\ActivePackageAssetProviderInterface;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Throwable;
@@ -42,8 +42,8 @@ final readonly class PackageAssetRebuildLiveOperationProvider implements LiveOpe
         } catch (Throwable $error) {
             return WorkflowResult::failed([
                 Message::exception(
-                    MessageCode::PACKAGE_ASSET_SYNC_FAILED,
-                    MessageKey::PACKAGE_ASSET_SYNC_FAILED,
+                    PackageMessageCode::PACKAGE_ASSET_SYNC_FAILED,
+                    PackageMessageKey::PACKAGE_ASSET_SYNC_FAILED,
                     ['%message%' => $error->getMessage()],
                     [
                         'operation' => $this->operation(),

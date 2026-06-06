@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Setup;
 
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Setup\SetupMessageCode;
+use App\Setup\SetupMessageKey;
 
 final readonly class SetupLanguageSelector
 {
@@ -23,19 +23,23 @@ final readonly class SetupLanguageSelector
         $availableLanguages = $this->languageCatalog->availableLanguages($projectDir);
 
         if (!in_array($input->language(), $availableLanguages, true)) {
-            throw new SetupStepFailedException(sprintf('Setup language "%s" is not available.', $input->language()));
+            throw SetupStepFailedException::fromMessage(Message::error(
+                SetupMessageCode::SETUP_STEP_FAILED,
+                SetupMessageKey::SETUP_INPUT_LANGUAGE_UNAVAILABLE,
+                ['%language%' => $input->language()],
+            ));
         }
 
         return [
             '_messages' => [
                 Message::info(
-                    MessageCode::SETUP_LANGUAGE_SELECTED,
-                    MessageKey::SETUP_LANGUAGE_SELECTED,
+                    SetupMessageCode::SETUP_LANGUAGE_SELECTED,
+                    SetupMessageKey::SETUP_LANGUAGE_SELECTED,
                     ['%language%' => $input->language()],
                 ),
                 Message::debug(
-                    MessageCode::SETUP_AVAILABLE_LANGUAGES,
-                    MessageKey::SETUP_AVAILABLE_LANGUAGES,
+                    SetupMessageCode::SETUP_AVAILABLE_LANGUAGES,
+                    SetupMessageKey::SETUP_AVAILABLE_LANGUAGES,
                     ['%languages%' => implode(', ', $availableLanguages)],
                 ),
             ],

@@ -7,35 +7,25 @@ namespace App\Controller;
 use App\Core\Access\AccessActor;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Message\MessageException;
-use App\Core\Routing\AbsoluteUriGenerator;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
 use App\Core\Validation\EmailAddress;
-use App\Content\Routing\ContentRouteLocalization;
-use App\Entity\AccountToken;
 use App\Entity\UserAccount;
-use App\Mail\AccountMailFlow;
-use App\Mail\MailLocaleResolver;
-use App\Security\AccountLinkDeliveryInterface;
-use App\Security\AccountTokenIssuer;
+use App\Localization\UserProfileLocaleService;
 use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenType;
-use App\Security\AdminUserAccessPolicy;
-use App\Security\PasswordPolicy;
-use App\Security\UserAccountLifecycle;
+use App\Security\UserAccountClosureService;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
+use App\Security\UserPasswordChangeService;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\Exception\SessionNotFoundException;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use Symfony\Component\Translation\LocaleSwitcher;
 use Throwable;
 
 final class UserController extends AbstractController
@@ -43,21 +33,14 @@ final class UserController extends AbstractController
     public function __construct(
         private readonly HttpErrorRenderer $httpError,
         private readonly EntityManagerInterface $entityManager,
-        private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly AuditLoggerInterface $auditLogger,
         private readonly UserFlowConfig $userFlowConfig,
-        private readonly AccountTokenIssuer $tokenIssuer,
-        private readonly AccountLinkDeliveryInterface $linkDelivery,
-        private readonly AbsoluteUriGenerator $absoluteUris,
-        private readonly MailLocaleResolver $mailLocaleResolver,
-        private readonly UserAccountLifecycle $userLifecycle,
         private readonly AccountTokenMaintenance $tokenMaintenance,
-        private readonly AdminUserAccessPolicy $adminUserPolicy,
         private readonly TokenStorageInterface $tokenStorage,
         private readonly StateMarkerRecorder $stateMarkers,
-        private readonly PasswordPolicy $passwordPolicy,
-        private readonly ContentRouteLocalization $localization,
-        private readonly LocaleSwitcher $localeSwitcher,
+        private readonly UserPasswordChangeService $passwordChangeService,
+        private readonly UserAccountClosureService $accountClosureService,
+        private readonly UserProfileLocaleService $profileLocales,
     ) {
     }
 
@@ -132,18 +115,26 @@ final class UserController extends AbstractController
             }
 
             if ([] === $errors) {
+                $language = $this->stringField($request, 'language') ?: 'default';
+
+                if ('default' !== $language && !in_array($language, $this->profileLocales->availableLocales(), true)) {
+                    $errors[] = 'ui.user.profile.errors.language_invalid';
+                }
+            }
+
+            if ([] === $errors) {
                 $user->updateProfile([
                     'display_name' => $this->stringField($request, 'display_name'),
                 ]);
                 $user->updateSettings([
                     ...$user->settings(),
-                    'language' => $this->stringField($request, 'language') ?: 'default',
+                    'language' => $language,
                 ]);
                 try {
                     $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::MODIFIED, $user->username(), 'profile');
                     $this->entityManager->flush();
                     $this->audit($user, 'user.profile_updated', ['result_status' => 'success']);
-                    $this->applyProfileLocale($request, $user);
+                    $this->profileLocales->apply($request, $user);
                     $this->addFlash('success', 'ui.user.profile.success');
 
                     return $this->redirectToRoute('user_profile');
@@ -157,35 +148,10 @@ final class UserController extends AbstractController
         return $this->render('@frontend/user/profile.html.twig', [
             'user_account' => $user,
             'username_change_enabled' => $usernameChangeEnabled,
+            'language_options' => $this->profileLocales->options(),
             'success' => $success,
             'errors' => $errors,
         ]);
-    }
-
-    private function applyProfileLocale(Request $request, UserAccount $user): void
-    {
-        $language = $user->settings()['language'] ?? 'default';
-        $locale = $this->supportedLocale(is_string($language) && 'default' !== $language ? $language : null)
-            ?? $this->localization->defaultLanguage();
-
-        $request->setLocale($locale);
-
-        try {
-            $request->getSession()->set('_locale', $locale);
-        } catch (SessionNotFoundException) {
-        }
-        $this->localeSwitcher->setLocale($locale);
-    }
-
-    private function supportedLocale(?string $locale): ?string
-    {
-        if (!is_string($locale) || '' === trim($locale)) {
-            return null;
-        }
-
-        $locale = trim($locale);
-
-        return in_array($locale, $this->localization->availableLanguages(), true) ? $locale : null;
     }
 
     #[Route('/user/profile/close', name: 'user_profile_close', methods: ['GET', 'POST'])]
@@ -209,16 +175,14 @@ final class UserController extends AbstractController
             $errors[] = 'ui.user.profile.close.errors.invalid_csrf';
         }
 
-        if ('1' !== $this->stringField($request, 'confirm_close')) {
-            $errors[] = 'ui.user.profile.close.errors.confirmation';
-        }
-
-        if (!$this->passwordHasher->isPasswordValid($user, $this->stringField($request, 'password'))) {
-            $errors[] = 'ui.user.profile.close.errors.password';
-        }
-
-        if (!$this->adminUserPolicy->allowsAccountClosure($user)) {
-            $errors[] = 'ui.user.profile.close.errors.last_owner';
+        if ([] === $errors) {
+            $result = $this->accountClosureService->close(
+                $request,
+                $user,
+                $this->stringField($request, 'password'),
+                '1' === $this->stringField($request, 'confirm_close'),
+            );
+            $errors = $result->errors();
         }
 
         if ([] !== $errors) {
@@ -234,20 +198,6 @@ final class UserController extends AbstractController
             return $this->redirectToRoute('user_profile_close');
         }
 
-        $retentionDays = $this->userFlowConfig->deletedUserRetentionDays();
-        $effects = $this->userLifecycle->changeStatus($user, UserAccountStatus::Deleted, $user->username());
-        $this->entityManager->flush();
-        $this->linkDelivery->notifyAddress(
-            $user->email(),
-            AccountMailFlow::AccountClosed,
-            $this->mailLocaleResolver->forPublicRequest($request, $user),
-            [
-                'username' => $user->username(),
-                'user_uid' => $user->uid(),
-                'retention_days' => $retentionDays,
-            ],
-        );
-        $this->audit($user, 'user.account_closed', ['result_status' => 'success', ...$effects]);
         $this->tokenStorage->setToken(null);
         $request->getSession()->invalidate();
 
@@ -275,40 +225,12 @@ final class UserController extends AbstractController
                 $errors[] = 'ui.user.password.errors.invalid_csrf';
             }
 
-            if (!$this->passwordHasher->isPasswordValid($user, $currentPassword)) {
-                $errors[] = 'ui.user.password.errors.current_password';
-            }
-
-            $errors = [
-                ...$errors,
-                ...$this->passwordViolationKeys($newPassword, $user->username(), $user->email()),
-            ];
-
-            if ($newPassword !== $confirmPassword) {
-                $errors[] = 'ui.user.password.errors.password_mismatch';
-            }
-
             if ([] === $errors) {
-                [$token, $plainToken] = $this->issuePasswordChangeReviewToken($user);
-                $reviewUrl = $this->passwordChangeReviewUrl($plainToken);
-
-                if (null === $reviewUrl) {
-                    $errors[] = 'ui.user.password.errors.delivery_failed';
-                } else {
-                    $user->changePassword($this->passwordHasher->hashPassword($user, $newPassword));
-                    $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::PASSWORD_CHANGED, $user->username(), 'profile');
-                    $this->entityManager->flush();
-                    $this->deliverPasswordChangeNotification($request, $token, $plainToken, $reviewUrl);
-                    $this->audit($user, 'auth.password_change_success', ['result_status' => 'success']);
-                    $success = true;
-                }
-            }
-
-            if ([] !== $errors) {
-                $this->audit($user, 'auth.password_change_failed', [
-                    'result_status' => 'failed',
-                    'error_keys' => $errors,
-                ]);
+                $result = $this->passwordChangeService->change($request, $user, $currentPassword, $newPassword, $confirmPassword);
+                $errors = $result->errors();
+                $success = $result->successState();
+            } else {
+                $this->audit($user, 'auth.password_change_failed', ['result_status' => 'failed', 'error_keys' => $errors]);
             }
         }
 
@@ -331,56 +253,6 @@ final class UserController extends AbstractController
         $value = $request->request->get($name);
 
         return is_string($value) ? $value : '';
-    }
-
-    /**
-     * @return array{0: AccountToken, 1: string}
-     */
-    private function issuePasswordChangeReviewToken(UserAccount $user): array
-    {
-        $this->tokenMaintenance->revokePendingForUser($user, [AccountTokenType::SecurityReview]);
-        [$token, $plainToken] = $this->tokenIssuer->issue(
-            AccountTokenType::SecurityReview,
-            $user->email(),
-            [],
-            $user,
-            ttl: $this->userFlowConfig->accountLinkTtl(),
-        );
-        $this->entityManager->persist($token);
-
-        return [$token, $plainToken];
-    }
-
-    private function passwordChangeReviewUrl(string $plainToken): ?string
-    {
-        return $this->absoluteUris->generateUri(__METHOD__, 'user_security_review', ['token' => $plainToken]);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function passwordViolationKeys(string $password, string $username, string $email): array
-    {
-        return array_map(
-            static fn (string $violation): string => match ($violation) {
-                PasswordPolicy::VIOLATION_COMPLEXITY => 'ui.user.password.errors.new_password_complexity',
-                PasswordPolicy::VIOLATION_REPEATED => 'ui.user.password.errors.new_password_repeated',
-                PasswordPolicy::VIOLATION_PERSONAL => 'ui.user.password.errors.new_password_personal',
-                default => 'ui.user.password.errors.new_password_length',
-            },
-            $this->passwordPolicy->violationCodes($password, $username, $email),
-        );
-    }
-
-    private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $plainToken, string $url): void
-    {
-        $this->linkDelivery->deliver(
-            $token,
-            AccountMailFlow::PasswordChanged,
-            $plainToken,
-            $url,
-            $this->mailLocaleResolver->forPublicRequest($request, $token->user()),
-        );
     }
 
     private function userByUsername(string $username): ?UserAccount

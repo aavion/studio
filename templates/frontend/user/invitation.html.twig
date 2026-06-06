@@ -3,22 +3,22 @@
 {% block title %}{{ 'ui.user.invitation.title'|trans }}{% endblock %}
 
 {% block frontend_body %}
-    <section class="studio-auth-panel">
+    <section class="system-frontend-auth-panel">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             title: 'ui.user.invitation.title'|trans,
             subtitle: 'ui.user.invitation.subtitle'|trans({'%email%': account_token.email}),
         } only %}
         {% if not success|default(false) %}
-            <p class="studio-muted">{{ 'ui.user.invitation.expires_at'|trans({'%expires_at%': account_token.expiresAt|date('Y-m-d H:i')}) }}</p>
+            <p class="system-muted">{{ 'ui.user.invitation.expires_at'|trans({'%expires_at%': account_token.expiresAt|date('Y-m-d H:i')}) }}</p>
         {% endif %}
         {% if success|default(false) %}
-            <p class="studio-auth-notice">{{ 'ui.user.invitation.success'|trans }}</p>
+            <p class="system-frontend-auth-notice">{{ 'ui.user.invitation.success'|trans }}</p>
             {% include '@frontend/partials/actions/_button-group.html.twig' with {
                 actions: [{label: 'ui.user.login.submit'|trans, href: path('user_login'), variant: 'primary'}],
             } only %}
         {% else %}
             {% if errors|default([]) is not empty %}
-                <ul class="studio-form-errors">
+                <ul class="system-form-errors">
                     {% for error in errors %}
                         <li>
                             {% if error is iterable %}
@@ -32,7 +32,7 @@
             {% endif %}
             <form
                 method="post"
-                class="studio-auth-form"
+                class="system-frontend-auth-form"
                 data-controller="password-policy"
                 data-password-policy-email-value="{{ account_token.email }}"
                 data-password-policy-mismatch-message-value="{{ 'ui.user.password.errors.password_mismatch'|trans }}"

@@ -31,7 +31,7 @@ final class TestDatabaseContentSeeder
     private static function contentItems(): array
     {
         $setupSeed = new SetupDefaultSeed();
-        $homeContent = $setupSeed->homeContentItem();
+        $homeContent = $setupSeed->homeContentItem(['en', 'de']);
         $homeRevision = $setupSeed->homeContentRevision();
         $setupSchema = $setupSeed->contentSchema();
         $setupSchemaVersion = $setupSeed->contentSchemaVersion();
@@ -57,8 +57,8 @@ final class TestDatabaseContentSeeder
                 ],
             ],
             [
-                'content_uid' => '20000000-0000-0000-0000-000000000002',
-                'revision_uid' => '20000000-0000-0000-0000-000000000102',
+                'content_uid' => '20000000-0000-7000-8000-000000000002',
+                'revision_uid' => '20000000-0000-7000-8000-000000000102',
                 'schema_uid' => $setupSchema['uid'],
                 'schema_version_uid' => $setupSchemaVersion['uid'],
                 'slug' => 'about',
@@ -76,10 +76,10 @@ final class TestDatabaseContentSeeder
                 ],
             ],
             [
-                'content_uid' => '20000000-0000-0000-0000-000000000003',
-                'revision_uid' => '20000000-0000-0000-0000-000000000103',
-                'schema_uid' => '10000000-0000-0000-0000-000000000002',
-                'schema_version_uid' => '10000000-0000-0000-0000-000000000102',
+                'content_uid' => '20000000-0000-7000-8000-000000000003',
+                'revision_uid' => '20000000-0000-7000-8000-000000000103',
+                'schema_uid' => '10000000-0000-7000-8000-000000000002',
+                'schema_version_uid' => '10000000-0000-7000-8000-000000000102',
                 'slug' => 'first-update',
                 'custom_url' => '/news/first-update',
                 'sort_order' => 30,
@@ -166,9 +166,9 @@ final class TestDatabaseContentSeeder
 
         $writer->update('content_item', ['active_revision_uid' => $item['revision_uid']], ['uid' => $item['content_uid']]);
         $suffix = substr($item['content_uid'], -1);
-        $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000094%s', $suffix), 'content_item', $item['content_uid'], 'created', 'system', null, ['slug' => $item['slug']]);
-        $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000095%s', $suffix), 'content_item', $item['content_uid'], 'published', 'system', 'published', ['revision_uid' => $item['revision_uid']]);
-        $writer->seedStateMarker(sprintf('00000000-0000-0000-0000-00000000096%s', $suffix), 'content_revision', $item['revision_uid'], 'created', 'system', null, ['content_uid' => $item['content_uid']]);
+        $writer->seedStateMarker(sprintf('00000000-0000-7000-8000-00000000094%s', $suffix), 'content_item', $item['content_uid'], 'created', 'system', null, ['slug' => $item['slug']]);
+        $writer->seedStateMarker(sprintf('00000000-0000-7000-8000-00000000095%s', $suffix), 'content_item', $item['content_uid'], 'published', 'system', 'published', ['revision_uid' => $item['revision_uid']]);
+        $writer->seedStateMarker(sprintf('00000000-0000-7000-8000-00000000096%s', $suffix), 'content_revision', $item['revision_uid'], 'created', 'system', null, ['content_uid' => $item['content_uid']]);
     }
 
     private function __construct()

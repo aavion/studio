@@ -17,7 +17,7 @@ final class CoreTranslationBootstrapperTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-core-translations');
+        $this->root = $this->createTemporaryDirectory('system-core-translations');
     }
 
     protected function tearDown(): void

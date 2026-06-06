@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\View\Template;
 
+use App\Core\Message\MessageException;
 use App\Core\Package\PackageScope;
-use InvalidArgumentException;
+use App\View\ViewMessageCode;
+use App\View\ViewMessageKey;
 
 enum TemplateNamespace: string
 {
@@ -18,7 +20,12 @@ enum TemplateNamespace: string
         $namespace = self::tryFrom(ltrim($name, '@'));
 
         if (null === $namespace) {
-            throw new InvalidArgumentException(sprintf('Unsupported template namespace "%s".', $name));
+            throw MessageException::forMessage(
+                ViewMessageCode::VIEW_TEMPLATE_NAMESPACE_UNSUPPORTED,
+                ViewMessageKey::VIEW_TEMPLATE_NAMESPACE_UNSUPPORTED,
+                ['%namespace%' => $name],
+                ['namespace' => $name],
+            );
         }
 
         return $namespace;

@@ -16,8 +16,7 @@ final readonly class CommandSchedulerTaskExecutor implements SchedulerTaskExecut
         private string $environment,
         private SchedulerCommandTargetParser $targetParser = new SchedulerCommandTargetParser(),
         private PhpCliBinaryManager $phpCliBinaryManager = new PhpCliBinaryManager(),
-    )
-    {
+    ) {
     }
 
     public function supports(SchedulerTask $task): bool

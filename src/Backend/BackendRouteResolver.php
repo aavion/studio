@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Backend;
 
+use App\Backend\BackendMessageCode;
+use App\Backend\BackendMessageKey;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Setup\SetupCompletionMarker;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -29,8 +29,8 @@ final readonly class BackendRouteResolver
                 $area,
                 Response::HTTP_NOT_FOUND,
                 Message::warning(
-                    MessageCode::BACKEND_SETUP_LOCKED,
-                    MessageKey::BACKEND_SETUP_LOCKED,
+                    BackendMessageCode::BACKEND_SETUP_LOCKED,
+                    BackendMessageKey::BACKEND_SETUP_LOCKED,
                     context: ['area' => $area->value],
                 ),
             );
@@ -50,8 +50,8 @@ final readonly class BackendRouteResolver
             $area,
             Response::HTTP_NOT_FOUND,
             Message::warning(
-                MessageCode::BACKEND_ROUTE_NOT_FOUND,
-                MessageKey::BACKEND_ROUTE_NOT_FOUND,
+                BackendMessageCode::BACKEND_ROUTE_NOT_FOUND,
+                BackendMessageKey::BACKEND_ROUTE_NOT_FOUND,
                 ['%path%' => '/'.$area->value.'/'.$path],
                 ['area' => $area->value, 'path' => $path],
             ),

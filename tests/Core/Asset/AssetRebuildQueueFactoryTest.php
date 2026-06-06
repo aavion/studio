@@ -20,7 +20,7 @@ final class AssetRebuildQueueFactoryTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-asset-rebuild');
+        $this->root = $this->createTemporaryDirectory('system-asset-rebuild');
         $this->writeTestFile($this->root, 'bin/console', "#!/usr/bin/env php\n<?php echo \"Studio test\";\n");
     }
 

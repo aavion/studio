@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Message\Message;
 use App\Core\Process\PhpCliBinaryManager;
 
 final readonly class SetupComposerCommandResolver
@@ -43,7 +44,10 @@ final readonly class SetupComposerCommandResolver
             return ['composer'];
         }
 
-        throw new SetupStepFailedException('Composer is unavailable. Install Composer or restore bin/composer.');
+        throw SetupStepFailedException::fromMessage(Message::error(
+            SetupMessageCode::SETUP_COMPOSER_UNAVAILABLE,
+            SetupMessageKey::SETUP_COMPOSER_UNAVAILABLE,
+        ));
     }
 
     /**

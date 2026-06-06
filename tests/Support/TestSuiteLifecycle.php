@@ -27,7 +27,7 @@ final class TestSuiteLifecycle
 
     public static function temporaryRoot(): string
     {
-        return sys_get_temp_dir().'/studio-test-suite';
+        return sys_get_temp_dir().'/system-test-suite';
     }
 
     private static function initializeTestDatabase(): void

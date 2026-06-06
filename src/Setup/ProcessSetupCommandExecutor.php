@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
+use App\Core\Operation\Filesystem\FilesystemMessageCode;
+use App\Core\Operation\Filesystem\FilesystemMessageKey;
+use App\Core\Operation\OperationMessageKey;
 use App\Core\Process\CliProcessEnvironment;
 use Symfony\Component\Process\Process;
 
@@ -22,8 +24,8 @@ final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutor
             $process->run();
         } catch (\Throwable $error) {
             throw SetupStepFailedException::fromMessage(Message::exception(
-                MessageCode::E_OPERATION_FAILED,
-                MessageKey::OPERATION_FAILED,
+                CommonMessageCode::E_OPERATION_FAILED,
+                OperationMessageKey::OPERATION_FAILED,
                 ['%operation%' => basename($command[0] ?? 'command')],
                 ['command' => $command, 'cwd' => $cwd, 'exception' => $error::class, 'message' => $error->getMessage()],
             ));
@@ -76,8 +78,8 @@ final readonly class ProcessSetupCommandExecutor implements SetupCommandExecutor
 
         if (!mkdir($path, 0775, true) && !is_dir($path)) {
             throw SetupStepFailedException::fromMessage(Message::error(
-                MessageCode::FILESYSTEM_DIRECTORY_CREATE_FAILED,
-                MessageKey::FILESYSTEM_DIRECTORY_CREATE_FAILED,
+                FilesystemMessageCode::FILESYSTEM_DIRECTORY_CREATE_FAILED,
+                FilesystemMessageKey::FILESYSTEM_DIRECTORY_CREATE_FAILED,
                 ['%path%' => basename($path)],
                 ['path' => $path],
             ));

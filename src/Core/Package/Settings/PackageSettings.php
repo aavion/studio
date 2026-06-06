@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Core\Package\Settings;
 
+use App\Core\Config\ConfigMessageKey;
 use App\Core\Config\ConfigValueType;
+use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageCode;
-use App\Core\Message\MessageKey;
 use App\Core\Message\MessageReporterInterface;
+use App\Core\Package\PackageMessageCode;
+use App\Core\Package\PackageMessageKey;
 use App\Core\Validation\Identifier;
 use App\Form\FormFieldDefinition;
 use DateTimeImmutable;
@@ -37,8 +39,8 @@ final readonly class PackageSettings
             );
         } catch (Throwable $error) {
             $this->report(Message::exception(
-                MessageCode::PACKAGE_SETTING_READ_FAILED,
-                MessageKey::PACKAGE_SETTING_READ_FAILED,
+                PackageMessageCode::PACKAGE_SETTING_READ_FAILED,
+                PackageMessageKey::PACKAGE_SETTING_READ_FAILED,
                 ['%package%' => $packageName, '%key%' => $key],
                 $this->errorContext($error, 'package_settings.get', $packageName, $key),
             ));
@@ -54,8 +56,8 @@ final readonly class PackageSettings
             return json_decode($value, true, flags: JSON_THROW_ON_ERROR);
         } catch (JsonException $error) {
             $this->report(Message::warning(
-                MessageCode::PACKAGE_SETTING_VALUE_INVALID,
-                MessageKey::PACKAGE_SETTING_VALUE_INVALID,
+                PackageMessageCode::PACKAGE_SETTING_VALUE_INVALID,
+                PackageMessageKey::PACKAGE_SETTING_VALUE_INVALID,
                 ['%package%' => $packageName, '%key%' => $key],
                 $this->errorContext($error, 'package_settings.get', $packageName, $key),
             ));
@@ -101,8 +103,8 @@ final readonly class PackageSettings
             return true;
         } catch (Throwable $error) {
             $this->report(Message::exception(
-                MessageCode::PACKAGE_SETTING_WRITE_FAILED,
-                MessageKey::PACKAGE_SETTING_WRITE_FAILED,
+                PackageMessageCode::PACKAGE_SETTING_WRITE_FAILED,
+                PackageMessageKey::PACKAGE_SETTING_WRITE_FAILED,
                 ['%package%' => $packageName, '%key%' => $key],
                 $this->errorContext($error, 'package_settings.set', $packageName, $key),
             ));
@@ -121,8 +123,8 @@ final readonly class PackageSettings
             return $this->connection->delete('package_setting_entry', ['package_name' => $packageName]);
         } catch (Throwable $error) {
             $this->report(Message::exception(
-                MessageCode::PACKAGE_SETTING_DELETE_FAILED,
-                MessageKey::PACKAGE_SETTING_DELETE_FAILED,
+                PackageMessageCode::PACKAGE_SETTING_DELETE_FAILED,
+                PackageMessageKey::PACKAGE_SETTING_DELETE_FAILED,
                 ['%package%' => $packageName],
                 $this->errorContext($error, 'package_settings.remove_package', $packageName, null),
             ));
@@ -176,8 +178,8 @@ final readonly class PackageSettings
         }
 
         $this->report(Message::warning(
-            MessageCode::PACKAGE_IDENTIFIER_INVALID,
-            MessageKey::PACKAGE_IDENTIFIER_INVALID,
+            PackageMessageCode::PACKAGE_IDENTIFIER_INVALID,
+            PackageMessageKey::PACKAGE_IDENTIFIER_INVALID,
             ['%identifier%' => $packageName],
             ['operation' => $operation, 'package' => $packageName],
         ));
@@ -188,13 +190,13 @@ final readonly class PackageSettings
     private function validateKey(string $key, string $operation, string $packageName): bool
     {
         try {
-            Identifier::assertConfigKey($key, MessageKey::CONFIG_KEY_INVALID);
+            Identifier::assertConfigKey($key, ConfigMessageKey::CONFIG_KEY_INVALID);
 
             return true;
         } catch (Throwable $error) {
             $this->report(Message::warning(
-                MessageCode::E_INVALID_ARGUMENT,
-                MessageKey::CONFIG_KEY_INVALID,
+                CommonMessageCode::E_INVALID_ARGUMENT,
+                ConfigMessageKey::CONFIG_KEY_INVALID,
                 ['%key%' => $key],
                 $this->errorContext($error, $operation, $packageName, $key),
             ));

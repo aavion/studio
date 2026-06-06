@@ -17,11 +17,12 @@ use App\Mail\AccountMailFlow;
 use App\Mail\MailLocaleResolver;
 use App\Security\AccountLinkDeliveryInterface;
 use App\Security\AccountTokenIssuer;
+use App\Security\AccountTokenLookup;
 use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
 use App\Security\AdminUserAccessPolicy;
-use App\Security\PasswordPolicy;
+use App\Security\PasswordPolicyErrorMapper;
 use App\Security\UserAccountLifecycle;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
@@ -43,6 +44,7 @@ final class UserPasswordRecoveryController extends AbstractController
         private readonly AuditLoggerInterface $auditLogger,
         private readonly UserFlowConfig $userFlowConfig,
         private readonly AccountTokenIssuer $tokenIssuer,
+        private readonly AccountTokenLookup $tokenLookup,
         private readonly AccountTokenMaintenance $tokenMaintenance,
         private readonly AccountLinkDeliveryInterface $linkDelivery,
         private readonly AbsoluteUriGenerator $absoluteUris,
@@ -50,7 +52,7 @@ final class UserPasswordRecoveryController extends AbstractController
         private readonly UserAccountLifecycle $userLifecycle,
         private readonly AdminUserAccessPolicy $adminUserPolicy,
         private readonly StateMarkerRecorder $stateMarkers,
-        private readonly PasswordPolicy $passwordPolicy,
+        private readonly PasswordPolicyErrorMapper $passwordErrors,
     ) {
     }
 
@@ -87,7 +89,7 @@ final class UserPasswordRecoveryController extends AbstractController
                     } else {
                         $this->entityManager->persist($token);
                         $this->entityManager->flush();
-                        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $plainToken, $url, $this->mailLocaleResolver->forPublicRequest($request, $user));
+                        $this->linkDelivery->deliver($token, AccountMailFlow::PasswordResetLink, $url, $this->mailLocaleResolver->forPublicRequest($request, $user));
                     }
                 }
 
@@ -104,7 +106,7 @@ final class UserPasswordRecoveryController extends AbstractController
     #[Route('/user/reset-password/{token}', name: 'user_password_reset_token', requirements: ['token' => '[a-f0-9]{64}'], methods: ['GET', 'POST'])]
     public function completePasswordReset(Request $request, string $token): Response
     {
-        $accountToken = $this->usableToken($token, AccountTokenType::PasswordReset);
+        $accountToken = $this->tokenLookup->pending($token, AccountTokenType::PasswordReset);
 
         if (!$accountToken instanceof AccountToken || !$this->hasUsableTokenUser($accountToken)) {
             return $this->httpError->notFound($request);
@@ -116,7 +118,7 @@ final class UserPasswordRecoveryController extends AbstractController
     #[Route('/user/security-review/{token}', name: 'user_security_review', requirements: ['token' => '[a-f0-9]{64}'], methods: ['GET', 'POST'])]
     public function securityReview(Request $request, string $token): Response
     {
-        $accountToken = $this->usableToken($token, AccountTokenType::SecurityReview);
+        $accountToken = $this->tokenLookup->pending($token, AccountTokenType::SecurityReview);
 
         if (!$accountToken instanceof AccountToken || !$this->hasUsableTokenUser($accountToken)) {
             return $this->httpError->notFound($request);
@@ -191,7 +193,7 @@ final class UserPasswordRecoveryController extends AbstractController
 
             $errors = [
                 ...$errors,
-                ...$this->passwordViolationKeys($password, $user->username(), $user->email()),
+                ...$this->passwordErrors->errorKeys($password, $user->username(), $user->email()),
             ];
 
             if ($password !== $confirmPassword) {
@@ -209,7 +211,7 @@ final class UserPasswordRecoveryController extends AbstractController
                     $token->consume($user);
                     $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::PASSWORD_CHANGED, $user->username(), 'password_reset');
                     $this->entityManager->flush();
-                    $this->deliverPasswordChangeNotification($request, $reviewToken, $plainReviewToken, $reviewUrl);
+                    $this->deliverPasswordChangeNotification($request, $reviewToken, $reviewUrl);
                     $this->audit($user, 'auth.password_reset_completed', ['result_status' => 'success']);
                     $success = true;
                 }
@@ -223,43 +225,11 @@ final class UserPasswordRecoveryController extends AbstractController
         ]);
     }
 
-    private function usableToken(string $plainToken, ?AccountTokenType $type): ?AccountToken
-    {
-        $criteria = [
-            'tokenHash' => $this->tokenIssuer->hash($plainToken),
-            'status' => AccountTokenStatus::Pending,
-        ];
-
-        if ($type instanceof AccountTokenType) {
-            $criteria['type'] = $type;
-        }
-
-        $token = $this->entityManager->getRepository(AccountToken::class)->findOneBy($criteria);
-
-        return $token instanceof AccountToken && !$token->isExpired() ? $token : null;
-    }
-
     private function hasUsableTokenUser(AccountToken $token): bool
     {
         $user = $token->user();
 
         return $user instanceof UserAccount && $user->status()->isUsable();
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function passwordViolationKeys(string $password, string $username, string $email): array
-    {
-        return array_map(
-            static fn (string $violation): string => match ($violation) {
-                PasswordPolicy::VIOLATION_COMPLEXITY => 'ui.user.password.errors.new_password_complexity',
-                PasswordPolicy::VIOLATION_REPEATED => 'ui.user.password.errors.new_password_repeated',
-                PasswordPolicy::VIOLATION_PERSONAL => 'ui.user.password.errors.new_password_personal',
-                default => 'ui.user.password.errors.new_password_length',
-            },
-            $this->passwordPolicy->violationCodes($password, $username, $email),
-        );
     }
 
     /**
@@ -285,12 +255,11 @@ final class UserPasswordRecoveryController extends AbstractController
         return $this->absoluteUris->generateUri(__METHOD__, 'user_security_review', ['token' => $plainToken]);
     }
 
-    private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $plainToken, string $url): void
+    private function deliverPasswordChangeNotification(Request $request, AccountToken $token, string $url): void
     {
         $this->linkDelivery->deliver(
             $token,
             AccountMailFlow::PasswordChanged,
-            $plainToken,
             $url,
             $this->mailLocaleResolver->forPublicRequest($request, $token->user()),
         );

@@ -16,7 +16,7 @@ final class LogFileBrowserTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->logDir = $this->createTemporaryDirectory('studio-log-browser');
+        $this->logDir = $this->createTemporaryDirectory('system-log-browser');
     }
 
     protected function tearDown(): void
@@ -26,9 +26,9 @@ final class LogFileBrowserTest extends TestCase
 
     public function testItReadsAndFiltersSelectedLogFiles(): void
     {
-        $this->writeTestFile($this->logDir, 'test.studio-message-2099-01-01.log', implode(PHP_EOL, [
-            '[2099-01-01T10:00:00.000000+00:00] studio_message.INFO: message.package.discovery_completed {"code":"package.discovery_completed"} []',
-            '[2099-01-01T10:01:00.000000+00:00] studio_message.ERROR: message.process.command_failed {"code":"process.command_failed","package":"demo-module"} []',
+        $this->writeTestFile($this->logDir, 'test/message-2099-01-01.log', implode(PHP_EOL, [
+            '[2099-01-01T10:00:00.000000+00:00] message.INFO: message.package.discovery_completed {"code":"package.discovery_completed"} []',
+            '[2099-01-01T10:01:00.000000+00:00] message.ERROR: message.process.command_failed {"code":"process.command_failed","package":"demo-module"} []',
             '',
         ]));
 
@@ -47,7 +47,7 @@ final class LogFileBrowserTest extends TestCase
         self::assertMatchesRegularExpression('/^[a-f0-9]{24}$/', $view['entries'][0]['id']);
         self::assertSame('message.process.command_failed', $view['entries'][0]['message']);
         self::assertSame('process.command_failed', $view['entries'][0]['context']['code']);
-        self::assertSame('test.studio-message-2099-01-01.log', $view['entries'][0]['file']);
+        self::assertSame('message-2099-01-01.log', $view['entries'][0]['file']);
 
         $entry = (new LogFileBrowser($this->logDir, 'test'))->entry('message', $view['entries'][0]['id']);
 
@@ -57,7 +57,7 @@ final class LogFileBrowserTest extends TestCase
 
     public function testItReadsAccessContextColumns(): void
     {
-        $this->writeTestFile($this->logDir, 'test.studio-access-2099-01-01.log', '[2099-01-01T10:00:00.000000+00:00] studio_access.INFO: access.request {"method":"GET","path":"/admin/logs","route":"backend_admin_route","http_status":200,"ip":"127.0.0.1","city":"n/a","state":"n/a","country":"n/a","continent":"n/a"} []'.PHP_EOL);
+        $this->writeTestFile($this->logDir, 'test/access-2099-01-01.log', '[2099-01-01T10:00:00.000000+00:00] access.INFO: access.request {"method":"GET","path":"/admin/logs","route":"backend_admin_route","http_status":200,"ip":"127.0.0.1","city":"n/a","state":"n/a","country":"n/a","continent":"n/a"} []'.PHP_EOL);
 
         $view = (new LogFileBrowser($this->logDir, 'test'))->browse([
             'source' => 'access',

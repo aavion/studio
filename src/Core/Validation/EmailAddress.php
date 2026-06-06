@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Validation;
 
 use App\Core\Message\MessageException;
-use App\Core\Message\MessageKey;
+use App\Security\SecurityMessageKey;
 
 final class EmailAddress
 {
@@ -19,7 +19,7 @@ final class EmailAddress
         return false !== filter_var(self::normalize($email), FILTER_VALIDATE_EMAIL);
     }
 
-    public static function assert(string $email, string $messageKey = MessageKey::USER_EMAIL_INVALID): string
+    public static function assert(string $email, string $messageKey = SecurityMessageKey::USER_EMAIL_INVALID): string
     {
         $normalized = self::normalize($email);
 

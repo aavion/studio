@@ -146,7 +146,7 @@ pkg:
 
                 The heading receives an anchor.
 
-                ## Highlighted section {.studio-demo-attribute}
+                ## Highlighted section {.demo-module-frontend-attribute}
 
                 Safe attributes can be attached where the profile allows them.
         design:
@@ -157,7 +157,7 @@ pkg:
 
             Design Markdown is intended for trusted schema, admin, or editor-controlled blocks where more layout control is acceptable.
 
-            <aside class="studio-demo-callout" data-demo="design">
+            <aside class="demo-module-frontend-callout" data-demo="design">
                 <strong>Trusted HTML:</strong> this block is intentionally rendered as HTML in the design profile.
             </aside>
 
@@ -166,12 +166,12 @@ pkg:
             ## Attribute-controlled blocks
 
             Paragraphs can opt into controlled attributes when the profile allows them.
-            {.studio-demo-attribute}
+            {.demo-module-frontend-attribute}
           examples:
             trusted_html:
               title: 'Trusted HTML'
               markdown: |
-                <section class="studio-demo-callout">
+                <section class="demo-module-frontend-callout">
                     <strong>Trusted HTML</strong> can be mixed into design Markdown.
                 </section>
 
@@ -185,10 +185,10 @@ pkg:
             attributes:
               title: 'Custom attributes'
               markdown: |
-                ## A styled heading {.studio-demo-attribute}
+                ## A styled heading {.demo-module-frontend-attribute}
 
                 Paragraph attributes can also be attached.
-                {.studio-demo-callout data-demo="typography"}
+                {.demo-module-frontend-callout data-demo="typography"}
       backend:
         title: 'Backend shell demo'
         nav_overview: 'Overview'

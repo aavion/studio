@@ -23,23 +23,18 @@ final readonly class AdminUserReviewViewFactory
      */
     public function reviewView(Request $request): array
     {
-        $filter = $this->reviewFilter($request);
-        $search = $this->listViews->queryString($request, 'q');
-        $sort = $this->listViews->queryChoice($request, 'sort', ['requested_at', 'email', 'kind', 'status'], 'requested_at');
-        $direction = $this->listViews->queryChoice($request, 'direction', ['asc', 'desc'], 'desc');
-        $perPage = $this->listViews->perPage($request->query->get('per_page'));
-        $page = $this->listViews->page($request->query->get('page'));
+        $query = AdminUserReviewQuery::fromRequest($request, $this->listViews);
         $items = $this->reviewItems();
 
-        if ('all' !== $filter) {
+        if ('all' !== $query->filter) {
             $items = array_values(array_filter(
                 $items,
-                static fn (array $item): bool => $filter === $item['filter'] || ('expired' === $filter && true === $item['expired']),
+                static fn (array $item): bool => $query->filter === $item['filter'] || ('expired' === $query->filter && true === $item['expired']),
             ));
         }
 
-        if ('' !== $search) {
-            $needle = mb_strtolower($search);
+        if ('' !== $query->search) {
+            $needle = mb_strtolower($query->search);
             $items = array_values(array_filter(
                 $items,
                 static fn (array $item): bool => str_contains(mb_strtolower((string) $item['email']), $needle)
@@ -47,19 +42,12 @@ final readonly class AdminUserReviewViewFactory
             ));
         }
 
-        $this->sortReviewItems($items, $sort, $direction);
-        $pagination = $this->listViews->pagination($items, $page, $perPage);
+        $this->sortReviewItems($items, $query->sort, $query->direction);
+        $pagination = $this->listViews->pagination($items, $query->page, $query->perPage);
 
         return [
             'items' => $pagination['items'],
-            'filters' => [
-                'filter' => $filter,
-                'search' => $search,
-                'sort' => $sort,
-                'direction' => $direction,
-                'per_page' => $perPage,
-                'page' => $pagination['page'],
-            ],
+            'filters' => $query->filters($pagination['page']),
             'pagination' => $pagination,
             'per_page_options' => $this->listViews->perPageOptions('admin.user_reviews.filters.all_entries'),
             'sort_options' => $this->reviewSortOptions(),
@@ -154,15 +142,6 @@ final readonly class AdminUserReviewViewFactory
             'role' => $user->role()->value,
             'groups' => [],
         ];
-    }
-
-    private function reviewFilter(Request $request): string
-    {
-        $filter = $request->query->get('filter');
-
-        return is_string($filter) && in_array($filter, ['all', 'registrations', 'invitations', 'disputes', 'expired'], true)
-            ? $filter
-            : 'all';
     }
 
     /**

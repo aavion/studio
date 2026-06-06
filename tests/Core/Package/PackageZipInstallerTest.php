@@ -12,6 +12,7 @@ use App\Core\Workflow\WorkflowStatus;
 use App\Entity\ExtensionPackage;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Uid\Uuid;
 use ZipArchive;
 
 final class PackageZipInstallerTest extends KernelTestCase
@@ -25,6 +26,13 @@ final class PackageZipInstallerTest extends KernelTestCase
         'zip-install-symlink',
     ];
 
+    private const TEST_PACKAGE_DATABASE_SLUGS = [
+        ...self::TEST_PACKAGE_SLUGS,
+        'demo-captcha-provider',
+        'demo-frontend-theme',
+        'demo-module',
+    ];
+
     private const TEST_INSTALL_IDS = [
         'aaaaaaaaaaaaaaaaaaaaaaaa',
         'bbbbbbbbbbbbbbbbbbbbbbbb',
@@ -33,6 +41,7 @@ final class PackageZipInstallerTest extends KernelTestCase
         'eeeeeeeeeeeeeeeeeeeeeeee',
         'ffffffffffffffffffffffff',
         '777777777777777777777777',
+        '888888888888888888888888',
         '999999999999999999999999',
     ];
 
@@ -47,6 +56,9 @@ final class PackageZipInstallerTest extends KernelTestCase
 
         foreach (self::TEST_PACKAGE_SLUGS as $slug) {
             $this->removePath($this->projectDir.'/packages/'.$slug);
+        }
+
+        foreach (self::TEST_PACKAGE_DATABASE_SLUGS as $slug) {
             $this->deletePackageRow($slug);
         }
     }
@@ -55,6 +67,9 @@ final class PackageZipInstallerTest extends KernelTestCase
     {
         foreach (self::TEST_PACKAGE_SLUGS as $slug) {
             $this->removePath($this->projectDir.'/packages/'.$slug);
+        }
+
+        foreach (self::TEST_PACKAGE_DATABASE_SLUGS as $slug) {
             $this->deletePackageRow($slug);
         }
 
@@ -267,6 +282,41 @@ final class PackageZipInstallerTest extends KernelTestCase
         $this->removePath($root);
     }
 
+    public function testItRejectsPolicyBlockedPackagePaths(): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            self::markTestSkipped('ZipArchive is required for package ZIP installer tests.');
+        }
+
+        $installId = '888888888888888888888888';
+        $slug = 'zip-install-symlink';
+        $root = $this->installRoot($installId);
+        $this->removePath($root);
+        mkdir($root, 0775, true);
+
+        $zip = new ZipArchive();
+        self::assertTrue(true === $zip->open($root.'/upload.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE));
+        $zip->addFromString($slug.'/.manifest', <<<MANIFEST
+            PACKAGE_AUTHOR=Aavion Test
+            PACKAGE_SLUG={$slug}
+            PACKAGE_NAME=ZIP Install Test
+            PACKAGE_DESCRIPTION=Package ZIP installer test fixture.
+            PACKAGE_VERSION=1.0.0
+            PACKAGE_SCOPE=module
+            PACKAGE_DEPENDENCIES=[]
+            MANIFEST);
+        $zip->addFromString($slug.'/public/index.php', '<?php echo "blocked";');
+        $zip->close();
+
+        $verify = $this->installer()->verify(['install_id' => $installId]);
+
+        self::assertSame(WorkflowStatus::Invalid, $verify->status());
+        self::assertSame('package.policy.blocked_path', $verify->firstIssue()?->code());
+        self::assertSame('reserved_project_path', $verify->firstIssue()?->context()['reason']);
+
+        $this->removePath($root);
+    }
+
     public function testItRestoresActiveReverseDependentsAfterSuccessfulOverwrite(): void
     {
         if (!class_exists(ZipArchive::class)) {
@@ -442,11 +492,7 @@ final class PackageZipInstallerTest extends KernelTestCase
 
     private function uuid(): string
     {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+        return Uuid::v7()->toRfc4122();
     }
 
     private function removePath(string $path): void

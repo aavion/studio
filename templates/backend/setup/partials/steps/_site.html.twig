@@ -1,0 +1,27 @@
+<section class="system-panel">
+    <h2>{{ 'setup.site.title'|trans }}</h2>
+    <p class="system-muted">{{ 'setup.site.text'|trans }}</p>
+    {% include '@backend/partials/forms/fields/input.html.twig' with {
+        name: 'site_title',
+        label: 'setup.form.site_title.label'|trans,
+        value: setup_display_values.site_title,
+        required: true,
+        attributes: {maxlength: 120},
+        errors: setup_errors.site_title|default([]),
+    } only %}
+    {% include '@backend/partials/forms/fields/input.html.twig' with {
+        name: 'default_uri',
+        label: 'setup.form.default_uri.label'|trans,
+        type: 'url',
+        value: setup_display_values.default_uri,
+        required: true,
+        attributes: {placeholder: 'https://example.test'},
+        errors: setup_errors.default_uri|default([]),
+    } only %}
+</section>
+
+<section class="system-panel">
+    <h2>{{ 'setup.site.behavior_title'|trans }}</h2>
+    <p class="system-muted">{{ 'setup.site.behavior_text'|trans }}</p>
+    {% include '@backend/partials/forms/_dynamic_fields.html.twig' with {fields: setup_site_settings_form.fields} only %}
+</section>

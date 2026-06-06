@@ -23,263 +23,21 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class UserControllerTest extends WebTestCase
 {
-    public function testProtectedUserRoutesRenderLoginForAnonymousUsers(): void
-    {
-        $client = self::createClient();
-
-        foreach (['/user/profile', '/user'] as $path) {
-            $client->request('GET', $path);
-
-            self::assertResponseStatusCodeSame(401);
-            self::assertSelectorTextContains('h1', 'Sign in');
-        }
-    }
-
-    public function testUserIndexRedirectsAuthenticatedUsersToProfile(): void
-    {
-        $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(1, 'indexuser', 'index-password'));
-        $client->request('GET', '/user');
-
-        self::assertResponseRedirects('/user/profile');
-    }
-
-    public function testProfileRouteRendersAccountSkeleton(): void
-    {
-        $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(1, 'profileuser', 'profile-password'));
-        $client->request('GET', '/user/profile');
-
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Profile');
-        self::assertSelectorTextContains('.studio-user-summary', 'profileuser');
-        self::assertSelectorTextContains('.studio-user-summary', 'profileuser@example.test');
-        self::assertSelectorNotExists('input[name="username"]');
-    }
-
-    public function testProfileUsernameChangeRequiresSetting(): void
-    {
-        $client = self::createClient();
-        $config = self::getContainer()->get(Config::class);
-        $user = $this->createUserWithLevel(1, 'stableprofile', 'profile-password');
-        $config->set('user.username_change.enabled', false);
-
-        $client->loginUser($user);
-        $crawler = $client->request('GET', '/user/profile');
-        $client->request('POST', '/user/profile', [
-            '_csrf_token' => (string) $crawler->filter('input[name="_csrf_token"]')->attr('value'),
-            'username' => 'ChangedProfile',
-            'email' => $user->email(),
-            'display_name' => 'Stable Profile',
-            'language' => 'default',
-        ]);
-
-        self::assertResponseRedirects('/user/profile');
-
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $entityManager->clear();
-        $unchangedUser = $entityManager->find(UserAccount::class, $user->uid());
-
-        self::assertInstanceOf(UserAccount::class, $unchangedUser);
-        self::assertSame('stableprofile', $unchangedUser->username());
-    }
-
-    public function testProfileLanguageCanBeChangedAndAppliesToCurrentResponse(): void
-    {
-        $client = self::createClient();
-        $user = $this->createUserWithLevel(1, 'languageprofile', 'profile-password');
-
-        $client->loginUser($user);
-        $crawler = $client->request('GET', '/user/profile');
-        $client->submit($crawler->selectButton('Save profile')->form([
-            'email' => $user->email(),
-            'display_name' => 'Language Profile',
-            'language' => 'de',
-        ]));
-
-        self::assertResponseRedirects('/user/profile');
-        $client->followRedirect();
-
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-alert-success', 'Profil gespeichert.');
-
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $entityManager->clear();
-        $updatedUser = $entityManager->find(UserAccount::class, $user->uid());
-
-        self::assertInstanceOf(UserAccount::class, $updatedUser);
-        self::assertSame('de', $updatedUser->settings()['language'] ?? null);
-
-        $client->request('GET', '/user/profile');
-
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Profil');
-    }
-
-    public function testProfileUsernameCanBeChangedWhenSettingIsEnabled(): void
-    {
-        $client = self::createClient();
-        $config = self::getContainer()->get(Config::class);
-        $user = $this->createUserWithLevel(1, 'renameprofile', 'profile-password');
-        $config->set('user.username_change.enabled', true);
-
-        try {
-            $client->loginUser($user);
-            $crawler = $client->request('GET', '/user/profile');
-
-            self::assertSelectorExists('input[name="username"]');
-
-            $client->submit($crawler->selectButton('Save profile')->form([
-                'username' => 'Renamed_Profile',
-                'email' => $user->email(),
-                'display_name' => 'Renamed Profile',
-                'language' => 'default',
-            ]));
-
-            self::assertResponseRedirects('/user/profile');
-            $client->followRedirect();
-
-            self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-alert-success', 'Profile saved.');
-
-            $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-            $entityManager->clear();
-            $renamedUser = $entityManager->find(UserAccount::class, $user->uid());
-
-            self::assertInstanceOf(UserAccount::class, $renamedUser);
-            self::assertSame('Renamed_Profile', $renamedUser->username());
-        } finally {
-            $config->set('user.username_change.enabled', false);
-        }
-    }
-
-    public function testProfileUsernameChangeRejectsDuplicateUsername(): void
-    {
-        $client = self::createClient();
-        $config = self::getContainer()->get(Config::class);
-        $user = $this->createUserWithLevel(1, 'duplicateprofile', 'profile-password');
-        $this->createUserWithLevel(1, 'takenprofile', 'profile-password');
-        $config->set('user.username_change.enabled', true);
-
-        try {
-            $client->loginUser($user);
-            $crawler = $client->request('GET', '/user/profile');
-            $client->submit($crawler->selectButton('Save profile')->form([
-                'username' => 'takenprofile',
-                'email' => $user->email(),
-                'display_name' => 'Duplicate Profile',
-                'language' => 'default',
-            ]));
-
-            self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-form-errors', 'This username is already used.');
-
-            $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-            $entityManager->clear();
-            $unchangedUser = $entityManager->find(UserAccount::class, $user->uid());
-
-            self::assertInstanceOf(UserAccount::class, $unchangedUser);
-            self::assertSame('duplicateprofile', $unchangedUser->username());
-        } finally {
-            $config->set('user.username_change.enabled', false);
-        }
-    }
-
-    public function testProfileEmailCanBeChanged(): void
-    {
-        $client = self::createClient();
-        $user = $this->createUserWithLevel(1, 'emailprofile', 'profile-password');
-
-        $client->loginUser($user);
-        $crawler = $client->request('GET', '/user/profile');
-        $client->submit($crawler->selectButton('Save profile')->form([
-            'email' => 'changed-emailprofile@example.test',
-            'display_name' => 'Email Profile',
-            'language' => 'default',
-        ]));
-
-        self::assertResponseRedirects('/user/profile');
-        $client->followRedirect();
-
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-alert-success', 'Profile saved.');
-
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $entityManager->clear();
-        $updatedUser = $entityManager->find(UserAccount::class, $user->uid());
-
-        self::assertInstanceOf(UserAccount::class, $updatedUser);
-        self::assertSame('changed-emailprofile@example.test', $updatedUser->email());
-    }
-
-    public function testProfileEmailChangeRevokesPendingRecoveryTokens(): void
-    {
-        $client = self::createClient();
-        $user = $this->createUserWithLevel(1, 'emailrecovery', 'profile-password');
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        [$resetToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(AccountTokenType::PasswordReset, $user->email(), [], $user);
-        [$reviewToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(AccountTokenType::SecurityReview, $user->email(), [], $user);
-        $entityManager->persist($resetToken);
-        $entityManager->persist($reviewToken);
-        $entityManager->flush();
-
-        $client->loginUser($user);
-        $crawler = $client->request('GET', '/user/profile');
-        $client->submit($crawler->selectButton('Save profile')->form([
-            'email' => 'changed-emailrecovery@example.test',
-            'display_name' => 'Email Recovery',
-            'language' => 'default',
-        ]));
-
-        self::assertResponseRedirects('/user/profile');
-
-        $entityManager->clear();
-        $updatedReset = $entityManager->find(AccountToken::class, $resetToken->uid());
-        $updatedReview = $entityManager->find(AccountToken::class, $reviewToken->uid());
-
-        self::assertInstanceOf(AccountToken::class, $updatedReset);
-        self::assertInstanceOf(AccountToken::class, $updatedReview);
-        self::assertSame(AccountTokenStatus::Revoked, $updatedReset->status());
-        self::assertSame(AccountTokenStatus::Revoked, $updatedReview->status());
-    }
-
-    public function testProfileEmailChangeRejectsDuplicateEmail(): void
-    {
-        $client = self::createClient();
-        $user = $this->createUserWithLevel(1, 'emailduplicate', 'profile-password');
-        $taken = $this->createUserWithLevel(1, 'emailtaken', 'profile-password');
-
-        $client->loginUser($user);
-        $crawler = $client->request('GET', '/user/profile');
-        $client->submit($crawler->selectButton('Save profile')->form([
-            'email' => $taken->email(),
-            'display_name' => 'Email Duplicate',
-            'language' => 'default',
-        ]));
-
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-form-errors', 'This email address is already used.');
-
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $entityManager->clear();
-        $unchangedUser = $entityManager->find(UserAccount::class, $user->uid());
-
-        self::assertInstanceOf(UserAccount::class, $unchangedUser);
-        self::assertSame('emailduplicate@example.test', $unchangedUser->email());
-    }
+    use AuthenticatedClientTrait;
+    use UserControllerFixtureTrait;
 
     public function testPasswordRouteChangesPassword(): void
     {
         $client = self::createClient();
         $user = $this->createUserWithLevel(1, 'passworduser', 'current-password');
-        $client->loginUser($user);
+        $this->loginTestUser($client, $user);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -293,17 +51,17 @@ final class UserControllerTest extends WebTestCase
         $client->submit($form);
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-auth-notice', 'Your password was updated.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your password was updated.');
         $updatedUser = self::getContainer()->get(EntityManagerInterface::class)->getRepository(UserAccount::class)->find($user->uid());
 
         self::assertInstanceOf(UserAccount::class, $updatedUser);
         self::assertFalse(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($updatedUser, 'current-password'));
         self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($updatedUser, 'NewPassword1!'));
-        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
         self::assertStringContainsString('auth.password_change_success', $auditLog);
         self::assertStringContainsString('"result_status":"success"', $auditLog);
         self::assertStringNotContainsString('NewPassword1!', $auditLog);
-        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/message-*.log') ?: []));
         self::assertStringContainsString('account.password.changed', $messageLog);
         self::assertStringContainsString('/user/security-review/', $messageLog);
 
@@ -331,7 +89,7 @@ final class UserControllerTest extends WebTestCase
         $config = self::getContainer()->get(Config::class);
         $originalSiteUrl = $config->get('site.url', 'http://localhost');
         $config->set('site.url', 'not-a-url');
-        $client->loginUser($user);
+        $this->loginTestUser($client, $user);
 
         try {
             $crawler = $client->request('GET', '/user/password');
@@ -342,7 +100,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-form-errors', 'The password-change security email could not be created. Please try again later.');
+            self::assertSelectorTextContains('.system-form-errors', 'The password-change security email could not be created. Please try again later.');
 
             $entityManager = self::getContainer()->get(EntityManagerInterface::class);
             $updatedUser = $entityManager->getRepository(UserAccount::class)->find($user->uid());
@@ -382,7 +140,7 @@ final class UserControllerTest extends WebTestCase
         $entityManager->flush();
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -390,7 +148,7 @@ final class UserControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Account security review');
-        self::assertSelectorTextContains('.studio-auth-notice', 'Only continue if you did not request the password change.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'Only continue if you did not request the password change.');
         self::assertSelectorExists('form button');
 
         $entityManager->clear();
@@ -405,7 +163,7 @@ final class UserControllerTest extends WebTestCase
         $client->submit($form);
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-auth-notice', 'An administrator notification was created for review.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'An administrator notification was created for review.');
 
         $entityManager->clear();
         $lockedUser = $entityManager->find(UserAccount::class, $user->uid());
@@ -421,7 +179,7 @@ final class UserControllerTest extends WebTestCase
         self::assertSame(AccountTokenStatus::Revoked, $revokedResetToken->status());
         self::assertInstanceOf(ApiKey::class, $revokedApiKey);
         self::assertSame(ApiKeyStatus::Revoked, $revokedApiKey->status());
-        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/message-*.log') ?: []));
         self::assertStringContainsString('account.password_change.disputed', $messageLog);
         self::assertStringContainsString('"username":"securityreview"', $messageLog);
     }
@@ -461,7 +219,7 @@ final class UserControllerTest extends WebTestCase
             $client->submit($crawler->selectButton('Lock account')->form());
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-error', 'The last active owner account cannot be locked from this review link.');
+            self::assertSelectorTextContains('.system-frontend-auth-error', 'The last active owner account cannot be locked from this review link.');
 
             $entityManager->clear();
             $unchangedAdmin = $entityManager->find(UserAccount::class, $admin->uid());
@@ -523,10 +281,10 @@ final class UserControllerTest extends WebTestCase
     public function testPasswordRouteReportsValidationErrors(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(1, 'passworderror', 'current-password'));
+        $this->loginTestUser($client, $this->createUserWithLevel(1, 'passworderror', 'current-password'));
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-audit-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -540,10 +298,10 @@ final class UserControllerTest extends WebTestCase
         $client->submit($form);
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-form-errors', 'The current password is not correct.');
-        self::assertSelectorTextContains('.studio-form-errors', 'The new password must contain at least 8 characters.');
-        self::assertSelectorTextContains('.studio-form-errors', 'The new passwords do not match.');
-        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-audit-*.log') ?: []));
+        self::assertSelectorTextContains('.system-form-errors', 'The current password is not correct.');
+        self::assertSelectorTextContains('.system-form-errors', 'The new password must contain at least 8 characters.');
+        self::assertSelectorTextContains('.system-form-errors', 'The new passwords do not match.');
+        $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
         self::assertStringContainsString('auth.password_change_failed', $auditLog);
         self::assertStringContainsString('ui.user.password.errors.current_password', $auditLog);
         self::assertStringNotContainsString('wrong-password', $auditLog);
@@ -552,7 +310,7 @@ final class UserControllerTest extends WebTestCase
     public function testApiKeysRouteRendersForAuthenticatedUsers(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->createUserWithLevel(1, 'skeletonuser', 'skeleton-password'));
+        $this->loginTestUser($client, $this->createUserWithLevel(1, 'skeletonuser', 'skeleton-password'));
         $client->request('GET', '/user/api-keys');
 
         self::assertResponseIsSuccessful();
@@ -718,7 +476,7 @@ final class UserControllerTest extends WebTestCase
         $client = self::createClient();
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -739,13 +497,13 @@ final class UserControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-auth-notice', 'Your account is ready.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your account is ready.');
 
         $user = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'missinggroupinvitee']);
 
         self::assertInstanceOf(UserAccount::class, $user);
         self::assertSame([], $this->userGroupIdentifiers($user));
-        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/message-*.log') ?: []));
         self::assertStringContainsString('account.link_stale_groups', $messageLog);
         self::assertStringContainsString('deleted_between_get_and_post', $messageLog);
 
@@ -764,7 +522,7 @@ final class UserControllerTest extends WebTestCase
         );
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $claimedUser = new UserAccount(
-            '60000000-0000-0000-0000-'.substr(md5('claimedinvitee'), 0, 12),
+            '60000000-0000-7000-8000-'.substr(md5('claimedinvitee'), 0, 12),
             'claimedinvitee',
             'claimed-invitee@example.test',
             'pending',
@@ -782,7 +540,7 @@ final class UserControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-form-errors', 'Email address "claimed-invitee@example.test" is already assigned to another account.');
+        self::assertSelectorTextContains('.system-form-errors', 'Email address "claimed-invitee@example.test" is already assigned to another account.');
         self::assertNull($entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'claimednewuser']));
 
         $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
@@ -812,7 +570,7 @@ final class UserControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-form-errors', 'This account setup link can no longer be used.');
+        self::assertSelectorTextContains('.system-form-errors', 'This account setup link can no longer be used.');
         self::assertNull($entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'lowrolegroup']));
 
         $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
@@ -842,7 +600,7 @@ final class UserControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-auth-notice', 'Your account is ready.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your account is ready.');
 
         $user = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'authorinvitee']);
 
@@ -868,7 +626,7 @@ final class UserControllerTest extends WebTestCase
         self::assertInstanceOf(UserAccount::class, $admin);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -879,14 +637,14 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-notice', 'If the address can be registered, an email with account setup instructions was created.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'If the address can be registered, an email with account setup instructions was created.');
 
             $token = self::getContainer()->get(EntityManagerInterface::class)
                 ->getRepository(AccountToken::class)
                 ->findOneBy(['email' => $admin->email(), 'type' => AccountTokenType::Registration]);
 
             self::assertNull($token);
-            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/message-*.log') ?: []));
             self::assertStringContainsString('account.registration.existing_account', $messageLog);
             self::assertStringContainsString('"username":"admin"', $messageLog);
         } finally {
@@ -907,7 +665,7 @@ final class UserControllerTest extends WebTestCase
         $config->set('user.registration.mode', 'auto_approval');
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -918,7 +676,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
 
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $deletedUser->email(),
@@ -930,7 +688,7 @@ final class UserControllerTest extends WebTestCase
             self::assertSame($deletedUser->uid(), $token->user()?->uid());
             self::assertSame(UserRole::Admin, $token->role());
             self::assertSame([], $token->groupIdentifiers());
-            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/message-*.log') ?: []));
             self::assertStringContainsString('account.registration.approval_requested', $messageLog);
             self::assertStringNotContainsString('https://example.test/user/invitation/', $messageLog);
             self::assertStringNotContainsString('account.registration.existing_account', $messageLog);
@@ -953,7 +711,7 @@ final class UserControllerTest extends WebTestCase
         $config->set('user.registration.mode', 'auto_approval');
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -964,7 +722,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
 
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $deletedUser->email(),
@@ -975,7 +733,7 @@ final class UserControllerTest extends WebTestCase
             self::assertInstanceOf(AccountToken::class, $token);
             self::assertSame($deletedUser->uid(), $token->user()?->uid());
             self::assertSame(UserRole::Author, $token->role());
-            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/message-*.log') ?: []));
             self::assertStringContainsString('account.registration.approval_requested', $messageLog);
             self::assertStringNotContainsString('https://example.test/user/invitation/', $messageLog);
         } finally {
@@ -997,7 +755,7 @@ final class UserControllerTest extends WebTestCase
         $config->set('user.registration.mode', 'auto_approval');
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -1008,7 +766,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-notice', 'If the address can be registered, an email with account setup instructions was created.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'If the address can be registered, an email with account setup instructions was created.');
 
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $deletedUser->email(),
@@ -1019,7 +777,7 @@ final class UserControllerTest extends WebTestCase
             self::assertInstanceOf(AccountToken::class, $token);
             self::assertSame($deletedUser->uid(), $token->user()?->uid());
             self::assertSame(UserRole::User, $token->role());
-            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/message-*.log') ?: []));
             self::assertStringContainsString('account.registration.link', $messageLog);
             self::assertStringContainsString('https://example.test/user/invitation/', $messageLog);
         } finally {
@@ -1034,9 +792,9 @@ final class UserControllerTest extends WebTestCase
         $config = self::getContainer()->get(Config::class);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $group = new AclGroup(
-            '00000000-0000-4000-8000-000000009901',
+            '00000000-0000-7000-8000-000000009901',
             'signup_default',
-            ['en' => 'Signup Default'],
+            'Signup Default',
             AccessLevel::USER,
         );
         $entityManager->persist($group);
@@ -1128,7 +886,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-form-errors', 'The account email could not be created. Please try again later.');
+            self::assertSelectorTextContains('.system-form-errors', 'The account email could not be created. Please try again later.');
 
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $email,
@@ -1143,7 +901,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-form-errors', 'The account email could not be created. Please try again later.');
+            self::assertSelectorTextContains('.system-form-errors', 'The account email could not be created. Please try again later.');
 
             $existingAccountToken = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $admin->email(),
@@ -1181,7 +939,7 @@ final class UserControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-auth-notice', 'Your account is ready.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your account is ready.');
 
         $entityManager->clear();
         $reactivatedUser = $entityManager->find(UserAccount::class, $deletedUid);
@@ -1211,7 +969,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
 
             $entityManager = self::getContainer()->get(EntityManagerInterface::class);
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy(['email' => $email]);
@@ -1239,7 +997,7 @@ final class UserControllerTest extends WebTestCase
         self::assertInstanceOf(UserAccount::class, $user);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
@@ -1262,7 +1020,7 @@ final class UserControllerTest extends WebTestCase
             'type' => AccountTokenType::PasswordReset,
         ]);
         $statuses = array_map(static fn (AccountToken $token): AccountTokenStatus => $token->status(), $tokens);
-        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+        $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/message-*.log') ?: []));
 
         self::assertCount(2, $tokens);
         self::assertCount(1, array_filter($statuses, static fn (AccountTokenStatus $status): bool => AccountTokenStatus::Pending === $status));
@@ -1293,7 +1051,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-form-errors', 'The reset email could not be created. Please try again later.');
+            self::assertSelectorTextContains('.system-form-errors', 'The reset email could not be created. Please try again later.');
 
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $user->email(),
@@ -1308,7 +1066,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-form-errors', 'The reset email could not be created. Please try again later.');
+            self::assertSelectorTextContains('.system-form-errors', 'The reset email could not be created. Please try again later.');
         } finally {
             $config->set('site.url', (string) $originalSiteUrl);
         }
@@ -1361,84 +1119,6 @@ final class UserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
-    public function testApiKeysRouteListsPersistedKeysForTheCurrentUser(): void
-    {
-        $client = self::createClient();
-        $user = self::getContainer()->get(EntityManagerInterface::class)
-            ->getRepository(UserAccount::class)
-            ->findOneBy(['username' => 'admin']);
-
-        self::assertInstanceOf(UserAccount::class, $user);
-
-        $client->loginUser($user);
-        $client->request('GET', '/user/api-keys');
-
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'API keys');
-        self::assertSelectorTextContains('.studio-field-table', 'seedrw');
-        self::assertSelectorTextContains('.studio-field-table', 'Read and write');
-        self::assertSelectorTextContains('.studio-field-table', 'seedro');
-        self::assertSelectorTextContains('.studio-field-table', 'Read only');
-        self::assertSelectorTextContains('.studio-field-table', 'seedrv');
-        self::assertSelectorTextContains('.studio-field-table', 'Revoked');
-    }
-
-    public function testApiKeysCanBeCreatedRevealedAndRevoked(): void
-    {
-        $client = self::createClient();
-        $user = $this->createUserWithLevel(1, 'apikeyflow', 'current-password');
-        $client->loginUser($user);
-
-        $crawler = $client->request('GET', '/user/api-keys');
-        $form = $crawler->selectButton('Generate key')->form([
-            'prefix' => 'flowkey',
-            'read_only' => '1',
-        ]);
-        $client->submit($form);
-
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-panel', 'Generated API key');
-        self::assertSelectorTextContains('.studio-code', 'flowkey.');
-
-        $apiKey = self::getContainer()->get(EntityManagerInterface::class)->getRepository(ApiKey::class)->findOneBy([
-            'prefix' => 'flowkey',
-            'user' => $user,
-        ]);
-
-        self::assertInstanceOf(ApiKey::class, $apiKey);
-
-        $crawler = $client->request('GET', '/user/api-keys/'.$apiKey->uid().'/reveal');
-        $client->submit($crawler->selectButton('Reveal key')->form([
-            'password' => 'current-password',
-        ]));
-
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-code', 'flowkey.');
-
-        $crawler = $client->request('GET', '/user/api-keys');
-        $client->submit($crawler->selectButton('Revoke')->form());
-        self::assertResponseRedirects('/user/api-keys');
-    }
-
-    public function testRevokedApiKeyCannotBeRevealedFromDirectUrl(): void
-    {
-        $client = self::createClient();
-        $user = $this->createUserWithLevel(1, 'revokedreveal', 'current-password');
-        $apiKey = $this->createApiKey($user, 'revokedreveal');
-        $apiKey->revoke();
-        self::getContainer()->get(EntityManagerInterface::class)->flush();
-        $client->loginUser($user);
-
-        $client->request('GET', '/user/api-keys/'.$apiKey->uid().'/reveal');
-
-        self::assertResponseStatusCodeSame(404);
-
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $entityManager->remove($entityManager->find(ApiKey::class, $apiKey->uid()));
-        $entityManager->remove($entityManager->find(UserAccount::class, $user->uid()));
-        $entityManager->flush();
-    }
-
     public function testUserCanCloseOwnAccountAndRevokeCredentials(): void
     {
         $client = self::createClient();
@@ -1457,14 +1137,14 @@ final class UserControllerTest extends WebTestCase
         $originalRetention = $config->get('user.deleted_user_retention_days', 7);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach (glob($logDir.'/test.studio-message-*.log') ?: [] as $logFile) {
+        foreach (glob($logDir.'/test/message-*.log') ?: [] as $logFile) {
             @unlink($logFile);
         }
 
         try {
             $config->set('user.deleted_user_retention_days', 21);
 
-            $client->loginUser($user);
+            $this->loginTestUser($client, $user);
             $crawler = $client->request('GET', '/user/profile');
             self::assertSelectorTextContains('main', 'Start account closure from a separate confirmation page.');
             self::assertStringNotContainsString('you have 21 day(s) to restore the account', (string) $client->getResponse()->getContent());
@@ -1495,7 +1175,7 @@ final class UserControllerTest extends WebTestCase
             self::assertSame(ApiKeyStatus::Revoked, $revokedApiKey->status());
             self::assertInstanceOf(AccountToken::class, $revokedToken);
             self::assertSame(AccountTokenStatus::Revoked, $revokedToken->status());
-            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test.studio-message-*.log') ?: []));
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/message-*.log') ?: []));
             self::assertStringContainsString('account.closed', $messageLog);
             self::assertStringContainsString('retention_days', $messageLog);
             self::assertStringContainsString('21', $messageLog);
@@ -1537,7 +1217,7 @@ final class UserControllerTest extends WebTestCase
         $entityManager->flush();
 
         try {
-            $client->loginUser($admin);
+            $this->loginTestUser($client, $admin);
             $crawler = $client->request('GET', '/user/profile');
             $crawler = $client->click($crawler->selectLink('Close account')->link());
             $form = $crawler->filter('form[action="/user/profile/close"]')->form([
@@ -1548,7 +1228,7 @@ final class UserControllerTest extends WebTestCase
 
             self::assertResponseRedirects('/user/profile/close');
             $client->followRedirect();
-            self::assertSelectorTextContains('.studio-alert-error', 'The last active owner account cannot be closed.');
+            self::assertSelectorTextContains('.system-alert-error', 'The last active owner account cannot be closed.');
 
             $entityManager->clear();
             $persistedAdmin = $entityManager->find(UserAccount::class, $admin->uid());
@@ -1574,90 +1254,4 @@ final class UserControllerTest extends WebTestCase
         }
     }
 
-    private function createUserWithLevel(int $level, string $username, string $password): UserAccount
-    {
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $existingUser = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
-
-        if ($existingUser instanceof UserAccount) {
-            $existingUser->changeStatus(UserAccountStatus::Active);
-            $existingUser->changeRole(UserRole::fromAccessLevel($level));
-            $existingUser->changePassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($existingUser, $password));
-            $entityManager->flush();
-
-            return $existingUser;
-        }
-
-        $user = new UserAccount(
-            '60000000-0000-0000-0000-'.substr(md5($username), 0, 12),
-            $username,
-            $username.'@example.test',
-            'pending',
-            role: UserRole::fromAccessLevel($level),
-        );
-        $user->changePassword(self::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, $password));
-        $entityManager->persist($user);
-        $entityManager->flush();
-
-        return $user;
-    }
-
-    private function createApiKey(UserAccount $user, string $prefix): ApiKey
-    {
-        $vault = self::getContainer()->get(ApiKeyVault::class);
-        $plainKey = $vault->generatePlainKey($prefix);
-        $apiKey = new ApiKey(
-            '63000000-0000-0000-0000-'.substr(md5($prefix.$user->uid()), 0, 12),
-            $prefix,
-            $vault->hmac($plainKey),
-            $vault->encrypt($plainKey),
-            $user,
-            ApiKeyStatus::ReadWrite,
-        );
-
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $entityManager->persist($apiKey);
-
-        return $apiKey;
-    }
-
-    private function createGroup(string $identifier, int $minRole): AclGroup
-    {
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $existingGroup = $entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => $identifier]);
-
-        if ($existingGroup instanceof AclGroup) {
-            $existingGroup->changeMinRole($minRole);
-
-            return $existingGroup;
-        }
-
-        $group = new AclGroup(
-            '62000000-0000-0000-0000-'.substr(md5($identifier), 0, 12),
-            $identifier,
-            ['en' => ucfirst(str_replace('_', ' ', $identifier))],
-            $minRole,
-        );
-        $entityManager->persist($group);
-
-        return $group;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function userGroupIdentifiers(UserAccount $user): array
-    {
-        $identifiers = [];
-
-        foreach ($user->groups() as $group) {
-            if ($group instanceof AclGroup) {
-                $identifiers[] = $group->identifier();
-            }
-        }
-
-        sort($identifiers);
-
-        return $identifiers;
-    }
 }
