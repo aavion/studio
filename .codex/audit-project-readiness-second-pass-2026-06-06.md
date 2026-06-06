@@ -93,18 +93,18 @@ This second pass additionally checks the explicit final-gate rules added during 
 | --- | --- | --- | --- |
 | Backend | `src/Backend` | Pending | Re-check read-model split, package detail provider size, dynamic context naming, and hard exceptions. |
 | Command | `src/Command` | Pending | Re-check command names, output renderer usage, subprocess boundaries, and `studio:` command branding decision. |
-| Content | `src/Content` | Pending | Re-check content aggregate split, language handling, route/error behavior, and future API read-model boundaries. |
+| Content | `src/Content` | In progress | Content read resolution, routing language behavior, and content field locale tokens reviewed. S2-015 hardens regional locale fallback and persisted field locale compatibility. Aggregate/API read-model boundaries still need review. |
 | Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap and S2-009 hardens profile language persistence. Setup/backend leftovers still need review. |
 | Core primitives | `src/Core/Access`, `ActionLog`, `Config`, `Diff`, `DryRun`, `Message`, `Workflow` | Pending | Re-check config default fallbacks, message catalogues, hard throws, and public naming. |
 | Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | Pending | Re-check central process policy, filesystem/symlink handling, Windows edges, and operation message usage. |
-| Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, and PHP capability policy reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, and S2-007 records the remaining lifecycle transaction boundary. |
+| Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, PHP capability policy, and runtime contribution registry reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, S2-007 records the remaining lifecycle transaction boundary, and S2-010 converts package runtime contribution failures to Message-layer diagnostics. |
 | Core observability | `src/Core/Log`, `Statistics`, `Diagnostics` | Pending | Re-check visitor/request IDs, privacy boundaries, log retention assumptions, and `studio` channel naming. |
-| Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | Pending | Re-check runtime paths, dynamic languages, event providers, and package catalogue conflicts. |
+| Core support | `src/Core/Translation`, `Lint`, `Manifest`, `Event`, selected support helpers | In progress | Event hook registry reviewed; S2-011 prevents silent public hook descriptor overrides. Translation/runtime paths, lint, manifest, and package catalogue conflicts still need review. |
 | Database | `src/Database` | Pending | Re-check prefix coverage, raw DBAL paths, and migration portability. |
 | Debug and Kernel | `src/Debug`, `src/Kernel.php` | Pending | Re-check debug collector naming, output safety, and APP_DEBUG gating. |
-| Entity and Repository | `src/Entity`, `src/Repository` | Pending | Re-check large entities, UID strategy, JSON fields, indexes, and repository filtering boundaries. |
-| Form, Mail, Navigation, Localization | `src/Form`, `src/Mail`, `src/Navigation`, `src/Localization` | Pending | Re-check locale resolver, generated form boundaries, mail deferred policy, and navigation facade split. |
-| Scheduler | `src/Scheduler` | Pending | Re-check Symfony Scheduler/Lock alignment, task registry shape, GET fallback security, and package task validation. |
+| Entity and Repository | `src/Entity`, `src/Repository` | In progress | Large entity inventory started; content field locale token compatibility reviewed in S2-015. UID strategy, statistics indexes, package/schema entities, and repository filtering boundaries still need final assessment. |
+| Form, Mail, Navigation, Localization | `src/Form`, `src/Mail`, `src/Navigation`, `src/Localization` | Reviewed | Locale resolver, form builder/submission layer, mail locale behavior, and navigation label fallback reviewed. S2-013 records the deferred Mail Message/API hardening; S2-014 hardens navigation primary-language fallback. |
+| Scheduler | `src/Scheduler` | In progress | Scheduler task registry, lock naming, package task policy, run recorder, web-auth settings, and task definitions reviewed. S2-012 converts public task definition invariants to Message-layer diagnostics. Remaining pass: route/controller usage and docs alignment. |
 | Security | `src/Security` | In progress | Session visitor binding reviewed; S2-008 records the remaining copied-session plus copied-visitor-cookie limitation. Tokens, API keys, ACL groups, account flows, and secret rotation still need broader review. |
 | Setup | `src/Setup` | Pending | Re-check setup runner/preflight split, dry-run behavior, config defaults, CLI/web input, and setup subprocess handling. |
 | View | `src/View` | In progress | Template runtime fallback reviewed; S2-005 removes a hardcoded `en` fallback from the root layout. Twig helper split, response header policy, dynamic injection failure ownership, and technical naming still need broader review. |
@@ -223,6 +223,66 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Added controller validation, `ui.user.profile.errors.language_invalid` translations, runtime catalogue entries, and a crafted POST regression test.
 - **Priority:** Now / Review readiness.
 
+### S2-010 Package runtime contribution failures use literal exception text
+
+- **Area:** Package PHP loader, package runtime contribution registry, scheduler contribution policy.
+- **Finding:** `PackageRuntimeContributionRegistry` correctly rejects unsupported contribution types, elevated scheduler sources, and trusted package scheduler tasks, but the failures used literal `InvalidArgumentException` messages.
+- **Evidence:** `src/Core/Package/PackageRuntimeContributionRegistry.php:162`, `src/Core/Package/PackageRuntimeContributionRegistry.php:181`, `src/Core/Package/PackagePhpLoader.php:212`, `tests/Core/Package/PackageLifecycleBoundaryTest.php:249`.
+- **Impact:** The package is marked faulty and behavior remains safe, but package authors and operational logs lose the domain-owned Message key that explains which policy failed. This is exactly the kind of review edge the second pass should remove.
+- **Recommendation:** Use package-owned Message keys for contribution shape and scheduler privilege failures, and preserve the previous Message context when the PHP loader converts the error into a package fault.
+- **Fix applied:** Added package runtime/scheduler Message keys and translations, converted registry policy errors to `MessageException`, enriched `PackagePhpLoader` fault context with previous Message details, and added regression expectations.
+- **Priority:** Now / Review readiness.
+
+### S2-011 Public event hook descriptors can be silently overridden by later providers
+
+- **Area:** Public event hook registry and future package hook aggregation.
+- **Finding:** `PublicEventHookRegistry` keyed descriptors by event class, so a later provider could silently replace an earlier provider's descriptor for the same public event.
+- **Evidence:** `src/Core/Event/PublicEventHookRegistry.php:30`, `tests/Core/Event/PublicEventHookRegistryTest.php:64`.
+- **Impact:** Current system providers do not intentionally collide, so no behavior was broken today. Future package/domain aggregation would otherwise allow a package provider or misordered domain provider to redefine a system-owned hook's domain, mode, or mutability without any explicit policy.
+- **Recommendation:** Make conflict behavior deterministic and conservative: the first descriptor wins. With system providers ordered before package providers, system-owned hook metadata cannot be silently overridden.
+- **Fix applied:** Changed registry aggregation to keep the first descriptor per event class and added a regression test for duplicate providers.
+- **Priority:** Now / Review readiness.
+
+### S2-012 Scheduler task definition invariants use literal exception text
+
+- **Area:** Scheduler task definitions and package/system scheduler extension points.
+- **Finding:** `SchedulerTaskDefinition` is a public extension-point value object used by system providers and package runtime contributions, but invalid identifiers, translation keys, targets, cron expressions, sources, and metadata used literal `InvalidArgumentException` messages.
+- **Evidence:** `src/Scheduler/SchedulerTaskDefinition.php:24`, `src/Scheduler/SchedulerTaskDefinition.php:31`, `src/Scheduler/SchedulerTaskDefinition.php:113`, `tests/Scheduler/SchedulerRunnerTest.php:411`.
+- **Impact:** The hard invariant behavior is correct, but package authors and operational tooling benefit from stable domain Message keys. Literal texts here also conflicted with the second-pass rule that hard throws should be deliberate and structured where practical.
+- **Recommendation:** Keep the invariant boundary, but emit Scheduler-owned Message keys/codes so rejected package/system task definitions are diagnosable and translatable through the shared Message layer.
+- **Fix applied:** Added Scheduler task-definition Message keys/translations, converted `SchedulerTaskDefinition` to `MessageException`, and updated a focused regression to assert the translation key.
+- **Priority:** Now / Review readiness.
+
+### S2-013 Mail flow definitions still use literal invariants while the real mailer remains deferred
+
+- **Area:** Mail flow registry, mail delivery payload, future mailer settings/API.
+- **Finding:** `MailFlowDefinition`, `MailDeliveryMessage`, and `MailFlowRegistry` use literal `InvalidArgumentException`/`LogicException` messages for invalid flow metadata, recipient payloads, locale tokens, and unknown flow lookups.
+- **Evidence:** `src/Mail/MailFlowDefinition.php:84`, `src/Mail/MailDeliveryMessage.php:34`, `src/Mail/MailDeliveryMessage.php:139`, `src/Mail/MailFlowRegistry.php:24`, `dev/draft/0.4.x-MailerDeliveryContract.md:29`.
+- **Impact:** This is not review-blocking for the current branch because mail delivery is explicitly a future feature and current mail-bound account flows use the message-log stub. However, these classes are the future public mailer contract and should not mature with literal, non-catalogued diagnostics.
+- **Recommendation:** In the mailer feature slice, introduce a Mail-owned Message code/key catalogue, provider interface for flow definitions, structured unknown-flow results, and full tests for locale/template fallback, placeholder validation, and safe delivery failures. Keep the existing locale policy: recipient preferred language first, then request locale for public flows or default locale for admin-triggered flows.
+- **Fix applied:** Deferred intentionally; a partial Mail Message catalogue now would duplicate the upcoming mailer contract work.
+- **Priority:** Mailer feature branch / Before release.
+
+### S2-014 Navigation labels ignore primary-language fallback for regional locales
+
+- **Area:** Navigation item repository and dynamic language handling.
+- **Finding:** Persisted menu labels are stored as language-keyed JSON, but lookup used only an exact language key before falling back to the first stored label.
+- **Evidence:** `src/Navigation/NavigationItemRepository.php:101`, `tests/Navigation/NavigationBuilderTest.php:18`.
+- **Impact:** A request/build language such as `de_DE` would not resolve an available `de` navigation label and could show an unrelated first label instead. This conflicts with the dynamic-language policy and with the resolver behavior used elsewhere.
+- **Recommendation:** Normalize `_`/`-`, check exact normalized variants, then fall back to the primary language before using the first available label.
+- **Fix applied:** Added normalized and primary-language fallback in `NavigationItemRepository::label()` plus a regression for `de_DE` resolving a `de` label.
+- **Priority:** Now / Review readiness.
+
+### S2-015 Content read language fallback and field tokens are narrower than the dynamic locale catalogue
+
+- **Area:** Content read context, content field values, dynamic language compatibility.
+- **Finding:** Content read resolution used only exact language matches before default/first-language fallback, and persisted `ContentFieldValue` language tokens accepted only a narrow lowercase two-letter plus optional hyphen pattern.
+- **Evidence:** `src/Content/Read/ContentReadContextResolver.php:35`, `src/Entity/ContentFieldValue.php:122`, `tests/Localization/LanguageCatalogueDiscoveryTest.php:27`.
+- **Impact:** A language catalogue containing regional tokens such as `en_US` is supported by discovery, but content field values could reject those tokens and content reads for `de_DE` could fall back to the wrong default instead of available `de` content.
+- **Recommendation:** Use the shared locale-token policy for persisted content field languages and make content reads follow normalized/primary-language fallback before defaulting.
+- **Fix applied:** Added normalized, underscore, and primary-language fallback to `ContentReadContextResolver`, switched `ContentFieldValue` validation to `LocaleToken::isValid()`, and added regressions for `de_DE` content reads and `en_US` field values.
+- **Priority:** Now / Platform/language compatibility.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -234,6 +294,13 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Package policy bypass scan reviewed. Direct file/process/env/network calls, include/require/eval, reserved package paths, source namespaces, translation namespaces, symlink zip entries, scheduler cron literals, and source paths are validated; S2-006 closes the dynamic callable gap.
 - Session visitor binding reviewed. Hard binding works for missing/different visitor cookies, but complete cookie-pair duplication remains a deferred risk-scoring problem rather than a safe hard-termination signal today.
 - User profile language persistence reviewed. S2-009 now validates posted profile language values against the dynamic locale list instead of relying on later resolver fallback.
+- Package runtime contribution registry reviewed. S2-010 now exposes unsupported contribution and package scheduler privilege failures through Message-layer diagnostics instead of literal exception text.
+- Public event hook registry reviewed. S2-011 now prevents later descriptor providers from silently overriding earlier public hook metadata.
+- Scheduler task definitions reviewed. S2-012 now uses Scheduler Message keys for public extension-point invariant failures.
+- Mail locale resolution reviewed. S2-013 records deferred Mail Message/API hardening; current locale behavior matches the documented recipient-first policy.
+- Navigation labels reviewed. S2-014 now handles regional locale tokens through normalized/primary-language fallback.
+- Content read language behavior reviewed. S2-015 aligns regional locale fallback and persisted content field token validation with the dynamic language catalogue.
+- Form builder/submission layer reviewed. No immediate drift found: values cast centrally, option validation is generic, and user-facing errors stay on existing translation keys.
 
 ## Fixes Applied
 
@@ -242,3 +309,8 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Removed the hardcoded root-template English fallback by surfacing the resolved default locale through the view context.
 - Hardened installable package PHP validation against dynamic callable and reflection bypasses.
 - Rejected unsupported crafted profile language submissions before they reach account settings.
+- Converted package runtime contribution and package scheduler privilege failures to structured Package Message keys and retained those keys in PHP-loader fault context.
+- Made public event hook descriptor aggregation first-wins so future package providers cannot silently override system hook metadata.
+- Converted Scheduler task definition invariant failures to structured Scheduler Message keys while preserving InvalidArgument-compatible behavior.
+- Added normalized and primary-language fallback for persisted navigation labels.
+- Added regional-locale fallback for content reads and shared locale-token validation for content field values.

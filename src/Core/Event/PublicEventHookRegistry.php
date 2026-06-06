@@ -30,6 +30,10 @@ final readonly class PublicEventHookRegistry
 
         foreach ($providers as $provider) {
             foreach ($provider->hooks() as $hook) {
+                if (isset($hooks[$hook->eventClass()])) {
+                    continue;
+                }
+
                 $hooks[$hook->eventClass()] = $hook;
             }
         }

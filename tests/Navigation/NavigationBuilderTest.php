@@ -29,6 +29,36 @@ final class NavigationBuilderTest extends KernelTestCase
         self::assertSame(['/', '/about', '/news/first-update', '/user/login'], array_column($navigation, 'url'));
     }
 
+    public function testItFallsBackToPrimaryLanguageForNavigationLabels(): void
+    {
+        self::bootKernel();
+        $connection = self::getContainer()->get(Connection::class);
+        self::assertInstanceOf(Connection::class, $connection);
+        $uid = '30000000-0000-7000-8000-000000000970';
+
+        try {
+            $connection->insert('site_menu_item', [
+                'uid' => $uid,
+                'menu_uid' => '30000000-0000-7000-8000-000000000001',
+                'parent_uid' => null,
+                'sort_order' => 5,
+                'labels' => json_encode(['en' => 'English label', 'de' => 'Deutsches Label'], JSON_THROW_ON_ERROR),
+                'target_type' => 'url',
+                'target_value' => '/language-test',
+                'view_min_level' => null,
+                'view_group_identifiers' => null,
+                'metadata' => json_encode(['test' => true], JSON_THROW_ON_ERROR),
+            ]);
+
+            $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'de_DE', actor: AccessActor::anonymous());
+            $labelsByUrl = array_column($navigation, 'label', 'url');
+
+            self::assertSame('Deutsches Label', $labelsByUrl['/language-test']);
+        } finally {
+            $connection->delete('site_menu_item', ['uid' => $uid]);
+        }
+    }
+
     public function testStaticPublicInjectionsSkipReservedRoutePrefixesInNavigation(): void
     {
         self::bootKernel();

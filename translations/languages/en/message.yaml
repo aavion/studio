@@ -68,6 +68,8 @@ message:
       runtime_failure: 'Package "%package%" was marked faulty after a runtime failure.'
       php_load_failed: 'Package "%package%" PHP loader failed and the package was marked faulty.'
       rolled_back: 'Package lifecycle changes were rolled back for %count% package(s).'
+    runtime:
+      contribution_unsupported: 'Package "%package%" returned unsupported runtime contribution type "%type%".'
     setting:
       read_failed: 'Package setting "%package%:%key%" could not be read.'
       write_failed: 'Package setting "%package%:%key%" could not be written.'
@@ -82,6 +84,8 @@ message:
       resolved: 'Package "%package%" resolved %count% dependency item(s).'
     scheduler:
       cron_invalid: 'Package "%package%" declares an invalid scheduler cron expression.'
+      source_invalid: 'Package scheduler task "%task%" from "%package%" must use the package name as source instead of "%source%".'
+      trusted_blocked: 'Package scheduler task "%task%" from "%package%" must not request trusted execution.'
   translation:
     aggregate_completed: 'Translation aggregation merged %files% file(s) for %locales% locale(s) from core and %packages% active package(s).'
     aggregate_failed: 'Translation aggregation could not write "%path%".'
@@ -358,3 +362,11 @@ message:
     task_disabled: 'Scheduler task "%task%" was disabled after repeated failures.'
     task_invalid_cron_disabled: 'Scheduler task "%task%" was disabled because its cron expression is invalid.'
     task_soft_budget_exceeded: 'Scheduler task "%task%" exceeded its soft execution budget.'
+    task_definition:
+      target_invalid: 'Scheduler task "%task%" target must not be empty and must fit the supported length.'
+      cron_empty: 'Scheduler task "%task%" cron expression must not be empty and must fit the supported length.'
+      cron_invalid: 'Scheduler task "%task%" cron expression "%cron%" is invalid.'
+      metadata_invalid: '%label% must be JSON-encodable.'
+      identifier_invalid: '%label% "%value%" is invalid.'
+      source_invalid: 'Scheduler task source "%source%" is invalid.'
+      translation_key_invalid: '%label% "%value%" must be a valid translation key.'

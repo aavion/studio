@@ -7,6 +7,8 @@ namespace App\Tests\Core\Event;
 use App\Content\Event\ContentRenderContextEvent;
 use App\Content\Event\ContentRenderedEvent;
 use App\Content\ContentEventHookProvider;
+use App\Core\Event\EventHookDescriptor;
+use App\Core\Event\EventHookDescriptorProviderInterface;
 use App\Core\Event\EventHookMode;
 use App\Core\Event\EventMessageKey;
 use App\Core\Event\PublicEventHookRegistry;
@@ -71,5 +73,39 @@ final class PublicEventHookRegistryTest extends TestCase
 
         self::assertCount(11, $hooks);
         self::assertSame(ContentRenderContextEvent::class, $hooks[0]->eventClass());
+    }
+
+    public function testFirstHookDescriptorWinsWhenProvidersDeclareTheSameEvent(): void
+    {
+        $hooks = (new PublicEventHookRegistry([
+            new class implements EventHookDescriptorProviderInterface {
+                public function hooks(): iterable
+                {
+                    yield new EventHookDescriptor(
+                        ViewContextEvent::class,
+                        'system',
+                        EventHookMode::Extend,
+                        EventMessageKey::EVENT_HOOK_VIEW_CONTEXT_SUMMARY,
+                        true,
+                    );
+                }
+            },
+            new class implements EventHookDescriptorProviderInterface {
+                public function hooks(): iterable
+                {
+                    yield new EventHookDescriptor(
+                        ViewContextEvent::class,
+                        'package',
+                        EventHookMode::Observe,
+                        EventMessageKey::EVENT_HOOK_VIEW_CONTEXT_SUMMARY,
+                        false,
+                    );
+                }
+            },
+        ]))->byEventClass();
+
+        self::assertSame('system', $hooks[ViewContextEvent::class]->domain());
+        self::assertSame(EventHookMode::Extend, $hooks[ViewContextEvent::class]->mode());
+        self::assertTrue($hooks[ViewContextEvent::class]->mutable());
     }
 }

@@ -8,6 +8,7 @@ use App\Core\Config\Config;
 use App\Core\Id\UuidFactory;
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
+use App\Core\Message\MessageException;
 use App\Core\Package\ActivePackageProviderInterface;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageScope;
@@ -414,7 +415,8 @@ final class SchedulerRunnerTest extends KernelTestCase
 
     public function testTaskDefinitionsRejectInvalidTranslationKeys(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(MessageException::class);
+        $this->expectExceptionMessage('message.scheduler.task_definition.translation_key_invalid');
 
         SchedulerTaskDefinition::command(
             'system.bad_task',

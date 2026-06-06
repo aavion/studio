@@ -264,6 +264,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
 
         self::assertFalse($result->isSuccess());
         self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame('message.package.runtime.contribution_unsupported', $result->firstIssue()?->context()['previous_message']['key'] ?? null);
         self::assertSame([], $registry->staticViewInjections());
         self::assertSame('faulty', $this->packageStatus('broken-module'));
     }
@@ -298,6 +299,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
 
         self::assertFalse($result->isSuccess());
         self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame('message.package.scheduler.source_invalid', $result->firstIssue()?->context()['previous_message']['key'] ?? null);
         self::assertSame([], $registry->schedulerTasks());
         self::assertSame('faulty', $this->packageStatus('scheduler-module'));
     }

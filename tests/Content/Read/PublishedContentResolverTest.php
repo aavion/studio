@@ -75,6 +75,17 @@ final class PublishedContentResolverTest extends KernelTestCase
         self::assertSame(ContentMessageKey::CONTENT_LANGUAGE_FALLBACK, $this->resolver->resolveBySlug('about', AccessActor::anonymous(), 'fr')->messages()[0]->translationKey());
     }
 
+    public function testItFallsBackToPrimaryContentLanguageForRegionalLocales(): void
+    {
+        $view = $this->resolver->findByPath('/home', AccessActor::anonymous(), 'de_DE');
+
+        self::assertNotNull($view);
+        self::assertSame('de_DE', $view->context()->requestedLanguage());
+        self::assertSame('de', $view->context()->language());
+        self::assertTrue($view->context()->languageFallbackUsed());
+        self::assertSame('Willkommen in Studio', $view->title());
+    }
+
     public function testItFallsBackToDefaultVariantWhenRequestedVariantIsMissing(): void
     {
         $result = $this->resolver->resolveBySlug('home', AccessActor::anonymous(), variant: 'compact');

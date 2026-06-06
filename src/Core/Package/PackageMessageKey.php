@@ -59,6 +59,7 @@ final class PackageMessageKey
     public const PACKAGE_LIFECYCLE_RUNTIME_FAILURE = 'message.package.lifecycle.runtime_failure';
     public const PACKAGE_LIFECYCLE_PHP_LOAD_FAILED = 'message.package.lifecycle.php_load_failed';
     public const PACKAGE_LIFECYCLE_ROLLED_BACK = 'message.package.lifecycle.rolled_back';
+    public const PACKAGE_RUNTIME_CONTRIBUTION_UNSUPPORTED = 'message.package.runtime.contribution_unsupported';
     public const PACKAGE_SETTING_READ_FAILED = 'message.package.setting.read_failed';
     public const PACKAGE_SETTING_WRITE_FAILED = 'message.package.setting.write_failed';
     public const PACKAGE_SETTING_DELETE_FAILED = 'message.package.setting.delete_failed';
@@ -66,6 +67,8 @@ final class PackageMessageKey
     public const PACKAGE_DEPENDENCY_MISSING = 'message.package.dependency.missing';
     public const PACKAGE_DEPENDENCY_INVALID = 'message.package.dependency.invalid';
     public const PACKAGE_SCHEDULER_CRON_INVALID = 'message.package.scheduler.cron_invalid';
+    public const PACKAGE_SCHEDULER_SOURCE_INVALID = 'message.package.scheduler.source_invalid';
+    public const PACKAGE_SCHEDULER_TRUSTED_BLOCKED = 'message.package.scheduler.trusted_blocked';
     public const PACKAGE_DEPENDENCY_VERSION_UNSATISFIED = 'message.package.dependency.version_unsatisfied';
     public const PACKAGE_DEPENDENCY_STATUS_BLOCKED = 'message.package.dependency.status_blocked';
     public const PACKAGE_DEPENDENCY_CYCLE = 'message.package.dependency.cycle';

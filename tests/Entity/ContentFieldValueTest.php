@@ -39,6 +39,20 @@ final class ContentFieldValueTest extends TestCase
         self::assertSame('Kurzfassung', $fieldValue->fieldContent());
     }
 
+    public function testItAcceptsRegionalLocaleTokens(): void
+    {
+        $fieldValue = new ContentFieldValue(
+            '22222222-2222-7222-8222-222222222223',
+            $this->revision(new ContentItem('11111111-1111-7111-8111-111111111112', 'regional-article')),
+            'en_US',
+            'default',
+            'title',
+            'Regional title',
+        );
+
+        self::assertSame('en_US', $fieldValue->language());
+    }
+
     public function testItRejectsInvalidFieldIdentifiers(): void
     {
         $this->expectException(InvalidArgumentException::class);

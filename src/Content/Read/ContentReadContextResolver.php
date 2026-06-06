@@ -39,6 +39,21 @@ final readonly class ContentReadContextResolver
             return $requestedLanguage;
         }
 
+        $normalizedLanguage = strtolower(str_replace('_', '-', $requestedLanguage));
+        if (in_array($normalizedLanguage, $availableLanguages, true)) {
+            return $normalizedLanguage;
+        }
+
+        $underscoreLanguage = str_replace('-', '_', $normalizedLanguage);
+        if (in_array($underscoreLanguage, $availableLanguages, true)) {
+            return $underscoreLanguage;
+        }
+
+        $primaryLanguage = explode('-', $normalizedLanguage)[0] ?? '';
+        if (in_array($primaryLanguage, $availableLanguages, true)) {
+            return $primaryLanguage;
+        }
+
         if ('' !== $this->defaultLanguage && in_array($this->defaultLanguage, $availableLanguages, true)) {
             return $this->defaultLanguage;
         }

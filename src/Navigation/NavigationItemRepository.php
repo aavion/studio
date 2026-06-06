@@ -100,7 +100,13 @@ final readonly class NavigationItemRepository
      */
     private function label(array $labels, string $language): string
     {
-        $label = $labels[$language] ?? reset($labels);
+        $normalizedLanguage = strtolower(str_replace('_', '-', trim($language)));
+        $primaryLanguage = explode('-', $normalizedLanguage)[0] ?? '';
+        $label = $labels[$language]
+            ?? $labels[$normalizedLanguage]
+            ?? $labels[str_replace('-', '_', $normalizedLanguage)]
+            ?? $labels[$primaryLanguage]
+            ?? reset($labels);
 
         return is_string($label) ? $label : '';
     }

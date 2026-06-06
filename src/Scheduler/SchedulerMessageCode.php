@@ -12,4 +12,5 @@ final class SchedulerMessageCode
     public const SCHEDULER_TASK_DISABLED = 'scheduler.task_disabled';
     public const SCHEDULER_TASK_INVALID_CRON_DISABLED = 'scheduler.task_invalid_cron_disabled';
     public const SCHEDULER_TASK_SOFT_BUDGET_EXCEEDED = 'scheduler.task_soft_budget_exceeded';
+    public const SCHEDULER_TASK_DEFINITION_INVALID = 'scheduler.task_definition_invalid';
 }

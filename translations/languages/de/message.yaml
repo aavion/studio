@@ -68,6 +68,8 @@ message:
       runtime_failure: 'Paket "%package%" wurde nach einem Runtime-Fehler als fehlerhaft markiert.'
       php_load_failed: 'PHP-Loader für Paket "%package%" ist fehlgeschlagen und das Paket wurde als fehlerhaft markiert.'
       rolled_back: 'Paket-Lifecycle-Änderungen wurden für %count% Paket(e) zurückgerollt.'
+    runtime:
+      contribution_unsupported: 'Paket "%package%" hat einen nicht unterstützten Runtime-Contribution-Typ "%type%" zurückgegeben.'
     setting:
       read_failed: 'Paket-Einstellung "%package%:%key%" konnte nicht gelesen werden.'
       write_failed: 'Paket-Einstellung "%package%:%key%" konnte nicht geschrieben werden.'
@@ -82,6 +84,8 @@ message:
       resolved: 'Paket "%package%" hat %count% Abhängigkeits-Eintrag(e) aufgelöst.'
     scheduler:
       cron_invalid: 'Paket "%package%" deklariert einen ungültigen Scheduler-Cron-Ausdruck.'
+      source_invalid: 'Paket-Scheduler-Task "%task%" aus "%package%" muss den Paketnamen als Source verwenden, nicht "%source%".'
+      trusted_blocked: 'Paket-Scheduler-Task "%task%" aus "%package%" darf keine vertrauenswürdige Ausführung anfordern.'
   translation:
     aggregate_completed: 'Translation-Aggregation hat %files% Datei(en) für %locales% Locale(s) aus Core und %packages% aktiven Paket(en) zusammengeführt.'
     aggregate_failed: 'Translation-Aggregation konnte "%path%" nicht schreiben.'
@@ -358,3 +362,11 @@ message:
     task_disabled: 'Scheduler-Task "%task%" wurde nach wiederholten Fehlern deaktiviert.'
     task_invalid_cron_disabled: 'Scheduler-Task "%task%" wurde deaktiviert, weil sein Cron-Ausdruck ungültig ist.'
     task_soft_budget_exceeded: 'Scheduler-Task "%task%" hat sein weiches Ausführungsbudget überschritten.'
+    task_definition:
+      target_invalid: 'Scheduler-Task "%task%" darf kein leeres Target verwenden und muss innerhalb der unterstützten Länge bleiben.'
+      cron_empty: 'Scheduler-Task "%task%" darf keinen leeren Cron-Ausdruck verwenden und muss innerhalb der unterstützten Länge bleiben.'
+      cron_invalid: 'Scheduler-Task "%task%" verwendet den ungültigen Cron-Ausdruck "%cron%".'
+      metadata_invalid: '%label% muss als JSON kodierbar sein.'
+      identifier_invalid: '%label% "%value%" ist ungültig.'
+      source_invalid: 'Scheduler-Task-Source "%source%" ist ungültig.'
+      translation_key_invalid: '%label% "%value%" muss ein gültiger Translation-Key sein.'

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Scheduler;
 
-use InvalidArgumentException;
+use App\Core\Message\MessageException;
 
 final readonly class SchedulerTaskDefinition
 {
@@ -28,15 +28,22 @@ final readonly class SchedulerTaskDefinition
         $this->assertTranslationKey($descriptionKey, 'Scheduler task description key');
 
         if ('' === trim($target) || strlen($target) > 255) {
-            throw new InvalidArgumentException('Scheduler task target must not be empty.');
+            throw $this->invalidDefinition(SchedulerMessageKey::SCHEDULER_TASK_DEFINITION_TARGET_INVALID, [
+                '%task%' => $identifier,
+            ], ['field' => 'target']);
         }
 
         if ('' === trim($defaultCronExpression) || strlen($defaultCronExpression) > 120) {
-            throw new InvalidArgumentException('Scheduler task cron expression must not be empty.');
+            throw $this->invalidDefinition(SchedulerMessageKey::SCHEDULER_TASK_DEFINITION_CRON_EMPTY, [
+                '%task%' => $identifier,
+            ], ['field' => 'default_cron_expression']);
         }
 
         if (!SchedulerCron::isValid($defaultCronExpression)) {
-            throw new InvalidArgumentException(sprintf('Scheduler task cron expression "%s" is invalid.', $defaultCronExpression));
+            throw $this->invalidDefinition(SchedulerMessageKey::SCHEDULER_TASK_DEFINITION_CRON_INVALID, [
+                '%task%' => $identifier,
+                '%cron%' => $defaultCronExpression,
+            ], ['field' => 'default_cron_expression']);
         }
 
         $this->assertJsonEncodable($metadata, 'Scheduler task metadata');
@@ -110,7 +117,13 @@ final readonly class SchedulerTaskDefinition
         try {
             json_encode($value, JSON_THROW_ON_ERROR);
         } catch (\JsonException $error) {
-            throw new InvalidArgumentException(sprintf('%s must be JSON-encodable.', $label), previous: $error);
+            throw $this->invalidDefinition(SchedulerMessageKey::SCHEDULER_TASK_DEFINITION_METADATA_INVALID, [
+                '%label%' => $label,
+            ], [
+                'field' => 'metadata',
+                'exception' => $error::class,
+                'message' => $error->getMessage(),
+            ]);
         }
     }
 
@@ -122,21 +135,46 @@ final readonly class SchedulerTaskDefinition
     private function assertToken(string $value, string $label): void
     {
         if (!self::isValidIdentifier($value)) {
-            throw new InvalidArgumentException(sprintf('%s "%s" is invalid.', $label, $value));
+            throw $this->invalidDefinition(SchedulerMessageKey::SCHEDULER_TASK_DEFINITION_IDENTIFIER_INVALID, [
+                '%label%' => $label,
+                '%value%' => $value,
+            ], ['field' => 'identifier']);
         }
     }
 
     private function assertSource(string $value): void
     {
         if (strlen($value) > 120 || 1 !== preg_match('/^[a-z0-9][a-z0-9_.-]*$/', $value)) {
-            throw new InvalidArgumentException(sprintf('Scheduler task source "%s" is invalid.', $value));
+            throw $this->invalidDefinition(SchedulerMessageKey::SCHEDULER_TASK_DEFINITION_SOURCE_INVALID, [
+                '%source%' => $value,
+            ], ['field' => 'source']);
         }
     }
 
     private function assertTranslationKey(string $value, string $label): void
     {
         if (strlen($value) > 160 || 1 !== preg_match('/^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$/', $value)) {
-            throw new InvalidArgumentException(sprintf('%s "%s" is invalid.', $label, $value));
+            throw $this->invalidDefinition(SchedulerMessageKey::SCHEDULER_TASK_DEFINITION_TRANSLATION_KEY_INVALID, [
+                '%label%' => $label,
+                '%value%' => $value,
+            ], ['field' => 'translation_key']);
         }
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $context
+     */
+    private function invalidDefinition(
+        string $messageKey,
+        array $parameters = [],
+        array $context = [],
+    ): MessageException {
+        return MessageException::forMessage(
+            SchedulerMessageCode::SCHEDULER_TASK_DEFINITION_INVALID,
+            $messageKey,
+            $parameters,
+            $context,
+        );
     }
 }
