@@ -94,7 +94,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Backend | `src/Backend` | In progress | Admin settings/system-info path and backend view context reviewed. System-info uses a reduced admin-only report, not raw `phpinfo()` or `$_SERVER`; S2-021 renames internal backend form request attributes to `system`. S2-027 splits package detail file/link/dependency helpers out of the package detail read-model assembler. Remaining pass: backend route/action naming and controller adapters. |
 | Command | `src/Command` | Reviewed | Commands are small and use `studio:` as intentional product CLI branding. Process-heavy work delegates into services; no immediate command naming drift found. |
 | Content | `src/Content` | Reviewed | Content read resolution, routing language behavior, content field locale tokens, public custom-Twig rendering, redirects, schema primitives, and content event payloads reviewed. S2-015 hardens regional locale fallback and persisted field locale compatibility; S2-037 reports custom-Twig render failures through the Message layer before falling back. |
-| Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap, S2-009 hardens profile language persistence, and S2-028 centralizes repeated token/password helper logic. Setup/backend leftovers still need review. |
+| Controller | `src/Controller` | In progress | Account registration/invitation/profile/password flows reviewed first; S2-003 records the remaining controller-as-adapter gap, S2-009 hardens profile language persistence, S2-028 centralizes repeated token/password helper logic, and S2-042 moves admin invitation/token actions behind Security services. Setup/backend leftovers still need review. |
 | Core primitives | `src/Core/Access`, `ActionLog`, `Config`, `Diff`, `DryRun`, `Message`, `Workflow` | Reviewed | Config seed/default fallback, domain-owned Message code/key aggregation, access rules, ActionLog, Diff, DryRun, Message, and Workflow value-object invariants reviewed. Hard exceptions in this slice are deliberate low-level invariant guards, while recoverable runtime config failures already report through the Message layer. |
 | Core operations | `src/Core/Filesystem`, `Operation`, `Process`, `Messenger` | Reviewed | Process environment, detached process boundaries, filesystem actions, Messenger drain, live-operation start/storage/runner boundaries, PHP CLI resolver/preference validation, and file inventory scanning reviewed. Dotenv app values are passed to child processes while web/CGI context is filtered. Filesystem symlink guards use WorkflowResults; S2-017 converts live-operation start failure reasons to Message-layer diagnostics, S2-030 normalizes live-operation storage roots, and S2-035 normalizes file-inventory roots. |
 | Core package | `src/Core/Package` | In progress | `PackageActivator`, `PackageRemover`, registry sync, fault reset, runtime loader, package install apply, scheduler cron validation, PHP capability policy, runtime contribution registry, and asset registry contributions reviewed. S2-004 keeps cron parser behavior, S2-006 hardens dynamic callable bypasses, S2-007 records the remaining lifecycle transaction boundary, S2-010 converts package runtime contribution failures to Message-layer diagnostics, and S2-026 converts asset contribution invariants to Package Message keys. |
@@ -543,6 +543,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Renamed the operation overlay storage prefix to `system.operation...` and verified the controller syntax with focused lint.
 - **Priority:** Now / Naming consistency.
 
+### S2-042 Admin invitation controller still owned account-token workflows
+
+- **Area:** Admin account invitations, registration approval/rejection, pending-token reissue/revoke, controller modularity.
+- **Finding:** `AdminUserInvitationController` was 510 lines and still owned role/group validation, existing-account updates, deleted-account reactivation token setup, pending-token group repair, token delivery/revocation policy, URL/TTL/flow mapping, mail delivery, and audit logging.
+- **Evidence:** `src/Controller/AdminUserInvitationController.php`, `src/Security/AccountTokenIssuer.php`, `src/Security/AdminUserAccessPolicy.php`, `tests/Controller/AdminUserControllerTest.php`.
+- **Impact:** This mixed HTTP/CSRF/redirect code with security-sensitive workflow policy. Future Security work such as remember-me credentials, account-token event auditing, step-up flows, or mailer replacement would otherwise need to modify controller-private logic.
+- **Recommendation:** Keep the controller as a thin HTTP adapter and move admin invitation/account-token action orchestration plus token action policy into Security-owned services below the context-size target.
+- **Fix applied:** Added `AdminUserInvitationWorkflow`, `AdminAccountTokenPolicy`, and `AdminAccountTokenActionResult`; reduced `AdminUserInvitationController` from 510 to 158 lines; kept each new collaborator below 300 lines; and verified invitation/registration/reissue/revoke flows with focused controller tests.
+- **Priority:** Now / Security modularity.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -584,6 +594,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Package asset contribution invariants reviewed. S2-026 moves package author-facing asset contribution failures to Package Message keys.
 - Package admin detail read model reviewed. S2-027 splits file IO, URL sanitization, and dependency label parsing out of the oversized provider.
 - Account token/password flows reviewed. S2-028 centralizes pending-token lookup and password-policy UI error mapping outside controllers while leaving the larger account-flow service extraction tracked by S2-003.
+- Admin invitation/token action flows reviewed. S2-042 moves invitation creation, registration approval/rejection, account-token reissue/revoke policy, URL/TTL/flow mapping, delivery, and audit logging out of the controller into Security services.
 - Core primitive foundations reviewed. S2-029 records that hard exceptions in ActionLog/Diff/DryRun/Message/Workflow are deliberate low-level invariants, while Config runtime failures already use Message diagnostics and central defaults.
 - Live-operation storage reviewed. S2-030 aligns project-root trimming with the rest of the cross-platform process/file storage code.
 - Access statistic entity boundaries reviewed. S2-031 validates request/visitor trace identifiers as compact technical tokens before new rows are created.
@@ -625,6 +636,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Converted package asset contribution invariant failures from literal exceptions to Package Message keys.
 - Split package admin detail helper responsibilities into focused backend services.
 - Extracted repeated account token lookup and password-policy error mapping into Security helpers.
+- Extracted admin invitation and pending account-token action workflows into Security services.
 - Removed separate clear-token context logging from the account-link message-log delivery stub and narrowed the delivery contract to generated action URLs.
 - Split CLI setup database input resolution out of the top-level CLI input factory.
 - Split the web setup wizard render target into focused backend setup partials.
