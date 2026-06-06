@@ -24,24 +24,7 @@ final readonly class TranslationLanguageCatalog
      */
     public function availableLanguages(): array
     {
-        $languages = [];
-
-        foreach ($this->runtimePath->generatedCataloguePaths() as $path) {
-            if (1 === preg_match('/messages\.([a-z][a-z0-9]*(?:[_-][a-zA-Z0-9]+)*)\.yaml$/', basename($path), $matches)) {
-                $languages[] = $matches[1];
-            }
-        }
-
-        foreach (glob($this->projectDir.'/translations/languages/*', GLOB_ONLYDIR) ?: [] as $path) {
-            if (1 === preg_match('/^[a-z][a-z0-9]*(?:[_-][a-zA-Z0-9]+)*$/', basename($path))) {
-                $languages[] = basename($path);
-            }
-        }
-
-        $languages = array_values(array_unique($languages));
-        sort($languages);
-
-        return $languages;
+        return (new LanguageCatalogueDiscovery($this->projectDir, $this->runtimePath))->availableLanguages();
     }
 
     public function defaultLanguage(): string

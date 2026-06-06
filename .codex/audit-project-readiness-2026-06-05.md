@@ -705,6 +705,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Setup/SetupLanguageCatalog.php:12`, `src/Setup/SetupLanguageCatalog.php:21`, `src/Setup/SetupLanguageCatalog.php:54`, `src/Core/Translation/TranslationLanguageCatalog.php:10`, `src/Core/Translation/TranslationLanguageCatalog.php:19`.
 - **Impact:** Setup has valid fallback needs before the full app is installed, but duplicated language discovery can drift from runtime localization behavior.
 - **Recommendation:** Keep setup-safe fallbacks, but extract shared language-code discovery/normalization or make `TranslationLanguageCatalog` usable in setup mode without relying on runtime state. Coordinate this with F-031.
+- **Implementation note:** `LanguageCatalogueDiscovery` now owns the shared runtime/source catalogue scan and locale-token filtering. `TranslationLanguageCatalog` and setup-safe `SetupLanguageCatalog` both delegate to it, while setup keeps its separate configured-default-language fallback so first-run setup remains DB-free and container-independent.
 - **Priority:** Before UI refinement.
 
 ### F-044 Response header public hook lacks an explicit header policy
