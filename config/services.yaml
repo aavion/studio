@@ -229,6 +229,10 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Core\Package\PackageFilesystemRemover:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\Core\Package\Install\PackageInstallFilesystem:
         arguments:
             $projectDir: '%kernel.project_dir%'

@@ -7,28 +7,38 @@ namespace App\Core\Package;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
-use App\Core\Operation\Filesystem\RemovePathAction;
 use App\Core\Operation\OperationMessageCode;
 use App\Core\Operation\OperationMessageKey;
 use App\Core\Package\PackageMessageCode;
 use App\Core\Package\PackageMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ExtensionPackage;
-use App\Entity\SchedulerTask;
-use App\Entity\SchedulerTaskRun;
 use Doctrine\ORM\EntityManagerInterface;
 use Throwable;
 
 final readonly class PackageRemover
 {
+    private PackageLifecycleStore $store;
+    private PackageRemovalPlanner $removalPlanner;
+    private PackageFilesystemRemover $filesystemRemover;
+    private PackagePurger $purger;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private PackageActivator $activator,
         private PackageLifecycleAssetRebuilderInterface $assetRebuilder,
-        private PackageLifecycleCleanupRunnerInterface $cleanupRunner,
-        private string $projectDir,
+        PackageLifecycleCleanupRunnerInterface $cleanupRunner,
+        string $projectDir,
         private WorkflowResultMessageReporterInterface $messageReporter,
+        ?PackageLifecycleStore $store = null,
+        ?PackageRemovalPlanner $removalPlanner = null,
+        ?PackageFilesystemRemover $filesystemRemover = null,
+        ?PackagePurger $purger = null,
     ) {
+        $this->store = $store ?? new PackageLifecycleStore($entityManager);
+        $this->removalPlanner = $removalPlanner ?? new PackageRemovalPlanner($this->store, $activator);
+        $this->filesystemRemover = $filesystemRemover ?? new PackageFilesystemRemover($projectDir, $this->store);
+        $this->purger = $purger ?? new PackagePurger($entityManager, $this->store, $cleanupRunner);
     }
 
     /**
@@ -36,45 +46,7 @@ final readonly class PackageRemover
      */
     public function planRemoval(string $packageName): WorkflowResult
     {
-        $package = $this->package($packageName);
-
-        if (null === $package) {
-            return $this->report($this->packageNotFound($packageName), 'package.remove.plan', ['package' => $packageName]);
-        }
-
-        $changes = $this->plannedRemovalChanges($package);
-
-        if (ExtensionPackageStatus::Active === $package->status()) {
-            $plan = $this->activator->planDeactivation($packageName);
-
-            if (!$plan->isSuccess()) {
-                return $this->report(WorkflowResult::failed($plan->issues(), [
-                    'package' => $packageName,
-                    'path' => $package->path(),
-                    'plan_context' => $plan->context(),
-                ], $plan->messages()), 'package.remove.plan', ['package' => $packageName]);
-            }
-
-            $planChanges = $plan->value()['changes'] ?? [];
-            if (is_array($planChanges)) {
-                $changes = array_values(array_filter(
-                    $planChanges,
-                    static fn (mixed $change): bool => is_array($change),
-                ));
-            }
-
-            if (ExtensionPackageStatus::Removed !== $package->status()) {
-                $changes[] = ['package' => $package->packageName(), 'action' => 'removed', 'status' => ExtensionPackageStatus::Removed->value];
-            }
-        }
-
-        return $this->report(WorkflowResult::success([
-            'package' => $packageName,
-            'changes' => $changes,
-        ], [
-            'package' => $packageName,
-            'path' => $package->path(),
-        ]), 'package.remove.plan', ['package' => $packageName]);
+        return $this->report($this->removalPlanner->planRemoval($packageName), 'package.remove.plan', ['package' => $packageName]);
     }
 
     /**
@@ -82,7 +54,7 @@ final readonly class PackageRemover
      */
     public function remove(string $packageName, string $environment, bool $rebuildAssets = true): WorkflowResult
     {
-        $package = $this->package($packageName);
+        $package = $this->store->package($packageName);
 
         if (null === $package) {
             return $this->report($this->packageNotFound($packageName), 'package.remove', ['package' => $packageName, 'environment' => $environment]);
@@ -104,7 +76,7 @@ final readonly class PackageRemover
             }
 
             $deactivationTargets = $this->packageNameList($plan->value()['deactivate'] ?? []);
-            $previousStatuses = $this->statusSnapshots($deactivationTargets);
+            $previousStatuses = $this->store->statusSnapshotsForNames($deactivationTargets);
             $deactivation = $this->activator->deactivate($packageName, $environment, rebuildAssets: false);
             $messages = [...$messages, ...$deactivation->messages()];
 
@@ -125,7 +97,7 @@ final readonly class PackageRemover
             }
         }
 
-        $filesystem = $this->removeFilesystemPackage($package);
+        $filesystem = $this->filesystemRemover->remove($package);
         $messages = [...$messages, ...$filesystem->messages()];
 
         if (!$filesystem->isSuccess()) {
@@ -188,56 +160,7 @@ final readonly class PackageRemover
      */
     public function purge(string $packageName): WorkflowResult
     {
-        $package = $this->package($packageName);
-
-        if (null === $package) {
-            return $this->report($this->packageNotFound($packageName), 'package.purge', ['package' => $packageName]);
-        }
-
-        if (ExtensionPackageStatus::Removed !== $package->status()) {
-            return $this->report($this->statusBlocked($package, 'package.purge'), 'package.purge', ['package' => $packageName]);
-        }
-
-        $cleanup = $this->cleanupRunner->cleanup($package);
-
-        if (!$cleanup->isSuccess()) {
-            return $this->report(WorkflowResult::failed($cleanup->issues(), [
-                'package' => $packageName,
-                'cleanup_context' => $cleanup->context(),
-            ], $cleanup->messages()), 'package.purge', ['package' => $packageName]);
-        }
-
-        foreach ($this->entityManager->getRepository(SchedulerTask::class)->findBy(['source' => $packageName]) as $task) {
-            if ($task instanceof SchedulerTask) {
-                foreach ($this->entityManager->getRepository(SchedulerTaskRun::class)->findBy(['task' => $task]) as $run) {
-                    $this->entityManager->remove($run);
-                }
-                $this->entityManager->remove($task);
-            }
-        }
-        $this->entityManager->remove($package);
-        $this->entityManager->flush();
-
-        return $this->report(WorkflowResult::success([
-            'package' => $packageName,
-            'changes' => [[
-                'package' => $packageName,
-                'action' => 'purged',
-                'status' => 'deleted',
-            ]],
-        ], [
-            'package' => $packageName,
-            'cleanup_context' => $cleanup->context(),
-        ], [
-            ...$cleanup->messages(),
-            Message::create(
-                PackageMessageCode::PACKAGE_LIFECYCLE_PURGED,
-                PackageMessageKey::PACKAGE_LIFECYCLE_PURGED,
-                ['%package%' => $packageName],
-                ['package' => $packageName],
-                MessageLevel::Success,
-            ),
-        ]), 'package.purge', ['package' => $packageName]);
+        return $this->report($this->purger->purge($packageName), 'package.purge', ['package' => $packageName]);
     }
 
     /**
@@ -258,26 +181,6 @@ final readonly class PackageRemover
     }
 
     /**
-     * @param list<string> $packageNames
-     *
-     * @return array<string, ExtensionPackageStatus>
-     */
-    private function statusSnapshots(array $packageNames): array
-    {
-        $snapshots = [];
-
-        foreach (array_unique($packageNames) as $packageName) {
-            $package = $this->package($packageName);
-
-            if ($package instanceof ExtensionPackage) {
-                $snapshots[$packageName] = $package->status();
-            }
-        }
-
-        return $snapshots;
-    }
-
-    /**
      * @param array<string, ExtensionPackageStatus> $statuses
      *
      * @return list<Message>
@@ -285,14 +188,7 @@ final readonly class PackageRemover
     private function restorePackageStatuses(array $statuses): array
     {
         try {
-            foreach ($statuses as $packageName => $status) {
-                $package = $this->package($packageName);
-
-                if ($package instanceof ExtensionPackage) {
-                    $package->restoreStatus($status);
-                }
-            }
-
+            $this->store->restoreStatuses($statuses);
             $this->entityManager->flush();
         } catch (Throwable $error) {
             return [
@@ -309,68 +205,6 @@ final readonly class PackageRemover
         }
 
         return [];
-    }
-
-    private function package(string $packageName): ?ExtensionPackage
-    {
-        $package = $this->entityManager->getRepository(ExtensionPackage::class)->findOneBy([
-            'packageName' => $packageName,
-        ]);
-
-        return $package instanceof ExtensionPackage ? $package : null;
-    }
-
-    /**
-     * @return WorkflowResult<array{path: string, removed: bool}>
-     */
-    private function removeFilesystemPackage(ExtensionPackage $package): WorkflowResult
-    {
-        if (!str_starts_with($package->path(), 'packages/')) {
-            return WorkflowResult::blocked([
-                Message::create(
-                    PackageMessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
-                    PackageMessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
-                    ['%package%' => $package->packageName(), '%status%' => $package->status()->value],
-                    ['package' => $package->packageName(), 'path' => $package->path(), 'reason' => 'not_filesystem_package'],
-                    MessageLevel::Warning,
-                ),
-            ]);
-        }
-
-        try {
-            return (new RemovePathAction($this->projectDir, $package->path()))->execute();
-        } catch (Throwable $error) {
-            return WorkflowResult::failed([
-                Message::exception(
-                    OperationMessageCode::OPERATION_EXCEPTION,
-                    OperationMessageKey::OPERATION_EXCEPTION,
-                    context: [
-                        'package' => $package->packageName(),
-                        'path' => $package->path(),
-                        'exception' => $error::class,
-                        'message' => $error->getMessage(),
-                    ],
-                ),
-            ]);
-        }
-    }
-
-    /**
-     * @return list<array{package: string, action: string, status: string}>
-     */
-    private function plannedRemovalChanges(ExtensionPackage $package): array
-    {
-        $changes = [];
-
-        if (ExtensionPackageStatus::Active === $package->status()) {
-            $changes[] = ['package' => $package->packageName(), 'action' => 'deactivated', 'status' => ExtensionPackageStatus::Inactive->value];
-        }
-
-        if (ExtensionPackageStatus::Removed !== $package->status()) {
-            $changes[] = ['package' => $package->packageName(), 'action' => 'removed', 'status' => ExtensionPackageStatus::Removed->value];
-        }
-
-        return $changes;
     }
 
     /**
@@ -411,19 +245,6 @@ final readonly class PackageRemover
                 PackageMessageKey::PACKAGE_LIFECYCLE_PACKAGE_NOT_FOUND,
                 ['%package%' => $packageName],
                 ['package' => $packageName],
-                MessageLevel::Warning,
-            ),
-        ]);
-    }
-
-    private function statusBlocked(ExtensionPackage $package, string $operation): WorkflowResult
-    {
-        return WorkflowResult::blocked([
-            Message::create(
-                PackageMessageCode::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
-                PackageMessageKey::PACKAGE_LIFECYCLE_STATUS_BLOCKED,
-                ['%package%' => $package->packageName(), '%status%' => $package->status()->value],
-                ['package' => $package->packageName(), 'status' => $package->status()->value, 'operation' => $operation],
                 MessageLevel::Warning,
             ),
         ]);
