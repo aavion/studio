@@ -295,6 +295,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Package/Install/PackageZipInstaller.php:32`, `src/Core/Package/Install/PackageZipInstaller.php:53`, `src/Core/Package/Install/PackageZipInstaller.php:111`, `src/Core/Package/Install/PackageZipInstaller.php:842`, `src/Core/Package/Install/PackageZipInstaller.php:977`, `src/Core/Package/Install/PackageZipInstaller.php:1009`.
 - **Impact:** Maintainability and security review risk. The class is over 1100 lines, making it hard to reason about dangerous archive and filesystem boundaries.
 - **Recommendation:** Split into `PackageUploadStager`, `PackageArchiveExtractor`, `PackageInstallVerifier`, `PackageInstallApplier`, and reusable filesystem/archive safety helpers. Keep the current public facade as a thin orchestrator until callers move.
+- **Implementation note:** Split the ZIP installer into a thin public facade plus upload staging, ZIP extraction/symlink safety, shared filesystem mutation, staged manifest reading, payload validation, registry/status access, version gating, replacement dependency preflight, rollback, reactivation planning, verification, and apply services. All package install classes now stay below the 300-line context target while preserving the existing review/apply workflow.
 - **Priority:** Before Admin/Editor.
 
 ### F-002 Live operation storage mixes persistence, presentation, locking, and process control

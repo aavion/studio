@@ -205,9 +205,20 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Package\Install\PackageZipInstaller:
+    App\Core\Package\Install\PackageInstallFilesystem:
         arguments:
             $projectDir: '%kernel.project_dir%'
+
+    App\Core\Package\Install\PackageUploadStager:
+        arguments:
+            $environment: '%kernel.environment%'
+
+    App\Core\Package\Install\PackageInstallVerifier:
+        arguments:
+            $environment: '%kernel.environment%'
+
+    App\Core\Package\Install\PackageInstallApplier:
+        arguments:
             $environment: '%kernel.environment%'
 
     App\Core\Package\PackageFaultResetter:
