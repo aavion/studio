@@ -87,6 +87,9 @@ services:
             - '../src/**/*Spec.php'
             - '../src/**/*Status.php'
             - '../src/**/*Type.php'
+            - '../src/Security/AdminGroupListQuery.php'
+            - '../src/Security/AdminUserListQuery.php'
+            - '../src/Security/AdminUserReviewQuery.php'
             - '../src/Kernel.php'
 
     App\Setup\SetupCommandExecutorInterface:

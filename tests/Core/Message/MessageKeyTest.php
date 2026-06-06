@@ -152,7 +152,7 @@ final class MessageKeyTest extends TestCase
             TranslationMessageKey::class => ['TRANSLATION_'],
             NavigationMessageKey::class => ['MENU_'],
             SchedulerMessageKey::class => ['SCHEDULER_'],
-            SecurityMessageKey::class => ['ACL_', 'USER', 'ACCOUNT_', 'API_KEY_'],
+            SecurityMessageKey::class => ['ACL_', 'USER_', 'ACCOUNT_', 'API_KEY_'],
             SetupMessageKey::class => ['SETUP_'],
             ViewMessageKey::class => ['VIEW_'],
         ];

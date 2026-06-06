@@ -12,7 +12,7 @@ final class SecurityMessageKey
     public const ACL_GROUP_APPLY_ACTION_INVALID = 'message.acl.group_apply.action_invalid';
     public const ACL_GROUP_APPLY_UPDATE_BLOCKED = 'message.acl.group_apply.update_blocked';
     public const ACL_GROUP_APPLY_DELETE_BLOCKED = 'message.acl.group_apply.delete_blocked';
-    public const USERNAME_INVALID = 'message.user.username.invalid';
+    public const USER_USERNAME_INVALID = 'message.user.username.invalid';
     public const USER_EMAIL_INVALID = 'message.user.email.invalid';
     public const USER_EMAIL_DUPLICATE = 'message.user.email.duplicate';
     public const USER_USERNAME_DUPLICATE = 'message.user.username.duplicate';

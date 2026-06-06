@@ -226,7 +226,7 @@ class UserAccount implements AccessLevelAwareUserInterface, PasswordAuthenticate
     private static function assertUsername(string $username): string
     {
         if (!self::isValidUsername($username)) {
-            throw MessageException::invalidArgument(SecurityMessageKey::USERNAME_INVALID, [
+            throw MessageException::invalidArgument(SecurityMessageKey::USER_USERNAME_INVALID, [
                 '%username%' => $username,
             ]);
         }

@@ -24,28 +24,12 @@ final readonly class AdminUserListViewFactory
      */
     public function usersView(Request $request): array
     {
-        $search = $this->listViews->queryString($request, 'q');
-        $status = $this->listViews->queryChoice($request, 'status', ['all', 'active', 'inactive'], 'all');
-        $role = $this->listViews->queryChoice($request, 'role', ['all', ...array_map(static fn (UserRole $role): string => $role->value, UserRole::assignable())], 'all');
-        $group = $this->listViews->queryString($request, 'group');
-        $sort = $this->listViews->queryChoice($request, 'sort', ['username', 'email', 'status', 'role'], 'username');
-        $direction = $this->listViews->queryChoice($request, 'direction', ['asc', 'desc'], 'asc');
-        $perPage = $this->listViews->perPage($request->query->get('per_page'));
-        $page = $this->listViews->page($request->query->get('page'));
-        $pagination = $this->userPagination($search, $status, $role, $group, $sort, $direction, $page, $perPage);
+        $query = AdminUserListQuery::fromRequest($request, $this->listViews);
+        $pagination = $this->userPagination($query);
 
         return [
             'items' => $pagination['items'],
-            'filters' => [
-                'search' => $search,
-                'status' => $status,
-                'role' => $role,
-                'group' => $group,
-                'sort' => $sort,
-                'direction' => $direction,
-                'per_page' => $perPage,
-                'page' => $pagination['page'],
-            ],
+            'filters' => $query->filters($pagination['page']),
             'pagination' => $pagination,
             'per_page_options' => $this->listViews->perPageOptions('admin.users.filters.all_entries'),
             'sort_options' => $this->userSortOptions(),
@@ -60,18 +44,14 @@ final readonly class AdminUserListViewFactory
      */
     public function groupsView(Request $request): array
     {
-        $search = $this->listViews->queryString($request, 'q');
-        $sort = $this->listViews->queryChoice($request, 'sort', ['identifier', 'name', 'min_role'], 'min_role');
-        $direction = $this->listViews->queryChoice($request, 'direction', ['asc', 'desc'], 'asc');
-        $perPage = $this->listViews->perPage($request->query->get('per_page'));
-        $page = $this->listViews->page($request->query->get('page'));
+        $query = AdminGroupListQuery::fromRequest($request, $this->listViews);
         $groups = array_values(array_filter(
             $this->entityManager->getRepository(AclGroup::class)->findAll(),
             static fn (mixed $group): bool => $group instanceof AclGroup,
         ));
 
-        if ('' !== $search) {
-            $needle = mb_strtolower($search);
+        if ('' !== $query->search) {
+            $needle = mb_strtolower($query->search);
             $groups = array_values(array_filter(
                 $groups,
                 static fn (AclGroup $group): bool => str_contains(mb_strtolower($group->identifier()), $needle)
@@ -79,25 +59,19 @@ final readonly class AdminUserListViewFactory
             ));
         }
 
-        $this->sortGroups($groups, $sort, $direction);
-        $pagination = $this->listViews->pagination($groups, $page, $perPage);
+        $this->sortGroups($groups, $query->sort, $query->direction);
+        $pagination = $this->listViews->pagination($groups, $query->page, $query->perPage);
 
         return [
             'items' => $pagination['items'],
-            'filters' => [
-                'search' => $search,
-                'sort' => $sort,
-                'direction' => $direction,
-                'per_page' => $perPage,
-                'page' => $pagination['page'],
-            ],
+            'filters' => $query->filters($pagination['page']),
             'pagination' => $pagination,
             'per_page_options' => $this->listViews->perPageOptions('admin.groups.filters.all_entries'),
             'sort_options' => $this->groupSortOptions(),
         ];
     }
 
-    private function filteredUsersQuery(string $search, string $status, string $role, string $group): QueryBuilder
+    private function filteredUsersQuery(AdminUserListQuery $query): QueryBuilder
     {
         $queryBuilder = $this->entityManager->createQueryBuilder()
             ->select('account')
@@ -107,29 +81,29 @@ final readonly class AdminUserListViewFactory
             ->setParameter('deletedUserUid', DeletedUserCleanup::DELETED_USER_UID)
             ->setParameter('deletedStatus', UserAccountStatus::Deleted);
 
-        if ('' !== $search) {
+        if ('' !== $query->search) {
             $queryBuilder
                 ->andWhere('LOWER(account.username) LIKE :search OR LOWER(account.email) LIKE :search')
-                ->setParameter('search', '%'.mb_strtolower($search).'%');
+                ->setParameter('search', '%'.mb_strtolower($query->search).'%');
         }
 
-        if ('all' !== $status) {
+        if ('all' !== $query->status) {
             $queryBuilder
                 ->andWhere('account.status = :status')
-                ->setParameter('status', UserAccountStatus::from($status));
+                ->setParameter('status', UserAccountStatus::from($query->status));
         }
 
-        if ('all' !== $role) {
+        if ('all' !== $query->role) {
             $queryBuilder
                 ->andWhere('account.role = :role')
-                ->setParameter('role', UserRole::from($role));
+                ->setParameter('role', UserRole::from($query->role));
         }
 
-        if ('' !== $group) {
+        if ('' !== $query->group) {
             $queryBuilder
                 ->innerJoin('account.groups', 'filterGroup')
                 ->andWhere('filterGroup.identifier = :group')
-                ->setParameter('group', $group);
+                ->setParameter('group', $query->group);
         }
 
         return $queryBuilder;
@@ -139,20 +113,13 @@ final readonly class AdminUserListViewFactory
      * @return array{items: list<UserAccount>, page: int, per_page: int|string, total: int, total_pages: int, has_previous: bool, has_next: bool, previous_page: int, next_page: int}
      */
     private function userPagination(
-        string $search,
-        string $status,
-        string $role,
-        string $group,
-        string $sort,
-        string $direction,
-        int $page,
-        int|string $perPage,
+        AdminUserListQuery $query,
     ): array {
-        $queryBuilder = $this->filteredUsersQuery($search, $status, $role, $group);
+        $queryBuilder = $this->filteredUsersQuery($query);
         $total = $this->countUsers($queryBuilder);
-        $this->sortUsers($queryBuilder, $sort, $direction);
+        $this->sortUsers($queryBuilder, $query->sort, $query->direction);
 
-        if ('all' === $perPage) {
+        if ('all' === $query->perPage) {
             return [
                 'items' => $this->userResults($queryBuilder),
                 'page' => 1,
@@ -166,18 +133,18 @@ final readonly class AdminUserListViewFactory
             ];
         }
 
-        $totalPages = max(1, (int) ceil($total / $perPage));
-        $page = min($page, $totalPages);
-        $offset = ($page - 1) * $perPage;
+        $totalPages = max(1, (int) ceil($total / $query->perPage));
+        $page = min($query->page, $totalPages);
+        $offset = ($page - 1) * $query->perPage;
 
         $queryBuilder
             ->setFirstResult($offset)
-            ->setMaxResults($perPage);
+            ->setMaxResults($query->perPage);
 
         return [
             'items' => $this->userResults($queryBuilder),
             'page' => $page,
-            'per_page' => $perPage,
+            'per_page' => $query->perPage,
             'total' => $total,
             'total_pages' => $totalPages,
             'has_previous' => $page > 1,

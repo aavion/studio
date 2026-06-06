@@ -70,6 +70,8 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-06
+- Split admin user, group, and review list request parsing into query value objects, kept the existing factories focused on read-model/view-model assembly, and explicitly excluded those request-query values from Symfony service discovery so non-service values do not bloat the container.
+- Tightened the project rule and catalogue test for namespace/scope-bound message key/code constants and aligned the user username validation key name to the stricter convention.
 - Removed temporary `src/**/README.md` orientation files so domain ownership is documented through the class map, drafts, manuals, and audit log instead of shallow duplicate summaries.
 - Split public hook descriptors into domain-owned event hook providers for content, navigation, package, view, and view-injection hooks while keeping `PublicEventHookRegistry` as the central package-contract aggregator.
 - Split message code/key constants into domain-owned catalogues aggregated by central `MessageCode`/`MessageKey` registries, migrated call sites to owning catalogues, and documented/tested scope-bound naming for future system and package message catalogues.

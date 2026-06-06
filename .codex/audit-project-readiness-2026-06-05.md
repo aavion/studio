@@ -673,6 +673,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Security/AdminUserListViewFactory.php:14`, `src/Security/AdminUserListViewFactory.php:25`, `src/Security/AdminUserListViewFactory.php:61`, `src/Security/AdminUserListViewFactory.php:101`, `src/Security/AdminUserListViewFactory.php:138`, `src/Security/AdminUserListViewFactory.php:207`, `src/Security/AdminUserReviewViewFactory.php:13`, `src/Security/AdminUserReviewViewFactory.php:24`, `src/Security/AdminUserReviewViewFactory.php:66`, `src/Security/AdminUserReviewViewFactory.php:153`.
 - **Impact:** Works for current admin volumes, but future audit/review queues, API responses, or large installs will need reusable query services and stable DTOs rather than template-specific arrays.
 - **Recommendation:** Split filter parsing from query/read-model generation. Introduce small `AdminUserListQuery`, `AdminGroupListQuery`, and `AdminUserReviewQuery` objects or services. Keep template mappers separate from future API DTOs.
+- **Implementation note:** Admin user, group, and review request parsing now lives in small query value objects while the existing factories focus on Doctrine-backed read-model/view-model assembly. Symfony service discovery excludes these request-query value objects explicitly so they do not bloat the container, while existing service-owned query collaborators remain injectable.
 - **Priority:** Before Admin/API expansion.
 
 ### F-040 Setup CLI and web input factories duplicate normalization and validation

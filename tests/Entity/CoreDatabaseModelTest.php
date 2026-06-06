@@ -142,7 +142,7 @@ final class CoreDatabaseModelTest extends TestCase
                 $user->changeUsername($username);
                 self::fail(sprintf('Username "%s" should have been rejected.', $username));
             } catch (InvalidArgumentException $exception) {
-                self::assertStringContainsString(SecurityMessageKey::USERNAME_INVALID, $exception->getMessage());
+                self::assertStringContainsString(SecurityMessageKey::USER_USERNAME_INVALID, $exception->getMessage());
             }
         }
     }
