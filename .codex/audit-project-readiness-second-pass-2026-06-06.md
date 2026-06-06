@@ -106,7 +106,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 | Form, Mail, Navigation, Localization | `src/Form`, `src/Mail`, `src/Navigation`, `src/Localization` | Reviewed | Locale resolver, form builder/submission layer, mail locale behavior, and navigation label fallback reviewed. S2-013 records the deferred Mail Message/API hardening; S2-014 hardens navigation primary-language fallback. |
 | Scheduler | `src/Scheduler` | Reviewed | Scheduler task registry, lock naming, package task policy, run recorder, web-auth settings, task definitions, `/cron/run` controller behavior, direct job triggering, and docs alignment reviewed. S2-012 converts public task definition invariants to Message-layer diagnostics; GET-token auth remains opt-in, Bearer auth stays primary, and only read-write API keys owned by active admin/owner users can trigger web runs. |
 | Security | `src/Security` | Reviewed | Session visitor binding, AccountToken issuer/entity behavior, API-key vault/entity behavior, ACL group policies/apply operations, maintenance-mode HTTP flow, APP_SECRET rotation guard, mail-link delivery stub, and remember-me direction reviewed. S2-008 records the remaining copied-session plus copied-visitor-cookie limitation, S2-018 captures remember-me as a Security-branch feature candidate using server-side rotating tokens bound to the visitor cookie, S2-028 extracts shared account token/password helpers, and S2-038 removes separate plain-token logging from the mail-link debug stub. Account-flow controller extraction remains tracked in the Controller domain by S2-003. |
-| Setup | `src/Setup` | In progress | PHP-CLI resolver/preference flow, dry-run placeholder behavior, preflight failure mapping, Composer probe, and setup subprocess environment reviewed. Large setup input/runtime classes remain watchlisted, but no immediate review-blocker found in this slice. |
+| Setup | `src/Setup` | Reviewed | PHP-CLI resolver/preference flow, dry-run placeholder behavior, preflight failure mapping, Composer probe, setup subprocess environment, setup seeding, environment writing/rollback, web/CLI input validation, and setup class sizes reviewed. S2-039 splits CLI database input resolution out of the oversized CLI input factory; all setup production files are now below the 300-line target. |
 | View | `src/View` | In progress | Template runtime fallback reviewed; S2-005 removes a hardcoded `en` fallback from the root layout. S2-023 moves Markdown embed accessibility copy to translations. S2-024 converts unsupported template namespace failures to View Message keys. Twig helper split, response header policy, dynamic injection failure ownership, and technical naming still need broader review. |
 | Assets/Templates/Translations | `assets`, `templates`, `translations` | In progress | Hardcoded language variants and package translation fallback policy reviewed. S2-022 replaces the package `languages/en` special case with a configured fallback-locale requirement. S2-023 fixes Markdown embed UI copy. Remaining pass: broader CSS naming classification. |
 | Documentation | `dev/draft`, `dev/manual`, `docs`, `.codex` | Pending | Re-check drift against actual behavior after all second-pass fixes. |
@@ -513,6 +513,16 @@ This second pass additionally checks the explicit final-gate rules added during 
 - **Fix applied:** Removed `debugPlainToken` from `MailDeliveryMessage`, removed the plain-token parameter from `AccountLinkDeliveryInterface::deliver()`, updated all account-flow callers, and adjusted tests/docs to assert no separate plain-token context field is logged.
 - **Priority:** Now / Security hardening.
 
+### S2-039 CLI setup input still mixed database-selection details into the top-level factory
+
+- **Area:** Setup CLI input, modularity, context-size target.
+- **Finding:** `SetupCliInputFactory` had dropped below the highest setup-risk classes after earlier setup refactors, but it still remained above the 300-line target and owned database driver availability, explicit URL/driver mismatch handling, interactive database prompts, server database defaults, SQLite URL defaults, and prefix normalization alongside the high-level setup input assembly.
+- **Evidence:** `src/Setup/SetupCliInputFactory.php`, `tests/Setup/SetupCliInputFactoryTest.php`, `dev/CLASSMAP.md`.
+- **Impact:** The behavior was covered, but the class was harder to audit because setup orchestration and database-choice policy lived together. The SQLite default also needed explicit regression coverage to preserve the selected/environment `APP_ENV` after extracting the logic.
+- **Recommendation:** Move CLI database input resolution into a focused collaborator and keep `SetupCliInputFactory` as the setup input orchestrator.
+- **Fix applied:** Added `SetupCliDatabaseInput`, reduced `SetupCliInputFactory` from 338 to 152 lines, added a regression test for environment-specific SQLite defaults, and kept the existing CLI setup behavior covered by the focused setup suite.
+- **Priority:** Now / Modularity.
+
 ## Cross-Cutting Passes
 
 - Fresh file and large-file inventory captured.
@@ -566,6 +576,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Command names reviewed. `studio:*` remains intentional product CLI branding, unlike internal technical service tags that moved to `system.*`.
 - Process environment reviewed. `CliProcessEnvironment::fromCurrentProcess()` keeps Symfony Dotenv/app values and removes web/CGI request context; process-starting callers use that boundary.
 - Setup PHP-CLI and Composer preflight reviewed. Cached `APP_DEFAULT_PHP_BINARY` remains validation-first and auto-heal/persistence is limited to controlled setup/preflight flows.
+- Setup CLI input reviewed. S2-039 extracts database input resolution from the CLI input factory and leaves all setup production classes below the 300-line target.
 - Form builder/submission layer reviewed. No immediate drift found: values cast centrally, option validation is generic, and user-facing errors stay on existing translation keys.
 
 ## Fixes Applied
@@ -591,6 +602,7 @@ This second pass additionally checks the explicit final-gate rules added during 
 - Split package admin detail helper responsibilities into focused backend services.
 - Extracted repeated account token lookup and password-policy error mapping into Security helpers.
 - Removed separate clear-token context logging from the account-link message-log delivery stub and narrowed the delivery contract to generated action URLs.
+- Split CLI setup database input resolution out of the top-level CLI input factory.
 - Normalized trailing POSIX and Windows separators for live-operation storage paths.
 - Validated access-statistics request and visitor trace identifiers before persistence.
 - Moved state-marker metadata validation to the State Message catalogue.

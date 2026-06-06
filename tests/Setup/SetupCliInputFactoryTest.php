@@ -207,6 +207,66 @@ final class SetupCliInputFactoryTest extends TestCase
         self::assertSame('', $input->adminPassword());
     }
 
+    public function testItUsesEnvironmentNameForDefaultSqliteDatabaseUrl(): void
+    {
+        $previous = [
+            'APP_ENV' => $_SERVER['APP_ENV'] ?? null,
+            'DATABASE_URL' => $_SERVER['DATABASE_URL'] ?? null,
+            '_ENV_APP_ENV' => $_ENV['APP_ENV'] ?? null,
+            '_ENV_DATABASE_URL' => $_ENV['DATABASE_URL'] ?? null,
+        ];
+
+        $_SERVER['APP_ENV'] = 'staging';
+        unset($_SERVER['DATABASE_URL']);
+        $_ENV['APP_ENV'] = 'staging';
+        unset($_ENV['DATABASE_URL']);
+
+        try {
+            $factory = new SetupCliInputFactory(
+                dirname(__DIR__, 2),
+                extensionAvailability: [
+                    'pdo_sqlite' => true,
+                    'pdo_mysql' => true,
+                    'pdo_pgsql' => true,
+                ],
+                input: $this->stream(''),
+                output: $this->stream(''),
+                interactive: false,
+            );
+
+            $input = $factory->create([
+                'language' => 'en',
+                'site-title' => 'Env SQLite Studio',
+                'url' => 'https://env.example.test',
+                'admin-username' => 'owner',
+                'admin-password' => 'Safe1!pass',
+                'admin-email' => 'owner@example.test',
+            ]);
+        } finally {
+            foreach (['APP_ENV', 'DATABASE_URL'] as $key) {
+                $value = $previous[$key];
+                if (null === $value) {
+                    unset($_SERVER[$key]);
+                    continue;
+                }
+
+                $_SERVER[$key] = $value;
+            }
+            foreach (['APP_ENV' => '_ENV_APP_ENV', 'DATABASE_URL' => '_ENV_DATABASE_URL'] as $key => $previousKey) {
+                $value = $previous[$previousKey];
+                if (null === $value) {
+                    unset($_ENV[$key]);
+                    continue;
+                }
+
+                $_ENV[$key] = $value;
+            }
+        }
+
+        self::assertSame('staging', $input->appEnv());
+        self::assertSame('sqlite:///%kernel.project_dir%/var/data_staging.db', $input->databaseUrl());
+    }
+
     public function testItRejectsExplicitDatabaseUrlDriverMismatches(): void
     {
         $factory = new SetupCliInputFactory(
