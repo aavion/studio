@@ -26,7 +26,7 @@
 
     <form
         id="setup-wizard"
-        class="studio-backend-form studio-setup-wizard{{ setup_step == 'language' ? ' is-landing' : '' }}"
+        class="system-backend-form system-backend-setup-wizard{{ setup_step == 'language' ? ' is-landing' : '' }}"
         method="post"
         action="{{ setup_step == 'language' ? path('backend_setup_index') : path('backend_setup_step', {step: setup_step}) }}"
         data-controller="setup-wizard{% if setup_step == 'admin' %} password-policy{% endif %}{{ setup_step == 'review' ? ' operation-overlay' : '' }}"

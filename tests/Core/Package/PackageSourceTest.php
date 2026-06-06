@@ -17,7 +17,7 @@ final class PackageSourceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->projectDir = $this->createTemporaryDirectory('studio-package-source');
+        $this->projectDir = $this->createTemporaryDirectory('system-package-source');
     }
 
     protected function tearDown(): void

@@ -1,12 +1,12 @@
-<section class="studio-panel">
+<section class="system-panel">
     <h2>{{ (setup_workflow.success|default(false) ? 'setup.result.success_title' : 'setup.result.failed_title')|trans }}</h2>
-    <p class="studio-muted">{{ (setup_workflow.success|default(false) ? 'setup.result.success_text' : 'setup.result.failed_text')|trans }}</p>
+    <p class="system-muted">{{ (setup_workflow.success|default(false) ? 'setup.result.success_text' : 'setup.result.failed_text')|trans }}</p>
     {% if not setup_workflow.success|default(false) %}
-        <div class="studio-button-group">
-            <a class="studio-button studio-button-secondary" href="{{ path('backend_setup_step', {step: 'database'}) }}">{{ 'setup.result.back_to_database'|trans }}</a>
-            <a class="studio-button studio-button-secondary" href="{{ path('backend_setup_step', {step: 'review'}) }}">{{ 'setup.result.back_to_review'|trans }}</a>
+        <div class="system-button-group">
+            <a class="system-button system-button-secondary" href="{{ path('backend_setup_step', {step: 'database'}) }}">{{ 'setup.result.back_to_database'|trans }}</a>
+            <a class="system-button system-button-secondary" href="{{ path('backend_setup_step', {step: 'review'}) }}">{{ 'setup.result.back_to_review'|trans }}</a>
         </div>
     {% else %}
-        <a class="studio-button studio-button-primary" href="/">{{ 'setup.result.go_home'|trans }}</a>
+        <a class="system-button system-button-primary" href="/">{{ 'setup.result.go_home'|trans }}</a>
     {% endif %}
 </section>

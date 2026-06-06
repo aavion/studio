@@ -3,8 +3,8 @@
 {% block title %}{{ content_view.title ?? content_view.content.slug }}{% endblock %}
 
 {% block frontend_body %}
-    <main class="studio-content-page" data-content-uid="{{ content_view.content.uid }}" data-content-revision="{{ content_view.revision.uid }}">
-        <article class="studio-content-article">
+    <main class="system-frontend-content-page" data-content-uid="{{ content_view.content.uid }}" data-content-revision="{{ content_view.revision.uid }}">
+        <article class="system-frontend-content-article">
             {% include '@frontend/partials/typography/_page-header.html.twig' with {
                 kicker: content_view.content.slug,
                 title: content_view.title,

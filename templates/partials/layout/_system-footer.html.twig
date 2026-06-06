@@ -1,6 +1,6 @@
 {% set copyright = footer_copyright(area) %}
 {% if copyright is not empty %}
-    <footer class="studio-system-footer studio-system-footer-{{ area }}">
+    <footer class="system-footer system-footer-{{ area }}">
         {{ copyright|render_markdown('basic')|raw }}
     </footer>
 {% endif %}

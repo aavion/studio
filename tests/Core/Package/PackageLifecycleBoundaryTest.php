@@ -53,7 +53,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         $this->connection = $this->entityManager->getConnection();
         $this->assetRebuilder = new BoundaryPackageLifecycleAssetRebuilder();
         $this->cleanupRunner = new RecordingPackageLifecycleCleanupRunner();
-        $this->projectDir = $this->createTemporaryDirectory('studio-package-lifecycle-boundary');
+        $this->projectDir = $this->createTemporaryDirectory('system-package-lifecycle-boundary');
         $this->connection->beginTransaction();
     }
 

@@ -27,7 +27,7 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorExists('form[action="/user/login"][method="post"]');
         self::assertSelectorExists('input[name="_csrf_token"]');
         self::assertSelectorTextContains('a[href="/user/reset-password"]', 'Forgot password?');
-        self::assertSelectorNotExists('.studio-error-reference');
+        self::assertSelectorNotExists('.system-frontend-error-reference');
         self::assertSelectorNotExists('a[href="/user/register"]');
     }
 
@@ -123,7 +123,7 @@ final class SecurityControllerTest extends WebTestCase
         $client->submit($form);
         $client->followRedirect();
 
-        self::assertSelectorTextContains('.studio-auth-notice', 'The username or password is not valid.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'The username or password is not valid.');
     }
 
     public function testLoginFormRejectsInactiveAndDeletedAccounts(): void
@@ -142,7 +142,7 @@ final class SecurityControllerTest extends WebTestCase
             $client->submit($form);
             $client->followRedirect();
 
-            self::assertSelectorTextContains('.studio-auth-notice', 'The username or password is not valid.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'The username or password is not valid.');
 
             $client->request('GET', '/admin');
 

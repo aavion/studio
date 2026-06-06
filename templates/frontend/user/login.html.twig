@@ -3,21 +3,21 @@
 {% block title %}{{ 'ui.user.login.title'|trans }}{% endblock %}
 
 {% block frontend_body %}
-    <section class="studio-auth-panel">
+    <section class="system-frontend-auth-panel">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             title: 'ui.user.login.title'|trans,
             subtitle: 'ui.user.login.placeholder'|trans,
         } only %}
         {% if http_error is defined and http_error.status_code|default(null) == 401 %}
-            <p class="studio-auth-notice">{{ http_error.message_key|trans }}</p>
+            <p class="system-frontend-auth-notice">{{ http_error.message_key|trans }}</p>
         {% endif %}
         {% if authentication_error|default(false) %}
-            <p class="studio-auth-notice">{{ 'ui.user.login.invalid_credentials'|trans }}</p>
+            <p class="system-frontend-auth-notice">{{ 'ui.user.login.invalid_credentials'|trans }}</p>
         {% endif %}
         {% if account_closed|default(false) %}
-            <p class="studio-auth-notice">{{ 'ui.user.login.account_closed'|trans }}</p>
+            <p class="system-frontend-auth-notice">{{ 'ui.user.login.account_closed'|trans }}</p>
         {% endif %}
-        <form action="{{ path('user_login') }}" method="post" class="studio-auth-form">
+        <form action="{{ path('user_login') }}" method="post" class="system-frontend-auth-form">
             {% include '@frontend/partials/forms/fields/input.html.twig' with {
                 name: 'username',
                 label: 'ui.user.login.username'|trans,

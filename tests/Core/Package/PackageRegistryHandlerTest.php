@@ -39,7 +39,7 @@ final class PackageRegistryHandlerTest extends KernelTestCase
     {
         self::bootKernel();
 
-        $this->projectDir = $this->createTemporaryDirectory('studio-package-registry');
+        $this->projectDir = $this->createTemporaryDirectory('system-package-registry');
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $this->connection = $this->entityManager->getConnection();
         $this->connection->beginTransaction();

@@ -1,4 +1,4 @@
-<div class="studio-button-group {{ class|default('') }}">
+<div class="system-button-group {{ class|default('') }}">
     {% for action in actions|default([]) %}
         {% include '@frontend/partials/actions/_button.html.twig' with {
             label: action.label,

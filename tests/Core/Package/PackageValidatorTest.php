@@ -23,7 +23,7 @@ final class PackageValidatorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->packageDir = $this->createTemporaryDirectory('studio-package-validator');
+        $this->packageDir = $this->createTemporaryDirectory('system-package-validator');
         $this->writeFile('.manifest', 'PACKAGE_NAME=System');
     }
 

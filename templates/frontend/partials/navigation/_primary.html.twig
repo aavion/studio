@@ -1,11 +1,11 @@
 {% macro render_items(items) %}
     {% if items is not empty %}
-        <ul class="studio-frontend-navigation-list">
+        <ul class="system-frontend-navigation-list">
             {% for item in items %}
                 {% if item.label is not empty %}
                     {% set item_classes = [
-                        'studio-frontend-navigation-item',
-                        'studio-frontend-navigation-level-' ~ item.level,
+                        'system-frontend-navigation-item',
+                        'system-frontend-navigation-level-' ~ item.level,
                         item.active ? 'is-active' : '',
                         item.active_ancestor ? 'is-active-ancestor' : '',
                     ]|filter(item_class => item_class is not empty)|join(' ') %}
@@ -13,7 +13,7 @@
                         'aria-current': item.active ? 'page' : false,
                     }) %}
                     <li class="{{ item_classes }}">
-                        <a class="studio-frontend-navigation-link" href="{{ item.url }}" {{ html_attributes(link_attributes) }}>{{ item.label|trans }}</a>
+                        <a class="system-frontend-navigation-link" href="{{ item.url }}" {{ html_attributes(link_attributes) }}>{{ item.label|trans }}</a>
                         {{ _self.render_items(item.children) }}
                     </li>
                 {% endif %}
@@ -22,7 +22,7 @@
     {% endif %}
 {% endmacro %}
 
-<nav class="studio-frontend-navigation" aria-label="{{ 'ui.frontend.navigation'|trans }}">
+<nav class="system-frontend-navigation" aria-label="{{ 'ui.frontend.navigation'|trans }}">
     {% set items = navigation('main', app.request.locale|default(''), 3) %}
     {% block frontend_navigation_items %}
         {{ _self.render_items(items) }}

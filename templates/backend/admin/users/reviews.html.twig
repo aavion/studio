@@ -15,19 +15,19 @@
         subtitle: 'admin.user_reviews.subtitle'|trans,
     } only %}
 
-    <nav class="studio-tabs" aria-label="{{ 'admin.user_reviews.filters.label'|trans }}">
+    <nav class="system-tabs" aria-label="{{ 'admin.user_reviews.filters.label'|trans }}">
         {% for filter in review_filters %}
-            <a class="studio-tab{% if review_filter == filter %} studio-tab-active{% endif %}" href="{{ path('backend_admin_user_reviews', app.request.query.all|merge({filter: filter, page: 1})) }}">
+            <a class="system-tab{% if review_filter == filter %} system-tab-active{% endif %}" href="{{ path('backend_admin_user_reviews', app.request.query.all|merge({filter: filter, page: 1})) }}">
                 {{ ('admin.user_reviews.filters.' ~ filter)|trans }}
             </a>
         {% endfor %}
     </nav>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.user_reviews.filters.title'|trans }}</h2>
-        <form method="get" class="studio-form studio-log-filter-form">
+        <form method="get" class="system-form system-backend-log-filter-form">
             <input type="hidden" name="filter" value="{{ review_filter == 'all' ? '' : review_filter }}">
-            <div class="studio-form-grid">
+            <div class="system-form-grid">
                 <label>
                     <span>{{ 'admin.user_reviews.filters.search'|trans }}</span>
                     <input type="search" name="q" value="{{ review_view.filters.search }}" maxlength="120">
@@ -57,36 +57,36 @@
                 </label>
             </div>
             <input type="hidden" name="page" value="1">
-            <button type="submit" class="studio-button">{{ 'admin.user_reviews.filters.apply'|trans }}</button>
+            <button type="submit" class="system-button">{{ 'admin.user_reviews.filters.apply'|trans }}</button>
         </form>
     </section>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         {% if review_items is empty %}
             {% include '@backend/partials/feedback/_empty-state.html.twig' with {
                 title: 'admin.user_reviews.empty_title'|trans,
                 message: 'admin.user_reviews.empty_message'|trans,
             } only %}
         {% else %}
-            <div class="studio-review-list">
+            <div class="system-backend-review-list">
                 {% for item in review_items %}
                     {% set token = item.token %}
                     {% set user = item.user %}
-                    <article class="studio-review-row">
-                        <div class="studio-review-main">
-                            <div class="studio-review-badges">
-                                <span class="studio-badge">{{ ('admin.user_reviews.kind.' ~ item.kind)|trans }}</span>
-                                <span class="studio-badge">{{ ('admin.user_reviews.status.' ~ item.status)|trans }}</span>
+                    <article class="system-backend-review-row">
+                        <div class="system-backend-review-main">
+                            <div class="system-backend-review-badges">
+                                <span class="system-badge">{{ ('admin.user_reviews.kind.' ~ item.kind)|trans }}</span>
+                                <span class="system-badge">{{ ('admin.user_reviews.status.' ~ item.status)|trans }}</span>
                             </div>
                             <h2>
                                 {% if user %}
                                     {{ user.username }}
-                                    <span class="studio-muted">{{ user.email }}</span>
+                                    <span class="system-muted">{{ user.email }}</span>
                                 {% else %}
                                     {{ item.email }}
                                 {% endif %}
                             </h2>
-                            <p class="studio-muted">
+                            <p class="system-muted">
                                 {{ 'admin.user_reviews.requested_at'|trans({'%datetime%': item.requested_at|date('Y-m-d H:i')}) }}
                                 {% if item.role is defined %}
                                     · {{ 'admin.user_reviews.role'|trans({'%role%': ('admin.users.roles.' ~ item.role)|trans}) }}
@@ -97,54 +97,54 @@
                             </p>
                         </div>
 
-                        <div class="studio-review-actions">
+                        <div class="system-backend-review-actions">
                             {% if item.kind == 'registration_approval' %}
-                                <form method="post" action="{{ path('backend_admin_user_invitation_approve', {uid: token.uid}) }}" class="studio-inline-form">
+                                <form method="post" action="{{ path('backend_admin_user_invitation_approve', {uid: token.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
                                     <input type="hidden" name="return_to" value="reviews">
-                                    <button class="studio-button" type="submit">{{ 'admin.user_reviews.actions.accept'|trans }}</button>
+                                    <button class="system-button" type="submit">{{ 'admin.user_reviews.actions.accept'|trans }}</button>
                                 </form>
-                                <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="studio-inline-form">
+                                <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
                                     <input type="hidden" name="return_to" value="reviews">
-                                    <button class="studio-button studio-button-secondary" type="submit">{{ 'admin.user_reviews.actions.reject'|trans }}</button>
+                                    <button class="system-button system-button-secondary" type="submit">{{ 'admin.user_reviews.actions.reject'|trans }}</button>
                                 </form>
                             {% elseif item.kind in ['invitation', 'registration'] %}
-                                <form method="post" action="{{ path('backend_admin_user_invitation_reissue', {uid: token.uid}) }}" class="studio-inline-form">
+                                <form method="post" action="{{ path('backend_admin_user_invitation_reissue', {uid: token.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
                                     <input type="hidden" name="return_to" value="reviews">
-                                    <button class="studio-button" type="submit">{{ 'admin.user_reviews.actions.reissue'|trans }}</button>
+                                    <button class="system-button" type="submit">{{ 'admin.user_reviews.actions.reissue'|trans }}</button>
                                 </form>
-                                <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="studio-inline-form">
+                                <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
                                     <input type="hidden" name="return_to" value="reviews">
-                                    <button class="studio-button studio-button-secondary" type="submit">{{ 'admin.user_reviews.actions.delete'|trans }}</button>
+                                    <button class="system-button system-button-secondary" type="submit">{{ 'admin.user_reviews.actions.delete'|trans }}</button>
                                 </form>
                             {% elseif item.kind == 'password_dispute' and user %}
-                                <form method="post" action="{{ path('backend_admin_user_review_reactivate', {uid: user.uid}) }}" class="studio-inline-form">
+                                <form method="post" action="{{ path('backend_admin_user_review_reactivate', {uid: user.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_review_' ~ user.uid) }}">
-                                    <button class="studio-button" type="submit">{{ 'admin.user_reviews.actions.reactivate'|trans }}</button>
+                                    <button class="system-button" type="submit">{{ 'admin.user_reviews.actions.reactivate'|trans }}</button>
                                 </form>
-                                <form method="post" action="{{ path('backend_admin_user_review_delete', {uid: user.uid}) }}" class="studio-inline-form">
+                                <form method="post" action="{{ path('backend_admin_user_review_delete', {uid: user.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_review_' ~ user.uid) }}">
-                                    <label class="studio-muted">
+                                    <label class="system-muted">
                                         <input type="checkbox" name="confirm_delete" value="1">
                                         {{ 'admin.user_reviews.actions.confirm_delete'|trans }}
                                     </label>
-                                    <button class="studio-button studio-button-secondary" type="submit">{{ 'admin.user_reviews.actions.delete'|trans }}</button>
+                                    <button class="system-button system-button-secondary" type="submit">{{ 'admin.user_reviews.actions.delete'|trans }}</button>
                                 </form>
                             {% endif %}
                         </div>
                     </article>
                 {% endfor %}
             </div>
-            <div class="studio-toolbar">
-                <span class="studio-muted">{{ 'admin.user_reviews.pagination.page_summary'|trans({'%page%': review_view.pagination.page, '%pages%': review_view.pagination.total_pages, '%total%': review_view.pagination.total}) }}</span>
+            <div class="system-toolbar">
+                <span class="system-muted">{{ 'admin.user_reviews.pagination.page_summary'|trans({'%page%': review_view.pagination.page, '%pages%': review_view.pagination.total_pages, '%total%': review_view.pagination.total}) }}</span>
                 {% if review_view.pagination.has_previous %}
-                    <a class="studio-button" href="?{{ app.request.query.all|merge({page: review_view.pagination.previous_page})|url_encode }}">{{ 'admin.user_reviews.pagination.previous'|trans }}</a>
+                    <a class="system-button" href="?{{ app.request.query.all|merge({page: review_view.pagination.previous_page})|url_encode }}">{{ 'admin.user_reviews.pagination.previous'|trans }}</a>
                 {% endif %}
                 {% if review_view.pagination.has_next %}
-                    <a class="studio-button" href="?{{ app.request.query.all|merge({page: review_view.pagination.next_page})|url_encode }}">{{ 'admin.user_reviews.pagination.next'|trans }}</a>
+                    <a class="system-button" href="?{{ app.request.query.all|merge({page: review_view.pagination.next_page})|url_encode }}">{{ 'admin.user_reviews.pagination.next'|trans }}</a>
                 {% endif %}
             </div>
         {% endif %}

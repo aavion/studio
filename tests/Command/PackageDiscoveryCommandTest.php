@@ -33,7 +33,7 @@ final class PackageDiscoveryCommandTest extends KernelTestCase
     {
         self::bootKernel();
 
-        $this->projectDir = $this->createTemporaryDirectory('studio-package-discovery-command');
+        $this->projectDir = $this->createTemporaryDirectory('system-package-discovery-command');
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $this->connection = $this->entityManager->getConnection();
         $this->connection->beginTransaction();

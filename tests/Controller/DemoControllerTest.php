@@ -88,7 +88,7 @@ final class DemoControllerTest extends WebTestCase
         $this->client->request('GET', '/demo2');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.studio-button-primary[href="/demo2/backend"]');
+        self::assertSelectorExists('.system-button-primary[href="/demo2/backend"]');
 
         $this->client->request('GET', '/demo');
 

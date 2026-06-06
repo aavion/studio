@@ -1,7 +1,7 @@
-<header class="studio-backend-topbar">
-    <span class="studio-backend-area">{{ area_key|trans }}</span>
+<header class="system-backend-topbar">
+    <span class="system-backend-area">{{ area_key|trans }}</span>
     {% include '@backend/admin/partials/_backend-actions.html.twig' with {
         actions: actions|default([]),
-        class: 'studio-backend-global-actions',
+        class: 'system-backend-global-actions',
     } only %}
 </header>

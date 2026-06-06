@@ -1,14 +1,14 @@
 {% extends '@root/base.html.twig' %}
 
-{% block body_class %}studio-body studio-frontend{% endblock %}
+{% block body_class %}system-body system-frontend{% endblock %}
 
 {% block body %}
-    <div class="studio-frontend-shell">
+    <div class="system-frontend-shell">
         {% include '@frontend/partials/layout/_skip-link.html.twig' %}
         {% include '@frontend/partials/layout/_header.html.twig' %}
         {% include '@frontend/partials/feedback/_flash-stack.html.twig' %}
 
-        <main id="studio-main" class="studio-frontend-main">
+        <main id="system-main" class="system-frontend-main">
             {% block frontend_body %}{% endblock %}
         </main>
 

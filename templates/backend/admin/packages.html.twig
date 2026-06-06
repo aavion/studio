@@ -12,13 +12,13 @@
 
 {% block admin_body %}
     {% set backend_actions %}
-        <div class="studio-backend-button-group">
-            <button class="studio-backend-button studio-button-primary" type="button" onclick="document.getElementById('package-install-dialog')?.showModal()">
+        <div class="system-backend-button-group">
+            <button class="system-backend-button system-button-primary" type="button" onclick="document.getElementById('package-install-dialog')?.showModal()">
                 {{ 'admin.packages.install.label'|trans }}
             </button>
             {% include '@backend/admin/partials/_backend-actions.html.twig' with {
                 actions: backend_actions(['package_discovery']),
-                class: 'studio-backend-button-group-inline',
+                class: 'system-backend-button-group-inline',
             } only %}
         </div>
     {% endset %}
@@ -31,14 +31,14 @@
 
     {% include '@backend/partials/feedback/_message.html.twig' with {message: message} only %}
 
-    <dialog id="package-install-dialog" class="studio-dialog">
-        <form method="dialog" class="studio-dialog-close">
-            <button class="studio-backend-button studio-button-secondary" type="submit">
+    <dialog id="package-install-dialog" class="system-dialog">
+        <form method="dialog" class="system-dialog-close">
+            <button class="system-backend-button system-button-secondary" type="submit">
                 {{ 'admin.packages.install.close'|trans }}
             </button>
         </form>
         <h2>{{ 'admin.packages.install.title'|trans }}</h2>
-        <p class="studio-muted">{{ 'admin.packages.install.text'|trans }}</p>
+        <p class="system-muted">{{ 'admin.packages.install.text'|trans }}</p>
         <form
             method="post"
             action="{{ path('backend_admin_package_install') }}"
@@ -50,22 +50,22 @@
         >
             <input type="hidden" name="_form_id" value="package-install">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('package-install') }}">
-            <label class="studio-form-field">
+            <label class="system-form-field">
                 <span>{{ 'admin.packages.install.file'|trans }}</span>
                 <input type="file" name="package_zip" accept=".zip,application/zip" required>
             </label>
-            <button class="studio-backend-button studio-button-primary" type="submit">
+            <button class="system-backend-button system-button-primary" type="submit">
                 {{ 'admin.packages.install.submit'|trans }}
             </button>
         </form>
     </dialog>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.packages.registry_title'|trans }}</h2>
-        <p class="studio-muted">{{ 'admin.packages.registry_text'|trans }}</p>
+        <p class="system-muted">{{ 'admin.packages.registry_text'|trans }}</p>
 
         {% if packages|length > 0 %}
-            <table class="studio-table">
+            <table class="system-table">
                 <thead>
                     <tr>
                         <th scope="col">{{ 'admin.packages.table.package'|trans }}</th>
@@ -89,20 +89,20 @@
                                     <a href="{{ package.detail_path }}">{{ package.label_key ? package.label_key|trans : package.label }}</a>
                                 </strong>
                                 {% if package_version %}
-                                    <span class="studio-muted">{{ package_version }}</span>
+                                    <span class="system-muted">{{ package_version }}</span>
                                 {% endif %}
                                 {% if package.available_version|default(null) %}
-                                    <strong class="studio-badge studio-badge-warning">&gt; {{ package.available_version }}</strong>
+                                    <strong class="system-badge system-badge-warning">&gt; {{ package.available_version }}</strong>
                                 {% endif %}
                             </th>
                             <td>
-                                <span class="studio-badge studio-badge-{{ package.status_tone }}">
+                                <span class="system-badge system-badge-{{ package.status_tone }}">
                                     {{ package.status_label_key|trans }}
                                 </span>
                             </td>
                             <td>
                                 {% for scope in package.scopes %}
-                                    <span class="studio-badge studio-badge-neutral">{{ scope.label_key|trans }}</span>
+                                    <span class="system-badge system-badge-neutral">{{ scope.label_key|trans }}</span>
                                 {% endfor %}
                             </td>
                         </tr>
@@ -110,7 +110,7 @@
                 </tbody>
             </table>
         {% else %}
-            <p class="studio-muted">{{ 'admin.packages.empty'|trans }}</p>
+            <p class="system-muted">{{ 'admin.packages.empty'|trans }}</p>
         {% endif %}
     </section>
 {% endblock %}

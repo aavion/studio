@@ -1,6 +1,6 @@
-<section class="studio-panel">
+<section class="system-panel">
     <h2>{{ 'setup.site.title'|trans }}</h2>
-    <p class="studio-muted">{{ 'setup.site.text'|trans }}</p>
+    <p class="system-muted">{{ 'setup.site.text'|trans }}</p>
     {% include '@backend/partials/forms/fields/input.html.twig' with {
         name: 'site_title',
         label: 'setup.form.site_title.label'|trans,
@@ -20,8 +20,8 @@
     } only %}
 </section>
 
-<section class="studio-panel">
+<section class="system-panel">
     <h2>{{ 'setup.site.behavior_title'|trans }}</h2>
-    <p class="studio-muted">{{ 'setup.site.behavior_text'|trans }}</p>
+    <p class="system-muted">{{ 'setup.site.behavior_text'|trans }}</p>
     {% include '@backend/partials/forms/_dynamic_fields.html.twig' with {fields: setup_site_settings_form.fields} only %}
 </section>

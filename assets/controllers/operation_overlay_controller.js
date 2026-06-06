@@ -145,7 +145,7 @@ export default class extends Controller {
 
         if (!this.resultRendered && ['success', 'requires_review', 'failed'].includes(payload.status) && payload.result?.issues?.length) {
             const item = document.createElement('li');
-            item.className = 'studio-action-log-entry is-result';
+            item.className = 'system-backend-action-log-entry is-result';
             const title = document.createElement('strong');
             title.textContent = this.label('result');
             item.append(title);
@@ -165,7 +165,7 @@ export default class extends Controller {
     renderEntry(entry) {
         const key = this.entryKey(entry);
         const item = this.stepElements.get(key) || document.createElement('li');
-        item.className = 'studio-action-log-entry';
+        item.className = 'system-backend-action-log-entry';
         item.dataset.operationEntryKey = key;
         item.replaceChildren();
 
@@ -174,7 +174,7 @@ export default class extends Controller {
         item.append(title);
 
         const status = document.createElement('span');
-        status.className = `studio-badge studio-badge-${this.tone(entry.status)}`;
+        status.className = `system-badge system-badge-${this.tone(entry.status)}`;
         status.textContent = this.statusLabel(entry.status);
         item.append(status);
 

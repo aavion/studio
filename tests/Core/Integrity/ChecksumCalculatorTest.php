@@ -19,7 +19,7 @@ final class ChecksumCalculatorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-checksum');
+        $this->root = $this->createTemporaryDirectory('system-checksum');
     }
 
     protected function tearDown(): void

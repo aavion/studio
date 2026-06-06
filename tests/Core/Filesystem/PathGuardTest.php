@@ -64,7 +64,7 @@ final class PathGuardTest extends TestCase
 
     public function testItDetectsSymlinkAncestors(): void
     {
-        $root = $this->createTemporaryDirectory('studio-path-guard');
+        $root = $this->createTemporaryDirectory('system-path-guard');
 
         try {
             mkdir($root.'/external', 0775, true);

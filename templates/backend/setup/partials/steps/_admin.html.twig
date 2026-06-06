@@ -1,6 +1,6 @@
-<section class="studio-panel">
+<section class="system-panel">
     <h2>{{ 'setup.admin.title'|trans }}</h2>
-    <p class="studio-muted">{{ 'setup.admin.text'|trans }}</p>
+    <p class="system-muted">{{ 'setup.admin.text'|trans }}</p>
     {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_username', label: 'setup.form.admin_username.label'|trans, value: setup_display_values.admin_username, required: true, attributes: {minlength: 5, maxlength: 30, pattern: '[A-Za-z][A-Za-z0-9_-]{4,29}', autocomplete: 'username', 'data-password-policy-target': 'username', 'data-action': 'input->password-policy#update'}, errors: setup_errors.admin_username|default([])} only %}
     {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_email', label: 'setup.form.admin_email.label'|trans, type: 'email', value: setup_display_values.admin_email, required: true, attributes: {'data-password-policy-target': 'email', 'data-action': 'input->password-policy#update'}, errors: setup_errors.admin_email|default([])} only %}
     {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'admin_password', label: 'setup.form.admin_password.label'|trans, type: 'password', value: '', required: setup_values.admin_password is empty, help: (setup_values.admin_password is empty ? 'setup.form.admin_password.help' : 'setup.form.admin_password.keep_help')|trans, attributes: {minlength: 8, autocomplete: 'new-password', 'data-password-policy-target': 'password', 'data-action': 'input->password-policy#update'}, errors: setup_errors.admin_password|default([])} only %}
@@ -8,8 +8,8 @@
     {% include '@root/partials/forms/_password_policy_meter.html.twig' only %}
 </section>
 
-<section class="studio-panel">
+<section class="system-panel">
     <h2>{{ 'setup.app_secret.title'|trans }}</h2>
-    <p class="studio-muted">{{ 'setup.app_secret.text'|trans }}</p>
+    <p class="system-muted">{{ 'setup.app_secret.text'|trans }}</p>
     {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'app_secret', label: 'setup.form.app_secret.label'|trans, value: setup_display_values.app_secret, help: 'setup.form.app_secret.help'|trans, attributes: {autocomplete: 'off', minlength: 12}, errors: setup_errors.app_secret|default([])} only %}
 </section>

@@ -13,7 +13,7 @@ final class SetupEnvironmentSnapshotTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = sys_get_temp_dir().'/studio-setup-env-snapshot-'.bin2hex(random_bytes(6));
+        $this->root = sys_get_temp_dir().'/system-backend-setup-env-snapshot-'.bin2hex(random_bytes(6));
         mkdir($this->root, 0777, true);
     }
 

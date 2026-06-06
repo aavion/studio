@@ -51,7 +51,7 @@ final class UserControllerTest extends WebTestCase
         $client->submit($form);
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-auth-notice', 'Your password was updated.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your password was updated.');
         $updatedUser = self::getContainer()->get(EntityManagerInterface::class)->getRepository(UserAccount::class)->find($user->uid());
 
         self::assertInstanceOf(UserAccount::class, $updatedUser);
@@ -100,7 +100,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-form-errors', 'The password-change security email could not be created. Please try again later.');
+            self::assertSelectorTextContains('.system-form-errors', 'The password-change security email could not be created. Please try again later.');
 
             $entityManager = self::getContainer()->get(EntityManagerInterface::class);
             $updatedUser = $entityManager->getRepository(UserAccount::class)->find($user->uid());
@@ -148,7 +148,7 @@ final class UserControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Account security review');
-        self::assertSelectorTextContains('.studio-auth-notice', 'Only continue if you did not request the password change.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'Only continue if you did not request the password change.');
         self::assertSelectorExists('form button');
 
         $entityManager->clear();
@@ -163,7 +163,7 @@ final class UserControllerTest extends WebTestCase
         $client->submit($form);
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-auth-notice', 'An administrator notification was created for review.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'An administrator notification was created for review.');
 
         $entityManager->clear();
         $lockedUser = $entityManager->find(UserAccount::class, $user->uid());
@@ -219,7 +219,7 @@ final class UserControllerTest extends WebTestCase
             $client->submit($crawler->selectButton('Lock account')->form());
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-error', 'The last active owner account cannot be locked from this review link.');
+            self::assertSelectorTextContains('.system-frontend-auth-error', 'The last active owner account cannot be locked from this review link.');
 
             $entityManager->clear();
             $unchangedAdmin = $entityManager->find(UserAccount::class, $admin->uid());
@@ -298,9 +298,9 @@ final class UserControllerTest extends WebTestCase
         $client->submit($form);
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-form-errors', 'The current password is not correct.');
-        self::assertSelectorTextContains('.studio-form-errors', 'The new password must contain at least 8 characters.');
-        self::assertSelectorTextContains('.studio-form-errors', 'The new passwords do not match.');
+        self::assertSelectorTextContains('.system-form-errors', 'The current password is not correct.');
+        self::assertSelectorTextContains('.system-form-errors', 'The new password must contain at least 8 characters.');
+        self::assertSelectorTextContains('.system-form-errors', 'The new passwords do not match.');
         $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
         self::assertStringContainsString('auth.password_change_failed', $auditLog);
         self::assertStringContainsString('ui.user.password.errors.current_password', $auditLog);
@@ -497,7 +497,7 @@ final class UserControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-auth-notice', 'Your account is ready.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your account is ready.');
 
         $user = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'missinggroupinvitee']);
 
@@ -540,7 +540,7 @@ final class UserControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-form-errors', 'Email address "claimed-invitee@example.test" is already assigned to another account.');
+        self::assertSelectorTextContains('.system-form-errors', 'Email address "claimed-invitee@example.test" is already assigned to another account.');
         self::assertNull($entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'claimednewuser']));
 
         $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
@@ -570,7 +570,7 @@ final class UserControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-form-errors', 'This account setup link can no longer be used.');
+        self::assertSelectorTextContains('.system-form-errors', 'This account setup link can no longer be used.');
         self::assertNull($entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'lowrolegroup']));
 
         $entityManager->remove($entityManager->find(AccountToken::class, $token->uid()));
@@ -600,7 +600,7 @@ final class UserControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-auth-notice', 'Your account is ready.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your account is ready.');
 
         $user = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'authorinvitee']);
 
@@ -637,7 +637,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-notice', 'If the address can be registered, an email with account setup instructions was created.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'If the address can be registered, an email with account setup instructions was created.');
 
             $token = self::getContainer()->get(EntityManagerInterface::class)
                 ->getRepository(AccountToken::class)
@@ -676,7 +676,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
 
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $deletedUser->email(),
@@ -722,7 +722,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
 
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $deletedUser->email(),
@@ -766,7 +766,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-notice', 'If the address can be registered, an email with account setup instructions was created.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'If the address can be registered, an email with account setup instructions was created.');
 
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $deletedUser->email(),
@@ -886,7 +886,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-form-errors', 'The account email could not be created. Please try again later.');
+            self::assertSelectorTextContains('.system-form-errors', 'The account email could not be created. Please try again later.');
 
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $email,
@@ -901,7 +901,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-form-errors', 'The account email could not be created. Please try again later.');
+            self::assertSelectorTextContains('.system-form-errors', 'The account email could not be created. Please try again later.');
 
             $existingAccountToken = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $admin->email(),
@@ -939,7 +939,7 @@ final class UserControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.studio-auth-notice', 'Your account is ready.');
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your account is ready.');
 
         $entityManager->clear();
         $reactivatedUser = $entityManager->find(UserAccount::class, $deletedUid);
@@ -969,7 +969,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'Your registration request will be reviewed. If it is approved, you will receive an email with account setup instructions.');
 
             $entityManager = self::getContainer()->get(EntityManagerInterface::class);
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy(['email' => $email]);
@@ -1051,7 +1051,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-form-errors', 'The reset email could not be created. Please try again later.');
+            self::assertSelectorTextContains('.system-form-errors', 'The reset email could not be created. Please try again later.');
 
             $token = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => $user->email(),
@@ -1066,7 +1066,7 @@ final class UserControllerTest extends WebTestCase
             ]));
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.studio-form-errors', 'The reset email could not be created. Please try again later.');
+            self::assertSelectorTextContains('.system-form-errors', 'The reset email could not be created. Please try again later.');
         } finally {
             $config->set('site.url', (string) $originalSiteUrl);
         }
@@ -1228,7 +1228,7 @@ final class UserControllerTest extends WebTestCase
 
             self::assertResponseRedirects('/user/profile/close');
             $client->followRedirect();
-            self::assertSelectorTextContains('.studio-alert-error', 'The last active owner account cannot be closed.');
+            self::assertSelectorTextContains('.system-alert-error', 'The last active owner account cannot be closed.');
 
             $entityManager->clear();
             $persistedAdmin = $entityManager->find(UserAccount::class, $admin->uid());

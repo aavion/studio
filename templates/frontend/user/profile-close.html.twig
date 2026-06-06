@@ -3,13 +3,13 @@
 {% block title %}{{ 'ui.user.profile.close.title'|trans }}{% endblock %}
 
 {% block frontend_body %}
-    <section class="studio-auth-panel">
+    <section class="system-frontend-auth-panel">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             title: 'ui.user.profile.close.title'|trans,
             subtitle: 'ui.user.profile.close.subtitle'|trans,
         } only %}
-        <p class="studio-muted">{{ 'ui.user.profile.close.confirmation_message'|trans({'%days%': deleted_user_retention_days}) }}</p>
-        <form method="post" action="{{ path('user_profile_close') }}" class="studio-auth-form">
+        <p class="system-muted">{{ 'ui.user.profile.close.confirmation_message'|trans({'%days%': deleted_user_retention_days}) }}</p>
+        <form method="post" action="{{ path('user_profile_close') }}" class="system-frontend-auth-form">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_profile_close') }}">
             {% include '@frontend/partials/forms/fields/input.html.twig' with {
                 name: 'password',

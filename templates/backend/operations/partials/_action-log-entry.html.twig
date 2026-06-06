@@ -1,7 +1,7 @@
-<li class="studio-action-log-entry">
+<li class="system-backend-action-log-entry">
     <strong>{{ entry.label|default('ui.operations.action_log.entry'|trans) }}</strong>
     {% if entry.status is defined %}
-        <span class="studio-badge studio-badge-neutral">{{ entry.status }}</span>
+        <span class="system-badge system-badge-neutral">{{ entry.status }}</span>
     {% endif %}
     {% if entry.message is defined %}
         <p>{{ entry.message }}</p>

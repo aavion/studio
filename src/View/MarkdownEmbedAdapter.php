@@ -41,7 +41,7 @@ final class MarkdownEmbedAdapter implements EmbedAdapterInterface
         $src = 'https://www.youtube-nocookie.com/embed/'.$videoId;
 
         return sprintf(
-            '<div class="studio-markdown-embed"><iframe src="%s" title="%s" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>',
+            '<div class="system-markdown-embed"><iframe src="%s" title="%s" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>',
             htmlspecialchars($src, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
             htmlspecialchars($this->videoTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
         );

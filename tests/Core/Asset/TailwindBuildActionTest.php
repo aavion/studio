@@ -18,7 +18,7 @@ final class TailwindBuildActionTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-tailwind-action');
+        $this->root = $this->createTemporaryDirectory('system-tailwind-action');
     }
 
     protected function tearDown(): void

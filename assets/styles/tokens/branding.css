@@ -15,6 +15,6 @@
 }
 
 :root {
-    --color-studio-primary: var(--color-brand-primary);
-    --color-studio-accent: var(--color-brand-accent);
+    --color-system-primary: var(--color-brand-primary);
+    --color-system-accent: var(--color-brand-accent);
 }

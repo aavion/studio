@@ -23,7 +23,7 @@ final class PackageTemplatePathConfiguratorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-template-paths');
+        $this->root = $this->createTemporaryDirectory('system-template-paths');
     }
 
     protected function tearDown(): void

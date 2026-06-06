@@ -47,8 +47,8 @@ final class UserProfileControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Profile');
-        self::assertSelectorTextContains('.studio-user-summary', 'profileuser');
-        self::assertSelectorTextContains('.studio-user-summary', 'profileuser@example.test');
+        self::assertSelectorTextContains('.system-frontend-user-summary', 'profileuser');
+        self::assertSelectorTextContains('.system-frontend-user-summary', 'profileuser@example.test');
         self::assertSelectorNotExists('input[name="username"]');
     }
 

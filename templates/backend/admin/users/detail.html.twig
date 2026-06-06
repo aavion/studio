@@ -14,9 +14,9 @@
         title: user_account.username,
     } only %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.users.detail.title'|trans }}</h2>
-        <dl class="studio-backend-summary">
+        <dl class="system-backend-summary">
             <div>
                 <dt>{{ 'admin.users.fields.email'|trans }}</dt>
                 <dd>{{ user_account.email }}</dd>
@@ -30,7 +30,7 @@
                 <dd>{{ login_possible ? 'ui.form.yes'|trans : 'ui.form.no'|trans }}</dd>
             </div>
         </dl>
-        <form method="post" class="studio-backend-form">
+        <form method="post" class="system-backend-form">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_' ~ user_account.uid) }}">
             {% include '@backend/partials/forms/fields/select.html.twig' with {
                 id: 'user_role',
@@ -63,22 +63,22 @@
         </form>
     </section>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.users.password_reset.title'|trans }}</h2>
-        <p class="studio-muted">{{ 'admin.users.password_reset.text'|trans }}</p>
+        <p class="system-muted">{{ 'admin.users.password_reset.text'|trans }}</p>
         <form method="post" action="{{ path('backend_admin_user_password_reset', {uid: user_account.uid}) }}">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_password_reset_' ~ user_account.uid) }}">
-            <button class="studio-button" type="submit">{{ 'admin.users.password_reset.submit'|trans }}</button>
+            <button class="system-button" type="submit">{{ 'admin.users.password_reset.submit'|trans }}</button>
         </form>
     </section>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.users.history.title'|trans }}</h2>
         <p><a href="{{ audit_log_url }}">{{ 'admin.users.history.audit_link'|trans }}</a></p>
         {% if state_history is empty %}
-            <p class="studio-muted">{{ 'admin.users.history.empty'|trans }}</p>
+            <p class="system-muted">{{ 'admin.users.history.empty'|trans }}</p>
         {% else %}
-            <table class="studio-field-table">
+            <table class="system-field-table">
                 <thead>
                     <tr>
                         <th scope="col">{{ 'admin.users.history.fields.event'|trans }}</th>

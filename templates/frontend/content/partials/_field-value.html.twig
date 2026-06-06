@@ -1,15 +1,15 @@
 {% if value is same as(null) %}
-    <span class="studio-muted">{{ 'ui.content.empty_value'|trans }}</span>
+    <span class="system-muted">{{ 'ui.content.empty_value'|trans }}</span>
 {% elseif value is same as(true) or value is same as(false) %}
     {{ value ? 'true' : 'false' }}
 {% elseif value is iterable %}
     {% if value.html is defined %}
-        <div class="studio-rich-text">{{ value.html|raw }}</div>
+        <div class="system-rich-text">{{ value.html|raw }}</div>
     {% elseif value.markdown is defined %}
-        <div class="studio-rich-text">{{ value.markdown|render_markdown }}</div>
+        <div class="system-rich-text">{{ value.markdown|render_markdown }}</div>
     {% else %}
-        <pre class="studio-code-block">{{ value|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+        <pre class="system-code-block">{{ value|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
     {% endif %}
 {% else %}
-    <div class="studio-rich-text">{{ value|render_markdown }}</div>
+    <div class="system-rich-text">{{ value|render_markdown }}</div>
 {% endif %}

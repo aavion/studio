@@ -3,19 +3,19 @@
 {% block title %}{{ 'ui.user.api_keys.title'|trans }}{% endblock %}
 
 {% block frontend_body %}
-    <section class="studio-auth-panel">
+    <section class="system-frontend-auth-panel">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             title: 'ui.user.api_keys.title'|trans,
             subtitle: 'ui.user.api_keys.subtitle'|trans,
         } only %}
         {% if new_plain_api_key|default(null) %}
-            <section class="studio-panel">
+            <section class="system-panel">
                 <h2>{{ 'ui.user.api_keys.generated_title'|trans }}</h2>
-                <p class="studio-muted">{{ 'ui.user.api_keys.generated_message'|trans }}</p>
-                <code class="studio-code">{{ new_plain_api_key }}</code>
+                <p class="system-muted">{{ 'ui.user.api_keys.generated_message'|trans }}</p>
+                <code class="system-code">{{ new_plain_api_key }}</code>
             </section>
         {% endif %}
-        <form method="post" class="studio-auth-form">
+        <form method="post" class="system-frontend-auth-form">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_api_key_create') }}">
             {% include '@frontend/partials/forms/fields/input.html.twig' with {
                 name: 'prefix',
@@ -37,12 +37,12 @@
                 message: 'ui.user.api_keys.empty_message'|trans,
             } only %}
         {% else %}
-            <div class="studio-api-key-list">
-                <input class="studio-api-key-toggle" type="checkbox" id="studio-show-revoked-api-keys">
-                <label class="studio-api-key-toggle-label" for="studio-show-revoked-api-keys">
+            <div class="system-frontend-api-key-list">
+                <input class="system-frontend-api-key-toggle" type="checkbox" id="system-show-revoked-api-keys">
+                <label class="system-frontend-api-key-toggle-label" for="system-show-revoked-api-keys">
                     {{ 'ui.user.api_keys.show_revoked'|trans }}
                 </label>
-                <table class="studio-field-table">
+                <table class="system-field-table">
                     <thead>
                         <tr>
                             <th scope="col">{{ 'ui.user.api_keys.prefix'|trans }}</th>
@@ -54,7 +54,7 @@
                     </thead>
                     <tbody>
                         {% for api_key in api_keys %}
-                            <tr class="{{ api_key.status.value == 'revoked' ? 'studio-api-key-row-revoked' : '' }}">
+                            <tr class="{{ api_key.status.value == 'revoked' ? 'system-frontend-api-key-row-revoked' : '' }}">
                                 <td>{{ api_key.prefix }}</td>
                                 <td>{{ api_key.status.messageKey|trans }}</td>
                                 <td>{{ api_key.createdAt|date('Y-m-d H:i') }}</td>
@@ -68,9 +68,9 @@
                                 <td>
                                     {% if api_key.status.value != 'revoked' %}
                                         <a href="{{ path('user_api_key_reveal', {uid: api_key.uid}) }}">{{ 'ui.user.api_keys.reveal.link'|trans }}</a>
-                                        <form method="post" action="{{ path('user_api_key_revoke', {uid: api_key.uid}) }}" class="studio-inline-form">
+                                        <form method="post" action="{{ path('user_api_key_revoke', {uid: api_key.uid}) }}" class="system-inline-form">
                                             <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_api_key_revoke_' ~ api_key.uid) }}">
-                                            <button type="submit" class="studio-button studio-button-secondary">{{ 'ui.user.api_keys.revoke'|trans }}</button>
+                                            <button type="submit" class="system-button system-button-secondary">{{ 'ui.user.api_keys.revoke'|trans }}</button>
                                         </form>
                                     {% else %}
                                         {{ 'ui.content.empty_value'|trans }}

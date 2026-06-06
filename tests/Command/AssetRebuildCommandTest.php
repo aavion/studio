@@ -33,7 +33,7 @@ final class AssetRebuildCommandTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-asset-command');
+        $this->root = $this->createTemporaryDirectory('system-asset-command');
         $this->writeTestFile($this->root, 'bin/console', "#!/usr/bin/env php\n<?php echo \"Studio test\";\n");
     }
 

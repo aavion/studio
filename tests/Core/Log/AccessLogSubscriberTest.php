@@ -63,7 +63,7 @@ final class AccessLogSubscriberTest extends TestCase
             new AccessRequestMetadata(),
             new VisitorIdGenerator('test-secret'),
             null,
-            new DatabaseReadyState(new SetupCompletionMarker(), sys_get_temp_dir().'/missing-studio-project', 'test'),
+            new DatabaseReadyState(new SetupCompletionMarker(), sys_get_temp_dir().'/missing-system-project', 'test'),
         ))->onKernelResponse(new ResponseEvent(
             new AccessSubscriberTestKernel(),
             $request,

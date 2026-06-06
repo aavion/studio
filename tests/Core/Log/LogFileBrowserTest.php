@@ -16,7 +16,7 @@ final class LogFileBrowserTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->logDir = $this->createTemporaryDirectory('studio-log-browser');
+        $this->logDir = $this->createTemporaryDirectory('system-log-browser');
     }
 
     protected function tearDown(): void

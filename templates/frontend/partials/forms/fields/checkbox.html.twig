@@ -1,9 +1,9 @@
 {% set field_id = id|default(name|default('field')) %}
-<div class="studio-form-field studio-form-field-checkbox">
-    <label class="studio-checkbox-label" for="{{ field_id }}">
+<div class="system-form-field system-form-field-checkbox">
+    <label class="system-checkbox-label" for="{{ field_id }}">
         <input
             id="{{ field_id }}"
-            class="studio-checkbox"
+            class="system-checkbox"
             type="checkbox"
             name="{{ name }}"
             value="{{ value|default('1') }}"

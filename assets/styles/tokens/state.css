@@ -1,6 +1,6 @@
 :root {
-    --studio-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 28%, transparent);
-    --studio-transition-fast: 140ms ease;
+    --system-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 28%, transparent);
+    --system-transition-fast: 140ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {

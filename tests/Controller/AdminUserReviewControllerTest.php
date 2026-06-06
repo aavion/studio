@@ -37,10 +37,10 @@ final class AdminUserReviewControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'User reviews');
-        self::assertSelectorTextContains('.studio-review-list', 'approval-review@example.test');
-        self::assertSelectorTextContains('.studio-review-list', 'Registration approval');
-        self::assertSelectorTextContains('.studio-review-list', 'expired-invite-review@example.test');
-        self::assertSelectorTextContains('.studio-review-list', 'Link expired');
+        self::assertSelectorTextContains('.system-backend-review-list', 'approval-review@example.test');
+        self::assertSelectorTextContains('.system-backend-review-list', 'Registration approval');
+        self::assertSelectorTextContains('.system-backend-review-list', 'expired-invite-review@example.test');
+        self::assertSelectorTextContains('.system-backend-review-list', 'Link expired');
         self::assertStringNotContainsString('Password reset', (string) $client->getResponse()->getContent());
 
         foreach ([$registration, $invitation, $passwordReset] as $token) {
@@ -66,9 +66,9 @@ final class AdminUserReviewControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('input[name="q"][value="visible-review-filter"]');
-        self::assertSelectorTextContains('.studio-review-list', 'visible-review-filter@example.test');
+        self::assertSelectorTextContains('.system-backend-review-list', 'visible-review-filter@example.test');
         self::assertStringNotContainsString('hidden-review-filter@example.test', (string) $client->getResponse()->getContent());
-        self::assertSelectorTextContains('.studio-toolbar', 'Page 1 of 1');
+        self::assertSelectorTextContains('.system-toolbar', 'Page 1 of 1');
 
         $entityManager->remove($entityManager->find(AccountToken::class, $visible->uid()));
         $entityManager->remove($entityManager->find(AccountToken::class, $hidden->uid()));

@@ -1,7 +1,7 @@
 {% set expand_active_branch_only = expand_active_branch_only|default(true) %}
 
 {% if items|length > 0 %}
-    <ul class="studio-backend-nav">
+    <ul class="system-backend-nav">
         {% for item in items %}
             {% set children_visible = item.children|length > 0 and (not expand_active_branch_only or item.active or item.active_ancestor) %}
             {% set item_classes = [

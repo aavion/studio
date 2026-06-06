@@ -1,5 +1,5 @@
 {% if actions|default([]) is not empty %}
-    <div class="studio-backend-button-group {{ class|default('') }}">
+    <div class="system-backend-button-group {{ class|default('') }}">
         {% for action in actions %}
             <form
                 method="post"
@@ -13,7 +13,7 @@
                 <input type="hidden" name="_form_id" value="backend-action-{{ action.id }}">
                 <input type="hidden" name="_backend_action" value="{{ action.id }}">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('backend-action-' ~ action.id) }}">
-                <button class="studio-backend-button studio-button-{{ action.variant }}" type="submit">
+                <button class="system-backend-button system-button-{{ action.variant }}" type="submit">
                     {{ action.label_key|trans }}
                 </button>
             </form>

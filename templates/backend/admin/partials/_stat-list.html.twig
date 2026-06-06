@@ -1,7 +1,7 @@
 {% if rows is empty %}
-    <p class="studio-muted">{{ 'admin.statistics.empty'|trans }}</p>
+    <p class="system-muted">{{ 'admin.statistics.empty'|trans }}</p>
 {% else %}
-    <ol class="studio-stat-list">
+    <ol class="system-backend-stat-list">
         {% for row in rows %}
             <li><span>{{ row.label }}</span> <strong>{{ row.count }}</strong></li>
         {% endfor %}

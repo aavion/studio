@@ -1,9 +1,9 @@
 {% set field_id = id|default(name|default('field')) %}
-<div class="studio-form-field studio-form-field-toggle">
-    <label class="studio-toggle-label" for="{{ field_id }}">
+<div class="system-form-field system-form-field-toggle">
+    <label class="system-toggle-label" for="{{ field_id }}">
         <input
             id="{{ field_id }}"
-            class="studio-toggle"
+            class="system-toggle"
             type="checkbox"
             role="switch"
             name="{{ name }}"

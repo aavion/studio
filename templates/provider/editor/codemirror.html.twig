@@ -1,6 +1,6 @@
 {% set editor_attributes = attributes|default({}) %}
 {% set editor_classes = [
-    'studio-codemirror-provider',
+    'system-editor-codemirror-provider',
     editor_attributes.class|default(''),
 ]|filter(class_name => class_name is not empty)|join(' ') %}
 

@@ -28,7 +28,7 @@ final class PackageDiscoveryRunnerTest extends KernelTestCase
     {
         self::bootKernel();
 
-        $this->projectDir = $this->createTemporaryDirectory('studio-package-discovery-runner');
+        $this->projectDir = $this->createTemporaryDirectory('system-package-discovery-runner');
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $this->connection = $this->entityManager->getConnection();
         $this->connection->beginTransaction();

@@ -1,21 +1,21 @@
 {% extends '@root/base.html.twig' %}
 
-{% block body_class %}studio-body studio-backend{% endblock %}
+{% block body_class %}system-body system-backend{% endblock %}
 
 {% block body %}
-    <main class="studio-backend-shell">
-        <div class="studio-admin-shell">
+    <main class="system-backend-shell">
+        <div class="system-backend-admin-shell">
             {% include '@backend/partials/layout/_sidebar.html.twig' with {
                 area: 'admin',
                 label_key: 'ui.admin.navigation',
                 sidebar_content: block('admin_sidebar'),
             } only %}
-            <section class="studio-admin-content">
+            <section class="system-backend-admin-content">
                 {% include '@backend/partials/layout/_topbar.html.twig' with {
                     area_key: 'ui.admin.area',
                     actions: backend_actions(['asset_rebuild', 'cache_clear']),
                 } only %}
-                <div class="studio-admin-content-inner">
+                <div class="system-backend-admin-content-inner">
                     {% include '@backend/partials/feedback/_flash-stack.html.twig' %}
                     {% block admin_body %}{% endblock %}
                 </div>

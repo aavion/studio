@@ -15,9 +15,9 @@
         subtitle: 'admin.groups.review.subtitle'|trans({'%group%': group.identifier}),
     } only %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.groups.review.summary_title'|trans }}</h2>
-        <dl class="studio-backend-summary">
+        <dl class="system-backend-summary">
             <div>
                 <dt>{{ 'admin.groups.review.summary.users'|trans }}</dt>
                 <dd>{{ impact.summary.users }}</dd>
@@ -42,9 +42,9 @@
     </section>
 
     {% if operation == 'update' %}
-        <section class="studio-panel">
+        <section class="system-panel">
             <h2>{{ 'admin.groups.review.update_title'|trans }}</h2>
-            <dl class="studio-backend-summary">
+            <dl class="system-backend-summary">
                 <div>
                     <dt>{{ 'admin.groups.fields.name'|trans }}</dt>
                     <dd>{{ group.name }} -> {{ pending.name }}</dd>
@@ -65,9 +65,9 @@
     ) %}
     {% set opens_published_access = opens_content_access|merge(opens_menu_access) %}
     {% if operation == 'delete' and opens_published_access is not empty %}
-        <section class="studio-panel">
+        <section class="system-panel">
             <h2>{{ 'admin.groups.review.access_warning_title'|trans }}</h2>
-            <p class="studio-muted">{{ 'admin.groups.review.access_warning_text'|trans }}</p>
+            <p class="system-muted">{{ 'admin.groups.review.access_warning_text'|trans }}</p>
             <ul>
                 {% for item in opens_published_access %}
                     <li>{{ item.label }}</li>
@@ -78,13 +78,13 @@
 
     {% include '@backend/admin/users/partials/_group-impact.html.twig' with {impact: impact} only %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.groups.review.confirm_title'|trans }}</h2>
         {% if operation == 'delete' %}
             <form
                 method="post"
                 action="{{ path('backend_admin_user_group_delete', {uid: group.uid}) }}"
-                class="studio-backend-form"
+                class="system-backend-form"
                 data-controller="operation-overlay"
                 data-action="submit->operation-overlay#submit"
                 data-operation-overlay-enabled-value="true"
@@ -93,8 +93,8 @@
                 <input type="hidden" name="_form_id" value="acl-group-delete-{{ group.uid }}">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_delete_' ~ group.uid) }}">
                 <input type="hidden" name="confirm_delete" value="1">
-                <button class="studio-backend-button studio-button-danger" type="submit">{{ 'admin.groups.review.confirm_delete'|trans }}</button>
-                <a class="studio-backend-button studio-button-secondary" href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">
+                <button class="system-backend-button system-button-danger" type="submit">{{ 'admin.groups.review.confirm_delete'|trans }}</button>
+                <a class="system-backend-button system-button-secondary" href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">
                     {{ 'admin.groups.review.cancel'|trans }}
                 </a>
             </form>
@@ -102,7 +102,7 @@
             <form
                 method="post"
                 action="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}"
-                class="studio-backend-form"
+                class="system-backend-form"
                 data-controller="operation-overlay"
                 data-action="submit->operation-overlay#submit"
                 data-operation-overlay-enabled-value="true"
@@ -113,8 +113,8 @@
                 <input type="hidden" name="confirm_update" value="1">
                 <input type="hidden" name="name" value="{{ pending.name }}">
                 <input type="hidden" name="min_role" value="{{ pending.min_role }}">
-                <button class="studio-backend-button studio-button-primary" type="submit">{{ 'admin.groups.review.confirm_update'|trans }}</button>
-                <a class="studio-backend-button studio-button-secondary" href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">
+                <button class="system-backend-button system-button-primary" type="submit">{{ 'admin.groups.review.confirm_update'|trans }}</button>
+                <a class="system-backend-button system-button-secondary" href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">
                     {{ 'admin.groups.review.cancel'|trans }}
                 </a>
             </form>

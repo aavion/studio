@@ -82,7 +82,7 @@ final class PackageActivatorTest extends KernelTestCase
 
     public function testActivatedPackageSchedulerTaskCanBeRegisteredAndEnabled(): void
     {
-        $this->temporaryProjectDir = $this->createTemporaryDirectory('studio-package-scheduler');
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-package-scheduler');
         $this->insertPackage('demo-module', ['module'], 'inactive');
         $this->writeTestFile($this->temporaryProjectDir, 'packages/demo-module/package.php', <<<'PHP'
 <?php

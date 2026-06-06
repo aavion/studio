@@ -36,7 +36,7 @@ final class AdminSchedulerControllerTest extends WebTestCase
             self::assertStringContainsString('Cron syntax', (string) $client->getResponse()->getContent());
             self::assertStringContainsString('Activate this job before running it manually.', (string) $client->getResponse()->getContent());
 
-            $form = $crawler->filter('form.studio-form')->form([
+            $form = $crawler->filter('form.system-form')->form([
                 'cron_expression' => '*/10 * * * *',
             ]);
             $form['enabled']->tick();

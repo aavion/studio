@@ -16,7 +16,7 @@ final class PackageDiscoveryTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->projectDir = $this->createTemporaryDirectory('studio-package-discovery');
+        $this->projectDir = $this->createTemporaryDirectory('system-package-discovery');
     }
 
     protected function tearDown(): void

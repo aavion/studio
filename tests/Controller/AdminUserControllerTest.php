@@ -48,7 +48,7 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'User management');
         self::assertSelectorExists('form[action="/admin/users/invitations"]');
-        self::assertSelectorExists('.studio-backend-nav a[href="/admin/users/groups"]');
+        self::assertSelectorExists('.system-backend-nav a[href="/admin/users/groups"]');
     }
 
     public function testDeletedUsersViewListsRetentionAndCleansExpiredAccounts(): void
@@ -320,9 +320,9 @@ final class AdminUserControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('input[name="q"][value="filtervisible"]');
-        self::assertSelectorTextContains('.studio-field-table', 'filtervisible');
+        self::assertSelectorTextContains('.system-field-table', 'filtervisible');
         self::assertStringNotContainsString('filterhidden', (string) $client->getResponse()->getContent());
-        self::assertSelectorTextContains('.studio-toolbar', 'Page 1 of 1');
+        self::assertSelectorTextContains('.system-toolbar', 'Page 1 of 1');
 
         $client->request('GET', '/admin/users?sort=role&direction=desc&per_page=25');
 
@@ -346,9 +346,9 @@ final class AdminUserControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('input[name="q"][value="filter_group_visible"]');
-        self::assertSelectorTextContains('.studio-field-table', 'filter_group_visible');
+        self::assertSelectorTextContains('.system-field-table', 'filter_group_visible');
         self::assertStringNotContainsString('filter_group_hidden', (string) $client->getResponse()->getContent());
-        self::assertSelectorTextContains('.studio-toolbar', 'Page 1 of 1');
+        self::assertSelectorTextContains('.system-toolbar', 'Page 1 of 1');
 
         $entityManager->remove($entityManager->find(AclGroup::class, $visibleGroup->uid()));
         $entityManager->remove($entityManager->find(AclGroup::class, $hiddenGroup->uid()));
@@ -413,7 +413,7 @@ final class AdminUserControllerTest extends WebTestCase
 
             self::assertResponseRedirects('/admin/users');
             $client->followRedirect();
-            self::assertSelectorTextContains('.studio-alert-error', 'The account email could not be created. Check the configured site URL and try again.');
+            self::assertSelectorTextContains('.system-alert-error', 'The account email could not be created. Check the configured site URL and try again.');
 
             $token = self::getContainer()->get(EntityManagerInterface::class)
                 ->getRepository(AccountToken::class)
@@ -947,7 +947,7 @@ final class AdminUserControllerTest extends WebTestCase
         $client->request('GET', '/admin/users/'.$updatedUser->uid());
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Account history');
-        self::assertSelectorTextContains('.studio-field-table', 'Status changed');
+        self::assertSelectorTextContains('.system-field-table', 'Status changed');
         self::assertSelectorExists('a[href*="/admin/logs"][href*="source=audit"][href*="'.$updatedUser->uid().'"]');
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -1192,7 +1192,7 @@ final class AdminUserControllerTest extends WebTestCase
         $this->loginTestUser($client, $actor);
         $crawler = $client->request('GET', '/admin/users/'.$target->uid());
         $client->request('POST', '/admin/users/'.$target->uid(), [
-            '_csrf_token' => (string) $crawler->filter('form.studio-backend-form input[name="_csrf_token"]')->attr('value'),
+            '_csrf_token' => (string) $crawler->filter('form.system-backend-form input[name="_csrf_token"]')->attr('value'),
             'status' => UserAccountStatus::Active->value,
             'role' => UserRole::User->value,
             'groups' => ['peer_assignment_admin'],
@@ -1334,7 +1334,7 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSame(0, $inviteForm->filter('input[value="peer_visible_admin"]')->count());
 
         $crawler = $client->request('GET', '/admin/users/'.$target->uid());
-        $detailForm = $crawler->filter('form.studio-backend-form')->first();
+        $detailForm = $crawler->filter('form.system-backend-form')->first();
 
         self::assertSame(0, $detailForm->filter('input[value="lower_visible_manager"]')->count());
         self::assertSame(0, $detailForm->filter('input[value="peer_visible_admin"]')->count());
@@ -1389,7 +1389,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         $crawler = $client->request('GET', '/admin/users/'.$user->uid());
         $client->request('POST', '/admin/users/'.$user->uid(), [
-            '_csrf_token' => (string) $crawler->filter('form.studio-backend-form input[name="_csrf_token"]')->attr('value'),
+            '_csrf_token' => (string) $crawler->filter('form.system-backend-form input[name="_csrf_token"]')->attr('value'),
             'status' => UserAccountStatus::Active->value,
             'role' => UserRole::User->value,
             'groups' => ['public_only'],

@@ -1,6 +1,6 @@
-<section class="studio-panel">
+<section class="system-panel">
     <h2>{{ 'setup.database.title'|trans }}</h2>
-    <p class="studio-muted">{{ 'setup.database.text'|trans }}</p>
+    <p class="system-muted">{{ 'setup.database.text'|trans }}</p>
     {% set database_driver_options = {} %}
     {% for driver_value, driver_label in setup_database_driver_options %}
         {% set database_driver_options = database_driver_options|merge({(driver_value): driver_label|trans}) %}
@@ -47,8 +47,8 @@
         attributes: {maxlength: 80, pattern: '[a-z][a-z0-9_]*'},
         errors: setup_errors.database_prefix|default([]),
     } only %}
-    <div class="studio-button-group">
-        <button class="studio-button studio-button-secondary" type="submit" name="_setup_action" value="test_database">
+    <div class="system-button-group">
+        <button class="system-button system-button-secondary" type="submit" name="_setup_action" value="test_database">
             {{ 'setup.database.test_connection'|trans }}
         </button>
     </div>

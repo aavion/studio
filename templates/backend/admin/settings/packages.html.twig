@@ -17,7 +17,7 @@
         title: 'admin.settings.packages.title'|trans,
     } only %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.settings.packages.foundation_title'|trans }}</h2>
         {% include '@backend/partials/forms/_dynamic.html.twig' with {form: settings_form} only %}
         {% if package_settings|length > 0 %}
@@ -27,13 +27,13 @@
                         <a href="{{ package.path }}">{{ package.label }}</a>
                         <code>{{ package.package_name }}</code>
                         {% if package.description %}
-                            <p class="studio-muted">{{ package.description }}</p>
+                            <p class="system-muted">{{ package.description }}</p>
                         {% endif %}
                     </li>
                 {% endfor %}
             </ul>
         {% else %}
-            <p class="studio-muted">{{ 'admin.settings.packages.empty'|trans }}</p>
+            <p class="system-muted">{{ 'admin.settings.packages.empty'|trans }}</p>
         {% endif %}
     </section>
 {% endblock %}

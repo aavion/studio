@@ -26,7 +26,7 @@ final class FilesystemOperationActionTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('studio-operation-actions');
+        $this->root = $this->createTemporaryDirectory('system-operation-actions');
     }
 
     protected function tearDown(): void

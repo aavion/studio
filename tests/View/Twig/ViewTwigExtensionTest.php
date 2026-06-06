@@ -81,8 +81,8 @@ final class ViewTwigExtensionTest extends KernelTestCase
 
         self::assertStringContainsString('type="email"', $html);
         self::assertStringContainsString('type="radio"', $html);
-        self::assertStringContainsString('studio-button-group', $html);
-        self::assertStringContainsString('studio-backend-select', $html);
+        self::assertStringContainsString('system-button-group', $html);
+        self::assertStringContainsString('system-backend-select', $html);
         self::assertStringContainsString('data-code-editor-language-value="html"', $html);
     }
 }

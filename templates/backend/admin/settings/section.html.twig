@@ -20,9 +20,9 @@
         title: title_key|trans,
     } only %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ foundation_title_key|trans }}</h2>
-        <p class="studio-muted">{{ foundation_text_key|trans }}</p>
+        <p class="system-muted">{{ foundation_text_key|trans }}</p>
         {% if settings_form %}
             {% include '@backend/partials/forms/_dynamic.html.twig' with {form: settings_form} only %}
         {% endif %}

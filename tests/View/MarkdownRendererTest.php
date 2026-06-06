@@ -43,7 +43,7 @@ final class MarkdownRendererTest extends TestCase
 
         self::assertStringContainsString('<h1 class="hero-title" id="landing-page">Landing Page', $html);
         self::assertStringContainsString('href="#landing-page" class="heading-permalink"', $html);
-        self::assertStringContainsString('studio-markdown-toc', $html);
+        self::assertStringContainsString('system-markdown-toc', $html);
         self::assertStringContainsString('<mark>Highlighted</mark>', $html);
         self::assertStringContainsString('<dl>', $html);
         self::assertStringContainsString('footnote-ref', $html);

@@ -496,7 +496,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             $settings,
             $this->synchronizer($provider),
             new SchedulerLockFactory(
-                new LockFactory(new FlockStore(sys_get_temp_dir().'/studio-scheduler-test-'.bin2hex(random_bytes(4)))),
+                new LockFactory(new FlockStore(sys_get_temp_dir().'/system-scheduler-test-'.bin2hex(random_bytes(4)))),
                 'test',
             ),
             new SchedulerDueTaskSelector($settings, $activePackages),

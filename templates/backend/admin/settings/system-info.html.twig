@@ -14,24 +14,24 @@
         title: 'admin.system_info.title'|trans,
     } only %}
 
-    <section class="studio-panel">
-        <div class="studio-panel-header">
+    <section class="system-panel">
+        <div class="system-panel-header">
             <div>
                 <h2>{{ 'admin.system_info.preflight.title'|trans }}</h2>
-                <p class="studio-muted">{{ 'admin.system_info.preflight.text'|trans }}</p>
+                <p class="system-muted">{{ 'admin.system_info.preflight.text'|trans }}</p>
             </div>
-            <span class="studio-badge studio-badge-{{ system_info.preflight.ok ? (system_info.preflight.has_warnings ? 'warning' : 'success') : 'error' }}">
+            <span class="system-badge system-badge-{{ system_info.preflight.ok ? (system_info.preflight.has_warnings ? 'warning' : 'success') : 'error' }}">
                 {{ (system_info.preflight.ok ? (system_info.preflight.has_warnings ? 'setup.preflight.status.warning' : 'setup.preflight.status.ok') : 'setup.preflight.status.failed')|trans }}
             </span>
         </div>
-        <div class="studio-table-wrapper">
-            <table class="studio-table">
+        <div class="system-table-wrapper">
+            <table class="system-table">
                 <tbody>
                     {% for check in system_info.preflight.detail_rows %}
                         <tr>
                             <th scope="row">{{ check.label_key|trans }}</th>
                             <td>
-                                <span class="studio-badge studio-badge-{{ check.status == 'ok' ? 'success' : (check.status == 'warning' ? 'warning' : (check.required ? 'error' : 'neutral')) }}">
+                                <span class="system-badge system-badge-{{ check.status == 'ok' ? 'success' : (check.status == 'warning' ? 'warning' : (check.required ? 'error' : 'neutral')) }}">
                                     {{ (check.status == 'ok' ? 'setup.preflight.status.ok' : (check.status == 'warning' ? 'setup.preflight.status.warning' : (check.required ? 'setup.preflight.status.failed' : 'setup.preflight.status.optional'))) | trans }}
                                 </span>
                             </td>
@@ -43,9 +43,9 @@
         </div>
     </section>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.system_info.summary.title'|trans }}</h2>
-        <dl class="studio-definition-list">
+        <dl class="system-definition-list">
             {% for row in system_info.summary %}
                 <div>
                     <dt>{{ row.label_key|trans }}</dt>
@@ -55,16 +55,16 @@
         </dl>
     </section>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.system_info.capabilities.title'|trans }}</h2>
-        <div class="studio-table-wrapper">
-            <table class="studio-table">
+        <div class="system-table-wrapper">
+            <table class="system-table">
                 <tbody>
                     {% for capability in system_info.capabilities %}
                         <tr>
                             <th scope="row">{{ capability.label_key|trans }}</th>
                             <td>
-                                <span class="studio-badge studio-badge-{{ capability.status == 'ok' ? 'success' : 'neutral' }}">
+                                <span class="system-badge system-badge-{{ capability.status == 'ok' ? 'success' : 'neutral' }}">
                                     {{ ('admin.system_info.status.' ~ capability.status)|trans }}
                                 </span>
                             </td>
@@ -76,9 +76,9 @@
         </div>
     </section>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.system_info.php_settings.title'|trans }}</h2>
-        <dl class="studio-definition-list">
+        <dl class="system-definition-list">
             {% for row in system_info.php_settings %}
                 <div>
                     <dt>{{ row.label_key|trans }}</dt>
@@ -88,11 +88,11 @@
         </dl>
     </section>
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.system_info.php_info.title'|trans }}</h2>
-        <p class="studio-muted">{{ 'admin.system_info.php_info.text'|trans }}</p>
-        <div class="studio-table-wrapper">
-            <table class="studio-table">
+        <p class="system-muted">{{ 'admin.system_info.php_info.text'|trans }}</p>
+        <div class="system-table-wrapper">
+            <table class="system-table">
                 <tbody>
                     {% for row in system_info.php_info %}
                         <tr>

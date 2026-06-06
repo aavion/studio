@@ -14,10 +14,10 @@
         title: 'admin.operations.title'|trans,
     } only %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.operations.lock.title'|trans }}</h2>
         {% if operation_lock %}
-            <dl class="studio-definition-list">
+            <dl class="system-definition-list">
                 <div>
                     <dt>{{ 'admin.operations.lock.operation'|trans }}</dt>
                     <dd><code>{{ operation_lock.operation_id|default('admin.operations.unknown_value'|trans) }}</code></dd>
@@ -33,15 +33,15 @@
                 <div>
                     <dt>{{ 'admin.operations.lock.status'|trans }}</dt>
                     <dd>
-                        <span class="studio-badge studio-badge-{{ operation_lock.stale ? 'warning' : 'neutral' }}">
+                        <span class="system-badge system-badge-{{ operation_lock.stale ? 'warning' : 'neutral' }}">
                             {{ operation_lock.stale ? 'admin.operations.lock.stale'|trans : 'admin.operations.lock.active'|trans }}
                         </span>
                         {% if operation_lock.killable %}
-                            <form class="studio-inline-icon-form" method="post" action="{{ app.request.pathInfo }}">
+                            <form class="system-inline-icon-form" method="post" action="{{ app.request.pathInfo }}">
                                 <input type="hidden" name="_form_id" value="admin-operations">
                                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-operations') }}">
                                 <input type="hidden" name="_operations_action" value="kill_stale_runner">
-                                <button class="studio-icon-action studio-icon-action-danger" type="submit" title="{{ 'admin.operations.actions.kill_stale_runner'|trans }}" aria-label="{{ 'admin.operations.actions.kill_stale_runner'|trans }}">
+                                <button class="system-icon-action system-icon-action-danger" type="submit" title="{{ 'admin.operations.actions.kill_stale_runner'|trans }}" aria-label="{{ 'admin.operations.actions.kill_stale_runner'|trans }}">
                                     <span class="ti ti-x" aria-hidden="true"></span>
                                 </button>
                             </form>
@@ -58,35 +58,35 @@
                     <input type="hidden" name="_form_id" value="admin-operations">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-operations') }}">
                     <input type="hidden" name="_operations_action" value="clear_stale_lock">
-                    <button class="studio-backend-button studio-button-warning" type="submit">
+                    <button class="system-backend-button system-button-warning" type="submit">
                         {{ 'admin.operations.actions.clear_stale_lock'|trans }}
                     </button>
                 </form>
-                <p class="studio-muted">{{ 'admin.operations.lock.clear_note'|trans }}</p>
+                <p class="system-muted">{{ 'admin.operations.lock.clear_note'|trans }}</p>
             {% endif %}
         {% else %}
-            <p class="studio-muted">{{ 'admin.operations.lock.empty'|trans }}</p>
+            <p class="system-muted">{{ 'admin.operations.lock.empty'|trans }}</p>
         {% endif %}
     </section>
 
-    <section class="studio-panel">
-        <div class="studio-panel-header">
+    <section class="system-panel">
+        <div class="system-panel-header">
             <div>
                 <h2>{{ 'admin.operations.runs.title'|trans }}</h2>
-                <p class="studio-muted">{{ 'admin.operations.runs.text'|trans }}</p>
+                <p class="system-muted">{{ 'admin.operations.runs.text'|trans }}</p>
             </div>
             <form method="post" action="{{ app.request.pathInfo }}">
                 <input type="hidden" name="_form_id" value="admin-operations">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-operations') }}">
                 <input type="hidden" name="_operations_action" value="cleanup">
-                <button class="studio-backend-button studio-button-secondary" type="submit">
+                <button class="system-backend-button system-button-secondary" type="submit">
                     {{ 'admin.operations.actions.cleanup'|trans }}
                 </button>
             </form>
         </div>
 
         {% if operation_runs is not empty %}
-            <table class="studio-table">
+            <table class="system-table">
                 <thead>
                     <tr>
                         <th scope="col">{{ 'admin.operations.table.operation'|trans }}</th>
@@ -103,11 +103,11 @@
                                 <strong><a href="/admin/operations/{{ run.operation_id }}">{{ run.label ?: run.operation }}</a></strong>
                                 <code>{{ run.operation_id }}</code>
                                 {% if run.issue.translation_key|default(null) %}
-                                    <p class="studio-muted">{{ run.issue.translation_key|trans(run.issue.parameters|default({})) }}</p>
+                                    <p class="system-muted">{{ run.issue.translation_key|trans(run.issue.parameters|default({})) }}</p>
                                 {% endif %}
                             </th>
                             <td>
-                                <span class="studio-badge studio-badge-{{ run.status == 'success' ? 'success' : (run.status == 'failed' ? 'error' : (run.status == 'requires_review' ? 'warning' : 'neutral')) }}">
+                                <span class="system-badge system-badge-{{ run.status == 'success' ? 'success' : (run.status == 'failed' ? 'error' : (run.status == 'requires_review' ? 'warning' : 'neutral')) }}">
                                     {{ ('ui.operations.action_log.statuses.' ~ run.status)|trans }}
                                 </span>
                             </td>
@@ -118,7 +118,7 @@
                 </tbody>
             </table>
         {% else %}
-            <p class="studio-muted">{{ 'admin.operations.runs.empty'|trans }}</p>
+            <p class="system-muted">{{ 'admin.operations.runs.empty'|trans }}</p>
         {% endif %}
     </section>
 {% endblock %}

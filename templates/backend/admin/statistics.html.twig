@@ -14,13 +14,13 @@
         title: 'admin.statistics.title'|trans,
     } only %}
 
-    <section class="studio-panel">
+    <section class="system-panel">
         <h2>{{ 'admin.statistics.access_title'|trans }}</h2>
         {% if access_statistics.enabled|default(true) == false %}
-            <p class="studio-muted">{{ 'admin.statistics.disabled'|trans }}</p>
+            <p class="system-muted">{{ 'admin.statistics.disabled'|trans }}</p>
         {% endif %}
-        <p class="studio-muted">{{ 'admin.statistics.summary'|trans({'%count%': access_statistics.total_requests}) }}</p>
-        <form method="get" class="studio-form studio-log-filter-form">
+        <p class="system-muted">{{ 'admin.statistics.summary'|trans({'%count%': access_statistics.total_requests}) }}</p>
+        <form method="get" class="system-form system-backend-log-filter-form">
             <label>
                 <span>{{ 'admin.statistics.window'|trans }}</span>
                 <select name="statistics_window">
@@ -29,12 +29,12 @@
                     {% endfor %}
                 </select>
             </label>
-            <button type="submit" class="studio-button">{{ 'admin.logs.filters.apply'|trans }}</button>
+            <button type="submit" class="system-button">{{ 'admin.logs.filters.apply'|trans }}</button>
         </form>
-        <div class="studio-grid studio-grid-3">
+        <div class="system-grid system-grid-3">
             <div>
                 <h3>{{ 'admin.statistics.unique_visitors'|trans }}</h3>
-                <p class="studio-stat-number">{{ access_statistics.unique_visitors|default(0) }}</p>
+                <p class="system-backend-stat-number">{{ access_statistics.unique_visitors|default(0) }}</p>
             </div>
             <div>
                 <h3>{{ 'admin.statistics.status_families'|trans }}</h3>
@@ -47,15 +47,15 @@
             </div>
             <div>
                 <h3>{{ 'admin.statistics.bot_requests'|trans }}</h3>
-                <p class="studio-stat-number">{{ access_statistics.bot_requests|default(0) }}</p>
+                <p class="system-backend-stat-number">{{ access_statistics.bot_requests|default(0) }}</p>
             </div>
             <div>
                 <h3>{{ 'admin.statistics.do_not_track_requests'|trans }}</h3>
-                <p class="studio-stat-number">{{ access_statistics.do_not_track_requests|default(0) }}</p>
+                <p class="system-backend-stat-number">{{ access_statistics.do_not_track_requests|default(0) }}</p>
             </div>
             <div>
                 <h3>{{ 'admin.statistics.average_duration'|trans }}</h3>
-                <p class="studio-stat-number">{{ access_statistics.average_duration_ms is same as(null) ? 'admin.statistics.empty'|trans : access_statistics.average_duration_ms ~ ' ms' }}</p>
+                <p class="system-backend-stat-number">{{ access_statistics.average_duration_ms is same as(null) ? 'admin.statistics.empty'|trans : access_statistics.average_duration_ms ~ ' ms' }}</p>
             </div>
             <div>
                 <h3>{{ 'admin.statistics.top_routes'|trans }}</h3>

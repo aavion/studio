@@ -28,7 +28,7 @@ final class SetupRunnerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = sys_get_temp_dir().'/studio-setup-test-'.bin2hex(random_bytes(6));
+        $this->root = sys_get_temp_dir().'/system-backend-setup-test-'.bin2hex(random_bytes(6));
         mkdir($this->root.'/bin', 0777, true);
         mkdir($this->root.'/config/packages', 0777, true);
         mkdir($this->root.'/translations/runtime/test', 0777, true);
