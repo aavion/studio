@@ -6,16 +6,20 @@ namespace App\Tests\Core\Event;
 
 use App\Content\Event\ContentRenderContextEvent;
 use App\Content\Event\ContentRenderedEvent;
-use App\Core\Event\CoreEventHookProvider;
+use App\Content\ContentEventHookProvider;
 use App\Core\Event\EventHookMode;
 use App\Core\Event\EventMessageKey;
 use App\Core\Event\PublicEventHookRegistry;
 use App\Core\Package\Event\PackageAssetRegistryBuildEvent;
+use App\Core\Package\PackageEventHookProvider;
 use App\Navigation\Event\NavigationBuilderEvent;
+use App\Navigation\NavigationEventHookProvider;
 use App\View\Event\OutputGeneratedEvent;
 use App\View\Event\ResponseHeadersEvent;
+use App\View\Injection\ViewInjectionEventHookProvider;
 use App\View\Injection\Event\DynamicViewInjectionRegistryEvent;
 use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
+use App\View\ViewEventHookProvider;
 use App\View\ViewContextEvent;
 use PHPUnit\Framework\TestCase;
 
@@ -57,9 +61,15 @@ final class PublicEventHookRegistryTest extends TestCase
 
     public function testItAggregatesHookDescriptorProviders(): void
     {
-        $hooks = (new PublicEventHookRegistry([new CoreEventHookProvider()]))->hooks();
+        $hooks = (new PublicEventHookRegistry([
+            new ContentEventHookProvider(),
+            new NavigationEventHookProvider(),
+            new PackageEventHookProvider(),
+            new ViewEventHookProvider(),
+            new ViewInjectionEventHookProvider(),
+        ]))->hooks();
 
         self::assertCount(11, $hooks);
-        self::assertSame(ViewContextEvent::class, $hooks[0]->eventClass());
+        self::assertSame(ContentRenderContextEvent::class, $hooks[0]->eventClass());
     }
 }

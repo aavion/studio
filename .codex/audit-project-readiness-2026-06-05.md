@@ -532,6 +532,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Event/PublicEventDispatcher.php:38`, `src/Core/Event/PublicEventDispatcher.php:42`, `src/Core/Event/PublicEventDispatcher.php:62`, `src/Core/Event/PublicEventDispatcher.php:80`, `src/Core/Event/PublicEventDispatcher.php:127`, `src/Core/Event/PublicEventHookRegistry.php:19`.
 - **Impact:** This gives package authors a documented hook catalogue, but it also means contributors must understand both Symfony events and the project's registry wrapper. If naming drifts, hooks become hard to document.
 - **Recommendation:** Keep the wrapper because the project needs explicit public hook metadata, but document that Symfony events are the runtime primitive and `EventHookDescriptor` is the public-documentation contract. Avoid adding undocumented dispatch-only events.
+- **Implementation note:** Kept Symfony events as the runtime primitive and `PublicEventHookRegistry` as the public contract aggregator, while splitting native hook descriptors into domain-owned providers for content, navigation, package, view, and view-injection hooks. The registry fallback now uses a small system provider list only for manual/test construction, so production descriptors come from tagged domain providers instead of a monolithic core list.
 - **Priority:** Before API / First-party modules.
 
 ### F-026 Database table prefixing relies on manual SQL rewriting and table inventory

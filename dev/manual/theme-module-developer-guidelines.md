@@ -99,7 +99,7 @@ Packages must not write macro files directly under `templates/macros/`, under an
 
 ## Event Hooks
 
-Packages may subscribe only to public hooks surfaced by `App\Core\Event\PublicEventHookRegistry`. The registry is the source of truth for stable package extension contracts. Other Symfony events can still exist inside the application, but they are internal unless listed there.
+Packages may subscribe only to public hooks surfaced by `App\Core\Event\PublicEventHookRegistry`. The registry aggregates domain-owned hook providers and is the source of truth for stable package extension contracts. Other Symfony events can still exist inside the application, but they are internal unless listed there.
 
 Core dispatch points use `App\Core\Event\PublicEventDispatcher`, which converts listener failures into structured operation issues and emits the internal `App\Core\Event\PublicHookFailedEvent`. Package subscribers should still avoid throwing where a recoverable result is possible. Unrecoverable package listener failures may cause the package lifecycle to mark the package `faulty` once package ownership can be resolved safely.
 
