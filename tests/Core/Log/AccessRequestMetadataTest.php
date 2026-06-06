@@ -23,7 +23,8 @@ final class AccessRequestMetadataTest extends TestCase
         $metadata->markStarted($request);
         $request->attributes->set('_route', 'backend_admin_route');
 
-        self::assertSame('request-123', $metadata->requestId($request));
+        self::assertMatchesRegularExpression('/\A[a-f0-9]{24}\z/', $metadata->requestId($request));
+        self::assertSame('request-123', $metadata->correlationId($request));
         self::assertIsInt($metadata->durationMs($request));
         self::assertSame('admin', $metadata->surface($request));
         self::assertSame('backend_admin_route', $metadata->resolvedRoute($request));
@@ -33,7 +34,7 @@ final class AccessRequestMetadataTest extends TestCase
         self::assertSame('application/json', $metadata->contentType($request->headers->get('Content-Type')));
         self::assertSame(7, $metadata->responseSize(new Response('content')));
         self::assertSame([
-            'request_id' => 'request-123',
+            'request_id' => $metadata->requestId($request),
             'visitor_id' => 'visitor-a',
             'requested_path' => '/admin/logs',
             'resolved_route' => 'backend_admin_route',
@@ -52,9 +53,10 @@ final class AccessRequestMetadataTest extends TestCase
 
         self::assertMatchesRegularExpression('/\A[a-f0-9]{24}\z/', $requestId);
         self::assertSame($requestId, $metadata->requestId($request));
+        self::assertSame('n/a', $metadata->correlationId($request));
     }
 
-    public function testItFallsBackToCorrelationIdWhenPrimaryRequestIdIsInvalid(): void
+    public function testItKeepsValidInboundCorrelationSeparateFromInternalRequestId(): void
     {
         $metadata = new AccessRequestMetadata();
         $request = Request::create('/admin/logs', server: [
@@ -62,7 +64,8 @@ final class AccessRequestMetadataTest extends TestCase
             'HTTP_X_CORRELATION_ID' => 'correlation-123',
         ]);
 
-        self::assertSame('correlation-123', $metadata->requestId($request));
+        self::assertMatchesRegularExpression('/\A[a-f0-9]{24}\z/', $metadata->requestId($request));
+        self::assertSame('correlation-123', $metadata->correlationId($request));
     }
 
     public function testItRedactsSensitivePathSegments(): void

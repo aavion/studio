@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 final readonly class AccessRequestMetadata
 {
     public const REQUEST_ID_ATTRIBUTE = '_system_access_request_id';
+    public const CORRELATION_ID_ATTRIBUTE = '_system_access_correlation_id';
     public const STARTED_AT_ATTRIBUTE = '_system_access_started_at';
     private const GENERATED_REQUEST_ID_BYTES = 12;
     private const MAX_REQUEST_ID_LENGTH = 64;
@@ -24,6 +25,7 @@ final readonly class AccessRequestMetadata
         }
 
         $this->requestId($request);
+        $this->correlationId($request);
     }
 
     public function requestId(Request $request): string
@@ -34,12 +36,26 @@ final readonly class AccessRequestMetadata
             return $existing;
         }
 
-        $requestId = $this->headerToken($request->headers->get('X-Request-ID'))
-            ?? $this->headerToken($request->headers->get('X-Correlation-ID'))
-            ?? $this->generateRequestId();
+        $requestId = $this->generateRequestId();
         $request->attributes->set(self::REQUEST_ID_ATTRIBUTE, $requestId);
 
         return $requestId;
+    }
+
+    public function correlationId(Request $request): string
+    {
+        $existing = $request->attributes->get(self::CORRELATION_ID_ATTRIBUTE);
+
+        if (is_string($existing) && '' !== $existing) {
+            return $existing;
+        }
+
+        $correlationId = $this->headerToken($request->headers->get('X-Correlation-ID'))
+            ?? $this->headerToken($request->headers->get('X-Request-ID'))
+            ?? 'n/a';
+        $request->attributes->set(self::CORRELATION_ID_ATTRIBUTE, $correlationId);
+
+        return $correlationId;
     }
 
     public function durationMs(Request $request): ?int

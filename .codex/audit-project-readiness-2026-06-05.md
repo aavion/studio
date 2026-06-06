@@ -354,6 +354,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Core/Log/AccessRequestMetadata.php:25`, `src/Core/Log/AccessRequestMetadata.php:32`, `src/Core/Log/AccessRequestMetadata.php:217`.
 - **Impact:** Sanitization and length limiting reduce log-injection risk, but external clients can still choose values that collide or confuse operational tracing.
 - **Recommendation:** Generate an internal request ID unconditionally and store inbound correlation IDs separately, or only trust inbound request IDs from trusted proxies.
+- **Implementation note:** `AccessRequestMetadata` now always generates the internal request ID and stores short safe inbound `X-Correlation-ID`/`X-Request-ID` values separately as `correlation_id` for access-log matching. Twig trace data and statistics continue to use only the internal request ID.
 - **Priority:** Before API.
 
 ### F-008 UUID primary-key strategy is consistent but should be revisited before schema growth
