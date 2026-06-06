@@ -23,9 +23,11 @@ message:
     json_syntax_error: 'JSON syntax check failed for "%path%".'
     yaml_syntax_error: 'YAML syntax check failed for "%path%".'
     css_syntax_error: 'CSS syntax check failed for "%path%".'
+    css_namespace_invalid: 'CSS class "%class%" in "%path%" must use the package-owned prefix "%expected_prefix%".'
     javascript_syntax_error: 'JavaScript syntax check failed for "%path%".'
     scope_invalid: 'Package scope "%scope%" is not supported.'
     template_path_invalid: 'Package template "%path%" is not allowed by root, provider, or macro namespace rules for package scope "%scope%".'
+    template_reference_invalid: 'Package template "%path%" must not reference template "%reference%" outside its own template scope.'
     policy:
       blocked_path: 'Package path "%path%" is blocked by package policy (%reason%).'
       warned_path: 'Package path "%path%" should be reviewed by package policy (%reason%).'
@@ -100,6 +102,8 @@ message:
     snapshot_store_failed: 'Access statistics snapshot storage failed.'
     cleanup_failed: 'Access statistics retention cleanup failed.'
     trace_id_invalid: 'Access statistics received an invalid %label%.'
+  account_app_secret_rotation:
+    manual_owner_reset_required: 'APP_SECRET rotation recovery could not deliver every owner reset link. Use the emergency recovery file when available, or run "%command%" manually for the listed owners.'
   event:
     hook:
       invalid: 'Event hook "%event%" is not a valid public hook definition.'

@@ -347,6 +347,7 @@ services:
 
     App\Security\AppSecretRotationGuard:
         arguments:
+            $projectDir: '%kernel.project_dir%'
             $secret: '%kernel.secret%'
             $environment: '%kernel.environment%'
 

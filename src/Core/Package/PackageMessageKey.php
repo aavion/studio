@@ -18,9 +18,11 @@ final class PackageMessageKey
     public const PACKAGE_JSON_SYNTAX_ERROR = 'message.package.json_syntax_error';
     public const PACKAGE_YAML_SYNTAX_ERROR = 'message.package.yaml_syntax_error';
     public const PACKAGE_CSS_SYNTAX_ERROR = 'message.package.css_syntax_error';
+    public const PACKAGE_CSS_NAMESPACE_INVALID = 'message.package.css_namespace_invalid';
     public const PACKAGE_JAVASCRIPT_SYNTAX_ERROR = 'message.package.javascript_syntax_error';
     public const PACKAGE_SCOPE_INVALID = 'message.package.scope_invalid';
     public const PACKAGE_TEMPLATE_PATH_INVALID = 'message.package.template_path_invalid';
+    public const PACKAGE_TEMPLATE_REFERENCE_INVALID = 'message.package.template_reference_invalid';
     public const PACKAGE_POLICY_BLOCKED_PATH = 'message.package.policy.blocked_path';
     public const PACKAGE_POLICY_WARNED_PATH = 'message.package.policy.warned_path';
     public const PACKAGE_POLICY_BLOCKED_PHP_CAPABILITY = 'message.package.policy.blocked_php_capability';

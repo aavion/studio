@@ -18,9 +18,11 @@ final class PackageValidator
         private readonly PackageInventoryInspector $inventoryInspector = new PackageInventoryInspector(),
         private readonly PackageRequiredPathValidator $requiredPathValidator = new PackageRequiredPathValidator(),
         private readonly PackageTemplatePathValidator $templatePathValidator = new PackageTemplatePathValidator(),
+        private readonly PackageTemplateReferenceValidator $templateReferenceValidator = new PackageTemplateReferenceValidator(),
         private readonly PackageFilePolicy $filePolicy = new PackageFilePolicy(),
         private readonly PackagePhpCapabilityPolicy $phpCapabilityPolicy = new PackagePhpCapabilityPolicy(),
         private readonly PackageFileSyntaxValidator $fileSyntaxValidator = new PackageFileSyntaxValidator(),
+        private readonly PackageCssNamespaceValidator $cssNamespaceValidator = new PackageCssNamespaceValidator(),
         private readonly PackageSourceNamespaceValidator $sourceNamespaceValidator = new PackageSourceNamespaceValidator(),
         private readonly PackageTranslationNamespaceValidator $translationNamespaceValidator = new PackageTranslationNamespaceValidator(),
         private readonly PackageSchedulerCronValidator $schedulerCronValidator = new PackageSchedulerCronValidator(),
@@ -44,10 +46,12 @@ final class PackageValidator
         $policyMessages = $this->filePolicy->warningMessages($candidate, $inspection);
 
         array_push($issues, ...$this->templatePathValidator->validate($candidate, $inspection->templateFiles()));
+        array_push($issues, ...$this->templateReferenceValidator->validate($candidate, $inspection->templateFiles()));
         array_push($issues, ...$this->filePolicy->blockedIssues($candidate, $inspection));
         array_push($issues, ...$this->phpCapabilityPolicy->validate($candidate, $inspection));
         array_push($issues, ...$this->schedulerCronValidator->validate($candidate, $inspection->phpFiles()));
         array_push($issues, ...$this->fileSyntaxValidator->validate($candidate, $inspection, $spec));
+        array_push($issues, ...$this->cssNamespaceValidator->validate($candidate, $inspection->cssFiles()));
         array_push($issues, ...$this->sourceNamespaceValidator->validate($candidate, $inspection->sourcePhpFiles()));
         array_push($issues, ...$this->translationNamespaceValidator->validate($candidate, $inspection->yamlFiles()));
 

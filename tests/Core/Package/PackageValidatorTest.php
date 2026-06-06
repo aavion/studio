@@ -755,6 +755,48 @@ PHP);
         self::assertTrue($result->isSuccess());
     }
 
+    public function testItAcceptsPackageOwnedCssClasses(): void
+    {
+        $this->writeFile('assets/module.css', <<<'CSS'
+.system-panel .demo-module-card,
+.demo-module-card,
+.demo-module-card.demo-module-card-active {
+    color: red;
+    background-image: url("../images/icon.svg");
+}
+CSS);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module']),
+            PackageSpec::create(),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItRejectsCssRulesTargetingClassesOutsidePackageNamespace(): void
+    {
+        $this->writeFile('assets/module.css', <<<'CSS'
+.system-panel,
+.other-package-card {
+    color: red;
+}
+CSS);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module']),
+            PackageSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame(
+            ['system-panel', 'other-package-card'],
+            array_map(static fn ($issue): string => $issue->context()['class'], $result->issues()),
+        );
+        self::assertSame('package.css_namespace_invalid', $result->firstIssue()?->code());
+        self::assertSame('demo-module-', $result->firstIssue()?->context()['expected_prefix']);
+    }
+
     public function testItAcceptsPackageTranslationFilesInOwnedNamespace(): void
     {
         $this->writeFile('languages/en/messages.yaml', "pkg:\n  system:\n    title: Demo\n");
@@ -821,6 +863,45 @@ PHP);
         self::assertFalse($result->isSuccess());
         self::assertSame('package.translation_namespace_invalid', $result->firstIssue()?->code());
         self::assertSame('languages/en/messages.yaml', $result->firstIssue()?->context()['file']);
+    }
+
+    public function testItRejectsPackageCssTargetClassesOutsideTheAssetScope(): void
+    {
+        $this->writeFile('assets/frontend/app.css', <<<'CSS'
+.demo-module-card,
+.system-panel .demo-module-backend-card {
+    color: red;
+}
+CSS);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module', 'PACKAGE_SCOPE' => 'frontend-theme']),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame(['demo-module-card', 'demo-module-backend-card'], array_map(
+            static fn ($issue): string => $issue->context()['class'],
+            $result->issues(),
+        ));
+        self::assertSame('demo-module-frontend-', $result->firstIssue()?->context()['expected_prefix']);
+    }
+
+    public function testItRejectsTemplateReferencesOutsideTheTemplateScope(): void
+    {
+        $this->writeFile('templates/frontend/page.html.twig', <<<'TWIG'
+{% extends '@backend/admin.html.twig' %}
+{% include '@root/partials/brand/_brand.html.twig' %}
+TWIG);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithScope('module'),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.template_reference_invalid', $result->firstIssue()?->code());
+        self::assertSame('@backend/admin.html.twig', $result->firstIssue()?->context()['reference']);
     }
 
     public function testItReportsStructuredSyntaxErrors(): void

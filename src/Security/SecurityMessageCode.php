@@ -16,4 +16,5 @@ final class SecurityMessageCode
     public const ACCOUNT_LINK_DELIVERED = 'account.link_delivered';
     public const ACCOUNT_NOTIFICATION_DELIVERED = 'account.notification_delivered';
     public const ACCOUNT_MAIL_STUB_QUEUED = 'account.mail_stub_queued';
+    public const ACCOUNT_APP_SECRET_ROTATION_MANUAL_OWNER_RESET_REQUIRED = 'account.app_secret_rotation.manual_owner_reset_required';
 }

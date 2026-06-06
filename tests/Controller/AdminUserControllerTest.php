@@ -1065,7 +1065,7 @@ final class AdminUserControllerTest extends WebTestCase
         }
     }
 
-    public function testAppSecretRotationRetriesWhenOwnerResetLinksCannotBeGenerated(): void
+    public function testAppSecretRotationMarksRecoveryHandledWhenOwnerResetLinksCannotBeGenerated(): void
     {
         $client = self::createClient();
         $admin = $this->adminUser();
@@ -1076,10 +1076,24 @@ final class AdminUserControllerTest extends WebTestCase
         $originalSiteUrl = $config->get('site.url', 'http://localhost');
         $originalFingerprints = $config->get(AppSecretRotationGuard::FINGERPRINTS_KEY, []);
         $activeKeyRows = $connection->fetchAllAssociative("SELECT uid, status FROM api_key WHERE status IN ('read_only', 'read_write')");
+        $existingResetTokenUids = $connection->fetchFirstColumn(
+            "SELECT uid FROM account_token WHERE user_uid = ? AND type = 'password_reset'",
+            [$admin->uid()],
+        );
         $apiKey = $this->createApiKey($admin, 'retryrotkey');
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+        $projectDir = (string) self::getContainer()->getParameter('kernel.project_dir');
         $entityManager->flush();
         $config->set('site.url', 'not-a-url');
         $config->set(AppSecretRotationGuard::FINGERPRINTS_KEY, ['test' => 'previous-secret-fingerprint'], ConfigValueType::Json, sensitive: true);
+
+        foreach (glob($logDir.'/test/message-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+
+        foreach (glob($projectDir.'/var/recovery/test/app-secret-rotation-*.json') ?: [] as $recoveryFile) {
+            @unlink($recoveryFile);
+        }
 
         try {
             $client->request('GET', '/admin/users');
@@ -1087,10 +1101,34 @@ final class AdminUserControllerTest extends WebTestCase
             self::assertResponseIsSuccessful();
             $fingerprints = $config->get(AppSecretRotationGuard::FINGERPRINTS_KEY, []);
             self::assertIsArray($fingerprints);
-            self::assertSame('previous-secret-fingerprint', $fingerprints['test'] ?? null);
+            self::assertArrayHasKey('test', $fingerprints);
+            self::assertNotSame('previous-secret-fingerprint', $fingerprints['test']);
             $updatedApiKey = $entityManager->find(ApiKey::class, $apiKey->uid());
             self::assertInstanceOf(ApiKey::class, $updatedApiKey);
             self::assertSame(ApiKeyStatus::Revoked, $updatedApiKey->status());
+            $messageLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/message-*.log') ?: []));
+            self::assertStringContainsString('account.app_secret_rotation.manual_owner_reset_required', $messageLog);
+            self::assertStringContainsString('"manual_command":"bin/setup --reset-password"', $messageLog);
+            self::assertStringContainsString('"failed_submissions"', $messageLog);
+            self::assertStringContainsString('"username":"'.$admin->username().'"', $messageLog);
+            self::assertStringContainsString('"reason":"action_url_unavailable"', $messageLog);
+            self::assertStringContainsString('"emergency_recovery_file":"var/recovery/test/app-secret-rotation-', $messageLog);
+
+            $recoveryFiles = glob($projectDir.'/var/recovery/test/app-secret-rotation-*.json') ?: [];
+            self::assertCount(1, $recoveryFiles);
+            $recovery = json_decode((string) file_get_contents($recoveryFiles[0]), true, flags: JSON_THROW_ON_ERROR);
+
+            self::assertSame('test', $recovery['environment']);
+            self::assertSame('bin/setup --reset-password', $recovery['manual_command']);
+            self::assertCount(1, $recovery['entries']);
+            self::assertSame($admin->uid(), $recovery['entries'][0]['user_uid']);
+            self::assertSame($admin->username(), $recovery['entries'][0]['username']);
+            self::assertSame('action_url_unavailable', $recovery['entries'][0]['reason']);
+            self::assertStringStartsWith('/user/reset-password/', $recovery['entries'][0]['reset_path']);
+
+            $recoveryToken = $entityManager->find(AccountToken::class, $recovery['entries'][0]['token_uid']);
+            self::assertInstanceOf(AccountToken::class, $recoveryToken);
+            self::assertSame(AccountTokenStatus::Pending, $recoveryToken->status());
         } finally {
             $config->set('site.url', (string) $originalSiteUrl);
             $config->set(
@@ -1105,6 +1143,25 @@ final class AdminUserControllerTest extends WebTestCase
             if ($storedApiKey instanceof ApiKey) {
                 $entityManager->remove($storedApiKey);
                 $entityManager->flush();
+            }
+
+            $currentResetTokenUids = array_values(array_diff(
+                array_map('strval', $connection->fetchFirstColumn("SELECT uid FROM account_token WHERE user_uid = ? AND type = 'password_reset'", [$admin->uid()])),
+                array_map('strval', $existingResetTokenUids),
+            ));
+
+            foreach ($currentResetTokenUids as $tokenUid) {
+                $token = $entityManager->find(AccountToken::class, $tokenUid);
+
+                if ($token instanceof AccountToken) {
+                    $entityManager->remove($token);
+                }
+            }
+
+            $entityManager->flush();
+
+            foreach (glob($projectDir.'/var/recovery/test/app-secret-rotation-*.json') ?: [] as $recoveryFile) {
+                @unlink($recoveryFile);
             }
 
             foreach ($activeKeyRows as $row) {

@@ -23,9 +23,11 @@ message:
     json_syntax_error: 'JSON-Syntaxprüfung für "%path%" fehlgeschlagen.'
     yaml_syntax_error: 'YAML-Syntaxprüfung für "%path%" fehlgeschlagen.'
     css_syntax_error: 'CSS-Syntaxprüfung für "%path%" fehlgeschlagen.'
+    css_namespace_invalid: 'CSS-Klasse "%class%" in "%path%" muss den paket-eigenen Prefix "%expected_prefix%" verwenden.'
     javascript_syntax_error: 'JavaScript-Syntaxprüfung für "%path%" fehlgeschlagen.'
     scope_invalid: 'Paket-Scope "%scope%" wird nicht unterstützt.'
     template_path_invalid: 'Paket-Template "%path%" ist durch Root-, Provider- oder Makro-Namespace-Regeln für Paket-Scope "%scope%" nicht erlaubt.'
+    template_reference_invalid: 'Paket-Template "%path%" darf Template "%reference%" außerhalb des eigenen Template-Scopes nicht referenzieren.'
     policy:
       blocked_path: 'Paketpfad "%path%" wird durch die Paket-Policy blockiert (%reason%).'
       warned_path: 'Paketpfad "%path%" sollte durch die Paket-Policy geprüft werden (%reason%).'
@@ -100,6 +102,8 @@ message:
     snapshot_store_failed: 'Speicherung des Zugriffsstatistik-Snapshots ist fehlgeschlagen.'
     cleanup_failed: 'Aufbewahrungs-Cleanup der Zugriffsstatistiken ist fehlgeschlagen.'
     trace_id_invalid: 'Zugriffsstatistiken haben eine ungültige %label% erhalten.'
+  account_app_secret_rotation:
+    manual_owner_reset_required: 'APP_SECRET-Rotation-Recovery konnte nicht alle Owner-Reset-Links zustellen. Nutze die Emergency-Recovery-Datei, sofern vorhanden, oder führe "%command%" für die gelisteten Owner manuell aus.'
   event:
     hook:
       invalid: 'Event-Hook "%event%" ist keine gültige öffentliche Hook-Definition.'
