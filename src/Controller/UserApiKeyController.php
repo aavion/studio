@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Api\ApiFeaturePolicy;
 use App\Core\Access\AccessActor;
 use App\Core\Id\UuidFactory;
 use App\Core\Log\AuditLoggerInterface;
@@ -29,6 +30,7 @@ final class UserApiKeyController extends AbstractController
         private readonly AuditLoggerInterface $auditLogger,
         private readonly ApiKeyVault $apiKeyVault,
         private readonly UuidFactory $uuidFactory,
+        private readonly ApiFeaturePolicy $apiFeaturePolicy,
     ) {
     }
 
@@ -39,6 +41,10 @@ final class UserApiKeyController extends AbstractController
 
         if (!$user instanceof UserAccount) {
             return $this->httpError->unauthorized($request);
+        }
+
+        if (!$this->apiFeaturePolicy->canManageKeys($user)) {
+            return $this->httpError->notFound($request);
         }
 
         $newPlainKey = null;
@@ -79,6 +85,10 @@ final class UserApiKeyController extends AbstractController
 
         if (!$user instanceof UserAccount) {
             return $this->httpError->unauthorized($request);
+        }
+
+        if (!$this->apiFeaturePolicy->canManageKeys($user)) {
+            return $this->httpError->notFound($request);
         }
 
         $apiKey = $this->entityManager->find(ApiKey::class, $uid);
@@ -127,6 +137,10 @@ final class UserApiKeyController extends AbstractController
 
         if (!$user instanceof UserAccount) {
             return $this->httpError->unauthorized($request);
+        }
+
+        if (!$this->apiFeaturePolicy->canManageKeys($user)) {
+            return $this->httpError->notFound($request);
         }
 
         $apiKey = $this->entityManager->find(ApiKey::class, $uid);

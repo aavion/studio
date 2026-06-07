@@ -216,6 +216,7 @@ message:
       setup_incomplete: 'The API is unavailable until setup has been completed.'
       database: 'The API is temporarily unavailable because database access failed.'
       maintenance: 'The API is temporarily unavailable because maintenance mode is active.'
+      disabled: 'The API is disabled by configuration.'
   system:
     secret_payload:
       root_secret_empty: 'Secret payload protection requires a root secret.'

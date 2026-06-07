@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Config\Settings;
 
+use App\Api\ApiFeaturePolicy;
 use App\Core\Config\Config;
 use App\Core\Access\AccessLevel;
 use App\Core\Validation\EmailAddress;
@@ -61,6 +62,10 @@ final readonly class CoreSettingsFormHandler
 
     private function validateDomainSettings(string $section, FormSubmissionResult $result): ?FormSubmissionResult
     {
+        if ('api' === $section) {
+            return $this->validateApiSettings($result);
+        }
+
         if ('users' !== $section) {
             return null;
         }
@@ -100,6 +105,47 @@ final readonly class CoreSettingsFormHandler
         }
 
         return null;
+    }
+
+    private function validateApiSettings(FormSubmissionResult $result): ?FormSubmissionResult
+    {
+        $origins = $result->value(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY);
+
+        if (null === $origins) {
+            return null;
+        }
+
+        if (!is_array($origins) || array_is_list($origins) === false) {
+            return new FormSubmissionResult($result->values(), [
+                ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY => [FormErrorKey::INVALID],
+            ]);
+        }
+
+        foreach ($origins as $origin) {
+            if (!is_string($origin) || !$this->isValidCorsOrigin($origin)) {
+                return new FormSubmissionResult($result->values(), [
+                    ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY => [FormErrorKey::INVALID],
+                ]);
+            }
+        }
+
+        return null;
+    }
+
+    private function isValidCorsOrigin(string $origin): bool
+    {
+        $origin = trim($origin);
+
+        if ('*' === $origin) {
+            return true;
+        }
+
+        $parts = parse_url($origin);
+
+        return is_array($parts)
+            && in_array($parts['scheme'] ?? null, ['http', 'https'], true)
+            && is_string($parts['host'] ?? null)
+            && !isset($parts['path'], $parts['query'], $parts['fragment']);
     }
 
     private function isValidOptionalEmail(mixed $email): bool

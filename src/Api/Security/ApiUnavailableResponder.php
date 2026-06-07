@@ -63,6 +63,20 @@ final readonly class ApiUnavailableResponder
         );
     }
 
+    public function apiDisabled(Request $request): Response
+    {
+        return $this->responder->error(
+            Message::warning(
+                ApiMessageCode::API_UNAVAILABLE_DISABLED,
+                ApiMessageKey::API_UNAVAILABLE_DISABLED,
+                context: ['reason' => 'api_disabled'],
+            ),
+            Response::HTTP_SERVICE_UNAVAILABLE,
+            $request,
+            headers: $this->headers(),
+        );
+    }
+
     /**
      * @return array<string, string>
      */

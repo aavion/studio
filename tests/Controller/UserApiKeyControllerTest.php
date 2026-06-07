@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Api\ApiFeaturePolicy;
+use App\Core\Config\Config;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
+use App\Security\UserRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -90,5 +93,42 @@ final class UserApiKeyControllerTest extends WebTestCase
         $entityManager->remove($entityManager->find(ApiKey::class, $apiKey->uid()));
         $entityManager->remove($entityManager->find(UserAccount::class, $user->uid()));
         $entityManager->flush();
+    }
+
+    public function testDisabledApiHidesKeyManagementForNonOwners(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(1, 'disabledapiuser', 'current-password');
+        self::getContainer()->get(Config::class)->set(ApiFeaturePolicy::ENABLED_KEY, false);
+        $this->loginTestUser($client, $user);
+
+        try {
+            $client->request('GET', '/user/profile');
+            self::assertResponseIsSuccessful();
+            self::assertStringNotContainsString('/user/api-keys', (string) $client->getResponse()->getContent());
+
+            $client->request('GET', '/user/api-keys');
+            self::assertResponseStatusCodeSame(404);
+        } finally {
+            self::getContainer()->get(Config::class)->set(ApiFeaturePolicy::ENABLED_KEY, true);
+        }
+    }
+
+    public function testDisabledApiKeepsKeyManagementAvailableForOwners(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(9, 'disabledapiowner', 'current-password');
+        $user->changeRole(UserRole::Owner);
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
+        self::getContainer()->get(Config::class)->set(ApiFeaturePolicy::ENABLED_KEY, false);
+        $this->loginTestUser($client, $user);
+
+        try {
+            $client->request('GET', '/user/api-keys');
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'API keys');
+        } finally {
+            self::getContainer()->get(Config::class)->set(ApiFeaturePolicy::ENABLED_KEY, true);
+        }
     }
 }

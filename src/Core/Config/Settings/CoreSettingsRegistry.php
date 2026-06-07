@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Config\Settings;
 
+use App\Api\ApiFeaturePolicy;
 use App\Core\Config\ConfigValueType;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Statistics\AccessStatisticsPolicy;
@@ -84,6 +85,10 @@ final readonly class CoreSettingsRegistry
 
             new CoreSettingDefinition('statistics', AccessStatisticsPolicy::ENABLED_KEY, 'admin.settings.fields.statistics_enabled.label', true, ConfigValueType::Boolean, sortOrder: 10),
             new CoreSettingDefinition('statistics', AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'admin.settings.fields.statistics_respect_dnt.label', true, ConfigValueType::Boolean, sortOrder: 20),
+
+            new CoreSettingDefinition('api', ApiFeaturePolicy::ENABLED_KEY, 'admin.settings.fields.api_enabled.label', true, ConfigValueType::Boolean, help: 'admin.settings.fields.api_enabled.help', sortOrder: 10),
+            new CoreSettingDefinition('api', ApiFeaturePolicy::CORS_ENABLED_KEY, 'admin.settings.fields.api_cors_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.api_cors_enabled.help', sortOrder: 20),
+            new CoreSettingDefinition('api', ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, 'admin.settings.fields.api_cors_allowed_origins.label', [], ConfigValueType::Json, help: 'admin.settings.fields.api_cors_allowed_origins.help', sortOrder: 30),
 
             new CoreSettingDefinition('packages', 'packages.update_check_interval', 'admin.settings.fields.package_update_interval.label', 'daily', ConfigValueType::String, FormInputType::Select, options: [
                 'manual' => 'admin.settings.options.interval.manual',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Navigation;
 
+use App\Api\ApiFeaturePolicy;
 use App\Core\Access\AccessLevel;
 use App\Navigation\Event\NavigationBuilderEvent;
 use App\Security\UserFlowConfig;
@@ -14,7 +15,7 @@ final readonly class UserNavigationSubscriber implements EventSubscriberInterfac
     private const LOGIN_ROOT_UID = 'virtual-user-login-root';
     private const PROFILE_ROOT_UID = 'virtual-user-profile-root';
 
-    public function __construct(private UserFlowConfig $config)
+    public function __construct(private UserFlowConfig $config, private ApiFeaturePolicy $apiFeaturePolicy)
     {
     }
 
@@ -49,7 +50,9 @@ final readonly class UserNavigationSubscriber implements EventSubscriberInterfac
             metadata: ['min_access_level' => AccessLevel::USER],
         ));
 
-        $this->addChild($event, 'api-keys', 'ui.user.api_keys.title', 'user_api_keys', 20, ['min_access_level' => AccessLevel::USER]);
+        $this->addChild($event, 'api-keys', 'ui.user.api_keys.title', 'user_api_keys', 20, [
+            'min_access_level' => $this->apiFeaturePolicy->isEnabled() ? AccessLevel::USER : AccessLevel::OWNER,
+        ]);
         $this->addChild($event, 'studio', 'ui.user.navigation.studio', 'backend_editor_index', 80, ['min_access_level' => AccessLevel::AUTHOR]);
         $this->addChild($event, 'admin', 'ui.user.navigation.admin', 'backend_admin_index', 90, ['min_access_level' => AccessLevel::ADMIN]);
         $this->addChild($event, 'logout', 'ui.user.logout.title', 'user_logout', 1000, [

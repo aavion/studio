@@ -76,6 +76,7 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-07
+- Added API feature policy settings under the Admin API/settings section: `api.enabled` now returns `/api/v1` JSON `503` responses when disabled, hides frontend API-key management for non-owner users while keeping owner access available for operational integrations, and prepares configurable API CORS origin settings.
 - Switched generated OpenAPI documents to OpenAPI 3.2.0, derived API metadata plus Bearer realm from the root `.manifest` through the existing `SystemPackageMetadataProvider`, and started using 3.2 document features including `$self`, named servers, `info.summary`, license metadata, and hierarchical tag metadata.
 - Split OpenAPI tags by shell/domain scope so backend administration uses `backend-admin-*`, backend editor resources use `backend-editor-*`, frontend content uses `frontend-content-*`, package navigation stays independent from admin package management, and future package contributions can use `packages-{package_slug}-*` without colliding with system resources.
 - Hardened package API contribution validation so package endpoints must also declare package-scoped `packages-{package_slug}-*` OpenAPI tags.

@@ -23,4 +23,5 @@ final class ApiMessageKey
     public const API_UNAVAILABLE_SETUP_INCOMPLETE = 'message.api.unavailable.setup_incomplete';
     public const API_UNAVAILABLE_DATABASE = 'message.api.unavailable.database';
     public const API_UNAVAILABLE_MAINTENANCE = 'message.api.unavailable.maintenance';
+    public const API_UNAVAILABLE_DISABLED = 'message.api.unavailable.disabled';
 }

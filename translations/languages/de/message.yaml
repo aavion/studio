@@ -216,6 +216,7 @@ message:
       setup_incomplete: 'Die API ist nicht verfügbar, bis das Setup abgeschlossen wurde.'
       database: 'Die API ist vorübergehend nicht verfügbar, weil der Datenbankzugriff fehlgeschlagen ist.'
       maintenance: 'Die API ist vorübergehend nicht verfügbar, weil der Wartungsmodus aktiv ist.'
+      disabled: 'Die API ist per Konfiguration deaktiviert.'
   system:
     secret_payload:
       root_secret_empty: 'Secret-Payload-Schutz benötigt ein Root-Secret.'
