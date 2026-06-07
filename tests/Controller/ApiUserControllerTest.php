@@ -349,6 +349,25 @@ final class ApiUserControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $payload = $this->jsonPayload($client->getResponse()->getContent());
         self::assertSame('API Group Alpha Updated', $payload['data']['attributes']['name']);
+
+        $client->request('DELETE', '/api/v1/admin/users/groups/items/'.$groupIdentifier, server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('acl_group_review', $payload['data']['type']);
+        self::assertSame('delete', $payload['data']['attributes']['operation']);
+        self::assertSame('/api/v1/admin/users/groups/items/'.$groupIdentifier.'?confirm=true', $payload['links']['confirm']);
+
+        $client->request('DELETE', '/api/v1/admin/users/groups/items/'.$groupIdentifier.'?confirm=true', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('acl_group_delete_result', $payload['data']['type']);
+        self::assertSame('deleted', $payload['data']['attributes']['status']);
     }
 
     public function testUserGroupMembershipCanBeAddedAndRemoved(): void
@@ -486,6 +505,7 @@ final class ApiUserControllerTest extends WebTestCase
         self::assertSame('getUserGroup', $payload['paths']['/admin/users/groups/items/{group_identifier}']['get']['operationId']);
         self::assertSame('updateUserGroup', $payload['paths']['/admin/users/groups/items/{group_identifier}']['patch']['operationId']);
         self::assertSame('deleteUserGroup', $payload['paths']['/admin/users/groups/items/{group_identifier}']['delete']['operationId']);
+        self::assertArrayNotHasKey('requestBody', $payload['paths']['/admin/users/groups/items/{group_identifier}']['delete']);
         self::assertSame('addUserGroupMembership', $payload['paths']['/admin/users/items/{username}/groups/{group_identifier}']['post']['operationId']);
         self::assertSame('removeUserGroupMembership', $payload['paths']['/admin/users/items/{username}/groups/{group_identifier}']['delete']['operationId']);
         self::assertSame('listUserReviews', $payload['paths']['/admin/users/reviews']['get']['operationId']);

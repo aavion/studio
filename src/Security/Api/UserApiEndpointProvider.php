@@ -167,12 +167,6 @@ final readonly class UserApiEndpointProvider implements ApiEndpointProviderInter
                     ['name' => 'group_identifier', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string']],
                     ['name' => 'confirm', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'boolean']],
                 ],
-                requestSchema: [
-                    'type' => 'object',
-                    'properties' => [
-                        'live_operation' => ['type' => 'boolean'],
-                    ],
-                ],
                 responseSchema: ['type' => 'object'],
                 pathPattern: '#^/api/v1/admin/users/groups/items/[a-z][a-z0-9_]{2,79}$#',
             ),
