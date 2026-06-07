@@ -30,6 +30,7 @@ final class PackageApiContributionGuard
         }
 
         self::assertHandlerKey($package, $definition->handlerKey());
+        self::assertTags($package, $definition->tags());
     }
 
     public static function assertHandler(ExtensionPackage $package, ApiEndpointHandlerInterface $handler): void
@@ -44,6 +45,30 @@ final class PackageApiContributionGuard
         if (!str_starts_with($handlerKey, $prefix)) {
             throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_HANDLER_INVALID, [
                 '%handler%' => $handlerKey,
+            ]);
+        }
+    }
+
+    /**
+     * @param list<string> $tags
+     */
+    private static function assertTags(ExtensionPackage $package, array $tags): void
+    {
+        $prefix = 'packages-'.PackageApiEndpointPath::slug($package->packageName()).'-';
+
+        if ([] === $tags) {
+            throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_TAG_INVALID, [
+                '%tag%' => '',
+            ]);
+        }
+
+        foreach ($tags as $tag) {
+            if (str_starts_with($tag, $prefix)) {
+                continue;
+            }
+
+            throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_TAG_INVALID, [
+                '%tag%' => $tag,
             ]);
         }
     }

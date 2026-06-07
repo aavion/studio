@@ -68,20 +68,20 @@ final class AdminUserReviewController extends AbstractController
         ]);
     }
 
-    #[Route('/admin/users/reviews/{uid}/reactivate', name: 'backend_admin_user_review_reactivate', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['POST'])]
-    public function reactivate(Request $request, string $uid): Response
+    #[Route('/admin/users/reviews/details/{username}/reactivate', name: 'backend_admin_user_review_reactivate', requirements: ['username' => '[A-Za-z][A-Za-z0-9_-]{4,29}'], priority: 10, methods: ['POST'])]
+    public function reactivate(Request $request, string $username): Response
     {
         if ($response = $this->adminAccessResponse($request)) {
             return $response;
         }
 
-        $user = $this->entityManager->find(UserAccount::class, $uid);
+        $user = $this->userByUsername($username);
 
         if (!$user instanceof UserAccount) {
             return $this->httpError->notFound($request);
         }
 
-        if (!$this->isCsrfTokenValid('admin_user_review_'.$uid, $this->field($request, '_csrf_token'))) {
+        if (!$this->isCsrfTokenValid('admin_user_review_'.$user->username(), $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectToRoute('backend_admin_user_reviews');
@@ -114,20 +114,20 @@ final class AdminUserReviewController extends AbstractController
         return $this->redirectToRoute('backend_admin_user_reviews');
     }
 
-    #[Route('/admin/users/reviews/{uid}/delete', name: 'backend_admin_user_review_delete', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['POST'])]
-    public function delete(Request $request, string $uid): Response
+    #[Route('/admin/users/reviews/details/{username}/delete', name: 'backend_admin_user_review_delete', requirements: ['username' => '[A-Za-z][A-Za-z0-9_-]{4,29}'], priority: 10, methods: ['POST'])]
+    public function delete(Request $request, string $username): Response
     {
         if ($response = $this->adminAccessResponse($request)) {
             return $response;
         }
 
-        $user = $this->entityManager->find(UserAccount::class, $uid);
+        $user = $this->userByUsername($username);
 
         if (!$user instanceof UserAccount) {
             return $this->httpError->notFound($request);
         }
 
-        if (!$this->isCsrfTokenValid('admin_user_review_'.$uid, $this->field($request, '_csrf_token'))) {
+        if (!$this->isCsrfTokenValid('admin_user_review_'.$user->username(), $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectToRoute('backend_admin_user_reviews');
@@ -251,5 +251,12 @@ final class AdminUserReviewController extends AbstractController
             'type' => AccountTokenType::SecurityReview,
             'status' => AccountTokenStatus::Used,
         ]) instanceof AccountToken;
+    }
+
+    private function userByUsername(string $username): ?UserAccount
+    {
+        $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
+
+        return $user instanceof UserAccount ? $user : null;
     }
 }

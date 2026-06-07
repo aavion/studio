@@ -201,9 +201,14 @@ message:
       route_invalid: 'API-Endpunkt-Route "%route%" ist ungültig.'
       operation_invalid: 'API-Endpunkt-Operation "%operation%" ist ungültig.'
       handler_invalid: 'API-Endpunkt-Handler "%handler%" ist ungültig oder nicht verfügbar.'
+      tag_invalid: 'API-Endpunkt-Tag "%tag%" ist für diesen Namespace ungültig.'
       summary_empty: 'API-Endpunkt-Zusammenfassung darf nicht leer sein.'
       success_status_invalid: 'API-Endpunkt-Erfolgsstatus %status% muss ein 2xx-HTTP-Statuscode sein.'
       not_found: 'Für diesen Pfad und diese Methode ist kein API-Endpunkt registriert.'
+    request:
+      invalid: 'Der API-Request-Body ist ungültig.'
+    validation:
+      failed: 'Der API-Request hat die Validierung nicht bestanden.'
     operation:
       not_implemented: 'API-Operation "%operation%" ist registriert, aber noch nicht implementiert.'
       unavailable: 'API-Operation "%operation%" ist im aktuellen Zustand nicht verfügbar.'

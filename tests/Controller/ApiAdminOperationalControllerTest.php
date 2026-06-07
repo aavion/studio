@@ -136,6 +136,69 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         }
     }
 
+    public function testAdminOperationMaintenanceRequiresConfirmation(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apiopsmaint', ApiKeyStatus::ReadWrite);
+
+        $client->request('POST', '/api/v1/admin/operations/cleanup', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('operation_maintenance_review', $payload['data']['type']);
+        self::assertSame('requires_confirmation', $payload['data']['attributes']['status']);
+        self::assertSame('/api/v1/admin/operations/cleanup?confirm=true', $payload['links']['confirm']);
+
+        $client->request('POST', '/api/v1/admin/operations/cleanup?confirm=true', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('operation_maintenance_result', $payload['data']['type']);
+        self::assertSame('completed', $payload['data']['attributes']['status']);
+    }
+
+    public function testAdminSchedulerTaskDetailAndPatchAreAvailable(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apiopssched', ApiKeyStatus::ReadWrite);
+
+        $client->request('GET', '/api/v1/admin/scheduler/system.live_operation_cleanup', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('scheduler_task', $payload['data']['type']);
+        self::assertSame('system.live_operation_cleanup', $payload['data']['id']);
+        self::assertArrayHasKey('recent_runs', $payload['data']['relationships']);
+
+        $client->request('PATCH', '/api/v1/admin/scheduler/system.live_operation_cleanup', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'enabled' => true,
+            'cron_expression' => '*/10 * * * *',
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('active', $payload['data']['attributes']['status']);
+        self::assertSame('*/10 * * * *', $payload['data']['attributes']['cron_expression']);
+
+        $client->request('POST', '/api/v1/admin/scheduler/system.live_operation_cleanup/run', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('scheduler_run', $payload['data']['type']);
+        self::assertSame('/api/v1/admin/scheduler/system.live_operation_cleanup', $payload['data']['links']['task']);
+    }
+
     public function testOpenApiIncludesAdminOperationalEndpoints(): void
     {
         $client = self::createClient();
@@ -145,9 +208,23 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $payload = $this->jsonPayload($client->getResponse()->getContent());
 
-        foreach (['/admin/backups', '/admin/logs', '/admin/logs/{log}', '/admin/operations', '/admin/operations/{operation_id}', '/admin/operations/{operation_id}/continue', '/admin/scheduler', '/admin/statistics', '/admin/themes'] as $path) {
+        foreach (['/admin/backups', '/admin/logs', '/admin/logs/{log}', '/admin/operations', '/admin/operations/{action}', '/admin/operations/{operation_id}', '/admin/operations/{operation_id}/continue', '/admin/scheduler', '/admin/scheduler/{task_identifier}', '/admin/scheduler/{task_identifier}/run', '/admin/statistics', '/admin/themes'] as $path) {
             self::assertArrayHasKey($path, $payload['paths']);
         }
+
+        self::assertSame(['backend-admin', 'backend-admin-backups'], $payload['paths']['/admin/backups']['get']['tags']);
+        self::assertSame(['backend-admin', 'backend-admin-logs'], $payload['paths']['/admin/logs']['get']['tags']);
+        self::assertSame(['backend-admin', 'backend-admin-operations'], $payload['paths']['/admin/operations']['get']['tags']);
+        self::assertSame(['backend-admin', 'backend-admin-scheduler'], $payload['paths']['/admin/scheduler']['get']['tags']);
+        self::assertSame(['backend-admin', 'backend-admin-statistics'], $payload['paths']['/admin/statistics']['get']['tags']);
+        self::assertSame(['backend-admin', 'backend-admin-themes'], $payload['paths']['/admin/themes']['get']['tags']);
+        self::assertContains([
+            'name' => 'backend-admin-operations',
+            'summary' => 'Backend Admin Operations',
+            'description' => 'Administrative live-operation status, continuation, and maintenance resources.',
+            'parent' => 'backend-admin',
+            'kind' => 'nav',
+        ], $payload['tags']);
     }
 
     private function createPlainApiKey(string $prefix, ApiKeyStatus $status = ApiKeyStatus::ReadOnly): string

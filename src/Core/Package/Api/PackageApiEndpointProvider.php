@@ -25,7 +25,7 @@ final readonly class PackageApiEndpointProvider implements ApiEndpointProviderIn
                 'listPackageApiEndpoints',
                 'List package API namespaces and available package endpoint children.',
                 self::HANDLER_PACKAGES_NAVIGATION,
-                ['packages'],
+                ['packages-navigation'],
                 responseSchema: [
                     'type' => 'object',
                     'properties' => [
@@ -49,7 +49,7 @@ final readonly class PackageApiEndpointProvider implements ApiEndpointProviderIn
                 'listPackages',
                 'List installed and discovered extension packages visible to administrators.',
                 self::HANDLER_PACKAGES_INDEX,
-                ['admin', 'packages'],
+                ['backend-admin', 'backend-admin-packages'],
                 responseSchema: [
                     'type' => 'object',
                     'properties' => [
@@ -75,7 +75,7 @@ final readonly class PackageApiEndpointProvider implements ApiEndpointProviderIn
                 'getPackage',
                 'Return one installed or discovered extension package visible to administrators.',
                 self::HANDLER_PACKAGES_INDEX,
-                ['admin', 'packages'],
+                ['backend-admin', 'backend-admin-packages'],
                 parameters: $this->packageParameters(),
                 responseSchema: ['type' => 'object'],
                 pathPattern: $this->packagePattern(),
@@ -101,7 +101,7 @@ final readonly class PackageApiEndpointProvider implements ApiEndpointProviderIn
                 $operationId,
                 sprintf('Review or confirm the "%s" lifecycle action for one extension package.', $action),
                 self::HANDLER_PACKAGES_INDEX,
-                ['admin', 'packages'],
+                ['backend-admin', 'backend-admin-packages'],
                 parameters: $this->lifecycleParameters(),
                 responseSchema: ['type' => 'object'],
                 successStatus: 202,

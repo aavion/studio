@@ -248,6 +248,7 @@ admin:
       submit: 'Create reset link'
       created: 'Password-reset link created.'
     fields:
+      uid: 'Internal UID'
       username: 'Username'
       email: 'Email'
       status: 'Status'
@@ -422,6 +423,7 @@ admin:
         item: 'Item'
         fields: 'Fields'
     fields:
+      uid: 'Internal UID'
       identifier: 'Identifier'
       name: 'Name'
       min_role: 'Minimum role'

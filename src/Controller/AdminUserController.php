@@ -102,26 +102,26 @@ final class AdminUserController extends AbstractController
         return $this->redirectToRoute('backend_admin_deleted_users');
     }
 
-    #[Route('/admin/users/deleted/{uid}/activate', name: 'backend_admin_deleted_user_activate', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['POST'])]
-    public function activateDeletedUser(Request $request, string $uid): Response
+    #[Route('/admin/users/deleted/details/{username}/activate', name: 'backend_admin_deleted_user_activate', requirements: ['username' => '[A-Za-z][A-Za-z0-9_-]{4,29}'], priority: 0, methods: ['POST'])]
+    public function activateDeletedUser(Request $request, string $username): Response
     {
-        return $this->changeDeletedUserStatus($request, $uid, UserAccountStatus::Active);
+        return $this->changeDeletedUserStatus($request, $username, UserAccountStatus::Active);
     }
 
-    #[Route('/admin/users/deleted/{uid}/deactivate', name: 'backend_admin_deleted_user_deactivate', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['POST'])]
-    public function deactivateDeletedUser(Request $request, string $uid): Response
+    #[Route('/admin/users/deleted/details/{username}/deactivate', name: 'backend_admin_deleted_user_deactivate', requirements: ['username' => '[A-Za-z][A-Za-z0-9_-]{4,29}'], priority: 0, methods: ['POST'])]
+    public function deactivateDeletedUser(Request $request, string $username): Response
     {
-        return $this->changeDeletedUserStatus($request, $uid, UserAccountStatus::Inactive);
+        return $this->changeDeletedUserStatus($request, $username, UserAccountStatus::Inactive);
     }
 
-    #[Route('/admin/users/{uid}', name: 'backend_admin_user_detail', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['GET', 'POST'])]
-    public function user(Request $request, string $uid): Response
+    #[Route('/admin/users/details/{username}', name: 'backend_admin_user_detail', requirements: ['username' => '[A-Za-z][A-Za-z0-9_-]{4,29}'], priority: 0, methods: ['GET', 'POST'])]
+    public function user(Request $request, string $username): Response
     {
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
             return $response;
         }
 
-        $user = $this->entityManager->find(UserAccount::class, $uid);
+        $user = $this->userByUsername($username);
 
         if (!$user instanceof UserAccount || DeletedUserCleanup::DELETED_USER_UID === $user->uid()) {
             return $this->httpError->notFound($request);
@@ -130,7 +130,7 @@ final class AdminUserController extends AbstractController
         if ($request->isMethod('POST')) {
             $this->updateUser($request, $user);
 
-            return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
+            return $this->redirectToRoute('backend_admin_user_detail', ['username' => $user->username()]);
         }
 
         return $this->render('@backend/admin/users/detail.html.twig', [
@@ -150,34 +150,34 @@ final class AdminUserController extends AbstractController
         ]);
     }
 
-    #[Route('/admin/users/{uid}/password-reset', name: 'backend_admin_user_password_reset', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['POST'])]
-    public function passwordReset(Request $request, string $uid): Response
+    #[Route('/admin/users/details/{username}/password-reset', name: 'backend_admin_user_password_reset', requirements: ['username' => '[A-Za-z][A-Za-z0-9_-]{4,29}'], priority: 0, methods: ['POST'])]
+    public function passwordReset(Request $request, string $username): Response
     {
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
             return $response;
         }
 
-        $user = $this->entityManager->find(UserAccount::class, $uid);
+        $user = $this->userByUsername($username);
 
         if (!$user instanceof UserAccount || DeletedUserCleanup::DELETED_USER_UID === $user->uid()) {
             return $this->httpError->notFound($request);
         }
 
-        if (!$this->isCsrfTokenValid('admin_user_password_reset_'.$uid, $this->field($request, '_csrf_token'))) {
+        if (!$this->isCsrfTokenValid('admin_user_password_reset_'.$user->username(), $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
-            return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
+            return $this->redirectToRoute('backend_admin_user_detail', ['username' => $user->username()]);
         }
 
         $result = $this->passwordResetService->create($this->adminContext->actor($this->getUser()), $user);
         $this->addFlash($result->successLevel(), $result->flashKey());
 
-        return $this->redirectToRoute('backend_admin_user_detail', ['uid' => $uid]);
+        return $this->redirectToRoute('backend_admin_user_detail', ['username' => $user->username()]);
     }
 
     private function updateUser(Request $request, UserAccount $user): void
     {
-        if (!$this->isCsrfTokenValid('admin_user_'.$user->uid(), $this->field($request, '_csrf_token'))) {
+        if (!$this->isCsrfTokenValid('admin_user_'.$user->username(), $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
             return;
@@ -212,19 +212,19 @@ final class AdminUserController extends AbstractController
         $this->addFlash($result->flashLevel(), $result->flashKey());
     }
 
-    private function changeDeletedUserStatus(Request $request, string $uid, UserAccountStatus $status): Response
+    private function changeDeletedUserStatus(Request $request, string $username, UserAccountStatus $status): Response
     {
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
             return $response;
         }
 
-        $user = $this->entityManager->find(UserAccount::class, $uid);
+        $user = $this->userByUsername($username);
 
         if (!$user instanceof UserAccount || DeletedUserCleanup::DELETED_USER_UID === $user->uid()) {
             return $this->httpError->notFound($request);
         }
 
-        if (!$this->isCsrfTokenValid('admin_deleted_user_status_'.$uid, $this->field($request, '_csrf_token'))) {
+        if (!$this->isCsrfTokenValid('admin_deleted_user_status_'.$user->username(), $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectToRoute('backend_admin_deleted_users');
@@ -246,6 +246,13 @@ final class AdminUserController extends AbstractController
         $this->addFlash($result->flashLevel(), $result->flashKey());
 
         return $this->redirectToRoute('backend_admin_deleted_users');
+    }
+
+    private function userByUsername(string $username): ?UserAccount
+    {
+        $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
+
+        return $user instanceof UserAccount ? $user : null;
     }
 
     /**

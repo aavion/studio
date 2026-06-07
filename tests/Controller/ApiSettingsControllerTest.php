@@ -80,6 +80,65 @@ final class ApiSettingsControllerTest extends WebTestCase
         self::assertSame('admin.settings.fields.site_title.label', $siteTitle['attributes']['label_key']);
     }
 
+    public function testSettingsSectionCanBePatchedWithReadWriteAdminApiKeys(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadWrite, 'apisetpatch', AccessLevel::ADMIN);
+
+        $client->request('PATCH', '/api/v1/admin/settings/general', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'values' => [
+                'site.footer_copyright' => 'API test footer',
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame(['site.footer_copyright'], $payload['meta']['updated_keys']);
+
+        $footer = $this->resourceById($payload['data'], 'site.footer_copyright');
+        self::assertSame('API test footer', $footer['attributes']['value']);
+    }
+
+    public function testSettingsPatchReturnsValidationErrors(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadWrite, 'apisetbad', AccessLevel::ADMIN);
+
+        $client->request('PATCH', '/api/v1/admin/settings/general', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'values' => [
+                'site.title' => '',
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(422);
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api.validation_failed', $payload['error']['code']);
+        self::assertSame(['admin.settings.form.errors.required'], $payload['error']['context']['errors']['site.title']);
+    }
+
+    public function testSettingsPatchRequiresWriteApiKey(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadOnly, 'apisetro', AccessLevel::ADMIN);
+
+        $client->request('PATCH', '/api/v1/admin/settings/general', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'values' => [
+                'site.footer_copyright' => 'blocked',
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
     public function testOpenApiIncludesSettingsEndpoint(): void
     {
         $client = self::createClient();
@@ -91,8 +150,17 @@ final class ApiSettingsControllerTest extends WebTestCase
         self::assertArrayHasKey('/admin/settings', $payload['paths']);
         self::assertArrayHasKey('/admin/settings/{section}', $payload['paths']);
         self::assertSame('listSettingsSections', $payload['paths']['/admin/settings']['get']['operationId']);
+        self::assertSame(['backend-admin', 'backend-admin-settings'], $payload['paths']['/admin/settings']['get']['tags']);
         self::assertSame('listSettingsSection', $payload['paths']['/admin/settings/{section}']['get']['operationId']);
+        self::assertSame('updateSettingsSection', $payload['paths']['/admin/settings/{section}']['patch']['operationId']);
         self::assertArrayNotHasKey('security', $payload['paths']['/admin/settings']['get']);
+        self::assertContains([
+            'name' => 'backend-admin-settings',
+            'summary' => 'Backend Admin Settings',
+            'description' => 'Administrative settings sections and values.',
+            'parent' => 'backend-admin',
+            'kind' => 'nav',
+        ], $payload['tags']);
     }
 
     private function createPlainApiKey(ApiKeyStatus $status, string $prefix, int $accessLevel): string

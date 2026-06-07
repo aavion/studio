@@ -28,6 +28,7 @@ final class PackageApiContributionGuardTest extends TestCase
             'getDemoModuleContribution',
             'Return demo contribution.',
             'packages.demo-module.demo',
+            ['packages-demo-module-demo'],
         ));
 
         self::addToAssertionCount(1);
@@ -47,6 +48,7 @@ final class PackageApiContributionGuardTest extends TestCase
             'getDemoModuleContribution',
             'Return demo contribution.',
             'packages.demo-module.demo',
+            ['packages-demo-module-demo'],
         ));
     }
 
@@ -64,6 +66,42 @@ final class PackageApiContributionGuardTest extends TestCase
             'getDemoModuleContribution',
             'Return demo contribution.',
             'pkg.demo-module.demo',
+            ['packages-demo-module-demo'],
+        ));
+    }
+
+    public function testItRejectsForeignTagNamespaces(): void
+    {
+        $package = $this->package('demo-module');
+
+        $this->expectException(MessageException::class);
+
+        PackageApiContributionGuard::assertEndpoint($package, new ApiEndpointDefinition(
+            'package',
+            'GET',
+            PackageApiEndpointPath::path($package->packageName(), 'demo'),
+            'api_v1_endpoint_dispatch',
+            'getDemoModuleContribution',
+            'Return demo contribution.',
+            'packages.demo-module.demo',
+            ['system-demo'],
+        ));
+    }
+
+    public function testItRejectsMissingPackageTags(): void
+    {
+        $package = $this->package('demo-module');
+
+        $this->expectException(MessageException::class);
+
+        PackageApiContributionGuard::assertEndpoint($package, new ApiEndpointDefinition(
+            'package',
+            'GET',
+            PackageApiEndpointPath::path($package->packageName(), 'demo'),
+            'api_v1_endpoint_dispatch',
+            'getDemoModuleContribution',
+            'Return demo contribution.',
+            'packages.demo-module.demo',
         ));
     }
 

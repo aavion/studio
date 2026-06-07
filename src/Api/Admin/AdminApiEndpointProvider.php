@@ -23,7 +23,7 @@ final readonly class AdminApiEndpointProvider implements ApiEndpointProviderInte
                 'listAdminApiEndpoints',
                 'List administrative API endpoints visible to administrators.',
                 self::HANDLER_ADMIN_INDEX,
-                ['admin'],
+                ['backend-admin'],
                 responseSchema: [
                     'type' => 'object',
                     'properties' => [

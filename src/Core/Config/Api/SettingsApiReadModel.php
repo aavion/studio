@@ -85,4 +85,21 @@ final readonly class SettingsApiReadModel
 
         return $resources;
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function values(string $section): array
+    {
+        $values = [];
+
+        foreach ($this->settings($section) as $resource) {
+            $id = $resource['id'] ?? null;
+            if (is_string($id)) {
+                $values[$id] = $resource['attributes']['value'] ?? null;
+            }
+        }
+
+        return $values;
+    }
 }

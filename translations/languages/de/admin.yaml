@@ -248,6 +248,7 @@ admin:
       submit: 'Reset-Link erstellen'
       created: 'Passwort-Reset-Link erstellt.'
     fields:
+      uid: 'Interne UID'
       username: 'Username'
       email: 'E-Mail'
       status: 'Status'
@@ -422,6 +423,7 @@ admin:
         item: 'Eintrag'
         fields: 'Felder'
     fields:
+      uid: 'Interne UID'
       identifier: 'Identifier'
       name: 'Name'
       min_role: 'Mindestrolle'

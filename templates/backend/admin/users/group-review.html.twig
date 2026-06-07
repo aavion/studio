@@ -83,38 +83,38 @@
         {% if operation == 'delete' %}
             <form
                 method="post"
-                action="{{ path('backend_admin_user_group_delete', {uid: group.uid}) }}"
+                action="{{ path('backend_admin_user_group_delete', {identifier: group.identifier}) }}"
                 class="system-backend-form"
                 data-controller="operation-overlay"
                 data-action="submit->operation-overlay#submit"
                 data-operation-overlay-enabled-value="true"
                 data-operation-overlay-redirect-on-success-value="{{ path('backend_admin_user_groups') }}"
             >
-                <input type="hidden" name="_form_id" value="acl-group-delete-{{ group.uid }}">
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_delete_' ~ group.uid) }}">
+                <input type="hidden" name="_form_id" value="acl-group-delete-{{ group.identifier }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_delete_' ~ group.identifier) }}">
                 <input type="hidden" name="confirm_delete" value="1">
                 <button class="system-backend-button system-button-danger" type="submit">{{ 'admin.groups.review.confirm_delete'|trans }}</button>
-                <a class="system-backend-button system-button-secondary" href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">
+                <a class="system-backend-button system-button-secondary" href="{{ path('backend_admin_user_group_detail', {identifier: group.identifier}) }}">
                     {{ 'admin.groups.review.cancel'|trans }}
                 </a>
             </form>
         {% else %}
             <form
                 method="post"
-                action="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}"
+                action="{{ path('backend_admin_user_group_detail', {identifier: group.identifier}) }}"
                 class="system-backend-form"
                 data-controller="operation-overlay"
                 data-action="submit->operation-overlay#submit"
                 data-operation-overlay-enabled-value="true"
-                data-operation-overlay-redirect-on-success-value="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}"
+                data-operation-overlay-redirect-on-success-value="{{ path('backend_admin_user_group_detail', {identifier: group.identifier}) }}"
             >
-                <input type="hidden" name="_form_id" value="acl-group-update-{{ group.uid }}">
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_' ~ group.uid) }}">
+                <input type="hidden" name="_form_id" value="acl-group-update-{{ group.identifier }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_' ~ group.identifier) }}">
                 <input type="hidden" name="confirm_update" value="1">
                 <input type="hidden" name="name" value="{{ pending.name }}">
                 <input type="hidden" name="min_role" value="{{ pending.min_role }}">
                 <button class="system-backend-button system-button-primary" type="submit">{{ 'admin.groups.review.confirm_update'|trans }}</button>
-                <a class="system-backend-button system-button-secondary" href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">
+                <a class="system-backend-button system-button-secondary" href="{{ path('backend_admin_user_group_detail', {identifier: group.identifier}) }}">
                     {{ 'admin.groups.review.cancel'|trans }}
                 </a>
             </form>

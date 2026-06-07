@@ -223,7 +223,7 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
                     'getDemoModulePackageEndpoint',
                     'Return package demo data.',
                     'packages.demo-module.demo',
-                    ['packages'],
+                    ['packages-demo-module-demo'],
                     responseSchema: ['type' => 'object'],
                 ))
                 ->apiEndpointHandler(new class implements ApiEndpointHandlerInterface {

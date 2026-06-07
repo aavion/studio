@@ -23,7 +23,7 @@ final readonly class SettingsApiEndpointProvider implements ApiEndpointProviderI
                 'listSettingsSections',
                 'List administrative settings sections visible to the API caller.',
                 self::HANDLER_SETTINGS_INDEX,
-                ['admin', 'settings'],
+                ['backend-admin', 'backend-admin-settings'],
                 responseSchema: [
                     'type' => 'object',
                     'properties' => [
@@ -55,9 +55,31 @@ final readonly class SettingsApiEndpointProvider implements ApiEndpointProviderI
                 'listSettingsSection',
                 'List administrative settings for one settings section.',
                 self::HANDLER_SETTINGS_INDEX,
-                ['admin', 'settings'],
+                ['backend-admin', 'backend-admin-settings'],
                 parameters: [
                     ['name' => 'section', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string']],
+                ],
+                responseSchema: ['type' => 'object'],
+                pathPattern: '#^/api/v1/admin/settings/[a-z0-9][a-z0-9_-]*$#',
+            ),
+            new ApiEndpointDefinition(
+                'settings',
+                Request::METHOD_PATCH,
+                '/api/v1/admin/settings/{section}',
+                'api_v1_endpoint_dispatch',
+                'updateSettingsSection',
+                'Validate and update administrative settings for one settings section.',
+                self::HANDLER_SETTINGS_INDEX,
+                ['backend-admin', 'backend-admin-settings'],
+                parameters: [
+                    ['name' => 'section', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string']],
+                ],
+                requestSchema: [
+                    'type' => 'object',
+                    'properties' => [
+                        'values' => ['type' => 'object'],
+                    ],
+                    'required' => ['values'],
                 ],
                 responseSchema: ['type' => 'object'],
                 pathPattern: '#^/api/v1/admin/settings/[a-z0-9][a-z0-9_-]*$#',

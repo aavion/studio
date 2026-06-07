@@ -144,8 +144,13 @@ final class ApiFoundationControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertSame('3.1.0', $payload['openapi']);
+        self::assertSame('3.2.0', $payload['openapi']);
+        self::assertSame('/api/v1/openapi.json', $payload['$self']);
         self::assertSame('Studio API', $payload['info']['title']);
+        self::assertSame('Symfony 8.1 based content-management system for structured project websites.', $payload['info']['description']);
+        self::assertSame(['name' => 'MIT', 'identifier' => 'MIT'], $payload['info']['license']);
+        self::assertSame([['name' => 'current', 'url' => '/api/v1']], $payload['servers']);
+        self::assertContains(['name' => 'system-status', 'summary' => 'System Status', 'description' => 'Status and healthcheck resources.', 'kind' => 'nav'], $payload['tags']);
         self::assertArrayHasKey('/status', $payload['paths']);
         self::assertArrayHasKey('/openapi.json', $payload['paths']);
         self::assertArrayHasKey('/admin', $payload['paths']);

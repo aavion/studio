@@ -24,9 +24,13 @@ final readonly class AdminOperationalApiEndpointProvider implements ApiEndpointP
             $this->endpoint('/api/v1/admin/logs', 'listAdminLogSources', 'List administrative log sources visible to administrators.', self::HANDLER_LOGS),
             $this->endpoint('/api/v1/admin/logs/{log}', 'listAdminLogEntries', 'List administrative log entries for one log source.', self::HANDLER_LOGS, parameters: $this->logParameters(), pathPattern: '#^/api/v1/admin/logs/[a-z]+$#'),
             $this->endpoint('/api/v1/admin/operations', 'listAdminOperations', 'List live operation runs visible to administrators.', self::HANDLER_OPERATIONS),
+            $this->endpoint('/api/v1/admin/operations/{action}', 'runAdminOperationMaintenance', 'Review or run an administrative live-operation maintenance action.', self::HANDLER_OPERATIONS, Request::METHOD_POST, parameters: $this->maintenanceOperationParameters(), responseSchema: ['type' => 'object'], pathPattern: '#^/api/v1/admin/operations/(cleanup|clear-stale-lock|kill-stale-runner)$#'),
             $this->endpoint('/api/v1/admin/operations/{operation_id}', 'getAdminOperation', 'Return one live operation report visible to administrators.', self::HANDLER_OPERATIONS, parameters: $this->operationParameters(), pathPattern: '#^/api/v1/admin/operations/[a-f0-9]{32}$#'),
             $this->endpoint('/api/v1/admin/operations/{operation_id}/continue', 'continueAdminOperation', 'Continue a review-gated live operation after explicit confirmation.', self::HANDLER_OPERATIONS, Request::METHOD_POST, parameters: $this->confirmOperationParameters(), responseSchema: ['type' => 'object'], successStatus: 202, pathPattern: '#^/api/v1/admin/operations/[a-f0-9]{32}/continue$#'),
             $this->endpoint('/api/v1/admin/scheduler', 'listAdminSchedulerTasks', 'List scheduler tasks visible to administrators.', self::HANDLER_SCHEDULER),
+            $this->endpoint('/api/v1/admin/scheduler/{task_identifier}', 'getAdminSchedulerTask', 'Return one scheduler task and its recent runs.', self::HANDLER_SCHEDULER, parameters: $this->schedulerTaskParameters(), pathPattern: '#^/api/v1/admin/scheduler/[A-Za-z0-9_.:-]+$#'),
+            $this->endpoint('/api/v1/admin/scheduler/{task_identifier}', 'updateAdminSchedulerTask', 'Validate and update one scheduler task cron expression and activation state.', self::HANDLER_SCHEDULER, Request::METHOD_PATCH, parameters: $this->schedulerTaskParameters(), requestSchema: $this->schedulerUpdateSchema(), responseSchema: ['type' => 'object'], pathPattern: '#^/api/v1/admin/scheduler/[A-Za-z0-9_.:-]+$#'),
+            $this->endpoint('/api/v1/admin/scheduler/{task_identifier}/run', 'runAdminSchedulerTask', 'Run one active scheduler task immediately.', self::HANDLER_SCHEDULER, Request::METHOD_POST, parameters: $this->schedulerTaskParameters(), responseSchema: ['type' => 'object'], pathPattern: '#^/api/v1/admin/scheduler/[A-Za-z0-9_.:-]+/run$#'),
             $this->endpoint('/api/v1/admin/statistics', 'getAdminStatistics', 'Return access statistics visible to administrators.', self::HANDLER_STATISTICS),
             $this->endpoint('/api/v1/admin/themes', 'listAdminThemes', 'List frontend and backend themes visible to administrators.', self::HANDLER_THEMES),
         ];
@@ -44,6 +48,7 @@ final readonly class AdminOperationalApiEndpointProvider implements ApiEndpointP
         string $method = Request::METHOD_GET,
         array $parameters = [],
         ?array $responseSchema = null,
+        ?array $requestSchema = null,
         int $successStatus = 200,
         ?string $pathPattern = null,
     ): ApiEndpointDefinition {
@@ -55,8 +60,9 @@ final readonly class AdminOperationalApiEndpointProvider implements ApiEndpointP
             $operationId,
             $summary,
             $handler,
-            ['admin'],
+            ['backend-admin', $this->tag($handler)],
             parameters: $parameters,
+            requestSchema: $requestSchema,
             responseSchema: $responseSchema ?? ['type' => 'object'],
             successStatus: $successStatus,
             pathPattern: $pathPattern,
@@ -98,11 +104,59 @@ final readonly class AdminOperationalApiEndpointProvider implements ApiEndpointP
     /**
      * @return list<array<string, mixed>>
      */
+    private function maintenanceOperationParameters(): array
+    {
+        return [
+            ['name' => 'action', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string', 'enum' => ['cleanup', 'clear-stale-lock', 'kill-stale-runner']]],
+            ['name' => 'confirm', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'boolean']],
+        ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
     private function confirmOperationParameters(): array
     {
         return [
             ...$this->operationParameters(),
             ['name' => 'confirm', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'boolean']],
         ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function schedulerTaskParameters(): array
+    {
+        return [
+            ['name' => 'task_identifier', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string']],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function schedulerUpdateSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'enabled' => ['type' => 'boolean'],
+                'cron_expression' => ['type' => 'string'],
+                'confirm_package_action_queue' => ['type' => 'boolean'],
+            ],
+        ];
+    }
+
+    private function tag(string $handler): string
+    {
+        return match ($handler) {
+            self::HANDLER_BACKUPS => 'backend-admin-backups',
+            self::HANDLER_LOGS => 'backend-admin-logs',
+            self::HANDLER_OPERATIONS => 'backend-admin-operations',
+            self::HANDLER_SCHEDULER => 'backend-admin-scheduler',
+            self::HANDLER_STATISTICS => 'backend-admin-statistics',
+            self::HANDLER_THEMES => 'backend-admin-themes',
+        };
     }
 }

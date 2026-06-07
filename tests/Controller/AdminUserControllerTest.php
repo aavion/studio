@@ -110,7 +110,7 @@ final class AdminUserControllerTest extends WebTestCase
             $client->request('GET', '/admin/users/deleted');
             self::assertStringNotContainsString('deleted-user@localhost.local', (string) $client->getResponse()->getContent());
 
-            $client->request('GET', '/admin/users/'.DeletedUserCleanup::DELETED_USER_UID);
+            $client->request('GET', '/admin/users/details/'.DeletedUserCleanup::DELETED_USER_UID);
             self::assertResponseStatusCodeSame(404);
         } finally {
             $config->set('user.deleted_user_retention_days', (int) $originalRetention, ConfigValueType::Integer, modifiedBy: 'test');
@@ -164,7 +164,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         try {
             $crawler = $client->request('GET', '/admin/users/deleted');
-            $client->submit($crawler->filter('form[action="/admin/users/deleted/'.$activatedUser->uid().'/activate"]')->form());
+            $client->submit($crawler->filter('form[action="/admin/users/deleted/details/'.$activatedUser->username().'/activate"]')->form());
 
             self::assertResponseRedirects('/admin/users/deleted');
 
@@ -179,7 +179,7 @@ final class AdminUserControllerTest extends WebTestCase
             self::assertStringContainsString('"username":"deletedactivate"', $messageLog);
 
             $crawler = $client->request('GET', '/admin/users/deleted');
-            $client->submit($crawler->filter('form[action="/admin/users/deleted/'.$deactivatedUser->uid().'/deactivate"]')->form());
+            $client->submit($crawler->filter('form[action="/admin/users/deleted/details/'.$deactivatedUser->username().'/deactivate"]')->form());
 
             self::assertResponseRedirects('/admin/users/deleted');
 
@@ -279,7 +279,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         try {
             $crawler = $client->request('GET', '/admin/users/deleted');
-            $client->submit($crawler->filter('form[action="/admin/users/deleted/'.$user->uid().'/activate"]')->form());
+            $client->submit($crawler->filter('form[action="/admin/users/deleted/details/'.$user->username().'/activate"]')->form());
 
             self::assertResponseRedirects('/admin/users/deleted');
 
@@ -370,11 +370,12 @@ final class AdminUserControllerTest extends WebTestCase
         }
 
         $crawler = $client->request('GET', '/admin/users');
-        $form = $crawler->selectButton('Create invitation')->form([
+        $client->request('POST', '/admin/users/invitations', [
+            '_csrf_token' => (string) $crawler->filter('form[action="/admin/users/invitations"] input[name="_csrf_token"]')->attr('value'),
             'email' => 'invited-admin-flow@example.test',
+            'role' => UserRole::User->value,
+            'groups' => ['qa_members'],
         ]);
-        $form['groups'][0]->tick();
-        $client->submit($form);
 
         self::assertResponseRedirects('/admin/users');
 
@@ -925,12 +926,12 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->persist($resetToken);
         $entityManager->flush();
 
-        $crawler = $client->request('GET', '/admin/users/'.$user->uid());
+        $crawler = $client->request('GET', '/admin/users/details/'.$user->username());
         $client->submit($crawler->selectButton('Save')->form([
             'status' => UserAccountStatus::Inactive->value,
         ]));
 
-        self::assertResponseRedirects('/admin/users/'.$user->uid());
+        self::assertResponseRedirects('/admin/users/details/'.$user->username());
 
         $entityManager->clear();
         $updatedUser = $entityManager->find(UserAccount::class, $user->uid());
@@ -944,7 +945,7 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertInstanceOf(AccountToken::class, $updatedToken);
         self::assertSame(AccountTokenStatus::Revoked, $updatedToken->status());
 
-        $client->request('GET', '/admin/users/'.$updatedUser->uid());
+        $client->request('GET', '/admin/users/details/'.$updatedUser->username());
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Account history');
         self::assertSelectorTextContains('.system-field-table', 'Status changed');
@@ -978,12 +979,12 @@ final class AdminUserControllerTest extends WebTestCase
         $user = $this->createUser('inactiveadminreset', UserAccountStatus::Inactive);
         $entityManager->flush();
 
-        $crawler = $client->request('GET', '/admin/users/'.$user->uid());
-        $client->request('POST', '/admin/users/'.$user->uid().'/password-reset', [
-            '_csrf_token' => (string) $crawler->filter('form[action="/admin/users/'.$user->uid().'/password-reset"] input[name="_csrf_token"]')->attr('value'),
+        $crawler = $client->request('GET', '/admin/users/details/'.$user->username());
+        $client->request('POST', '/admin/users/details/'.$user->username().'/password-reset', [
+            '_csrf_token' => (string) $crawler->filter('form[action="/admin/users/details/'.$user->username().'/password-reset"] input[name="_csrf_token"]')->attr('value'),
         ]);
 
-        self::assertResponseRedirects('/admin/users/'.$user->uid());
+        self::assertResponseRedirects('/admin/users/details/'.$user->username());
         self::assertNull($entityManager->getRepository(AccountToken::class)->findOneBy([
             'user' => $user,
             'type' => AccountTokenType::PasswordReset,
@@ -1184,12 +1185,12 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
 
         $this->loginTestUser($client, $limitedAdmin);
-        $crawler = $client->request('GET', '/admin/users/'.$target->uid());
+        $crawler = $client->request('GET', '/admin/users/details/'.$target->username());
         $client->submit($crawler->selectButton('Save')->form([
             'status' => UserAccountStatus::Inactive->value,
         ]));
 
-        self::assertResponseRedirects('/admin/users/'.$target->uid());
+        self::assertResponseRedirects('/admin/users/details/'.$target->username());
 
         $entityManager->clear();
         $unchangedTarget = $entityManager->find(UserAccount::class, $target->uid());
@@ -1216,12 +1217,12 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
 
         $this->loginTestUser($client, $actor);
-        $crawler = $client->request('GET', '/admin/users/'.$target->uid());
+        $crawler = $client->request('GET', '/admin/users/details/'.$target->username());
         $client->submit($crawler->selectButton('Save')->form([
             'status' => UserAccountStatus::Inactive->value,
         ]));
 
-        self::assertResponseRedirects('/admin/users/'.$target->uid());
+        self::assertResponseRedirects('/admin/users/details/'.$target->username());
 
         $entityManager->clear();
         $unchangedTarget = $entityManager->find(UserAccount::class, $target->uid());
@@ -1247,15 +1248,15 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
 
         $this->loginTestUser($client, $actor);
-        $crawler = $client->request('GET', '/admin/users/'.$target->uid());
-        $client->request('POST', '/admin/users/'.$target->uid(), [
+        $crawler = $client->request('GET', '/admin/users/details/'.$target->username());
+        $client->request('POST', '/admin/users/details/'.$target->username(), [
             '_csrf_token' => (string) $crawler->filter('form.system-backend-form input[name="_csrf_token"]')->attr('value'),
             'status' => UserAccountStatus::Active->value,
             'role' => UserRole::User->value,
             'groups' => ['peer_assignment_admin'],
         ]);
 
-        self::assertResponseRedirects('/admin/users/'.$target->uid());
+        self::assertResponseRedirects('/admin/users/details/'.$target->username());
 
         $entityManager->clear();
         $unchangedTarget = $entityManager->find(UserAccount::class, $target->uid());
@@ -1390,7 +1391,7 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSame(0, $inviteForm->filter('input[value="lower_visible_manager"]')->count());
         self::assertSame(0, $inviteForm->filter('input[value="peer_visible_admin"]')->count());
 
-        $crawler = $client->request('GET', '/admin/users/'.$target->uid());
+        $crawler = $client->request('GET', '/admin/users/details/'.$target->username());
         $detailForm = $crawler->filter('form.system-backend-form')->first();
 
         self::assertSame(0, $detailForm->filter('input[value="lower_visible_manager"]')->count());
@@ -1412,7 +1413,7 @@ final class AdminUserControllerTest extends WebTestCase
         $user->addGroup($this->contextUserGroup());
         $entityManager->flush();
 
-        $crawler = $client->request('GET', '/admin/users/'.$user->uid());
+        $crawler = $client->request('GET', '/admin/users/details/'.$user->username());
         $form = $crawler->selectButton('Save')->form([
             'status' => UserAccountStatus::Active->value,
         ]);
@@ -1421,7 +1422,7 @@ final class AdminUserControllerTest extends WebTestCase
         }
         $client->submit($form);
 
-        self::assertResponseRedirects('/admin/users/'.$user->uid());
+        self::assertResponseRedirects('/admin/users/details/'.$user->username());
 
         $entityManager->clear();
         $unchangedUser = $entityManager->find(UserAccount::class, $user->uid());
@@ -1444,15 +1445,15 @@ final class AdminUserControllerTest extends WebTestCase
         $user->addGroup($this->contextUserGroup());
         $entityManager->flush();
 
-        $crawler = $client->request('GET', '/admin/users/'.$user->uid());
-        $client->request('POST', '/admin/users/'.$user->uid(), [
+        $crawler = $client->request('GET', '/admin/users/details/'.$user->username());
+        $client->request('POST', '/admin/users/details/'.$user->username(), [
             '_csrf_token' => (string) $crawler->filter('form.system-backend-form input[name="_csrf_token"]')->attr('value'),
             'status' => UserAccountStatus::Active->value,
             'role' => UserRole::User->value,
             'groups' => ['public_only'],
         ]);
 
-        self::assertResponseRedirects('/admin/users/'.$user->uid());
+        self::assertResponseRedirects('/admin/users/details/'.$user->username());
 
         $entityManager->clear();
         $unchangedUser = $entityManager->find(UserAccount::class, $user->uid());
@@ -1503,14 +1504,14 @@ final class AdminUserControllerTest extends WebTestCase
         $admin = $this->adminUser();
         $this->loginTestUser($client, $admin);
 
-        $crawler = $client->request('GET', '/admin/users/'.$admin->uid());
+        $crawler = $client->request('GET', '/admin/users/details/'.$admin->username());
         $form = $crawler->selectButton('Save')->form([
             'status' => UserAccountStatus::Active->value,
             'role' => UserRole::User->value,
         ]);
         $client->submit($form);
 
-        self::assertResponseRedirects('/admin/users/'.$admin->uid());
+        self::assertResponseRedirects('/admin/users/details/'.$admin->username());
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->clear();
@@ -1575,8 +1576,8 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->persist($menuItem);
         $entityManager->flush();
 
-        $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
-        $client->submit($crawler->filter('form[action="/admin/users/groups/'.$group->uid().'/delete"]')->form());
+        $crawler = $client->request('GET', '/admin/users/groups/details/'.$group->identifier());
+        $client->submit($crawler->filter('form[action="/admin/users/groups/details/'.$group->identifier().'/delete"]')->form());
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Review ACL group change');
@@ -1647,8 +1648,8 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
 
         try {
-            $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
-            $client->submit($crawler->filter('form[action="/admin/users/groups/'.$group->uid().'/delete"]')->form());
+            $crawler = $client->request('GET', '/admin/users/groups/details/'.$group->identifier());
+            $client->submit($crawler->filter('form[action="/admin/users/groups/details/'.$group->identifier().'/delete"]')->form());
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('main', 'Published content may become public');
@@ -1680,8 +1681,8 @@ final class AdminUserControllerTest extends WebTestCase
         $user->addGroup($group);
         $entityManager->flush();
 
-        $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
-        $client->submit($crawler->filter('form[action="/admin/users/groups/'.$group->uid().'/delete"]')->form());
+        $crawler = $client->request('GET', '/admin/users/groups/details/'.$group->identifier());
+        $client->submit($crawler->filter('form[action="/admin/users/groups/details/'.$group->identifier().'/delete"]')->form());
 
         self::assertResponseIsSuccessful();
         $client->submit($client->getCrawler()->selectButton('Delete group and remove references')->form());
@@ -1709,7 +1710,7 @@ final class AdminUserControllerTest extends WebTestCase
         $user->addGroup($group);
         $entityManager->flush();
 
-        $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
+        $crawler = $client->request('GET', '/admin/users/groups/details/'.$group->identifier());
         $client->submit($crawler->selectButton('Save')->form([
             'name' => 'Floor update group',
             'min_role' => (string) AccessLevel::PUBLIC,
@@ -1717,7 +1718,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $client->submit($client->getCrawler()->selectButton('Apply group update')->form());
-        self::assertResponseRedirects('/admin/users/groups/'.$group->uid());
+        self::assertResponseRedirects('/admin/users/groups/details/'.$group->identifier());
 
         $entityManager->clear();
         $unchangedGroup = $entityManager->find(AclGroup::class, $group->uid());
@@ -1745,10 +1746,10 @@ final class AdminUserControllerTest extends WebTestCase
         $config->set('user.default_acl_group', 'default_delete_guard', ConfigValueType::String, modifiedBy: 'test');
 
         try {
-            $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
-            $client->submit($crawler->filter('form[action="/admin/users/groups/'.$group->uid().'/delete"]')->form());
+            $crawler = $client->request('GET', '/admin/users/groups/details/'.$group->identifier());
+            $client->submit($crawler->filter('form[action="/admin/users/groups/details/'.$group->identifier().'/delete"]')->form());
 
-            self::assertResponseRedirects('/admin/users/groups/'.$group->uid());
+            self::assertResponseRedirects('/admin/users/groups/details/'.$group->identifier());
 
             $entityManager->clear();
             $unchangedGroup = $entityManager->find(AclGroup::class, $group->uid());
@@ -1778,7 +1779,7 @@ final class AdminUserControllerTest extends WebTestCase
         $config->set('user.default_acl_group', 'default_level_guard', ConfigValueType::String, modifiedBy: 'test');
 
         try {
-            $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
+            $crawler = $client->request('GET', '/admin/users/groups/details/'.$group->identifier());
             $client->submit($crawler->selectButton('Save')->form([
                 'name' => 'Default level guard',
                 'min_role' => (string) AccessLevel::PUBLIC,
@@ -1786,7 +1787,7 @@ final class AdminUserControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             $client->submit($client->getCrawler()->selectButton('Apply group update')->form());
-            self::assertResponseRedirects('/admin/users/groups/'.$group->uid());
+            self::assertResponseRedirects('/admin/users/groups/details/'.$group->identifier());
 
             $entityManager->clear();
             $unchangedGroup = $entityManager->find(AclGroup::class, $group->uid());
@@ -1816,13 +1817,13 @@ final class AdminUserControllerTest extends WebTestCase
         $config->set('user.default_acl_group', 'default_raise_guard', ConfigValueType::String, modifiedBy: 'test');
 
         try {
-            $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
+            $crawler = $client->request('GET', '/admin/users/groups/details/'.$group->identifier());
             $client->submit($crawler->selectButton('Save')->form([
                 'name' => 'Default raise guard',
                 'min_role' => (string) AccessLevel::AUTHOR,
             ]));
 
-            self::assertResponseRedirects('/admin/users/groups/'.$group->uid());
+            self::assertResponseRedirects('/admin/users/groups/details/'.$group->identifier());
 
             $entityManager->clear();
             $unchangedGroup = $entityManager->find(AclGroup::class, $group->uid());
@@ -1857,7 +1858,7 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->persist($token);
         $entityManager->flush();
 
-        $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
+        $crawler = $client->request('GET', '/admin/users/groups/details/'.$group->identifier());
         $client->submit($crawler->selectButton('Save')->form([
             'name' => 'Floor cleanup',
             'min_role' => (string) AccessLevel::AUTHOR,
@@ -1865,7 +1866,7 @@ final class AdminUserControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $client->submit($client->getCrawler()->selectButton('Apply group update')->form());
-        self::assertResponseRedirects('/admin/users/groups/'.$group->uid());
+        self::assertResponseRedirects('/admin/users/groups/details/'.$group->identifier());
 
         $entityManager->clear();
         $updatedUser = $entityManager->find(UserAccount::class, $user->uid());
@@ -1924,7 +1925,7 @@ final class AdminUserControllerTest extends WebTestCase
         $group = $this->createGroup('review_update', AccessLevel::AUTHOR);
         $entityManager->flush();
 
-        $crawler = $client->request('GET', '/admin/users/groups/'.$group->uid());
+        $crawler = $client->request('GET', '/admin/users/groups/details/'.$group->identifier());
         $client->submit($crawler->selectButton('Save')->form([
             'name' => 'Review update changed',
             'min_role' => (string) AccessLevel::MANAGER,
@@ -1937,7 +1938,7 @@ final class AdminUserControllerTest extends WebTestCase
         $crawler = $client->getCrawler();
         $client->submit($crawler->selectButton('Apply group update')->form());
 
-        self::assertResponseRedirects('/admin/users/groups/'.$group->uid());
+        self::assertResponseRedirects('/admin/users/groups/details/'.$group->identifier());
 
         $entityManager->clear();
         $updatedGroup = $entityManager->find(AclGroup::class, $group->uid());

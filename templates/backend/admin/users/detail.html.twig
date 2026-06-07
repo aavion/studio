@@ -18,6 +18,10 @@
         <h2>{{ 'admin.users.detail.title'|trans }}</h2>
         <dl class="system-backend-summary">
             <div>
+                <dt>{{ 'admin.users.fields.uid'|trans }}</dt>
+                <dd>{{ user_account.uid }}</dd>
+            </div>
+            <div>
                 <dt>{{ 'admin.users.fields.email'|trans }}</dt>
                 <dd>{{ user_account.email }}</dd>
             </div>
@@ -31,7 +35,7 @@
             </div>
         </dl>
         <form method="post" class="system-backend-form">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_' ~ user_account.uid) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_' ~ user_account.username) }}">
             {% include '@backend/partials/forms/fields/select.html.twig' with {
                 id: 'user_role',
                 name: 'role',
@@ -66,8 +70,8 @@
     <section class="system-panel">
         <h2>{{ 'admin.users.password_reset.title'|trans }}</h2>
         <p class="system-muted">{{ 'admin.users.password_reset.text'|trans }}</p>
-        <form method="post" action="{{ path('backend_admin_user_password_reset', {uid: user_account.uid}) }}">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_password_reset_' ~ user_account.uid) }}">
+        <form method="post" action="{{ path('backend_admin_user_password_reset', {username: user_account.username}) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_password_reset_' ~ user_account.username) }}">
             <button class="system-button" type="submit">{{ 'admin.users.password_reset.submit'|trans }}</button>
         </form>
     </section>

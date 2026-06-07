@@ -37,11 +37,11 @@ final readonly class UserApiReadModel
     /**
      * @return array<string, mixed>
      */
-    private function resource(UserAccount $user): array
+    public function resource(UserAccount $user, bool $includeUid = false): array
     {
-        return [
+        $resource = [
             'type' => 'user',
-            'id' => $user->uid(),
+            'id' => $user->username(),
             'attributes' => [
                 'username' => $user->username(),
                 'email' => $user->email(),
@@ -50,7 +50,16 @@ final readonly class UserApiReadModel
                 'access_level' => $user->accessLevel(),
                 'groups' => $this->groups($user),
             ],
+            'links' => [
+                'self' => '/api/v1/admin/users/items/'.$user->username(),
+            ],
         ];
+
+        if ($includeUid) {
+            $resource['attributes']['uid'] = $user->uid();
+        }
+
+        return $resource;
     }
 
     /**

@@ -201,9 +201,14 @@ message:
       route_invalid: 'API endpoint route "%route%" is invalid.'
       operation_invalid: 'API endpoint operation "%operation%" is invalid.'
       handler_invalid: 'API endpoint handler "%handler%" is invalid or unavailable.'
+      tag_invalid: 'API endpoint tag "%tag%" is invalid for this namespace.'
       summary_empty: 'API endpoint summary must not be empty.'
       success_status_invalid: 'API endpoint success status %status% must be a 2xx HTTP status code.'
       not_found: 'No API endpoint is registered for this path and method.'
+    request:
+      invalid: 'The API request body is invalid.'
+    validation:
+      failed: 'The API request did not pass validation.'
     operation:
       not_implemented: 'API operation "%operation%" is registered but not implemented yet.'
       unavailable: 'API operation "%operation%" is not available in the current state.'

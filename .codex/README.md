@@ -24,6 +24,7 @@
 - Additional agent notes should live directly under `.codex/`. Add markdown-files here for context-optimization.
 - Reusable scripts should live directly under `.codex/`. Add helpers here to avoid re-writing shell snippets.
 - Run `bin/lint` to execute the project-wide syntax, container, template, YAML, JavaScript, JSON, Tailwind, and translation-key checks.
+- Run `php .codex/render.php /path [METHOD]` to render a Symfony route. The helper renders as a transient Owner by default, supports `ROLE=author|admin|owner` for role-only API checks, and supports `RENDER_USER=username` or `USER=username` for loading an existing user and groups from the database. API renders attach a debug read-write API context without requiring Bearer keys; set `RENDER_SETUP_COMPLETED=0` to test the real setup gate instead of the helper bypass.
 - Run `php .codex/compare_translations.php` to compare source catalogue files and keys across all locale directories under `translations/languages/`, using English as the reference locale when available.
 - Run `php .codex/resolve_cloud_artifacts.php` to inspect iCloud/Finder artifacts. Add `--apply` to delete safe duplicates and macOS metadata; add `--prefer-base` only after reviewing differing conflict copies.
 - Run `php .codex/clean_ignored_artifacts.php` to inspect ignored artifacts. Add `--apply` to delete everything ignored by Git.

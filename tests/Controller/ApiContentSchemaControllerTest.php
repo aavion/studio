@@ -172,6 +172,8 @@ final class ApiContentSchemaControllerTest extends WebTestCase
         self::assertArrayHasKey('/content', $payload['paths']);
         self::assertArrayHasKey('/content/items', $payload['paths']);
         self::assertArrayHasKey('/schemas', $payload['paths']);
+        self::assertSame(['frontend-content', 'frontend-content-items'], $payload['paths']['/content']['get']['tags']);
+        self::assertSame(['backend-editor', 'backend-editor-schemas'], $payload['paths']['/schemas']['get']['tags']);
     }
 
     private function createSchema(): void

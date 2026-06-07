@@ -127,10 +127,19 @@ final class ApiPackageControllerTest extends WebTestCase
         self::assertArrayHasKey('/admin/packages/{package_slug}', $payload['paths']);
         self::assertArrayHasKey('/admin/packages/{package_slug}/activate', $payload['paths']);
         self::assertSame('listPackageApiEndpoints', $payload['paths']['/packages']['get']['operationId']);
+        self::assertSame(['packages-navigation'], $payload['paths']['/packages']['get']['tags']);
         self::assertSame([], $payload['paths']['/packages']['get']['security']);
         self::assertSame('listPackages', $payload['paths']['/admin/packages']['get']['operationId']);
+        self::assertSame(['backend-admin', 'backend-admin-packages'], $payload['paths']['/admin/packages']['get']['tags']);
         self::assertSame('getPackage', $payload['paths']['/admin/packages/{package_slug}']['get']['operationId']);
         self::assertSame('packageActivate', $payload['paths']['/admin/packages/{package_slug}/activate']['post']['operationId']);
+        self::assertContains([
+            'name' => 'backend-admin-packages',
+            'summary' => 'Backend Admin Packages',
+            'description' => 'Administrative package management and lifecycle resources.',
+            'parent' => 'backend-admin',
+            'kind' => 'nav',
+        ], $payload['tags']);
     }
 
     private function createPlainApiKey(string $prefix, ApiKeyStatus $status = ApiKeyStatus::ReadOnly): string

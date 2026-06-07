@@ -10,6 +10,7 @@ use App\Api\Http\ApiResponder;
 use App\Core\Message\Message;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
+use App\View\SystemPackageMetadataProvider;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,6 +22,7 @@ final readonly class ApiEndpointAccessSubscriber implements EventSubscriberInter
     public function __construct(
         private ApiEndpointRegistry $endpoints,
         private ApiResponder $responder,
+        private SystemPackageMetadataProvider $systemPackageMetadata,
     ) {
     }
 
@@ -61,7 +63,7 @@ final readonly class ApiEndpointAccessSubscriber implements EventSubscriberInter
                 ),
                 Response::HTTP_UNAUTHORIZED,
                 $request,
-                headers: ['WWW-Authenticate' => 'Bearer realm="Studio API"'],
+                headers: ['WWW-Authenticate' => sprintf('Bearer realm="%s"', $this->realm())],
             ));
 
             return;
@@ -77,5 +79,20 @@ final readonly class ApiEndpointAccessSubscriber implements EventSubscriberInter
             Request::METHOD_HEAD,
             Request::METHOD_OPTIONS,
         ], true);
+    }
+
+    private function apiTitle(): string
+    {
+        $name = trim((string) $this->systemPackageMetadata->metadata()['name']);
+
+        return ('' !== $name ? $name : 'System').' API';
+    }
+
+    private function realm(): string
+    {
+        return strtr($this->apiTitle(), [
+            '\\' => '\\\\',
+            '"' => '\\"',
+        ]);
     }
 }

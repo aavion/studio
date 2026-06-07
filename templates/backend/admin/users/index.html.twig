@@ -154,7 +154,7 @@
                                     {{ 'ui.content.empty_value'|trans }}
                                 {% endfor %}
                             </td>
-                            <td><a href="{{ path('backend_admin_user_detail', {uid: user.uid}) }}">{{ 'admin.users.actions.details'|trans }}</a></td>
+                            <td><a href="{{ path('backend_admin_user_detail', {username: user.username}) }}">{{ 'admin.users.actions.details'|trans }}</a></td>
                         </tr>
                     {% endfor %}
                 </tbody>

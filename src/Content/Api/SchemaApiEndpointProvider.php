@@ -23,7 +23,7 @@ final readonly class SchemaApiEndpointProvider implements ApiEndpointProviderInt
                 'listContentSchemas',
                 'List active content schema metadata visible to API authors.',
                 self::HANDLER_SCHEMAS_INDEX,
-                ['schemas'],
+                ['backend-editor', 'backend-editor-schemas'],
                 responseSchema: ['type' => 'object'],
             ),
         ];
