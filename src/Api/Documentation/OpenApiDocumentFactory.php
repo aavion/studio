@@ -254,6 +254,7 @@ final readonly class OpenApiDocumentFactory
             'Forbidden' => $this->errorResponse('The authenticated actor is not allowed to use this operation.'),
             'NotFound' => $this->errorResponse('The requested API resource does not exist.'),
             'Conflict' => $this->errorResponse('The requested operation conflicts with the current resource state.'),
+            'UnsupportedMediaType' => $this->errorResponse('The request body media type is not supported. Use application/json.'),
             'ValidationFailed' => $this->errorResponse('The request did not pass validation.'),
             'ServiceUnavailable' => $this->errorResponse('The API is temporarily unavailable.'),
         ];
@@ -297,6 +298,7 @@ final readonly class OpenApiDocumentFactory
             '403' => ['$ref' => '#/components/responses/Forbidden'],
             '404' => ['$ref' => '#/components/responses/NotFound'],
             '409' => ['$ref' => '#/components/responses/Conflict'],
+            '415' => ['$ref' => '#/components/responses/UnsupportedMediaType'],
             '422' => ['$ref' => '#/components/responses/ValidationFailed'],
             '503' => ['$ref' => '#/components/responses/ServiceUnavailable'],
         ];

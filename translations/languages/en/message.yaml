@@ -207,6 +207,7 @@ message:
       not_found: 'No API endpoint is registered for this path and method.'
     request:
       invalid: 'The API request body is invalid.'
+      unsupported_media_type: 'The API request body must use application/json.'
     validation:
       failed: 'The API request did not pass validation.'
     operation:

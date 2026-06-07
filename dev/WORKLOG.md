@@ -76,6 +76,7 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-07
+- Added endpoint-definition based API content-type enforcement so operations with request schemas require `application/json` or `*+json`, return localized JSON `415` errors for unsupported media types, and document the standard `415` response in OpenAPI.
 - Added versioned API trace headers so `/api/v1/**` responses include the system `X-Request-ID`, echo a validated inbound `X-Correlation-ID` when present, document both headers in OpenAPI success/error responses, and expose them to configured CORS browser clients.
 - Added the authenticated frontend user API slice under `/api/v1/user`, including self profile reads/patches, own API key listing, one-time API key creation, revocation, OpenAPI tag metadata, and focused functional coverage while keeping it separate from `/api/v1/admin/users`.
 - Added setup seed defaults for the new API settings so fresh installations persist API enabled, CORS disabled, and no allowed CORS origins while runtime config fallback remains sourced from the central core settings registry.

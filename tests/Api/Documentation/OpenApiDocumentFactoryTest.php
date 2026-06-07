@@ -90,10 +90,12 @@ final class OpenApiDocumentFactoryTest extends TestCase
         self::assertArrayHasKey('RequestId', $document['components']['headers']);
         self::assertArrayHasKey('CorrelationId', $document['components']['headers']);
         self::assertArrayHasKey('ServiceUnavailable', $document['components']['responses']);
+        self::assertArrayHasKey('UnsupportedMediaType', $document['components']['responses']);
 
         $statusOperation = $document['paths']['/status']['get'];
         self::assertSame([], $statusOperation['security']);
         self::assertSame('#/components/responses/Unauthorized', $statusOperation['responses']['401']['$ref']);
+        self::assertSame('#/components/responses/UnsupportedMediaType', $statusOperation['responses']['415']['$ref']);
         self::assertSame('#/components/responses/ServiceUnavailable', $statusOperation['responses']['503']['$ref']);
         self::assertSame('#/components/headers/RequestId', $statusOperation['responses']['200']['headers']['X-Request-ID']['$ref']);
         self::assertSame('#/components/headers/CorrelationId', $statusOperation['responses']['200']['headers']['X-Correlation-ID']['$ref']);

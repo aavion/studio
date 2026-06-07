@@ -17,6 +17,7 @@ final class ApiMessageKey
     public const API_ENDPOINT_SUCCESS_STATUS_INVALID = 'message.api.endpoint.success_status_invalid';
     public const API_ENDPOINT_NOT_FOUND = 'message.api.endpoint.not_found';
     public const API_REQUEST_INVALID = 'message.api.request.invalid';
+    public const API_UNSUPPORTED_MEDIA_TYPE = 'message.api.request.unsupported_media_type';
     public const API_VALIDATION_FAILED = 'message.api.validation.failed';
     public const API_OPERATION_NOT_IMPLEMENTED = 'message.api.operation.not_implemented';
     public const API_OPERATION_UNAVAILABLE = 'message.api.operation.unavailable';

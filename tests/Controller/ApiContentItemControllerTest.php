@@ -115,6 +115,7 @@ final class ApiContentItemControllerTest extends WebTestCase
 
         $client->request('POST', '/api/v1/content/items/create', server: [
             'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
         ], content: json_encode(['schema' => 'api_character'], JSON_THROW_ON_ERROR));
 
         self::assertResponseStatusCodeSame(501);
@@ -123,6 +124,7 @@ final class ApiContentItemControllerTest extends WebTestCase
 
         $client->request('POST', self::KAEL_PATH.'/validate', server: [
             'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
         ], content: json_encode(['schema' => 'api_character'], JSON_THROW_ON_ERROR));
 
         self::assertResponseStatusCodeSame(501);
@@ -131,6 +133,7 @@ final class ApiContentItemControllerTest extends WebTestCase
 
         $client->request('POST', self::KAEL_PATH.'/diff', server: [
             'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
         ], content: json_encode(['schema' => 'api_character'], JSON_THROW_ON_ERROR));
 
         self::assertResponseStatusCodeSame(501);

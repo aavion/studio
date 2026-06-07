@@ -207,6 +207,7 @@ message:
       not_found: 'Für diesen Pfad und diese Methode ist kein API-Endpunkt registriert.'
     request:
       invalid: 'Der API-Request-Body ist ungültig.'
+      unsupported_media_type: 'Der API-Request-Body muss application/json verwenden.'
     validation:
       failed: 'Der API-Request hat die Validierung nicht bestanden.'
     operation:
