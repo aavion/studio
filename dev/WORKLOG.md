@@ -76,6 +76,7 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-07
+- Closed the retained-deleted user boundary for admin user/group membership API mutations so hidden deleted accounts cannot be modified through normal membership endpoints.
 - Moved content revision API reads out of public content delivery by gating `/api/v1/content/items/{item_path}/revisions` and revision detail stubs behind level-4 API actors while preserving the existing content resolver ACL path.
 - Addressed API review hardening findings: content revision navigation no longer leaks through public content delivery, normal user/admin detail paths reject retained deleted accounts, ACL group deletion no longer requires a JSON content type for empty confirm/review requests, and admin package management routes use canonical package slugs while returning package names as data.
 - Ran the API slice against the GitHub #57 drift-audit checklist, fixed the only newly introduced branded OpenAPI extension name by switching to neutral `x-access`, moved API-key prefix validation before key-material generation, and recorded remaining package-handler and modularity follow-ups in the API draft.

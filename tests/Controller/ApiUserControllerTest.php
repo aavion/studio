@@ -395,6 +395,38 @@ final class ApiUserControllerTest extends WebTestCase
         self::assertNotContains($group->identifier(), array_column($payload['data']['attributes']['groups'], 'identifier'));
     }
 
+    public function testUserGroupMembershipRejectsRetainedDeletedUsers(): void
+    {
+        $client = self::createClient();
+        $target = $this->createUserWithLevel(AccessLevel::AUTHOR, 'apiusermemdel', 'current-password');
+        $existingGroup = $this->createGroup('api_deleted_existing', AccessLevel::USER);
+        $newGroup = $this->createGroup('api_deleted_new', AccessLevel::USER);
+        $target->addGroup($existingGroup);
+        $target->changeStatus(UserAccountStatus::Deleted);
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
+        $plainKey = $this->createPlainApiKey('apiusrmemdel', ApiKeyStatus::ReadWrite);
+
+        $client->request('POST', '/api/v1/admin/users/items/'.$target->username().'/groups/'.$newGroup->identifier(), server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseStatusCodeSame(404);
+
+        $client->request('DELETE', '/api/v1/admin/users/items/'.$target->username().'/groups/'.$existingGroup->identifier(), server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseStatusCodeSame(404);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $unchanged = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $target->username()]);
+
+        self::assertInstanceOf(UserAccount::class, $unchanged);
+        self::assertSame(UserAccountStatus::Deleted, $unchanged->status());
+        self::assertSame([$existingGroup->identifier()], $this->userGroupIdentifiers($unchanged));
+    }
+
     public function testUserReviewActionsRequireConfirmation(): void
     {
         $client = self::createClient();

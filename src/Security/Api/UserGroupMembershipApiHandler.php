@@ -17,6 +17,8 @@ use App\Core\Message\Message;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
 use App\Security\AdminUserAccessPolicy;
+use App\Security\DeletedUserCleanup;
+use App\Security\UserAccountStatus;
 use App\Security\UserGroupMembershipManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -59,7 +61,12 @@ final readonly class UserGroupMembershipApiHandler implements ApiEndpointHandler
     {
         $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
         $group = $this->entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => $groupIdentifier]);
-        if (!$user instanceof UserAccount || !$group instanceof AclGroup) {
+        if (
+            !$user instanceof UserAccount
+            || DeletedUserCleanup::DELETED_USER_UID === $user->uid()
+            || UserAccountStatus::Deleted === $user->status()
+            || !$group instanceof AclGroup
+        ) {
             return $this->notFound($request, ['username' => $username, 'group_identifier' => $groupIdentifier]);
         }
 
