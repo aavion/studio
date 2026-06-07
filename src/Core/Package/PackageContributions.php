@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Api\Endpoint\ApiEndpointDefinition;
+use App\Api\Endpoint\ApiEndpointHandlerInterface;
+use App\Api\Endpoint\ApiEndpointHandlerProviderInterface;
+use App\Api\Endpoint\ApiEndpointProviderInterface;
 use App\Core\Package\Settings\PackageSettingDefinition;
 use App\Core\Package\Settings\PackageSettingProviderInterface;
 use App\Scheduler\SchedulerActionQueueProviderInterface;
@@ -34,7 +38,7 @@ final class PackageContributions implements \IteratorAggregate
     }
 
     public function add(
-        StaticViewInjection|ConfigurableStaticViewInjectionSet|DynamicViewInjection|PackageSettingDefinition|SchedulerTaskDefinition|StaticViewInjectionProviderInterface|DynamicViewInjectionProviderInterface|PackageSettingProviderInterface|SchedulerTaskProviderInterface|SchedulerCallableProviderInterface|SchedulerActionQueueProviderInterface $contribution,
+        StaticViewInjection|ConfigurableStaticViewInjectionSet|DynamicViewInjection|PackageSettingDefinition|SchedulerTaskDefinition|ApiEndpointDefinition|ApiEndpointHandlerInterface|StaticViewInjectionProviderInterface|DynamicViewInjectionProviderInterface|PackageSettingProviderInterface|ApiEndpointProviderInterface|ApiEndpointHandlerProviderInterface|SchedulerTaskProviderInterface|SchedulerCallableProviderInterface|SchedulerActionQueueProviderInterface $contribution,
     ): self {
         $this->items[] = $contribution;
 
@@ -66,6 +70,16 @@ final class PackageContributions implements \IteratorAggregate
         return $this->add($definition);
     }
 
+    public function apiEndpoint(ApiEndpointDefinition $definition): self
+    {
+        return $this->add($definition);
+    }
+
+    public function apiEndpointHandler(ApiEndpointHandlerInterface $handler): self
+    {
+        return $this->add($handler);
+    }
+
     public function staticViewProvider(StaticViewInjectionProviderInterface $provider): self
     {
         return $this->add($provider);
@@ -77,6 +91,16 @@ final class PackageContributions implements \IteratorAggregate
     }
 
     public function settingsProvider(PackageSettingProviderInterface $provider): self
+    {
+        return $this->add($provider);
+    }
+
+    public function apiEndpointProvider(ApiEndpointProviderInterface $provider): self
+    {
+        return $this->add($provider);
+    }
+
+    public function apiEndpointHandlerProvider(ApiEndpointHandlerProviderInterface $provider): self
     {
         return $this->add($provider);
     }

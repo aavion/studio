@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Api\Endpoint;
 
+use Symfony\Component\HttpFoundation\Request;
+
 final readonly class ApiEndpointRegistry
 {
     /**
@@ -44,6 +46,26 @@ final readonly class ApiEndpointRegistry
     {
         foreach ($this->endpoints() as $endpoint) {
             if ($endpoint->routeName() !== $routeName) {
+                continue;
+            }
+
+            if ($endpoint->method() === $method || ('HEAD' === $method && 'GET' === $endpoint->method())) {
+                return $endpoint;
+            }
+        }
+
+        return null;
+    }
+
+    public function endpointForRequest(Request $request): ?ApiEndpointDefinition
+    {
+        return $this->endpointForPath($request->getPathInfo(), $request->getMethod());
+    }
+
+    public function endpointForPath(string $path, string $method): ?ApiEndpointDefinition
+    {
+        foreach ($this->endpoints() as $endpoint) {
+            if ($endpoint->path() !== $path) {
                 continue;
             }
 

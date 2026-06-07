@@ -24,6 +24,7 @@ final readonly class ApiEndpointDefinition
         private string $routeName,
         private string $operationId,
         private string $summary,
+        private ?string $handlerKey = null,
         private array $tags = [],
         private array $parameters = [],
         private ?array $requestSchema = null,
@@ -36,6 +37,7 @@ final readonly class ApiEndpointDefinition
         $this->assertPath($path);
         $this->assertRouteName($routeName);
         $this->assertOperationId($operationId);
+        $this->assertHandlerKey($handlerKey);
         $this->assertSummary($summary);
         $this->assertSuccessStatus($successStatus);
     }
@@ -68,6 +70,11 @@ final readonly class ApiEndpointDefinition
     public function summary(): string
     {
         return $this->summary;
+    }
+
+    public function handlerKey(): ?string
+    {
+        return $this->handlerKey;
     }
 
     /**
@@ -157,6 +164,19 @@ final readonly class ApiEndpointDefinition
         if (1 !== preg_match('/^[A-Za-z][A-Za-z0-9_]*$/', $operationId)) {
             throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_OPERATION_INVALID, [
                 '%operation%' => $operationId,
+            ]);
+        }
+    }
+
+    private function assertHandlerKey(?string $handlerKey): void
+    {
+        if (null === $handlerKey) {
+            return;
+        }
+
+        if (1 !== preg_match('/^[a-z0-9][a-z0-9_.-]*$/', $handlerKey)) {
+            throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_HANDLER_INVALID, [
+                '%handler%' => $handlerKey,
             ]);
         }
     }

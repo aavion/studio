@@ -20,6 +20,12 @@ services:
         App\Api\Endpoint\ApiEndpointProviderInterface:
             tags:
                 - { name: 'system.api_endpoint_provider', priority: 0 }
+        App\Api\Endpoint\ApiEndpointHandlerInterface:
+            tags:
+                - { name: 'system.api_endpoint_handler', priority: 0 }
+        App\Api\Endpoint\ApiEndpointHandlerProviderInterface:
+            tags:
+                - { name: 'system.api_endpoint_handler', priority: 0 }
         App\Core\Event\EventHookDescriptorProviderInterface:
             tags:
                 - { name: 'system.event_hook_provider', priority: 0 }
@@ -108,6 +114,10 @@ services:
     App\Api\Endpoint\ApiEndpointRegistry:
         arguments:
             $providers: !tagged_iterator { tag: system.api_endpoint_provider }
+
+    App\Api\Endpoint\ApiEndpointHandlerRegistry:
+        arguments:
+            $handlers: !tagged_iterator { tag: system.api_endpoint_handler }
 
     App\Core\Package\PackageTranslationNamespaceValidator:
         arguments:

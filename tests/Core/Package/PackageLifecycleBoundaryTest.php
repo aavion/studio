@@ -166,6 +166,9 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         $this->writeTestFile($this->projectDir, 'packages/demo-module/package.php', <<<'PHP'
             <?php
 
+            use App\Api\Endpoint\ApiEndpointDefinition;
+            use App\Api\Endpoint\ApiEndpointHandlerInterface;
+            use App\Api\Endpoint\PackageApiEndpointPath;
             use App\Core\Package\PackageContributions;
             use App\Core\Package\Settings\PackageSettingDefinition;
             use App\View\Injection\ConfigurableStaticViewInjectionRoute;
@@ -174,6 +177,9 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
             use App\View\Injection\DynamicViewInjectionSlot;
             use App\View\Injection\StaticViewInjection;
             use App\View\Injection\ViewSurface;
+            use Symfony\Component\HttpFoundation\JsonResponse;
+            use Symfony\Component\HttpFoundation\Request;
+            use Symfony\Component\HttpFoundation\Response;
 
             return PackageContributions::create()
                 ->staticView(new StaticViewInjection(
@@ -208,7 +214,29 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
                     'display.mode',
                     'pkg.demo-module.settings.display_mode.label',
                     'compact',
-                ));
+                ))
+                ->apiEndpoint(new ApiEndpointDefinition(
+                    'package',
+                    'GET',
+                    PackageApiEndpointPath::path($package->packageName(), 'demo'),
+                    'api_v1_endpoint_dispatch',
+                    'getDemoModulePackageEndpoint',
+                    'Return package demo data.',
+                    'packages.demo-module.demo',
+                    ['packages'],
+                    responseSchema: ['type' => 'object'],
+                ))
+                ->apiEndpointHandler(new class implements ApiEndpointHandlerInterface {
+                    public function apiEndpointHandlerKey(): string
+                    {
+                        return 'packages.demo-module.demo';
+                    }
+
+                    public function handle(Request $request, ApiEndpointDefinition $endpoint): Response
+                    {
+                        return new JsonResponse(['data' => ['type' => 'package_demo']]);
+                    }
+                });
             PHP);
         $registry = new PackageRuntimeContributionRegistry();
 
@@ -227,6 +255,8 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         self::assertSame('demo', $registry->staticViewInjections()[1]->pathSlug());
         self::assertSame('pkg-demo-module-after-content', $registry->dynamicViewInjections()[0]->uid());
         self::assertSame('display.mode', $registry->packageSettings()[0]->key());
+        self::assertSame('/api/v1/packages/demo-module/demo', $registry->apiEndpoints()[0]->path());
+        self::assertSame('packages.demo-module.demo', $registry->apiEndpointHandlers()[0]->apiEndpointHandlerKey());
     }
 
     public function testPackagePhpLoaderDoesNotKeepPartialRuntimeContributionsAfterFailure(): void

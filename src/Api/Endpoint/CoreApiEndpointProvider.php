@@ -18,7 +18,7 @@ final readonly class CoreApiEndpointProvider implements ApiEndpointProviderInter
                 'api_v1_openapi',
                 'getOpenApiDocument',
                 'Return the OpenAPI document generated from registered API endpoint definitions.',
-                ['system'],
+                tags: ['system'],
                 allowPublic: true,
             ),
             new ApiEndpointDefinition(
@@ -28,7 +28,7 @@ final readonly class CoreApiEndpointProvider implements ApiEndpointProviderInter
                 'api_v1_status',
                 'getApiStatus',
                 'Return a small authenticated API status payload.',
-                ['system'],
+                tags: ['system'],
                 allowPublic: true,
             ),
         ];

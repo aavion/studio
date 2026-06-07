@@ -148,8 +148,45 @@ final class ApiFoundationControllerTest extends WebTestCase
         self::assertSame('Studio API', $payload['info']['title']);
         self::assertArrayHasKey('/status', $payload['paths']);
         self::assertArrayHasKey('/openapi.json', $payload['paths']);
+        self::assertArrayHasKey('/admin', $payload['paths']);
         self::assertSame('getApiStatus', $payload['paths']['/status']['get']['operationId']);
         self::assertSame([], $payload['paths']['/status']['get']['security']);
+    }
+
+    public function testAdminEndpointIndexRejectsAnonymousAccess(): void
+    {
+        $client = self::createClient();
+
+        $client->request('GET', '/api/v1/admin');
+
+        self::assertResponseStatusCodeSame(401);
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api_key.authentication_failed', $payload['error']['code']);
+    }
+
+    public function testAdminEndpointIndexListsAdministrativeEndpointsForAdminApiKeys(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadOnly, 'apiadminix', AccessLevel::ADMIN);
+
+        $client->request('GET', '/api/v1/admin', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertGreaterThanOrEqual(4, $payload['meta']['count']);
+
+        $paths = array_map(
+            static fn (array $resource): string => $resource['attributes']['path'],
+            $payload['data'],
+        );
+
+        self::assertContains('/api/v1/admin', $paths);
+        self::assertContains('/api/v1/admin/settings', $paths);
+        self::assertContains('/api/v1/admin/packages', $paths);
+        self::assertContains('/api/v1/admin/users', $paths);
+        self::assertNotContains('/api/v1/status', $paths);
     }
 
     private function createPlainApiKey(ApiKeyStatus $status, string $prefix, int $accessLevel = 1): string

@@ -22,7 +22,7 @@ final class ApiEndpointAccessSubscriberTest extends TestCase
 {
     public function testItAttachesAnonymousContextForPublicReadEndpoints(): void
     {
-        $request = $this->request('GET', 'api_public_status');
+        $request = $this->request('GET', '/api/v1/public-status', 'api_public_status');
         $event = new RequestEvent($this->kernel(), $request, HttpKernelInterface::MAIN_REQUEST);
 
         $this->subscriber()->onKernelRequest($event);
@@ -36,7 +36,7 @@ final class ApiEndpointAccessSubscriberTest extends TestCase
 
     public function testItRejectsAnonymousAccessToPrivateEndpoints(): void
     {
-        $request = $this->request('GET', 'api_private_status');
+        $request = $this->request('GET', '/api/v1/private-status', 'api_private_status');
         $event = new RequestEvent($this->kernel(), $request, HttpKernelInterface::MAIN_REQUEST);
 
         $this->subscriber()->onKernelRequest($event);
@@ -48,7 +48,7 @@ final class ApiEndpointAccessSubscriberTest extends TestCase
 
     public function testItRejectsAnonymousMutationsEvenWhenEndpointAllowsPublic(): void
     {
-        $request = $this->request('POST', 'api_public_mutation');
+        $request = $this->request('POST', '/api/v1/public-mutation', 'api_public_mutation');
         $event = new RequestEvent($this->kernel(), $request, HttpKernelInterface::MAIN_REQUEST);
 
         $this->subscriber()->onKernelRequest($event);
@@ -102,9 +102,9 @@ final class ApiEndpointAccessSubscriberTest extends TestCase
         };
     }
 
-    private function request(string $method, string $route): Request
+    private function request(string $method, string $path, string $route): Request
     {
-        $request = Request::create('/api/v1/status', $method);
+        $request = Request::create($path, $method);
         $request->attributes->set('_route', $route);
 
         return $request;

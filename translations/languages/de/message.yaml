@@ -200,8 +200,10 @@ message:
       path_invalid: 'API-Endpunkt-Pfad "%path%" muss unter /api/v1/ bleiben.'
       route_invalid: 'API-Endpunkt-Route "%route%" ist ungültig.'
       operation_invalid: 'API-Endpunkt-Operation "%operation%" ist ungültig.'
+      handler_invalid: 'API-Endpunkt-Handler "%handler%" ist ungültig oder nicht verfügbar.'
       summary_empty: 'API-Endpunkt-Zusammenfassung darf nicht leer sein.'
       success_status_invalid: 'API-Endpunkt-Erfolgsstatus %status% muss ein 2xx-HTTP-Statuscode sein.'
+      not_found: 'Für diesen Pfad und diese Methode ist kein API-Endpunkt registriert.'
     unavailable:
       setup_incomplete: 'Die API ist nicht verfügbar, bis das Setup abgeschlossen wurde.'
       database: 'Die API ist vorübergehend nicht verfügbar, weil der Datenbankzugriff fehlgeschlagen ist.'

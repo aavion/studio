@@ -75,14 +75,20 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-07
-- Planned the `feat-api` implementation scope: REST/OpenAPI first, stateless API-key authentication, read-only method gating, domain-owned ACL enforcement, canonical content slug-hierarchy identity, page/limit pagination, Message-layer API feedback, and package endpoint definition namespaces under `/api/v1/packages/{package_slug}/...`.
+- Planned the `feat-api` implementation scope: REST/OpenAPI first, stateless API-key authentication, read-only method gating, domain-owned ACL enforcement, canonical content slug-hierarchy identity, page/limit pagination, Message-layer API feedback, admin endpoint namespaces under `/api/v1/admin/...`, and package endpoint definition namespaces under `/api/v1/packages/{package_slug}/...`.
 - Started the API foundation with a stateless `/api/v1` firewall, Bearer API-key authenticator, request-scoped API context, read-only method gate, shared JSON responder, endpoint provider/definition registry, dynamic OpenAPI JSON generation from registered definitions, and only system metadata endpoints for status and documentation.
 - Refined API foundation access so endpoint definitions are private by default but can opt into anonymous safe-method reads with `allow_public`; invalid Bearer keys still fail authentication, and missing keys only receive an anonymous context for explicitly public read endpoints.
 - Added deterministic `/api/v1` availability handling so incomplete setup and Doctrine/DBAL failures return Message-layer JSON `503` responses with `Retry-After` instead of setup redirects, HTML error pages, or uncaught exception output.
 - Added API-specific maintenance handling after Bearer authentication so public/non-admin API requests return JSON `503` during maintenance while admin API keys can still access `/api/v1`.
 - Broadened the global maintenance bypass to `/api/**` so internal `/api/live/**` operation polling remains available during `APP_MAINTENANCE`; `/api/v1/**` remains protected by the API-specific maintenance gate.
+- Added central definition-backed API dispatch through `ApiEndpointController`, endpoint handler registration, package API endpoint/handler contributions constrained to `/api/v1/packages/{package_slug}/...`, and first admin-only read endpoints under `/api/v1/admin` for endpoint discovery, settings, package overview, and user lists.
+- Added explicit Hypermedia-style package API navigation at `/api/v1/packages`, backed by a reusable endpoint navigation builder that lists visible direct child paths and methods without replacing the OpenAPI contract.
+- Added the second API foundation endpoint baseline with admin read endpoints for themes, scheduler, backups, operations, logs, statistics, user groups, and user reviews, plus content navigation, ACL-aware published content item metadata, and author-level schema metadata including custom Twig while deferring mutations and deep editor/content workflows.
+- Shared the existing content read ACL policy between public content resolution and API content item lists so role-or-group view rules and additional group restrictions stay domain-owned and covered by API functional tests.
+- Hardened API endpoint registration with a registry wiring test that fails on missing definition-backed handlers, duplicate method/path pairs, or duplicate OpenAPI operation IDs.
 
 ### 2026-06-06
 - Cleaned up working directory for next feature slice
+
 ### Archived Compacted Session History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

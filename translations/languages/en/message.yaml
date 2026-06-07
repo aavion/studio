@@ -200,8 +200,10 @@ message:
       path_invalid: 'API endpoint path "%path%" must stay under /api/v1/.'
       route_invalid: 'API endpoint route "%route%" is invalid.'
       operation_invalid: 'API endpoint operation "%operation%" is invalid.'
+      handler_invalid: 'API endpoint handler "%handler%" is invalid or unavailable.'
       summary_empty: 'API endpoint summary must not be empty.'
       success_status_invalid: 'API endpoint success status %status% must be a 2xx HTTP status code.'
+      not_found: 'No API endpoint is registered for this path and method.'
     unavailable:
       setup_incomplete: 'The API is unavailable until setup has been completed.'
       database: 'The API is temporarily unavailable because database access failed.'

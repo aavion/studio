@@ -47,10 +47,7 @@ final readonly class ApiEndpointAccessSubscriber implements EventSubscriberInter
             return;
         }
 
-        $endpoint = $this->endpoints->endpointForRoute(
-            (string) $request->attributes->get('_route'),
-            $request->getMethod(),
-        );
+        $endpoint = $this->endpoints->endpointForRequest($request);
 
         if (null === $endpoint) {
             return;
