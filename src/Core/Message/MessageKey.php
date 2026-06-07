@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Message;
 
+use App\Api\ApiMessageKey;
 use App\Backend\BackendMessageKey;
 use App\Content\ContentMessageKey;
 use App\Core\Access\AccessMessageKey;
@@ -37,6 +38,7 @@ final class MessageKey
     {
         return [
             AccessMessageKey::class,
+            ApiMessageKey::class,
             AssetMessageKey::class,
             BackendMessageKey::class,
             ConfigMessageKey::class,

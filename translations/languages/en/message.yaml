@@ -193,6 +193,19 @@ message:
       invalid: 'ACL group identifier "%identifier%" must be lowercase snake_case with at least 3 characters.'
     group_name:
       invalid: 'ACL group name must contain 1 to 160 characters.'
+  api:
+    endpoint:
+      owner_invalid: 'API endpoint owner "%owner%" is invalid.'
+      method_invalid: 'API endpoint method "%method%" is not supported.'
+      path_invalid: 'API endpoint path "%path%" must stay under /api/v1/.'
+      route_invalid: 'API endpoint route "%route%" is invalid.'
+      operation_invalid: 'API endpoint operation "%operation%" is invalid.'
+      summary_empty: 'API endpoint summary must not be empty.'
+      success_status_invalid: 'API endpoint success status %status% must be a 2xx HTTP status code.'
+    unavailable:
+      setup_incomplete: 'The API is unavailable until setup has been completed.'
+      database: 'The API is temporarily unavailable because database access failed.'
+      maintenance: 'The API is temporarily unavailable because maintenance mode is active.'
   system:
     secret_payload:
       root_secret_empty: 'Secret payload protection requires a root secret.'
@@ -332,6 +345,7 @@ message:
     authentication_failed: 'API key authentication failed.'
     reauthentication_required: 'Reauthentication is required to reveal this API key.'
     permission:
+      denied: 'This API key is not allowed to access this resource.'
       write_required: 'This API key does not allow write access.'
       revoked: 'This API key has been revoked.'
   menu:

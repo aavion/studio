@@ -36,6 +36,7 @@ final class SecurityMessageKey
     public const API_KEY_NOT_FOUND = 'message.api_key.not_found';
     public const API_KEY_AUTHENTICATION_FAILED = 'message.api_key.authentication_failed';
     public const API_KEY_REAUTHENTICATION_REQUIRED = 'message.api_key.reauthentication_required';
+    public const API_KEY_PERMISSION_DENIED = 'message.api_key.permission.denied';
     public const API_KEY_PERMISSION_WRITE_REQUIRED = 'message.api_key.permission.write_required';
     public const API_KEY_PERMISSION_REVOKED = 'message.api_key.permission.revoked';
 }

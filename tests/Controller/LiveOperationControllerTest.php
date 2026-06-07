@@ -57,6 +57,34 @@ final class LiveOperationControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
+    public function testItReturnsOperationStatusDuringMaintenanceMode(): void
+    {
+        $client = self::createClient();
+        $store = self::getContainer()->get(LiveOperationRunStore::class);
+
+        self::assertInstanceOf(LiveOperationRunStore::class, $store);
+        $run = $store->create('backend.cache_clear', [], 'Cache clear');
+        $store->finish($run['operation_id'], true, [
+            'status' => 'success',
+            'issues' => [],
+            'messages' => [],
+        ]);
+        $maintenanceState = $this->setEnvironment('APP_MAINTENANCE', '1');
+
+        try {
+            self::ensureKernelShutdown();
+            $client = self::createClient();
+            $client->request('GET', '/api/live/operations/'.$run['operation_id'].'?token='.$run['token']);
+
+            self::assertResponseIsSuccessful();
+            $payload = json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+            self::assertSame('success', $payload['status']);
+        } finally {
+            $this->restoreEnvironment('APP_MAINTENANCE', $maintenanceState);
+            self::ensureKernelShutdown();
+        }
+    }
+
     public function testItExposesReviewRequiredContinuationLinks(): void
     {
         $client = self::createClient();
@@ -123,5 +151,51 @@ final class LiveOperationControllerTest extends WebTestCase
 
             usleep(100000);
         } while (microtime(true) < $deadline);
+    }
+
+    /**
+     * @return array{server_exists: bool, server: mixed, env_exists: bool, env: mixed, getenv: string|false}
+     */
+    private function setEnvironment(string $key, string $value): array
+    {
+        $previous = [
+            'server_exists' => array_key_exists($key, $_SERVER),
+            'server' => $_SERVER[$key] ?? null,
+            'env_exists' => array_key_exists($key, $_ENV),
+            'env' => $_ENV[$key] ?? null,
+            'getenv' => getenv($key),
+        ];
+
+        $_SERVER[$key] = $value;
+        $_ENV[$key] = $value;
+        putenv($key.'='.$value);
+
+        return $previous;
+    }
+
+    /**
+     * @param array{server_exists: bool, server: mixed, env_exists: bool, env: mixed, getenv: string|false} $previous
+     */
+    private function restoreEnvironment(string $key, array $previous): void
+    {
+        if ($previous['server_exists']) {
+            $_SERVER[$key] = $previous['server'];
+        } else {
+            unset($_SERVER[$key]);
+        }
+
+        if ($previous['env_exists']) {
+            $_ENV[$key] = $previous['env'];
+        } else {
+            unset($_ENV[$key]);
+        }
+
+        if (false === $previous['getenv']) {
+            putenv($key);
+
+            return;
+        }
+
+        putenv($key.'='.$previous['getenv']);
     }
 }

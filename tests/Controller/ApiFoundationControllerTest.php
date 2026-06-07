@@ -1,0 +1,235 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Controller;
+
+use App\Core\Access\AccessLevel;
+use App\Database\DatabaseReadyState;
+use App\Entity\ApiKey;
+use App\Entity\UserAccount;
+use App\Security\ApiKeyStatus;
+use App\Security\ApiKeyVault;
+use App\Setup\SetupCompletionMarker;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\Response;
+
+final class ApiFoundationControllerTest extends WebTestCase
+{
+    use UserControllerFixtureTrait;
+
+    public function testStatusAllowsPublicReadAccess(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/api/v1/status');
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api_status', $payload['data']['type']);
+        self::assertSame('ok', $payload['data']['attributes']['status']);
+    }
+
+    public function testStatusReturnsJsonServiceUnavailableBeforeSetupIsComplete(): void
+    {
+        $setupState = $this->setEnvironment(SetupCompletionMarker::KEY, '0');
+        $unreadyState = $this->setEnvironment(DatabaseReadyState::ALLOW_UNREADY_KEY, '0');
+
+        try {
+            self::ensureKernelShutdown();
+            $client = self::createClient();
+            $client->request('GET', '/api/v1/status');
+
+            self::assertResponseStatusCodeSame(Response::HTTP_SERVICE_UNAVAILABLE);
+            self::assertSame('60', $client->getResponse()->headers->get('Retry-After'));
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('api.unavailable_setup_incomplete', $payload['error']['code']);
+            self::assertSame('setup_incomplete', $payload['error']['context']['reason']);
+        } finally {
+            $this->restoreEnvironment(SetupCompletionMarker::KEY, $setupState);
+            $this->restoreEnvironment(DatabaseReadyState::ALLOW_UNREADY_KEY, $unreadyState);
+            self::ensureKernelShutdown();
+        }
+    }
+
+    public function testStatusReturnsJsonServiceUnavailableDuringMaintenanceForPublicRequests(): void
+    {
+        $maintenanceState = $this->setEnvironment('APP_MAINTENANCE', '1');
+
+        try {
+            self::ensureKernelShutdown();
+            $client = self::createClient();
+            $client->request('GET', '/api/v1/status');
+
+            self::assertResponseStatusCodeSame(Response::HTTP_SERVICE_UNAVAILABLE);
+            self::assertSame('60', $client->getResponse()->headers->get('Retry-After'));
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('api.unavailable_maintenance', $payload['error']['code']);
+            self::assertSame('maintenance', $payload['error']['context']['reason']);
+        } finally {
+            $this->restoreEnvironment('APP_MAINTENANCE', $maintenanceState);
+            self::ensureKernelShutdown();
+        }
+    }
+
+    public function testStatusAllowsAdminApiKeyDuringMaintenance(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadOnly, 'apimaintad', AccessLevel::ADMIN);
+        $maintenanceState = $this->setEnvironment('APP_MAINTENANCE', '1');
+
+        try {
+            self::ensureKernelShutdown();
+            $client = self::createClient();
+            $client->request('GET', '/api/v1/status', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('api_status', $payload['data']['type']);
+        } finally {
+            $this->restoreEnvironment('APP_MAINTENANCE', $maintenanceState);
+            self::ensureKernelShutdown();
+        }
+    }
+
+    public function testStatusRejectsInvalidBearerApiKey(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/api/v1/status', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer missing.invalid',
+        ]);
+
+        self::assertResponseStatusCodeSame(401);
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api_key.authentication_failed', $payload['error']['code']);
+    }
+
+    public function testStatusAcceptsReadOnlyBearerApiKey(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadOnly, 'apistatusro');
+
+        $client->request('GET', '/api/v1/status', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api_status', $payload['data']['type']);
+        self::assertSame('ok', $payload['data']['attributes']['status']);
+    }
+
+    public function testStatusRejectsRevokedBearerApiKey(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::Revoked, 'apistatusrv');
+
+        $client->request('GET', '/api/v1/status', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseStatusCodeSame(401);
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api_key.permission_revoked', $payload['error']['code']);
+        self::assertSame('message.api_key.permission.revoked', $payload['error']['message_key']);
+    }
+
+    public function testOpenApiDocumentIsGeneratedFromRegisteredEndpointDefinitions(): void
+    {
+        $client = self::createClient();
+
+        $client->request('GET', '/api/v1/openapi.json');
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('3.1.0', $payload['openapi']);
+        self::assertSame('Studio API', $payload['info']['title']);
+        self::assertArrayHasKey('/status', $payload['paths']);
+        self::assertArrayHasKey('/openapi.json', $payload['paths']);
+        self::assertSame('getApiStatus', $payload['paths']['/status']['get']['operationId']);
+        self::assertSame([], $payload['paths']['/status']['get']['security']);
+    }
+
+    private function createPlainApiKey(ApiKeyStatus $status, string $prefix, int $accessLevel = 1): string
+    {
+        $user = $this->createUserWithLevel($accessLevel, $prefix.'user', 'current-password');
+        $vault = self::getContainer()->get(ApiKeyVault::class);
+        $plainKey = $vault->generatePlainKey($prefix);
+        $apiKey = new ApiKey(
+            '64000000-0000-7000-8000-'.substr(md5($prefix.$status->value), 0, 12),
+            $prefix,
+            $vault->hmac($plainKey),
+            $vault->encrypt($plainKey, $prefix),
+            $user,
+            $status,
+        );
+
+        if (ApiKeyStatus::Revoked === $status) {
+            $apiKey->revoke();
+        }
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($apiKey);
+        $entityManager->flush();
+
+        return $plainKey;
+    }
+
+    /**
+     * @return array{server_exists: bool, server: mixed, env_exists: bool, env: mixed, getenv: string|false}
+     */
+    private function setEnvironment(string $key, string $value): array
+    {
+        $previous = [
+            'server_exists' => array_key_exists($key, $_SERVER),
+            'server' => $_SERVER[$key] ?? null,
+            'env_exists' => array_key_exists($key, $_ENV),
+            'env' => $_ENV[$key] ?? null,
+            'getenv' => getenv($key),
+        ];
+
+        $_SERVER[$key] = $value;
+        $_ENV[$key] = $value;
+        putenv($key.'='.$value);
+
+        return $previous;
+    }
+
+    /**
+     * @param array{server_exists: bool, server: mixed, env_exists: bool, env: mixed, getenv: string|false} $previous
+     */
+    private function restoreEnvironment(string $key, array $previous): void
+    {
+        if ($previous['server_exists']) {
+            $_SERVER[$key] = $previous['server'];
+        } else {
+            unset($_SERVER[$key]);
+        }
+
+        if ($previous['env_exists']) {
+            $_ENV[$key] = $previous['env'];
+        } else {
+            unset($_ENV[$key]);
+        }
+
+        if (false === $previous['getenv']) {
+            putenv($key);
+
+            return;
+        }
+
+        putenv($key.'='.$previous['getenv']);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function jsonPayload(string|false $content): array
+    {
+        self::assertIsString($content);
+
+        return json_decode($content, true, flags: JSON_THROW_ON_ERROR);
+    }
+}

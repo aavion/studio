@@ -59,7 +59,7 @@ final readonly class MaintenanceModeSubscriber implements EventSubscriberInterfa
 
     private function isBypassPath(string $path): bool
     {
-        foreach (['/_profiler', '/_wdt', '/assets', '/build', '/cron'] as $prefix) {
+        foreach (['/_profiler', '/_wdt', '/assets', '/build', '/cron', '/api'] as $prefix) {
             if ($path === $prefix || str_starts_with($path, $prefix.'/')) {
                 return true;
             }

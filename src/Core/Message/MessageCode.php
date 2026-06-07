@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Message;
 
+use App\Api\ApiMessageCode;
 use App\Backend\BackendMessageCode;
 use App\Content\ContentMessageCode;
 use App\Core\Access\AccessMessageCode;
@@ -35,6 +36,7 @@ final class MessageCode
     {
         return [
             AccessMessageCode::class,
+            ApiMessageCode::class,
             AssetMessageCode::class,
             BackendMessageCode::class,
             CommonMessageCode::class,

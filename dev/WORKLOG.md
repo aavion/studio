@@ -76,6 +76,11 @@
 
 ### 2026-06-07
 - Planned the `feat-api` implementation scope: REST/OpenAPI first, stateless API-key authentication, read-only method gating, domain-owned ACL enforcement, canonical content slug-hierarchy identity, page/limit pagination, Message-layer API feedback, and package endpoint definition namespaces under `/api/v1/packages/{package_slug}/...`.
+- Started the API foundation with a stateless `/api/v1` firewall, Bearer API-key authenticator, request-scoped API context, read-only method gate, shared JSON responder, endpoint provider/definition registry, dynamic OpenAPI JSON generation from registered definitions, and only system metadata endpoints for status and documentation.
+- Refined API foundation access so endpoint definitions are private by default but can opt into anonymous safe-method reads with `allow_public`; invalid Bearer keys still fail authentication, and missing keys only receive an anonymous context for explicitly public read endpoints.
+- Added deterministic `/api/v1` availability handling so incomplete setup and Doctrine/DBAL failures return Message-layer JSON `503` responses with `Retry-After` instead of setup redirects, HTML error pages, or uncaught exception output.
+- Added API-specific maintenance handling after Bearer authentication so public/non-admin API requests return JSON `503` during maintenance while admin API keys can still access `/api/v1`.
+- Broadened the global maintenance bypass to `/api/**` so internal `/api/live/**` operation polling remains available during `APP_MAINTENANCE`; `/api/v1/**` remains protected by the API-specific maintenance gate.
 
 ### 2026-06-06
 - Cleaned up working directory for next feature slice
