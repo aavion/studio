@@ -94,19 +94,12 @@ final readonly class ContentApiItemReadModel
             return [];
         }
 
-        return array_values(array_map(
-            fn (ContentRevision $revision): array => [
-                'type' => 'content_version',
-                'id' => (string) $revision->version(),
-                'attributes' => [
-                    'version' => $revision->version(),
-                    'active' => $view->content()->activeRevisionUid() === $revision->uid(),
-                    'schema' => $revision->schema()->identifier(),
-                    'schema_version' => $revision->schemaVersion()->version(),
-                ],
-            ],
-            $view->content()->revisions()->toArray(),
-        ));
+        $activeRevision = $view->content()->activeRevision();
+        if (!$activeRevision instanceof ContentRevision) {
+            return [];
+        }
+
+        return [$this->versionResource($activeRevision)];
     }
 
     /**
@@ -170,4 +163,20 @@ final readonly class ContentApiItemReadModel
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function versionResource(ContentRevision $revision): array
+    {
+        return [
+            'type' => 'content_version',
+            'id' => (string) $revision->version(),
+            'attributes' => [
+                'version' => $revision->version(),
+                'active' => true,
+                'schema' => $revision->schema()->identifier(),
+                'schema_version' => $revision->schemaVersion()->version(),
+            ],
+        ];
+    }
 }

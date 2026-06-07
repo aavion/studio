@@ -84,6 +84,7 @@ final class ApiContentItemControllerTest extends WebTestCase
         $client->request('GET', self::KAEL_PATH.'/revisions');
         self::assertResponseIsSuccessful();
         $versions = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame(1, $versions['meta']['count']);
         self::assertSame('1', $versions['data'][0]['id']);
         self::assertTrue($versions['data'][0]['attributes']['active']);
     }
@@ -183,6 +184,7 @@ final class ApiContentItemControllerTest extends WebTestCase
         $revision = $this->revision('6b100000-0000-7000-8000-000000000020', $kael, $schemaVersion, 'Kael Mercer');
         $revision->addFieldValue(new ContentFieldValue('6b100000-0000-7000-8000-000000000021', $revision, 'de', 'before-t17', 'name', 'Kael Mercer vor T17'));
         $kael->activateRevision($revision);
+        $kael->addRevision($this->revision('6b100000-0000-7000-8000-000000000022', $kael, $schemaVersion, 'Kael Mercer Draft', 2));
         $items[] = $kael;
 
         foreach ($items as $item) {
@@ -205,9 +207,9 @@ final class ApiContentItemControllerTest extends WebTestCase
         return $item;
     }
 
-    private function revision(string $uid, ContentItem $item, ContentSchemaVersion $schemaVersion, string $name): ContentRevision
+    private function revision(string $uid, ContentItem $item, ContentSchemaVersion $schemaVersion, string $name, int $version = 1): ContentRevision
     {
-        $revision = new ContentRevision($uid, $item, 1, $schemaVersion);
+        $revision = new ContentRevision($uid, $item, $version, $schemaVersion);
         $revision->addFieldValue(new ContentFieldValue(
             substr_replace($uid, 'f', 0, 1),
             $revision,
