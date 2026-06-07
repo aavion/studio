@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Package\Api;
 
+use App\Api\Endpoint\PackageApiEndpointPath;
 use App\Core\Package\PackageAdminOverview;
 
 final readonly class PackageApiReadModel
@@ -18,10 +19,12 @@ final readonly class PackageApiReadModel
     public function packages(): array
     {
         return array_map(
-            static fn (array $package): array => [
+            fn (array $package): array => [
                 'type' => 'package',
-                'id' => (string) $package['package_name'],
+                'id' => $this->packageSlug((string) $package['package_name']),
                 'attributes' => [
+                    'package_name' => $package['package_name'],
+                    'package_slug' => $this->packageSlug((string) $package['package_name']),
                     'label' => $package['label'],
                     'label_key' => $package['label_key'],
                     'description' => $package['description'],
@@ -40,5 +43,24 @@ final readonly class PackageApiReadModel
             ],
             $this->overview->packages(),
         );
+    }
+
+    public function packageNameForSlug(string $slug): ?string
+    {
+        $matches = [];
+
+        foreach ($this->overview->packages() as $package) {
+            $packageName = (string) $package['package_name'];
+            if ($this->packageSlug($packageName) === $slug) {
+                $matches[] = $packageName;
+            }
+        }
+
+        return 1 === count($matches) ? $matches[0] : null;
+    }
+
+    public function packageSlug(string $packageName): string
+    {
+        return PackageApiEndpointPath::slug($packageName);
     }
 }

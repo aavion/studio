@@ -12,7 +12,7 @@ final readonly class PackageApiEndpointProvider implements ApiEndpointProviderIn
 {
     public const HANDLER_PACKAGES_INDEX = 'packages.index';
     public const HANDLER_PACKAGES_NAVIGATION = 'packages.navigation';
-    private const PACKAGE_SEGMENT_PATTERN = '[^/]+';
+    private const PACKAGE_SEGMENT_PATTERN = '[a-z0-9]+(?:-[a-z0-9]+)*';
 
     public function apiEndpoints(): array
     {

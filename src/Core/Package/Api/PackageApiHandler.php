@@ -44,7 +44,12 @@ final readonly class PackageApiHandler implements ApiEndpointHandlerInterface
             return $denied;
         }
 
-        $packageName = $this->packageNameFromPath($request->getPathInfo());
+        $packageSlug = $this->packageSlugFromPath($request->getPathInfo());
+        $packageName = null === $packageSlug ? null : $this->readModel->packageNameForSlug($packageSlug);
+        if (null !== $packageSlug && null === $packageName) {
+            return $this->notFound($request, $packageSlug);
+        }
+
         $action = $this->lifecycleActionFromPath($request->getPathInfo());
         if (null !== $packageName && null !== $action) {
             return $this->lifecycle($request, $packageName, $action);
@@ -129,13 +134,17 @@ final readonly class PackageApiHandler implements ApiEndpointHandlerInterface
      */
     private function packageResource(array $package): array
     {
+        $packageName = (string) $package['package_name'];
+        $packageSlug = $this->readModel->packageSlug($packageName);
+
         return [
             'type' => 'package',
-            'id' => (string) $package['package_name'],
+            'id' => $packageSlug,
             'attributes' => [
                 ...$package,
-                'api_path' => '/api/v1/admin/packages/'.rawurlencode((string) $package['package_name']),
-                'api_actions' => $this->apiActions($package['actions'] ?? [], (string) $package['package_name']),
+                'package_slug' => $packageSlug,
+                'api_path' => '/api/v1/admin/packages/'.$packageSlug,
+                'api_actions' => $this->apiActions($package['actions'] ?? [], $packageSlug),
             ],
         ];
     }
@@ -145,7 +154,7 @@ final readonly class PackageApiHandler implements ApiEndpointHandlerInterface
      *
      * @return list<array<string, mixed>>
      */
-    private function apiActions(mixed $actions, string $packageName): array
+    private function apiActions(mixed $actions, string $packageSlug): array
     {
         if (!is_array($actions)) {
             return [];
@@ -160,7 +169,7 @@ final readonly class PackageApiHandler implements ApiEndpointHandlerInterface
             $resources[] = [
                 ...$action,
                 'method' => Request::METHOD_POST,
-                'api_path' => '/api/v1/admin/packages/'.rawurlencode($packageName).'/'.$action['id'],
+                'api_path' => '/api/v1/admin/packages/'.$packageSlug.'/'.$action['id'],
                 'requires_confirmation' => true,
             ];
         }
@@ -195,13 +204,13 @@ final readonly class PackageApiHandler implements ApiEndpointHandlerInterface
         return is_array($plan) && true === ($plan['success'] ?? false);
     }
 
-    private function packageNameFromPath(string $path): ?string
+    private function packageSlugFromPath(string $path): ?string
     {
         if (1 !== preg_match('#^/api/v1/admin/packages/([^/]+)(?:/(?:activate|deactivate|reset-fault|delete|purge))?$#', $path, $matches)) {
             return null;
         }
 
-        return rawurldecode($matches[1]);
+        return $matches[1];
     }
 
     private function lifecycleActionFromPath(string $path): ?string
