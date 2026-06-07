@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-06-06  
+> **Updated**: 2026-06-07  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -63,7 +63,7 @@
 - [ ] Finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
 - [ ] Before production readiness, review public package/developer-facing class, interface, function, and Twig helper names for clarity and ergonomics; decide whether to rename directly or provide stable aliases so extension APIs read as intentional rather than provisional.
-- [ ] API branch planning: before implementation, turn `dev/draft/0.4.x-ApiLayer.md` into a concrete endpoint/resource plan covering initial read/write scope, token scopes, response DTOs, error envelope, pagination, filtering, sorting, audit signals, and tests.
+- [x] API branch planning: before implementation, turn `dev/draft/0.4.x-ApiLayer.md` into a concrete endpoint/resource plan covering initial read/write scope, API-key method gating, response DTOs, error envelope, pagination, filtering, sorting, audit signals, and tests.
 - [ ] Audit follow-up: add a durable package lifecycle operation journal/coordinator for multi-step activation, deactivation, install, rollback, and cleanup flows.
 - [ ] Audit follow-up: design copied-session plus copied-visitor-cookie risk scoring in the Security branch; current hard session binding intentionally covers visitor changes, not complete cookie-pair duplication.
 - [ ] Audit follow-up: implement remember-me with Symfony-style persistent server-side tokens, visitor binding, explicit revocation, token rotation, and audit signals in the Security branch.
@@ -73,6 +73,9 @@
 
 ## Session Logs
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
+
+### 2026-06-07
+- Planned the `feat-api` implementation scope: REST/OpenAPI first, stateless API-key authentication, read-only method gating, domain-owned ACL enforcement, canonical content slug-hierarchy identity, page/limit pagination, Message-layer API feedback, and package endpoint definition namespaces under `/api/v1/packages/{package_slug}/...`.
 
 ### 2026-06-06
 - Cleaned up working directory for next feature slice
