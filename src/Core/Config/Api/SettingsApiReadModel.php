@@ -18,11 +18,45 @@ final readonly class SettingsApiReadModel
     /**
      * @return list<array<string, mixed>>
      */
-    public function settings(): array
+    public function sections(): array
+    {
+        $sections = [];
+
+        foreach ($this->settings->allDefinitions() as $definition) {
+            $field = $definition->formField();
+            if (false === ($field->metadata()['persist'] ?? true)) {
+                continue;
+            }
+
+            $section = $definition->section();
+            $sections[$section] ??= [
+                'type' => 'settings_section',
+                'id' => $section,
+                'attributes' => [
+                    'section' => $section,
+                    'path' => '/api/v1/admin/settings/'.$section,
+                    'field_count' => 0,
+                    'title_key' => 'admin.settings.'.$section.'.title',
+                ],
+            ];
+            ++$sections[$section]['attributes']['field_count'];
+        }
+
+        return array_values($sections);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function settings(?string $section = null): array
     {
         $resources = [];
 
         foreach ($this->settings->allDefinitions() as $definition) {
+            if (null !== $section && $definition->section() !== $section) {
+                continue;
+            }
+
             $field = $definition->formField();
 
             if (false === ($field->metadata()['persist'] ?? true)) {

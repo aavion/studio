@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Api\Admin;
 
+use App\Api\ApiMessageCode;
+use App\Api\ApiMessageKey;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointHandlerInterface;
 use App\Api\Http\ApiResponder;
 use App\Api\Security\ApiAccessGuard;
 use App\Core\Access\AccessLevel;
 use App\Core\Log\LogFileBrowser;
+use App\Core\Message\Message;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -34,7 +37,24 @@ final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
             return $denied;
         }
 
-        $view = $this->logs->browse($request->query->all());
+        $source = $this->sourceFromPath($request->getPathInfo());
+        if (null === $source) {
+            $view = $this->logs->browse([]);
+
+            return $this->responder->data($this->sourceResources($view['sources']), meta: [
+                'count' => count($view['sources']),
+                'default_source' => $view['selected_source'],
+            ]);
+        }
+
+        if (!$this->isKnownSource($source)) {
+            return $this->notFound($request, $source);
+        }
+
+        $view = $this->logs->browse([
+            ...$request->query->all(),
+            'source' => $source,
+        ]);
         $entries = array_map(static fn (array $entry): array => [
             'type' => 'log_entry',
             'id' => (string) ($entry['id'] ?? ''),
@@ -44,5 +64,61 @@ final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
         unset($view['entries']);
 
         return $this->responder->data($entries, meta: $view);
+    }
+
+    /**
+     * @param list<array{key: string, label: string}> $sources
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function sourceResources(array $sources): array
+    {
+        return array_map(static fn (array $source): array => [
+            'type' => 'log_source',
+            'id' => $source['key'],
+            'attributes' => [
+                'source' => $source['key'],
+                'label_key' => $source['label'],
+                'path' => '/api/v1/admin/logs/'.$source['key'],
+                'filters' => ['level', 'q', 'match', 'time_window', 'audit_action', 'per_page', 'page'],
+            ],
+        ], $sources);
+    }
+
+    private function sourceFromPath(string $path): ?string
+    {
+        $prefix = '/api/v1/admin/logs/';
+        if (!str_starts_with($path, $prefix)) {
+            return null;
+        }
+
+        $source = rawurldecode(substr($path, strlen($prefix)));
+
+        return '' === $source ? null : $source;
+    }
+
+    private function isKnownSource(string $source): bool
+    {
+        $view = $this->logs->browse([]);
+
+        foreach ($view['sources'] as $candidate) {
+            if (($candidate['key'] ?? null) === $source) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function notFound(Request $request, string $source): Response
+    {
+        return $this->responder->error(
+            Message::warning(ApiMessageCode::API_ENDPOINT_NOT_FOUND, ApiMessageKey::API_ENDPOINT_NOT_FOUND, context: [
+                'path' => $request->getPathInfo(),
+                'source' => $source,
+            ]),
+            Response::HTTP_NOT_FOUND,
+            $request,
+        );
     }
 }

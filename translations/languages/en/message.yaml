@@ -206,6 +206,7 @@ message:
       not_found: 'No API endpoint is registered for this path and method.'
     operation:
       not_implemented: 'API operation "%operation%" is registered but not implemented yet.'
+      unavailable: 'API operation "%operation%" is not available in the current state.'
     unavailable:
       setup_incomplete: 'The API is unavailable until setup has been completed.'
       database: 'The API is temporarily unavailable because database access failed.'

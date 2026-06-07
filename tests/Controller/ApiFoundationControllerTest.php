@@ -175,14 +175,14 @@ final class ApiFoundationControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertGreaterThanOrEqual(4, $payload['meta']['count']);
+        self::assertSame('api_navigation', $payload['data']['type']);
+        self::assertSame('/api/v1/admin', $payload['data']['attributes']['path']);
 
         $paths = array_map(
             static fn (array $resource): string => $resource['attributes']['path'],
-            $payload['data'],
+            $payload['data']['attributes']['children'],
         );
 
-        self::assertContains('/api/v1/admin', $paths);
         self::assertContains('/api/v1/admin/settings', $paths);
         self::assertContains('/api/v1/admin/packages', $paths);
         self::assertContains('/api/v1/admin/users', $paths);

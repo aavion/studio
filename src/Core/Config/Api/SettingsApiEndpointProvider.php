@@ -20,8 +20,8 @@ final readonly class SettingsApiEndpointProvider implements ApiEndpointProviderI
                 Request::METHOD_GET,
                 '/api/v1/admin/settings',
                 'api_v1_endpoint_dispatch',
-                'listSettings',
-                'List administrative settings visible to the API caller.',
+                'listSettingsSections',
+                'List administrative settings sections visible to the API caller.',
                 self::HANDLER_SETTINGS_INDEX,
                 ['admin', 'settings'],
                 responseSchema: [
@@ -46,6 +46,21 @@ final readonly class SettingsApiEndpointProvider implements ApiEndpointProviderI
                         ],
                     ],
                 ],
+            ),
+            new ApiEndpointDefinition(
+                'settings',
+                Request::METHOD_GET,
+                '/api/v1/admin/settings/{section}',
+                'api_v1_endpoint_dispatch',
+                'listSettingsSection',
+                'List administrative settings for one settings section.',
+                self::HANDLER_SETTINGS_INDEX,
+                ['admin', 'settings'],
+                parameters: [
+                    ['name' => 'section', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string']],
+                ],
+                responseSchema: ['type' => 'object'],
+                pathPattern: '#^/api/v1/admin/settings/[a-z0-9][a-z0-9_-]*$#',
             ),
         ];
     }

@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Core\Access\AccessLevel;
+use App\Core\Package\ExtensionPackageStatus;
+use App\Core\Package\PackageScope;
 use App\Entity\ApiKey;
+use App\Entity\ExtensionPackage;
 use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
 use Doctrine\ORM\EntityManagerInterface;
@@ -59,6 +62,58 @@ final class ApiPackageControllerTest extends WebTestCase
         self::assertArrayNotHasKey('detail_path', $system['attributes']);
     }
 
+    public function testPackageDetailReturnsApiActionsForAdminApiKeys(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apipkgdetail');
+        $this->upsertPackage('api-package-detail', ExtensionPackageStatus::Inactive);
+
+        $client->request('GET', '/api/v1/admin/packages/api-package-detail', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('package', $payload['data']['type']);
+        self::assertSame('api-package-detail', $payload['data']['id']);
+        self::assertSame('/api/v1/admin/packages/api-package-detail', $payload['data']['attributes']['api_path']);
+
+        $actions = array_column($payload['data']['attributes']['api_actions'], 'api_path', 'id');
+        self::assertSame('/api/v1/admin/packages/api-package-detail/activate', $actions['activate']);
+        self::assertSame('/api/v1/admin/packages/api-package-detail/delete', $actions['delete']);
+    }
+
+    public function testPackageLifecycleActionReturnsReviewUntilConfirmed(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apipkgwrite', ApiKeyStatus::ReadWrite);
+        $this->upsertPackage('api-package-action', ExtensionPackageStatus::Inactive);
+
+        $client->request('POST', '/api/v1/admin/packages/api-package-action/activate', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('package_lifecycle_review', $payload['data']['type']);
+        self::assertSame('api-package-action:activate', $payload['data']['id']);
+        self::assertSame('ok', $payload['data']['attributes']['status']);
+        self::assertSame('confirm=true', $payload['data']['attributes']['confirm_parameter']);
+    }
+
+    public function testPackageLifecycleActionRequiresWriteApiKey(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apipkgreadonly');
+        $this->upsertPackage('api-package-readonly', ExtensionPackageStatus::Inactive);
+
+        $client->request('POST', '/api/v1/admin/packages/api-package-readonly/activate', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
     public function testOpenApiIncludesPackagesEndpoint(): void
     {
         $client = self::createClient();
@@ -69,23 +124,27 @@ final class ApiPackageControllerTest extends WebTestCase
         $payload = $this->jsonPayload($client->getResponse()->getContent());
         self::assertArrayHasKey('/packages', $payload['paths']);
         self::assertArrayHasKey('/admin/packages', $payload['paths']);
+        self::assertArrayHasKey('/admin/packages/{package_slug}', $payload['paths']);
+        self::assertArrayHasKey('/admin/packages/{package_slug}/activate', $payload['paths']);
         self::assertSame('listPackageApiEndpoints', $payload['paths']['/packages']['get']['operationId']);
         self::assertSame([], $payload['paths']['/packages']['get']['security']);
         self::assertSame('listPackages', $payload['paths']['/admin/packages']['get']['operationId']);
+        self::assertSame('getPackage', $payload['paths']['/admin/packages/{package_slug}']['get']['operationId']);
+        self::assertSame('packageActivate', $payload['paths']['/admin/packages/{package_slug}/activate']['post']['operationId']);
     }
 
-    private function createPlainApiKey(string $prefix): string
+    private function createPlainApiKey(string $prefix, ApiKeyStatus $status = ApiKeyStatus::ReadOnly): string
     {
         $user = $this->createUserWithLevel(AccessLevel::ADMIN, $prefix.'user', 'current-password');
         $vault = self::getContainer()->get(ApiKeyVault::class);
         $plainKey = $vault->generatePlainKey($prefix);
         $apiKey = new ApiKey(
-            '68000000-0000-7000-8000-'.substr(md5($prefix), 0, 12),
+            '68000000-0000-7000-8000-'.substr(md5($prefix.$status->value), 0, 12),
             $prefix,
             $vault->hmac($plainKey),
             $vault->encrypt($plainKey, $prefix),
             $user,
-            ApiKeyStatus::ReadOnly,
+            $status,
         );
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -93,6 +152,31 @@ final class ApiPackageControllerTest extends WebTestCase
         $entityManager->flush();
 
         return $plainKey;
+    }
+
+    private function upsertPackage(string $packageName, ExtensionPackageStatus $status): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $existing = $entityManager->getRepository(ExtensionPackage::class)->findOneBy(['packageName' => $packageName]);
+        if ($existing instanceof ExtensionPackage) {
+            $entityManager->remove($existing);
+            $entityManager->flush();
+        }
+
+        $entityManager->persist(new ExtensionPackage(
+            '69000000-0000-7000-8000-'.substr(md5($packageName), 0, 12),
+            [PackageScope::Module],
+            $packageName,
+            'packages/'.$packageName,
+            $status,
+            [
+                'display_name' => ucfirst(str_replace('-', ' ', $packageName)),
+                'description' => 'API package fixture',
+                'author' => 'Test Suite',
+            ],
+            manifestVersion: '1.0.0',
+        ));
+        $entityManager->flush();
     }
 
     /**

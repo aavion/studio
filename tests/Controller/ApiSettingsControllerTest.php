@@ -54,6 +54,25 @@ final class ApiSettingsControllerTest extends WebTestCase
         $payload = $this->jsonPayload($client->getResponse()->getContent());
         self::assertGreaterThan(0, $payload['meta']['count']);
 
+        $general = $this->resourceById($payload['data'], 'general');
+        self::assertSame('settings_section', $general['type']);
+        self::assertSame('/api/v1/admin/settings/general', $general['attributes']['path']);
+        self::assertGreaterThan(0, $general['attributes']['field_count']);
+    }
+
+    public function testSettingsSectionReturnsAdministrativeFieldsForAdminApiKeys(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadOnly, 'apisetsec', AccessLevel::ADMIN);
+
+        $client->request('GET', '/api/v1/admin/settings/general', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('general', $payload['meta']['section']);
+
         $siteTitle = $this->resourceById($payload['data'], 'site.title');
         self::assertSame('setting', $siteTitle['type']);
         self::assertSame('general', $siteTitle['attributes']['section']);
@@ -70,7 +89,9 @@ final class ApiSettingsControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $payload = $this->jsonPayload($client->getResponse()->getContent());
         self::assertArrayHasKey('/admin/settings', $payload['paths']);
-        self::assertSame('listSettings', $payload['paths']['/admin/settings']['get']['operationId']);
+        self::assertArrayHasKey('/admin/settings/{section}', $payload['paths']);
+        self::assertSame('listSettingsSections', $payload['paths']['/admin/settings']['get']['operationId']);
+        self::assertSame('listSettingsSection', $payload['paths']['/admin/settings/{section}']['get']['operationId']);
         self::assertArrayNotHasKey('security', $payload['paths']['/admin/settings']['get']);
     }
 
