@@ -101,6 +101,7 @@ final class OpenApiDocumentFactoryTest extends TestCase
         self::assertSame('#/components/headers/CorrelationId', $statusOperation['responses']['200']['headers']['X-Correlation-ID']['$ref']);
         self::assertSame('#/components/schemas/ApiDataEnvelope', $statusOperation['responses']['200']['content']['application/json']['schema']['$ref']);
         self::assertSame('#/components/headers/RequestId', $document['components']['responses']['Unauthorized']['headers']['X-Request-ID']['$ref']);
+        self::assertSame('getApiRoot', $document['paths']['/']['get']['operationId']);
     }
 
     private function provider(): ApiEndpointProviderInterface
@@ -109,6 +110,16 @@ final class OpenApiDocumentFactoryTest extends TestCase
             public function apiEndpoints(): array
             {
                 return [
+                    new ApiEndpointDefinition(
+                        'system',
+                        'GET',
+                        '/api/v1',
+                        'api_v1_root',
+                        'getApiRoot',
+                        'Root.',
+                        tags: ['system-api'],
+                        allowPublic: true,
+                    ),
                     new ApiEndpointDefinition(
                         'system',
                         'GET',

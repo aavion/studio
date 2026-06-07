@@ -158,7 +158,7 @@ final readonly class ApiEndpointDefinition
 
     private function assertPath(string $path): void
     {
-        if (!str_starts_with($path, '/api/v1/')) {
+        if ('/api/v1' !== $path && !str_starts_with($path, '/api/v1/')) {
             throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_PATH_INVALID, [
                 '%path%' => $path,
             ]);

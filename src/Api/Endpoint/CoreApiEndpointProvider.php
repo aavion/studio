@@ -14,6 +14,16 @@ final readonly class CoreApiEndpointProvider implements ApiEndpointProviderInter
             new ApiEndpointDefinition(
                 'system',
                 Request::METHOD_GET,
+                '/api/v1',
+                'api_v1_root',
+                'getApiRoot',
+                'Return top-level API navigation links visible to the current actor.',
+                tags: ['system-api'],
+                allowPublic: true,
+            ),
+            new ApiEndpointDefinition(
+                'system',
+                Request::METHOD_GET,
                 '/api/v1/openapi.json',
                 'api_v1_openapi',
                 'getOpenApiDocument',

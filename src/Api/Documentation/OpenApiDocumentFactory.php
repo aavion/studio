@@ -306,6 +306,10 @@ final readonly class OpenApiDocumentFactory
 
     private function relativePath(ApiEndpointDefinition $endpoint): string
     {
+        if ('/api/v1' === $endpoint->path()) {
+            return '/';
+        }
+
         return substr($endpoint->path(), strlen('/api/v1'));
     }
 

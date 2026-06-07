@@ -19,6 +19,51 @@ final class ApiFoundationControllerTest extends WebTestCase
 {
     use UserControllerFixtureTrait;
 
+    public function testRootListsPublicTopLevelApiNavigation(): void
+    {
+        $client = self::createClient();
+
+        $client->request('GET', '/api/v1');
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api_navigation', $payload['data']['type']);
+        self::assertSame('/api/v1', $payload['data']['attributes']['path']);
+
+        $paths = array_map(
+            static fn (array $resource): string => $resource['attributes']['path'],
+            $payload['data']['attributes']['children'],
+        );
+
+        self::assertContains('/api/v1/status', $paths);
+        self::assertContains('/api/v1/openapi.json', $paths);
+        self::assertContains('/api/v1/content', $paths);
+        self::assertContains('/api/v1/packages', $paths);
+        self::assertNotContains('/api/v1/admin', $paths);
+        self::assertNotContains('/api/v1/user', $paths);
+    }
+
+    public function testRootListsPrivateTopLevelApiNavigationForApiKeys(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadOnly, 'apirootnav', AccessLevel::ADMIN);
+
+        $client->request('GET', '/api/v1', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        $paths = array_map(
+            static fn (array $resource): string => $resource['attributes']['path'],
+            $payload['data']['attributes']['children'],
+        );
+
+        self::assertContains('/api/v1/admin', $paths);
+        self::assertContains('/api/v1/user', $paths);
+        self::assertContains('/api/v1/schemas', $paths);
+    }
+
     public function testStatusAllowsPublicReadAccess(): void
     {
         $client = self::createClient();
@@ -152,9 +197,11 @@ final class ApiFoundationControllerTest extends WebTestCase
         self::assertSame(['name' => 'MIT', 'identifier' => 'MIT'], $payload['info']['license']);
         self::assertSame([['name' => 'current', 'url' => '/api/v1']], $payload['servers']);
         self::assertContains(['name' => 'system-status', 'summary' => 'System Status', 'description' => 'Status and healthcheck resources.', 'kind' => 'nav'], $payload['tags']);
+        self::assertArrayHasKey('/', $payload['paths']);
         self::assertArrayHasKey('/status', $payload['paths']);
         self::assertArrayHasKey('/openapi.json', $payload['paths']);
         self::assertArrayHasKey('/admin', $payload['paths']);
+        self::assertSame('getApiRoot', $payload['paths']['/']['get']['operationId']);
         self::assertSame('getApiStatus', $payload['paths']['/status']['get']['operationId']);
         self::assertSame([], $payload['paths']['/status']['get']['security']);
     }
