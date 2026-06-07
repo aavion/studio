@@ -16,6 +16,7 @@ final readonly class ApiCorsSubscriber implements EventSubscriberInterface
 {
     private const ALLOWED_METHODS = 'GET, HEAD, OPTIONS, POST, PUT, PATCH, DELETE';
     private const ALLOWED_HEADERS = 'Authorization, Content-Type, Accept, Accept-Language, X-Correlation-ID, X-Request-ID';
+    private const EXPOSED_HEADERS = 'X-Request-ID, X-Correlation-ID';
 
     public function __construct(private ApiFeaturePolicy $apiFeaturePolicy)
     {
@@ -108,6 +109,7 @@ final readonly class ApiCorsSubscriber implements EventSubscriberInterface
         $response->headers->set('Access-Control-Allow-Origin', $origin);
         $response->headers->set('Access-Control-Allow-Methods', self::ALLOWED_METHODS);
         $response->headers->set('Access-Control-Allow-Headers', self::ALLOWED_HEADERS);
+        $response->headers->set('Access-Control-Expose-Headers', self::EXPOSED_HEADERS);
         $response->headers->set('Access-Control-Max-Age', '600');
 
         if ('*' !== $origin) {

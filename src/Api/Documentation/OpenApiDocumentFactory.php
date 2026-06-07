@@ -62,6 +62,7 @@ final readonly class OpenApiDocumentFactory
                 'responses' => [
                     $successStatus => [
                         'description' => 'Successful response.',
+                        'headers' => $this->traceHeaders(),
                         'content' => [
                             'application/json' => [
                                 'schema' => $endpoint->responseSchema() ?? ['$ref' => '#/components/schemas/ApiDataEnvelope'],
@@ -102,8 +103,26 @@ final readonly class OpenApiDocumentFactory
                     'scheme' => 'bearer',
                 ],
             ],
+            'headers' => $this->headers(),
             'schemas' => $this->schemas(),
             'responses' => $this->responses(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function headers(): array
+    {
+        return [
+            'RequestId' => [
+                'description' => 'System-generated request identifier for support and log correlation.',
+                'schema' => ['type' => 'string'],
+            ],
+            'CorrelationId' => [
+                'description' => 'Validated inbound X-Correlation-ID or X-Request-ID value when supplied by the client.',
+                'schema' => ['type' => 'string'],
+            ],
         ];
     }
 
@@ -247,11 +266,23 @@ final readonly class OpenApiDocumentFactory
     {
         return [
             'description' => $description,
+            'headers' => $this->traceHeaders(),
             'content' => [
                 'application/json' => [
                     'schema' => ['$ref' => '#/components/schemas/ApiErrorEnvelope'],
                 ],
             ],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string, string>>
+     */
+    private function traceHeaders(): array
+    {
+        return [
+            'X-Request-ID' => ['$ref' => '#/components/headers/RequestId'],
+            'X-Correlation-ID' => ['$ref' => '#/components/headers/CorrelationId'],
         ];
     }
 

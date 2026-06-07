@@ -31,6 +31,7 @@ final class ApiCorsSubscriberTest extends TestCase
         self::assertSame(Response::HTTP_NO_CONTENT, $event->getResponse()->getStatusCode());
         self::assertSame('https://client.example', $event->getResponse()->headers->get('Access-Control-Allow-Origin'));
         self::assertStringContainsString('Authorization', (string) $event->getResponse()->headers->get('Access-Control-Allow-Headers'));
+        self::assertSame('X-Request-ID, X-Correlation-ID', $event->getResponse()->headers->get('Access-Control-Expose-Headers'));
         self::assertSame('Origin', $event->getResponse()->headers->get('Vary'));
     }
 
@@ -57,6 +58,7 @@ final class ApiCorsSubscriberTest extends TestCase
         $this->subscriber(['https://client.example'])->onKernelResponse($event);
 
         self::assertSame('https://client.example', $response->headers->get('Access-Control-Allow-Origin'));
+        self::assertSame('X-Request-ID, X-Correlation-ID', $response->headers->get('Access-Control-Expose-Headers'));
         self::assertSame('Origin', $response->headers->get('Vary'));
     }
 

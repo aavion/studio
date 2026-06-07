@@ -87,13 +87,18 @@ final class OpenApiDocumentFactoryTest extends TestCase
         self::assertArrayHasKey('ApiErrorEnvelope', $document['components']['schemas']);
         self::assertArrayHasKey('ApiMessage', $document['components']['schemas']);
         self::assertArrayHasKey('ApiMutationReview', $document['components']['schemas']);
+        self::assertArrayHasKey('RequestId', $document['components']['headers']);
+        self::assertArrayHasKey('CorrelationId', $document['components']['headers']);
         self::assertArrayHasKey('ServiceUnavailable', $document['components']['responses']);
 
         $statusOperation = $document['paths']['/status']['get'];
         self::assertSame([], $statusOperation['security']);
         self::assertSame('#/components/responses/Unauthorized', $statusOperation['responses']['401']['$ref']);
         self::assertSame('#/components/responses/ServiceUnavailable', $statusOperation['responses']['503']['$ref']);
+        self::assertSame('#/components/headers/RequestId', $statusOperation['responses']['200']['headers']['X-Request-ID']['$ref']);
+        self::assertSame('#/components/headers/CorrelationId', $statusOperation['responses']['200']['headers']['X-Correlation-ID']['$ref']);
         self::assertSame('#/components/schemas/ApiDataEnvelope', $statusOperation['responses']['200']['content']['application/json']['schema']['$ref']);
+        self::assertSame('#/components/headers/RequestId', $document['components']['responses']['Unauthorized']['headers']['X-Request-ID']['$ref']);
     }
 
     private function provider(): ApiEndpointProviderInterface
