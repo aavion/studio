@@ -123,7 +123,11 @@ final class AdminUserController extends AbstractController
 
         $user = $this->userByUsername($username);
 
-        if (!$user instanceof UserAccount || DeletedUserCleanup::DELETED_USER_UID === $user->uid()) {
+        if (
+            !$user instanceof UserAccount
+            || DeletedUserCleanup::DELETED_USER_UID === $user->uid()
+            || UserAccountStatus::Deleted === $user->status()
+        ) {
             return $this->httpError->notFound($request);
         }
 
@@ -159,7 +163,11 @@ final class AdminUserController extends AbstractController
 
         $user = $this->userByUsername($username);
 
-        if (!$user instanceof UserAccount || DeletedUserCleanup::DELETED_USER_UID === $user->uid()) {
+        if (
+            !$user instanceof UserAccount
+            || DeletedUserCleanup::DELETED_USER_UID === $user->uid()
+            || UserAccountStatus::Deleted === $user->status()
+        ) {
             return $this->httpError->notFound($request);
         }
 

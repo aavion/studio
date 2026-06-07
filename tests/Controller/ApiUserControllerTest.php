@@ -74,6 +74,31 @@ final class ApiUserControllerTest extends WebTestCase
         self::assertSame('apiuserdetail', $payload['data']['attributes']['username']);
     }
 
+    public function testUserDetailRejectsRetainedDeletedUsers(): void
+    {
+        $client = self::createClient();
+        $target = $this->createUserWithLevel(AccessLevel::AUTHOR, 'apiuserdeleted', 'current-password');
+        $target->changeStatus(UserAccountStatus::Deleted);
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
+        $plainKey = $this->createPlainApiKey('apiuserdeladm');
+        $writeKey = $this->createPlainApiKey('apiuserdelwr', ApiKeyStatus::ReadWrite);
+
+        $client->request('GET', '/api/v1/admin/users/items/'.$target->username(), server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseStatusCodeSame(404);
+
+        $client->request('PATCH', '/api/v1/admin/users/items/'.$target->username(), server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$writeKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'status' => 'active',
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
     public function testUserCanBePatchedWithReadWriteAdminApiKeys(): void
     {
         $client = self::createClient();

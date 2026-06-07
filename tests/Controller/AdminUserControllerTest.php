@@ -207,6 +207,35 @@ final class AdminUserControllerTest extends WebTestCase
         }
     }
 
+    public function testRetainedDeletedUsersAreRejectedByNormalDetailRoutes(): void
+    {
+        $client = self::createClient();
+        $this->loginTestUser($client, $this->adminUser());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $user = $this->createUser('deletednormal', UserAccountStatus::Active);
+        $this->markDeletedAt($user, 'status-admin', '2026-05-10 10:00:00');
+
+        try {
+            $client->request('GET', '/admin/users/details/'.$user->username());
+            self::assertResponseStatusCodeSame(404);
+
+            $client->request('POST', '/admin/users/details/'.$user->username().'/password-reset');
+            self::assertResponseStatusCodeSame(404);
+        } finally {
+            $managedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+            if ($managedUser instanceof UserAccount) {
+                $entityManager->remove($managedUser);
+            }
+
+            $entityManager->getConnection()->delete('state_marker', [
+                'subject_type' => StateSubjectType::USER_ACCOUNT,
+                'subject_uid' => $user->uid(),
+            ]);
+            $entityManager->flush();
+        }
+    }
+
     public function testDeletedUserCleanupUsesLatestDeletionMarkerForRetention(): void
     {
         $client = self::createClient();

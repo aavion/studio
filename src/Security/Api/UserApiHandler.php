@@ -126,7 +126,11 @@ final readonly class UserApiHandler implements ApiEndpointHandlerInterface
     private function user(string $username): ?UserAccount
     {
         $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
-        if (!$user instanceof UserAccount || DeletedUserCleanup::DELETED_USER_UID === $user->uid()) {
+        if (
+            !$user instanceof UserAccount
+            || DeletedUserCleanup::DELETED_USER_UID === $user->uid()
+            || UserAccountStatus::Deleted === $user->status()
+        ) {
             return null;
         }
 
