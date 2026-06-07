@@ -26,10 +26,20 @@ final readonly class LocalePreferenceResolver
         return $this->localization->availableLanguages();
     }
 
-    public function resolveRequestLocale(?string $urlLocale, ?UserAccount $user, ?string $sessionLocale): ?string
+    public function resolveRequestLocale(
+        ?string $urlLocale,
+        ?UserAccount $user,
+        ?string $sessionLocale,
+        ?string $preferredLocale = null,
+    ): ?string
     {
         return $this->firstSupported($urlLocale)
-            ?? $this->firstSupportedLenient($this->userPreference($user), $sessionLocale, $this->defaultLocale());
+            ?? $this->firstSupportedLenient(
+                $sessionLocale,
+                $this->userPreference($user),
+                $preferredLocale,
+                $this->defaultLocale(),
+            );
     }
 
     public function resolveMailLocale(?UserAccount $user = null, ?string $requestLocale = null): string

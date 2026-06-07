@@ -26,7 +26,7 @@ final class RequestLocaleSubscriberTest extends TestCase
 {
     public function testItAppliesConfiguredDefaultLanguage(): void
     {
-        $request = Request::create('/admin');
+        $request = Request::create('/admin', server: ['HTTP_ACCEPT_LANGUAGE' => '']);
         $subscriber = $this->subscriber($this->localization('de'), new TokenStorage());
 
         $subscriber->onKernelRequest($this->event($request));
@@ -36,7 +36,7 @@ final class RequestLocaleSubscriberTest extends TestCase
 
     public function testItPrefersUserLanguageOverConfiguredDefault(): void
     {
-        $request = Request::create('/admin');
+        $request = Request::create('/admin', server: ['HTTP_ACCEPT_LANGUAGE' => '']);
         $tokenStorage = new TokenStorage();
         $tokenStorage->setToken(new UsernamePasswordToken(new UserAccount(
             '77777777-7777-7777-8777-777777777777',
@@ -74,7 +74,7 @@ final class RequestLocaleSubscriberTest extends TestCase
 
     public function testItIgnoresUnsupportedUserLanguageAndUsesSessionLanguage(): void
     {
-        $request = Request::create('/admin');
+        $request = Request::create('/admin', server: ['HTTP_ACCEPT_LANGUAGE' => '']);
         $session = new Session(new MockArraySessionStorage());
         $session->set('_locale', 'de');
         $request->setSession($session);
@@ -85,6 +85,28 @@ final class RequestLocaleSubscriberTest extends TestCase
             'stale-locale@example.test',
             'hash',
             settings: ['language' => 'fr'],
+        ), 'main'));
+
+        $subscriber = $this->subscriber($this->localization('en'), $tokenStorage);
+
+        $subscriber->onKernelRequest($this->event($request));
+
+        self::assertSame('de', $request->getLocale());
+    }
+
+    public function testItKeepsSessionLanguageBeforeUserLanguage(): void
+    {
+        $request = Request::create('/admin', server: ['HTTP_ACCEPT_LANGUAGE' => '']);
+        $session = new Session(new MockArraySessionStorage());
+        $session->set('_locale', 'de');
+        $request->setSession($session);
+        $tokenStorage = new TokenStorage();
+        $tokenStorage->setToken(new UsernamePasswordToken(new UserAccount(
+            '77777777-7777-7777-8777-777777777782',
+            'sessionprefuser',
+            'session-pref@example.test',
+            'hash',
+            settings: ['language' => 'en'],
         ), 'main'));
 
         $subscriber = $this->subscriber($this->localization('en'), $tokenStorage);
@@ -105,6 +127,48 @@ final class RequestLocaleSubscriberTest extends TestCase
         $subscriber->onKernelRequest($this->event($request));
 
         self::assertSame('de', $request->getLocale());
+    }
+
+    public function testItKeepsSessionLanguageBeforeAcceptLanguage(): void
+    {
+        $request = Request::create('/admin', server: ['HTTP_ACCEPT_LANGUAGE' => 'de-DE, en;q=0.7']);
+        $session = new Session(new MockArraySessionStorage());
+        $session->set('_locale', 'en');
+        $request->setSession($session);
+        $subscriber = $this->subscriber($this->localization('en'), new TokenStorage());
+
+        $subscriber->onKernelRequest($this->event($request));
+
+        self::assertSame('en', $request->getLocale());
+    }
+
+    public function testItUsesAcceptLanguageBeforeConfiguredDefault(): void
+    {
+        $request = Request::create('/admin', server: ['HTTP_ACCEPT_LANGUAGE' => 'de-DE, en;q=0.7']);
+        $subscriber = $this->subscriber($this->localization('en'), new TokenStorage());
+
+        $subscriber->onKernelRequest($this->event($request));
+
+        self::assertSame('de', $request->getLocale());
+    }
+
+    public function testItKeepsUserLanguageBeforeAcceptLanguage(): void
+    {
+        $request = Request::create('/admin', server: ['HTTP_ACCEPT_LANGUAGE' => 'de-DE, en;q=0.7']);
+        $tokenStorage = new TokenStorage();
+        $tokenStorage->setToken(new UsernamePasswordToken(new UserAccount(
+            '77777777-7777-7777-8777-777777777781',
+            'headerprefuser',
+            'header-pref@example.test',
+            'hash',
+            settings: ['language' => 'en'],
+        ), 'main'));
+
+        $subscriber = $this->subscriber($this->localization('de'), $tokenStorage);
+
+        $subscriber->onKernelRequest($this->event($request));
+
+        self::assertSame('en', $request->getLocale());
     }
 
     public function testItPrefersLanguageQueryOverUserLanguage(): void
