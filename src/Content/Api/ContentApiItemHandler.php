@@ -12,8 +12,8 @@ use App\Api\Http\ApiRequestContext;
 use App\Api\Http\ApiResponder;
 use App\Content\Read\PublishedContentResolver;
 use App\Content\Read\PublishedContentResolveStatus;
-use App\Core\Message\Message;
 use App\Core\Access\AccessActor;
+use App\Core\Message\Message;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -83,7 +83,7 @@ final readonly class ContentApiItemHandler implements ApiEndpointHandlerInterfac
 
         if (null !== $view) {
             return $this->responder->data($this->readModel->viewResource($view), meta: [
-                'messages' => array_map(static fn (Message $message): array => $message->toArray(), $result->messages()),
+                'messages' => $this->responder->messages($result->messages(), $request),
             ]);
         }
 
@@ -157,6 +157,6 @@ final readonly class ContentApiItemHandler implements ApiEndpointHandlerInterfac
             return $language;
         }
 
-        return $request->getPreferredLanguage() ?? '';
+        return $request->getLocale();
     }
 }

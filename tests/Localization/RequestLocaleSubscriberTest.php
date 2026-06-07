@@ -107,6 +107,35 @@ final class RequestLocaleSubscriberTest extends TestCase
         self::assertSame('de', $request->getLocale());
     }
 
+    public function testItPrefersLanguageQueryOverUserLanguage(): void
+    {
+        $request = Request::create('/api/v1/content/items', 'GET', ['language' => 'de']);
+        $tokenStorage = new TokenStorage();
+        $tokenStorage->setToken(new UsernamePasswordToken(new UserAccount(
+            '77777777-7777-7777-8777-777777777780',
+            'apiuserlocale',
+            'api-locale@example.test',
+            'hash',
+            settings: ['language' => 'en'],
+        ), 'api'));
+
+        $subscriber = $this->subscriber($this->localization('en'), $tokenStorage);
+
+        $subscriber->onKernelRequest($this->event($request));
+
+        self::assertSame('de', $request->getLocale());
+    }
+
+    public function testItPrefersLanguageQueryOverSupportedUrlLocale(): void
+    {
+        $request = Request::create('/en/articles', 'GET', ['language' => 'de']);
+        $subscriber = $this->subscriber($this->localization('en', routePrefixesEnabled: true), new TokenStorage());
+
+        $subscriber->onKernelRequest($this->event($request));
+
+        self::assertSame('de', $request->getLocale());
+    }
+
     private function localization(string $defaultLanguage, bool $routePrefixesEnabled = false): ContentRouteLocalization
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);

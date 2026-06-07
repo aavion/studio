@@ -38,6 +38,33 @@ final readonly class ApiResponder
     }
 
     /**
+     * @return array{level: string, code: string, translation_key: string, message: string, parameters: array<string, mixed>, context: array<string, mixed>}
+     */
+    public function message(Message $message, ?Request $request = null): array
+    {
+        return [
+            ...$message->toArray(),
+            'message' => $this->translatedMessage($message, $request),
+        ];
+    }
+
+    /**
+     * @param iterable<Message> $messages
+     *
+     * @return list<array{level: string, code: string, translation_key: string, message: string, parameters: array<string, mixed>, context: array<string, mixed>}>
+     */
+    public function messages(iterable $messages, ?Request $request = null): array
+    {
+        $payload = [];
+
+        foreach ($messages as $message) {
+            $payload[] = $this->message($message, $request);
+        }
+
+        return $payload;
+    }
+
+    /**
      * @param array<string, mixed> $context
      * @param array<string, string> $headers
      */
@@ -52,11 +79,7 @@ final readonly class ApiResponder
             'status' => $status,
             'code' => $message->code(),
             'message_key' => $message->translationKey(),
-            'message' => $this->translator->trans(
-                $message->translationKey(),
-                $message->parameters(),
-                locale: $request?->getLocale(),
-            ),
+            'message' => $this->translatedMessage($message, $request),
         ];
 
         if ([] !== $message->parameters()) {
@@ -69,5 +92,25 @@ final readonly class ApiResponder
         }
 
         return $this->json->render(['error' => $error], $status, $headers);
+    }
+
+    private function translatedMessage(Message $message, ?Request $request): string
+    {
+        return $this->translator->trans(
+            $message->translationKey(),
+            $message->parameters(),
+            locale: $this->responseLocale($request),
+        );
+    }
+
+    private function responseLocale(?Request $request): ?string
+    {
+        $language = $request?->query->get('language');
+
+        if (is_string($language) && '' !== trim($language)) {
+            return trim($language);
+        }
+
+        return $request?->getLocale();
     }
 }

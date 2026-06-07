@@ -42,6 +42,28 @@ final class ApiContentItemControllerTest extends WebTestCase
         self::assertSame(self::KAEL_PATH.'/revisions', $payload['data']['links']['revisions']);
     }
 
+    public function testContentItemDetailUsesApiUserLanguageWhenLanguageQueryIsMissing(): void
+    {
+        $client = self::createClient();
+        $this->createContentTree();
+        $plainKey = $this->createPlainApiKey('apicontentlang', AccessLevel::USER, ApiKeyStatus::ReadOnly);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $user = $entityManager->getRepository(\App\Entity\UserAccount::class)->findOneBy(['username' => 'apicontentlanguser']);
+        self::assertInstanceOf(\App\Entity\UserAccount::class, $user);
+        $user->updateSettings(['language' => 'de']);
+        $entityManager->flush();
+
+        $client->request('GET', self::KAEL_PATH.'/variants/before-t17', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('de', $payload['data']['attributes']['language']);
+        self::assertSame('Kael Mercer vor T17', $payload['data']['attributes']['fields']['name']);
+    }
+
     public function testContentItemNavigationListsChildrenVariantsAndVersions(): void
     {
         $client = self::createClient();
@@ -76,6 +98,7 @@ final class ApiContentItemControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(501);
         $payload = $this->jsonPayload($client->getResponse()->getContent());
         self::assertSame('api.operation_not_implemented', $payload['error']['code']);
+        self::assertSame('API-Operation "readContentVersion" ist registriert, aber noch nicht implementiert.', $payload['error']['message']);
         self::assertSame('readContentVersion', $payload['error']['context']['operation']);
 
         $client->request('GET', self::KAEL_PATH.'/revisions/1');

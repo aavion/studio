@@ -97,13 +97,14 @@ final class ApiFoundationControllerTest extends WebTestCase
     public function testStatusRejectsInvalidBearerApiKey(): void
     {
         $client = self::createClient();
-        $client->request('GET', '/api/v1/status', server: [
+        $client->request('GET', '/api/v1/status', ['language' => 'de'], server: [
             'HTTP_AUTHORIZATION' => 'Bearer missing.invalid',
         ]);
 
         self::assertResponseStatusCodeSame(401);
         $payload = $this->jsonPayload($client->getResponse()->getContent());
         self::assertSame('api_key.authentication_failed', $payload['error']['code']);
+        self::assertSame('API-Key-Authentifizierung fehlgeschlagen.', $payload['error']['message']);
     }
 
     public function testStatusAcceptsReadOnlyBearerApiKey(): void
