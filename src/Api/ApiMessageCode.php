@@ -15,6 +15,7 @@ final class ApiMessageCode
     public const API_ENDPOINT_SUMMARY_EMPTY = 'api.endpoint_summary_empty';
     public const API_ENDPOINT_SUCCESS_STATUS_INVALID = 'api.endpoint_success_status_invalid';
     public const API_ENDPOINT_NOT_FOUND = 'api.endpoint_not_found';
+    public const API_OPERATION_NOT_IMPLEMENTED = 'api.operation_not_implemented';
     public const API_UNAVAILABLE_SETUP_INCOMPLETE = 'api.unavailable_setup_incomplete';
     public const API_UNAVAILABLE_DATABASE = 'api.unavailable_database';
     public const API_UNAVAILABLE_MAINTENANCE = 'api.unavailable_maintenance';

@@ -119,6 +119,8 @@ services:
         arguments:
             $handlers: !tagged_iterator { tag: system.api_endpoint_handler }
 
+    App\Content\Api\ContentApiPath: ~
+
     App\Core\Package\PackageTranslationNamespaceValidator:
         arguments:
             $fallbackLocale: '%kernel.default_locale%'

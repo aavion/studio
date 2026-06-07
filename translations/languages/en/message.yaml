@@ -204,6 +204,8 @@ message:
       summary_empty: 'API endpoint summary must not be empty.'
       success_status_invalid: 'API endpoint success status %status% must be a 2xx HTTP status code.'
       not_found: 'No API endpoint is registered for this path and method.'
+    operation:
+      not_implemented: 'API operation "%operation%" is registered but not implemented yet.'
     unavailable:
       setup_incomplete: 'The API is unavailable until setup has been completed.'
       database: 'The API is temporarily unavailable because database access failed.'

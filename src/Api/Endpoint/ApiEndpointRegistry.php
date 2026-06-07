@@ -65,7 +65,7 @@ final readonly class ApiEndpointRegistry
     public function endpointForPath(string $path, string $method): ?ApiEndpointDefinition
     {
         foreach ($this->endpoints() as $endpoint) {
-            if ($endpoint->path() !== $path) {
+            if (!$endpoint->matchesPath($path)) {
                 continue;
             }
 

@@ -31,6 +31,7 @@ final readonly class ApiEndpointDefinition
         private ?array $responseSchema = null,
         private int $successStatus = 200,
         private bool $allowPublic = false,
+        private ?string $pathPattern = null,
     ) {
         $this->assertOwner($owner);
         $this->assertMethod($method);
@@ -40,6 +41,7 @@ final readonly class ApiEndpointDefinition
         $this->assertHandlerKey($handlerKey);
         $this->assertSummary($summary);
         $this->assertSuccessStatus($successStatus);
+        $this->assertPathPattern($pathPattern);
     }
 
     public function owner(): string
@@ -119,6 +121,15 @@ final readonly class ApiEndpointDefinition
         return $this->allowPublic;
     }
 
+    public function matchesPath(string $path): bool
+    {
+        if ($this->path === $path) {
+            return true;
+        }
+
+        return null !== $this->pathPattern && 1 === preg_match($this->pathPattern, $path);
+    }
+
     private function assertOwner(string $owner): void
     {
         if (1 !== preg_match('/^[a-z0-9][a-z0-9_-]{1,158}[a-z0-9]$/', $owner)) {
@@ -193,6 +204,19 @@ final readonly class ApiEndpointDefinition
         if ($status < 200 || $status > 299) {
             throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_SUCCESS_STATUS_INVALID, [
                 '%status%' => $status,
+            ]);
+        }
+    }
+
+    private function assertPathPattern(?string $pattern): void
+    {
+        if (null === $pattern) {
+            return;
+        }
+
+        if (false === @preg_match($pattern, '')) {
+            throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_PATH_INVALID, [
+                '%path%' => $pattern,
             ]);
         }
     }

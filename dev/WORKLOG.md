@@ -62,6 +62,7 @@
 - ! Keep Symfony service discovery narrow so DTOs, value objects, messages, events, enums, and other non-services do not bloat the container.
 - [ ] Finish the visual design-system pass and first release-readiness verification shape in the UI/UX follow-up.
 - [ ] Add portable read-model/index strategy when JSON-held values such as localized titles need frequent list-view filtering or sorting across MariaDB/MySQL, SQLite, and PostgreSQL.
+- [ ] Editor/API follow-up: when the final content/editor model lands, replace provisional API content list filtering with a domain-owned actor-aware content list/read resolver covering canonical paths, language, variants, optional version selection, pagination, filtering, and sorting.
 - [ ] Before production readiness, review public package/developer-facing class, interface, function, and Twig helper names for clarity and ergonomics; decide whether to rename directly or provide stable aliases so extension APIs read as intentional rather than provisional.
 - [x] API branch planning: before implementation, turn `dev/draft/0.4.x-ApiLayer.md` into a concrete endpoint/resource plan covering initial read/write scope, API-key method gating, response DTOs, error envelope, pagination, filtering, sorting, audit signals, and tests.
 - [ ] Audit follow-up: add a durable package lifecycle operation journal/coordinator for multi-step activation, deactivation, install, rollback, and cleanup flows.
@@ -86,6 +87,9 @@
 - Added the second API foundation endpoint baseline with admin read endpoints for themes, scheduler, backups, operations, logs, statistics, user groups, and user reviews, plus content navigation, ACL-aware published content item metadata, and author-level schema metadata including custom Twig while deferring mutations and deep editor/content workflows.
 - Shared the existing content read ACL policy between public content resolution and API content item lists so role-or-group view rules and additional group restrictions stay domain-owned and covered by API functional tests.
 - Hardened API endpoint registration with a registry wiring test that fails on missing definition-backed handlers, duplicate method/path pairs, or duplicate OpenAPI operation IDs.
+- Added deterministic content item detail paths with standardized child (`items`), variant (`variants`), and revision (`revisions`) navigation, plus stable `501` content mutation command stubs for create, edit, delete, publish/unpublish, revision publish/unpublish, and variant create/edit/delete until the Editor/Content domain services land.
+- Reserved content collection query parameters, revision detail reads, and validate/diff command stubs so the Editor/Content slice can add optimistic locking, automatic pre-persist validation, structured OK/WARN/FAIL feedback, and missing-reference warnings without reshaping the API surface.
+- Recorded Sanity as a broad content/editor/API workflow reference while keeping Studio web-editor-first and requiring API/LLM workflows to reuse the same content validation, revision, diff, conflict, audit, and publish services.
 
 ### 2026-06-06
 - Cleaned up working directory for next feature slice
