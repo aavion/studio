@@ -76,6 +76,7 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-07
+- Added setup seed defaults for the new API settings so fresh installations persist API enabled, CORS disabled, and no allowed CORS origins while runtime config fallback remains sourced from the central core settings registry.
 - Added stable `error.details.fields` output for API validation failures while preserving existing Message-layer context, so clients can consume field errors without parsing generic context payloads.
 - Hardened generated OpenAPI contracts with reusable data/error/message/link/pagination/mutation-review/operation-start schemas plus shared 400/401/403/404/409/422/503 JSON error responses referenced by every registered endpoint.
 - Implemented config-driven API CORS handling for `/api/v1/**`, including deterministic allowed-origin preflight responses and response headers for configured origins while keeping CORS disabled by default.

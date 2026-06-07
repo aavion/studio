@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Config;
 
+use App\Api\ApiFeaturePolicy;
 use App\Core\Config\Settings\CoreSettingDefinition;
 use App\Core\Config\Settings\CoreConfigDefaultProvider;
 use App\Core\Config\Settings\CoreSettingsRegistry;
@@ -25,6 +26,7 @@ final class CoreSettingsRegistryTest extends TestCase
         $users = $registry->definitions('users');
         $security = $registry->definitions('security');
         $statistics = $registry->definitions('statistics');
+        $api = $registry->definitions('api');
 
         self::assertSame([
             'site.title',
@@ -67,6 +69,15 @@ final class CoreSettingsRegistryTest extends TestCase
         ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $statistics));
         self::assertTrue($statistics[0]->defaultValue());
         self::assertTrue($statistics[1]->defaultValue());
+
+        self::assertSame([
+            ApiFeaturePolicy::ENABLED_KEY,
+            ApiFeaturePolicy::CORS_ENABLED_KEY,
+            ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY,
+        ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $api));
+        self::assertTrue($api[0]->defaultValue());
+        self::assertFalse($api[1]->defaultValue());
+        self::assertSame([], $api[2]->defaultValue());
     }
 
     public function testItKeepsContentEditorSectionsOutOfTheAdminSettingsRegistry(): void
@@ -86,6 +97,9 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertSame('Studio', $provider->defaultValue('site.title'));
         self::assertSame('/home', $provider->defaultValue('content.home_path'));
         self::assertTrue($provider->defaultValue(AccessStatisticsPolicy::ENABLED_KEY));
+        self::assertTrue($provider->defaultValue(ApiFeaturePolicy::ENABLED_KEY));
+        self::assertFalse($provider->defaultValue(ApiFeaturePolicy::CORS_ENABLED_KEY));
+        self::assertSame([], $provider->defaultValue(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY));
         self::assertFalse($provider->hasDefault('security.captcha.preview'));
         self::assertNull($provider->defaultValue('security.captcha.preview'));
     }
