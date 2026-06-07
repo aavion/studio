@@ -41,14 +41,7 @@ final readonly class OpenApiDocumentFactory
             ],
             'tags' => $this->tags(),
             'paths' => $this->paths(),
-            'components' => [
-                'securitySchemes' => [
-                    'bearerAuth' => [
-                        'type' => 'http',
-                        'scheme' => 'bearer',
-                    ],
-                ],
-            ],
+            'components' => $this->components(),
         ];
     }
 
@@ -71,13 +64,11 @@ final readonly class OpenApiDocumentFactory
                         'description' => 'Successful response.',
                         'content' => [
                             'application/json' => [
-                                'schema' => $endpoint->responseSchema() ?? ['type' => 'object'],
+                                'schema' => $endpoint->responseSchema() ?? ['$ref' => '#/components/schemas/ApiDataEnvelope'],
                             ],
                         ],
                     ],
-                    '401' => ['description' => 'API key authentication failed.'],
-                    '403' => ['description' => 'The authenticated API key is not allowed to use this operation.'],
-                ],
+                ] + $this->standardErrorResponses(),
             ];
 
             if ($endpoint->allowsPublic()) {
@@ -97,6 +88,187 @@ final readonly class OpenApiDocumentFactory
         }
 
         return $paths;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function components(): array
+    {
+        return [
+            'securitySchemes' => [
+                'bearerAuth' => [
+                    'type' => 'http',
+                    'scheme' => 'bearer',
+                ],
+            ],
+            'schemas' => $this->schemas(),
+            'responses' => $this->responses(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function schemas(): array
+    {
+        return [
+            'ApiDataEnvelope' => [
+                'type' => 'object',
+                'required' => ['data'],
+                'properties' => [
+                    'data' => true,
+                    'meta' => ['$ref' => '#/components/schemas/ApiMeta'],
+                    'links' => ['$ref' => '#/components/schemas/ApiLinks'],
+                ],
+                'additionalProperties' => false,
+            ],
+            'ApiErrorEnvelope' => [
+                'type' => 'object',
+                'required' => ['error'],
+                'properties' => [
+                    'error' => ['$ref' => '#/components/schemas/ApiError'],
+                ],
+                'additionalProperties' => false,
+            ],
+            'ApiError' => [
+                'type' => 'object',
+                'required' => ['status', 'code', 'message_key', 'message'],
+                'properties' => [
+                    'status' => ['type' => 'integer', 'minimum' => 400, 'maximum' => 599],
+                    'code' => ['type' => 'string'],
+                    'message_key' => ['type' => 'string'],
+                    'message' => ['type' => 'string'],
+                    'parameters' => ['type' => 'object', 'additionalProperties' => true],
+                    'context' => ['type' => 'object', 'additionalProperties' => true],
+                    'details' => ['type' => 'object', 'additionalProperties' => true],
+                ],
+                'additionalProperties' => false,
+            ],
+            'ApiMessage' => [
+                'type' => 'object',
+                'required' => ['level', 'code', 'translation_key', 'message', 'parameters', 'context'],
+                'properties' => [
+                    'level' => ['type' => 'string', 'enum' => ['debug', 'info', 'success', 'warning', 'error']],
+                    'code' => ['type' => 'string'],
+                    'translation_key' => ['type' => 'string'],
+                    'message' => ['type' => 'string'],
+                    'parameters' => ['type' => 'object', 'additionalProperties' => true],
+                    'context' => ['type' => 'object', 'additionalProperties' => true],
+                ],
+                'additionalProperties' => false,
+            ],
+            'ApiMeta' => [
+                'type' => 'object',
+                'additionalProperties' => true,
+                'properties' => [
+                    'pagination' => ['$ref' => '#/components/schemas/ApiPagination'],
+                    'messages' => [
+                        'type' => 'array',
+                        'items' => ['$ref' => '#/components/schemas/ApiMessage'],
+                    ],
+                ],
+            ],
+            'ApiPagination' => [
+                'type' => 'object',
+                'properties' => [
+                    'page' => ['type' => 'integer', 'minimum' => 1],
+                    'per_page' => ['type' => 'integer', 'minimum' => 1],
+                    'total' => ['type' => 'integer', 'minimum' => 0],
+                    'page_count' => ['type' => 'integer', 'minimum' => 0],
+                ],
+                'additionalProperties' => false,
+            ],
+            'ApiLinks' => [
+                'type' => 'object',
+                'additionalProperties' => ['type' => 'string'],
+            ],
+            'ApiMutationReview' => [
+                'type' => 'object',
+                'required' => ['type', 'id', 'attributes'],
+                'properties' => [
+                    'type' => ['type' => 'string'],
+                    'id' => ['type' => 'string'],
+                    'attributes' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'status' => ['type' => 'string', 'enum' => ['ok', 'warn', 'fail', 'requires_confirmation']],
+                            'confirm_parameter' => ['type' => 'string'],
+                            'impact' => ['type' => 'object', 'additionalProperties' => true],
+                            'diff' => ['type' => 'object', 'additionalProperties' => true],
+                        ],
+                        'additionalProperties' => true,
+                    ],
+                    'links' => ['$ref' => '#/components/schemas/ApiLinks'],
+                ],
+                'additionalProperties' => false,
+            ],
+            'ApiOperationStart' => [
+                'type' => 'object',
+                'required' => ['type', 'id', 'attributes', 'links'],
+                'properties' => [
+                    'type' => ['type' => 'string'],
+                    'id' => ['type' => 'string'],
+                    'attributes' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'operation_id' => ['type' => 'string'],
+                            'status' => ['type' => 'string'],
+                        ],
+                        'additionalProperties' => true,
+                    ],
+                    'links' => ['$ref' => '#/components/schemas/ApiLinks'],
+                ],
+                'additionalProperties' => false,
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function responses(): array
+    {
+        return [
+            'BadRequest' => $this->errorResponse('The request body or parameters are invalid.'),
+            'Unauthorized' => $this->errorResponse('API key authentication failed.'),
+            'Forbidden' => $this->errorResponse('The authenticated actor is not allowed to use this operation.'),
+            'NotFound' => $this->errorResponse('The requested API resource does not exist.'),
+            'Conflict' => $this->errorResponse('The requested operation conflicts with the current resource state.'),
+            'ValidationFailed' => $this->errorResponse('The request did not pass validation.'),
+            'ServiceUnavailable' => $this->errorResponse('The API is temporarily unavailable.'),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function errorResponse(string $description): array
+    {
+        return [
+            'description' => $description,
+            'content' => [
+                'application/json' => [
+                    'schema' => ['$ref' => '#/components/schemas/ApiErrorEnvelope'],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string, string>>
+     */
+    private function standardErrorResponses(): array
+    {
+        return [
+            '400' => ['$ref' => '#/components/responses/BadRequest'],
+            '401' => ['$ref' => '#/components/responses/Unauthorized'],
+            '403' => ['$ref' => '#/components/responses/Forbidden'],
+            '404' => ['$ref' => '#/components/responses/NotFound'],
+            '409' => ['$ref' => '#/components/responses/Conflict'],
+            '422' => ['$ref' => '#/components/responses/ValidationFailed'],
+            '503' => ['$ref' => '#/components/responses/ServiceUnavailable'],
+        ];
     }
 
     private function relativePath(ApiEndpointDefinition $endpoint): string

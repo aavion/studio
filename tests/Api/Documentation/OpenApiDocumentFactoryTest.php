@@ -76,6 +76,26 @@ final class OpenApiDocumentFactoryTest extends TestCase
         ], $document['tags']);
     }
 
+    public function testItEmitsReusableSchemasAndStandardErrorResponses(): void
+    {
+        $document = (new OpenApiDocumentFactory(
+            new ApiEndpointRegistry([$this->provider()]),
+            new SystemPackageMetadataProvider(dirname(__DIR__, 3)),
+        ))->create();
+
+        self::assertArrayHasKey('ApiDataEnvelope', $document['components']['schemas']);
+        self::assertArrayHasKey('ApiErrorEnvelope', $document['components']['schemas']);
+        self::assertArrayHasKey('ApiMessage', $document['components']['schemas']);
+        self::assertArrayHasKey('ApiMutationReview', $document['components']['schemas']);
+        self::assertArrayHasKey('ServiceUnavailable', $document['components']['responses']);
+
+        $statusOperation = $document['paths']['/status']['get'];
+        self::assertSame([], $statusOperation['security']);
+        self::assertSame('#/components/responses/Unauthorized', $statusOperation['responses']['401']['$ref']);
+        self::assertSame('#/components/responses/ServiceUnavailable', $statusOperation['responses']['503']['$ref']);
+        self::assertSame('#/components/schemas/ApiDataEnvelope', $statusOperation['responses']['200']['content']['application/json']['schema']['$ref']);
+    }
+
     private function provider(): ApiEndpointProviderInterface
     {
         return new class implements ApiEndpointProviderInterface {
