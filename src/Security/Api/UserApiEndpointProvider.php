@@ -6,6 +6,8 @@ namespace App\Security\Api;
 
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointProviderInterface;
+use App\Api\Endpoint\ApiListQueryParameterDefinition;
+use App\Security\UserRole;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class UserApiEndpointProvider implements ApiEndpointProviderInterface
@@ -28,11 +30,11 @@ final readonly class UserApiEndpointProvider implements ApiEndpointProviderInter
                 self::HANDLER_USERS_INDEX,
                 ['backend-admin', 'backend-admin-users'],
                 parameters: [
-                    ['name' => 'q', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-                    ['name' => 'status', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-                    ['name' => 'role', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-                    ['name' => 'page', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'integer']],
-                    ['name' => 'per_page', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
+                    ApiListQueryParameterDefinition::search(),
+                    ApiListQueryParameterDefinition::choice('status', ['all', 'active', 'inactive']),
+                    ApiListQueryParameterDefinition::choice('role', array_map(static fn (UserRole $role): string => $role->value, UserRole::assignable())),
+                    ApiListQueryParameterDefinition::page(),
+                    ApiListQueryParameterDefinition::limit(),
                 ],
                 responseSchema: ['type' => 'object'],
             ),
@@ -84,11 +86,11 @@ final readonly class UserApiEndpointProvider implements ApiEndpointProviderInter
                 self::HANDLER_USER_GROUPS_INDEX,
                 ['backend-admin', 'backend-admin-users'],
                 parameters: [
-                    ['name' => 'q', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-                    ['name' => 'sort', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-                    ['name' => 'direction', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-                    ['name' => 'page', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'integer']],
-                    ['name' => 'per_page', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
+                    ApiListQueryParameterDefinition::search(),
+                    ApiListQueryParameterDefinition::choice('sort', ['identifier', 'name', 'min_role']),
+                    ApiListQueryParameterDefinition::direction(),
+                    ApiListQueryParameterDefinition::page(),
+                    ApiListQueryParameterDefinition::limit(),
                 ],
                 responseSchema: ['type' => 'object'],
             ),
@@ -210,12 +212,12 @@ final readonly class UserApiEndpointProvider implements ApiEndpointProviderInter
                 self::HANDLER_USER_REVIEWS_INDEX,
                 ['backend-admin', 'backend-admin-users'],
                 parameters: [
-                    ['name' => 'filter', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-                    ['name' => 'q', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-                    ['name' => 'sort', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-                    ['name' => 'direction', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-                    ['name' => 'page', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'integer']],
-                    ['name' => 'per_page', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
+                    ApiListQueryParameterDefinition::choice('filter', ['all', 'registrations', 'invitations', 'disputes', 'expired']),
+                    ApiListQueryParameterDefinition::search(),
+                    ApiListQueryParameterDefinition::choice('sort', ['requested_at', 'email', 'kind', 'status']),
+                    ApiListQueryParameterDefinition::direction(),
+                    ApiListQueryParameterDefinition::page(),
+                    ApiListQueryParameterDefinition::limit(),
                 ],
                 responseSchema: ['type' => 'object'],
             ),

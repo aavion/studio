@@ -9,6 +9,7 @@ use App\Api\ApiMessageKey;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointHandlerInterface;
 use App\Api\Http\ApiJsonRequestParser;
+use App\Api\Http\ApiListQueryNormalizer;
 use App\Api\Http\ApiRequestContext;
 use App\Api\Http\ApiResponder;
 use App\Api\Security\ApiAccessGuard;
@@ -40,6 +41,7 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
         private LiveOperationStarter $liveOperations,
         private UuidFactory $uuidFactory,
         private ApiJsonRequestParser $jsonRequests,
+        private ApiListQueryNormalizer $listQueries,
         private AuditLoggerInterface $auditLogger,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
@@ -76,12 +78,12 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
             return $this->createGroup($request);
         }
 
-        $view = $this->lists->groupsView($request);
+        $view = $this->lists->groupsView($this->listQueries->backendRequest($request));
         $groups = array_map($this->readModel->resource(...), $view['items']);
 
         unset($view['items']);
 
-        return $this->responder->data($groups, meta: $view);
+        return $this->responder->data($groups, meta: $this->listQueries->apiMeta($view));
     }
 
     private function createGroup(Request $request): Response

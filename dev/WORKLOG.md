@@ -76,6 +76,7 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-07
+- Standardized versioned API list contracts around `page` and `limit`: OpenAPI list parameters and the reusable pagination schema now use `limit`, API list responses normalize shared backend `per_page`/`total_pages` metadata to `limit`/`page_count`, and focused tests cover the API boundary without changing backend UI list routes.
 - Added a registered `GET /api/v1` root navigation endpoint that uses endpoint definitions to show public top-level API branches anonymously and private top-level branches for authenticated API-key callers, and exposes the root path in OpenAPI as `/`.
 - Added endpoint-definition based API content-type enforcement so operations with request schemas require `application/json` or `*+json`, return localized JSON `415` errors for unsupported media types, and document the standard `415` response in OpenAPI.
 - Added versioned API trace headers so `/api/v1/**` responses include the system `X-Request-ID`, echo a validated inbound `X-Correlation-ID` when present, document both headers in OpenAPI success/error responses, and expose them to configured CORS browser clients.

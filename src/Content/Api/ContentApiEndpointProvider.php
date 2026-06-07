@@ -6,6 +6,7 @@ namespace App\Content\Api;
 
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointProviderInterface;
+use App\Api\Endpoint\ApiListQueryParameterDefinition;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class ContentApiEndpointProvider implements ApiEndpointProviderInterface
@@ -58,9 +59,9 @@ final readonly class ContentApiEndpointProvider implements ApiEndpointProviderIn
             ['name' => 'status', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string', 'enum' => ['published', 'draft', 'deleted', 'all']]],
             ['name' => 'schema', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
             ['name' => 'parent', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-            ['name' => 'page', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'integer', 'minimum' => 1]],
-            ['name' => 'limit', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100]],
-            ['name' => 'sort', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
+            ApiListQueryParameterDefinition::page(),
+            ApiListQueryParameterDefinition::limitRange(100),
+            ApiListQueryParameterDefinition::sort(),
         ];
     }
 

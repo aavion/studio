@@ -91,6 +91,8 @@ final class OpenApiDocumentFactoryTest extends TestCase
         self::assertArrayHasKey('CorrelationId', $document['components']['headers']);
         self::assertArrayHasKey('ServiceUnavailable', $document['components']['responses']);
         self::assertArrayHasKey('UnsupportedMediaType', $document['components']['responses']);
+        self::assertArrayHasKey('limit', $document['components']['schemas']['ApiPagination']['properties']);
+        self::assertArrayNotHasKey('per_page', $document['components']['schemas']['ApiPagination']['properties']);
 
         $statusOperation = $document['paths']['/status']['get'];
         self::assertSame([], $statusOperation['security']);

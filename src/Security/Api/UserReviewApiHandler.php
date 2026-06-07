@@ -8,6 +8,7 @@ use App\Api\ApiMessageCode;
 use App\Api\ApiMessageKey;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointHandlerInterface;
+use App\Api\Http\ApiListQueryNormalizer;
 use App\Api\Http\ApiRequestContext;
 use App\Api\Http\ApiResponder;
 use App\Api\Security\ApiAccessGuard;
@@ -39,6 +40,7 @@ final readonly class UserReviewApiHandler implements ApiEndpointHandlerInterface
 {
     public function __construct(
         private AdminUserReviewViewFactory $reviews,
+        private ApiListQueryNormalizer $listQueries,
         private EntityManagerInterface $entityManager,
         private AdminUserAccessPolicy $policy,
         private UserAccountLifecycle $userLifecycle,
@@ -76,11 +78,11 @@ final readonly class UserReviewApiHandler implements ApiEndpointHandlerInterface
             return $this->reviewAction($request, $action['username'], $action['action']);
         }
 
-        $view = $this->reviews->reviewView($request);
+        $view = $this->reviews->reviewView($this->listQueries->backendRequest($request));
         $items = array_map($this->resource(...), $view['items']);
         unset($view['items']);
 
-        return $this->responder->data($items, meta: $view);
+        return $this->responder->data($items, meta: $this->listQueries->apiMeta($view));
     }
 
     private function reviewAction(Request $request, string $username, string $action): Response

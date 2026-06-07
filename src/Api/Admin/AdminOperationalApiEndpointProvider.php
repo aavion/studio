@@ -6,6 +6,7 @@ namespace App\Api\Admin;
 
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointProviderInterface;
+use App\Api\Endpoint\ApiListQueryParameterDefinition;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class AdminOperationalApiEndpointProvider implements ApiEndpointProviderInterface
@@ -81,13 +82,8 @@ final readonly class AdminOperationalApiEndpointProvider implements ApiEndpointP
             ['name' => 'match', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string', 'enum' => ['contains', 'equals']]],
             ['name' => 'time_window', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string', 'enum' => ['1h', '24h', '7d', '30d']]],
             ['name' => 'audit_action', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-            ['name' => 'per_page', 'in' => 'query', 'required' => false, 'schema' => [
-                'oneOf' => [
-                    ['type' => 'integer'],
-                    ['type' => 'string', 'enum' => ['all']],
-                ],
-            ]],
-            ['name' => 'page', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'integer', 'minimum' => 1]],
+            ApiListQueryParameterDefinition::limit(),
+            ApiListQueryParameterDefinition::page(),
         ];
     }
 

@@ -192,7 +192,12 @@ final readonly class OpenApiDocumentFactory
                 'type' => 'object',
                 'properties' => [
                     'page' => ['type' => 'integer', 'minimum' => 1],
-                    'per_page' => ['type' => 'integer', 'minimum' => 1],
+                    'limit' => [
+                        'oneOf' => [
+                            ['type' => 'integer', 'minimum' => 1],
+                            ['type' => 'string', 'enum' => ['all']],
+                        ],
+                    ],
                     'total' => ['type' => 'integer', 'minimum' => 0],
                     'page_count' => ['type' => 'integer', 'minimum' => 0],
                 ],

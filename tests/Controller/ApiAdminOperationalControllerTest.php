@@ -66,7 +66,7 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         self::assertGreaterThan(0, $payload['meta']['count']);
         self::assertSame('log_source', $payload['data'][0]['type']);
 
-        $client->request('GET', '/api/v1/admin/logs/message?level=INFO&per_page=25', server: [
+        $client->request('GET', '/api/v1/admin/logs/message?level=INFO&limit=25', server: [
             'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
         ]);
 
@@ -74,6 +74,10 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         $payload = $this->jsonPayload($client->getResponse()->getContent());
         self::assertSame('message', $payload['meta']['selected_source']);
         self::assertSame('INFO', $payload['meta']['filters']['level']);
+        self::assertSame(25, $payload['meta']['filters']['limit']);
+        self::assertArrayNotHasKey('per_page', $payload['meta']['filters']);
+        self::assertArrayNotHasKey('per_page', $payload['meta']['pagination']);
+        self::assertArrayNotHasKey('total_pages', $payload['meta']['pagination']);
     }
 
     public function testAdminOperationDetailAndContinuationReviewAreAvailable(): void

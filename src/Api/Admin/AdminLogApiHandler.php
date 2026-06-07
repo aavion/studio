@@ -8,6 +8,7 @@ use App\Api\ApiMessageCode;
 use App\Api\ApiMessageKey;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointHandlerInterface;
+use App\Api\Http\ApiListQueryNormalizer;
 use App\Api\Http\ApiResponder;
 use App\Api\Security\ApiAccessGuard;
 use App\Core\Access\AccessLevel;
@@ -20,6 +21,7 @@ final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
 {
     public function __construct(
         private LogFileBrowser $logs,
+        private ApiListQueryNormalizer $listQueries,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
     ) {
@@ -52,7 +54,7 @@ final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
         }
 
         $view = $this->logs->browse([
-            ...$request->query->all(),
+            ...$this->listQueries->backendQuery($request->query->all()),
             'source' => $source,
         ]);
         $entries = array_map(static fn (array $entry): array => [
@@ -63,7 +65,7 @@ final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
 
         unset($view['entries']);
 
-        return $this->responder->data($entries, meta: $view);
+        return $this->responder->data($entries, meta: $this->listQueries->apiMeta($view));
     }
 
     /**
@@ -80,7 +82,7 @@ final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
                 'source' => $source['key'],
                 'label_key' => $source['label'],
                 'path' => '/api/v1/admin/logs/'.$source['key'],
-                'filters' => ['level', 'q', 'match', 'time_window', 'audit_action', 'per_page', 'page'],
+                'filters' => ['level', 'q', 'match', 'time_window', 'audit_action', 'limit', 'page'],
             ],
         ], $sources);
     }

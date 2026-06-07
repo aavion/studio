@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security\Api;
 
+use App\Api\Http\ApiListQueryNormalizer;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
 use App\Security\AdminUserListViewFactory;
@@ -11,8 +12,10 @@ use Symfony\Component\HttpFoundation\Request;
 
 final readonly class UserApiReadModel
 {
-    public function __construct(private AdminUserListViewFactory $users)
-    {
+    public function __construct(
+        private AdminUserListViewFactory $users,
+        private ApiListQueryNormalizer $listQueries,
+    ) {
     }
 
     /**
@@ -20,17 +23,18 @@ final readonly class UserApiReadModel
      */
     public function users(Request $request): array
     {
-        $view = $this->users->usersView($request);
+        $view = $this->users->usersView($this->listQueries->backendRequest($request));
+        $meta = $this->listQueries->apiMeta([
+            'filters' => $view['filters'],
+            'pagination' => $view['pagination'],
+        ]);
 
         return [
             'data' => array_map(
                 fn (UserAccount $user): array => $this->resource($user),
                 $view['items'],
             ),
-            'meta' => [
-                'filters' => $view['filters'],
-                'pagination' => $view['pagination'],
-            ],
+            'meta' => $meta,
         ];
     }
 

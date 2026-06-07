@@ -36,12 +36,17 @@ final class ApiUserControllerTest extends WebTestCase
         $this->createUserWithLevel(AccessLevel::AUTHOR, 'apiusertarget', 'current-password');
         $plainKey = $this->createPlainApiKey('apiuseradm');
 
-        $client->request('GET', '/api/v1/admin/users?q=apiusertarget&per_page=5', server: [
+        $client->request('GET', '/api/v1/admin/users?q=apiusertarget&limit=25', server: [
             'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
         ]);
 
         self::assertResponseIsSuccessful();
         $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame(25, $payload['meta']['pagination']['limit']);
+        self::assertArrayNotHasKey('per_page', $payload['meta']['pagination']);
+        self::assertArrayNotHasKey('total_pages', $payload['meta']['pagination']);
+        self::assertSame(25, $payload['meta']['filters']['limit']);
+        self::assertArrayNotHasKey('per_page', $payload['meta']['filters']);
         self::assertSame(1, $payload['meta']['pagination']['total']);
 
         $user = $payload['data'][0];
