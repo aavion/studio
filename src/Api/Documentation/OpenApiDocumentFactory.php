@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Api\Documentation;
 
 use App\Api\Endpoint\ApiEndpointDefinition;
+use App\Api\Endpoint\ApiEndpointAccessPolicy;
 use App\Api\Endpoint\ApiEndpointRegistry;
 use App\View\SystemPackageMetadataProvider;
 
@@ -12,6 +13,7 @@ final readonly class OpenApiDocumentFactory
 {
     public function __construct(
         private ApiEndpointRegistry $endpoints,
+        private ApiEndpointAccessPolicy $accessPolicy,
         private SystemPackageMetadataProvider $systemPackageMetadata,
     ) {
     }
@@ -59,6 +61,13 @@ final readonly class OpenApiDocumentFactory
                 'summary' => $endpoint->summary(),
                 'tags' => $endpoint->tags(),
                 'parameters' => $endpoint->parameters(),
+                'x-access' => [
+                    'allow_public' => $endpoint->allowsPublic(),
+                    'requires_api_key' => $this->accessPolicy->requiresApiKey($endpoint),
+                    'required_access_level' => $this->accessPolicy->minimumAccessLevel($endpoint),
+                    'required_role' => $this->accessPolicy->minimumRole($endpoint),
+                    'key_capability' => $this->accessPolicy->keyCapability($endpoint),
+                ],
                 'responses' => [
                     $successStatus => [
                         'description' => 'Successful response.',
@@ -398,6 +407,7 @@ final readonly class OpenApiDocumentFactory
             'backend-admin-logs' => ['summary' => 'Backend Admin Logs', 'description' => 'Administrative log source and log entry resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-operations' => ['summary' => 'Backend Admin Operations', 'description' => 'Administrative live-operation status, continuation, and maintenance resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-packages' => ['summary' => 'Backend Admin Packages', 'description' => 'Administrative package management and lifecycle resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
+            'backend-admin-permissions' => ['summary' => 'Backend Admin Permissions', 'description' => 'Endpoint access and API key capability matrix resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-scheduler' => ['summary' => 'Backend Admin Scheduler', 'description' => 'Administrative scheduler task and run resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-settings' => ['summary' => 'Backend Admin Settings', 'description' => 'Administrative settings sections and values.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-statistics' => ['summary' => 'Backend Admin Statistics', 'description' => 'Administrative access statistics resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],

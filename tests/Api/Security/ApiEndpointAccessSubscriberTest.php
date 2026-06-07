@@ -10,6 +10,7 @@ use App\Api\Endpoint\ApiEndpointRegistry;
 use App\Api\Http\ApiRequestContext;
 use App\Api\Http\ApiResponder;
 use App\Api\Security\ApiEndpointAccessSubscriber;
+use App\Core\Message\MessageException;
 use App\Core\Output\JsonOutputRenderer;
 use App\Tests\Support\IdentityTranslator;
 use App\View\SystemPackageMetadataProvider;
@@ -47,15 +48,19 @@ final class ApiEndpointAccessSubscriberTest extends TestCase
         self::assertSame('Bearer realm="Studio API"', $event->getResponse()->headers->get('WWW-Authenticate'));
     }
 
-    public function testItRejectsAnonymousMutationsEvenWhenEndpointAllowsPublic(): void
+    public function testEndpointDefinitionsRejectPublicMutations(): void
     {
-        $request = $this->request('POST', '/api/v1/public-mutation', 'api_public_mutation');
-        $event = new RequestEvent($this->kernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+        $this->expectException(MessageException::class);
 
-        $this->subscriber()->onKernelRequest($event);
-
-        self::assertTrue($event->hasResponse());
-        self::assertSame(Response::HTTP_UNAUTHORIZED, $event->getResponse()->getStatusCode());
+        new ApiEndpointDefinition(
+            'system',
+            'POST',
+            '/api/v1/public-mutation',
+            'api_public_mutation',
+            'postPublicMutation',
+            'Public mutation.',
+            allowPublic: true,
+        );
     }
 
     private function subscriber(): ApiEndpointAccessSubscriber
@@ -80,15 +85,6 @@ final class ApiEndpointAccessSubscriberTest extends TestCase
                         'api_public_status',
                         'getPublicStatus',
                         'Public status.',
-                        allowPublic: true,
-                    ),
-                    new ApiEndpointDefinition(
-                        'system',
-                        'POST',
-                        '/api/v1/public-mutation',
-                        'api_public_mutation',
-                        'postPublicMutation',
-                        'Public mutation.',
                         allowPublic: true,
                     ),
                     new ApiEndpointDefinition(

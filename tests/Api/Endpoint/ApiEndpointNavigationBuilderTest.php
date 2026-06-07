@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Api\Endpoint;
 
 use App\Api\Endpoint\ApiEndpointDefinition;
+use App\Api\Endpoint\ApiEndpointAccessPolicy;
 use App\Api\Endpoint\ApiEndpointNavigationBuilder;
 use App\Api\Endpoint\ApiEndpointProviderInterface;
 use App\Api\Endpoint\ApiEndpointRegistry;
@@ -41,43 +42,46 @@ final class ApiEndpointNavigationBuilderTest extends TestCase
 
     private function builder(): ApiEndpointNavigationBuilder
     {
-        return new ApiEndpointNavigationBuilder(new ApiEndpointRegistry([
-            new class implements ApiEndpointProviderInterface {
-                public function apiEndpoints(): array
-                {
-                    return [
-                        new ApiEndpointDefinition(
-                            'packages',
-                            'GET',
-                            '/api/v1/packages',
-                            'api_v1_endpoint_dispatch',
-                            'listPackageApiEndpoints',
-                            'List package endpoint children.',
-                            'packages.navigation',
-                            allowPublic: true,
-                        ),
-                        new ApiEndpointDefinition(
-                            'package',
-                            'GET',
-                            '/api/v1/packages/public-module/feed',
-                            'api_v1_endpoint_dispatch',
-                            'getPublicPackageFeed',
-                            'Return public package feed.',
-                            'packages.public-module.feed',
-                            allowPublic: true,
-                        ),
-                        new ApiEndpointDefinition(
-                            'package',
-                            'GET',
-                            '/api/v1/packages/private-module/config',
-                            'api_v1_endpoint_dispatch',
-                            'getPrivatePackageConfig',
-                            'Return private package configuration.',
-                            'packages.private-module.config',
-                        ),
-                    ];
-                }
-            },
-        ]));
+        return new ApiEndpointNavigationBuilder(
+            new ApiEndpointRegistry([
+                new class implements ApiEndpointProviderInterface {
+                    public function apiEndpoints(): array
+                    {
+                        return [
+                            new ApiEndpointDefinition(
+                                'packages',
+                                'GET',
+                                '/api/v1/packages',
+                                'api_v1_endpoint_dispatch',
+                                'listPackageApiEndpoints',
+                                'List package endpoint children.',
+                                'packages.navigation',
+                                allowPublic: true,
+                            ),
+                            new ApiEndpointDefinition(
+                                'package',
+                                'GET',
+                                '/api/v1/packages/public-module/feed',
+                                'api_v1_endpoint_dispatch',
+                                'getPublicPackageFeed',
+                                'Return public package feed.',
+                                'packages.public-module.feed',
+                                allowPublic: true,
+                            ),
+                            new ApiEndpointDefinition(
+                                'package',
+                                'GET',
+                                '/api/v1/packages/private-module/config',
+                                'api_v1_endpoint_dispatch',
+                                'getPrivatePackageConfig',
+                                'Return private package configuration.',
+                                'packages.private-module.config',
+                            ),
+                        ];
+                    }
+                },
+            ]),
+            new ApiEndpointAccessPolicy(),
+        );
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Api\Documentation;
 
 use App\Api\Documentation\OpenApiDocumentFactory;
+use App\Api\Endpoint\ApiEndpointAccessPolicy;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointProviderInterface;
 use App\Api\Endpoint\ApiEndpointRegistry;
@@ -27,6 +28,7 @@ final class OpenApiDocumentFactoryTest extends TestCase
         try {
             $document = (new OpenApiDocumentFactory(
                 new ApiEndpointRegistry([$this->provider()]),
+                new ApiEndpointAccessPolicy(),
                 new SystemPackageMetadataProvider($projectDir),
             ))->create();
         } finally {
@@ -48,6 +50,7 @@ final class OpenApiDocumentFactoryTest extends TestCase
     {
         $document = (new OpenApiDocumentFactory(
             new ApiEndpointRegistry([$this->provider()]),
+            new ApiEndpointAccessPolicy(),
             new SystemPackageMetadataProvider(dirname(__DIR__, 3)),
         ))->create();
 
@@ -80,6 +83,7 @@ final class OpenApiDocumentFactoryTest extends TestCase
     {
         $document = (new OpenApiDocumentFactory(
             new ApiEndpointRegistry([$this->provider()]),
+            new ApiEndpointAccessPolicy(),
             new SystemPackageMetadataProvider(dirname(__DIR__, 3)),
         ))->create();
 
@@ -99,6 +103,13 @@ final class OpenApiDocumentFactoryTest extends TestCase
         self::assertSame('#/components/responses/Unauthorized', $statusOperation['responses']['401']['$ref']);
         self::assertSame('#/components/responses/UnsupportedMediaType', $statusOperation['responses']['415']['$ref']);
         self::assertSame('#/components/responses/ServiceUnavailable', $statusOperation['responses']['503']['$ref']);
+        self::assertSame([
+            'allow_public' => true,
+            'requires_api_key' => false,
+            'required_access_level' => 0,
+            'required_role' => 'public',
+            'key_capability' => 'read_only_or_read_write',
+        ], $statusOperation['x-access']);
         self::assertSame('#/components/headers/RequestId', $statusOperation['responses']['200']['headers']['X-Request-ID']['$ref']);
         self::assertSame('#/components/headers/CorrelationId', $statusOperation['responses']['200']['headers']['X-Correlation-ID']['$ref']);
         self::assertSame('#/components/schemas/ApiDataEnvelope', $statusOperation['responses']['200']['content']['application/json']['schema']['$ref']);

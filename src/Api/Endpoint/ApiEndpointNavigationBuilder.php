@@ -6,8 +6,10 @@ namespace App\Api\Endpoint;
 
 final readonly class ApiEndpointNavigationBuilder
 {
-    public function __construct(private ApiEndpointRegistry $endpoints)
-    {
+    public function __construct(
+        private ApiEndpointRegistry $endpoints,
+        private ApiEndpointAccessPolicy $accessPolicy,
+    ) {
     }
 
     /**
@@ -84,6 +86,13 @@ final readonly class ApiEndpointNavigationBuilder
             'operation_id' => $endpoint->operationId(),
             'summary' => $endpoint->summary(),
             'tags' => $endpoint->tags(),
+            'access' => [
+                'allow_public' => $endpoint->allowsPublic(),
+                'requires_api_key' => $this->accessPolicy->requiresApiKey($endpoint),
+                'required_access_level' => $this->accessPolicy->minimumAccessLevel($endpoint),
+                'required_role' => $this->accessPolicy->minimumRole($endpoint),
+                'key_capability' => $this->accessPolicy->keyCapability($endpoint),
+            ],
         ];
     }
 

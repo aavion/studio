@@ -201,9 +201,12 @@ final class ApiFoundationControllerTest extends WebTestCase
         self::assertArrayHasKey('/status', $payload['paths']);
         self::assertArrayHasKey('/openapi.json', $payload['paths']);
         self::assertArrayHasKey('/admin', $payload['paths']);
+        self::assertArrayHasKey('/admin/permissions', $payload['paths']);
         self::assertSame('getApiRoot', $payload['paths']['/']['get']['operationId']);
         self::assertSame('getApiStatus', $payload['paths']['/status']['get']['operationId']);
         self::assertSame([], $payload['paths']['/status']['get']['security']);
+        self::assertSame(8, $payload['paths']['/admin/permissions']['get']['x-access']['required_access_level']);
+        self::assertSame('read_only_or_read_write', $payload['paths']['/admin/permissions']['get']['x-access']['key_capability']);
     }
 
     public function testAdminEndpointIndexRejectsAnonymousAccess(): void
@@ -215,6 +218,22 @@ final class ApiFoundationControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(401);
         $payload = $this->jsonPayload($client->getResponse()->getContent());
         self::assertSame('api_key.authentication_failed', $payload['error']['code']);
+    }
+
+    public function testAdminEndpointIndexRejectsNonAdminApiKeysBeforeHandlerExecution(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadOnly, 'apiadmus', AccessLevel::USER);
+
+        $client->request('GET', '/api/v1/admin', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api_key.permission_denied', $payload['error']['code']);
+        self::assertSame(AccessLevel::ADMIN, $payload['error']['context']['required_access_level']);
+        self::assertSame('listAdminApiEndpoints', $payload['error']['context']['operation_id']);
     }
 
     public function testAdminEndpointIndexListsAdministrativeEndpointsForAdminApiKeys(): void
@@ -239,7 +258,42 @@ final class ApiFoundationControllerTest extends WebTestCase
         self::assertContains('/api/v1/admin/settings', $paths);
         self::assertContains('/api/v1/admin/packages', $paths);
         self::assertContains('/api/v1/admin/users', $paths);
+        self::assertContains('/api/v1/admin/permissions', $paths);
         self::assertNotContains('/api/v1/status', $paths);
+
+        $permissionsChild = array_values(array_filter(
+            $payload['data']['attributes']['children'],
+            static fn (array $resource): bool => '/api/v1/admin/permissions' === $resource['attributes']['path'],
+        ))[0] ?? null;
+
+        self::assertIsArray($permissionsChild);
+        self::assertSame(8, $permissionsChild['attributes']['methods'][0]['access']['required_access_level']);
+    }
+
+    public function testAdminPermissionMatrixListsEndpointAccessRequirements(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadOnly, 'apipermix', AccessLevel::ADMIN);
+
+        $client->request('GET', '/api/v1/admin/permissions', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertGreaterThan(0, $payload['meta']['count']);
+
+        $permissions = [];
+        foreach ($payload['data'] as $resource) {
+            $permissions[$resource['attributes']['method'].' '.$resource['attributes']['path']] = $resource['attributes'];
+        }
+
+        self::assertArrayHasKey('GET /api/v1/status', $permissions);
+        self::assertFalse($permissions['GET /api/v1/status']['requires_api_key']);
+        self::assertSame('public', $permissions['GET /api/v1/status']['required_role']);
+        self::assertArrayHasKey('PATCH /api/v1/admin/settings/{section}', $permissions);
+        self::assertSame('admin', $permissions['PATCH /api/v1/admin/settings/{section}']['required_role']);
+        self::assertSame('read_write', $permissions['PATCH /api/v1/admin/settings/{section}']['key_capability']);
     }
 
     private function createPlainApiKey(ApiKeyStatus $status, string $prefix, int $accessLevel = 1): string

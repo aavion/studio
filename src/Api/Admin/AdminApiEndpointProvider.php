@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 final readonly class AdminApiEndpointProvider implements ApiEndpointProviderInterface
 {
     public const HANDLER_ADMIN_INDEX = 'admin.index';
+    public const HANDLER_ADMIN_PERMISSIONS = 'admin.permissions';
 
     public function apiEndpoints(): array
     {
@@ -40,6 +41,17 @@ final readonly class AdminApiEndpointProvider implements ApiEndpointProviderInte
                         ],
                     ],
                 ],
+            ),
+            new ApiEndpointDefinition(
+                'admin',
+                Request::METHOD_GET,
+                '/api/v1/admin/permissions',
+                'api_v1_endpoint_dispatch',
+                'listApiPermissionMatrix',
+                'List endpoint access requirements and API key capability requirements.',
+                self::HANDLER_ADMIN_PERMISSIONS,
+                ['backend-admin', 'backend-admin-permissions'],
+                responseSchema: ['type' => 'object'],
             ),
         ];
     }

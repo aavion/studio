@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Api\Endpoint;
 
 use App\Api\ApiMessageKey;
+use App\Core\Access\AccessLevel;
 use App\Core\Message\MessageException;
 use App\Core\Validation\Identifier;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,6 +32,7 @@ final readonly class ApiEndpointDefinition
         private ?array $responseSchema = null,
         private int $successStatus = 200,
         private bool $allowPublic = false,
+        private ?int $minimumAccessLevel = null,
         private ?string $pathPattern = null,
     ) {
         $this->assertOwner($owner);
@@ -41,6 +43,8 @@ final readonly class ApiEndpointDefinition
         $this->assertHandlerKey($handlerKey);
         $this->assertSummary($summary);
         $this->assertSuccessStatus($successStatus);
+        $this->assertPublicAccess($method, $allowPublic);
+        AccessLevel::assert($minimumAccessLevel);
         $this->assertPathPattern($pathPattern);
     }
 
@@ -119,6 +123,11 @@ final readonly class ApiEndpointDefinition
     public function allowsPublic(): bool
     {
         return $this->allowPublic;
+    }
+
+    public function minimumAccessLevel(): ?int
+    {
+        return $this->minimumAccessLevel;
     }
 
     public function matchesPath(string $path): bool
@@ -206,6 +215,30 @@ final readonly class ApiEndpointDefinition
                 '%status%' => $status,
             ]);
         }
+    }
+
+    private function assertPublicAccess(string $method, bool $allowPublic): void
+    {
+        if (!$allowPublic) {
+            return;
+        }
+
+        if ($this->isSafeMethod($method)) {
+            return;
+        }
+
+        throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_METHOD_INVALID, [
+            '%method%' => $method,
+        ]);
+    }
+
+    private function isSafeMethod(string $method): bool
+    {
+        return in_array($method, [
+            Request::METHOD_GET,
+            Request::METHOD_HEAD,
+            Request::METHOD_OPTIONS,
+        ], true);
     }
 
     private function assertPathPattern(?string $pattern): void
