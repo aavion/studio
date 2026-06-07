@@ -91,7 +91,28 @@ final readonly class ApiResponder
             $error['context'] = $context;
         }
 
+        $details = $this->errorDetails($context);
+        if ([] !== $details) {
+            $error['details'] = $details;
+        }
+
         return $this->json->render(['error' => $error], $status, $headers);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     *
+     * @return array<string, mixed>
+     */
+    private function errorDetails(array $context): array
+    {
+        $errors = $context['errors'] ?? null;
+
+        if (!is_array($errors)) {
+            return [];
+        }
+
+        return ['fields' => $errors];
     }
 
     private function translatedMessage(Message $message, ?Request $request): string
