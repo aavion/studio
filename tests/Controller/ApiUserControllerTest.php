@@ -130,6 +130,131 @@ final class ApiUserControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
+    public function testCurrentUserProfileRequiresApiKey(): void
+    {
+        $client = self::createClient();
+
+        $client->request('GET', '/api/v1/user');
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testCurrentUserProfileReturnsAuthenticatedUser(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(AccessLevel::USER, 'apiselfprofile', 'current-password');
+        $plainKey = $this->createPlainApiKeyForUser($user, 'apiselfro');
+
+        $client->request('GET', '/api/v1/user', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('user_profile', $payload['data']['type']);
+        self::assertSame($user->username(), $payload['data']['id']);
+        self::assertSame($user->email(), $payload['data']['attributes']['email']);
+        self::assertSame('/api/v1/user/api-keys', $payload['data']['links']['api_keys']);
+    }
+
+    public function testCurrentUserProfileCanBePatchedWithReadWriteKey(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(AccessLevel::USER, 'apiselfpatch', 'current-password');
+        $plainKey = $this->createPlainApiKeyForUser($user, 'apiselfrw', ApiKeyStatus::ReadWrite);
+
+        $client->request('PATCH', '/api/v1/user', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'email' => 'api-self-patch@example.test',
+            'display_name' => 'API Self Patch',
+            'language' => 'de',
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api-self-patch@example.test', $payload['data']['attributes']['email']);
+        self::assertSame('API Self Patch', $payload['data']['attributes']['display_name']);
+        self::assertSame('de', $payload['data']['attributes']['language']);
+        self::assertSame(['email', 'display_name', 'language'], $payload['meta']['updated_fields']);
+    }
+
+    public function testCurrentUserProfilePatchRequiresReadWriteKey(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(AccessLevel::USER, 'apiselfreadonly', 'current-password');
+        $plainKey = $this->createPlainApiKeyForUser($user, 'apiselfkey');
+
+        $client->request('PATCH', '/api/v1/user', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'display_name' => 'Should Not Persist',
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testCurrentUserApiKeysCanBeListedCreatedAndRevoked(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(AccessLevel::USER, 'apiselfkeys', 'current-password');
+        $plainKey = $this->createPlainApiKeyForUser($user, 'apiselfmgmt', ApiKeyStatus::ReadWrite);
+
+        $client->request('GET', '/api/v1/user/api-keys', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame(1, $payload['meta']['count']);
+        self::assertSame('apiselfmgmt', $payload['data'][0]['id']);
+
+        $client->request('POST', '/api/v1/user/api-keys', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'prefix' => 'apiselfnew',
+            'read_only' => true,
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(201);
+        $created = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('apiselfnew', $created['data']['attributes']['prefix']);
+        self::assertSame('read_only', $created['data']['attributes']['status']);
+        self::assertStringStartsWith('apiselfnew.', $created['data']['attributes']['plain_key']);
+        $revokeLink = $created['data']['links']['revoke'];
+
+        $client->request('DELETE', $revokeLink, server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $revoked = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('revoked', $revoked['data']['attributes']['status']);
+        self::assertArrayNotHasKey('revoke', $revoked['data']['links']);
+    }
+
+    public function testCurrentUserApiKeyCreationReturnsValidationDetails(): void
+    {
+        $client = self::createClient();
+        $user = $this->createUserWithLevel(AccessLevel::USER, 'apiselfinvalid', 'current-password');
+        $plainKey = $this->createPlainApiKeyForUser($user, 'apiselfbad', ApiKeyStatus::ReadWrite);
+
+        $client->request('POST', '/api/v1/user/api-keys', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'prefix' => 'x',
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(422);
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api.validation_failed', $payload['error']['code']);
+        self::assertArrayHasKey('prefix', $payload['error']['details']['fields']);
+    }
+
     public function testUserGroupAndReviewEndpointsReturnBasicListsForAdminApiKeys(): void
     {
         $client = self::createClient();
@@ -302,6 +427,9 @@ final class ApiUserControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertArrayHasKey('/user', $payload['paths']);
+        self::assertArrayHasKey('/user/api-keys', $payload['paths']);
+        self::assertArrayHasKey('/user/api-keys/items/{key_uid}', $payload['paths']);
         self::assertArrayHasKey('/admin/users', $payload['paths']);
         self::assertArrayHasKey('/admin/users/items/{username}', $payload['paths']);
         self::assertArrayHasKey('/admin/users/groups', $payload['paths']);
@@ -313,6 +441,12 @@ final class ApiUserControllerTest extends WebTestCase
         self::assertArrayHasKey('/admin/users/reviews/tokens/{token_uid}/approve', $payload['paths']);
         self::assertArrayHasKey('/admin/users/reviews/tokens/{token_uid}/reissue', $payload['paths']);
         self::assertArrayHasKey('/admin/users/reviews/tokens/{token_uid}', $payload['paths']);
+        self::assertSame('getCurrentUserProfile', $payload['paths']['/user']['get']['operationId']);
+        self::assertSame('updateCurrentUserProfile', $payload['paths']['/user']['patch']['operationId']);
+        self::assertSame(['frontend-user', 'frontend-user-profile'], $payload['paths']['/user']['get']['tags']);
+        self::assertSame('listCurrentUserApiKeys', $payload['paths']['/user/api-keys']['get']['operationId']);
+        self::assertSame('createCurrentUserApiKey', $payload['paths']['/user/api-keys']['post']['operationId']);
+        self::assertSame('revokeCurrentUserApiKey', $payload['paths']['/user/api-keys/items/{key_uid}']['delete']['operationId']);
         self::assertSame('listUsers', $payload['paths']['/admin/users']['get']['operationId']);
         self::assertSame(['backend-admin', 'backend-admin-users'], $payload['paths']['/admin/users']['get']['tags']);
         self::assertSame('getUser', $payload['paths']['/admin/users/items/{username}']['get']['operationId']);
@@ -331,6 +465,12 @@ final class ApiUserControllerTest extends WebTestCase
         self::assertSame('reissueUserAccountTokenReview', $payload['paths']['/admin/users/reviews/tokens/{token_uid}/reissue']['post']['operationId']);
         self::assertSame('denyUserAccountTokenReview', $payload['paths']['/admin/users/reviews/tokens/{token_uid}']['delete']['operationId']);
         self::assertContains([
+            'name' => 'frontend-user',
+            'summary' => 'Frontend User',
+            'description' => 'Authenticated user self-service resources.',
+            'kind' => 'nav',
+        ], $payload['tags']);
+        self::assertContains([
             'name' => 'backend-admin-users',
             'summary' => 'Backend Admin Users',
             'description' => 'Administrative user, ACL group, and review resources.',
@@ -346,6 +486,26 @@ final class ApiUserControllerTest extends WebTestCase
         $plainKey = $vault->generatePlainKey($prefix);
         $apiKey = new ApiKey(
             '69000000-0000-7000-8000-'.substr(md5($prefix.$status->value), 0, 12),
+            $prefix,
+            $vault->hmac($plainKey),
+            $vault->encrypt($plainKey, $prefix),
+            $user,
+            $status,
+        );
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($apiKey);
+        $entityManager->flush();
+
+        return $plainKey;
+    }
+
+    private function createPlainApiKeyForUser(UserAccount $user, string $prefix, ApiKeyStatus $status = ApiKeyStatus::ReadOnly): string
+    {
+        $vault = self::getContainer()->get(ApiKeyVault::class);
+        $plainKey = $vault->generatePlainKey($prefix);
+        $apiKey = new ApiKey(
+            '69000000-0000-7000-8003-'.substr(md5($prefix.$user->uid().$status->value), 0, 12),
             $prefix,
             $vault->hmac($plainKey),
             $vault->encrypt($plainKey, $prefix),
