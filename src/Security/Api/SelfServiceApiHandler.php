@@ -26,6 +26,7 @@ use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenType;
 use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
+use App\Security\SecurityMessageKey;
 use App\Security\UserFlowConfig;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonException;
@@ -218,6 +219,10 @@ final readonly class SelfServiceApiHandler implements ApiEndpointHandlerInterfac
         }
 
         $prefix = $this->string($payload['prefix'] ?? null);
+        if (1 !== preg_match('/^[A-Za-z0-9_-]{4,16}$/', $prefix)) {
+            return $this->validationFailed($request, ['prefix' => [SecurityMessageKey::API_KEY_PREFIX_INVALID]]);
+        }
+
         $status = false === ($payload['read_only'] ?? true) ? ApiKeyStatus::ReadWrite : ApiKeyStatus::ReadOnly;
         $plainKey = $this->apiKeyVault->generatePlainKey($prefix);
 
