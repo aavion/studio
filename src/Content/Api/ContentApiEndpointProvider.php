@@ -7,6 +7,7 @@ namespace App\Content\Api;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointProviderInterface;
 use App\Api\Endpoint\ApiListQueryParameterDefinition;
+use App\Core\Access\AccessLevel;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class ContentApiEndpointProvider implements ApiEndpointProviderInterface
@@ -25,8 +26,8 @@ final readonly class ContentApiEndpointProvider implements ApiEndpointProviderIn
             new ApiEndpointDefinition('content', Request::METHOD_GET, '/api/v1/content/items/{item_path}', 'api_v1_endpoint_dispatch', 'getContentItem', 'Return one published content item by canonical API path.', self::HANDLER_CONTENT_ITEMS, self::TAGS, parameters: $this->itemParameters(), responseSchema: ['type' => 'object'], allowPublic: true, pathPattern: $this->itemPattern(true)),
             new ApiEndpointDefinition('content', Request::METHOD_GET, '/api/v1/content/items/{item_path}/items', 'api_v1_endpoint_dispatch', 'listContentItemChildren', 'List visible direct children for one content item.', self::HANDLER_CONTENT_ITEMS, self::TAGS, parameters: $this->itemParameters(), responseSchema: ['type' => 'object'], allowPublic: true, pathPattern: $this->collectionPattern('items')),
             new ApiEndpointDefinition('content', Request::METHOD_GET, '/api/v1/content/items/{item_path}/variants', 'api_v1_endpoint_dispatch', 'listContentItemVariants', 'List available variants for one content item.', self::HANDLER_CONTENT_ITEMS, self::TAGS, parameters: $this->itemParameters(), responseSchema: ['type' => 'object'], allowPublic: true, pathPattern: $this->collectionPattern('variants')),
-            new ApiEndpointDefinition('content', Request::METHOD_GET, '/api/v1/content/items/{item_path}/revisions', 'api_v1_endpoint_dispatch', 'listContentItemRevisions', 'List revisions for one content item.', self::HANDLER_CONTENT_ITEMS, self::TAGS, parameters: $this->itemParameters(), responseSchema: ['type' => 'object'], allowPublic: true, pathPattern: $this->collectionPattern('revisions')),
-            new ApiEndpointDefinition('content', Request::METHOD_GET, '/api/v1/content/items/{item_path}/revisions/{revision}', 'api_v1_endpoint_dispatch', 'getContentItemRevision', 'Return one content item revision.', self::HANDLER_CONTENT_ITEMS, self::TAGS, parameters: $this->revisionParameters(), responseSchema: ['type' => 'object'], allowPublic: true, pathPattern: $this->revisionPattern()),
+            new ApiEndpointDefinition('content', Request::METHOD_GET, '/api/v1/content/items/{item_path}/revisions', 'api_v1_endpoint_dispatch', 'listContentItemRevisions', 'List revisions for one content item visible to editor-level API actors.', self::HANDLER_CONTENT_ITEMS, self::TAGS, parameters: $this->itemParameters(), responseSchema: ['type' => 'object'], minimumAccessLevel: AccessLevel::PUBLISHER, pathPattern: $this->collectionPattern('revisions')),
+            new ApiEndpointDefinition('content', Request::METHOD_GET, '/api/v1/content/items/{item_path}/revisions/{revision}', 'api_v1_endpoint_dispatch', 'getContentItemRevision', 'Return one content item revision visible to editor-level API actors.', self::HANDLER_CONTENT_ITEMS, self::TAGS, parameters: $this->revisionParameters(), responseSchema: ['type' => 'object'], minimumAccessLevel: AccessLevel::PUBLISHER, pathPattern: $this->revisionPattern()),
 
             // Provisional content command map: these endpoints are advisory placeholders for the upcoming
             // Editor/Content domain model, not a final API contract. Future work must adapt these definitions

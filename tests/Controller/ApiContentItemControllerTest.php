@@ -82,11 +82,25 @@ final class ApiContentItemControllerTest extends WebTestCase
         self::assertSame(['default', 'before-t17'], array_column($variants['data'], 'id'));
 
         $client->request('GET', self::KAEL_PATH.'/revisions');
+        self::assertResponseStatusCodeSame(401);
+
+        $authorKey = $this->createPlainApiKey('apirevauth', AccessLevel::AUTHOR, ApiKeyStatus::ReadOnly);
+        $client->request('GET', self::KAEL_PATH.'/revisions', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$authorKey,
+        ]);
+        self::assertResponseStatusCodeSame(403);
+
+        $publisherKey = $this->createPlainApiKey('apirevpub', AccessLevel::PUBLISHER, ApiKeyStatus::ReadOnly);
+        $client->request('GET', self::KAEL_PATH.'/revisions', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$publisherKey,
+        ]);
         self::assertResponseIsSuccessful();
         $versions = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertSame(1, $versions['meta']['count']);
+        self::assertSame(2, $versions['meta']['count']);
         self::assertSame('1', $versions['data'][0]['id']);
+        self::assertSame('2', $versions['data'][1]['id']);
         self::assertTrue($versions['data'][0]['attributes']['active']);
+        self::assertFalse($versions['data'][1]['attributes']['active']);
     }
 
     public function testContentItemVersionSelectorIsRegisteredButDeferred(): void
@@ -102,7 +116,10 @@ final class ApiContentItemControllerTest extends WebTestCase
         self::assertSame('API-Operation "readContentVersion" ist registriert, aber noch nicht implementiert.', $payload['error']['message']);
         self::assertSame('readContentVersion', $payload['error']['context']['operation']);
 
-        $client->request('GET', self::KAEL_PATH.'/revisions/1');
+        $publisherKey = $this->createPlainApiKey('apirevone', AccessLevel::PUBLISHER, ApiKeyStatus::ReadOnly);
+        $client->request('GET', self::KAEL_PATH.'/revisions/1', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$publisherKey,
+        ]);
 
         self::assertResponseStatusCodeSame(501);
         $revisionPayload = $this->jsonPayload($client->getResponse()->getContent());
