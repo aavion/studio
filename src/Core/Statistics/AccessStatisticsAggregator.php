@@ -29,6 +29,8 @@ final readonly class AccessStatisticsAggregator
      *     window: string,
      *     since: string|null,
      *     total_requests: int,
+     *     page_requests: int,
+     *     api_requests: int,
      *     unique_visitors: int,
      *     status_families: array<string, int>,
      *     top_routes: list<array{label: string, count: int}>,
@@ -56,6 +58,8 @@ final readonly class AccessStatisticsAggregator
             'window' => $window,
             'since' => $since?->format(DATE_ATOM),
             'total_requests' => $summary['total_requests'],
+            'page_requests' => $summary['page_requests'],
+            'api_requests' => $summary['api_requests'],
             'unique_visitors' => $summary['unique_visitors'],
             'status_families' => $summary['status_families'],
             'top_routes' => $this->topRoutes($since),
@@ -76,6 +80,8 @@ final readonly class AccessStatisticsAggregator
     /**
      * @return array{
      *     total_requests: int,
+     *     page_requests: int,
+     *     api_requests: int,
      *     unique_visitors: int,
      *     status_families: array<string, int>,
      *     bot_requests: int,
@@ -88,9 +94,11 @@ final readonly class AccessStatisticsAggregator
         try {
             [$where, $parameters] = $this->where($since);
             $base = $this->connection->fetchAssociative(
-                'SELECT COUNT(*) AS total_requests, COUNT(DISTINCT visitor_id) AS unique_visitors, SUM(CASE WHEN is_bot THEN 1 ELSE 0 END) AS bot_requests, SUM(CASE WHEN do_not_track THEN 1 ELSE 0 END) AS do_not_track_requests, AVG(duration_ms) AS average_duration_ms FROM access_statistic_event'.$where,
-                $parameters,
+                'SELECT COUNT(*) AS total_requests, SUM(CASE WHEN surface = ? THEN 1 ELSE 0 END) AS api_requests, COUNT(DISTINCT visitor_id) AS unique_visitors, SUM(CASE WHEN is_bot THEN 1 ELSE 0 END) AS bot_requests, SUM(CASE WHEN do_not_track THEN 1 ELSE 0 END) AS do_not_track_requests, AVG(duration_ms) AS average_duration_ms FROM access_statistic_event'.$where,
+                ['api', ...$parameters],
             ) ?: [];
+            $apiRequests = $this->intValue($base, 'api_requests');
+            $totalRequests = $this->intValue($base, 'total_requests');
             $statusFamilies = ['2xx' => 0, '3xx' => 0, '4xx' => 0, '5xx' => 0, 'other' => 0];
 
             foreach ($this->connection->fetchAllAssociative(
@@ -101,7 +109,9 @@ final readonly class AccessStatisticsAggregator
             }
 
             return [
-                'total_requests' => $this->intValue($base, 'total_requests'),
+                'total_requests' => $totalRequests,
+                'page_requests' => max(0, $totalRequests - $apiRequests),
+                'api_requests' => $apiRequests,
                 'unique_visitors' => $this->intValue($base, 'unique_visitors'),
                 'status_families' => $statusFamilies,
                 'bot_requests' => $this->intValue($base, 'bot_requests'),
@@ -113,6 +123,8 @@ final readonly class AccessStatisticsAggregator
 
             return [
                 'total_requests' => 0,
+                'page_requests' => 0,
+                'api_requests' => 0,
                 'unique_visitors' => 0,
                 'status_families' => ['2xx' => 0, '3xx' => 0, '4xx' => 0, '5xx' => 0, 'other' => 0],
                 'bot_requests' => 0,

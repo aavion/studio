@@ -639,6 +639,8 @@ admin:
     access_title: 'Zugriffsstatistiken'
     summary: '%count% Access-Log-Einträge sind in diesem anonymisierten Snapshot enthalten.'
     window: 'Zeitraum'
+    page_requests: 'Seitenaufrufe'
+    api_requests: 'API-Aufrufe'
     unique_visitors: 'Eindeutige Besucher'
     status_families: 'Statusfamilien'
     top_routes: 'Top-Routen'

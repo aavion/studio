@@ -54,28 +54,38 @@ final class AccessStatisticsAggregatorTest extends TestCase
         $this->insertEvent('00000000-0000-7000-8000-000000000001', 'request-a', 'visitor-a', 'GET', '/', 'content_home', 'public', 200, 20, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2026-05-27 10:00:00');
         $this->insertEvent('00000000-0000-7000-8000-000000000002', 'request-b', 'visitor-a', 'GET', '/missing', 'content_view', 'public', 404, 40, 'DE', 'safari', 'mobile', false, 'example.org', 'de-de', '2026-05-27 10:00:00', true);
         $this->insertEvent('00000000-0000-7000-8000-000000000003', 'request-c', 'visitor-b', 'POST', '/admin', 'backend_admin_index', 'admin', 302, 60, 'n/a', 'bot', 'bot', true, 'n/a', 'en-us', '2026-05-27 10:00:00');
+        $this->insertEvent('00000000-0000-7000-8000-000000000004', 'request-d', 'visitor-c', 'GET', '/api/v1/status', 'api_v1_status', 'api', 200, 80, 'n/a', 'other', 'desktop', false, 'n/a', 'en-us', '2026-05-27 10:00:00');
 
         $snapshot = (new AccessStatisticsAggregator($this->connection, new AccessStatisticsWindow()))->snapshot('all');
         $encoded = json_encode($snapshot, JSON_THROW_ON_ERROR);
 
         self::assertSame('all', $snapshot['window']);
         self::assertNull($snapshot['since']);
-        self::assertSame(3, $snapshot['total_requests']);
-        self::assertSame(2, $snapshot['unique_visitors']);
-        self::assertSame(1, $snapshot['status_families']['2xx']);
+        self::assertSame(4, $snapshot['total_requests']);
+        self::assertSame(3, $snapshot['page_requests']);
+        self::assertSame(1, $snapshot['api_requests']);
+        self::assertSame(3, $snapshot['unique_visitors']);
+        self::assertSame(2, $snapshot['status_families']['2xx']);
         self::assertSame(1, $snapshot['status_families']['3xx']);
         self::assertSame(1, $snapshot['status_families']['4xx']);
         self::assertContains(['label' => 'content_home', 'count' => 1], $snapshot['top_routes']);
         self::assertSame([['label' => 'content_view', 'count' => 1]], $snapshot['top_not_found']);
         self::assertContains(['label' => 'DE', 'count' => 2], $snapshot['top_countries']);
-        self::assertSame([['label' => 'safari', 'count' => 2], ['label' => 'bot', 'count' => 1]], $snapshot['top_browsers']);
-        self::assertSame([['label' => 'mobile', 'count' => 2], ['label' => 'bot', 'count' => 1]], $snapshot['device_types']);
+        self::assertContains(['label' => 'safari', 'count' => 2], $snapshot['top_browsers']);
+        self::assertContains(['label' => 'bot', 'count' => 1], $snapshot['top_browsers']);
+        self::assertContains(['label' => 'other', 'count' => 1], $snapshot['top_browsers']);
+        self::assertContains(['label' => 'mobile', 'count' => 2], $snapshot['device_types']);
+        self::assertContains(['label' => 'bot', 'count' => 1], $snapshot['device_types']);
+        self::assertContains(['label' => 'desktop', 'count' => 1], $snapshot['device_types']);
         self::assertSame(1, $snapshot['bot_requests']);
         self::assertSame(1, $snapshot['do_not_track_requests']);
-        self::assertSame([['label' => 'public', 'count' => 2], ['label' => 'admin', 'count' => 1]], $snapshot['surfaces']);
+        self::assertContains(['label' => 'public', 'count' => 2], $snapshot['surfaces']);
+        self::assertContains(['label' => 'admin', 'count' => 1], $snapshot['surfaces']);
+        self::assertContains(['label' => 'api', 'count' => 1], $snapshot['surfaces']);
         self::assertSame([['label' => 'example.org', 'count' => 2]], $snapshot['top_referrers']);
-        self::assertSame([['label' => 'de-de', 'count' => 2], ['label' => 'en-us', 'count' => 1]], $snapshot['languages']);
-        self::assertSame(40, $snapshot['average_duration_ms']);
+        self::assertContains(['label' => 'de-de', 'count' => 2], $snapshot['languages']);
+        self::assertContains(['label' => 'en-us', 'count' => 2], $snapshot['languages']);
+        self::assertSame(50, $snapshot['average_duration_ms']);
         self::assertStringNotContainsString('visitor-a', $encoded);
         self::assertStringNotContainsString('visitor-b', $encoded);
     }
