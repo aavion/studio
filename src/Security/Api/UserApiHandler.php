@@ -81,7 +81,7 @@ final readonly class UserApiHandler implements ApiEndpointHandlerInterface
         $groups = $this->groups($payload['groups'] ?? $this->groupIdentifiers($user));
         $errors = [];
 
-        if (!$status instanceof UserAccountStatus) {
+        if (!$status instanceof UserAccountStatus || UserAccountStatus::Deleted === $status) {
             $errors['status'] = ['admin.users.form.errors.invalid_status'];
         }
 

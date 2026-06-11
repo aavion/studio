@@ -240,7 +240,7 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
     private function groupUpdateErrors(Request $request, AclGroup $group, array $pending): array
     {
         $errors = [];
-        if ('' === $pending['name']) {
+        if ('' === $pending['name'] || mb_strlen($pending['name']) > AclGroup::MAX_NAME_LENGTH) {
             $errors['name'] = ['admin.groups.form.invalid'];
         }
 

@@ -122,6 +122,28 @@ final class ApiUserControllerTest extends WebTestCase
         self::assertSame('user.account_updated', $payload['meta']['audit_action']);
     }
 
+    public function testUserPatchRejectsDeletedStatus(): void
+    {
+        $client = self::createClient();
+        $target = $this->createUserWithLevel(AccessLevel::AUTHOR, 'apiuserdelpatch', 'current-password');
+        $plainKey = $this->createPlainApiKey('apiuserdelpat', ApiKeyStatus::ReadWrite);
+
+        $client->request('PATCH', '/api/v1/admin/users/items/'.$target->username(), server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'status' => 'deleted',
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(422);
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api.validation_failed', $payload['error']['code']);
+        self::assertSame(['admin.users.form.errors.invalid_status'], $payload['error']['details']['fields']['status']);
+
+        self::getContainer()->get(EntityManagerInterface::class)->refresh($target);
+        self::assertSame(UserAccountStatus::Active, $target->status());
+    }
+
     public function testUserPatchReturnsValidationErrors(): void
     {
         $client = self::createClient();
@@ -368,6 +390,27 @@ final class ApiUserControllerTest extends WebTestCase
         $payload = $this->jsonPayload($client->getResponse()->getContent());
         self::assertSame('acl_group_delete_result', $payload['data']['type']);
         self::assertSame('deleted', $payload['data']['attributes']['status']);
+    }
+
+    public function testAclGroupPatchRejectsOverlongNamesBeforeConfirmation(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apiusrgrpbad', ApiKeyStatus::ReadWrite);
+        $group = $this->createGroup('api_group_bad_name', AccessLevel::USER);
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
+
+        $client->request('PATCH', '/api/v1/admin/users/groups/items/'.$group->identifier().'?confirm=true', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'name' => str_repeat('A', AclGroup::MAX_NAME_LENGTH + 1),
+            'min_role' => AccessLevel::USER,
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(422);
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api.validation_failed', $payload['error']['code']);
+        self::assertSame(['admin.groups.form.invalid'], $payload['error']['details']['fields']['name']);
     }
 
     public function testUserGroupMembershipCanBeAddedAndRemoved(): void
