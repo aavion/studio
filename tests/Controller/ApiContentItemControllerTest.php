@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Content\Api\ContentApiItemListQuery;
 use App\Content\Schema\ContentSchemaSource;
 use App\Core\Access\AccessLevel;
 use App\Entity\ApiKey;
@@ -162,7 +163,37 @@ final class ApiContentItemControllerTest extends WebTestCase
         self::assertSame('slug', $filtered['meta']['filters']['sort']);
     }
 
-    public function testContentItemListDoesNotExposeDraftStatusToAnonymousActors(): void
+    public function testContentItemListPaginatesAfterAccessFiltering(): void
+    {
+        $client = self::createClient();
+        $this->createContentTree();
+        $this->addRestrictedChildBeforeKael();
+
+        $client->request('GET', '/api/v1/content/items', [
+            'parent' => '/projects/aurora-7/lore/characters/crew',
+            'sort' => 'slug',
+            'limit' => '1',
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame(1, $payload['meta']['count']);
+        self::assertSame('kael-mercer', $payload['data'][0]['attributes']['slug']);
+    }
+
+    public function testContentItemListCapsLargePageNumbers(): void
+    {
+        $client = self::createClient();
+        $this->createContentTree();
+
+        $client->request('GET', '/api/v1/content/items', ['page' => '999999']);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame(ContentApiItemListQuery::MAX_PAGE, $payload['meta']['pagination']['page']);
+    }
+
+    public function testContentItemListKeepsPublishedEndpointToPublishedItems(): void
     {
         $client = self::createClient();
         $this->createContentTree();
@@ -181,10 +212,16 @@ final class ApiContentItemControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $publisher = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertSame(1, $publisher['meta']['count']);
-        self::assertSame('api-draft', $publisher['data'][0]['attributes']['slug']);
-    }
+        self::assertSame(0, $publisher['meta']['count']);
 
+        $client->request('GET', '/api/v1/content/items', ['status' => 'all'], server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$publisherKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $all = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame(0, $all['meta']['count']);
+    }
 
     public function testContentItemVersionSelectorIsRegisteredButDeferred(): void
     {
@@ -346,7 +383,7 @@ final class ApiContentItemControllerTest extends WebTestCase
 
     private function removeExistingContentTree(EntityManagerInterface $entityManager): void
     {
-        for ($index = 16; $index >= 10; --$index) {
+        for ($index = 17; $index >= 10; --$index) {
             $existing = $entityManager->getRepository(ContentItem::class)->find('6b100000-0000-7000-8000-0000000000'.$index);
             if ($existing instanceof ContentItem) {
                 $entityManager->remove($existing);
@@ -363,6 +400,29 @@ final class ApiContentItemControllerTest extends WebTestCase
             $entityManager->remove($existing);
             $entityManager->flush();
         }
+    }
+
+    private function addRestrictedChildBeforeKael(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $crew = $entityManager->find(ContentItem::class, '6b100000-0000-7000-8000-000000000014');
+        $schema = $entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'api_character']);
+
+        self::assertInstanceOf(ContentItem::class, $crew);
+        self::assertInstanceOf(ContentSchema::class, $schema);
+        self::assertInstanceOf(ContentSchemaVersion::class, $schema->activeVersion());
+
+        $hidden = $this->contentItem('6b100000-0000-7000-8000-000000000017', 'aa-hidden', $crew->uid());
+        $hidden->setViewRule(AccessLevel::AUTHOR);
+        $hidden->activateRevision($this->revision(
+            '6b100000-0000-7000-8000-000000000027',
+            $hidden,
+            $schema->activeVersion(),
+            'Hidden API character',
+        ));
+
+        $entityManager->persist($hidden);
+        $entityManager->flush();
     }
 
     private function createPlainApiKey(string $prefix, int $accessLevel, ApiKeyStatus $status): string

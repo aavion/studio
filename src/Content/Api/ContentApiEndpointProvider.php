@@ -57,10 +57,10 @@ final readonly class ContentApiEndpointProvider implements ApiEndpointProviderIn
         return [
             ['name' => 'language', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
             ['name' => 'variant', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-            ['name' => 'status', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string', 'enum' => ['published', 'draft', 'deleted', 'all']]],
+            ['name' => 'status', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string', 'enum' => ['published']]],
             ['name' => 'schema', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
             ['name' => 'parent', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
-            ApiListQueryParameterDefinition::page(),
+            ['name' => 'page', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'integer', 'minimum' => 1, 'maximum' => ContentApiItemListQuery::MAX_PAGE]],
             ApiListQueryParameterDefinition::limitRange(100),
             ApiListQueryParameterDefinition::sort(),
         ];

@@ -7,11 +7,12 @@ namespace App\Content\Api;
 use App\Content\ContentStatus;
 use App\Content\Read\PublishedContentResolver;
 use App\Core\Access\AccessActor;
-use App\Core\Access\AccessLevel;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class ContentApiItemListQuery
 {
+    public const MAX_PAGE = 1000;
+
     public function __construct(
         private PublishedContentResolver $contentResolver,
         private ContentApiPath $paths,
@@ -38,10 +39,10 @@ final readonly class ContentApiItemListQuery
         $sort = $this->queryString($request, 'sort', 'sort_order');
 
         return [
-            'page' => $this->positiveIntQuery($request, 'page', 1, 100000),
+            'page' => $this->positiveIntQuery($request, 'page', 1, self::MAX_PAGE),
             'limit' => $this->positiveIntQuery($request, 'limit', 100, 100),
             'status' => $status,
-            'statuses' => $this->statusFilter($status, $actor),
+            'statuses' => $this->statusFilter($status),
             'schema' => $this->queryString($request, 'schema', ''),
             'parent' => $parent,
             'parent_uid' => $this->parentUid($parent, $actor),
@@ -53,20 +54,9 @@ final readonly class ContentApiItemListQuery
     /**
      * @return list<ContentStatus>|null
      */
-    private function statusFilter(string $status, AccessActor $actor): ?array
+    private function statusFilter(string $status): ?array
     {
-        if ($actor->accessLevel() < AccessLevel::PUBLISHER) {
-            return in_array($status, ['published', 'all'], true) ? [ContentStatus::Published] : null;
-        }
-
-        return match ($status) {
-            'all' => [],
-            'draft' => [ContentStatus::Draft],
-            'scheduled' => [ContentStatus::Scheduled],
-            'archived' => [ContentStatus::Archived],
-            'deleted' => [ContentStatus::Deleted],
-            default => [ContentStatus::Published],
-        };
+        return 'published' === $status ? [ContentStatus::Published] : null;
     }
 
     private function parentUid(string $parent, AccessActor $actor): ?string

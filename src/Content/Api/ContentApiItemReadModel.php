@@ -23,6 +23,7 @@ final readonly class ContentApiItemReadModel
         private PublishedContentResolver $contentResolver,
         private ContentApiPath $paths,
         private ContentApiItemListQuery $listQuery,
+        private ContentApiVisibleItemPager $visibleItemPager,
     ) {
     }
 
@@ -70,16 +71,8 @@ final readonly class ContentApiItemReadModel
             $queryBuilder->addOrderBy($field, $direction);
         }
 
-        $items = $queryBuilder
-            ->setFirstResult(($query['page'] - 1) * $query['limit'])
-            ->setMaxResults($query['limit'])
-            ->getQuery()
-            ->getResult();
-
-        $visibleItems = array_values(array_filter(array_map(
-            fn (ContentItem $item): ?array => $this->accessPolicy->allowsView($item, $actor) ? $this->itemResource($item) : null,
-            $items,
-        )));
+        $items = $this->visibleItemPager->page($queryBuilder, $query['page'], $query['limit'], $actor);
+        $visibleItems = array_map(fn (ContentItem $item): array => $this->itemResource($item), $items);
 
         return [
             'items' => $visibleItems,

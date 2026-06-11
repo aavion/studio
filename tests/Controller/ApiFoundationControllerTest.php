@@ -152,6 +152,40 @@ final class ApiFoundationControllerTest extends WebTestCase
         self::assertSame('API-Key-Authentifizierung fehlgeschlagen.', $payload['error']['message']);
     }
 
+    public function testStatusRejectsMalformedBearerCredentials(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/api/v1/status', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer ',
+        ]);
+
+        self::assertResponseStatusCodeSame(401);
+        self::assertSame('Bearer realm="Studio API"', $client->getResponse()->headers->get('WWW-Authenticate'));
+    }
+
+    public function testStatusIgnoresNonBearerAuthorizationOnPublicReads(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/api/v1/status', server: [
+            'HTTP_AUTHORIZATION' => 'Basic unrelated',
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api_status', $payload['data']['type']);
+    }
+
+    public function testPrivateEndpointStillChallengesNonBearerAuthorization(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/api/v1/admin', server: [
+            'HTTP_AUTHORIZATION' => 'Basic unrelated',
+        ]);
+
+        self::assertResponseStatusCodeSame(401);
+        self::assertSame('Bearer realm="Studio API"', $client->getResponse()->headers->get('WWW-Authenticate'));
+    }
+
     public function testStatusAcceptsReadOnlyBearerApiKey(): void
     {
         $client = self::createClient();

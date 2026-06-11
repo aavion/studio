@@ -33,7 +33,7 @@ final class ApiKeyAuthenticator extends AbstractAuthenticator
     public function supports(Request $request): ?bool
     {
         return str_starts_with($request->getPathInfo(), '/api/v1')
-            && is_string($request->headers->get('Authorization'));
+            && $this->hasBearerAuthorizationScheme($request);
     }
 
     public function authenticate(Request $request): Passport
@@ -87,6 +87,13 @@ final class ApiKeyAuthenticator extends AbstractAuthenticator
         $token = trim($matches[1]);
 
         return '' !== $token && strlen($token) <= 512 ? $token : null;
+    }
+
+    private function hasBearerAuthorizationScheme(Request $request): bool
+    {
+        $authorization = $request->headers->get('Authorization');
+
+        return is_string($authorization) && 1 === preg_match('/^Bearer(?:\s+|$)/i', $authorization);
     }
 
     private function apiKeyFor(string $plainKey): ?ApiKey
