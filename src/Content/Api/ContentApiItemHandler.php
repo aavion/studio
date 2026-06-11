@@ -38,9 +38,13 @@ final readonly class ContentApiItemHandler implements ApiEndpointHandlerInterfac
         $path = $request->getPathInfo();
 
         if (ContentApiPath::BASE === $path) {
-            $items = $this->readModel->visibleItems($actor);
+            $list = $this->readModel->visibleItems($request, $actor);
 
-            return $this->responder->data($items, meta: ['count' => count($items)]);
+            return $this->responder->data($list['items'], meta: [
+                'count' => count($list['items']),
+                'pagination' => $list['pagination'],
+                'filters' => $list['filters'],
+            ]);
         }
 
         $itemPath = $this->paths->itemFromRequestPath($path);

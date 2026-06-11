@@ -48,6 +48,19 @@ final class ApiEndpointAccessSubscriberTest extends TestCase
         self::assertSame('Bearer realm="Studio API"', $event->getResponse()->headers->get('WWW-Authenticate'));
     }
 
+    public function testItPreservesEarlierApiResponses(): void
+    {
+        $request = $this->request('GET', '/api/v1/private-status', 'api_private_status');
+        $event = new RequestEvent($this->kernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+        $event->setResponse(new Response('Unavailable', Response::HTTP_SERVICE_UNAVAILABLE));
+
+        $this->subscriber()->onKernelRequest($event);
+
+        self::assertSame(Response::HTTP_SERVICE_UNAVAILABLE, $event->getResponse()->getStatusCode());
+        self::assertSame('Unavailable', $event->getResponse()->getContent());
+        self::assertNull($event->getResponse()->headers->get('WWW-Authenticate'));
+    }
+
     public function testEndpointDefinitionsRejectPublicMutations(): void
     {
         $this->expectException(MessageException::class);

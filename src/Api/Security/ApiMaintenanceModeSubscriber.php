@@ -28,7 +28,7 @@ final readonly class ApiMaintenanceModeSubscriber implements EventSubscriberInte
     public function onKernelRequest(RequestEvent $event): void
     {
         $request = $event->getRequest();
-        if (!$this->maintenanceEnabled || !$event->isMainRequest() || !str_starts_with($request->getPathInfo(), '/api/v1')) {
+        if (!$this->maintenanceEnabled || !$event->isMainRequest() || $event->hasResponse() || !str_starts_with($request->getPathInfo(), '/api/v1')) {
             return;
         }
 

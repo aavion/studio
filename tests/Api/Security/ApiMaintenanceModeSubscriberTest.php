@@ -58,6 +58,17 @@ final class ApiMaintenanceModeSubscriberTest extends TestCase
         self::assertSame(Response::HTTP_SERVICE_UNAVAILABLE, $event->getResponse()->getStatusCode());
     }
 
+    public function testItPreservesEarlierApiResponses(): void
+    {
+        $event = $this->event('/api/v1/status');
+        $event->setResponse(new Response('Setup incomplete', Response::HTTP_SERVICE_UNAVAILABLE));
+
+        $this->subscriber(true)->onKernelRequest($event);
+
+        self::assertSame(Response::HTTP_SERVICE_UNAVAILABLE, $event->getResponse()->getStatusCode());
+        self::assertSame('Setup incomplete', $event->getResponse()->getContent());
+    }
+
     public function testItIgnoresRequestsWhenMaintenanceIsDisabled(): void
     {
         $event = $this->event('/api/v1/status');

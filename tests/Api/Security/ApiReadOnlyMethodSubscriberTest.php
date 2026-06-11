@@ -57,6 +57,19 @@ final class ApiReadOnlyMethodSubscriberTest extends TestCase
         self::assertFalse($event->hasResponse());
     }
 
+    public function testItPreservesEarlierApiResponses(): void
+    {
+        $request = Request::create('/api/v1/status', 'POST');
+        $this->context(ApiKeyStatus::ReadOnly)->attachTo($request);
+        $event = new RequestEvent($this->kernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+        $event->setResponse(new Response('Unsupported media type', Response::HTTP_UNSUPPORTED_MEDIA_TYPE));
+
+        $this->subscriber()->onKernelRequest($event);
+
+        self::assertSame(Response::HTTP_UNSUPPORTED_MEDIA_TYPE, $event->getResponse()->getStatusCode());
+        self::assertSame('Unsupported media type', $event->getResponse()->getContent());
+    }
+
     private function subscriber(): ApiReadOnlyMethodSubscriber
     {
         return new ApiReadOnlyMethodSubscriber(new ApiResponder(

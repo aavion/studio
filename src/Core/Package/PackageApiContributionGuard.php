@@ -23,6 +23,8 @@ final class PackageApiContributionGuard
             ]);
         }
 
+        self::assertPathPattern($expectedPrefix, $definition->pathPattern());
+
         if (null === $definition->handlerKey()) {
             throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_HANDLER_INVALID, [
                 '%handler%' => '',
@@ -47,6 +49,44 @@ final class PackageApiContributionGuard
                 '%handler%' => $handlerKey,
             ]);
         }
+    }
+
+    private static function assertPathPattern(string $expectedPrefix, ?string $pathPattern): void
+    {
+        if (null === $pathPattern) {
+            return;
+        }
+
+        $body = self::pathPatternBody($pathPattern);
+        $delimiter = $pathPattern[0] ?? '#';
+        $expectedStart = '^'.preg_quote($expectedPrefix, $delimiter);
+
+        if (null !== $body && str_starts_with($body, $expectedStart)) {
+            return;
+        }
+
+        throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_PATH_INVALID, [
+            '%path%' => $pathPattern,
+        ]);
+    }
+
+    private static function pathPatternBody(string $pathPattern): ?string
+    {
+        if ('' === $pathPattern) {
+            return null;
+        }
+
+        $delimiter = $pathPattern[0];
+        if (ctype_alnum($delimiter) || '\\' === $delimiter || ctype_space($delimiter)) {
+            return null;
+        }
+
+        $end = strrpos($pathPattern, $delimiter);
+        if (false === $end || 0 === $end) {
+            return null;
+        }
+
+        return substr($pathPattern, 1, $end - 1);
     }
 
     /**

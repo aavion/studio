@@ -35,7 +35,7 @@ final readonly class ApiEndpointPermissionSubscriber implements EventSubscriberI
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest()) {
+        if (!$event->isMainRequest() || $event->hasResponse()) {
             return;
         }
 

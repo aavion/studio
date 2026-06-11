@@ -130,6 +130,11 @@ final readonly class ApiEndpointDefinition
         return $this->minimumAccessLevel;
     }
 
+    public function pathPattern(): ?string
+    {
+        return $this->pathPattern;
+    }
+
     public function matchesPath(string $path): bool
     {
         if ($this->path === $path) {

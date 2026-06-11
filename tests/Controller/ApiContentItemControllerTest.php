@@ -126,6 +126,66 @@ final class ApiContentItemControllerTest extends WebTestCase
         self::assertFalse($versions['data'][1]['attributes']['active']);
     }
 
+    public function testContentItemListHonorsDocumentedPaginationAndFilters(): void
+    {
+        $client = self::createClient();
+        $this->createContentTree();
+
+        $client->request('GET', '/api/v1/content/items', [
+            'parent' => '/missing-parent',
+            'schema' => 'api_character',
+            'sort' => 'slug',
+            'limit' => '1',
+            'page' => '1',
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame(0, $payload['meta']['count']);
+
+        $client->request('GET', '/api/v1/content/items', [
+            'parent' => '/projects/aurora-7/lore/characters/crew',
+            'schema' => 'api_character',
+            'sort' => 'slug',
+            'limit' => '1',
+            'page' => '1',
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $filtered = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame(1, $filtered['meta']['count']);
+        self::assertSame('kael-mercer', $filtered['data'][0]['attributes']['slug']);
+        self::assertSame(1, $filtered['meta']['pagination']['page']);
+        self::assertSame(1, $filtered['meta']['pagination']['limit']);
+        self::assertSame('/projects/aurora-7/lore/characters/crew', $filtered['meta']['filters']['parent']);
+        self::assertSame('api_character', $filtered['meta']['filters']['schema']);
+        self::assertSame('slug', $filtered['meta']['filters']['sort']);
+    }
+
+    public function testContentItemListDoesNotExposeDraftStatusToAnonymousActors(): void
+    {
+        $client = self::createClient();
+        $this->createContentTree();
+
+        $client->request('GET', '/api/v1/content/items', ['status' => 'draft']);
+
+        self::assertResponseIsSuccessful();
+        $anonymous = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame(0, $anonymous['meta']['count']);
+        self::assertSame('draft', $anonymous['meta']['filters']['status']);
+
+        $publisherKey = $this->createPlainApiKey('apilistpub', AccessLevel::PUBLISHER, ApiKeyStatus::ReadOnly);
+        $client->request('GET', '/api/v1/content/items', ['status' => 'draft'], server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$publisherKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $publisher = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame(1, $publisher['meta']['count']);
+        self::assertSame('api-draft', $publisher['data'][0]['attributes']['slug']);
+    }
+
+
     public function testContentItemVersionSelectorIsRegisteredButDeferred(): void
     {
         $client = self::createClient();
@@ -227,6 +287,12 @@ final class ApiContentItemControllerTest extends WebTestCase
         $kael->addRevision($this->revision('6b100000-0000-7000-8000-000000000022', $kael, $schemaVersion, 'Kael Mercer Draft', 2));
         $items[] = $kael;
 
+        $draft = new ContentItem('6b100000-0000-7000-8000-000000000016', 'api-draft');
+        $draft->setAvailableLanguages(['de']);
+        $draft->setAvailableVariants(['default']);
+        $draft->activateRevision($this->revision('6b100000-0000-7000-8000-000000000026', $draft, $schemaVersion, 'API Draft'));
+        $items[] = $draft;
+
         foreach ($items as $item) {
             $entityManager->persist($item);
         }
@@ -280,7 +346,7 @@ final class ApiContentItemControllerTest extends WebTestCase
 
     private function removeExistingContentTree(EntityManagerInterface $entityManager): void
     {
-        for ($index = 15; $index >= 10; --$index) {
+        for ($index = 16; $index >= 10; --$index) {
             $existing = $entityManager->getRepository(ContentItem::class)->find('6b100000-0000-7000-8000-0000000000'.$index);
             if ($existing instanceof ContentItem) {
                 $entityManager->remove($existing);

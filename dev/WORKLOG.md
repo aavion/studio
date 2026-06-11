@@ -76,6 +76,7 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-07
+- Hardened API review findings around response preservation and package-owned route patterns: endpoint access, endpoint permission, maintenance, and read-only subscribers now preserve earlier API responses such as disabled/setup/maintenance `503`, anonymous `401` challenges, and media-type errors; package API contributions must keep custom path patterns anchored below their owned package subtree; and content item collection reads now honor documented pagination, status, schema, parent, and sort query parameters without exposing draft/deleted status lists to anonymous actors.
 - Unified package identity around canonical hyphen-only `PACKAGE_SLUG`: package validation now rejects slash/dot/underscore identifiers, requires the package directory basename to match the slug, and keeps admin/package API paths slug-based without introducing a second API identifier.
 - Rejected `deleted` as a normal admin user PATCH status so retained-deleted accounts stay inside the dedicated deletion/review workflows.
 - Returned `403` for authenticated content ACL denials while keeping anonymous ACL denials at `401`, covering both API content reads and public web content routing.

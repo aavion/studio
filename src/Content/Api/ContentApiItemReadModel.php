@@ -13,6 +13,7 @@ use App\Core\Access\AccessActor;
 use App\Entity\ContentItem;
 use App\Entity\ContentRevision;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Request;
 
 final readonly class ContentApiItemReadModel
 {
@@ -21,24 +22,79 @@ final readonly class ContentApiItemReadModel
         private ContentReadAccessPolicy $accessPolicy,
         private PublishedContentResolver $contentResolver,
         private ContentApiPath $paths,
+        private ContentApiItemListQuery $listQuery,
     ) {
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * @return array{
+     *     items: list<array<string, mixed>>,
+     *     pagination: array{page: int, limit: int, returned: int},
+     *     filters: array{status: string, schema: string, parent: string, sort: string}
+     * }
      */
-    public function visibleItems(AccessActor $actor): array
+    public function visibleItems(Request $request, AccessActor $actor): array
     {
-        $items = $this->entityManager->getRepository(ContentItem::class)->findBy(
-            ['status' => ContentStatus::Published, 'visibility' => ContentVisibility::Public],
-            ['sortOrder' => 'ASC', 'slug' => 'ASC'],
-            100,
-        );
+        $query = $this->listQuery->fromRequest($request, $actor);
+        if (null === $query['statuses']) {
+            return $this->emptyList($query);
+        }
 
-        return array_values(array_filter(array_map(
+        $queryBuilder = $this->entityManager->getRepository(ContentItem::class)->createQueryBuilder('item')
+            ->andWhere('item.visibility = :visibility')
+            ->setParameter('visibility', ContentVisibility::Public);
+
+        if ([] !== $query['statuses']) {
+            $queryBuilder
+                ->andWhere('item.status IN (:statuses)')
+                ->setParameter('statuses', $query['statuses']);
+        }
+
+        if ('' !== $query['schema'] || 'schema' === ltrim($query['sort'], '-')) {
+            $queryBuilder->innerJoin('item.schema', 'schema');
+        }
+
+        if ('' !== $query['schema']) {
+            $queryBuilder
+                ->andWhere('schema.identifier = :schema')
+                ->setParameter('schema', $query['schema']);
+        }
+
+        if (null !== $query['parent_uid']) {
+            $queryBuilder
+                ->andWhere('item.parentUid = :parentUid')
+                ->setParameter('parentUid', $query['parent_uid']);
+        }
+
+        foreach ($query['order_by'] as $field => $direction) {
+            $queryBuilder->addOrderBy($field, $direction);
+        }
+
+        $items = $queryBuilder
+            ->setFirstResult(($query['page'] - 1) * $query['limit'])
+            ->setMaxResults($query['limit'])
+            ->getQuery()
+            ->getResult();
+
+        $visibleItems = array_values(array_filter(array_map(
             fn (ContentItem $item): ?array => $this->accessPolicy->allowsView($item, $actor) ? $this->itemResource($item) : null,
             $items,
         )));
+
+        return [
+            'items' => $visibleItems,
+            'pagination' => [
+                'page' => $query['page'],
+                'limit' => $query['limit'],
+                'returned' => count($visibleItems),
+            ],
+            'filters' => [
+                'status' => $query['status'],
+                'schema' => $query['schema'],
+                'parent' => $query['parent'],
+                'sort' => $query['sort'],
+            ],
+        ];
     }
 
     /**
@@ -160,6 +216,43 @@ final readonly class ContentApiItemReadModel
                 'children' => $self.'/items',
                 'variants' => $self.'/variants',
                 'revisions' => $self.'/revisions',
+            ],
+        ];
+    }
+
+    /**
+     * @param array{
+     *     page: int,
+     *     limit: int,
+     *     status: string,
+     *     statuses: list<ContentStatus>|null,
+     *     schema: string,
+     *     parent: string,
+     *     parent_uid: string|null,
+     *     sort: string,
+     *     order_by: array<string, 'ASC'|'DESC'>
+     * } $query
+     *
+     * @return array{
+     *     items: list<array<string, mixed>>,
+     *     pagination: array{page: int, limit: int, returned: int},
+     *     filters: array{status: string, schema: string, parent: string, sort: string}
+     * }
+     */
+    private function emptyList(array $query): array
+    {
+        return [
+            'items' => [],
+            'pagination' => [
+                'page' => $query['page'],
+                'limit' => $query['limit'],
+                'returned' => 0,
+            ],
+            'filters' => [
+                'status' => $query['status'],
+                'schema' => $query['schema'],
+                'parent' => $query['parent'],
+                'sort' => $query['sort'],
             ],
         ];
     }

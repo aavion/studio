@@ -31,7 +31,7 @@ final readonly class ApiReadOnlyMethodSubscriber implements EventSubscriberInter
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest()) {
+        if (!$event->isMainRequest() || $event->hasResponse()) {
             return;
         }
 

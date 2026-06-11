@@ -52,6 +52,25 @@ final class PackageApiContributionGuardTest extends TestCase
         ));
     }
 
+    public function testItRejectsPackageEndpointPatternsOutsideOwnedNamespace(): void
+    {
+        $package = $this->package('demo-module');
+
+        $this->expectException(MessageException::class);
+
+        PackageApiContributionGuard::assertEndpoint($package, new ApiEndpointDefinition(
+            'package',
+            'GET',
+            PackageApiEndpointPath::path($package->packageName(), 'demo'),
+            'api_v1_endpoint_dispatch',
+            'getDemoModuleContribution',
+            'Return demo contribution.',
+            'packages.demo-module.demo',
+            ['packages-demo-module-demo'],
+            pathPattern: '#^/api/v1/.*$#',
+        ));
+    }
+
     public function testItRejectsForeignHandlerNamespaces(): void
     {
         $package = $this->package('demo-module');
