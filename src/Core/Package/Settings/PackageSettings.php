@@ -11,6 +11,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
 use App\Core\Package\PackageMessageCode;
 use App\Core\Package\PackageMessageKey;
+use App\Core\Package\ExtensionPackageIdentity;
 use App\Core\Validation\Identifier;
 use App\Form\FormFieldDefinition;
 use DateTimeImmutable;
@@ -173,7 +174,7 @@ final readonly class PackageSettings
 
     private function validatePackageName(string $packageName, string $operation): bool
     {
-        if (1 === preg_match('/^[a-z0-9][a-z0-9_.\/-]*$/', $packageName)) {
+        if (ExtensionPackageIdentity::isPackageName($packageName)) {
             return true;
         }
 

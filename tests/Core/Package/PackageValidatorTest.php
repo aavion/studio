@@ -7,6 +7,7 @@ namespace App\Tests\Core\Package;
 use App\Core\Manifest\Manifest;
 use App\Core\Package\PackageCandidate;
 use App\Core\Package\PackageInspection;
+use App\Core\Package\PackageManifestSpec;
 use App\Core\Package\PackageSource;
 use App\Core\Package\PackageSpec;
 use App\Core\Package\PackageTranslationNamespaceValidator;
@@ -19,17 +20,20 @@ final class PackageValidatorTest extends TestCase
 {
     use FilesystemTestHelper;
 
+    private string $rootDir;
     private string $packageDir;
 
     protected function setUp(): void
     {
-        $this->packageDir = $this->createTemporaryDirectory('system-package-validator');
+        $this->rootDir = $this->createTemporaryDirectory('system-package-validator');
+        $this->packageDir = $this->rootDir.'/system';
+        mkdir($this->packageDir, 0777, true);
         $this->writeFile('.manifest', 'PACKAGE_NAME=System');
     }
 
     protected function tearDown(): void
     {
-        $this->removeDirectory($this->packageDir);
+        $this->removeDirectory($this->rootDir);
     }
 
     public function testItAcceptsPackagesWithRequiredFilesAndDirectories(): void
@@ -137,6 +141,36 @@ final class PackageValidatorTest extends TestCase
         self::assertFalse($result->isSuccess());
         self::assertSame('package.identifier.invalid', $result->firstIssue()?->code());
         self::assertSame('PACKAGE_SLUG', $result->firstIssue()?->context()['key']);
+    }
+
+    public function testItRejectsSlashSeparatedPackageSlugs(): void
+    {
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'vendor/package']),
+            PackageSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.identifier.invalid', $result->firstIssue()?->code());
+        self::assertSame('PACKAGE_SLUG', $result->firstIssue()?->context()['key']);
+    }
+
+    public function testItRejectsPackageSlugThatDoesNotMatchDirectoryName(): void
+    {
+        $result = (new PackageValidator())->validate(
+            new PackageCandidate(
+                PackageSource::children('package', 'packages'),
+                $this->packageDir,
+                $this->packageDir.'/.manifest',
+                new Manifest(['PACKAGE_SLUG' => 'other-system', 'PACKAGE_NAME' => 'System']),
+            ),
+            PackageSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.identifier.invalid', $result->firstIssue()?->code());
+        self::assertSame('PACKAGE_SLUG', $result->firstIssue()?->context()['key']);
+        self::assertSame('system', $result->firstIssue()?->context()['expected_slug']);
     }
 
     public function testItRejectsMalformedPackageDependencies(): void
@@ -1085,6 +1119,13 @@ TWIG);
      */
     private function candidateWithManifest(array $manifest): PackageCandidate
     {
+        $slug = $manifest['PACKAGE_SLUG'] ?? 'system';
+        if (PackageManifestSpec::isValidSlug($slug) && basename($this->packageDir) !== $slug) {
+            $targetDir = $this->rootDir.'/'.$slug;
+            rename($this->packageDir, $targetDir);
+            $this->packageDir = $targetDir;
+        }
+
         return new PackageCandidate(
             PackageSource::children('package', 'packages'),
             $this->packageDir,

@@ -6,14 +6,15 @@ namespace App\Api\Endpoint;
 
 use App\Api\ApiMessageKey;
 use App\Core\Message\MessageException;
+use App\Core\Package\ExtensionPackageIdentity;
 
 final class PackageApiEndpointPath
 {
     public static function slug(string $packageName): string
     {
-        $slug = trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower($packageName)), '-');
+        $slug = trim($packageName);
 
-        if ('' === $slug) {
+        if (!ExtensionPackageIdentity::isPackageName($slug)) {
             throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_PATH_INVALID, [
                 '%path%' => $packageName,
             ]);

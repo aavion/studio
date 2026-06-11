@@ -47,16 +47,14 @@ final readonly class PackageApiReadModel
 
     public function packageNameForSlug(string $slug): ?string
     {
-        $matches = [];
-
         foreach ($this->overview->packages() as $package) {
             $packageName = (string) $package['package_name'];
-            if ($this->packageSlug($packageName) === $slug) {
-                $matches[] = $packageName;
+            if ($packageName === $slug) {
+                return $packageName;
             }
         }
 
-        return 1 === count($matches) ? $matches[0] : null;
+        return null;
     }
 
     public function packageSlug(string $packageName): string

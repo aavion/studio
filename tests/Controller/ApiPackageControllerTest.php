@@ -87,37 +87,6 @@ final class ApiPackageControllerTest extends WebTestCase
         self::assertSame('/api/v1/admin/packages/api-package-detail/delete', $actions['delete']);
     }
 
-    public function testPackageDetailUsesStableSlugForSlashPackageNames(): void
-    {
-        $client = self::createClient();
-        $plainKey = $this->createPlainApiKey('apipkgslug');
-        $this->upsertPackage('vendor/api-package', ExtensionPackageStatus::Inactive);
-
-        $client->request('GET', '/api/v1/admin/packages', server: [
-            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
-        ]);
-
-        self::assertResponseIsSuccessful();
-        $payload = $this->jsonPayload($client->getResponse()->getContent());
-        $listed = $this->resourceById($payload['data'], 'vendor-api-package');
-        self::assertSame('vendor/api-package', $listed['attributes']['package_name']);
-        self::assertSame('vendor-api-package', $listed['attributes']['package_slug']);
-
-        $client->request('GET', '/api/v1/admin/packages/vendor-api-package', server: [
-            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
-        ]);
-
-        self::assertResponseIsSuccessful();
-        $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertSame('package', $payload['data']['type']);
-        self::assertSame('vendor-api-package', $payload['data']['id']);
-        self::assertSame('vendor/api-package', $payload['data']['attributes']['package_name']);
-        self::assertSame('/api/v1/admin/packages/vendor-api-package', $payload['data']['attributes']['api_path']);
-
-        $actions = array_column($payload['data']['attributes']['api_actions'], 'api_path', 'id');
-        self::assertSame('/api/v1/admin/packages/vendor-api-package/activate', $actions['activate']);
-    }
-
     public function testPackageLifecycleActionReturnsReviewUntilConfirmed(): void
     {
         $client = self::createClient();
