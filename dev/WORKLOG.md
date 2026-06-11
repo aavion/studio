@@ -76,6 +76,10 @@
 **Usage:** Create a new log entry at the top for every coding session roughly describing every committed change. At the start of each new feature branch, compact previous session logs by session, move them to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log.
 
 ### 2026-06-07
+- Unified package identity around canonical hyphen-only `PACKAGE_SLUG`: package validation now rejects slash/dot/underscore identifiers, requires the package directory basename to match the slug, and keeps admin/package API paths slug-based without introducing a second API identifier.
+- Rejected `deleted` as a normal admin user PATCH status so retained-deleted accounts stay inside the dedicated deletion/review workflows.
+- Returned `403` for authenticated content ACL denials while keeping anonymous ACL denials at `401`, covering both API content reads and public web content routing.
+- Validated ACL group rename lengths before applying confirmed API group edits so domain validation issues return structured API errors instead of uncaught exceptions.
 - Closed the retained-deleted user boundary for admin user/group membership API mutations so hidden deleted accounts cannot be modified through normal membership endpoints.
 - Moved content revision API reads out of public content delivery by gating `/api/v1/content/items/{item_path}/revisions` and revision detail stubs behind level-4 API actors while preserving the existing content resolver ACL path.
 - Addressed API review hardening findings: content revision navigation no longer leaks through public content delivery, normal user/admin detail paths reject retained deleted accounts, ACL group deletion no longer requires a JSON content type for empty confirm/review requests, and admin package management routes use canonical package slugs while returning package names as data.
