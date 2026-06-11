@@ -27,6 +27,7 @@ final class AccessRequestMetadataTest extends TestCase
         self::assertSame('request-123', $metadata->correlationId($request));
         self::assertIsInt($metadata->durationMs($request));
         self::assertSame('admin', $metadata->surface($request));
+        self::assertSame('api', $metadata->surface(Request::create('/api/v1/status')));
         self::assertSame('backend_admin_route', $metadata->resolvedRoute($request));
         self::assertSame('https://example.org/source', $metadata->referrer($request));
         self::assertSame('example.org', $metadata->referrerHost($request));

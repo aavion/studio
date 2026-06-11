@@ -195,7 +195,9 @@ final class PublicContentController extends AbstractController
         }
 
         if ($result->isUnauthorized()) {
-            return $this->httpError->unauthorized($request);
+            return null === $this->actor()->userUid()
+                ? $this->httpError->unauthorized($request)
+                : $this->httpError->forbidden($request);
         }
 
         if ($result->isForbidden()) {

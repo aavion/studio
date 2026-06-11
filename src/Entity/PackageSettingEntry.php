@@ -6,8 +6,7 @@ namespace App\Entity;
 
 use App\Core\Config\ConfigMessageKey;
 use App\Core\Config\ConfigValueType;
-use App\Core\Message\MessageException;
-use App\Core\Package\PackageMessageKey;
+use App\Core\Package\ExtensionPackageIdentity;
 use App\Core\Validation\Identifier;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
@@ -101,12 +100,6 @@ class PackageSettingEntry
 
     private static function assertPackageName(string $packageName): string
     {
-        if (1 !== preg_match('/^[a-z0-9][a-z0-9_.\/-]*$/', $packageName)) {
-            throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_IDENTIFIER_INVALID, [
-                '%identifier%' => $packageName,
-            ]);
-        }
-
-        return $packageName;
+        return ExtensionPackageIdentity::assertPackageName($packageName);
     }
 }

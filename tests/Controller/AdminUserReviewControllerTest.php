@@ -92,7 +92,7 @@ final class AdminUserReviewControllerTest extends WebTestCase
         $entityManager->flush();
 
         $crawler = $client->request('GET', '/admin/users/reviews');
-        $client->submit($crawler->filter('form[action="/admin/users/reviews/'.$user->uid().'/reactivate"]')->form());
+        $client->submit($crawler->filter('form[action="/admin/users/reviews/details/'.$user->username().'/reactivate"]')->form());
 
         self::assertResponseRedirects('/admin/users/reviews');
 
@@ -124,7 +124,7 @@ final class AdminUserReviewControllerTest extends WebTestCase
         $entityManager->flush();
 
         $crawler = $client->request('GET', '/admin/users/reviews');
-        $form = $crawler->filter('form[action="/admin/users/reviews/'.$user->uid().'/delete"]')->form();
+        $form = $crawler->filter('form[action="/admin/users/reviews/details/'.$user->username().'/delete"]')->form();
         $form['confirm_delete']->tick();
         $client->submit($form);
 
@@ -158,7 +158,7 @@ final class AdminUserReviewControllerTest extends WebTestCase
         $entityManager->flush();
 
         $crawler = $client->request('GET', '/admin/users/reviews');
-        $form = $crawler->filter('form[action="/admin/users/reviews/'.$user->uid().'/delete"]')->form();
+        $form = $crawler->filter('form[action="/admin/users/reviews/details/'.$user->username().'/delete"]')->form();
         $form['confirm_delete']->tick();
         $user->changeStatus(UserAccountStatus::Active);
         $entityManager->remove($token);
@@ -195,7 +195,7 @@ final class AdminUserReviewControllerTest extends WebTestCase
         $entityManager->flush();
 
         $crawler = $client->request('GET', '/admin/users/reviews');
-        $form = $crawler->filter('form[action="/admin/users/reviews/'.$user->uid().'/reactivate"]')->form();
+        $form = $crawler->filter('form[action="/admin/users/reviews/details/'.$user->username().'/reactivate"]')->form();
         $user->changeStatus(UserAccountStatus::Active);
         $entityManager->remove($token);
         $entityManager->flush();

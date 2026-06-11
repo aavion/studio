@@ -7,6 +7,7 @@ namespace App\Localization;
 use App\Content\Routing\ContentRouteLocalization;
 use App\Entity\UserAccount;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Exception\SessionNotFoundException;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -41,9 +42,10 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
 
         $request = $event->getRequest();
         $locale = $this->localePreferences->resolveRequestLocale(
-            $this->urlLocale($request->getPathInfo()),
+            $this->queryLocale($request) ?? $this->urlLocale($request->getPathInfo()),
             $this->userLocale(),
             $this->sessionLocale($event),
+            $this->preferredLocale($request),
         );
 
         if (null === $locale) {
@@ -57,6 +59,22 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
             $request->getSession()->set('_locale', $locale);
         } catch (SessionNotFoundException) {
         }
+    }
+
+    private function queryLocale(Request $request): ?string
+    {
+        $language = $request->query->get('language');
+
+        return is_string($language) && '' !== trim($language) ? trim($language) : null;
+    }
+
+    private function preferredLocale(Request $request): ?string
+    {
+        if ('' === trim((string) $request->headers->get('Accept-Language', ''))) {
+            return null;
+        }
+
+        return $request->getPreferredLanguage();
     }
 
     private function userLocale(): ?UserAccount
@@ -93,5 +111,4 @@ final readonly class RequestLocaleSubscriber implements EventSubscriberInterface
 
         return is_string($locale) && '' !== trim($locale) ? trim($locale) : null;
     }
-
 }

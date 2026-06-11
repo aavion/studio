@@ -17,6 +17,15 @@ services:
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
     _instanceof:
+        App\Api\Endpoint\ApiEndpointProviderInterface:
+            tags:
+                - { name: 'system.api_endpoint_provider', priority: 0 }
+        App\Api\Endpoint\ApiEndpointHandlerInterface:
+            tags:
+                - { name: 'system.api_endpoint_handler', priority: 0 }
+        App\Api\Endpoint\ApiEndpointHandlerProviderInterface:
+            tags:
+                - { name: 'system.api_endpoint_handler', priority: 0 }
         App\Core\Event\EventHookDescriptorProviderInterface:
             tags:
                 - { name: 'system.event_hook_provider', priority: 0 }
@@ -61,6 +70,7 @@ services:
             - '../src/**/*Actor.php'
             - '../src/**/*Capability.php'
             - '../src/**/*Change.php'
+            - '../src/Api/Http/ApiRequestContext.php'
             - '../src/**/*Contribution.php'
             - '../src/**/*Definition.php'
             - '../src/**/*Descriptor.php'
@@ -97,6 +107,19 @@ services:
 
     App\Core\Config\ConfigDefaultProviderInterface:
         alias: App\Core\Config\Settings\CoreConfigDefaultProvider
+
+    App\Api\Security\ApiAvailabilityCheckerInterface:
+        alias: App\Api\Security\DatabaseApiAvailabilityChecker
+
+    App\Api\Endpoint\ApiEndpointRegistry:
+        arguments:
+            $providers: !tagged_iterator { tag: system.api_endpoint_provider }
+
+    App\Api\Endpoint\ApiEndpointHandlerRegistry:
+        arguments:
+            $handlers: !tagged_iterator { tag: system.api_endpoint_handler }
+
+    App\Content\Api\ContentApiPath: ~
 
     App\Core\Package\PackageTranslationNamespaceValidator:
         arguments:
@@ -394,6 +417,10 @@ services:
             $providers: !tagged_iterator { tag: system.live_operation_queue_provider }
 
     App\Security\MaintenanceModeSubscriber:
+        arguments:
+            $maintenanceEnabled: '%env(bool:APP_MAINTENANCE)%'
+
+    App\Api\Security\ApiMaintenanceModeSubscriber:
         arguments:
             $maintenanceEnabled: '%env(bool:APP_MAINTENANCE)%'
 

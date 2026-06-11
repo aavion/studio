@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
+use App\Api\ApiFeaturePolicy;
 use App\Core\Access\AccessLevel;
 use App\Core\Config\ConfigDefaultProviderInterface;
 use App\Core\Config\ConfigValueType;
@@ -45,6 +46,9 @@ final readonly class SetupDefaultSeed
             ['key' => ConfigAuditLogPolicy::EVENTS_KEY, 'value' => $this->setting($input, ConfigAuditLogPolicy::EVENTS_KEY, ConfigAuditLogPolicy::DEFAULT_CATEGORIES), 'type' => ConfigValueType::Json],
             ['key' => AccessStatisticsPolicy::ENABLED_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, true), 'type' => ConfigValueType::Boolean],
+            ['key' => ApiFeaturePolicy::ENABLED_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
+            ['key' => ApiFeaturePolicy::CORS_ENABLED_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::CORS_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
+            ['key' => ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, []), 'type' => ConfigValueType::Json],
             ['key' => SchedulerSettings::ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::GET_AUTH_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::GET_AUTH_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Api\Endpoint\ApiEndpointDefinition;
+use App\Api\Endpoint\ApiEndpointHandlerInterface;
+use App\Api\Endpoint\ApiEndpointHandlerProviderInterface;
+use App\Api\Endpoint\ApiEndpointProviderInterface;
 use App\Core\Message\MessageException;
 use App\Core\Package\Settings\PackageSettingDefinition;
 use App\Core\Package\Settings\PackageSettingProviderInterface;
@@ -20,45 +24,28 @@ use App\View\Injection\DynamicViewInjectionProviderInterface;
 use App\View\Injection\StaticViewInjection;
 use App\View\Injection\StaticViewInjectionProviderInterface;
 
-final class PackageRuntimeContributionRegistry implements StaticViewInjectionProviderInterface, DynamicViewInjectionProviderInterface, PackageSettingProviderInterface, SchedulerTaskProviderInterface, SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface
+final class PackageRuntimeContributionRegistry implements StaticViewInjectionProviderInterface, DynamicViewInjectionProviderInterface, PackageSettingProviderInterface, ApiEndpointProviderInterface, ApiEndpointHandlerProviderInterface, SchedulerTaskProviderInterface, SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface
 {
     public function __construct(private ?PackageSettings $packageSettingsStore = null)
     {
     }
 
-    /**
-     * @var list<StaticViewInjection>
-     */
     private array $staticViewInjections = [];
 
-    /**
-     * @var list<ConfigurableStaticViewInjectionSet>
-     */
     private array $configurableStaticViewInjectionSets = [];
 
-    /**
-     * @var list<DynamicViewInjection>
-     */
     private array $dynamicViewInjections = [];
 
-    /**
-     * @var list<PackageSettingDefinition>
-     */
     private array $packageSettingDefinitions = [];
 
-    /**
-     * @var list<SchedulerTaskDefinition>
-     */
+    private array $apiEndpointDefinitions = [];
+
+    private array $apiEndpointHandlers = [];
+
     private array $schedulerTaskDefinitions = [];
 
-    /**
-     * @var list<SchedulerCallableProviderInterface>
-     */
     private array $schedulerCallableProviders = [];
 
-    /**
-     * @var list<SchedulerActionQueueProviderInterface>
-     */
     private array $schedulerActionQueueProviders = [];
 
     public function add(ExtensionPackage $package, mixed $contribution): void
@@ -104,6 +91,18 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
             return;
         }
 
+        if ($contribution instanceof ApiEndpointDefinition) {
+            $this->addApiEndpointDefinition($package, $contribution);
+
+            return;
+        }
+
+        if ($contribution instanceof ApiEndpointHandlerInterface) {
+            $this->addApiEndpointHandler($package, $contribution);
+
+            return;
+        }
+
         $providerHandled = false;
 
         if ($contribution instanceof StaticViewInjectionProviderInterface) {
@@ -125,6 +124,22 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
         if ($contribution instanceof PackageSettingProviderInterface) {
             foreach ($contribution->packageSettings() as $definition) {
                 $this->addToRegistry($package, $definition);
+            }
+
+            $providerHandled = true;
+        }
+
+        if ($contribution instanceof ApiEndpointProviderInterface) {
+            foreach ($contribution->apiEndpoints() as $definition) {
+                $this->addToRegistry($package, $definition);
+            }
+
+            $providerHandled = true;
+        }
+
+        if ($contribution instanceof ApiEndpointHandlerProviderInterface) {
+            foreach ($contribution->apiEndpointHandlers() as $handler) {
+                $this->addToRegistry($package, $handler);
             }
 
             $providerHandled = true;
@@ -172,6 +187,8 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
         $this->configurableStaticViewInjectionSets = $registry->configurableStaticViewInjectionSets;
         $this->dynamicViewInjections = $registry->dynamicViewInjections;
         $this->packageSettingDefinitions = $registry->packageSettingDefinitions;
+        $this->apiEndpointDefinitions = $registry->apiEndpointDefinitions;
+        $this->apiEndpointHandlers = $registry->apiEndpointHandlers;
         $this->schedulerTaskDefinitions = $registry->schedulerTaskDefinitions;
         $this->schedulerCallableProviders = $registry->schedulerCallableProviders;
         $this->schedulerActionQueueProviders = $registry->schedulerActionQueueProviders;
@@ -195,6 +212,18 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
         }
 
         $this->schedulerTaskDefinitions[] = $definition;
+    }
+
+    private function addApiEndpointDefinition(ExtensionPackage $package, ApiEndpointDefinition $definition): void
+    {
+        PackageApiContributionGuard::assertEndpoint($package, $definition);
+        $this->apiEndpointDefinitions[] = $definition;
+    }
+
+    private function addApiEndpointHandler(ExtensionPackage $package, ApiEndpointHandlerInterface $handler): void
+    {
+        PackageApiContributionGuard::assertHandler($package, $handler);
+        $this->apiEndpointHandlers[] = $handler;
     }
 
     public function staticViewInjections(): array
@@ -221,6 +250,16 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
     public function packageSettings(): array
     {
         return $this->packageSettingDefinitions;
+    }
+
+    public function apiEndpoints(): array
+    {
+        return $this->apiEndpointDefinitions;
+    }
+
+    public function apiEndpointHandlers(): array
+    {
+        return $this->apiEndpointHandlers;
     }
 
     public function schedulerTasks(): array

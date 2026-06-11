@@ -26,6 +26,7 @@ admin:
     security_settings: 'Sicherheit'
     package_settings: 'Pakete'
     statistics_settings: 'Statistiken'
+    api_settings: 'API'
     scheduler_settings: 'Scheduler'
     system_info: 'System-Info'
   actions:
@@ -248,6 +249,7 @@ admin:
       submit: 'Reset-Link erstellen'
       created: 'Passwort-Reset-Link erstellt.'
     fields:
+      uid: 'Interne UID'
       username: 'Username'
       email: 'E-Mail'
       status: 'Status'
@@ -422,6 +424,7 @@ admin:
         item: 'Eintrag'
         fields: 'Felder'
     fields:
+      uid: 'Interne UID'
       identifier: 'Identifier'
       name: 'Name'
       min_role: 'Mindestrolle'
@@ -636,6 +639,8 @@ admin:
     access_title: 'Zugriffsstatistiken'
     summary: '%count% Access-Log-Einträge sind in diesem anonymisierten Snapshot enthalten.'
     window: 'Zeitraum'
+    page_requests: 'Seitenaufrufe'
+    api_requests: 'API-Aufrufe'
     unique_visitors: 'Eindeutige Besucher'
     status_families: 'Statusfamilien'
     top_routes: 'Top-Routen'
@@ -685,6 +690,10 @@ admin:
       title: 'Statistik-Einstellungen'
       foundation_title: 'Statistik-Konfiguration'
       foundation_text: 'Aufzeichnung und Anzeige von Zugriffsstatistiken können unabhängig vom Raw-Access-Logging deaktiviert werden. Raw-Access-Logs bleiben für operative Sicherheit verfügbar und werden 30 Tage aufbewahrt.'
+    api:
+      title: 'API-Einstellungen'
+      foundation_title: 'API-Verfügbarkeit'
+      foundation_text: 'API-Zugriff kann für normale Nutzer deaktiviert werden, während Owner das Key-Management für operative Integrationen wie Scheduler-Aktivierung behalten.'
     packages:
       title: 'Paket-Einstellungen'
       foundation_title: 'Pakete mit Einstellungen'
@@ -774,6 +783,15 @@ admin:
         label: 'Zugriffsstatistiken aktivieren'
       statistics_respect_dnt:
         label: 'Do Not Track respektieren'
+      api_enabled:
+        label: 'API-Zugriff aktivieren'
+        help: 'Wenn deaktiviert, gibt /api/v1 eine 503-Antwort zurück und API-Key-Management wird für Nicht-Owner ausgeblendet.'
+      api_cors_enabled:
+        label: 'API-CORS aktivieren'
+        help: 'Erlaubt konfigurierten Browser-Origins den Zugriff auf /api/v1. Deaktiviert lassen, solange externe Browser-Clients keinen direkten Zugriff benötigen.'
+      api_cors_allowed_origins:
+        label: 'Erlaubte API-CORS-Origins'
+        help: 'JSON-Array exakter Origins wie ["https://client.example"]. Der Wildcard "*" sollte nur bewusst verwendet werden.'
       package_update_interval:
         label: 'Update-Check-Intervall'
       package_auto_updates:

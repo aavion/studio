@@ -75,7 +75,7 @@
                         <td>{{ group.identifier }}</td>
                         <td>{{ group.name }}</td>
                         <td>{{ group.minRole }}</td>
-                        <td><a href="{{ path('backend_admin_user_group_detail', {uid: group.uid}) }}">{{ 'admin.users.actions.details'|trans }}</a></td>
+                        <td><a href="{{ path('backend_admin_user_group_detail', {identifier: group.identifier}) }}">{{ 'admin.users.actions.details'|trans }}</a></td>
                     </tr>
                 {% endfor %}
             </tbody>

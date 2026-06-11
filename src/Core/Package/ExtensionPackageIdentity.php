@@ -10,13 +10,18 @@ final readonly class ExtensionPackageIdentity
 {
     public static function assertPackageName(string $packageName): string
     {
-        if (1 !== preg_match('/^[a-z0-9][a-z0-9_.\/-]*$/', $packageName)) {
+        if (!self::isPackageName($packageName)) {
             throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_IDENTIFIER_INVALID, [
                 '%identifier%' => $packageName,
             ]);
         }
 
         return $packageName;
+    }
+
+    public static function isPackageName(string $packageName): bool
+    {
+        return 1 === preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $packageName);
     }
 
     /**

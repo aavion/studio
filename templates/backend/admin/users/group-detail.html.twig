@@ -16,9 +16,23 @@
 
     <section class="system-panel">
         <h2>{{ 'admin.groups.detail.title'|trans }}</h2>
+        <dl class="system-backend-summary">
+            <div>
+                <dt>{{ 'admin.groups.fields.uid'|trans }}</dt>
+                <dd>{{ group.uid }}</dd>
+            </div>
+            <div>
+                <dt>{{ 'admin.groups.fields.name'|trans }}</dt>
+                <dd>{{ group.name }}</dd>
+            </div>
+            <div>
+                <dt>{{ 'admin.groups.fields.min_role'|trans }}</dt>
+                <dd>{{ group.minRole }}</dd>
+            </div>
+        </dl>
         <p class="system-muted">{{ 'admin.groups.member_count'|trans({'%count%': member_count}) }}</p>
         <form method="post" class="system-backend-form">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_' ~ group.uid) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_' ~ group.identifier) }}">
             {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name', name: 'name', label: 'admin.groups.fields.name'|trans, value: group.name, required: true, attributes: {maxlength: 160}} only %}
             {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_min_role', name: 'min_role', label: 'admin.groups.fields.min_role'|trans, type: 'number', value: group.minRole, required: true, attributes: {min: 0, max: 9}} only %}
             {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.actions.save'|trans} only %}
@@ -27,8 +41,8 @@
 
     <section class="system-panel">
         <h2>{{ 'admin.groups.delete.title'|trans }}</h2>
-        <form method="post" action="{{ path('backend_admin_user_group_delete', {uid: group.uid}) }}">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_delete_' ~ group.uid) }}">
+        <form method="post" action="{{ path('backend_admin_user_group_delete', {identifier: group.identifier}) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_delete_' ~ group.identifier) }}">
             <button class="system-button system-button-danger" type="submit">{{ 'admin.groups.actions.delete'|trans }}</button>
         </form>
     </section>
@@ -50,7 +64,7 @@
                 <tbody>
                     {% for member in members %}
                         <tr>
-                            <td><a href="{{ path('backend_admin_user_detail', {uid: member.uid}) }}">{{ member.username }}</a></td>
+                            <td><a href="{{ path('backend_admin_user_detail', {username: member.username}) }}">{{ member.username }}</a></td>
                             <td>{{ member.email }}</td>
                             <td>{{ ('admin.users.status.' ~ member.status.value)|trans }}</td>
                             <td>{{ ('ui.user.roles.' ~ member.role.value)|trans }}</td>

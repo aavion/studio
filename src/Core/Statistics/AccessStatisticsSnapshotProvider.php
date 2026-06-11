@@ -86,6 +86,8 @@ final readonly class AccessStatisticsSnapshotProvider
             'window' => $window,
             'since' => $this->window->since($window)?->format(DATE_ATOM),
             'total_requests' => 0,
+            'page_requests' => 0,
+            'api_requests' => 0,
             'unique_visitors' => 0,
             'status_families' => ['2xx' => 0, '3xx' => 0, '4xx' => 0, '5xx' => 0, 'other' => 0],
             'top_routes' => [],

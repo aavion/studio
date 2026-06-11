@@ -36,6 +36,6 @@ final class PackageManifestSpec
 
     public static function isValidSlug(string $slug): bool
     {
-        return 1 === preg_match('/^[a-z0-9][a-z0-9_.-]*$/', $slug);
+        return ExtensionPackageIdentity::isPackageName($slug);
     }
 }

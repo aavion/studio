@@ -11,9 +11,7 @@ use App\Content\ContentVisibility;
 use App\Content\Routing\ContentPathLookup;
 use App\Content\Routing\ContentRoutePath;
 use App\Core\Access\AccessActor;
-use App\Core\Access\AccessCapability;
 use App\Core\Access\AccessResolver;
-use App\Core\Access\AccessRule;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
 use App\Entity\ContentItem;
@@ -23,7 +21,7 @@ use App\Repository\ContentItemRepository;
 final class PublishedContentResolver
 {
     private ContentPathLookup $pathLookup;
-    private AccessResolver $accessResolver;
+    private ContentReadAccessPolicy $accessPolicy;
 
     public function __construct(
         private ContentItemRepository $contentItems,
@@ -32,8 +30,9 @@ final class PublishedContentResolver
         private ContentReadContextResolver $contextResolver = new ContentReadContextResolver(),
         ?AccessResolver $accessResolver = null,
         ?ContentPathLookup $pathLookup = null,
+        ?ContentReadAccessPolicy $accessPolicy = null,
     ) {
-        $this->accessResolver = $accessResolver ?? new AccessResolver($messageReporter);
+        $this->accessPolicy = $accessPolicy ?? new ContentReadAccessPolicy($accessResolver ?? new AccessResolver($messageReporter));
         $this->pathLookup = $pathLookup ?? new ContentPathLookup($contentItems);
     }
 
@@ -81,15 +80,11 @@ final class PublishedContentResolver
             return PublishedContentResolveResult::contextUnavailable();
         }
 
-        if (!$this->aclRestrictionsAllow($content, $actor)) {
+        if (!$this->accessPolicy->allowsAclRestrictions($content, $actor)) {
             return PublishedContentResolveResult::denied();
         }
 
-        $decision = $this->accessResolver->decide(
-            $actor,
-            AccessCapability::View,
-            AccessRule::from($content->viewMinLevel(), $content->viewGroupIdentifiers()),
-        );
+        $decision = $this->accessPolicy->viewDecision($content, $actor);
 
         if (!$decision->isGranted()) {
             return PublishedContentResolveResult::denied();
@@ -146,23 +141,6 @@ final class PublishedContentResolver
         return $this->messageReporter->report($message, [
             'source' => 'published_content_resolver',
         ]);
-    }
-
-    private function aclRestrictionsAllow(ContentItem $content, AccessActor $actor): bool
-    {
-        $restrictions = $content->aclRestrictions();
-
-        if ([] === $restrictions) {
-            return true;
-        }
-
-        foreach ($restrictions as $identifier) {
-            if ($actor->hasGroupIdentifier($identifier)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

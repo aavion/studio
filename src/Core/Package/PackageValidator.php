@@ -114,6 +114,25 @@ final class PackageValidator
             ];
         }
 
+        $directorySlug = basename(str_replace('\\', '/', rtrim($candidate->directory(), '/\\')));
+        if ($directorySlug !== $slug) {
+            return [
+                Message::create(
+                    PackageMessageCode::PACKAGE_IDENTIFIER_INVALID,
+                    PackageMessageKey::PACKAGE_IDENTIFIER_INVALID,
+                    ['%identifier%' => $slug],
+                    [
+                        'source' => $candidate->source()->name(),
+                        'path' => $candidate->manifestPath(),
+                        'key' => 'PACKAGE_SLUG',
+                        'slug' => $slug,
+                        'expected_slug' => $directorySlug,
+                    ],
+                    MessageLevel::Error,
+                ),
+            ];
+        }
+
         return [];
     }
 

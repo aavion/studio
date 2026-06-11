@@ -61,14 +61,14 @@ final class AdminAclGroupController extends AbstractController
         ]);
     }
 
-    #[Route('/admin/users/groups/{uid}', name: 'backend_admin_user_group_detail', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['GET', 'POST'])]
-    public function group(Request $request, string $uid): Response
+    #[Route('/admin/users/groups/details/{identifier}', name: 'backend_admin_user_group_detail', requirements: ['identifier' => '[a-z][a-z0-9_]{2,79}'], priority: 10, methods: ['GET', 'POST'])]
+    public function group(Request $request, string $identifier): Response
     {
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
             return $response;
         }
 
-        $group = $this->entityManager->find(AclGroup::class, $uid);
+        $group = $this->groupByIdentifier($identifier);
 
         if (!$group instanceof AclGroup) {
             return $this->httpError->notFound($request);
@@ -79,7 +79,7 @@ final class AdminAclGroupController extends AbstractController
                 return $response;
             }
 
-            return $this->redirectToRoute('backend_admin_user_group_detail', ['uid' => $uid]);
+            return $this->redirectToRoute('backend_admin_user_group_detail', ['identifier' => $group->identifier()]);
         }
 
         return $this->render('@backend/admin/users/group-detail.html.twig', [
@@ -90,29 +90,29 @@ final class AdminAclGroupController extends AbstractController
         ]);
     }
 
-    #[Route('/admin/users/groups/{uid}/delete', name: 'backend_admin_user_group_delete', requirements: ['uid' => '[a-f0-9-]{36}'], priority: 10, methods: ['POST'])]
-    public function delete(Request $request, string $uid): Response
+    #[Route('/admin/users/groups/details/{identifier}/delete', name: 'backend_admin_user_group_delete', requirements: ['identifier' => '[a-z][a-z0-9_]{2,79}'], priority: 10, methods: ['POST'])]
+    public function delete(Request $request, string $identifier): Response
     {
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
             return $response;
         }
 
-        $group = $this->entityManager->find(AclGroup::class, $uid);
+        $group = $this->groupByIdentifier($identifier);
 
         if (!$group instanceof AclGroup) {
             return $this->httpError->notFound($request);
         }
 
-        if (!$this->isCsrfTokenValid('admin_group_delete_'.$uid, $this->field($request, '_csrf_token'))) {
+        if (!$this->isCsrfTokenValid('admin_group_delete_'.$group->identifier(), $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
-            return $this->redirectToRoute('backend_admin_user_group_detail', ['uid' => $uid]);
+            return $this->redirectToRoute('backend_admin_user_group_detail', ['identifier' => $group->identifier()]);
         }
 
         if ($error = $this->adminUserPolicy->validateGroupDelete($this->adminContext->actor($this->getUser()), $group)) {
             $this->addFlash('error', $error);
 
-            return $this->redirectToRoute('backend_admin_user_group_detail', ['uid' => $uid]);
+            return $this->redirectToRoute('backend_admin_user_group_detail', ['identifier' => $group->identifier()]);
         }
 
         $impact = $this->aclGroupImpact->impact($group);
@@ -177,7 +177,7 @@ final class AdminAclGroupController extends AbstractController
 
     private function updateGroup(Request $request, AclGroup $group): ?Response
     {
-        if (!$this->isCsrfTokenValid('admin_group_'.$group->uid(), $this->field($request, '_csrf_token'))) {
+        if (!$this->isCsrfTokenValid('admin_group_'.$group->identifier(), $this->field($request, '_csrf_token'))) {
             $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
 
             return null;
@@ -279,5 +279,12 @@ final class AdminAclGroupController extends AbstractController
         $value = $request->request->get($name);
 
         return is_scalar($value) ? trim((string) $value) : '';
+    }
+
+    private function groupByIdentifier(string $identifier): ?AclGroup
+    {
+        $group = $this->entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => $identifier]);
+
+        return $group instanceof AclGroup ? $group : null;
     }
 }

@@ -56,12 +56,12 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <form method="post" action="{{ path('backend_admin_deleted_user_activate', {uid: row.user.uid}) }}" class="system-inline-form">
-                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_deleted_user_status_' ~ row.user.uid) }}">
+                                <form method="post" action="{{ path('backend_admin_deleted_user_activate', {username: row.user.username}) }}" class="system-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_deleted_user_status_' ~ row.user.username) }}">
                                     <button type="submit" class="system-link-button">{{ 'admin.users.deleted.activate'|trans }}</button>
                                 </form>
-                                <form method="post" action="{{ path('backend_admin_deleted_user_deactivate', {uid: row.user.uid}) }}" class="system-inline-form">
-                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_deleted_user_status_' ~ row.user.uid) }}">
+                                <form method="post" action="{{ path('backend_admin_deleted_user_deactivate', {username: row.user.username}) }}" class="system-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_deleted_user_status_' ~ row.user.username) }}">
                                     <button type="submit" class="system-link-button">{{ 'admin.users.deleted.deactivate'|trans }}</button>
                                 </form>
                             </td>

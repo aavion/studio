@@ -1,0 +1,159 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Api\Documentation;
+
+use App\Api\Documentation\OpenApiDocumentFactory;
+use App\Api\Endpoint\ApiEndpointAccessPolicy;
+use App\Api\Endpoint\ApiEndpointDefinition;
+use App\Api\Endpoint\ApiEndpointProviderInterface;
+use App\Api\Endpoint\ApiEndpointRegistry;
+use App\View\SystemPackageMetadataProvider;
+use PHPUnit\Framework\TestCase;
+
+final class OpenApiDocumentFactoryTest extends TestCase
+{
+    public function testItUsesSystemPackageManifestNameForApiTitle(): void
+    {
+        $projectDir = sys_get_temp_dir().'/studio-openapi-manifest-'.bin2hex(random_bytes(4));
+        mkdir($projectDir);
+        file_put_contents($projectDir.'/.manifest', implode("\n", [
+            'APP_NAME=Example Product',
+            'APP_DESCRIPTION=Example API documentation.',
+            'APP_LICENSE=MIT',
+            '',
+        ]));
+
+        try {
+            $document = (new OpenApiDocumentFactory(
+                new ApiEndpointRegistry([$this->provider()]),
+                new ApiEndpointAccessPolicy(),
+                new SystemPackageMetadataProvider($projectDir),
+            ))->create();
+        } finally {
+            unlink($projectDir.'/.manifest');
+            rmdir($projectDir);
+        }
+
+        self::assertSame('3.2.0', $document['openapi']);
+        self::assertSame('/api/v1/openapi.json', $document['$self']);
+        self::assertSame('Example Product API', $document['info']['title']);
+        self::assertSame('Example Product API', $document['info']['summary']);
+        self::assertSame('Example API documentation.', $document['info']['description']);
+        self::assertSame(['name' => 'MIT', 'identifier' => 'MIT'], $document['info']['license']);
+        self::assertSame([['name' => 'current', 'url' => '/api/v1']], $document['servers']);
+        self::assertContains(['name' => 'system-status', 'summary' => 'System Status', 'description' => 'Status and healthcheck resources.', 'kind' => 'nav'], $document['tags']);
+    }
+
+    public function testItEmitsOpenApi32TagMetadataForUsedEndpointTags(): void
+    {
+        $document = (new OpenApiDocumentFactory(
+            new ApiEndpointRegistry([$this->provider()]),
+            new ApiEndpointAccessPolicy(),
+            new SystemPackageMetadataProvider(dirname(__DIR__, 3)),
+        ))->create();
+
+        self::assertContains([
+            'name' => 'backend-admin',
+            'summary' => 'Backend Admin',
+            'description' => 'Backend administration resources.',
+            'kind' => 'nav',
+        ], $document['tags']);
+        self::assertContains([
+            'name' => 'backend-admin-users',
+            'summary' => 'Backend Admin Users',
+            'description' => 'Administrative user, ACL group, and review resources.',
+            'parent' => 'backend-admin',
+            'kind' => 'nav',
+        ], $document['tags']);
+        self::assertNotContains([
+            'name' => 'users',
+            'summary' => 'Users',
+            'kind' => 'nav',
+        ], $document['tags']);
+        self::assertContains([
+            'name' => 'custom_tag',
+            'summary' => 'Custom tag',
+            'kind' => 'nav',
+        ], $document['tags']);
+    }
+
+    public function testItEmitsReusableSchemasAndStandardErrorResponses(): void
+    {
+        $document = (new OpenApiDocumentFactory(
+            new ApiEndpointRegistry([$this->provider()]),
+            new ApiEndpointAccessPolicy(),
+            new SystemPackageMetadataProvider(dirname(__DIR__, 3)),
+        ))->create();
+
+        self::assertArrayHasKey('ApiDataEnvelope', $document['components']['schemas']);
+        self::assertArrayHasKey('ApiErrorEnvelope', $document['components']['schemas']);
+        self::assertArrayHasKey('ApiMessage', $document['components']['schemas']);
+        self::assertArrayHasKey('ApiMutationReview', $document['components']['schemas']);
+        self::assertArrayHasKey('RequestId', $document['components']['headers']);
+        self::assertArrayHasKey('CorrelationId', $document['components']['headers']);
+        self::assertArrayHasKey('ServiceUnavailable', $document['components']['responses']);
+        self::assertArrayHasKey('UnsupportedMediaType', $document['components']['responses']);
+        self::assertArrayHasKey('limit', $document['components']['schemas']['ApiPagination']['properties']);
+        self::assertArrayNotHasKey('per_page', $document['components']['schemas']['ApiPagination']['properties']);
+
+        $statusOperation = $document['paths']['/status']['get'];
+        self::assertSame([], $statusOperation['security']);
+        self::assertSame('#/components/responses/Unauthorized', $statusOperation['responses']['401']['$ref']);
+        self::assertSame('#/components/responses/UnsupportedMediaType', $statusOperation['responses']['415']['$ref']);
+        self::assertSame('#/components/responses/ServiceUnavailable', $statusOperation['responses']['503']['$ref']);
+        self::assertSame([
+            'allow_public' => true,
+            'requires_api_key' => false,
+            'required_access_level' => 0,
+            'required_role' => 'public',
+            'key_capability' => 'read_only_or_read_write',
+        ], $statusOperation['x-access']);
+        self::assertSame('#/components/headers/RequestId', $statusOperation['responses']['200']['headers']['X-Request-ID']['$ref']);
+        self::assertSame('#/components/headers/CorrelationId', $statusOperation['responses']['200']['headers']['X-Correlation-ID']['$ref']);
+        self::assertSame('#/components/schemas/ApiDataEnvelope', $statusOperation['responses']['200']['content']['application/json']['schema']['$ref']);
+        self::assertSame('#/components/headers/RequestId', $document['components']['responses']['Unauthorized']['headers']['X-Request-ID']['$ref']);
+        self::assertSame('getApiRoot', $document['paths']['/']['get']['operationId']);
+    }
+
+    private function provider(): ApiEndpointProviderInterface
+    {
+        return new class implements ApiEndpointProviderInterface {
+            public function apiEndpoints(): array
+            {
+                return [
+                    new ApiEndpointDefinition(
+                        'system',
+                        'GET',
+                        '/api/v1',
+                        'api_v1_root',
+                        'getApiRoot',
+                        'Root.',
+                        tags: ['system-api'],
+                        allowPublic: true,
+                    ),
+                    new ApiEndpointDefinition(
+                        'system',
+                        'GET',
+                        '/api/v1/status',
+                        'api_v1_status',
+                        'getApiStatus',
+                        'Status.',
+                        tags: ['system-status'],
+                        allowPublic: true,
+                    ),
+                    new ApiEndpointDefinition(
+                        'users',
+                        'GET',
+                        '/api/v1/admin/users',
+                        'api_v1_endpoint_dispatch',
+                        'listUsers',
+                        'List users.',
+                        tags: ['backend-admin', 'backend-admin-users', 'custom_tag'],
+                    ),
+                ];
+            }
+        };
+    }
+}

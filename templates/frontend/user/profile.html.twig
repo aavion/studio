@@ -63,12 +63,15 @@
             } only %}
             {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.profile.submit'|trans} only %}
         </form>
-        {% include '@frontend/partials/actions/_button-group.html.twig' with {
-            actions: [
-                {label: 'ui.user.password.title'|trans, href: path('user_password'), variant: 'secondary'},
+        {% set profile_actions = [
+            {label: 'ui.user.password.title'|trans, href: path('user_password'), variant: 'secondary'},
+        ] %}
+        {% if api_key_management_enabled|default(false) %}
+            {% set profile_actions = profile_actions|merge([
                 {label: 'ui.user.api_keys.title'|trans, href: path('user_api_keys'), variant: 'secondary'},
-            ],
-        } only %}
+            ]) %}
+        {% endif %}
+        {% include '@frontend/partials/actions/_button-group.html.twig' with {actions: profile_actions} only %}
         <section class="system-panel">
             <h2>{{ 'ui.user.profile.close.title'|trans }}</h2>
             <p class="system-muted">{{ 'ui.user.profile.close.message'|trans }}</p>

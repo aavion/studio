@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Setup;
 
+use App\Api\ApiFeaturePolicy;
 use App\Core\Config\ConfigDefaultProviderInterface;
 use App\Setup\DatabaseDriver;
 use App\Setup\SetupDefaultSeed;
@@ -25,6 +26,9 @@ final class SetupDefaultSeedTest extends TestCase
         self::assertFalse($settings[UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY]);
         self::assertSame(UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, $settings[UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY]);
         self::assertSame(UserFlowConfig::DEFAULT_DELETED_USER_RETENTION_DAYS, $settings[UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY]);
+        self::assertTrue($settings[ApiFeaturePolicy::ENABLED_KEY]);
+        self::assertFalse($settings[ApiFeaturePolicy::CORS_ENABLED_KEY]);
+        self::assertSame([], $settings[ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY]);
     }
 
     public function testItUsesCentralConfigDefaultsForSetupSeededSettings(): void
@@ -62,6 +66,9 @@ final class SetupDefaultSeedTest extends TestCase
             \App\Core\Log\ConfigAuditLogPolicy::EVENTS_KEY,
             \App\Core\Statistics\AccessStatisticsPolicy::ENABLED_KEY,
             \App\Core\Statistics\AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY,
+            ApiFeaturePolicy::ENABLED_KEY,
+            ApiFeaturePolicy::CORS_ENABLED_KEY,
+            ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY,
             SchedulerSettings::ENABLED_KEY,
             SchedulerSettings::GET_AUTH_ENABLED_KEY,
             SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY,

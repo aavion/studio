@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Message;
 
 use App\Backend\BackendMessageKey;
+use App\Api\ApiMessageKey;
 use App\Content\ContentMessageKey;
 use App\Core\Access\AccessMessageKey;
 use App\Core\Asset\AssetMessageKey;
@@ -135,6 +136,7 @@ final class MessageKeyTest extends TestCase
             BackendMessageKey::class => ['BACKEND_'],
             ContentMessageKey::class => ['CONTENT_'],
             AccessMessageKey::class => ['ACCESS_'],
+            ApiMessageKey::class => ['API_'],
             AssetMessageKey::class => ['TAILWIND_'],
             ConfigMessageKey::class => ['CONFIG_'],
             EventMessageKey::class => ['EVENT_HOOK_'],
@@ -167,6 +169,7 @@ final class MessageKeyTest extends TestCase
             BackendMessageKey::class => ['message.backend.'],
             ContentMessageKey::class => ['message.content.'],
             AccessMessageKey::class => ['message.access.'],
+            ApiMessageKey::class => ['message.api.'],
             AssetMessageKey::class => ['message.tailwind.'],
             ConfigMessageKey::class => ['message.config.'],
             EventMessageKey::class => ['message.event.'],

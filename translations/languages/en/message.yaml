@@ -193,6 +193,31 @@ message:
       invalid: 'ACL group identifier "%identifier%" must be lowercase snake_case with at least 3 characters.'
     group_name:
       invalid: 'ACL group name must contain 1 to 160 characters.'
+  api:
+    endpoint:
+      owner_invalid: 'API endpoint owner "%owner%" is invalid.'
+      method_invalid: 'API endpoint method "%method%" is not supported.'
+      path_invalid: 'API endpoint path "%path%" must stay under /api/v1/.'
+      route_invalid: 'API endpoint route "%route%" is invalid.'
+      operation_invalid: 'API endpoint operation "%operation%" is invalid.'
+      handler_invalid: 'API endpoint handler "%handler%" is invalid or unavailable.'
+      tag_invalid: 'API endpoint tag "%tag%" is invalid for this namespace.'
+      summary_empty: 'API endpoint summary must not be empty.'
+      success_status_invalid: 'API endpoint success status %status% must be a 2xx HTTP status code.'
+      not_found: 'No API endpoint is registered for this path and method.'
+    request:
+      invalid: 'The API request body is invalid.'
+      unsupported_media_type: 'The API request body must use application/json.'
+    validation:
+      failed: 'The API request did not pass validation.'
+    operation:
+      not_implemented: 'API operation "%operation%" is registered but not implemented yet.'
+      unavailable: 'API operation "%operation%" is not available in the current state.'
+    unavailable:
+      setup_incomplete: 'The API is unavailable until setup has been completed.'
+      database: 'The API is temporarily unavailable because database access failed.'
+      maintenance: 'The API is temporarily unavailable because maintenance mode is active.'
+      disabled: 'The API is disabled by configuration.'
   system:
     secret_payload:
       root_secret_empty: 'Secret payload protection requires a root secret.'
@@ -332,6 +357,7 @@ message:
     authentication_failed: 'API key authentication failed.'
     reauthentication_required: 'Reauthentication is required to reveal this API key.'
     permission:
+      denied: 'This API key is not allowed to access this resource.'
       write_required: 'This API key does not allow write access.'
       revoked: 'This API key has been revoked.'
   menu:

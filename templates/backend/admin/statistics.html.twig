@@ -33,6 +33,14 @@
         </form>
         <div class="system-grid system-grid-3">
             <div>
+                <h3>{{ 'admin.statistics.page_requests'|trans }}</h3>
+                <p class="system-backend-stat-number">{{ access_statistics.page_requests|default(access_statistics.total_requests|default(0)) }}</p>
+            </div>
+            <div>
+                <h3>{{ 'admin.statistics.api_requests'|trans }}</h3>
+                <p class="system-backend-stat-number">{{ access_statistics.api_requests|default(0) }}</p>
+            </div>
+            <div>
                 <h3>{{ 'admin.statistics.unique_visitors'|trans }}</h3>
                 <p class="system-backend-stat-number">{{ access_statistics.unique_visitors|default(0) }}</p>
             </div>

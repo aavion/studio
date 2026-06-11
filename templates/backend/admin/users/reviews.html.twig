@@ -121,12 +121,12 @@
                                     <button class="system-button system-button-secondary" type="submit">{{ 'admin.user_reviews.actions.delete'|trans }}</button>
                                 </form>
                             {% elseif item.kind == 'password_dispute' and user %}
-                                <form method="post" action="{{ path('backend_admin_user_review_reactivate', {uid: user.uid}) }}" class="system-inline-form">
-                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_review_' ~ user.uid) }}">
+                                <form method="post" action="{{ path('backend_admin_user_review_reactivate', {username: user.username}) }}" class="system-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_review_' ~ user.username) }}">
                                     <button class="system-button" type="submit">{{ 'admin.user_reviews.actions.reactivate'|trans }}</button>
                                 </form>
-                                <form method="post" action="{{ path('backend_admin_user_review_delete', {uid: user.uid}) }}" class="system-inline-form">
-                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_review_' ~ user.uid) }}">
+                                <form method="post" action="{{ path('backend_admin_user_review_delete', {username: user.username}) }}" class="system-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_review_' ~ user.username) }}">
                                     <label class="system-muted">
                                         <input type="checkbox" name="confirm_delete" value="1">
                                         {{ 'admin.user_reviews.actions.confirm_delete'|trans }}

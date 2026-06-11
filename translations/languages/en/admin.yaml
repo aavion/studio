@@ -26,6 +26,7 @@ admin:
     security_settings: 'Security'
     package_settings: 'Packages'
     statistics_settings: 'Statistics'
+    api_settings: 'API'
     scheduler_settings: 'Scheduler'
     system_info: 'System information'
   actions:
@@ -248,6 +249,7 @@ admin:
       submit: 'Create reset link'
       created: 'Password-reset link created.'
     fields:
+      uid: 'Internal UID'
       username: 'Username'
       email: 'Email'
       status: 'Status'
@@ -422,6 +424,7 @@ admin:
         item: 'Item'
         fields: 'Fields'
     fields:
+      uid: 'Internal UID'
       identifier: 'Identifier'
       name: 'Name'
       min_role: 'Minimum role'
@@ -636,6 +639,8 @@ admin:
     access_title: 'Access statistics'
     summary: '%count% access-log entries are included in this anonymized snapshot.'
     window: 'Time window'
+    page_requests: 'Page requests'
+    api_requests: 'API requests'
     unique_visitors: 'Unique visitors'
     status_families: 'Status families'
     top_routes: 'Top routes'
@@ -685,6 +690,10 @@ admin:
       title: 'Statistics settings'
       foundation_title: 'Statistics configuration'
       foundation_text: 'Access statistics recording and display can be disabled independently from raw access logging. Raw access logs remain available for operational security and are retained for 30 days.'
+    api:
+      title: 'API settings'
+      foundation_title: 'API availability'
+      foundation_text: 'API access can be disabled for normal users while owners keep key management available for operational integrations such as scheduler activation.'
     packages:
       title: 'Package settings'
       foundation_title: 'Packages with settings'
@@ -774,6 +783,15 @@ admin:
         label: 'Enable access statistics'
       statistics_respect_dnt:
         label: 'Respect Do Not Track'
+      api_enabled:
+        label: 'Enable API access'
+        help: 'When disabled, /api/v1 returns 503 and API-key management is hidden for non-owner users.'
+      api_cors_enabled:
+        label: 'Enable API CORS'
+        help: 'Allows configured browser origins to call /api/v1. Leave disabled unless external browser clients need direct access.'
+      api_cors_allowed_origins:
+        label: 'Allowed API CORS origins'
+        help: 'JSON array of exact origins such as ["https://client.example"]. The wildcard "*" should only be used intentionally.'
       package_update_interval:
         label: 'Update check interval'
       package_auto_updates:

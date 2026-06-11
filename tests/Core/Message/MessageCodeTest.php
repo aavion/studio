@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Message;
 
 use App\Backend\BackendMessageCode;
+use App\Api\ApiMessageCode;
 use App\Content\ContentMessageCode;
 use App\Core\Access\AccessMessageCode;
 use App\Core\Asset\AssetMessageCode;
@@ -88,6 +89,7 @@ final class MessageCodeTest extends TestCase
             BackendMessageCode::class => ['BACKEND_'],
             ContentMessageCode::class => ['CONTENT_'],
             AccessMessageCode::class => ['ACCESS_'],
+            ApiMessageCode::class => ['API_'],
             AssetMessageCode::class => ['TAILWIND_'],
             ConfigMessageCode::class => ['CONFIG_'],
             EventMessageCode::class => ['EVENT_HOOK_'],
@@ -118,6 +120,7 @@ final class MessageCodeTest extends TestCase
             BackendMessageCode::class => ['backend.'],
             ContentMessageCode::class => ['content.'],
             AccessMessageCode::class => ['access.'],
+            ApiMessageCode::class => ['api.'],
             AssetMessageCode::class => ['tailwind.'],
             ConfigMessageCode::class => ['config.'],
             EventMessageCode::class => ['event.'],

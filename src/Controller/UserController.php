@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Api\ApiFeaturePolicy;
 use App\Core\Access\AccessActor;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Message\MessageException;
@@ -41,6 +42,7 @@ final class UserController extends AbstractController
         private readonly UserPasswordChangeService $passwordChangeService,
         private readonly UserAccountClosureService $accountClosureService,
         private readonly UserProfileLocaleService $profileLocales,
+        private readonly ApiFeaturePolicy $apiFeaturePolicy,
     ) {
     }
 
@@ -149,6 +151,7 @@ final class UserController extends AbstractController
             'user_account' => $user,
             'username_change_enabled' => $usernameChangeEnabled,
             'language_options' => $this->profileLocales->options(),
+            'api_key_management_enabled' => $this->apiFeaturePolicy->canManageKeys($user),
             'success' => $success,
             'errors' => $errors,
         ]);
