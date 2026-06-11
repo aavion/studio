@@ -64,6 +64,29 @@ final class ApiContentItemControllerTest extends WebTestCase
         self::assertSame('Kael Mercer vor T17', $payload['data']['attributes']['fields']['name']);
     }
 
+    public function testContentItemDetailReturnsForbiddenForAuthenticatedAclDenials(): void
+    {
+        $client = self::createClient();
+        $this->createContentTree();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $item = $entityManager->find(ContentItem::class, '6b100000-0000-7000-8000-000000000015');
+
+        self::assertInstanceOf(ContentItem::class, $item);
+
+        $item->setViewRule(AccessLevel::AUTHOR);
+        $entityManager->flush();
+
+        $client->request('GET', self::KAEL_PATH);
+        self::assertResponseStatusCodeSame(401);
+
+        $plainKey = $this->createPlainApiKey('apicontdenied', AccessLevel::USER, ApiKeyStatus::ReadOnly);
+        $client->request('GET', self::KAEL_PATH, server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
     public function testContentItemNavigationListsChildrenVariantsAndVersions(): void
     {
         $client = self::createClient();

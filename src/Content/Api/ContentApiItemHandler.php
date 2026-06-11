@@ -87,7 +87,7 @@ final readonly class ContentApiItemHandler implements ApiEndpointHandlerInterfac
             ]);
         }
 
-        return $this->resolveError($request, $result->status());
+        return $this->resolveError($request, $result->status(), $actor);
     }
 
     private function children(Request $request, AccessActor $actor): Response
@@ -114,10 +114,14 @@ final readonly class ContentApiItemHandler implements ApiEndpointHandlerInterfac
         return $this->responder->data($versions, meta: ['count' => count($versions)]);
     }
 
-    private function resolveError(Request $request, PublishedContentResolveStatus $status): Response
+    private function resolveError(Request $request, PublishedContentResolveStatus $status, AccessActor $actor): Response
     {
         if (PublishedContentResolveStatus::Denied === $status) {
-            return $this->responder->error($this->notFoundMessage(), Response::HTTP_UNAUTHORIZED, $request);
+            return $this->responder->error(
+                $this->notFoundMessage(),
+                null === $actor->userUid() ? Response::HTTP_UNAUTHORIZED : Response::HTTP_FORBIDDEN,
+                $request,
+            );
         }
 
         if (PublishedContentResolveStatus::NotPublic === $status) {

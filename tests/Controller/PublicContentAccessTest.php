@@ -14,6 +14,9 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 final class PublicContentAccessTest extends WebTestCase
 {
+    use AuthenticatedClientTrait;
+    use UserControllerFixtureTrait;
+
     public function testItReturnsForbiddenForPrivateContent(): void
     {
         $client = self::createClient();
@@ -56,6 +59,22 @@ final class PublicContentAccessTest extends WebTestCase
             self::assertResponseStatusCodeSame(401);
             self::assertSelectorTextContains('h1', 'Sign in');
             self::assertSelectorTextContains('.system-frontend-auth-notice', 'This content is only available after signing in with sufficient access.');
+        } finally {
+            $connection->update('content_item', ['view_min_level' => AccessLevel::PUBLIC], ['slug' => 'home']);
+        }
+    }
+
+    public function testItReturnsForbiddenForAuthenticatedAclDeniedContent(): void
+    {
+        $client = self::createClient();
+        $this->loginTestUser($client, $this->createUserWithLevel(AccessLevel::USER, 'contentdenied', 'current-password'));
+        $connection = self::getContainer()->get(Connection::class);
+        $connection->update('content_item', ['view_min_level' => AccessLevel::AUTHOR], ['slug' => 'home']);
+
+        try {
+            $client->request('GET', '/');
+
+            self::assertResponseStatusCodeSame(403);
         } finally {
             $connection->update('content_item', ['view_min_level' => AccessLevel::PUBLIC], ['slug' => 'home']);
         }
