@@ -1,12 +1,68 @@
 # Repository Agent Guide
 
 > **Status**: Active  
-> **Updated**: 2026-05-23  
+> **Updated**: 2026-06-12  
 > **Owner**: Dominik Letica, OpenAI/Codex  
-> **Purpose:** Provide practical, repository-specific instructions for coding agents working on this Symfony application.  
+> **Purpose:** Provide practical, repository-specific instructions and binding project rules for coding agents working on this Symfony application.  
 
-## Binding Project Rules
-- `.codex/PROJECT_RULES.md` is the binding project-wide rule source for architecture, naming, process, security, localization, and audit decisions. Check it before feature work, refactors, audits, and review-finding fixes.
+## Binding Rule Source
+- `AGENTS.md` is the binding project-wide rule source for architecture, naming, process, security, localization, and audit decisions.
+- Project rules are embedded below so they survive Codex project moves, context changes, and partial context reloads.
+- Update `AGENTS.md` directly when architecture, naming, process, security, localization, audit, or verification rules change.
+
+## Project Rules
+
+### Pre-1.0 Development
+- No production deployment must be supported before the first stable `1.0.0` release.
+- Before `1.0.0`, prefer clean design over compatibility shims, data migrations, or legacy behavior.
+- Keep Doctrine migrations consolidated: the project should contain one current baseline migration before `1.0.0`, not a long chain of development migrations.
+- When changing database shape before `1.0.0`, edit the baseline migration, entities, tests, docs, and class map together.
+- Remove obsolete code paths instead of preserving backward compatibility unless the user explicitly asks otherwise.
+
+### Database Support
+- The application should support MariaDB/MySQL, SQLite, and PostgreSQL through Doctrine DBAL/ORM where practical.
+- The automated test environment uses SQLite at `var/test/test.db` via `.env.test`.
+- Migration tests should verify that the current baseline migration applies cleanly to SQLite.
+- Prefer portable Doctrine types, portable indexes, explicit columns for frequently filtered values, and app-level validation over vendor-specific SQL behavior.
+- JSON columns are acceptable for flexible configuration, profile data, schema definitions, labels, ACL group lists, metadata, and field content.
+- Do not rely on vendor-specific JSON operators for core read paths unless the feature explicitly declares a minimum database/version requirement.
+- If a flexible JSON value becomes a common filter/sort/list field, add a portable explicit column or read-model/index table instead of requiring database-specific JSON indexes.
+
+### Content Revisions
+- Content revisions are the stable unit for import previews, structured diffs, review, revert, and retention.
+- Imports may stage proposed changes as new revisions, diff those revisions against the active revision, and activate them only after review.
+- Cleanup and retention should be driven by nullable active pointers and configuration, not by hard-deleting historical rows by default.
+
+### Architecture And Development Rules
+- Modularity is preferred over monolithic implementations. Split large classes, controllers, services, tests, and helpers when the extracted boundary improves responsibility, reuse, readability, or LLM context stability.
+- Files should stay below roughly 300 lines where practical because this size remains reliable for agent context handling, review, and patching. Treat this as a soft limit: split files when a clear responsibility boundary exists, but do not fragment a naturally cohesive file only to satisfy the line target.
+- Public and contributor-facing callable, interface, hook, event, command, route, payload, translation-key, and extension-point names must be clear, consistent, and easy to document.
+- New or refactored package-owned technical identifiers must follow one stable owner/scope/name convention. The native core/system package owner is `system`; reserve `Studio`/`studio` for branding sourced from `.manifest`, branding assets, or deliberately retained legacy surfaces until those surfaces are intentionally migrated.
+- System UI, template, and CSS names should stay branding-neutral. Use `{system|package-slug}-*` for owner-level selectors, `{system|package-slug}-frontend-*` for frontend selectors, `{system|package-slug}-backend-*` for backend selectors, and `{system|package-slug}-{provider-scope}-*` for provider selectors. Package-owned selectors must remain under the package slug and declared scope so package validation can detect collisions.
+- Prefer plain domain names when a storage boundary is already owned and no package/user collision is possible, for example `visitor_id`, `message`, `audit`, or `access`. Use the `system` owner prefix only where it protects a shared namespace such as cookies, browser storage, session attributes, service tags, package identities, generated assets, or package-facing extension points.
+- CLI command names should prefer Symfony-style domain namespaces such as `assets:*`, `packages:*`, or `scheduler:*` over product branding. A product prefix is acceptable only when it improves clarity, avoids a real namespace collision, or is deliberately retained until a planned pre-`1.0.0` command migration.
+- Built-in file logs should stay descriptive and environment-scoped. Prefer `var/log/{APP_ENV}/{message|audit|access}-{rotation_date}.log` over adding a product or system owner prefix to every log filename.
+- Runtime errors, validation failures, operational diagnostics, and user-facing feedback should use the shared `Message`, `MessageCode`, `MessageKey`, `WorkflowResult`, or `MessageException` layer wherever practical. Hard exceptions with literal text are allowed only for consciously chosen low-level invariants or unrecoverable adapter failures, and should not be used as a convenience shortcut around structured messages.
+- Message code/key constants must live in domain-owned `*MessageCode` and `*MessageKey` catalogue classes close to the owning namespace. `App\Core\Message\MessageCode` and `App\Core\Message\MessageKey` are aggregation entry points, not cross-domain constant warehouses. Catalogue constant names must be namespace/scope-bound with the owning machine namespace first, for example `PACKAGE_INSTALL_*`, `SETUP_PROMPT_*`, or `ACL_GROUP_*`, and their values must stay in the matching machine namespace, for example `package.install.*`, `message.setup.prompt.*`, or `message.acl.group_*`. Future package-owned catalogues must use package-owned namespaces and must not override `system`, core, or other package namespaces; system catalogues win conflicts.
+- Public hook descriptors must be registered by domain-owned `EventHookDescriptorProviderInterface` implementations close to the event owner. `PublicEventHookRegistry` aggregates providers for documentation, tooling, debug output, and package API validation; it must not become a central cross-domain list of every hook.
+- Available languages must be discovered from translation catalogues, runtime configuration, or explicit content data. Do not hardcode language variants in runtime control flow, default API parameters, or administrative form fields. Content entities may intentionally store separate localized variants per language, but non-content domain data should use one generic label/name unless localized variants are a documented product requirement.
+- Core/system cookies must be first-party and technically scoped only, such as visitor identification, session/security binding, language preference, or appearance preference. Core must not set or read cross-site advertising, profiling, or external analytics cookies. Future advertising or external statistics packages must own their own cookie strategy, consent requirements, documentation, and isolation from core technical cookies, for example through a centralized consent interface where packages register their cookie policies.
+- Child processes and detached runners must use the central process/environment helpers unless a direct process call is intentionally local and documented. Application subprocesses must inherit Symfony Dotenv-derived configuration and must filter web/CGI request context before execution.
+- Add small wrapper or helper APIs when they make public or extension-facing behavior easier to explain, safer to call, or less error-prone.
+- Prefer Symfony, Doctrine, Twig, Messenger, Validator, Serializer, Process, Filesystem, Security, EventDispatcher, Form, Translation, and other maintained vendor capabilities over custom infrastructure unless the custom abstraction has clear project-specific value.
+- Additional vendor packages are acceptable when they reduce custom maintenance, improve portability/security, or integrate cleanly with Symfony without making the project unnecessarily heavy.
+- Keep tests behavior-focused. Secure public behavior, cross-platform assumptions, security boundaries, and data-model guarantees without pinning fragile template, CSS, or implementation details.
+- Performance and data-model decisions must be justified by expected behavior and scale, including identifier strategy, indexes, pagination, filtering, sorting, caching, filesystem scans, process spawning, request/visitor identifiers, and full-table or full-tree work.
+- Security and misuse resistance must be considered for public entry points, sessions, tokens, visitor/request identity, subprocesses, filesystem access, package/module boundaries, logging, audit data, secrets, and environment propagation.
+- Feature drafts, previous implementation choices, and early pre-`1.0.0` assumptions are guidance, not law. Prefer a simpler, safer, more Symfony-native, or more maintainable design when evidence supports changing course.
+
+### Architecture And Drift Audits
+- Run broad architecture and project-rules drift audits as reusable review gates, not as one-time cleanup exercises.
+- Use audits to verify that current code and new feature work still follow the architecture and development rules above.
+- Challenge feature drafts, previous implementation choices, and early pre-`1.0.0` assumptions during audits instead of treating them as binding.
+- Review performance and data-model decisions critically, including UUIDs versus auto-increment identifiers, indexes, pagination, filtering, sorting, caching, filesystem scans, process spawning, request/visitor identifiers, and full-table or full-tree work.
+- Review security and misuse resistance around public entry points, sessions, tokens, visitor/request identity, subprocesses, filesystem access, package/module boundaries, logging, audit data, secrets, and environment propagation.
+- Capture audit findings with evidence, impact, recommendation, and priority. Apply small safe improvements directly; split larger refactors into dedicated follow-up issues or audit PR slices.
 
 ## Operating Principles
 - Read the existing code and documentation before changing behavior. Prefer local patterns over new abstractions.
@@ -31,8 +87,9 @@
 - `.codex/` contains agent notes, helper scripts, context cache, and environment/tooling notes.
 
 ## Before Editing
-- Check `dev/WORKLOG.md` for active TODOs and recent context before code changes.
+- Check the project rules in this file and `dev/WORKLOG.md` for active TODOs and recent context before code changes.
 - Check `.codex/ENVIRONMENT.md` before assuming binary paths or local tooling; skip local-only details in cloud or container environments.
+- Check `.codex/framework-version-recap.md` before routine framework or dependency work; treat it as a version-pinned documentation cache and refresh the relevant section when installed versions change, when the cached note is unclear, or when the task depends on precise current API behavior.
 - Prefer reusable helper scripts in `.codex/` over ad-hoc command snippets. When adding helpers, document them in `.codex/README.md`.
 - For behavior changes, identify the matching documentation and test locations before editing.
 - For UI or rendered-output changes, identify affected Twig templates, translations, and routes.
@@ -48,7 +105,7 @@
 ## Build and Verification Commands
 - `bin/init` initializes the repository, refreshes dependencies and assets, and is the preferred recovery path for broken or incomplete `vendor/` packages because it removes an existing `vendor/` tree before Composer runs.
 - `composer install` installs PHP dependencies and verifies required extensions.
-- `bin/lint` runs the full project lint suite; pass one or more files or directories to run focused type-based checks instead, for example `bin/lint src/Security templates/backend/admin/users`.
+- `bin/lint` runs the full project lint suite, including Markdown parse checks and a Git whitespace check that excludes Markdown hard line breaks; pass one or more files or directories to run focused type-based checks, or use `bin/lint --diff` / `bin/lint --diff=<target..source>` to lint supported files from the current or named Git diff.
 - `php -l <path>` checks PHP syntax for a changed file.
 - `php bin/console lint:container` validates Symfony container wiring after service or configuration changes.
 - `php bin/console tailwind:build` compiles Tailwind CSS.
@@ -58,16 +115,17 @@
 - `php bin/phpunit` runs the full PHPUnit suite.
 - `php bin/phpunit --coverage-text` runs PHPUnit with quick coverage feedback before PRs.
 - `bin/lint` includes the translation source catalogue file/key comparison for release-safe validation without requiring `.codex/`.
+- Before committing, prefer `bin/lint --diff` or the relevant focused `bin/lint <path...>` over raw `git diff --check`; if raw `git diff --check` is run and reports trailing whitespace in Markdown, inspect whether the spaces are intentional hard line breaks before changing them. Do not remove intentional Markdown hard breaks only to satisfy Git whitespace output.
 - `php .codex/render.php /<route>` renders a route for Twig and translation review.
 
 ## Verification Matrix
 - PHP-only logic: run targeted PHPUnit coverage and `php -l` for edited PHP files.
 - Service, DI, security, or configuration changes: run targeted tests and `php bin/console lint:container`.
 - Twig, translation, or UX copy changes: run `bin/lint <changed translation/template paths...>` and render affected routes with `.codex/render.php` when available.
-- Asset or Stimulus changes: prefer `bin/lint <changed path...>` for focused JavaScript, JSON, CSS, YAML, Twig, and PHP syntax checks, then run the relevant asset build command and targeted UI/functional checks when build output or rendering can change.
+- Asset or Stimulus changes: prefer `bin/lint <changed path...>` for focused JavaScript, JSON, CSS, YAML, Twig, Markdown, and PHP syntax checks, then run the relevant asset build command and targeted UI/functional checks when build output or rendering can change.
 - Focused CSS checks use the strict CSS parser and may report Tailwind-specific directives or generated modern at-rules such as `@apply`, `@theme`, or `@supports` as unsupported syntax; treat the accompanying linter note as context, and use `php bin/console tailwind:build` for the authoritative full Tailwind validation.
 - Doctrine mapping or entity changes: generate or update migrations and run tests covering persistence behavior.
-- Documentation changes: verify style, relative links, and alignment with current behavior.
+- Documentation changes: run `bin/lint <changed markdown paths...>` for Markdown parse coverage, then verify style, relative links, and alignment with current behavior.
 - If a recommended verification step cannot run, record the reason in the final response and, when relevant, in `dev/WORKLOG.md`.
 
 ## Coding Style

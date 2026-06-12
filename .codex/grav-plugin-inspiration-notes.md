@@ -1,7 +1,7 @@
 # Grav Plugin Inspiration Notes
 
-> **Status**: Draft  
-> **Updated**: 2026-05-20  
+> **Status**: Reference / historical inspiration  
+> **Updated**: 2026-06-12  
 > **Owner**: OpenAI/Codex  
 > **Purpose:** Capture reusable product and architecture ideas from the old Grav plugins without copying code into the Symfony rewrite.  
 
