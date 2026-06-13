@@ -95,6 +95,7 @@
 - Documented that locked SVGs in `assets/icons` should be committed as reviewable dependency snapshots while avoiding bulk-locking complete upstream icon sets by default.
 - Declared `ext-sodium` as a direct Composer platform requirement and added it to the PR verification runner because the Symfony Mercure/JWT dependency chain requires `lcobucci/jwt`, which requires Sodium.
 - Clarified `AGENTS.md` wording around session notes with branch/PR context and the boundary between agent-only `.codex` helpers and project-wide tooling.
+- Normalized `AGENTS.md` wording so the document reads as a standalone first-version guide rather than as a patch over earlier agent habits.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

@@ -7,7 +7,7 @@
 
 ## Binding Rule Source
 - `AGENTS.md` is the binding project-wide rule source for architecture, naming, process, security, localization, and audit decisions.
-- Project rules are embedded below so they survive Codex project moves, context changes, and partial context reloads.
+- This file includes the project rules directly so agents receive the same architecture, process, and verification guidance whenever the repository is loaded.
 - Update `AGENTS.md` directly when architecture, naming, process, security, localization, audit, or verification rules change.
 
 ## Project Rules
@@ -54,12 +54,12 @@
 - Keep tests behavior-focused. Secure public behavior, cross-platform assumptions, security boundaries, and data-model guarantees without pinning fragile template, CSS, or implementation details.
 - Performance and data-model decisions must be justified by expected behavior and scale, including identifier strategy, indexes, pagination, filtering, sorting, caching, filesystem scans, process spawning, request/visitor identifiers, and full-table or full-tree work.
 - Security and misuse resistance must be considered for public entry points, sessions, tokens, visitor/request identity, subprocesses, filesystem access, package/module boundaries, logging, audit data, secrets, and environment propagation.
-- Feature drafts, previous implementation choices, and early pre-`1.0.0` assumptions are guidance, not law. Prefer a simpler, safer, more Symfony-native, or more maintainable design when evidence supports changing course.
+- Feature drafts, existing implementation choices, and early pre-`1.0.0` assumptions are guidance, not law. Prefer a simpler, safer, more Symfony-native, or more maintainable design when evidence supports changing course.
 
 ### Architecture And Drift Audits
-- Run broad architecture and project-rules drift audits as reusable review gates, not as one-time cleanup exercises.
+- Run broad architecture and project-rules drift audits as reusable review gates.
 - Use audits to verify that current code and new feature work still follow the architecture and development rules above.
-- Challenge feature drafts, previous implementation choices, and early pre-`1.0.0` assumptions during audits instead of treating them as binding.
+- Challenge feature drafts, existing implementation choices, and early pre-`1.0.0` assumptions during audits instead of treating them as binding.
 - Review performance and data-model decisions critically, including UUIDs versus auto-increment identifiers, indexes, pagination, filtering, sorting, caching, filesystem scans, process spawning, request/visitor identifiers, and full-table or full-tree work.
 - Review security and misuse resistance around public entry points, sessions, tokens, visitor/request identity, subprocesses, filesystem access, package/module boundaries, logging, audit data, secrets, and environment propagation.
 - Capture audit findings with evidence, impact, recommendation, and priority. Apply small safe improvements directly; split larger refactors into dedicated follow-up issues or audit PR slices.
@@ -116,7 +116,7 @@
 - `php bin/phpunit` runs the full PHPUnit suite.
 - `php bin/phpunit --coverage-text` runs PHPUnit with quick coverage feedback before PRs.
 - `bin/lint` includes the translation source catalogue file/key comparison for release-safe validation without requiring `.codex/`.
-- Before committing, prefer `bin/lint --diff` or the relevant focused `bin/lint <path...>` over raw `git diff --check`; if raw `git diff --check` is run and reports trailing whitespace in Markdown, inspect whether the spaces are intentional hard line breaks before changing them. Do not remove intentional Markdown hard breaks only to satisfy Git whitespace output.
+- Before committing, use `bin/lint --diff` or the relevant focused `bin/lint <path...>` for Git-aware whitespace checks. Markdown files may contain intentional two-space hard line breaks; preserve those hard breaks when reviewing whitespace output from raw Git commands.
 - `php bin/console render:route /<route>` renders a route for Twig, translation, and debug user/role review.
 
 ## Verification Matrix
@@ -170,7 +170,7 @@
 ## Worklog
 - Record meaningful code, behavior, documentation, and tooling changes in `dev/WORKLOG.md`.
 - Keep active worklog entries session-based with branch context, using headings in the form `### YYYY-MM-DD branch-name`; continue appending sessions under the active branch so PR reviewers retain the full change context.
-- Move completed branch entries to `dev/WORKLOG_HISTORY.md` only when switching branches or after the PR is merged, not merely because a new Codex session starts.
+- Move completed branch entries to `dev/WORKLOG_HISTORY.md` when switching branches or after the PR is merged; new Codex sessions stay under the active branch entry.
 - Note completed work, verification performed, and TODOs or follow-ups that remain.
 - Do not use the worklog as a substitute for fixing issues that are part of the current task.
 
