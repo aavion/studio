@@ -63,7 +63,7 @@ final class AssetRebuildCommandTest extends TestCase
 
         self::assertSame(Command::SUCCESS, $exitCode);
         self::assertSame('asset rebuild', $payload['name']);
-        self::assertCount(8, $payload['actions']);
+        self::assertCount(9, $payload['actions']);
         self::assertSame(RuntimeException::class, $payload['context']['package_provider_error']['exception']);
         self::assertFileDoesNotExist($this->root.'/.env.test.local');
     }

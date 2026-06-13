@@ -1,6 +1,7 @@
 {% props alerts = [], dismiss_delay = 8000, stream_topics = null %}
 {% set stream_topics = stream_topics is same as(null) ? ui_alert_stream_topics() : stream_topics %}
 {% set stream_url = ui_alert_stream_url(stream_topics) %}
+{% set poll_url = stream_topics is not empty ? path('api_live_alerts') : null %}
 {% set stack_attributes = {
     class: 'system-alert-stack',
     'data-controller': 'alert-stack',
@@ -13,6 +14,13 @@
     {% set stack_attributes = stack_attributes|merge({
         'data-controller': 'alert-stack ui-alert-stream',
         'data-ui-alert-stream-url-value': stream_url,
+    }) %}
+{% endif %}
+{% if poll_url %}
+    {% set stack_attributes = stack_attributes|merge({
+        'data-controller': stack_attributes['data-controller'] ~ ' ui-alert-poll',
+        'data-ui-alert-poll-url-value': poll_url,
+        'data-ui-alert-poll-interval-value': 15000,
     }) %}
 {% endif %}
 

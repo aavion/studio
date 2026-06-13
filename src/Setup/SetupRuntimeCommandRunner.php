@@ -145,6 +145,31 @@ final readonly class SetupRuntimeCommandRunner
     }
 
     /**
+     * @param array<string, string> $environment
+     *
+     * @return array<string, mixed>
+     */
+    public function runMercureHealth(
+        string $projectDir,
+        SetupInput $input,
+        array $environment,
+        SetupCommandExecutorInterface $commandExecutor,
+    ): array {
+        $command = [
+            ...$this->phpCliCommandPrefix($projectDir, $input, $environment, true),
+            $projectDir.'/bin/console',
+            'mercure:health',
+            '--env='.$input->appEnv(),
+        ];
+        $result = $commandExecutor->run($command, $projectDir, $this->databaseEnvironmentScope->commandEnvironment($environment));
+
+        return [
+            'command' => $command,
+            'available' => $result->isSuccessful(),
+        ];
+    }
+
+    /**
      * @return list<string>
      */
     public function dryRunMigrationCommand(string $projectDir, SetupInput $input): array

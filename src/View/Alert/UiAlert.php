@@ -24,6 +24,7 @@ final readonly class UiAlert
         private ?string $id = null,
         private array $actions = [],
         private bool $loading = false,
+        private ?string $title = null,
     ) {
         if ('' === trim($this->message)) {
             throw new InvalidArgumentException('UI alert message must not be empty.');
@@ -41,9 +42,10 @@ final readonly class UiAlert
         ?string $id = null,
         array $actions = [],
         bool $loading = false,
+        ?string $title = null,
     ): self
     {
-        return new self($message, $level, $persistent, mode: $mode, id: $id, actions: $actions, loading: $loading);
+        return new self($message, $level, $persistent, mode: $mode, id: $id, actions: $actions, loading: $loading, title: $title);
     }
 
     /**
@@ -61,7 +63,9 @@ final readonly class UiAlert
         ?string $id = null,
         array $actions = [],
         bool $loading = false,
-    ): self {
+        ?string $title = null,
+    ): self
+    {
         return new self(
             $message,
             $level instanceof MessageLevel ? $level->value : $level,
@@ -73,11 +77,36 @@ final readonly class UiAlert
             $id,
             $actions,
             $loading,
+            $title,
+        );
+    }
+
+    public function withPresentation(?UiAlertPresentation $presentation): self
+    {
+        if (!$presentation instanceof UiAlertPresentation) {
+            return $this;
+        }
+
+        $mode = $presentation->mode() ?? $this->mode;
+        $actions = $presentation->actions();
+
+        return new self(
+            $this->message,
+            $this->level,
+            UiAlertMode::Persistent->value === $mode || (null === $presentation->mode() && $this->persistent),
+            $this->code,
+            $this->translationKey,
+            $this->context,
+            $mode,
+            $presentation->id() ?? $this->id,
+            [] !== $actions ? $actions : $this->actions,
+            $presentation->isLoading() ?? $this->loading,
+            $presentation->title() ?? $this->title,
         );
     }
 
     /**
-     * @return array{message: string, level: string, persistent: bool, mode: string, loading: bool, id?: string, actions?: list<array<string, mixed>>, code?: string, translation_key?: string, context?: array<string, mixed>}
+     * @return array{message: string, level: string, persistent: bool, mode: string, loading: bool, title?: string, id?: string, actions?: list<array<string, mixed>>, code?: string, translation_key?: string, context?: array<string, mixed>}
      */
     public function toArray(): array
     {
@@ -88,6 +117,10 @@ final readonly class UiAlert
             'mode' => $this->normalizedMode(),
             'loading' => $this->loading,
         ];
+
+        if (null !== $this->title && '' !== trim($this->title)) {
+            $payload['title'] = $this->title;
+        }
 
         if (null !== $this->id && '' !== trim($this->id)) {
             $payload['id'] = $this->id;

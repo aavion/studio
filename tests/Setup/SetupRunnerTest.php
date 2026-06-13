@@ -112,6 +112,7 @@ final class SetupRunnerTest extends TestCase
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
+            [PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'],
         ], $executor->commands);
 
         $pdo = new PDO('sqlite:'.$databasePath);
@@ -471,6 +472,7 @@ final class SetupRunnerTest extends TestCase
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
+            [PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'],
         ], $executor->commands);
     }
 
@@ -520,7 +522,9 @@ final class SetupRunnerTest extends TestCase
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'], $entries[8]['context']['command']);
         self::assertSame('run_asset_rebuild', $entries[9]['name']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'], $entries[9]['context']['command']);
-        self::assertSame('mark_setup_completed', $entries[10]['name']);
+        self::assertSame('run_mercure_health', $entries[10]['name']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'], $entries[10]['context']['command']);
+        self::assertSame('mark_setup_completed', $entries[11]['name']);
     }
 
     public function testDryRunUsesPhpCliPlaceholderWhenResolverValidationFails(): void

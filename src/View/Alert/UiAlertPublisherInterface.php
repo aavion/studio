@@ -11,9 +11,9 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 interface UiAlertPublisherInterface
 {
-    public function publish(string $topic, UiAlert|Message $alert, ?string $locale = null, bool $private = true): ?string;
+    public function publish(string $topic, UiAlert|Message|UiAlertTranslation $alert, ?string $locale = null, bool $private = true): ?string;
 
-    public function publishToUser(UserAccount|UserInterface|string $user, UiAlert|Message $alert, ?string $locale = null): ?string;
+    public function publishToUser(UserAccount|UserInterface|string $user, UiAlert|Message|UiAlertTranslation $alert, ?string $locale = null): ?string;
 
-    public function publishToSession(SessionInterface|string $session, UiAlert|Message $alert, ?string $locale = null): ?string;
+    public function publishToSession(SessionInterface|string $session, UiAlert|Message|UiAlertTranslation $alert, ?string $locale = null): ?string;
 }

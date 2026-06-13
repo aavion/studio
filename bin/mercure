@@ -1,0 +1,18 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__).'/vendor/autoload.php';
+
+use App\Core\Process\CliProcessEnvironment;
+use Symfony\Component\Process\Process;
+
+$command = [PHP_BINARY ?: 'php', dirname(__DIR__).'/bin/console', 'mercure:start', ...array_slice($argv, 1)];
+$process = new Process($command, dirname(__DIR__), CliProcessEnvironment::fromCurrentProcess());
+$process->setTimeout(null);
+$process->run(static function (string $type, string $buffer): void {
+    fwrite(Process::ERR === $type ? STDERR : STDOUT, $buffer);
+});
+
+exit($process->getExitCode() ?? 1);

@@ -186,6 +186,7 @@ final class SetupRunner
             ['clear_cache', fn (): array => $this->runtimeCommands->clearCache($this->projectDir, $input, $environment, $this->commandExecutor)],
             ['run_package_discovery', fn (): array => $this->runtimeCommands->runPackageDiscovery($this->projectDir, $input, $environment, $this->commandExecutor)],
             ['run_asset_rebuild', fn (): array => $this->runtimeCommands->runAssetRebuild($this->projectDir, $input, $environment, $this->commandExecutor)],
+            ['run_mercure_health', fn (): array => $this->runtimeCommands->runMercureHealth($this->projectDir, $input, $environment, $this->commandExecutor)],
             ['mark_setup_completed', fn (): array => $this->completionMarker->markComplete($this->projectDir, $input->appEnv())],
         ];
     }

@@ -473,6 +473,9 @@ admin:
       cache_clear:
         label: 'Cache clear'
         description: 'Clears and warms the Symfony application cache.'
+      mercure_health:
+        label: 'Mercure health'
+        description: 'Checks the Mercure hub and starts the local hub when supported.'
     table:
       job: 'Job'
       source: 'Source'

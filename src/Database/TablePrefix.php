@@ -30,6 +30,7 @@ final readonly class TablePrefix
         'site_menu',
         'site_menu_item',
         'state_marker',
+        'ui_alert_inbox',
         'user_account',
         'user_acl_group',
     ];

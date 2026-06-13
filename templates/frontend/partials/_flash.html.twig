@@ -1,10 +1,14 @@
 {% set alerts = [] %}
 {% for label, messages in app.flashes %}
     {% for message in messages %}
-        {% set alerts = alerts|merge([{
-            level: label,
-            message: message is iterable and message.translation_key is defined ? message.translation_key|trans(message.parameters|default({})) : message|trans,
-        }]) %}
+        {% if message is iterable and message._ui_alert|default(false) %}
+            {% set alerts = alerts|merge([message]) %}
+        {% else %}
+            {% set alerts = alerts|merge([{
+                level: label,
+                message: message is iterable and message.translation_key is defined ? message.translation_key|trans(message.parameters|default({})) : message|trans,
+            }]) %}
+        {% endif %}
     {% endfor %}
 {% endfor %}
 {% include '@root/partials/feedback/_alert-stack.html.twig' with {alerts} only %}

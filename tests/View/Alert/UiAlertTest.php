@@ -5,26 +5,43 @@ declare(strict_types=1);
 namespace App\Tests\View\Alert;
 
 use App\View\Alert\UiAlert;
+use App\View\Alert\UiAlertAction;
+use App\View\Alert\UiAlertMode;
+use App\View\Alert\UiAlertPresentation;
 use PHPUnit\Framework\TestCase;
 
 final class UiAlertTest extends TestCase
 {
-    public function testItSerializesNotificationCenterPayloadFields(): void
+    public function testPresentationAddsTitleActionsAndPersistentMode(): void
     {
-        $alert = UiAlert::fromLevel('danger', 'Operation failed.', persistent: true, mode: 'persistent', id: 'operation:demo', actions: [
-            ['label' => 'Show details', 'event' => 'operation-overlay:show', 'detail' => ['operation' => 'demo']],
-        ], loading: true);
+        $alert = UiAlert::fromLevel('info', 'Operation running')->withPresentation(UiAlertPresentation::loading(
+            title: 'Cache clear',
+            actions: [UiAlertAction::event('Show details', 'operation:open', ['id' => 'cache-clear'])],
+            id: 'operation-cache-clear',
+        ));
 
         self::assertSame([
-            'message' => 'Operation failed.',
-            'level' => 'error',
+            'message' => 'Operation running',
+            'level' => 'info',
             'persistent' => true,
             'mode' => 'persistent',
             'loading' => true,
-            'id' => 'operation:demo',
-            'actions' => [
-                ['label' => 'Show details', 'event' => 'operation-overlay:show', 'detail' => ['operation' => 'demo']],
-            ],
+            'title' => 'Cache clear',
+            'id' => 'operation-cache-clear',
+            'actions' => [[
+                'label' => 'Show details',
+                'event' => 'operation:open',
+                'detail' => ['id' => 'cache-clear'],
+            ]],
         ], $alert->toArray());
+    }
+
+    public function testHiddenPresentationOverridesPreviousPersistentMode(): void
+    {
+        $alert = UiAlert::fromLevel('warning', 'Background alert', persistent: true)
+            ->withPresentation(new UiAlertPresentation(UiAlertMode::Hidden));
+
+        self::assertSame('hidden', $alert->toArray()['mode']);
+        self::assertFalse($alert->toArray()['persistent']);
     }
 }

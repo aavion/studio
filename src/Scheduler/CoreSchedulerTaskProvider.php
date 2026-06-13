@@ -40,6 +40,13 @@ final readonly class CoreSchedulerTaskProvider implements SchedulerTaskProviderI
                 'cache:clear',
                 '0 4 * * *',
             ),
+            SchedulerTaskDefinition::command(
+                'system.mercure_health',
+                'admin.scheduler.tasks.mercure_health.label',
+                'admin.scheduler.tasks.mercure_health.description',
+                'mercure:health',
+                '7 * * * *',
+            ),
         ];
     }
 }

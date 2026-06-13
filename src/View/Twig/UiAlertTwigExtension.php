@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\View\Twig;
 
 use App\View\Alert\UiAlertTopicFactory;
+use App\View\Alert\MercureAvailability;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Mercure\Twig\MercureExtension;
@@ -19,6 +20,7 @@ final class UiAlertTwigExtension extends AbstractExtension
         private readonly RequestStack $requestStack,
         private readonly Security $security,
         private readonly UiAlertTopicFactory $topicFactory,
+        private readonly MercureAvailability $mercureAvailability,
         private readonly ?MercureExtension $mercure = null,
     ) {
     }
@@ -51,7 +53,7 @@ final class UiAlertTwigExtension extends AbstractExtension
     {
         $topics ??= $this->streamTopics();
 
-        if ([] === $topics || null === $this->mercure) {
+        if ([] === $topics || null === $this->mercure || !$this->mercureAvailability->available()) {
             return null;
         }
 

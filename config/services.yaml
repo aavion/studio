@@ -109,6 +109,9 @@ services:
     App\Core\Config\ConfigDefaultProviderInterface:
         alias: App\Core\Config\Settings\CoreConfigDefaultProvider
 
+    App\View\Alert\UiAlertDispatcherInterface:
+        alias: App\View\Alert\UiAlertDispatcher
+
     App\Api\Security\ApiAvailabilityCheckerInterface:
         alias: App\Api\Security\DatabaseApiAvailabilityChecker
 
@@ -446,8 +449,31 @@ services:
             $defaultUri: '%env(DEFAULT_URI)%'
             $secret: '%kernel.secret%'
 
+    App\View\Alert\MercureAvailability:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\View\Alert\UiAlertPublisherInterface:
         alias: App\View\Alert\MercureUiAlertPublisher
+
+    App\Core\Mercure\MercureBinaryManager:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $version: '%app.mercure_binary_version%'
+
+    App\Core\Mercure\MercureRuntime:
+        arguments:
+            $defaultUri: '%env(DEFAULT_URI)%'
+            $projectDir: '%kernel.project_dir%'
+
+    App\Command\MercureStartCommand:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Controller\LiveAlertController:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
 
     App\View\Http\HttpErrorRenderer:
         arguments:
