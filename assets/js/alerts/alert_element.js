@@ -17,6 +17,11 @@ export function createAlertElement(payload, closeLabel) {
         mode,
     });
 
+    const statusIcon = document.createElement('span');
+    statusIcon.className = `system-alert-icon ti ${alertIcon(level)}`;
+    statusIcon.setAttribute('aria-hidden', 'true');
+    alert.append(statusIcon);
+
     const content = document.createElement('div');
     content.className = 'system-alert-content';
 
@@ -33,6 +38,19 @@ export function createAlertElement(payload, closeLabel) {
     alert.append(closeButton(closeLabel));
 
     return alert;
+}
+
+function alertIcon(level) {
+    const icons = {
+        debug: 'ti-bug',
+        info: 'ti-info-circle',
+        success: 'ti-circle-check',
+        warning: 'ti-alert-triangle',
+        error: 'ti-alert-circle',
+        exception: 'ti-alert-circle',
+    };
+
+    return icons[level] || icons.info;
 }
 
 function appendActions(content, actions) {

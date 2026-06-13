@@ -22,6 +22,14 @@
         <span class="system-alert-badge" data-alert-stack-target="badge" hidden>0</span>
     </button>
     <div class="system-alert-panel" data-alert-stack-target="panel" {% if alerts|default([]) is empty %}hidden{% endif %}>
+        <header class="system-alert-panel-header">
+            <div>
+                <strong>{{ 'ui.alert.notifications'|trans }}</strong>
+            </div>
+            <button class="system-alert-panel-close" type="button" data-action="alert-stack#hide" aria-label="{{ 'ui.alert.hide'|trans }}">
+                <span class="ti ti-chevron-up" aria-hidden="true"></span>
+            </button>
+        </header>
         <div class="system-alert-list" data-alert-stack-target="list">
             {% for alert in alerts %}
                 <twig:root:Alert :alert="alert" />

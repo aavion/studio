@@ -19,6 +19,14 @@
 {% set alert_actions = actions is not null ? actions : alert.actions|default([]) %}
 {% set alert_loading = loading is not null ? loading : alert.loading|default(false) %}
 {% set alert_id = id|default(alert.id|default('')) %}
+{% set alert_icon = {
+    debug: 'ti-bug',
+    info: 'ti-info-circle',
+    success: 'ti-circle-check',
+    warning: 'ti-alert-triangle',
+    error: 'ti-alert-circle',
+    exception: 'ti-alert-circle',
+}[normalized_level] %}
 
 <section
     {{ attributes.defaults({
@@ -39,6 +47,7 @@
         })|json_encode|e('html_attr'),
     }) }}
 >
+    <span class="system-alert-icon ti {{ alert_icon }}" aria-hidden="true"></span>
     <div class="system-alert-content">
         {% if alert_loading %}
             <span class="system-alert-spinner" aria-hidden="true"></span>

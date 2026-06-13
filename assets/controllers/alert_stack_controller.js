@@ -41,6 +41,11 @@ export default class extends Controller {
         this.hidePanel();
     }
 
+    hide(event) {
+        event.preventDefault();
+        this.hidePanel();
+    }
+
     close(event) {
         event.preventDefault();
         this.closeAlert(event.currentTarget.closest('[data-alert-stack-target="alert"]'));
