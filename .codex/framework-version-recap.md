@@ -1,7 +1,7 @@
 # Framework And Dependency Recap
 
 > **Status:** Active  
-> **Updated:** 2026-06-12  
+> **Updated:** 2026-06-13  
 > **Owner:** Codex  
 > **Purpose:** Cache current project dependency notes so agents avoid older Symfony, Doctrine, Twig, Tailwind, PHPUnit, CommonMark, and Symfony UX habits between documentation checks.  
 
@@ -25,6 +25,8 @@ Versions were checked against the installed Composer packages, `composer.json`, 
 | SymfonyCasts TailwindBundle | `0.13.0` | Project pins Tailwind CLI `v4.3.0`. |
 | Tailwind CSS | `v4.3.0` binary | CSS-first configuration. |
 | StimulusBundle | `3.1.0` | AssetMapper integration is active. |
+| Symfony UX packages | `3.1.0` | Autocomplete, CalendarLink, Chartjs, Cropperjs, Dropzone, Icons, LiveComponent, Map, Native, Notify, React, Translator, Turbo, TwigComponent, and Vue are installed. |
+| MercureBundle / Mercure Notifier | `0.8.0` / `8.1.0` | Used by UX Turbo Streams/Notify foundations; default local URLs derive from `DEFAULT_URI`. |
 | UX Turbo | `3.1.0`; Turbo `8.0.23` via importmap | Turbo Drive is available; use deliberately around forms. |
 | Stimulus | `3.2.2` via importmap | Use values, targets, classes, actions, outlets, and lifecycle cleanup. |
 | League CommonMark | `2.8.2` | Use GFM/CommonMark converters for Markdown rendering and lint parse smoke checks. |
@@ -91,10 +93,12 @@ Versions were checked against the installed Composer packages, `composer.json`, 
 
 ### Installed UX Packages
 
-- `symfony/stimulus-bundle` and `symfony/ux-turbo` are installed.
+- `symfony/stimulus-bundle` plus the Symfony UX 3.1 package set are installed: Autocomplete, CalendarLink, Chartjs, Cropperjs, Dropzone, Icons, LiveComponent, Map, Native, Notify, React, Translator, Turbo, TwigComponent, and Vue.
 - The project uses AssetMapper/importmap, not a Node build pipeline.
 - `@symfony/stimulus-bundle`, `@hotwired/stimulus`, and `@hotwired/turbo` are in `importmap.php`.
-- `assets/controllers.json` enables UX Turbo controllers.
+- `assets/controllers.json` keeps optional UX Stimulus controllers lazy by default. Leave expensive controllers lazy until a template actually references them.
+- React and Vue use the AssetMapper loader form of `registerReactControllerComponents()` and `registerVueControllerComponents()`; do not copy Webpack-era `require.context()` examples into this project.
+- UX Icons has remote Iconify lookup disabled in `config/packages/ux_icons.yaml` so builds and CI stay offline-safe. Import or lock remote icons explicitly before using them, then keep committed icon assets/cache in sync with templates.
 
 ### StimulusBundle
 
@@ -112,13 +116,18 @@ Versions were checked against the installed Composer packages, `composer.json`, 
 - Use `<turbo-frame>` for scoped replacement, but ensure frame responses contain the expected frame or deliberately opt into full-page reload behavior.
 - Disable Turbo for flows where browser-native behavior is required, for example logout or setup forms, using `data-turbo="false"`.
 
-### Likely Next Packages
+### Components And Rich UI
 
-- TwigComponent and LiveComponent are not installed yet, but are strong candidates for backend/admin UI.
 - TwigComponent registers PHP classes with `#[AsTwigComponent]`; public properties become props, components are services, and templates can use the special `attributes` variable with `attributes.defaults()`.
 - Anonymous Twig components can be template-only and declare props with `{% props %}`. Use them for simple repeated UI fragments before adding PHP classes.
 - LiveComponent builds on TwigComponent with `#[AsLiveComponent]`, `#[LiveProp]`, `#[LiveAction]`, `DefaultActionTrait`, form traits, URL-bound props, hydration/dehydration, and validation helpers.
 - Use LiveComponent only for interactions that benefit from server-roundtrip reactivity. Keep plain Symfony forms, Stimulus, or Turbo Frames for simpler workflows.
+- Use UX Autocomplete for entity/reference selections, Dropzone/Cropperjs for media workflows, Chartjs or the existing ApexCharts integration for dashboards, Icons for UI symbols, Translator for JavaScript copy, Notify for browser notifications, and Map only behind explicit provider/configuration choices.
+
+### Mercure
+
+- MercureBundle reads `MERCURE_URL`, `MERCURE_PUBLIC_URL`, and `MERCURE_JWT_SECRET`. The committed defaults derive URLs from `DEFAULT_URI` and the development JWT secret from `APP_SECRET`; production deployments should override these with environment-specific hub URLs and secrets when the hub is external or separately rotated.
+- Keep `MERCURE_DSN=mercure://default` for notifier integration unless a real notification transport strategy says otherwise.
 
 ## CommonMark Notes
 
@@ -149,5 +158,6 @@ Versions were checked against the installed Composer packages, `composer.json`, 
 - Context7 `/websites/twig_symfony_doc`
 - Context7 `/tailwindlabs/tailwindcss.com`, `/symfonycasts/tailwind-bundle`
 - Context7 `/symfony/ux`, `/symfony/stimulus-bundle`, `/websites/symfony_bundles_ux-turbo_current`, `/symfony/ux-twig-component`, `/symfony/ux-live-component`
+- Context7 `/symfony/symfony-docs/__branch__8.0` for MercureBundle configuration
 - Context7 `/thephpleague/commonmark`
 - Context7 `/websites/phpunit_de_en_13_0`

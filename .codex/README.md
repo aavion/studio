@@ -1,7 +1,7 @@
 # Agents Working Directory
 
 > **Status**: Active  
-> **Updated**: 2026-06-12  
+> **Updated**: 2026-06-13  
 > **Owner**: Dominik Letica, OpenAI/Codex  
 > **Purpose:** Provides a working directory for coding agents to cache additional information and reusable tools.  
 
@@ -19,7 +19,6 @@
 - Audit: [Project Readiness Drift Audit Second Pass 2026-06-06](audit-project-readiness-second-pass-2026-06-06.md) - completed second-pass audit and final gate notes.
 
 ### Tools
-- Tool: [Render Symfony Output](render.php)
 - Tool: [Compare Translation Keys](compare_translations.php)
 - Tool: [Global Project Lint](../bin/lint)
 - Tool: [Resolve Cloud Artifacts](resolve_cloud_artifacts.php)
@@ -32,8 +31,8 @@
 - Historical audits may stay here while their findings are still actively referenced. Move resolved or superseded details into `dev/WORKLOG.md`, feature drafts, or issue trackers before deleting the audit note.
 - Documentation-reference notes such as the framework recap are version-pinned cache aids. Check them before routine work, refresh them from Context7 or official documentation when installed versions change, when the cached note is unclear, or when the task depends on version-sensitive behavior, and write useful new findings back into the cache.
 - Run `bin/lint` to execute the project-wide syntax, container, template, YAML, JavaScript, JSON, Markdown parse, Tailwind, translation-key, and non-Markdown Git whitespace checks.
-- Run `bin/lint --diff` to lint supported files in the current staged or unstaged Git diff. Use `bin/lint --diff=<target..source>` or `bin/lint --diff:<target..source>` for an explicit Git diff range.
-- Run `php .codex/render.php /path [METHOD]` to render a Symfony route. The helper renders as a transient Owner by default, supports `ROLE=author|admin|owner` for role-only API checks, and supports `RENDER_USER=username` or `USER=username` for loading an existing user and groups from the database. API renders attach a debug read-write API context without requiring Bearer keys; set `RENDER_SETUP_COMPLETED=0` to test the real setup gate instead of the helper bypass.
+- Run `bin/lint --diff` to lint supported files in the current staged or unstaged Git diff. Use `bin/lint --staged` for staged-only changes, or `bin/lint --diff=<target..source>`, `bin/lint --diff:<target..source>`, or `bin/lint --changed=<target..source>` for an explicit Git diff range. Git-dependent checks skip cleanly when Git or a work tree is unavailable.
+- Use `php bin/console render:route /path` for project-wide CLI route rendering with optional `--role`, `--user`, `--method`, `--host`, `--https`, and `--setup-completed=0` debug context.
 - Run `php .codex/compare_translations.php` to compare source catalogue files and keys across all locale directories under `translations/languages/`, using English as the reference locale when available.
 - Run `php .codex/resolve_cloud_artifacts.php` to inspect iCloud/Finder artifacts. Add `--apply` to delete safe duplicates and macOS metadata; add `--prefer-base` only after reviewing differing conflict copies.
 - Run `php .codex/clean_ignored_artifacts.php` to inspect ignored artifacts. Add `--apply` to delete everything ignored by Git.

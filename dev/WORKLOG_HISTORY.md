@@ -1,14 +1,14 @@
 # Developer Worklog History
 
 > **Status**: Active  
-> **Updated**: 2026-06-12  
+> **Updated**: 2026-06-13  
 > **Owner**: Core  
-> **Purpose:** Preserve compacted session history moved out of `dev/WORKLOG.md` at coding-session boundaries.
+> **Purpose:** Preserve compacted branch/PR history moved out of `dev/WORKLOG.md` at branch boundaries.
 
 ## Usage
-Move completed session logs from `dev/WORKLOG.md` into this file at the start of each new coding session. Keep entries compacted by session so the active worklog remains context-friendly while older project history stays available.
+Move completed branch or PR logs from `dev/WORKLOG.md` into this file when switching branches or after a PR is merged. Keep the active worklog focused on the current branch so reviewers can see the full PR context while older project history stays available.
 
-## Archived Sessions
+## Archived Branches
 ### 2026-06-07
 - Completed the API foundation and hardening slice: stateless Bearer API-key authentication, endpoint definitions/handlers, OpenAPI 3.2 generation, public/private navigation, admin/user/content/package endpoints, CORS, trace headers, feature policy settings, response/error schemas, and Message-layer localized feedback.
 - Hardened API access and review boundaries around disabled/setup/maintenance responses, package-owned route patterns, read-only method gates, endpoint permissions, API-key parsing, deleted users, ACL denial status, retained-deleted account mutations, content revisions, package slug identity, pagination/filtering/sorting, and public published-content status leakage.

@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-06-12  
+> **Updated**: 2026-06-13  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -72,10 +72,10 @@
 - [ ] Audit follow-up: decide whether optional branding packages need capabilities beyond `system-template`; package CSS class namespace validation is now enforced for package-owned selectors.
 - [ ] Evaluate whether the documented minimum memory requirement should become 256M after PHPUnit 13.2/full-suite runs needed a higher CLI memory limit; do not fix this requirement until setup/init/lint/runtime memory behavior has been reviewed across target hosting platforms.
 
-## Session Logs
-**Usage:** At the start of a new coding session, compact older session logs before adding the new entry: keep the active worklog focused on the current or most recent session, move older session details to [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), and keep the archived history linked below the current session log. Create the new session entry at the top and record every meaningful committed or completed change, including verification and follow-ups.
+## Branch Logs
+**Usage:** Keep the active worklog focused on the current branch or PR, not on individual chat sessions. Use headings in the form `### YYYY-MM-DD branch-name`. Continue the same branch entry across session/context changes so reviewers can see the full PR context in one place. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top. Record every meaningful committed or completed change, including verification and follow-ups.
 
-### 2026-06-12
+### 2026-06-12 docs-cleanup
 - Refreshed the `.codex` context inventory: marked the branding-neutral naming migration and first readiness audit as completed/historical, removed the obsolete standalone Symfony docs notes, made the framework recap the version-pinned dependency documentation cache, and updated it with current installed-dependency guidance for Symfony 8.1, Doctrine ORM/DBAL, Twig 3.27, Tailwind v4/TailwindBundle, Symfony UX, CommonMark, and PHPUnit 13.
 - Extended `bin/lint` into the all-in-one diff linting entry point: it now supports `--diff`, `--diff=<target..source>`, and `--diff:<target..source>`, collects staged/unstaged or explicit Git diff files when Git is available, lints extensionless PHP scripts such as `bin/lint`, and runs a non-Markdown Git whitespace check that preserves intentional Markdown hard line breaks.
 - Added Markdown parse coverage to `bin/lint` using the existing League CommonMark/GFM dependency so Markdown targets produce a real parse/render smoke-check instead of being reported as unsupported.
@@ -84,5 +84,12 @@
 - Removed the obsolete `.codex/PROJECT_RULES.md` duplicate, updated `.codex/ENVIRONMENT.md` for the new `/Volumes/Projekte/studio` checkout path, and refreshed `.codex/README.md` with active context, historical audit, tool, and cleanup guidance.
 - Verified `.codex/resolve_cloud_artifacts.php` reports no cloud conflict artifacts; `.codex/clean_ignored_artifacts.php` dry-run still lists normal ignored generated/dependency directories such as `vendor/`, `var/`, `assets/vendor/`, `translations/runtime/`, and package build outputs, so no deletion was applied.
 
-### Archived Compacted Session History
+### 2026-06-13 docs-cleanup
+- Moved route rendering from the `.codex` helper into project code with `php bin/console render:route /path`, including optional debug role, existing user, method, host, HTTPS, setup-completion, browser-auth, and API debug context support; removed the obsolete `.codex/render.php` helper and updated render-review references.
+- Extended `bin/lint` with `--staged` and `--changed=<target..source>` while keeping Git-dependent target collection and whitespace checks graceful when Git or a work tree is unavailable.
+- Reviewed the newly installed Symfony UX package set, kept optional UX Stimulus controllers lazy, removed generated React/Vue/Icon demo files, and tied committed Mercure defaults to `DEFAULT_URI` and `APP_SECRET` for development while documenting production override expectations.
+- Updated the class map, dependency recap, local agent tooling notes, and active worklog/history to reflect the render command, lint modes, Symfony UX baseline, and branch-oriented worklog boundary.
+- Changed worklog retention from session-oriented compaction to branch/PR-oriented logs, restored the current `docs-cleanup` branch context from history, and mirrored the rule in `AGENTS.md`.
+
+### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

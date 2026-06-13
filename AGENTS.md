@@ -1,7 +1,7 @@
 # Repository Agent Guide
 
 > **Status**: Active  
-> **Updated**: 2026-06-12  
+> **Updated**: 2026-06-13  
 > **Owner**: Dominik Letica, OpenAI/Codex  
 > **Purpose:** Provide practical, repository-specific instructions and binding project rules for coding agents working on this Symfony application.  
 
@@ -105,7 +105,7 @@
 ## Build and Verification Commands
 - `bin/init` initializes the repository, refreshes dependencies and assets, and is the preferred recovery path for broken or incomplete `vendor/` packages because it removes an existing `vendor/` tree before Composer runs.
 - `composer install` installs PHP dependencies and verifies required extensions.
-- `bin/lint` runs the full project lint suite, including Markdown parse checks and a Git whitespace check that excludes Markdown hard line breaks; pass one or more files or directories to run focused type-based checks, or use `bin/lint --diff` / `bin/lint --diff=<target..source>` to lint supported files from the current or named Git diff.
+- `bin/lint` runs the full project lint suite, including Markdown parse checks and a Git whitespace check that excludes Markdown hard line breaks; pass one or more files or directories to run focused type-based checks, or use `bin/lint --diff`, `bin/lint --staged`, `bin/lint --diff=<target..source>`, or `bin/lint --changed=<target..source>` to lint supported Git changes when Git and a work tree are available.
 - `php -l <path>` checks PHP syntax for a changed file.
 - `php bin/console lint:container` validates Symfony container wiring after service or configuration changes.
 - `php bin/console tailwind:build` compiles Tailwind CSS.
@@ -116,12 +116,12 @@
 - `php bin/phpunit --coverage-text` runs PHPUnit with quick coverage feedback before PRs.
 - `bin/lint` includes the translation source catalogue file/key comparison for release-safe validation without requiring `.codex/`.
 - Before committing, prefer `bin/lint --diff` or the relevant focused `bin/lint <path...>` over raw `git diff --check`; if raw `git diff --check` is run and reports trailing whitespace in Markdown, inspect whether the spaces are intentional hard line breaks before changing them. Do not remove intentional Markdown hard breaks only to satisfy Git whitespace output.
-- `php .codex/render.php /<route>` renders a route for Twig and translation review.
+- `php bin/console render:route /<route>` renders a route for Twig, translation, and debug user/role review.
 
 ## Verification Matrix
 - PHP-only logic: run targeted PHPUnit coverage and `php -l` for edited PHP files.
 - Service, DI, security, or configuration changes: run targeted tests and `php bin/console lint:container`.
-- Twig, translation, or UX copy changes: run `bin/lint <changed translation/template paths...>` and render affected routes with `.codex/render.php` when available.
+- Twig, translation, or UX copy changes: run `bin/lint <changed translation/template paths...>` and render affected routes with `php bin/console render:route /<route>` when available.
 - Asset or Stimulus changes: prefer `bin/lint <changed path...>` for focused JavaScript, JSON, CSS, YAML, Twig, Markdown, and PHP syntax checks, then run the relevant asset build command and targeted UI/functional checks when build output or rendering can change.
 - Focused CSS checks use the strict CSS parser and may report Tailwind-specific directives or generated modern at-rules such as `@apply`, `@theme`, or `@supports` as unsupported syntax; treat the accompanying linter note as context, and use `php bin/console tailwind:build` for the authoritative full Tailwind validation.
 - Doctrine mapping or entity changes: generate or update migrations and run tests covering persistence behavior.
@@ -144,7 +144,7 @@
 - Keep matching translation source catalogue files and keys in sync across all locale directories in the same change. Source files live under `translations/languages/{locale}/*.yaml`, with English used as the comparison reference when available and the message-layer source named `message.yaml`; runtime `translations/messages.{locale}.yaml` catalogues are generated for Symfony's default domain.
 - User-facing strings include labels, buttons, links, placeholders, help text, validation messages, flash messages, empty states, error pages, and navigation text.
 - Logs, developer exceptions, CLI output, test names, and internal debug strings do not need localization.
-- For rendered Twig review, use `.codex/render.php /<route>` when available and then `bin/lint <changed translation/template paths...>`.
+- For rendered Twig review, use `php bin/console render:route /<route>` when available and then `bin/lint <changed translation/template paths...>`.
 
 ## Documentation
 - Follow `dev/STYLEGUIDE.md` for all Markdown documentation.
@@ -168,6 +168,8 @@
 
 ## Worklog
 - Record meaningful code, behavior, documentation, and tooling changes in `dev/WORKLOG.md`.
+- Keep active worklog entries branch/PR-oriented, using headings in the form `### YYYY-MM-DD branch-name`; continue the current branch entry across chat/session context changes so PR reviewers retain the full change context.
+- Move completed branch entries to `dev/WORKLOG_HISTORY.md` only when switching branches or after the PR is merged, not merely because a new Codex session starts.
 - Note completed work, verification performed, and TODOs or follow-ups that remain.
 - Do not use the worklog as a substitute for fixing issues that are part of the current task.
 
