@@ -93,6 +93,7 @@
 - Added Symfony UX icon locking to `bin/init` and the package-aware asset rebuild queue as non-blocking dependency steps, and registered active package template paths for icon/AssetMapper console scans so core and package icon references can be imported locally when Iconify is reachable without breaking offline CI or admin rebuilds.
 - Added a local-only Symfony UX icon reference check to `bin/lint` so static Twig icon references fail when the required locked SVG is missing, without running the mutating network-backed `ux:icons:lock` command.
 - Documented that locked SVGs in `assets/icons` should be committed as reviewable dependency snapshots while avoiding bulk-locking complete upstream icon sets by default.
+- Declared `ext-sodium` as a direct Composer platform requirement and added it to the PR verification runner because the Symfony Mercure/JWT dependency chain requires `lcobucci/jwt`, which requires Sodium.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
