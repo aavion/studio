@@ -82,7 +82,7 @@
 - `tests/` mirrors production code for PHPUnit unit, integration, functional, and end-to-end coverage.
 - `translations/` contains modular source catalogues and generated runtime catalogues.
 - `docs/` contains user-facing documentation; `dev/manual/` contains developer documentation; `dev/draft/` contains concepts and feature outlines.
-- `dev/WORKLOG.md` tracks branch/PR context, completed work, TODOs, and deferred follow-ups.
+- `dev/WORKLOG.md` tracks session notes with branch/PR context, completed work, TODOs, and deferred follow-ups.
 - `dev/CLASSMAP.md` indexes relevant callables and their tests.
 - `.codex/` contains agent-only notes, reusable development helper scripts, context cache, and environment/tooling notes. Production code, tests, build scripts, and release workflows must not depend on files under `.codex/`.
 
@@ -169,7 +169,7 @@
 
 ## Worklog
 - Record meaningful code, behavior, documentation, and tooling changes in `dev/WORKLOG.md`.
-- Keep active worklog entries branch/PR-oriented, using headings in the form `### YYYY-MM-DD branch-name`; continue the current branch entry across chat/session context changes so PR reviewers retain the full change context.
+- Keep active worklog entries session-based with branch context, using headings in the form `### YYYY-MM-DD branch-name`; continue appending sessions under the active branch so PR reviewers retain the full change context.
 - Move completed branch entries to `dev/WORKLOG_HISTORY.md` only when switching branches or after the PR is merged, not merely because a new Codex session starts.
 - Note completed work, verification performed, and TODOs or follow-ups that remain.
 - Do not use the worklog as a substitute for fixing issues that are part of the current task.
@@ -198,7 +198,7 @@
 - Developer manual: `dev/manual/**`
 - User manual: `docs/**`
 - Feature drafts and outlines: `dev/draft/**`
-- Worklog and branch/PR notes: `dev/WORKLOG.md`
+- Worklog session notes with branch/PR context: `dev/WORKLOG.md`
 - Callable index: `dev/CLASSMAP.md`
 - Documentation style guide: `dev/STYLEGUIDE.md`
 - Documentation templates: `docs/assets/template.md` and `dev/manual/assets/template.md`

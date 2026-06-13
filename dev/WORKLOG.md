@@ -73,7 +73,7 @@
 - [ ] Evaluate whether the documented minimum memory requirement should become 256M after PHPUnit 13.2/full-suite runs needed a higher CLI memory limit; do not fix this requirement until setup/init/lint/runtime memory behavior has been reviewed across target hosting platforms.
 
 ## Branch Logs
-**Usage:** Keep the active worklog focused on the current branch or PR, not on individual chat sessions. Use headings in the form `### YYYY-MM-DD branch-name`. Continue the same branch entry across session/context changes so reviewers can see the full PR context in one place. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top. Record every meaningful committed or completed change, including verification and follow-ups.
+**Usage:** Keep session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Continue appending new session notes under the active branch so reviewers can see the full PR context in one place. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top. Record every meaningful committed or completed change, including verification and follow-ups.
 
 ### 2026-06-12 docs-cleanup
 - Refreshed the `.codex` context inventory: marked the branding-neutral naming migration and first readiness audit as completed/historical, removed the obsolete standalone Symfony docs notes, made the framework recap the version-pinned dependency documentation cache, and updated it with current installed-dependency guidance for Symfony 8.1, Doctrine ORM/DBAL, Twig 3.27, Tailwind v4/TailwindBundle, Symfony UX, CommonMark, and PHPUnit 13.
@@ -89,12 +89,12 @@
 - Extended `bin/lint` with `--staged` and `--changed=<target..source>` while keeping Git-dependent target collection and whitespace checks graceful when Git or a work tree is unavailable.
 - Reviewed the newly installed Symfony UX package set, kept optional UX Stimulus controllers lazy, removed generated React/Vue/Icon demo files, and tied committed Mercure defaults to `DEFAULT_URI` and `APP_SECRET` for development while documenting production override expectations.
 - Updated the class map, dependency recap, local agent tooling notes, and active worklog/history to reflect the render command, lint modes, Symfony UX baseline, and branch-oriented worklog boundary.
-- Changed worklog retention from session-oriented compaction to branch/PR-oriented logs, restored the current `docs-cleanup` branch context from history, and mirrored the rule in `AGENTS.md`.
+- Changed worklog retention from per-session compaction to branch-scoped archival, restored the current `docs-cleanup` branch context from history, and mirrored the rule in `AGENTS.md`.
 - Added Symfony UX icon locking to `bin/init` and the package-aware asset rebuild queue as non-blocking dependency steps, and registered active package template paths for icon/AssetMapper console scans so core and package icon references can be imported locally when Iconify is reachable without breaking offline CI or admin rebuilds.
 - Added a local-only Symfony UX icon reference check to `bin/lint` so static Twig icon references fail when the required locked SVG is missing, without running the mutating network-backed `ux:icons:lock` command.
 - Documented that locked SVGs in `assets/icons` should be committed as reviewable dependency snapshots while avoiding bulk-locking complete upstream icon sets by default.
 - Declared `ext-sodium` as a direct Composer platform requirement and added it to the PR verification runner because the Symfony Mercure/JWT dependency chain requires `lcobucci/jwt`, which requires Sodium.
-- Clarified `AGENTS.md` wording around branch/PR-oriented worklog context and the boundary between agent-only `.codex` helpers and project-wide tooling.
+- Clarified `AGENTS.md` wording around session notes with branch/PR context and the boundary between agent-only `.codex` helpers and project-wide tooling.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
