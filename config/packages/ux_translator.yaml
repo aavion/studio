@@ -4,6 +4,5 @@ ux_translator:
 
 when@prod:
     ux_translator:
-        # Control whether TypeScript types are dumped alongside translations.
-        # Disable this if you do not use TypeScript (e.g. in production when using AssetMapper), to speed up cache warmup.
-        # dump_typescript: false
+        # The project currently uses JavaScript with AssetMapper; skip TypeScript type dumps during production warmup.
+        dump_typescript: false

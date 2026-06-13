@@ -115,6 +115,7 @@ Versions were checked against the installed Composer packages, `composer.json`, 
 - Turbo Drive is enabled by default when UX Turbo is active. Verify CSRF, redirects, validation errors, flash messages, and retained scroll/focus behavior for forms.
 - For successful non-GET forms, prefer redirect-after-post with `303 See Other` unless intentionally returning Turbo Streams.
 - For Turbo Stream responses, check `TurboBundle::STREAM_FORMAT`, set the request format, and render only the stream/block response.
+- In UX Turbo 3.1, `turbo_stream_listen()` and the old Mercure listen renderer are deprecated. Use `turbo_stream_from()` or the `<twig:Turbo:Stream:From>` component for Mercure-backed stream subscriptions.
 - Use `<turbo-frame>` for scoped replacement, but ensure frame responses contain the expected frame or deliberately opt into full-page reload behavior.
 - Disable Turbo for flows where browser-native behavior is required, for example logout or setup forms, using `data-turbo="false"`.
 
