@@ -37,6 +37,7 @@ final readonly class AssetRebuildQueueFactory
             new TranslationAggregateAction($this->translationCatalogueAggregator, $packages),
             $this->consoleCommand('assets:install', $environment, $persistPhpBinaryPreference),
             $this->consoleCommand('importmap:install', $environment, $persistPhpBinaryPreference),
+            $this->consoleCommand('ux:translator:warm-cache', $environment, $persistPhpBinaryPreference),
             $this->consoleCommand('ux:icons:lock', $environment, $persistPhpBinaryPreference, failOnError: false),
             $this->consoleCommand('tailwind:build', $environment, $persistPhpBinaryPreference, timeout: 300.0),
         ];

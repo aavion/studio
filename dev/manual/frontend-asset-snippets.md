@@ -17,7 +17,7 @@ Composer auto-scripts currently handle:
 - ImportMap install;
 - Tailwind build.
 
-`bin/init` reruns the asset setup commands after Composer has restored dependencies so clean checkouts and recovered `vendor/` trees have deterministic local assets. It only runs `asset-map:compile` in `prod`.
+`bin/init` reruns the asset setup commands after Composer has restored dependencies so clean checkouts and recovered `vendor/` trees have deterministic local assets, then warms the Symfony cache so UX Translator can dump JavaScript translation assets. It only runs `asset-map:compile` in `prod`.
 
 The global package-aware rebuild entry point is `php bin/console assets:rebuild`. Package lifecycle workflows and manual admin recovery actions should call this command through the operational ActionLog runner, not rebuild assets during normal page requests.
 
@@ -27,10 +27,11 @@ The command publishes a planned step count in dry-run mode and reports current s
 2. aggregate core and active package translation sources into the runtime `messages` catalogues;
 3. run `assets:install`;
 4. run `importmap:install`;
-5. run `ux:icons:lock` as a non-blocking step so core and package template icon references are imported locally when Iconify is reachable;
-6. run `tailwind:build`;
-7. only in `prod`, remove `public/assets` and run `asset-map:compile`;
-8. run `cache:clear` as the finalizer.
+5. run `ux:translator:warm-cache` so AssetMapper can resolve `var/translations/index.js`;
+6. run `ux:icons:lock` as a non-blocking step so core and package template icon references are imported locally when Iconify is reachable;
+7. run `tailwind:build`;
+8. only in `prod`, remove `public/assets` and run `asset-map:compile`;
+9. run `cache:clear` as the finalizer.
 
 Symfony UX icons render inline from local SVG files under `assets/icons`; they do not need to be copied to `public/assets`. The lock step is intentionally non-blocking because offline CI, restricted production networks, or temporary Iconify outages should not break an otherwise valid asset rebuild. Missing icons are still visible as warnings in the ActionLog and should be locked manually during development or before release when network access is available. Before `ux:icons:lock`, `ux:icons:warm-cache`, or `asset-map:compile` run in the console, the package template path configurator registers active package template paths on Twig so scans include package-owned Twig files under `packages/**/templates`.
 
@@ -42,7 +43,7 @@ Locked SVG files under `assets/icons` are committed as small, reviewable UI depe
 
 Use `php bin/console packages:assets:sync` when only the active package mirror and generated registry files need to be refreshed without running the full Symfony asset lifecycle.
 
-Package asset sync and translation aggregation should preserve the previous generated state until the replacement is ready. Package assets are mirrored into a temporary `assets/.packages.tmp-*` directory before `assets/packages` is swapped, generated CSS/JavaScript registries are replaced through temporary files, and runtime translation catalogues are aggregated into a temporary `translations/runtime/{APP_ENV}.tmp-*` directory before the environment runtime directory is replaced. Production rebuilds still remove `public/assets` before `asset-map:compile` because AssetMapper writes versioned files and repeated compiles would otherwise leave stale compiled assets behind.
+Package asset sync and translation aggregation should preserve the previous generated state until the replacement is ready. Package assets are mirrored into a temporary `assets/.packages.tmp-*` directory before `assets/packages` is swapped, generated CSS/JavaScript registries are replaced through temporary files, and runtime translation catalogues are aggregated into a temporary `translations/runtime/{APP_ENV}.tmp-*` directory before the environment runtime directory is replaced. `ux:translator:warm-cache` runs after translation aggregation so the JavaScript translation assets in `var/translations` exist before AssetMapper resolves `assets/translator.js`. Production rebuilds still remove `public/assets` before `asset-map:compile` because AssetMapper writes versioned files and repeated compiles would otherwise leave stale compiled assets behind.
 
 ## Theme asset notes
 

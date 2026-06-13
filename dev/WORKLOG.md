@@ -97,6 +97,7 @@
 - Clarified `AGENTS.md` wording around session notes with branch/PR context and the boundary between agent-only `.codex` helpers and project-wide tooling.
 - Normalized `AGENTS.md` wording so the document reads as a standalone first-version guide rather than as a patch over earlier agent habits.
 - Disabled UX Translator TypeScript type dumps in production because the current AssetMapper setup uses JavaScript, not TypeScript, and recorded the UX Turbo 3.1 stream-listen deprecation in the dependency recap.
+- Added cache warmup to `bin/init` and `ux:translator:warm-cache` to the package-aware asset rebuild queue so `var/translations/index.js` exists before AssetMapper resolves `assets/translator.js`.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
