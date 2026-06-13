@@ -9,6 +9,7 @@ use App\Core\Message\CommonMessageCode;
 use App\Tests\Support\IdentityTranslator;
 use App\View\Alert\MercureUiAlertPublisher;
 use App\View\Alert\UiAlert;
+use App\View\Alert\UiAlertMessageFactory;
 use App\View\Alert\UiAlertTopicFactory;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Mercure\HubInterface;
@@ -17,21 +18,17 @@ use Symfony\Component\Mercure\Update;
 
 final class MercureUiAlertPublisherTest extends TestCase
 {
-    public function testItPublishesUiAlertPayloadsAsPrivateMercureUpdates(): void
+    public function testItPublishesUiAlertPayloadsAsPublicMercureUpdatesByDefault(): void
     {
         $hub = new RecordingHub();
-        $publisher = new MercureUiAlertPublisher(
-            $hub,
-            new UiAlertTopicFactory('https://example.test', 'secret'),
-            new IdentityTranslator(),
-        );
+        $publisher = $this->publisher($hub);
 
         $id = $publisher->publish('https://example.test/ui-alerts/session/topic', UiAlert::fromLevel('danger', 'Saved'));
 
         self::assertSame('update-id', $id);
         self::assertInstanceOf(Update::class, $hub->update);
         self::assertSame(['https://example.test/ui-alerts/session/topic'], $hub->update->getTopics());
-        self::assertTrue($hub->update->isPrivate());
+        self::assertFalse($hub->update->isPrivate());
         self::assertSame('ui-alert', $hub->update->getType());
         self::assertSame([
             'message' => 'Saved',
@@ -42,14 +39,20 @@ final class MercureUiAlertPublisherTest extends TestCase
         ], json_decode($hub->update->getData(), true, 512, JSON_THROW_ON_ERROR));
     }
 
+    public function testItCanPublishPrivateMercureUpdatesExplicitly(): void
+    {
+        $hub = new RecordingHub();
+        $publisher = $this->publisher($hub);
+
+        $publisher->publish('https://example.test/ui-alerts/session/topic', UiAlert::fromLevel('success', 'Saved'), private: true);
+
+        self::assertTrue($hub->update?->isPrivate());
+    }
+
     public function testItTranslatesStructuredMessagesBeforePublishing(): void
     {
         $hub = new RecordingHub();
-        $publisher = new MercureUiAlertPublisher(
-            $hub,
-            new UiAlertTopicFactory('https://example.test', 'secret'),
-            new IdentityTranslator(),
-        );
+        $publisher = $this->publisher($hub);
 
         $publisher->publishToSession('session-id', Message::success('message.package.discovery_completed', ['%package%' => 'Demo']));
 
@@ -58,6 +61,15 @@ final class MercureUiAlertPublisherTest extends TestCase
         self::assertSame('success', $payload['level']);
         self::assertSame(CommonMessageCode::SUCCESS, $payload['code']);
         self::assertSame('message.package.discovery_completed', $payload['translation_key']);
+    }
+
+    private function publisher(RecordingHub $hub): MercureUiAlertPublisher
+    {
+        return new MercureUiAlertPublisher(
+            $hub,
+            new UiAlertTopicFactory('https://example.test', 'secret'),
+            new UiAlertMessageFactory(new IdentityTranslator()),
+        );
     }
 }
 

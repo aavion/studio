@@ -21,7 +21,7 @@ final readonly class MercureUiAlertPublisher implements UiAlertPublisherInterfac
     ) {
     }
 
-    public function publish(string $topic, UiAlert|Message|UiAlertTranslation $alert, ?string $locale = null, bool $private = true): ?string
+    public function publish(string $topic, UiAlert|Message|UiAlertTranslation $alert, ?string $locale = null, bool $private = false): ?string
     {
         $payload = $this->alertFactory->create($alert, $locale)->toArray();
 

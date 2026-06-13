@@ -12,9 +12,8 @@ final readonly class DispatchUiAlertMessage
     public function __construct(
         public string $topic,
         public array $payload,
-        public bool $queue = true,
-        public bool $push = true,
-        public bool $private = true,
+        public UiAlertDelivery $delivery = UiAlertDelivery::Queue,
+        public bool $private = false,
         public ?int $ttlSeconds = 86400,
         public ?string $locale = null,
     ) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\View\Alert;
 
 use App\Core\Message\Message;
+use App\Core\Id\UuidFactory;
 use App\Entity\UserAccount;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -23,6 +24,7 @@ final readonly class UiAlertDispatcher implements UiAlertDispatcherInterface
         private RequestUiAlertFlasher $flasher,
         private RequestStack $requestStack,
         private Security $security,
+        private UuidFactory $uuidFactory = new UuidFactory(),
     ) {
     }
 
@@ -35,23 +37,18 @@ final readonly class UiAlertDispatcher implements UiAlertDispatcherInterface
         $options = $this->options($delivery);
         $uiAlert = $this->alertFactory->create($alert, $options->locale(), $presentation);
 
-        if (!$options->queue()) {
-            $flashed = $this->flasher->flash($uiAlert);
-            $topics = $this->currentTopics();
-            if ($options->push() && [] !== $topics) {
-                $this->pushTopics($topics, $uiAlert, $options);
-            }
-
-            return $flashed;
-        }
-
-        $topics = $this->currentTopics();
-        if ([] === $topics) {
+        if ($options->flashes()) {
             return $this->flasher->flash($uiAlert);
         }
 
-        $queued = null !== $this->inbox->append($topics, $uiAlert, $options->ttlSeconds());
-        $pushed = $options->push() && $this->pushTopics($topics, $uiAlert, $options);
+        $uiAlert = $this->ensureAlertId($uiAlert);
+        $topics = $this->currentTopics();
+        if ([] === $topics) {
+            return $options->queues() ? $this->flasher->flash($uiAlert) : false;
+        }
+
+        $queued = $options->queues() && null !== $this->inbox->append($topics, $uiAlert, $options->ttlSeconds());
+        $pushed = $options->pushes() && $this->pushTopics($topics, $uiAlert, $options);
 
         return $queued || $pushed;
     }
@@ -65,17 +62,20 @@ final readonly class UiAlertDispatcher implements UiAlertDispatcherInterface
     {
         $options = $this->options($delivery);
         $uiAlert = $this->alertFactory->create($alert, $options->locale(), $presentation);
+        if (!$options->flashes()) {
+            $uiAlert = $this->ensureAlertId($uiAlert);
+        }
         $queued = false;
         $pushed = false;
         $flashed = false;
 
-        if ($options->queue()) {
+        if ($options->queues()) {
             $queued = null !== $this->inbox->append([$topic], $uiAlert, $options->ttlSeconds());
-        } else {
+        } elseif ($options->flashes()) {
             $flashed = $this->flasher->flash($uiAlert);
         }
 
-        if ($options->push()) {
+        if ($options->pushes()) {
             try {
                 $pushed = null !== $this->publisher->publish($topic, $uiAlert, $options->locale(), $options->private());
             } catch (Throwable) {
@@ -109,6 +109,11 @@ final readonly class UiAlertDispatcher implements UiAlertDispatcherInterface
     private function options(UiAlertDelivery|UiAlertDeliveryOptions $delivery): UiAlertDeliveryOptions
     {
         return $delivery instanceof UiAlertDeliveryOptions ? $delivery : $delivery->toOptions();
+    }
+
+    private function ensureAlertId(UiAlert $alert): UiAlert
+    {
+        return $alert->hasId() ? $alert : $alert->withId('ui-alert-'.$this->uuidFactory->generate());
     }
 
     /**

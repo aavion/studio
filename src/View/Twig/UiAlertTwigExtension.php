@@ -58,7 +58,7 @@ final class UiAlertTwigExtension extends AbstractExtension
         }
 
         try {
-            return $this->mercure->mercure($topics, ['subscribe' => $topics]);
+            return $this->mercure->mercure($topics);
         } catch (Throwable) {
             return null;
         }

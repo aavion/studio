@@ -105,6 +105,33 @@ final readonly class UiAlert
         );
     }
 
+    public function withId(string $id): self
+    {
+        $id = trim($id);
+        if ('' === $id || $id === $this->id) {
+            return $this;
+        }
+
+        return new self(
+            $this->message,
+            $this->level,
+            $this->persistent,
+            $this->code,
+            $this->translationKey,
+            $this->context,
+            $this->mode,
+            $id,
+            $this->actions,
+            $this->loading,
+            $this->title,
+        );
+    }
+
+    public function hasId(): bool
+    {
+        return null !== $this->id && '' !== trim($this->id);
+    }
+
     /**
      * @return array{message: string, level: string, persistent: bool, mode: string, loading: bool, title?: string, id?: string, actions?: list<array<string, mixed>>, code?: string, translation_key?: string, context?: array<string, mixed>}
      */

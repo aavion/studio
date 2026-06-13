@@ -34,6 +34,18 @@ final class MercureRuntimeTest extends TestCase
         );
     }
 
+    public function testItStartsLocalHubWithAnonymousSubscribersEnabled(): void
+    {
+        $runtime = new MercureRuntime(
+            new MercureBinaryManager('/tmp/studio'),
+            $this->hub(),
+            'http://127.0.0.1:8000',
+            '/tmp/studio',
+        );
+
+        self::assertContains('--allow-anonymous', $runtime->startCommand());
+    }
+
     private function hub(): HubInterface
     {
         return new class implements HubInterface {

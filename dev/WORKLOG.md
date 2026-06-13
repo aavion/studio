@@ -92,7 +92,8 @@
 - Gated Mercure stream URLs and push publishing behind the stored Mercure health state, and extended health checks to require both internal publish access and public `MERCURE_PUBLIC_URL` subscribe reachability; public subscribe failures now stop the local hub instead of keeping a stale process alive.
 - Derived the default `MERCURE_PUBLIC_URL` from `DEFAULT_URI` and expanded the web-server notes with copyable Apache, nginx, and IIS reverse-proxy snippets for Mercure Server-Sent Events.
 - Added `mercure:check` as a read-only diagnostic command that reports binary availability, tracked process state, listen endpoint reachability, publish endpoint status, and public endpoint reachability without installing, starting, stopping, or writing health state.
-- Hardened the Mercure public endpoint probe so Symfony `403` responses are not mistaken for a reachable Mercure hub; the probe now accepts Mercure-style missing-topic responses and authenticated `401 Unauthorized` hub responses as valid Mercure fingerprints.
+- Hardened Mercure endpoint probes so Symfony `403` responses are not mistaken for a reachable Mercure hub; read-only diagnostics can still report Mercure-style missing-topic responses or authenticated `401 Unauthorized` responses as hub fingerprints.
+- Tightened the Mercure public endpoint probe for UI-alert push delivery to require an anonymous `text/event-stream` subscription, and updated the local hub start command to pass `--allow-anonymous` so public HMAC-bound alert topics can be consumed without subscriber cookies.
 - Made `mercure:check` show the configured publish URL separately from its status and changed the publish probe to test `MERCURE_URL` directly without masking stale configuration through a local hub fallback.
 - Relaxed the local hub endpoint diagnostic to count a direct publishable local hub URL as reachable while keeping public endpoint checks tied to a real Mercure/SSE fingerprint.
 - Made Mercure process detection and stop handling fall back from a missing or stale PID file to processes running the exact configured Mercure binary path.
@@ -105,6 +106,11 @@
 - Migrated existing controller/admin responder request alerts to the unified alert interface instead of direct `addFlash()` calls.
 - Routed translated UI keys through the same `addAlert()` dispatcher path via `UiAlertTranslation` instead of a separate translated-alert method.
 - Added the optional native-notification profile setting gate based on Mercure publish-health state.
+- Changed UI alert Mercure delivery to use HMAC-bound public topics without EventSource credentials by default, avoiding cross-origin credential/CORS friction for the optional local hub.
+- Added client-side closed-alert ID storage so polling-delivered alerts do not reappear after being dismissed and the page reloads.
+- Made the Mercure EventSource subscriber recover from closed streams with bounded reconnect backoff and active/online wakeups while polling remains the reliable delivery fallback.
+- Simplified UI-alert delivery semantics to `Direct`, `Queue`, and low-level `Push`: direct alerts only flash into the current request, queued alerts write the inbox and best-effort push through Mercure, and push-only alerts remain reserved for volatile/debug notifications.
+- Added server-side fallback IDs for queued or pushed UI alerts so Mercure live delivery and polling fallback share the same dedupe key even when producers do not provide an explicit alert ID.
 - Repaired the demo frontend theme CSS namespace and aligned package CSS syntax validation with `bin/lint` Tailwind directive tolerance so demo packages can leave `faulty` state after a lifecycle reset; verified the demo module public routes render after activation.
 - Removed locally generated `public/assets` and clarified that `asset-map:compile` is production/release-only rather than a local verification command.
 - Updated `bin/lint --diff` focused CSS handling so known Tailwind directives are informational parser skips while `tailwind:build` remains the authoritative CSS validation step.

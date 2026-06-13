@@ -16,14 +16,18 @@ export default class extends Controller {
     };
 
     static memoryAlerts = [];
+    static memoryClosedAlerts = [];
     static storageKey = 'system.alerts.active';
+    static closedStorageKey = 'system.alerts.closed';
 
     initialize() {
         this.alerts = new Map();
+        this.closedAlertIds = new Set();
     }
 
     connect() {
         this.ensureAlertState();
+        this.hydrateClosedAlerts();
         this.hydrateStoredAlerts();
         this.hydrateServerAlerts();
         this.renderState();
@@ -62,10 +66,11 @@ export default class extends Controller {
 
         const ids = [...this.alerts.keys()];
         for (const id of ids) {
-            this.removeAlertById(id);
+            this.closeAlertById(id, false);
         }
 
         this.persist();
+        this.persistClosedAlerts();
         this.renderState({ keepPanelOpen: true });
     }
 
@@ -104,6 +109,10 @@ export default class extends Controller {
         }
 
         const id = alertId(payload);
+        if (this.closedAlertIds.has(id)) {
+            return null;
+        }
+
         const existing = this.alerts.get(id);
         const normalizedPayload = { ...payload, id };
         const nextSignature = JSON.stringify(storableAlertPayload(normalizedPayload));
@@ -206,6 +215,14 @@ export default class extends Controller {
 
     hydrateServerAlerts() {
         for (const alert of this.alertTargets) {
+            const payload = payloadFromAlertElement(alert);
+            const id = alertId(payload);
+            if (this.closedAlertIds.has(id)) {
+                alert.remove();
+
+                continue;
+            }
+
             this.registerAlert(alert, false);
 
             if (alert.dataset.alertMode !== 'hidden') {
@@ -285,6 +302,32 @@ export default class extends Controller {
         }
     }
 
+    hydrateClosedAlerts() {
+        this.closedAlertIds = new Set(this.readClosedAlertIds());
+    }
+
+    persistClosedAlerts() {
+        const ids = [...this.closedAlertIds].slice(-200);
+        this.closedAlertIds = new Set(ids);
+
+        try {
+            window.sessionStorage.setItem(this.constructor.closedStorageKey, JSON.stringify(ids));
+        } catch {
+            this.constructor.memoryClosedAlerts = ids;
+        }
+    }
+
+    readClosedAlertIds() {
+        try {
+            const raw = window.sessionStorage.getItem(this.constructor.closedStorageKey);
+            const parsed = raw ? JSON.parse(raw) : [];
+
+            return Array.isArray(parsed) ? parsed.map((id) => String(id || '').trim()).filter(Boolean) : [];
+        } catch {
+            return this.constructor.memoryClosedAlerts;
+        }
+    }
+
     get activeCount() {
         this.ensureAlertState();
 
@@ -309,6 +352,8 @@ export default class extends Controller {
         const entry = this.alerts.get(id);
         entry.element?.remove();
         this.alerts.delete(id);
+        this.closedAlertIds.add(id);
+        this.persistClosedAlerts();
         document.dispatchEvent(new CustomEvent('ui-alert:closed', {
             detail: { id },
         }));

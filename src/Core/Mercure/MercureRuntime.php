@@ -37,6 +37,7 @@ final readonly class MercureRuntime
             $jwtSecret,
             '--subscriber-jwt-key',
             $jwtSecret,
+            '--allow-anonymous',
             '--cors-allowed-origins',
             '*',
             '--transport-url',
@@ -165,7 +166,7 @@ final readonly class MercureRuntime
             return false;
         }
 
-        return $this->hubEndpointProbe($url);
+        return $this->subscriberEndpointProbe($this->urlWithTopic($url));
     }
 
     public function listenAddress(): string
@@ -263,6 +264,25 @@ final readonly class MercureRuntime
                     str_contains($body, 'Unauthorized')
                     || str_contains($body, 'unauthorized')
                 );
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function subscriberEndpointProbe(string $url): bool
+    {
+        try {
+            $response = HttpClient::create([
+                'timeout' => 2.0,
+                'max_duration' => 2.0,
+            ])->request('GET', $url, [
+                'headers' => ['Accept' => 'text/event-stream'],
+            ]);
+            $status = $response->getStatusCode();
+            $headers = $response->getHeaders(false);
+            $contentType = strtolower($headers['content-type'][0] ?? '');
+
+            return 200 === $status && str_contains($contentType, 'text/event-stream');
         } catch (Throwable) {
             return false;
         }

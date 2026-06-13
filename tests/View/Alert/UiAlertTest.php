@@ -44,4 +44,12 @@ final class UiAlertTest extends TestCase
         self::assertSame('hidden', $alert->toArray()['mode']);
         self::assertFalse($alert->toArray()['persistent']);
     }
+
+    public function testItCanAttachStableDedupeId(): void
+    {
+        $alert = UiAlert::fromLevel('success', 'Saved')->withId('ui-alert-test');
+
+        self::assertTrue($alert->hasId());
+        self::assertSame('ui-alert-test', $alert->toArray()['id']);
+    }
 }

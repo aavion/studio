@@ -40,8 +40,7 @@ final readonly class DispatchUiAlertMessageHandler
         }
 
         $this->dispatcher->addAlertToTopic($message->topic, $alert, new UiAlertDeliveryOptions(
-            $message->queue,
-            $message->push,
+            $message->delivery,
             $message->private,
             $message->ttlSeconds,
             $message->locale,
