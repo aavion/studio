@@ -86,6 +86,7 @@
 - Added a quiet notification-center "close all" action and an empty-state fallback for panels without active alerts.
 - Aligned alert heading markup so runner spinners render inline with operation titles.
 - Repaired the demo frontend theme CSS namespace and aligned package CSS syntax validation with `bin/lint` Tailwind directive tolerance so demo packages can leave `faulty` state after a lifecycle reset; verified the demo module public routes render after activation.
+- Removed locally generated `public/assets` and clarified that `asset-map:compile` is production/release-only rather than a local verification command.
 - Updated `bin/lint --diff` focused CSS handling so known Tailwind directives are informational parser skips while `tailwind:build` remains the authoritative CSS validation step.
 - Removed the unused Alpine and ApexCharts application wiring, dropped the stale custom Apex chart Stimulus controller, and switched the package asset rewriter fixture to a neutral external import name.
 - Updated the design-system draft and class map for scoped Twig components, targeted UI alerts, notification-center behavior, reusable live polling, and the removed chart controller.

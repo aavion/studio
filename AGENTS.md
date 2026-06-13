@@ -109,7 +109,7 @@
 - `php -l <path>` checks PHP syntax for a changed file.
 - `php bin/console lint:container` validates Symfony container wiring after service or configuration changes.
 - `php bin/console tailwind:build` compiles Tailwind CSS.
-- `php bin/console asset-map:compile` refreshes AssetMapper output and importmap pins.
+- `php bin/console asset-map:compile` is production/release-only. Do not run it for local development or normal verification; if `public/assets/` is created locally, remove that generated production output from the worktree.
 - `php bin/console ux:icons:lock` imports referenced Symfony UX/Iconify icons into `assets/icons`; commit the resulting SVGs as versioned UI dependency snapshots, but avoid bulk-locking complete icon sets without a concrete need.
 - `php bin/console doctrine:migrations:diff` generates schema migrations.
 - `php bin/console doctrine:migrations:migrate` applies schema migrations.
@@ -123,7 +123,7 @@
 - PHP-only logic: run targeted PHPUnit coverage and `php -l` for edited PHP files.
 - Service, DI, security, or configuration changes: run targeted tests and `php bin/console lint:container`.
 - Twig, translation, or UX copy changes: run `bin/lint <changed translation/template paths...>` and render affected routes with `php bin/console render:route /<route>` when available.
-- Asset or Stimulus changes: prefer `bin/lint <changed path...>` for focused JavaScript, JSON, CSS, YAML, Twig, Markdown, and PHP syntax checks, then run the relevant asset build command and targeted UI/functional checks when build output or rendering can change.
+- Asset or Stimulus changes: prefer `bin/lint <changed path...>` for focused JavaScript, JSON, CSS, YAML, Twig, Markdown, and PHP syntax checks, then run the relevant development asset build command and targeted UI/functional checks when build output or rendering can change. Do not use production-only `asset-map:compile` for local verification.
 - Focused CSS checks use the strict CSS parser and may report Tailwind-specific directives or generated modern at-rules such as `@apply`, `@theme`, or `@supports` as unsupported syntax; treat the accompanying linter note as context, and use `php bin/console tailwind:build` for the authoritative full Tailwind validation.
 - Doctrine mapping or entity changes: generate or update migrations and run tests covering persistence behavior.
 - Documentation changes: run `bin/lint <changed markdown paths...>` for Markdown parse coverage, then verify style, relative links, and alignment with current behavior.
