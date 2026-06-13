@@ -441,6 +441,14 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\View\Alert\UiAlertTopicFactory:
+        arguments:
+            $defaultUri: '%env(DEFAULT_URI)%'
+            $secret: '%kernel.secret%'
+
+    App\View\Alert\UiAlertPublisherInterface:
+        alias: App\View\Alert\MercureUiAlertPublisher
+
     App\View\Http\HttpErrorRenderer:
         arguments:
             $debug: '%kernel.debug%'

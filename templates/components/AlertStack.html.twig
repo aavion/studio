@@ -1,0 +1,31 @@
+{% props alerts = [], dismiss_delay = 8000, stream_topics = null %}
+{% set stream_topics = stream_topics is same as(null) ? ui_alert_stream_topics() : stream_topics %}
+{% set stream_url = ui_alert_stream_url(stream_topics) %}
+{% set stack_attributes = {
+    class: 'system-alert-stack',
+    'data-controller': 'alert-stack',
+    'data-alert-stack-dismiss-delay-value': dismiss_delay,
+    'data-alert-close-label': 'ui.alert.close'|trans,
+    'data-alert-notifications-label': 'ui.alert.notifications'|trans,
+} %}
+{% if stream_url %}
+    {% set stack_attributes = stack_attributes|merge({
+        'data-controller': 'alert-stack ui-alert-stream',
+        'data-action': 'ui-alert:received->alert-stack#append',
+        'data-ui-alert-stream-url-value': stream_url,
+    }) %}
+{% endif %}
+
+<div {{ attributes.defaults(stack_attributes) }}>
+    <button class="system-alert-bell" type="button" data-alert-stack-target="toggle" data-action="alert-stack#toggle" aria-label="{{ 'ui.alert.notifications'|trans }}" hidden>
+        <span class="ti ti-bell" aria-hidden="true"></span>
+        <span class="system-alert-badge" data-alert-stack-target="badge" hidden>0</span>
+    </button>
+    <div class="system-alert-panel" data-alert-stack-target="panel" {% if alerts|default([]) is empty %}hidden{% endif %}>
+        <div class="system-alert-list" data-alert-stack-target="list">
+            {% for alert in alerts %}
+                <twig:root:Alert :alert="alert" />
+            {% endfor %}
+        </div>
+    </div>
+</div>

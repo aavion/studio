@@ -1,0 +1,76 @@
+{% props alert = {}, level = null, message = null, persistent = null, mode = null, actions = null, id = null, loading = null %}
+{% set raw_level = level|default(alert.level|default('info')) %}
+{% set normalized_level = {
+    notice: 'info',
+    danger: 'error',
+    warn: 'warning',
+    WARN: 'warning',
+    ERROR: 'error',
+    EXCEPTION: 'exception',
+    SUCCESS: 'success',
+    INFO: 'info',
+    DEBUG: 'debug',
+}[raw_level]|default(raw_level|lower) %}
+{% set normalized_level = normalized_level in ['debug', 'info', 'success', 'warning', 'error', 'exception'] ? normalized_level : 'info' %}
+{% set alert_persistent = persistent is not null ? persistent : alert.persistent|default(false) %}
+{% set alert_mode = mode|default(alert.mode|default(alert_persistent ? 'persistent' : 'auto')) %}
+{% set alert_mode = alert_mode in ['auto', 'hidden', 'persistent'] ? alert_mode : 'auto' %}
+{% set alert_message = message|default(alert.message|default('')) %}
+{% set alert_actions = actions is not null ? actions : alert.actions|default([]) %}
+{% set alert_loading = loading is not null ? loading : alert.loading|default(false) %}
+{% set alert_id = id|default(alert.id|default('')) %}
+
+<section
+    {{ attributes.defaults({
+        class: 'system-alert system-alert-' ~ normalized_level,
+        role: normalized_level in ['error', 'exception'] ? 'alert' : 'status',
+        'data-alert-stack-target': 'alert',
+        'data-alert-id': alert_id,
+        'data-alert-mode': alert_mode,
+        'data-alert-persistent': alert_mode == 'persistent' or alert_persistent ? 'true' : 'false',
+        'data-alert-payload': alert|merge({
+            id: alert_id,
+            level: normalized_level,
+            message: alert_message,
+            mode: alert_mode,
+            persistent: alert_persistent,
+            actions: alert_actions,
+            loading: alert_loading,
+        })|json_encode|e('html_attr'),
+    }) }}
+>
+    <div class="system-alert-content">
+        {% if alert_loading %}
+            <span class="system-alert-spinner" aria-hidden="true"></span>
+        {% endif %}
+        {{ alert_message }}
+        {% if alert_actions is not empty %}
+            <div class="system-alert-actions">
+                {% for action in alert_actions %}
+                    {% set label = action.label|default('') %}
+                    {% if label %}
+                        {% if action.href|default('') %}
+                            <a
+                                class="system-alert-action"
+                                href="{{ action.href }}"
+                                {% if action.target|default('') %}target="{{ action.target }}"{% endif %}
+                                data-action="alert-stack#action"
+                            >{{ label }}</a>
+                        {% else %}
+                            <button
+                                class="system-alert-action"
+                                type="button"
+                                data-action="alert-stack#action"
+                                {% if action.event|default('') %}data-alert-action-event="{{ action.event }}"{% endif %}
+                                {% if action.detail|default(null) is not null %}data-alert-action-detail="{{ action.detail|json_encode|e('html_attr') }}"{% endif %}
+                            >{{ label }}</button>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+    <button class="system-alert-close" type="button" data-action="alert-stack#close" aria-label="{{ 'ui.alert.close'|trans }}">
+        <span class="ti ti-x" aria-hidden="true"></span>
+    </button>
+</section>

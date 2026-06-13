@@ -1,11 +1,1 @@
-<header class="system-page-header">
-    <div>
-        {% if kicker|default(null) %}
-            <div class="system-kicker">{{ kicker }}</div>
-        {% endif %}
-        <h1>{{ title }}</h1>
-        {% if subtitle|default(null) %}
-            <p class="system-page-subtitle">{{ subtitle }}</p>
-        {% endif %}
-    </div>
-</header>
+<twig:frontend:PageHeader :title="title" :kicker="kicker|default(null)" :subtitle="subtitle|default(null)" />

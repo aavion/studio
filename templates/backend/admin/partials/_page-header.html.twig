@@ -1,9 +1,1 @@
-<header class="system-page-header">
-    <div>
-        <div class="system-kicker">{{ eyebrow|default('ui.admin.area'|trans) }}</div>
-        <h1>{{ title }}</h1>
-    </div>
-    {% if actions is defined and actions is not empty %}
-        <div class="system-page-actions">{{ actions|raw }}</div>
-    {% endif %}
-</header>
+<twig:backend:PageHeader :title="title" :eyebrow="eyebrow|default('ui.admin.area'|trans)" :actions="actions|default(null)" />

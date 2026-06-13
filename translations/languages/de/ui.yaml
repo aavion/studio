@@ -3,6 +3,7 @@ ui:
     name: 'Studio'
   alert:
     close: 'Benachrichtigung schließen'
+    notifications: 'Benachrichtigungen'
   navigation:
     skip_to_content: 'Zum Inhalt springen'
   frontend:

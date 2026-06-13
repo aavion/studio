@@ -1,9 +1,7 @@
-{% set button_type = type|default(href|default(null) ? null : 'button') %}
-{% set button_variant = variant|default('primary') %}
-{% set button_class = ['system-backend-button', 'system-button-' ~ button_variant, class|default('')]|filter(item => item is not empty)|join(' ') %}
-
-{% if href|default(null) %}
-    <a class="{{ button_class }}" href="{{ href }}">{{ label }}</a>
-{% else %}
-    <button class="{{ button_class }}" type="{{ button_type }}">{{ label }}</button>
-{% endif %}
+<twig:backend:Button
+    :label="label"
+    :href="href|default(null)"
+    :type="type|default(null)"
+    :variant="variant|default('primary')"
+    :class="class|default('')"
+/>

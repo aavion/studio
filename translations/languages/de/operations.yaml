@@ -15,6 +15,7 @@ ui:
         cancel: 'Abbrechen'
         refresh: 'Aktualisieren'
         close: 'Schließen'
+        show_details: 'Details anzeigen'
       states:
         starting: 'Operation wird gestartet...'
         waiting: 'Bitte warten...'

@@ -1,0 +1,13 @@
+{% props title, kicker = null, subtitle = null %}
+
+<header {{ attributes.defaults({class: 'system-page-header'}) }}>
+    <div>
+        {% if kicker %}
+            <div class="system-kicker">{{ kicker }}</div>
+        {% endif %}
+        <h1>{{ title }}</h1>
+        {% if subtitle %}
+            <p class="system-page-subtitle">{{ subtitle }}</p>
+        {% endif %}
+    </div>
+</header>

@@ -1,0 +1,8 @@
+{% props title = 'ui.empty_state.title'|trans, message = null %}
+
+<section {{ attributes.defaults({class: 'system-backend-empty-state'}) }}>
+    <h2>{{ title }}</h2>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+</section>

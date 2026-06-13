@@ -27,8 +27,6 @@ return [
     '@symfony/stimulus-bundle' => ['path' => './vendor/symfony/stimulus-bundle/assets/dist/loader.js'],
     '@hotwired/stimulus' => ['version' => '3.2.2'],
     '@hotwired/turbo' => ['version' => '8.0.23'],
-    'alpinejs' => ['version' => '3.15.12'],
-    'apexcharts' => ['version' => '5.12.0'],
     'codemirror' => ['version' => '6.0.2'],
     '@codemirror/view' => ['version' => '6.43.0'],
     '@codemirror/state' => ['version' => '6.6.0'],

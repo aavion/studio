@@ -296,6 +296,76 @@ function lintSourceFiles(string $root, array $files, LinterInterface $linter, st
 /**
  * @param list<string> $files
  */
+function lintCssFiles(string $root, array $files): int
+{
+    fwrite(STDOUT, "\n==> CSS syntax\n");
+    $failures = 0;
+    $linter = new CssLinter();
+
+    foreach ($files as $file) {
+        $relative = relativePath($root, $file);
+        $contents = (string) file_get_contents($file);
+        $result = $linter->lint($contents, $relative);
+
+        foreach ($result->issues() as $issue) {
+            if (isTailwindDirectiveCssIssue($contents, $issue->line())) {
+                fwrite(STDOUT, sprintf(
+                    "%s:%s:%s strict CSS parser skipped a Tailwind directive; tailwind:build remains authoritative for this file.\n",
+                    $relative,
+                    $issue->line() ?? 1,
+                    $issue->column() ?? 1,
+                ));
+
+                continue;
+            }
+
+            fwrite(STDERR, sprintf(
+                "%s:%s:%s %s\n",
+                $relative,
+                $issue->line() ?? 1,
+                $issue->column() ?? 1,
+                $issue->details()['error'] ?? $issue->message(),
+            ));
+            ++$failures;
+        }
+    }
+
+    if (0 === $failures) {
+        fwrite(STDOUT, "CSS syntax OK.\n");
+    }
+
+    return $failures;
+}
+
+function isTailwindDirectiveCssIssue(string $contents, ?int $line): bool
+{
+    if (null === $line) {
+        return false;
+    }
+
+    $lines = preg_split('/\R/', $contents) ?: [];
+    $texts = [
+        trim((string) ($lines[$line - 2] ?? '')),
+        trim((string) ($lines[$line - 1] ?? '')),
+        trim((string) ($lines[$line] ?? '')),
+    ];
+
+    foreach ($texts as $text) {
+        if (str_starts_with($text, '@apply ')
+            || str_starts_with($text, '@theme ')
+            || str_starts_with($text, '@custom-variant ')
+            || str_starts_with($text, '@source ')
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * @param list<string> $files
+ */
 function lintMarkdownFiles(string $root, array $files): int
 {
     fwrite(STDOUT, "\n==> Markdown parse\n");
@@ -964,7 +1034,7 @@ if ($diffMode || $stagedMode || [] !== $targets) {
 
     if (isset($filesByExtension['css'])) {
         fwrite(STDOUT, "\nNote: focused CSS lint uses the strict CSS parser and may report Tailwind-specific directives or generated modern at-rules such as @apply, @theme, or @supports as unsupported syntax.\n");
-        $failures += lintSourceFiles($root, $filesByExtension['css'], new CssLinter(), 'CSS syntax');
+        $failures += lintCssFiles($root, $filesByExtension['css']);
     }
 
     if (containsTranslationSource($root, $collected['files'])) {

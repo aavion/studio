@@ -1,0 +1,94 @@
+.system-alert-stack {
+    justify-items: end;
+}
+
+.system-alert-bell {
+    position: relative;
+    display: inline-grid;
+    width: 2.35rem;
+    height: 2.35rem;
+    place-items: center;
+    border: var(--system-border);
+    border-radius: 999px;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    box-shadow: 0 0.75rem 1.75rem color-mix(in srgb, var(--color-brand-canvas) 18%, transparent);
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.system-alert-bell:hover,
+.system-alert-bell:focus-visible {
+    border-color: color-mix(in srgb, var(--color-primary) 46%, transparent);
+}
+
+.system-alert-badge {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.35rem;
+    display: inline-grid;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    padding: 0 0.28rem;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--color-error);
+    color: var(--color-paper);
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.system-alert-panel {
+    display: grid;
+    width: 100%;
+    pointer-events: auto;
+}
+
+.system-alert-list {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.system-alert-spinner {
+    display: inline-block;
+    width: 0.9rem;
+    height: 0.9rem;
+    margin-right: 0.45rem;
+    border: 2px solid color-mix(in srgb, currentColor 28%, transparent);
+    border-top-color: currentColor;
+    border-radius: 999px;
+    vertical-align: -0.1rem;
+    animation: system-alert-spin 850ms linear infinite;
+}
+
+.system-alert-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    margin-top: 0.35rem;
+}
+
+.system-alert-action {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-size: var(--system-text-xs);
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+}
+
+.system-alert-action:hover,
+.system-alert-action:focus-visible {
+    color: var(--color-primary);
+}
+
+@keyframes system-alert-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
