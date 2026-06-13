@@ -29,9 +29,16 @@ if ($options['help']) {
 $targets = $options['targets'];
 $diffMode = $options['diff'];
 $diffRange = $options['diff_range'];
+$stagedMode = $options['staged'];
 
-if ($diffMode && [] !== $targets) {
-    fwrite(STDERR, "The --diff option cannot be combined with explicit lint targets.\n");
+if (($diffMode || $stagedMode) && [] !== $targets) {
+    fwrite(STDERR, "The --diff and --staged options cannot be combined with explicit lint targets.\n");
+
+    exit(1);
+}
+
+if ($diffMode && $stagedMode) {
+    fwrite(STDERR, "The --diff and --staged options cannot be combined.\n");
 
     exit(1);
 }
@@ -39,13 +46,14 @@ if ($diffMode && [] !== $targets) {
 /**
  * @param list<string> $arguments
  *
- * @return array{targets: list<string>, diff: bool, diff_range: ?string, help: bool}
+ * @return array{targets: list<string>, diff: bool, diff_range: ?string, staged: bool, help: bool}
  */
 function parseLintArguments(array $arguments): array
 {
     $targets = [];
     $diff = false;
     $diffRange = null;
+    $staged = false;
     $help = false;
 
     for ($index = 0; $index < count($arguments); ++$index) {
@@ -53,6 +61,19 @@ function parseLintArguments(array $arguments): array
 
         if ('--help' === $argument || '-h' === $argument) {
             $help = true;
+
+            continue;
+        }
+
+        if ('--staged' === $argument) {
+            $staged = true;
+
+            continue;
+        }
+
+        if (str_starts_with($argument, '--changed=')) {
+            $diff = true;
+            $diffRange = substr($argument, 10) ?: null;
 
             continue;
         }
@@ -83,6 +104,7 @@ function parseLintArguments(array $arguments): array
         'targets' => $targets,
         'diff' => $diff,
         'diff_range' => $diffRange,
+        'staged' => $staged,
         'help' => $help,
     ];
 }
@@ -96,11 +118,15 @@ Usage:
   bin/lint --diff
   bin/lint --diff=<target..source>
   bin/lint --diff:<target..source>
+  bin/lint --changed=<target..source>
+  bin/lint --staged
 
 Options:
   --diff                  Lint supported files changed in the staged or unstaged Git diff.
   --diff=<range>          Lint supported files changed in the given Git diff range.
   --diff:<range>          Alternative range syntax for shells where it reads better.
+  --changed=<range>       Alias for --diff=<range>.
+  --staged                Lint supported files changed in the staged Git diff.
   -h, --help              Show this help.
 
 USAGE);
@@ -416,6 +442,17 @@ function gitAvailable(string $root): bool
     return $result['started'] && 0 === $result['exit_code'];
 }
 
+function gitRepositoryAvailable(string $root): bool
+{
+    if (!gitAvailable($root)) {
+        return false;
+    }
+
+    $result = runCapturedCommand(['git', 'rev-parse', '--is-inside-work-tree'], $root);
+
+    return $result['started'] && 0 === $result['exit_code'] && in_array('true', $result['lines'], true);
+}
+
 /**
  * @param list<string> $command
  *
@@ -455,23 +492,27 @@ function runCapturedCommand(array $command, string $cwd): array
 /**
  * @return array{files: list<string>, failures: int}
  */
-function collectDiffTargetFiles(string $root, ?string $range): array
+function collectDiffTargetFiles(string $root, ?string $range, bool $stagedOnly = false): array
 {
-    if (!gitAvailable($root)) {
-        fwrite(STDOUT, "Git is not available; skipping diff target collection.\n");
+    if (!gitRepositoryAvailable($root)) {
+        fwrite(STDOUT, "Git is not available or this is not a Git work tree; skipping diff target collection.\n");
 
         return ['files' => [], 'failures' => 0];
     }
 
     $paths = [];
-    $commands = null === $range
+    $commands = $stagedOnly
+        ? [
+            ['git', 'diff', '--cached', '--name-only', '--diff-filter=ACMRTUXB', '--'],
+        ]
+        : (null === $range
         ? [
             ['git', 'diff', '--name-only', '--diff-filter=ACMRTUXB', '--'],
             ['git', 'diff', '--cached', '--name-only', '--diff-filter=ACMRTUXB', '--'],
         ]
         : [
             ['git', 'diff', '--name-only', '--diff-filter=ACMRTUXB', $range, '--'],
-        ];
+        ]);
 
     foreach ($commands as $command) {
         $result = runCapturedCommand($command, $root);
@@ -492,24 +533,28 @@ function collectDiffTargetFiles(string $root, ?string $range): array
     return collectTargetFiles($root, array_keys($paths));
 }
 
-function lintGitDiffWhitespace(string $root, ?string $range): int
+function lintGitDiffWhitespace(string $root, ?string $range, bool $stagedOnly = false): int
 {
     fwrite(STDOUT, "\n==> Git diff whitespace\n");
 
-    if (!gitAvailable($root)) {
-        fwrite(STDOUT, "Git is not available; skipping git diff whitespace check.\n");
+    if (!gitRepositoryAvailable($root)) {
+        fwrite(STDOUT, "Git is not available or this is not a Git work tree; skipping git diff whitespace check.\n");
 
         return 0;
     }
 
-    $commands = null === $range
+    $commands = $stagedOnly
+        ? [
+            ['git', 'diff', '--cached', '--check', '--', ':!:*.md'],
+        ]
+        : (null === $range
         ? [
             ['git', 'diff', '--check', '--', ':!:*.md'],
             ['git', 'diff', '--cached', '--check', '--', ':!:*.md'],
         ]
         : [
             ['git', 'diff', '--check', $range, '--', ':!:*.md'],
-        ];
+        ]);
     $failures = 0;
 
     foreach ($commands as $command) {
@@ -737,9 +782,9 @@ function flattenTranslationCatalogue(array $data, string $prefix = ''): array
     return $flat;
 }
 
-if ($diffMode || [] !== $targets) {
-    $collected = $diffMode
-        ? collectDiffTargetFiles($root, $diffRange)
+if ($diffMode || $stagedMode || [] !== $targets) {
+    $collected = ($diffMode || $stagedMode)
+        ? collectDiffTargetFiles($root, $diffRange, $stagedMode)
         : collectTargetFiles($root, $targets);
     $failures += $collected['failures'];
     $filesByExtension = groupFilesByExtension($collected['files']);
@@ -779,10 +824,10 @@ if ($diffMode || [] !== $targets) {
         $failures += lintTranslationSourceKeys($root);
     }
 
-    $failures += lintGitDiffWhitespace($root, $diffMode ? $diffRange : null);
+    $failures += lintGitDiffWhitespace($root, $diffMode ? $diffRange : null, $stagedMode);
 
     if ([] === $collected['files'] && 0 === $failures) {
-        fwrite(STDOUT, $diffMode ? "No supported changed lint targets found.\n" : "No supported lint targets found.\n");
+        fwrite(STDOUT, ($diffMode || $stagedMode) ? "No supported changed lint targets found.\n" : "No supported lint targets found.\n");
     }
 
     if (0 !== $failures) {
