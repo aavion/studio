@@ -374,6 +374,15 @@
             "config/packages/ux_icons.yaml"
         ]
     },
+    "symfony/ux-leaflet-map": {
+        "version": "3.1",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "2.19",
+            "ref": "bed7e7f6d7c04e0de9665859ddbf0e842e5323e3"
+        }
+    },
     "symfony/ux-live-component": {
         "version": "3.1",
         "recipe": {

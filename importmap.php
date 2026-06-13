@@ -91,4 +91,7 @@ return [
     '@vue/compiler-core' => ['version' => '3.5.38'],
     '@vue/reactivity' => ['version' => '3.5.38'],
     '@symfony/ux-vue' => ['path' => './vendor/symfony/ux-vue/assets/dist/loader.js'],
+    'leaflet' => ['version' => '1.9.4'],
+    'leaflet/dist/leaflet.min.css' => ['version' => '1.9.4', 'type' => 'css'],
+    '@symfony/ux-leaflet-map' => ['path' => './vendor/symfony/ux-leaflet-map/assets/dist/map_controller.js'],
 ];
