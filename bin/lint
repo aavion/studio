@@ -12,12 +12,125 @@ use App\Core\Lint\CssLinter;
 use App\Core\Lint\JavaScriptLinter;
 use App\Core\Lint\JsonLinter;
 use App\Core\Lint\LinterInterface;
+use League\CommonMark\GithubFlavoredMarkdownConverter;
 use Symfony\Component\Yaml\Yaml;
 
 $root = dirname(__DIR__);
 $php = PHP_BINARY;
 $failures = 0;
-$targets = array_slice($argv, 1);
+$options = parseLintArguments(array_slice($argv, 1));
+
+if ($options['help']) {
+    printLintUsage();
+
+    exit(0);
+}
+
+$targets = $options['targets'];
+$diffMode = $options['diff'];
+$diffRange = $options['diff_range'];
+$stagedMode = $options['staged'];
+
+if (($diffMode || $stagedMode) && [] !== $targets) {
+    fwrite(STDERR, "The --diff and --staged options cannot be combined with explicit lint targets.\n");
+
+    exit(1);
+}
+
+if ($diffMode && $stagedMode) {
+    fwrite(STDERR, "The --diff and --staged options cannot be combined.\n");
+
+    exit(1);
+}
+
+/**
+ * @param list<string> $arguments
+ *
+ * @return array{targets: list<string>, diff: bool, diff_range: ?string, staged: bool, help: bool}
+ */
+function parseLintArguments(array $arguments): array
+{
+    $targets = [];
+    $diff = false;
+    $diffRange = null;
+    $staged = false;
+    $help = false;
+
+    for ($index = 0; $index < count($arguments); ++$index) {
+        $argument = $arguments[$index];
+
+        if ('--help' === $argument || '-h' === $argument) {
+            $help = true;
+
+            continue;
+        }
+
+        if ('--staged' === $argument) {
+            $staged = true;
+
+            continue;
+        }
+
+        if (str_starts_with($argument, '--changed=')) {
+            $diff = true;
+            $diffRange = substr($argument, 10) ?: null;
+
+            continue;
+        }
+
+        if ('--diff' === $argument) {
+            $diff = true;
+            $next = $arguments[$index + 1] ?? null;
+
+            if (is_string($next) && !str_starts_with($next, '-') && str_contains($next, '..')) {
+                $diffRange = $next;
+                ++$index;
+            }
+
+            continue;
+        }
+
+        if (str_starts_with($argument, '--diff=') || str_starts_with($argument, '--diff:')) {
+            $diff = true;
+            $diffRange = substr($argument, 7) ?: null;
+
+            continue;
+        }
+
+        $targets[] = $argument;
+    }
+
+    return [
+        'targets' => $targets,
+        'diff' => $diff,
+        'diff_range' => $diffRange,
+        'staged' => $staged,
+        'help' => $help,
+    ];
+}
+
+function printLintUsage(): void
+{
+    fwrite(STDOUT, <<<'USAGE'
+Usage:
+  bin/lint
+  bin/lint <file-or-directory>...
+  bin/lint --diff
+  bin/lint --diff=<target..source>
+  bin/lint --diff:<target..source>
+  bin/lint --changed=<target..source>
+  bin/lint --staged
+
+Options:
+  --diff                  Lint supported files changed in the staged or unstaged Git diff.
+  --diff=<range>          Lint supported files changed in the given Git diff range.
+  --diff:<range>          Alternative range syntax for shells where it reads better.
+  --changed=<range>       Alias for --diff=<range>.
+  --staged                Lint supported files changed in the staged Git diff.
+  -h, --help              Show this help.
+
+USAGE);
+}
 
 function nullDevice(): string
 {
@@ -88,7 +201,13 @@ function filesWithExtensions(string $root, array $extensions): array
     $extensions = array_flip($extensions);
 
     foreach ($iterator as $file) {
-        if ($file instanceof SplFileInfo && $file->isFile() && isset($extensions[$file->getExtension()])) {
+        if (!$file instanceof SplFileInfo || !$file->isFile()) {
+            continue;
+        }
+
+        $extension = lintFileType($file->getPathname());
+
+        if (null !== $extension && isset($extensions[$extension])) {
             $files[] = $file->getPathname();
         }
     }
@@ -175,6 +294,158 @@ function lintSourceFiles(string $root, array $files, LinterInterface $linter, st
 }
 
 /**
+ * @param list<string> $files
+ */
+function lintMarkdownFiles(string $root, array $files): int
+{
+    fwrite(STDOUT, "\n==> Markdown parse\n");
+
+    $converter = new GithubFlavoredMarkdownConverter([
+        'html_input' => 'escape',
+        'allow_unsafe_links' => false,
+    ]);
+    $failures = 0;
+
+    foreach ($files as $file) {
+        $relative = relativePath($root, $file);
+
+        try {
+            $converter->convert((string) file_get_contents($file));
+        } catch (Throwable $error) {
+            fwrite(STDERR, sprintf(
+                "%s:1:1 Markdown parse failed: %s\n",
+                $relative,
+                $error->getMessage(),
+            ));
+            ++$failures;
+        }
+    }
+
+    if (0 === $failures) {
+        fwrite(STDOUT, "Markdown parse OK.\n");
+    }
+
+    return $failures;
+}
+
+/**
+ * @param list<string> $files
+ */
+function lintUxIconReferences(string $root, array $files): int
+{
+    fwrite(STDOUT, "\n==> Symfony UX icon references\n");
+
+    $config = uxIconLintConfig($root);
+    $failures = 0;
+
+    foreach ($files as $file) {
+        $relative = relativePath($root, $file);
+        $contents = (string) file_get_contents($file);
+
+        foreach (extractUxIconReferences($contents) as $reference) {
+            if (localUxIconExists($reference['name'], $config)) {
+                continue;
+            }
+
+            ++$failures;
+            fwrite(STDERR, sprintf(
+                "%s:%d:1 Missing local Symfony UX icon \"%s\". Run php bin/console ux:icons:lock when Iconify is reachable.\n",
+                $relative,
+                $reference['line'],
+                $reference['name'],
+            ));
+        }
+    }
+
+    if (0 === $failures) {
+        fwrite(STDOUT, "Symfony UX icon references OK.\n");
+    }
+
+    return $failures;
+}
+
+/**
+ * @return array{icon_dir: string, aliases: array<string, string>, icon_set_paths: array<string, string>}
+ */
+function uxIconLintConfig(string $root): array
+{
+    $configPath = $root.'/config/packages/ux_icons.yaml';
+    $config = is_file($configPath) ? (array) Yaml::parseFile($configPath) : [];
+    $uxIcons = is_array($config['ux_icons'] ?? null) ? $config['ux_icons'] : [];
+    $aliases = is_array($uxIcons['aliases'] ?? null) ? $uxIcons['aliases'] : [];
+    $iconSets = is_array($uxIcons['icon_sets'] ?? null) ? $uxIcons['icon_sets'] : [];
+    $iconSetPaths = [];
+
+    foreach ($iconSets as $prefix => $iconSet) {
+        if (!is_string($prefix) || !is_array($iconSet) || !is_string($iconSet['path'] ?? null)) {
+            continue;
+        }
+
+        $iconSetPaths[$prefix] = resolveProjectPath($root, $iconSet['path']);
+    }
+
+    return [
+        'icon_dir' => resolveProjectPath($root, is_string($uxIcons['icon_dir'] ?? null) ? $uxIcons['icon_dir'] : '%kernel.project_dir%/assets/icons'),
+        'aliases' => array_filter($aliases, static fn (mixed $target, mixed $alias): bool => is_string($alias) && is_string($target), ARRAY_FILTER_USE_BOTH),
+        'icon_set_paths' => $iconSetPaths,
+    ];
+}
+
+function resolveProjectPath(string $root, string $path): string
+{
+    $path = str_replace('%kernel.project_dir%', $root, $path);
+
+    return str_starts_with($path, DIRECTORY_SEPARATOR) ? $path : $root.DIRECTORY_SEPARATOR.$path;
+}
+
+/**
+ * @return list<array{name: string, line: int}>
+ */
+function extractUxIconReferences(string $contents): array
+{
+    $iconName = '[a-z0-9]+(?:-[a-z0-9]+)*(?::[a-z0-9]+(?:-[a-z0-9]+)*)*';
+    $patterns = [
+        '/\bux_icon\s*\(\s*[\'"](?P<name>'.$iconName.')[\'"]/',
+        '/<twig:ux:icon\b[^>]*\bname\s*=\s*[\'"](?P<name>'.$iconName.')[\'"][^>]*>/i',
+    ];
+    $references = [];
+
+    foreach ($patterns as $pattern) {
+        if (!preg_match_all($pattern, $contents, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE)) {
+            continue;
+        }
+
+        foreach ($matches as $match) {
+            $name = $match['name'][0];
+            $offset = $match['name'][1];
+            $references[$name.'@'.$offset] = [
+                'name' => $name,
+                'line' => substr_count(substr($contents, 0, $offset), "\n") + 1,
+            ];
+        }
+    }
+
+    return array_values($references);
+}
+
+/**
+ * @param array{icon_dir: string, aliases: array<string, string>, icon_set_paths: array<string, string>} $config
+ */
+function localUxIconExists(string $name, array $config): bool
+{
+    $iconName = $config['aliases'][$name] ?? $name;
+
+    if (str_contains($iconName, ':')) {
+        [$prefix, $icon] = explode(':', $iconName, 2);
+        if (isset($config['icon_set_paths'][$prefix]) && is_file($config['icon_set_paths'][$prefix].DIRECTORY_SEPARATOR.str_replace(':', DIRECTORY_SEPARATOR, $icon).'.svg')) {
+            return true;
+        }
+    }
+
+    return is_file($config['icon_dir'].DIRECTORY_SEPARATOR.str_replace(':', DIRECTORY_SEPARATOR, $iconName).'.svg');
+}
+
+/**
  * @param list<string> $prefixes
  */
 function pathMatchesAnyPrefix(string $path, array $prefixes): bool
@@ -195,7 +466,7 @@ function pathMatchesAnyPrefix(string $path, array $prefixes): bool
  */
 function collectTargetFiles(string $root, array $targets): array
 {
-    $supportedExtensions = ['css', 'js', 'json', 'php', 'twig', 'yaml', 'yml'];
+    $supportedExtensions = ['css', 'js', 'json', 'md', 'php', 'twig', 'yaml', 'yml'];
     $files = [];
     $failures = 0;
 
@@ -210,9 +481,9 @@ function collectTargetFiles(string $root, array $targets): array
         }
 
         if (is_file($path)) {
-            $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $extension = lintFileType($path);
 
-            if (!in_array($extension, $supportedExtensions, true)) {
+            if (null === $extension || !in_array($extension, $supportedExtensions, true)) {
                 fwrite(STDOUT, sprintf("Skipping unsupported lint target: %s\n", relativePath($root, $path)));
 
                 continue;
@@ -257,6 +528,173 @@ function relativePath(string $root, string $path): string
     return str_replace('\\', '/', substr($path, strlen($root) + 1));
 }
 
+function lintFileType(string $path): ?string
+{
+    $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+    if ('' !== $extension) {
+        return $extension;
+    }
+
+    $handle = @fopen($path, 'r');
+
+    if (!is_resource($handle)) {
+        return null;
+    }
+
+    $start = (string) fread($handle, 128);
+    fclose($handle);
+
+    if (str_starts_with($start, '<?php') || str_starts_with($start, "#!/usr/bin/env php\n")) {
+        return 'php';
+    }
+
+    return null;
+}
+
+function gitAvailable(string $root): bool
+{
+    $result = runCapturedCommand(['git', '--version'], $root);
+
+    return $result['started'] && 0 === $result['exit_code'];
+}
+
+function gitRepositoryAvailable(string $root): bool
+{
+    if (!gitAvailable($root)) {
+        return false;
+    }
+
+    $result = runCapturedCommand(['git', 'rev-parse', '--is-inside-work-tree'], $root);
+
+    return $result['started'] && 0 === $result['exit_code'] && in_array('true', $result['lines'], true);
+}
+
+/**
+ * @param list<string> $command
+ *
+ * @return array{started: bool, exit_code: int, lines: list<string>}
+ */
+function runCapturedCommand(array $command, string $cwd): array
+{
+    $process = proc_open(
+        $command,
+        [
+            0 => ['file', nullDevice(), 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ],
+        $pipes,
+        $cwd,
+    );
+
+    if (!is_resource($process)) {
+        return ['started' => false, 'exit_code' => 127, 'lines' => []];
+    }
+
+    $stdout = stream_get_contents($pipes[1]);
+    $stderr = stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+
+    $exitCode = proc_close($process);
+    $lines = array_values(array_filter(
+        array_map('rtrim', explode(PHP_EOL, trim((string) $stdout.PHP_EOL.(string) $stderr))),
+        static fn (string $line): bool => '' !== $line,
+    ));
+
+    return ['started' => true, 'exit_code' => $exitCode, 'lines' => $lines];
+}
+
+/**
+ * @return array{files: list<string>, failures: int}
+ */
+function collectDiffTargetFiles(string $root, ?string $range, bool $stagedOnly = false): array
+{
+    if (!gitRepositoryAvailable($root)) {
+        fwrite(STDOUT, "Git is not available or this is not a Git work tree; skipping diff target collection.\n");
+
+        return ['files' => [], 'failures' => 0];
+    }
+
+    $paths = [];
+    $commands = $stagedOnly
+        ? [
+            ['git', 'diff', '--cached', '--name-only', '--diff-filter=ACMRTUXB', '--'],
+        ]
+        : (null === $range
+        ? [
+            ['git', 'diff', '--name-only', '--diff-filter=ACMRTUXB', '--'],
+            ['git', 'diff', '--cached', '--name-only', '--diff-filter=ACMRTUXB', '--'],
+        ]
+        : [
+            ['git', 'diff', '--name-only', '--diff-filter=ACMRTUXB', $range, '--'],
+        ]);
+
+    foreach ($commands as $command) {
+        $result = runCapturedCommand($command, $root);
+
+        if (0 !== $result['exit_code']) {
+            foreach ($result['lines'] as $line) {
+                fwrite(STDERR, $line.PHP_EOL);
+            }
+
+            return ['files' => [], 'failures' => 1];
+        }
+
+        foreach ($result['lines'] as $line) {
+            $paths[$line] = true;
+        }
+    }
+
+    return collectTargetFiles($root, array_keys($paths));
+}
+
+function lintGitDiffWhitespace(string $root, ?string $range, bool $stagedOnly = false): int
+{
+    fwrite(STDOUT, "\n==> Git diff whitespace\n");
+
+    if (!gitRepositoryAvailable($root)) {
+        fwrite(STDOUT, "Git is not available or this is not a Git work tree; skipping git diff whitespace check.\n");
+
+        return 0;
+    }
+
+    $commands = $stagedOnly
+        ? [
+            ['git', 'diff', '--cached', '--check', '--', ':!:*.md'],
+        ]
+        : (null === $range
+        ? [
+            ['git', 'diff', '--check', '--', ':!:*.md'],
+            ['git', 'diff', '--cached', '--check', '--', ':!:*.md'],
+        ]
+        : [
+            ['git', 'diff', '--check', $range, '--', ':!:*.md'],
+        ]);
+    $failures = 0;
+
+    foreach ($commands as $command) {
+        $result = runCapturedCommand($command, $root);
+
+        if (0 === $result['exit_code']) {
+            continue;
+        }
+
+        ++$failures;
+
+        foreach ($result['lines'] as $line) {
+            fwrite(STDERR, $line.PHP_EOL);
+        }
+    }
+
+    if (0 === $failures) {
+        fwrite(STDOUT, "Git diff whitespace OK.\n");
+    }
+
+    return $failures;
+}
+
 /**
  * @param list<string> $files
  *
@@ -267,7 +705,12 @@ function groupFilesByExtension(array $files): array
     $groups = [];
 
     foreach ($files as $file) {
-        $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        $extension = lintFileType($file);
+
+        if (null === $extension) {
+            continue;
+        }
+
         $groups[$extension][] = $file;
     }
 
@@ -288,6 +731,31 @@ function containsTranslationSource(string $root, array $files): bool
     }
 
     return false;
+}
+
+/**
+ * @param list<string> $files
+ */
+function containsUxIconConfig(string $root, array $files): bool
+{
+    foreach ($files as $file) {
+        if ('config/packages/ux_icons.yaml' === relativePath($root, $file)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * @return list<string>
+ */
+function uxIconTemplateFiles(string $root): array
+{
+    $collected = collectTargetFiles($root, ['templates', 'packages']);
+    $groups = groupFilesByExtension($collected['files']);
+
+    return $groups['twig'] ?? [];
 }
 
 function lintTranslationSourceKeys(string $root): int
@@ -456,8 +924,10 @@ function flattenTranslationCatalogue(array $data, string $prefix = ''): array
     return $flat;
 }
 
-if ([] !== $targets) {
-    $collected = collectTargetFiles($root, $targets);
+if ($diffMode || $stagedMode || [] !== $targets) {
+    $collected = ($diffMode || $stagedMode)
+        ? collectDiffTargetFiles($root, $diffRange, $stagedMode)
+        : collectTargetFiles($root, $targets);
     $failures += $collected['failures'];
     $filesByExtension = groupFilesByExtension($collected['files']);
 
@@ -468,6 +938,11 @@ if ([] !== $targets) {
     $twigFiles = $filesByExtension['twig'] ?? [];
     if ([] !== $twigFiles) {
         $run([$php, 'bin/console', 'lint:twig', ...$twigFiles], 'Twig templates');
+    }
+
+    $iconTwigFiles = containsUxIconConfig($root, $collected['files']) ? uxIconTemplateFiles($root) : $twigFiles;
+    if ([] !== $iconTwigFiles) {
+        $failures += lintUxIconReferences($root, $iconTwigFiles);
     }
 
     $yamlFiles = [...($filesByExtension['yaml'] ?? []), ...($filesByExtension['yml'] ?? [])];
@@ -483,6 +958,10 @@ if ([] !== $targets) {
         $failures += lintSourceFiles($root, $filesByExtension['json'], new JsonLinter(), 'JSON syntax');
     }
 
+    if (isset($filesByExtension['md'])) {
+        $failures += lintMarkdownFiles($root, $filesByExtension['md']);
+    }
+
     if (isset($filesByExtension['css'])) {
         fwrite(STDOUT, "\nNote: focused CSS lint uses the strict CSS parser and may report Tailwind-specific directives or generated modern at-rules such as @apply, @theme, or @supports as unsupported syntax.\n");
         $failures += lintSourceFiles($root, $filesByExtension['css'], new CssLinter(), 'CSS syntax');
@@ -492,8 +971,10 @@ if ([] !== $targets) {
         $failures += lintTranslationSourceKeys($root);
     }
 
+    $failures += lintGitDiffWhitespace($root, $diffMode ? $diffRange : null, $stagedMode);
+
     if ([] === $collected['files'] && 0 === $failures) {
-        fwrite(STDOUT, "No supported lint targets found.\n");
+        fwrite(STDOUT, ($diffMode || $stagedMode) ? "No supported changed lint targets found.\n" : "No supported lint targets found.\n");
     }
 
     if (0 !== $failures) {
@@ -510,11 +991,14 @@ if ([] !== $targets) {
 $failures += lintPhpFiles($root, filesWithExtensions($root, ['php']), $php);
 $run([$php, 'bin/console', 'lint:container'], 'Symfony container');
 $run([$php, 'bin/console', 'lint:twig', 'templates'], 'Twig templates');
+$failures += lintUxIconReferences($root, uxIconTemplateFiles($root));
 $run([$php, 'bin/console', 'lint:yaml', '--parse-tags', 'config', 'translations'], 'YAML config and translations');
 $failures += lintSourceFiles($root, filesWithExtensions($root, ['js']), new JavaScriptLinter(), 'JavaScript module syntax');
 $failures += lintSourceFiles($root, filesWithExtensions($root, ['json']), new JsonLinter(), 'JSON syntax');
+$failures += lintMarkdownFiles($root, filesWithExtensions($root, ['md']));
 $run([$php, 'bin/console', 'tailwind:build'], 'Tailwind CSS build');
 $failures += lintTranslationSourceKeys($root);
+$failures += lintGitDiffWhitespace($root, null);
 
 if (0 !== $failures) {
     fwrite(STDERR, sprintf("\nLint failed with %d failing check(s).\n", $failures));

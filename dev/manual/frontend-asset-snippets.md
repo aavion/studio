@@ -1,7 +1,7 @@
 # Frontend asset snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-31
+> **Updated**: 2026-06-13
 > **Owner**: Core  
 > **Purpose:** Record early notes for AssetMapper, ImportMap, Tailwind, theme assets, illustrations, and package asset rebuilds.  
 
@@ -17,7 +17,7 @@ Composer auto-scripts currently handle:
 - ImportMap install;
 - Tailwind build.
 
-`bin/init` should avoid duplicating those commands and only run `asset-map:compile` in `prod`.
+`bin/init` reruns the asset setup commands after Composer has restored dependencies so clean checkouts and recovered `vendor/` trees have deterministic local assets. It only runs `asset-map:compile` in `prod`.
 
 The global package-aware rebuild entry point is `php bin/console assets:rebuild`. Package lifecycle workflows and manual admin recovery actions should call this command through the operational ActionLog runner, not rebuild assets during normal page requests.
 
@@ -27,9 +27,16 @@ The command publishes a planned step count in dry-run mode and reports current s
 2. aggregate core and active package translation sources into the runtime `messages` catalogues;
 3. run `assets:install`;
 4. run `importmap:install`;
-5. run `tailwind:build`;
-6. only in `prod`, remove `public/assets` and run `asset-map:compile`;
-7. run `cache:clear` as the finalizer.
+5. run `ux:icons:lock` as a non-blocking step so core and package template icon references are imported locally when Iconify is reachable;
+6. run `tailwind:build`;
+7. only in `prod`, remove `public/assets` and run `asset-map:compile`;
+8. run `cache:clear` as the finalizer.
+
+Symfony UX icons render inline from local SVG files under `assets/icons`; they do not need to be copied to `public/assets`. The lock step is intentionally non-blocking because offline CI, restricted production networks, or temporary Iconify outages should not break an otherwise valid asset rebuild. Missing icons are still visible as warnings in the ActionLog and should be locked manually during development or before release when network access is available. Before `ux:icons:lock`, `ux:icons:warm-cache`, or `asset-map:compile` run in the console, the package template path configurator registers active package template paths on Twig so scans include package-owned Twig files under `packages/**/templates`.
+
+`bin/lint` performs the non-mutating counterpart: it scans static `ux_icon('...')` and `<twig:ux:icon name="...">` references in Twig files and verifies that the corresponding local SVG exists under `assets/icons`, resolving configured aliases from `config/packages/ux_icons.yaml`. This check is local-only and suitable for CI; it does not attempt Iconify network access.
+
+Locked SVG files under `assets/icons` are committed as small, reviewable UI dependency snapshots. Do not bulk-lock complete upstream icon sets by default; add icons through real template usage, configured aliases, or explicit import decisions.
 
 `cache:clear` intentionally runs last. The rebuild should run in a CLI worker or subprocess with persisted ActionLog entries, while the UI reads progress through streaming or `/api/live/operations/{operationId}/log?cursor=<number>`. If clearing the cache briefly interrupts polling, the UI can resume from the stored cursor. The command must not depend on the current HTTP request continuing after cache invalidation.
 

@@ -38,14 +38,15 @@ final class AssetRebuildQueueFactoryTest extends TestCase
         ]);
         $actions = $queue->actions();
 
-        self::assertCount(6, $actions);
+        self::assertCount(7, $actions);
         self::assertSame('package_asset_sync', $actions[0]->type());
         self::assertSame('translation_aggregate', $actions[1]->type());
         self::assertStringContainsString('assets:install', $actions[2]->label());
         self::assertStringContainsString('importmap:install', $actions[3]->label());
-        self::assertSame('tailwind_build', $actions[4]->type());
-        self::assertSame('Build Tailwind CSS', $actions[4]->label());
-        self::assertStringContainsString('cache:clear', $actions[5]->label());
+        self::assertStringContainsString('ux:icons:lock', $actions[4]->label());
+        self::assertSame('tailwind_build', $actions[5]->type());
+        self::assertSame('Build Tailwind CSS', $actions[5]->label());
+        self::assertStringContainsString('cache:clear', $actions[6]->label());
         self::assertFalse($queue->context()['production_compile']);
         self::assertSame('manual', $queue->context()['trigger']);
         self::assertSame(1, count(array_filter(
@@ -59,11 +60,12 @@ final class AssetRebuildQueueFactoryTest extends TestCase
         $queue = $this->factory()->create('prod', [], 'setup');
         $actions = $queue->actions();
 
-        self::assertCount(8, $actions);
-        self::assertSame('remove_path', $actions[5]->type());
-        self::assertStringContainsString('public/assets', $actions[5]->label());
-        self::assertStringContainsString('asset-map:compile', $actions[6]->label());
-        self::assertStringContainsString('cache:clear', $actions[7]->label());
+        self::assertCount(9, $actions);
+        self::assertStringContainsString('ux:icons:lock', $actions[4]->label());
+        self::assertSame('remove_path', $actions[6]->type());
+        self::assertStringContainsString('public/assets', $actions[6]->label());
+        self::assertStringContainsString('asset-map:compile', $actions[7]->label());
+        self::assertStringContainsString('cache:clear', $actions[8]->label());
         self::assertTrue($queue->context()['production_compile']);
         self::assertSame('setup', $queue->context()['trigger']);
     }

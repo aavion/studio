@@ -1,6 +1,7 @@
 # Project Readiness Drift Audit 2026-06-05
 
-> **Status**: Active  
+> **Status**: Completed / historical  
+> **Updated**: 2026-06-12  
 > **Issue**: #57  
 > **Branch**: `audit-project-readiness`  
 > **Purpose**: Preserve context and working notes for the first broad architecture, modularity, naming, performance, security, Symfony-alignment, and documentation-drift audit.
@@ -104,7 +105,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 
 ## Product Decisions
 
-- **D1:** Existing and future orchestration classes should be split into thin facades plus small services wherever this improves modularity, reuse, and context stability. The roughly 300-line target is a real design pressure, not only a hint.
+- **D1:** Existing and future orchestration classes should be split into thin facades plus small services wherever this improves modularity, reuse, and context stability. The roughly 300-line target is a real but soft design pressure: useful for context handling, review, and patch reliability, but not a reason to fragment naturally cohesive files.
 - **D2:** Controllers should be HTTP adapters. Workflow logic belongs in application services, and existing controllers should be refactored toward that boundary when touched or when audit work identifies a useful split.
 - **D3:** Package code is not a full sandbox. First-party and third-party packages share the lifecycle model, but package activation must validate package PHP, templates, routes, hooks, headers, namespaces/classes, and other capabilities against an adjustable allow/warn/block policy registry.
 - **D4:** Package authors should have one preferred `PackageContributions`-style builder/DTO API. Provider interfaces may remain internal adapters or advanced extension points.
@@ -634,7 +635,7 @@ Run a complete project audit without treating feature-draft assumptions or previ
 - **Evidence:** `src/Scheduler/CommandSchedulerTaskExecutor.php:31`, `src/Scheduler/CommandSchedulerTaskExecutor.php:50`, `src/Core/Operation/Process/RunCommandAction.php:83`, `src/Core/Process/PhpCliBinaryValidator.php:27`, `src/Core/Operation/Live/LiveOperationStarter.php:104`, `src/Core/Asset/AssetRebuildQueueFactory.php:81`.
 - **Impact:** The current behavior aligns with the branch goal of passing Symfony Dotenv values while filtering web/CGI request context. The risk is documentation and future drift: a new process action could bypass `RunCommandAction` or pass a manually sanitized environment that omits Dotenv values.
 - **Recommendation:** Introduce or document a single `ChildProcessEnvironment`/`CliProcessEnvironment` policy and require all direct `Process` construction to use it. Add this as an explicit review checklist item for future subprocess features.
-- **Implementation note:** Rechecked direct `Process` construction after the shared process/detached-process foundations. Application subprocesses use `RunCommandAction`, `DetachedProcessStarter`, setup/preflight process helpers, or PHP CLI resolver/validator paths backed by `CliProcessEnvironment::fromCurrentProcess()`. Remaining direct `Process` calls are local tool probes such as PHP linting, diagnostics, `ps`, or `kill`. `.codex/PROJECT_RULES.md` records the subprocess environment rule for future feature branches.
+- **Implementation note:** Rechecked direct `Process` construction after the shared process/detached-process foundations. Application subprocesses use `RunCommandAction`, `DetachedProcessStarter`, setup/preflight process helpers, or PHP CLI resolver/validator paths backed by `CliProcessEnvironment::fromCurrentProcess()`. Remaining direct `Process` calls are local tool probes such as PHP linting, diagnostics, `ps`, or `kill`. `AGENTS.md` records the subprocess environment rule for future feature branches.
 - **Priority:** Now / ongoing.
 
 ### F-036 ACL group impact cleanup is a cross-domain JSON scanner

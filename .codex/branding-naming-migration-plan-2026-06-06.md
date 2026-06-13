@@ -1,9 +1,16 @@
 # Branding-Neutral Naming Migration Plan 2026-06-06
 
-> **Status**: Draft for implementation  
+> **Status**: Completed / historical  
+> **Updated**: 2026-06-12  
 > **Branch**: `audit-project-readiness`  
 > **Base context**: Visitor identity slice committed as `c2a86a1 Harden visitor identity tracking`.  
-> **Purpose**: Migrate branding-irrelevant `studio` identifiers toward neutral domain names, `system` owner names, or package-slug-owned names before `1.0.0`.
+> **Purpose**: Preserve the completed migration plan for branding-irrelevant `studio` identifiers.
+
+## Completion Note
+
+This plan is no longer active implementation guidance. The second readiness audit recorded the final naming scan: remaining `Studio`, `studio_`, or `studio-*` hits are product/brand strings, database-prefix examples or fixtures, package scope values such as `system-template`, or historical audit notes. Native inspectable CSS, template, helper, CLI, and log-path names were migrated toward branding-neutral `system` or domain ownership.
+
+Keep this file as historical context for why the naming rules exist. New naming decisions are governed by `AGENTS.md`.
 
 ## Product Decisions
 

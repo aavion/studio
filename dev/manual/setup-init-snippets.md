@@ -1,7 +1,7 @@
 # Setup and init snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-24  
+> **Updated**: 2026-06-13  
 > **Owner**: Core  
 > **Purpose:** Capture setup and init behavior notes before the first-run installer and automation workflows are finalized.  
 
@@ -21,7 +21,8 @@
 - generate core-only runtime translation catalogues from `translations/languages/{locale}` before Symfony console consumers run;
 - resolve Symfony environment consistently with Symfony's dotenv behavior;
 - install development dependencies for `dev` and `test`;
-- rely on Composer auto-scripts for ImportMap, public assets, and Tailwind;
+- refresh public assets, ImportMap packages, Symfony UX icon locks, and Tailwind after dependencies are available;
+- treat Symfony UX icon lock failures as warnings so offline init runs can still complete;
 - run AssetMapper compilation only for `prod`;
 - return clear success, warning, and failure summaries.
 

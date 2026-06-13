@@ -6,6 +6,8 @@ namespace App\View\Template;
 
 use App\Core\Package\ActivePackageProviderInterface;
 use App\Debug\SystemDebugCollector;
+use Symfony\Component\Console\ConsoleEvents;
+use Symfony\Component\Console\Event\ConsoleCommandEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -28,8 +30,19 @@ final class PackageTemplatePathConfigurator implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
+            ConsoleEvents::COMMAND => 'onConsoleCommand',
             KernelEvents::REQUEST => ['onKernelRequest', 512],
         ];
+    }
+
+    public function onConsoleCommand(ConsoleCommandEvent $event): void
+    {
+        $commandName = $event->getCommand()?->getName();
+        if (!in_array($commandName, ['asset-map:compile', 'ux:icons:lock', 'ux:icons:warm-cache'], true)) {
+            return;
+        }
+
+        $this->configure();
     }
 
     public function onKernelRequest(RequestEvent $event): void

@@ -92,6 +92,19 @@ final class RunCommandActionTest extends TestCase
         self::assertSame('nope', $execution->actionLog()->entries()[0]->context()['error_excerpt']);
     }
 
+    public function testItCanTreatNonZeroExitCodesAsWarnings(): void
+    {
+        $action = new RunCommandAction([PHP_BINARY, '-r', 'fwrite(STDERR, "offline"); exit(7);'], failOnError: false);
+        $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue(ActionQueue::create('process', [$action]));
+
+        self::assertTrue($execution->result()->isSuccess());
+        self::assertSame(MessageLevel::Warning, $execution->actionLog()->entries()[0]->messages()[0]->level());
+        self::assertSame('process.command_failed', $execution->actionLog()->entries()[0]->messages()[0]->code());
+        self::assertSame(7, $execution->actionLog()->entries()[0]->context()['exit_code']);
+        self::assertFalse($execution->actionLog()->entries()[0]->context()['fail_on_error']);
+        self::assertSame('offline', $execution->actionLog()->entries()[0]->context()['error_excerpt']);
+    }
+
     public function testItLimitsOutputExcerpts(): void
     {
         $action = new RunCommandAction([PHP_BINARY, '-r', 'echo "abcdef";'], excerptLength: 3);

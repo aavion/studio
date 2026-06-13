@@ -1,7 +1,7 @@
 # Local agent tooling snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-23  
+> **Updated**: 2026-06-13  
 > **Owner**: Core  
 > **Purpose:** Track local Codex helper scripts and operational notes for agent-assisted development.  
 
@@ -15,6 +15,15 @@ The `.codex/` directory contains local helper scripts and notes for agent workfl
 |--------|---------|
 | `.codex/clean_ignored_artifacts.php` | Lists or removes ignored build/dependency artifacts. |
 | `.codex/resolve_cloud_artifacts.php` | Inspects and optionally removes iCloud/Finder conflict artifacts. |
+
+Project-wide developer commands that are useful for agent workflows live outside `.codex/` because they are part of the application repository:
+
+| Command | Purpose |
+|---------|---------|
+| `bin/lint` | Runs the full project lint suite or focused lint checks. |
+| `bin/lint --diff` | Lints supported files from the current staged and unstaged Git diff when Git and a work tree are available. |
+| `bin/lint --staged` | Lints supported files staged for commit when Git and a work tree are available. |
+| `php bin/console render:route /path` | Renders a route through the Symfony kernel with optional debug `--role`, `--user`, `--method`, `--host`, `--https`, and `--setup-completed=0` context. |
 
 ## Cleanup notes
 

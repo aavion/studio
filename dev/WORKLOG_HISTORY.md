@@ -1,14 +1,19 @@
 # Developer Worklog History
 
 > **Status**: Active  
-> **Updated**: 2026-06-06  
+> **Updated**: 2026-06-13  
 > **Owner**: Core  
-> **Purpose:** Preserve compacted session history moved out of `dev/WORKLOG.md` at feature-branch boundaries.
+> **Purpose:** Preserve compacted branch/PR history moved out of `dev/WORKLOG.md` at branch boundaries.
 
 ## Usage
-Move completed session logs from `dev/WORKLOG.md` into this file at the start of each new feature branch. Keep entries compacted by session so the active worklog remains context-friendly while older project history stays available.
+Move completed branch or PR logs from `dev/WORKLOG.md` into this file when switching branches or after a PR is merged. Keep the active worklog focused on the current branch so reviewers can see the full PR context while older project history stays available.
 
-## Archived Sessions
+## Archived Branches
+### 2026-06-07
+- Completed the API foundation and hardening slice: stateless Bearer API-key authentication, endpoint definitions/handlers, OpenAPI 3.2 generation, public/private navigation, admin/user/content/package endpoints, CORS, trace headers, feature policy settings, response/error schemas, and Message-layer localized feedback.
+- Hardened API access and review boundaries around disabled/setup/maintenance responses, package-owned route patterns, read-only method gates, endpoint permissions, API-key parsing, deleted users, ACL denial status, retained-deleted account mutations, content revisions, package slug identity, pagination/filtering/sorting, and public published-content status leakage.
+- Added broad focused coverage and registry checks for API endpoint wiring, access policy, user/self-service API keys, admin mutations, content ACL behavior, package/admin path stability, OpenAPI metadata, CORS, validation details, and hardening review findings while recording remaining package-handler and modularity follow-ups.
+
 ### 2026-06-06
 - Completed the second project-readiness audit pass: rechecked large classes, namespace placement, hard exceptions, Message-layer usage, dynamic language handling, `studio`/`system` naming, documentation drift, platform notes, and deferred package/security/mail decisions.
 - Finished the broad modularity refactor by splitting setup, setup preflight, live operations, backend admin routes, package lifecycle/registry/validation, package ZIP install, scheduler package inspection, ACL group impact cleanup, content item concerns, generated form submission, admin read-model queries, account/profile/token workflows, and public hook descriptors into focused collaborators.
