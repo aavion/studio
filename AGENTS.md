@@ -82,15 +82,15 @@
 - `tests/` mirrors production code for PHPUnit unit, integration, functional, and end-to-end coverage.
 - `translations/` contains modular source catalogues and generated runtime catalogues.
 - `docs/` contains user-facing documentation; `dev/manual/` contains developer documentation; `dev/draft/` contains concepts and feature outlines.
-- `dev/WORKLOG.md` tracks sessions, completed work, TODOs, and deferred follow-ups.
+- `dev/WORKLOG.md` tracks branch/PR context, completed work, TODOs, and deferred follow-ups.
 - `dev/CLASSMAP.md` indexes relevant callables and their tests.
-- `.codex/` contains agent notes, helper scripts, context cache, and environment/tooling notes.
+- `.codex/` contains agent-only notes, reusable development helper scripts, context cache, and environment/tooling notes. Production code, tests, build scripts, and release workflows must not depend on files under `.codex/`.
 
 ## Before Editing
 - Check the project rules in this file and `dev/WORKLOG.md` for active TODOs and recent context before code changes.
 - Check `.codex/ENVIRONMENT.md` before assuming binary paths or local tooling; skip local-only details in cloud or container environments.
 - Check `.codex/framework-version-recap.md` before routine framework or dependency work; treat it as a version-pinned documentation cache and refresh the relevant section when installed versions change, when the cached note is unclear, or when the task depends on precise current API behavior.
-- Prefer reusable helper scripts in `.codex/` over ad-hoc command snippets. When adding helpers, document them in `.codex/README.md`.
+- Prefer reusable `.codex/` helpers over ad-hoc command snippets for agent-only development tasks. Promote helpers into project tooling such as `bin/` or Symfony commands when they become useful to other developers or required by tests, CI, build, setup, or production workflows.
 - For behavior changes, identify the matching documentation and test locations before editing.
 - For UI or rendered-output changes, identify affected Twig templates, translations, and routes.
 
@@ -198,7 +198,7 @@
 - Developer manual: `dev/manual/**`
 - User manual: `docs/**`
 - Feature drafts and outlines: `dev/draft/**`
-- Worklog and session notes: `dev/WORKLOG.md`
+- Worklog and branch/PR notes: `dev/WORKLOG.md`
 - Callable index: `dev/CLASSMAP.md`
 - Documentation style guide: `dev/STYLEGUIDE.md`
 - Documentation templates: `docs/assets/template.md` and `dev/manual/assets/template.md`
