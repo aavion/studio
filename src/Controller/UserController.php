@@ -7,6 +7,8 @@ namespace App\Controller;
 use App\Api\ApiFeaturePolicy;
 use App\Core\Access\AccessActor;
 use App\Core\Log\AuditLoggerInterface;
+use App\Core\Message\CommonMessageCode;
+use App\Core\Message\Message;
 use App\Core\Message\MessageException;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
@@ -21,6 +23,10 @@ use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\Security\UserPasswordChangeService;
 use App\View\Http\HttpErrorRenderer;
+use App\View\Alert\MercureAvailability;
+use App\View\Alert\UiAlertDelivery;
+use App\View\Alert\UiAlertDispatcherInterface;
+use App\View\Alert\UiAlertTranslation;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -43,6 +49,8 @@ final class UserController extends AbstractController
         private readonly UserAccountClosureService $accountClosureService,
         private readonly UserProfileLocaleService $profileLocales,
         private readonly ApiFeaturePolicy $apiFeaturePolicy,
+        private readonly MercureAvailability $mercureAvailability,
+        private readonly UiAlertDispatcherInterface $alerts,
     ) {
     }
 
@@ -68,6 +76,7 @@ final class UserController extends AbstractController
         $success = false;
         $errors = [];
         $usernameChangeEnabled = $this->userFlowConfig->usernameChangeEnabled();
+        $nativeNotificationsAvailable = $this->mercureAvailability->available(refreshIfStale: true);
 
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('user_profile', $this->stringField($request, '_csrf_token'))) {
@@ -131,13 +140,14 @@ final class UserController extends AbstractController
                 $user->updateSettings([
                     ...$user->settings(),
                     'language' => $language,
+                    'native_notifications' => $nativeNotificationsAvailable && '1' === $this->stringField($request, 'native_notifications'),
                 ]);
                 try {
                     $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::MODIFIED, $user->username(), 'profile');
                     $this->entityManager->flush();
                     $this->audit($user, 'user.profile_updated', ['result_status' => 'success']);
                     $this->profileLocales->apply($request, $user);
-                    $this->addFlash('success', 'ui.user.profile.success');
+                    $this->alertKey('success', 'ui.user.profile.success');
 
                     return $this->redirectToRoute('user_profile');
                 } catch (MessageException $exception) {
@@ -152,6 +162,7 @@ final class UserController extends AbstractController
             'username_change_enabled' => $usernameChangeEnabled,
             'language_options' => $this->profileLocales->options(),
             'api_key_management_enabled' => $this->apiFeaturePolicy->canManageKeys($user),
+            'native_notifications_available' => $nativeNotificationsAvailable,
             'success' => $success,
             'errors' => $errors,
         ]);
@@ -190,7 +201,7 @@ final class UserController extends AbstractController
 
         if ([] !== $errors) {
             foreach ($errors as $error) {
-                $this->addFlash('error', $error);
+                $this->alertKey('error', $error);
             }
 
             $this->audit($user, 'user.account_close_failed', [
@@ -256,6 +267,11 @@ final class UserController extends AbstractController
         $value = $request->request->get($name);
 
         return is_string($value) ? $value : '';
+    }
+
+    private function alertKey(string $level, string $key): void
+    {
+        $this->alerts->addAlert(UiAlertTranslation::forLevel($level, $key), UiAlertDelivery::Direct);
     }
 
     private function userByUsername(string $username): ?UserAccount

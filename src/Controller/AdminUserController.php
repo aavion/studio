@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Backend\AdminControllerContext;
+use App\Core\Message\CommonMessageCode;
+use App\Core\Message\Message;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
 use App\Entity\AccountToken;
@@ -17,6 +19,9 @@ use App\Security\AdminUserPasswordResetService;
 use App\Security\DeletedUserCleanup;
 use App\Security\UserAccountStatus;
 use App\Security\UserRole;
+use App\View\Alert\UiAlertDelivery;
+use App\View\Alert\UiAlertDispatcherInterface;
+use App\View\Alert\UiAlertTranslation;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -36,6 +41,7 @@ final class AdminUserController extends AbstractController
         private readonly AdminUserListViewFactory $adminUserLists,
         private readonly StateMarkerRecorder $stateMarkers,
         private readonly DeletedUserCleanup $deletedUserCleanup,
+        private readonly UiAlertDispatcherInterface $alerts,
     ) {
     }
 
@@ -85,7 +91,7 @@ final class AdminUserController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('admin_deleted_users_cleanup', $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectToRoute('backend_admin_deleted_users');
         }
@@ -97,7 +103,7 @@ final class AdminUserController extends AbstractController
             'cutoff' => $result['cutoff']->format(DATE_ATOM),
             'user_uids' => $result['user_uids'],
         ]);
-        $this->addFlash('success', 'admin.users.deleted.cleanup_done');
+        $this->alertKey('success', 'admin.users.deleted.cleanup_done');
 
         return $this->redirectToRoute('backend_admin_deleted_users');
     }
@@ -172,13 +178,13 @@ final class AdminUserController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('admin_user_password_reset_'.$user->username(), $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectToRoute('backend_admin_user_detail', ['username' => $user->username()]);
         }
 
         $result = $this->passwordResetService->create($this->adminContext->actor($this->getUser()), $user);
-        $this->addFlash($result->successLevel(), $result->flashKey());
+        $this->alertKey($result->successLevel(), $result->flashKey());
 
         return $this->redirectToRoute('backend_admin_user_detail', ['username' => $user->username()]);
     }
@@ -186,7 +192,7 @@ final class AdminUserController extends AbstractController
     private function updateUser(Request $request, UserAccount $user): void
     {
         if (!$this->isCsrfTokenValid('admin_user_'.$user->username(), $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return;
         }
@@ -194,7 +200,7 @@ final class AdminUserController extends AbstractController
         $status = UserAccountStatus::tryFrom($this->field($request, 'status'));
 
         if (!$status instanceof UserAccountStatus) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_status');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_status');
 
             return;
         }
@@ -203,7 +209,7 @@ final class AdminUserController extends AbstractController
         $role = UserRole::tryFrom($this->field($request, 'role'));
 
         if (!$role instanceof UserRole || UserRole::Public === $role) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_role');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_role');
 
             return;
         }
@@ -217,7 +223,7 @@ final class AdminUserController extends AbstractController
             $newGroupIdentifiers,
         );
         $this->adminContext->audit($this->getUser(), $result->auditAction(), $result->auditContext());
-        $this->addFlash($result->flashLevel(), $result->flashKey());
+        $this->alertKey($result->flashLevel(), $result->flashKey());
     }
 
     private function changeDeletedUserStatus(Request $request, string $username, UserAccountStatus $status): Response
@@ -233,13 +239,13 @@ final class AdminUserController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('admin_deleted_user_status_'.$user->username(), $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectToRoute('backend_admin_deleted_users');
         }
 
         if (UserAccountStatus::Deleted !== $user->status()) {
-            $this->addFlash('error', 'admin.users.deleted.not_deleted');
+            $this->alertKey('error', 'admin.users.deleted.not_deleted');
 
             return $this->redirectToRoute('backend_admin_deleted_users');
         }
@@ -251,7 +257,7 @@ final class AdminUserController extends AbstractController
             $status,
         );
         $this->adminContext->audit($this->getUser(), $result->auditAction(), $result->auditContext());
-        $this->addFlash($result->flashLevel(), $result->flashKey());
+        $this->alertKey($result->flashLevel(), $result->flashKey());
 
         return $this->redirectToRoute('backend_admin_deleted_users');
     }
@@ -285,5 +291,10 @@ final class AdminUserController extends AbstractController
         $value = $request->request->get($name);
 
         return is_scalar($value) ? trim((string) $value) : '';
+    }
+
+    private function alertKey(string $level, string $key): void
+    {
+        $this->alerts->addAlert(UiAlertTranslation::forLevel($level, $key), UiAlertDelivery::Direct);
     }
 }

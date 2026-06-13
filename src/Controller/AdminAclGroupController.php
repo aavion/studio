@@ -7,6 +7,8 @@ namespace App\Controller;
 use App\Backend\AdminControllerContext;
 use App\Core\Access\AccessLevel;
 use App\Core\Id\UuidFactory;
+use App\Core\Message\CommonMessageCode;
+use App\Core\Message\Message;
 use App\Core\Operation\Live\LiveOperationHttpResponder;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationStarter;
@@ -15,6 +17,9 @@ use App\Security\AclGroupImpactService;
 use App\Security\AclGroupMemberProvider;
 use App\Security\AdminUserAccessPolicy;
 use App\Security\AdminUserListViewFactory;
+use App\View\Alert\UiAlertDelivery;
+use App\View\Alert\UiAlertDispatcherInterface;
+use App\View\Alert\UiAlertTranslation;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -36,6 +41,7 @@ final class AdminAclGroupController extends AbstractController
         private readonly LiveOperationStarter $liveOperationStarter,
         private readonly LiveOperationHttpResponder $liveOperationResponder,
         private readonly UuidFactory $uuidFactory,
+        private readonly UiAlertDispatcherInterface $alerts,
     ) {
     }
 
@@ -104,13 +110,13 @@ final class AdminAclGroupController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('admin_group_delete_'.$group->identifier(), $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectToRoute('backend_admin_user_group_detail', ['identifier' => $group->identifier()]);
         }
 
         if ($error = $this->adminUserPolicy->validateGroupDelete($this->adminContext->actor($this->getUser()), $group)) {
-            $this->addFlash('error', $error);
+            $this->alertKey('error', $error);
 
             return $this->redirectToRoute('backend_admin_user_group_detail', ['identifier' => $group->identifier()]);
         }
@@ -138,7 +144,7 @@ final class AdminAclGroupController extends AbstractController
             'group' => $group->identifier(),
             'impact' => $cleanupImpact['summary'],
         ]);
-        $this->addFlash('success', 'admin.groups.deleted');
+        $this->alertKey('success', 'admin.groups.deleted');
 
         return $this->redirectToRoute('backend_admin_user_groups');
     }
@@ -146,7 +152,7 @@ final class AdminAclGroupController extends AbstractController
     private function createGroup(Request $request): void
     {
         if (!$this->isCsrfTokenValid('admin_group_create', $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return;
         }
@@ -155,7 +161,7 @@ final class AdminAclGroupController extends AbstractController
             $accessLevel = AccessLevel::assert((int) $this->field($request, 'min_role'));
 
             if ($error = $this->adminUserPolicy->validateGroupCreate($this->adminContext->actor($this->getUser()), $accessLevel)) {
-                $this->addFlash('error', $error);
+                $this->alertKey('error', $error);
 
                 return;
             }
@@ -169,16 +175,16 @@ final class AdminAclGroupController extends AbstractController
             $this->entityManager->persist($group);
             $this->entityManager->flush();
             $this->adminContext->audit($this->getUser(), 'acl.group_created', ['group' => $group->identifier()]);
-            $this->addFlash('success', 'admin.groups.created');
+            $this->alertKey('success', 'admin.groups.created');
         } catch (Throwable) {
-            $this->addFlash('error', 'admin.groups.form.invalid');
+            $this->alertKey('error', 'admin.groups.form.invalid');
         }
     }
 
     private function updateGroup(Request $request, AclGroup $group): ?Response
     {
         if (!$this->isCsrfTokenValid('admin_group_'.$group->identifier(), $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return null;
         }
@@ -189,7 +195,7 @@ final class AdminAclGroupController extends AbstractController
         ];
 
         if ('' === $pending['name']) {
-            $this->addFlash('error', 'admin.groups.form.invalid');
+            $this->alertKey('error', 'admin.groups.form.invalid');
 
             return null;
         }
@@ -197,13 +203,13 @@ final class AdminAclGroupController extends AbstractController
         try {
             AccessLevel::assert($pending['min_role']);
         } catch (Throwable) {
-            $this->addFlash('error', 'admin.groups.form.invalid');
+            $this->alertKey('error', 'admin.groups.form.invalid');
 
             return null;
         }
 
         if ($error = $this->adminUserPolicy->validateGroupUpdate($this->adminContext->actor($this->getUser()), $group, $pending['min_role'])) {
-            $this->addFlash('error', $error);
+            $this->alertKey('error', $error);
 
             return null;
         }
@@ -240,9 +246,9 @@ final class AdminAclGroupController extends AbstractController
                 'impact' => $impact['summary'],
                 'floor_cleanup' => $floorCleanup,
             ]);
-            $this->addFlash('success', 'admin.groups.saved');
+            $this->alertKey('success', 'admin.groups.saved');
         } catch (Throwable) {
-            $this->addFlash('error', 'admin.groups.form.invalid');
+            $this->alertKey('error', 'admin.groups.form.invalid');
         }
 
         return null;
@@ -286,5 +292,10 @@ final class AdminAclGroupController extends AbstractController
         $group = $this->entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => $identifier]);
 
         return $group instanceof AclGroup ? $group : null;
+    }
+
+    private function alertKey(string $level, string $key): void
+    {
+        $this->alerts->addAlert(UiAlertTranslation::forLevel($level, $key), UiAlertDelivery::Direct);
     }
 }

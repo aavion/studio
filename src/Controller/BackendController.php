@@ -11,6 +11,7 @@ use App\Backend\BackendArea;
 use App\Backend\BackendRouteResolver;
 use App\Backend\BackendViewDefinition;
 use App\Core\Access\AccessActor;
+use App\Core\Message\Message;
 use App\Core\Config\Settings\CoreSettingsFormHandler;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Log\LogFileBrowser;
@@ -20,6 +21,9 @@ use App\Form\FormErrorKey;
 use App\Form\FormSubmissionResult;
 use App\Form\FormTokenValidator;
 use App\Navigation\NavigationBuilder;
+use App\View\Alert\UiAlertDelivery;
+use App\View\Alert\UiAlertDispatcherInterface;
+use App\View\Alert\UiAlertTranslation;
 use App\View\Http\HttpErrorRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -41,6 +45,7 @@ final class BackendController extends AbstractController
         private readonly LogFileBrowser $logFileBrowser,
         private readonly AuditLoggerInterface $auditLogger,
         private readonly FormTokenValidator $formTokenValidator,
+        private readonly UiAlertDispatcherInterface $alerts,
     ) {
     }
 
@@ -247,7 +252,7 @@ final class BackendController extends AbstractController
                 ]);
             }
 
-            $this->addFlash('success', 'admin.settings.form.saved');
+            $this->alerts->addAlert(UiAlertTranslation::success('admin.settings.form.saved'), UiAlertDelivery::Direct);
 
             return $this->redirect($request->getPathInfo());
         }

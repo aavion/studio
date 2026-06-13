@@ -8,6 +8,8 @@ use App\Backend\BackendAccessGuard;
 use App\Backend\BackendArea;
 use App\Core\Access\AccessActor;
 use App\Core\Log\AuditLoggerInterface;
+use App\Core\Message\CommonMessageCode;
+use App\Core\Message\Message;
 use App\Core\State\StateMarkerKey;
 use App\Core\State\StateMarkerRecorder;
 use App\Core\State\StateSubjectType;
@@ -23,6 +25,9 @@ use App\Security\AdminUserAccessPolicy;
 use App\Security\AdminUserReviewViewFactory;
 use App\Security\UserAccountLifecycle;
 use App\Security\UserAccountStatus;
+use App\View\Alert\UiAlertDelivery;
+use App\View\Alert\UiAlertDispatcherInterface;
+use App\View\Alert\UiAlertTranslation;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -47,6 +52,7 @@ final class AdminUserReviewController extends AbstractController
         private readonly AuditLoggerInterface $auditLogger,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly StateMarkerRecorder $stateMarkers,
+        private readonly UiAlertDispatcherInterface $alerts,
     ) {
     }
 
@@ -82,19 +88,19 @@ final class AdminUserReviewController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('admin_user_review_'.$user->username(), $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
 
         if (!$this->hasUnresolvedSecurityReview($user)) {
-            $this->addFlash('error', 'admin.users.invitation.unavailable');
+            $this->alertKey('error', 'admin.users.invitation.unavailable');
 
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
 
         if ($error = $this->adminUserPolicy->validateUserAction($this->actor(), $user)) {
-            $this->addFlash('error', $error);
+            $this->alertKey('error', $error);
 
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
@@ -109,7 +115,7 @@ final class AdminUserReviewController extends AbstractController
             'user_uid' => $user->uid(),
         ]);
         $this->audit('user.security_review_reactivated', ['target_user' => $user->uid()]);
-        $this->addFlash('success', 'admin.user_reviews.actions.reactivated');
+        $this->alertKey('success', 'admin.user_reviews.actions.reactivated');
 
         return $this->redirectToRoute('backend_admin_user_reviews');
     }
@@ -128,31 +134,31 @@ final class AdminUserReviewController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('admin_user_review_'.$user->username(), $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
 
         if ('1' !== $this->field($request, 'confirm_delete')) {
-            $this->addFlash('error', 'admin.user_reviews.actions.delete_confirmation_required');
+            $this->alertKey('error', 'admin.user_reviews.actions.delete_confirmation_required');
 
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
 
         if (!$this->hasUnresolvedSecurityReview($user)) {
-            $this->addFlash('error', 'admin.users.invitation.unavailable');
+            $this->alertKey('error', 'admin.users.invitation.unavailable');
 
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
 
         if ($error = $this->adminUserPolicy->validateUserAction($this->actor(), $user)) {
-            $this->addFlash('error', $error);
+            $this->alertKey('error', $error);
 
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
 
         if (!$this->adminUserPolicy->allowsAccountClosure($user)) {
-            $this->addFlash('error', 'admin.users.form.errors.last_owner');
+            $this->alertKey('error', 'admin.users.form.errors.last_owner');
 
             return $this->redirectToRoute('backend_admin_user_reviews');
         }
@@ -161,7 +167,7 @@ final class AdminUserReviewController extends AbstractController
         $this->deleteUsedSecurityReviewTokens($user);
         $this->entityManager->flush();
         $this->audit('user.security_review_deleted', ['target_user' => $user->uid(), ...$effects]);
-        $this->addFlash('success', 'admin.user_reviews.actions.deleted');
+        $this->alertKey('success', 'admin.user_reviews.actions.deleted');
 
         return $this->redirectToRoute('backend_admin_user_reviews');
     }
@@ -258,5 +264,10 @@ final class AdminUserReviewController extends AbstractController
         $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
 
         return $user instanceof UserAccount ? $user : null;
+    }
+
+    private function alertKey(string $level, string $key): void
+    {
+        $this->alerts->addAlert(UiAlertTranslation::forLevel($level, $key), UiAlertDelivery::Direct);
     }
 }
