@@ -103,13 +103,14 @@
 - When addressing review findings, trace adjacent and analogous code paths that share the same policy, transition, or boundary, and apply or explicitly rule out the same fix there to avoid one-path-only hardening.
 
 ## Build and Verification Commands
-- `bin/init` initializes the repository, refreshes dependencies and assets, and is the preferred recovery path for broken or incomplete `vendor/` packages because it removes an existing `vendor/` tree before Composer runs.
+- `bin/init` initializes the repository, refreshes dependencies and assets, locks referenced Symfony UX icons locally when possible, and is the preferred recovery path for broken or incomplete `vendor/` packages because it removes an existing `vendor/` tree before Composer runs.
 - `composer install` installs PHP dependencies and verifies required extensions.
-- `bin/lint` runs the full project lint suite, including Markdown parse checks and a Git whitespace check that excludes Markdown hard line breaks; pass one or more files or directories to run focused type-based checks, or use `bin/lint --diff`, `bin/lint --staged`, `bin/lint --diff=<target..source>`, or `bin/lint --changed=<target..source>` to lint supported Git changes when Git and a work tree are available.
+- `bin/lint` runs the full project lint suite, including Markdown parse checks, local Symfony UX icon reference checks, and a Git whitespace check that excludes Markdown hard line breaks; pass one or more files or directories to run focused type-based checks, or use `bin/lint --diff`, `bin/lint --staged`, `bin/lint --diff=<target..source>`, or `bin/lint --changed=<target..source>` to lint supported Git changes when Git and a work tree are available.
 - `php -l <path>` checks PHP syntax for a changed file.
 - `php bin/console lint:container` validates Symfony container wiring after service or configuration changes.
 - `php bin/console tailwind:build` compiles Tailwind CSS.
 - `php bin/console asset-map:compile` refreshes AssetMapper output and importmap pins.
+- `php bin/console ux:icons:lock` imports referenced Symfony UX/Iconify icons into `assets/icons`; commit the resulting SVGs as versioned UI dependency snapshots, but avoid bulk-locking complete icon sets without a concrete need.
 - `php bin/console doctrine:migrations:diff` generates schema migrations.
 - `php bin/console doctrine:migrations:migrate` applies schema migrations.
 - `php bin/phpunit` runs the full PHPUnit suite.

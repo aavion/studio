@@ -29,6 +29,7 @@ final readonly class RunCommandAction implements OperationActionInterface
         private ?float $timeout = 60.0,
         private int $excerptLength = 2000,
         private ?string $label = null,
+        private bool $failOnError = true,
     ) {
         if ([] === $command) {
             throw new InvalidArgumentException('Command action command must not be empty.');
@@ -78,6 +79,7 @@ final readonly class RunCommandAction implements OperationActionInterface
             'cwd' => $this->cwd,
             'env_keys' => array_keys($this->env),
             'timeout' => $this->timeout,
+            'fail_on_error' => $this->failOnError,
         ]);
     }
 
@@ -100,9 +102,23 @@ final readonly class RunCommandAction implements OperationActionInterface
             'term_signal' => $process->hasBeenSignaled() ? $process->getTermSignal() : null,
             'output_excerpt' => $this->excerpt($process->getOutput()),
             'error_excerpt' => $this->excerpt($process->getErrorOutput()),
+            'fail_on_error' => $this->failOnError,
         ];
 
         if (!$process->isSuccessful()) {
+            if (!$this->failOnError) {
+                return WorkflowResult::success([
+                    'exit_code' => $process->getExitCode(),
+                    'output_excerpt' => $context['output_excerpt'],
+                    'error_excerpt' => $context['error_excerpt'],
+                ], $context, [
+                    Message::warning(ProcessMessageCode::PROCESS_COMMAND_FAILED, ProcessMessageKey::PROCESS_COMMAND_FAILED, [
+                        '%command%' => $this->messageSubject(),
+                        '%exit_code%' => $process->getExitCode() ?? 'unknown',
+                    ], $context),
+                ]);
+            }
+
             return WorkflowResult::failed([
                 Message::create(ProcessMessageCode::PROCESS_COMMAND_FAILED, ProcessMessageKey::PROCESS_COMMAND_FAILED, [
                     '%command%' => $this->messageSubject(),

@@ -90,6 +90,9 @@
 - Reviewed the newly installed Symfony UX package set, kept optional UX Stimulus controllers lazy, removed generated React/Vue/Icon demo files, and tied committed Mercure defaults to `DEFAULT_URI` and `APP_SECRET` for development while documenting production override expectations.
 - Updated the class map, dependency recap, local agent tooling notes, and active worklog/history to reflect the render command, lint modes, Symfony UX baseline, and branch-oriented worklog boundary.
 - Changed worklog retention from session-oriented compaction to branch/PR-oriented logs, restored the current `docs-cleanup` branch context from history, and mirrored the rule in `AGENTS.md`.
+- Added Symfony UX icon locking to `bin/init` and the package-aware asset rebuild queue as non-blocking dependency steps, and registered active package template paths for icon/AssetMapper console scans so core and package icon references can be imported locally when Iconify is reachable without breaking offline CI or admin rebuilds.
+- Added a local-only Symfony UX icon reference check to `bin/lint` so static Twig icon references fail when the required locked SVG is missing, without running the mutating network-backed `ux:icons:lock` command.
+- Documented that locked SVGs in `assets/icons` should be committed as reviewable dependency snapshots while avoiding bulk-locking complete upstream icon sets by default.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

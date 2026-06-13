@@ -37,6 +37,7 @@ final readonly class AssetRebuildQueueFactory
             new TranslationAggregateAction($this->translationCatalogueAggregator, $packages),
             $this->consoleCommand('assets:install', $environment, $persistPhpBinaryPreference),
             $this->consoleCommand('importmap:install', $environment, $persistPhpBinaryPreference),
+            $this->consoleCommand('ux:icons:lock', $environment, $persistPhpBinaryPreference, failOnError: false),
             $this->consoleCommand('tailwind:build', $environment, $persistPhpBinaryPreference, timeout: 300.0),
         ];
 
@@ -55,7 +56,7 @@ final readonly class AssetRebuildQueueFactory
         ]);
     }
 
-    private function consoleCommand(string $command, string $environment, bool $persistPhpBinaryPreference, ?float $timeout = 120.0): OperationActionInterface
+    private function consoleCommand(string $command, string $environment, bool $persistPhpBinaryPreference, ?float $timeout = 120.0, bool $failOnError = true): OperationActionInterface
     {
         $resolution = $this->phpCliBinaryManager->resolve($this->projectDir, $environment, persistPreference: $persistPhpBinaryPreference);
 
@@ -78,6 +79,6 @@ final readonly class AssetRebuildQueueFactory
             return new TailwindBuildAction($consoleCommand, $this->projectDir, $timeout);
         }
 
-        return new RunCommandAction($consoleCommand, $this->projectDir, timeout: $timeout);
+        return new RunCommandAction($consoleCommand, $this->projectDir, timeout: $timeout, failOnError: $failOnError);
     }
 }

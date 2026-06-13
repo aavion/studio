@@ -62,6 +62,8 @@ final class InitScriptTest extends TestCase
         self::assertStringContainsString("'cache:clear', '--no-warmup'", $contents);
         self::assertStringContainsString("'assets:install', 'public'", $contents);
         self::assertStringContainsString("'importmap:install'", $contents);
+        self::assertStringContainsString("'ux:icons:lock'", $contents);
+        self::assertStringContainsString('runOptionalCommand', $contents);
         self::assertStringContainsString("'tailwind:build'", $contents);
         self::assertStringContainsString("'asset-map:compile'", $contents);
         self::assertStringNotContainsString("'doctrine:migrations:migrate'", $contents);

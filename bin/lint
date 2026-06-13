@@ -329,6 +329,123 @@ function lintMarkdownFiles(string $root, array $files): int
 }
 
 /**
+ * @param list<string> $files
+ */
+function lintUxIconReferences(string $root, array $files): int
+{
+    fwrite(STDOUT, "\n==> Symfony UX icon references\n");
+
+    $config = uxIconLintConfig($root);
+    $failures = 0;
+
+    foreach ($files as $file) {
+        $relative = relativePath($root, $file);
+        $contents = (string) file_get_contents($file);
+
+        foreach (extractUxIconReferences($contents) as $reference) {
+            if (localUxIconExists($reference['name'], $config)) {
+                continue;
+            }
+
+            ++$failures;
+            fwrite(STDERR, sprintf(
+                "%s:%d:1 Missing local Symfony UX icon \"%s\". Run php bin/console ux:icons:lock when Iconify is reachable.\n",
+                $relative,
+                $reference['line'],
+                $reference['name'],
+            ));
+        }
+    }
+
+    if (0 === $failures) {
+        fwrite(STDOUT, "Symfony UX icon references OK.\n");
+    }
+
+    return $failures;
+}
+
+/**
+ * @return array{icon_dir: string, aliases: array<string, string>, icon_set_paths: array<string, string>}
+ */
+function uxIconLintConfig(string $root): array
+{
+    $configPath = $root.'/config/packages/ux_icons.yaml';
+    $config = is_file($configPath) ? (array) Yaml::parseFile($configPath) : [];
+    $uxIcons = is_array($config['ux_icons'] ?? null) ? $config['ux_icons'] : [];
+    $aliases = is_array($uxIcons['aliases'] ?? null) ? $uxIcons['aliases'] : [];
+    $iconSets = is_array($uxIcons['icon_sets'] ?? null) ? $uxIcons['icon_sets'] : [];
+    $iconSetPaths = [];
+
+    foreach ($iconSets as $prefix => $iconSet) {
+        if (!is_string($prefix) || !is_array($iconSet) || !is_string($iconSet['path'] ?? null)) {
+            continue;
+        }
+
+        $iconSetPaths[$prefix] = resolveProjectPath($root, $iconSet['path']);
+    }
+
+    return [
+        'icon_dir' => resolveProjectPath($root, is_string($uxIcons['icon_dir'] ?? null) ? $uxIcons['icon_dir'] : '%kernel.project_dir%/assets/icons'),
+        'aliases' => array_filter($aliases, static fn (mixed $target, mixed $alias): bool => is_string($alias) && is_string($target), ARRAY_FILTER_USE_BOTH),
+        'icon_set_paths' => $iconSetPaths,
+    ];
+}
+
+function resolveProjectPath(string $root, string $path): string
+{
+    $path = str_replace('%kernel.project_dir%', $root, $path);
+
+    return str_starts_with($path, DIRECTORY_SEPARATOR) ? $path : $root.DIRECTORY_SEPARATOR.$path;
+}
+
+/**
+ * @return list<array{name: string, line: int}>
+ */
+function extractUxIconReferences(string $contents): array
+{
+    $iconName = '[a-z0-9]+(?:-[a-z0-9]+)*(?::[a-z0-9]+(?:-[a-z0-9]+)*)*';
+    $patterns = [
+        '/\bux_icon\s*\(\s*[\'"](?P<name>'.$iconName.')[\'"]/',
+        '/<twig:ux:icon\b[^>]*\bname\s*=\s*[\'"](?P<name>'.$iconName.')[\'"][^>]*>/i',
+    ];
+    $references = [];
+
+    foreach ($patterns as $pattern) {
+        if (!preg_match_all($pattern, $contents, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE)) {
+            continue;
+        }
+
+        foreach ($matches as $match) {
+            $name = $match['name'][0];
+            $offset = $match['name'][1];
+            $references[$name.'@'.$offset] = [
+                'name' => $name,
+                'line' => substr_count(substr($contents, 0, $offset), "\n") + 1,
+            ];
+        }
+    }
+
+    return array_values($references);
+}
+
+/**
+ * @param array{icon_dir: string, aliases: array<string, string>, icon_set_paths: array<string, string>} $config
+ */
+function localUxIconExists(string $name, array $config): bool
+{
+    $iconName = $config['aliases'][$name] ?? $name;
+
+    if (str_contains($iconName, ':')) {
+        [$prefix, $icon] = explode(':', $iconName, 2);
+        if (isset($config['icon_set_paths'][$prefix]) && is_file($config['icon_set_paths'][$prefix].DIRECTORY_SEPARATOR.str_replace(':', DIRECTORY_SEPARATOR, $icon).'.svg')) {
+            return true;
+        }
+    }
+
+    return is_file($config['icon_dir'].DIRECTORY_SEPARATOR.str_replace(':', DIRECTORY_SEPARATOR, $iconName).'.svg');
+}
+
+/**
  * @param list<string> $prefixes
  */
 function pathMatchesAnyPrefix(string $path, array $prefixes): bool
@@ -616,6 +733,31 @@ function containsTranslationSource(string $root, array $files): bool
     return false;
 }
 
+/**
+ * @param list<string> $files
+ */
+function containsUxIconConfig(string $root, array $files): bool
+{
+    foreach ($files as $file) {
+        if ('config/packages/ux_icons.yaml' === relativePath($root, $file)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * @return list<string>
+ */
+function uxIconTemplateFiles(string $root): array
+{
+    $collected = collectTargetFiles($root, ['templates', 'packages']);
+    $groups = groupFilesByExtension($collected['files']);
+
+    return $groups['twig'] ?? [];
+}
+
 function lintTranslationSourceKeys(string $root): int
 {
     fwrite(STDOUT, "\n==> Translation source keys\n");
@@ -798,6 +940,11 @@ if ($diffMode || $stagedMode || [] !== $targets) {
         $run([$php, 'bin/console', 'lint:twig', ...$twigFiles], 'Twig templates');
     }
 
+    $iconTwigFiles = containsUxIconConfig($root, $collected['files']) ? uxIconTemplateFiles($root) : $twigFiles;
+    if ([] !== $iconTwigFiles) {
+        $failures += lintUxIconReferences($root, $iconTwigFiles);
+    }
+
     $yamlFiles = [...($filesByExtension['yaml'] ?? []), ...($filesByExtension['yml'] ?? [])];
     if ([] !== $yamlFiles) {
         $run([$php, 'bin/console', 'lint:yaml', '--parse-tags', ...$yamlFiles], 'YAML files');
@@ -844,6 +991,7 @@ if ($diffMode || $stagedMode || [] !== $targets) {
 $failures += lintPhpFiles($root, filesWithExtensions($root, ['php']), $php);
 $run([$php, 'bin/console', 'lint:container'], 'Symfony container');
 $run([$php, 'bin/console', 'lint:twig', 'templates'], 'Twig templates');
+$failures += lintUxIconReferences($root, uxIconTemplateFiles($root));
 $run([$php, 'bin/console', 'lint:yaml', '--parse-tags', 'config', 'translations'], 'YAML config and translations');
 $failures += lintSourceFiles($root, filesWithExtensions($root, ['js']), new JavaScriptLinter(), 'JavaScript module syntax');
 $failures += lintSourceFiles($root, filesWithExtensions($root, ['json']), new JsonLinter(), 'JSON syntax');

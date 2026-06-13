@@ -11,6 +11,10 @@ use App\Tests\Support\FilesystemTestHelper;
 use App\View\Template\PackageTemplatePathConfigurator;
 use App\View\Template\PackageTemplatePathResolver;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Event\ConsoleCommandEvent;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
@@ -111,6 +115,46 @@ final class PackageTemplatePathConfiguratorTest extends TestCase
         self::assertSame('editor native', $twig->render('@provider/editor/richtext.html.twig'));
     }
 
+    public function testItRegistersPackagePathsBeforeIconConsoleCommands(): void
+    {
+        $this->writeTestFile($this->root, 'templates/.keep', '');
+        $this->writeTestFile($this->root, 'packages/module/templates/.keep', '');
+
+        $loader = new FilesystemLoader();
+        $twig = new Environment($loader);
+        $configurator = new PackageTemplatePathConfigurator(
+            $twig,
+            new StaticPackageProvider([
+                $this->package('module', [PackageScope::Module]),
+            ]),
+            new PackageTemplatePathResolver($this->root),
+        );
+
+        $configurator->onConsoleCommand($this->consoleEvent('ux:icons:lock'));
+
+        self::assertContains($this->root.'/packages/module/templates', $loader->getPaths('root'));
+    }
+
+    public function testItDoesNotRegisterPackagePathsForUnrelatedConsoleCommands(): void
+    {
+        $this->writeTestFile($this->root, 'templates/.keep', '');
+        $this->writeTestFile($this->root, 'packages/module/templates/.keep', '');
+
+        $loader = new FilesystemLoader();
+        $twig = new Environment($loader);
+        $configurator = new PackageTemplatePathConfigurator(
+            $twig,
+            new StaticPackageProvider([
+                $this->package('module', [PackageScope::Module]),
+            ]),
+            new PackageTemplatePathResolver($this->root),
+        );
+
+        $configurator->onConsoleCommand($this->consoleEvent('cache:clear'));
+
+        self::assertSame([], $loader->getPaths('root'));
+    }
+
     /**
      * @param list<PackageScope> $scopes
      */
@@ -127,6 +171,11 @@ final class PackageTemplatePathConfiguratorTest extends TestCase
     private function uuid(): string
     {
         return Uuid::v7()->toRfc4122();
+    }
+
+    private function consoleEvent(string $commandName): ConsoleCommandEvent
+    {
+        return new ConsoleCommandEvent(new Command($commandName), new ArrayInput([]), new NullOutput());
     }
 }
 

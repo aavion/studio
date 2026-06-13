@@ -182,6 +182,7 @@ final class InitCommand
         $this->runRequiredCommand([...$console, 'cache:clear', '--no-warmup'], 'Symfony cache is cleared without warmup.');
         $this->runRequiredCommand([...$console, 'assets:install', 'public'], 'Bundle assets are installed.');
         $this->runRequiredCommand([...$console, 'importmap:install'], 'Importmap packages are installed.');
+        $this->runOptionalCommand([...$console, 'ux:icons:lock'], 'Symfony UX icons are locked locally.');
         $this->runRequiredCommand([...$console, 'tailwind:build'], 'Tailwind CSS is built.');
     }
 
@@ -346,6 +347,22 @@ final class InitCommand
 
         $this->reporter->failure(sprintf(
             'Command failed with exit code %d: %s',
+            $exitCode,
+            $this->formatCommand($command),
+        ));
+    }
+
+    private function runOptionalCommand(array $command, string $successMessage): void
+    {
+        $exitCode = $this->runCommand($command, true);
+        if (0 === $exitCode) {
+            $this->reporter->success($successMessage);
+
+            return;
+        }
+
+        $this->reporter->warning(sprintf(
+            'Optional command failed with exit code %d and was skipped: %s',
             $exitCode,
             $this->formatCommand($command),
         ));
