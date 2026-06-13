@@ -1,4 +1,4 @@
-{% props alert = {}, level = null, message = null, persistent = null, mode = null, actions = null, id = null, loading = null %}
+{% props alert = {}, level = null, title = null, message = null, persistent = null, mode = null, actions = null, id = null, loading = null %}
 {% set raw_level = level|default(alert.level|default('info')) %}
 {% set normalized_level = {
     notice: 'info',
@@ -16,6 +16,7 @@
 {% set alert_mode = mode|default(alert.mode|default(alert_persistent ? 'persistent' : 'auto')) %}
 {% set alert_mode = alert_mode in ['auto', 'hidden', 'persistent'] ? alert_mode : 'auto' %}
 {% set alert_message = message|default(alert.message|default('')) %}
+{% set alert_title = title|default(alert.title|default('')) %}
 {% set alert_actions = actions is not null ? actions : alert.actions|default([]) %}
 {% set alert_loading = loading is not null ? loading : alert.loading|default(false) %}
 {% set alert_id = id|default(alert.id|default('')) %}
@@ -39,6 +40,7 @@
         'data-alert-payload': alert|merge({
             id: alert_id,
             level: normalized_level,
+            title: alert_title,
             message: alert_message,
             mode: alert_mode,
             persistent: alert_persistent,
@@ -49,10 +51,19 @@
 >
     <span class="system-alert-icon ti {{ alert_icon }}" aria-hidden="true"></span>
     <div class="system-alert-content">
-        {% if alert_loading %}
-            <span class="system-alert-spinner" aria-hidden="true"></span>
+        {% if alert_loading or alert_title %}
+            <div class="system-alert-heading">
+                {% if alert_loading %}
+                    <span class="system-alert-spinner" aria-hidden="true"></span>
+                {% endif %}
+                {% if alert_title %}
+                    <strong class="system-alert-title">{{ alert_title }}</strong>
+                {% endif %}
+            </div>
         {% endif %}
-        {{ alert_message }}
+        {% if alert_message %}
+            <span class="system-alert-message">{{ alert_message }}</span>
+        {% endif %}
         {% if alert_actions is not empty %}
             <div class="system-alert-actions">
                 {% for action in alert_actions %}

@@ -43,6 +43,7 @@ export function normalizeAlertLevel(level) {
 export function storableAlertPayload(payload) {
     return {
         id: payload.id,
+        title: payload.title,
         message: payload.message,
         level: normalizeAlertLevel(payload.level || 'info'),
         mode: alertMode(payload),
@@ -64,7 +65,10 @@ export function payloadFromAlertElement(alert) {
     } catch {
         return {
             id: alert.dataset.alertId || '',
-            message: alert.querySelector('.system-alert-content')?.textContent || '',
+            title: alert.querySelector('.system-alert-title')?.textContent || '',
+            message: alert.querySelector('.system-alert-message')?.textContent
+                || alert.querySelector('.system-alert-content')?.textContent
+                || '',
             level: [...alert.classList].find((name) => name.startsWith('system-alert-'))?.replace('system-alert-', '') || 'info',
             mode: alert.dataset.alertMode || 'auto',
             persistent: alert.dataset.alertPersistent === 'true',

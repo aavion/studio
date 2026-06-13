@@ -3,6 +3,9 @@ ui:
     name: 'Studio'
   alert:
     close: 'Close notification'
+    close_all: 'Close all'
+    empty_message: 'No active notifications are waiting.'
+    empty_title: 'No notifications'
     hide: 'Hide notifications'
     notifications: 'Notifications'
   navigation:

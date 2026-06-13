@@ -4,6 +4,7 @@
 {% set stack_attributes = {
     class: 'system-alert-stack',
     'data-controller': 'alert-stack',
+    'data-action': 'ui-alert:received->alert-stack#append',
     'data-alert-stack-dismiss-delay-value': dismiss_delay,
     'data-alert-close-label': 'ui.alert.close'|trans,
     'data-alert-notifications-label': 'ui.alert.notifications'|trans,
@@ -11,7 +12,6 @@
 {% if stream_url %}
     {% set stack_attributes = stack_attributes|merge({
         'data-controller': 'alert-stack ui-alert-stream',
-        'data-action': 'ui-alert:received->alert-stack#append',
         'data-ui-alert-stream-url-value': stream_url,
     }) %}
 {% endif %}
@@ -21,19 +21,31 @@
         <span class="ti ti-bell" aria-hidden="true"></span>
         <span class="system-alert-badge" data-alert-stack-target="badge" hidden>0</span>
     </button>
-    <div class="system-alert-panel" data-alert-stack-target="panel" {% if alerts|default([]) is empty %}hidden{% endif %}>
-        <header class="system-alert-panel-header">
-            <div>
-                <strong>{{ 'ui.alert.notifications'|trans }}</strong>
-            </div>
-            <button class="system-alert-panel-close" type="button" data-action="alert-stack#hide" aria-label="{{ 'ui.alert.hide'|trans }}">
-                <span class="ti ti-chevron-up" aria-hidden="true"></span>
-            </button>
-        </header>
-        <div class="system-alert-list" data-alert-stack-target="list">
-            {% for alert in alerts %}
-                <twig:root:Alert :alert="alert" />
-            {% endfor %}
-        </div>
-    </div>
-</div>
+	    <div class="system-alert-panel-shell" data-alert-stack-target="panel" {% if alerts|default([]) is empty %}hidden{% endif %}>
+	    <div class="system-alert-panel">
+	        <header class="system-alert-panel-header">
+	            <div>
+	                <strong>{{ 'ui.alert.notifications'|trans }}</strong>
+	            </div>
+	            <div class="system-alert-panel-actions">
+	                <button class="system-alert-clear-all" type="button" data-alert-stack-target="clearAll" data-action="alert-stack#closeAll" {% if alerts|default([]) is empty %}hidden{% endif %}>
+	                    {{ 'ui.alert.close_all'|trans }}
+	                </button>
+	                <button class="system-alert-panel-close" type="button" data-action="alert-stack#hide" aria-label="{{ 'ui.alert.hide'|trans }}">
+	                    <span class="ti ti-chevron-up" aria-hidden="true"></span>
+	                </button>
+	            </div>
+	        </header>
+	        <div class="system-alert-list" data-alert-stack-target="list">
+	            {% for alert in alerts %}
+	                <twig:root:Alert :alert="alert" />
+	            {% endfor %}
+	        </div>
+	        <div class="system-alert-empty" data-alert-stack-target="empty" {% if alerts|default([]) is not empty %}hidden{% endif %}>
+	            <span class="ti ti-bell-off" aria-hidden="true"></span>
+	            <strong>{{ 'ui.alert.empty_title'|trans }}</strong>
+	            <span>{{ 'ui.alert.empty_message'|trans }}</span>
+	        </div>
+	    </div>
+	    </div>
+	</div>

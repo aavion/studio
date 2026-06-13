@@ -3,6 +3,9 @@ ui:
     name: 'Studio'
   alert:
     close: 'Benachrichtigung schließen'
+    close_all: 'Alle schließen'
+    empty_message: 'Es liegen keine aktiven Benachrichtigungen vor.'
+    empty_title: 'Keine Benachrichtigungen'
     hide: 'Benachrichtigungen ausblenden'
     notifications: 'Benachrichtigungen'
   navigation:

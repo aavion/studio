@@ -110,7 +110,14 @@ export default class extends Controller {
         this.livePoller = new LivePoller({
             interval: 750,
             onPayload: (payload, nextCursor) => {
-                this.storeOperation(statusUrl, nextCursor, payload.continue_url || null, payload.status || null, payload.progress || null);
+                this.storeOperation(
+                    statusUrl,
+                    nextCursor,
+                    payload.continue_url || null,
+                    payload.status || null,
+                    payload.progress || null,
+                    payload.label || payload.operation || null,
+                );
                 this.render(payload);
             },
             onError: (response, error) => {
@@ -259,7 +266,7 @@ export default class extends Controller {
                 return;
             }
 
-            this.storeOperation(payload.value.status_url, 0, null, 'queued', null);
+            this.storeOperation(payload.value.status_url, 0, null, 'queued', null, payload.value.label || payload.value.operation || null);
             await this.poll(payload.value.status_url);
         } catch (error) {
             this.fail(error instanceof Error ? error.message : this.label('requestError'));
@@ -430,7 +437,7 @@ export default class extends Controller {
         }
     }
 
-    storeOperation(statusUrl, cursor, continueUrl = null, status = null, progress = null) {
+    storeOperation(statusUrl, cursor, continueUrl = null, status = null, progress = null, label = null) {
         try {
             window.sessionStorage.setItem(this.storageKey(), JSON.stringify({
                 statusUrl,
@@ -438,6 +445,7 @@ export default class extends Controller {
                 continueUrl,
                 status,
                 progress,
+                label,
                 updatedAt: new Date().toISOString(),
             }));
         } catch {
@@ -493,6 +501,7 @@ export default class extends Controller {
         }
 
         const issue = payload.result?.issues?.[0] || null;
+        const title = this.operationTitle(payload);
         const message = terminal
             ? (status === 'success'
                 ? this.label('completed')
@@ -503,6 +512,7 @@ export default class extends Controller {
 
         this.dispatchAlert({
             id: this.operationAlertId(),
+            title,
             level: status === 'success' ? 'success' : (status === 'requires_review' ? 'warning' : (status === 'failed' ? 'error' : 'info')),
             message,
             mode: terminal && status === 'success' ? 'auto' : 'persistent',
@@ -515,6 +525,18 @@ export default class extends Controller {
                 },
             }],
         });
+    }
+
+    operationTitle(payload) {
+        const label = String(payload.label || '').trim();
+
+        if (label) {
+            return label;
+        }
+
+        const operation = String(payload.operation || '').trim();
+
+        return operation ? this.actionLabel(operation) : this.label('operation');
     }
 
     runningMessage(payload) {

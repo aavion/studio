@@ -81,6 +81,10 @@
 - Extracted reusable live JSON polling into `assets/js/live/live_poll.js` and `live-poll` Stimulus controller, then switched the operation overlay to consume that shared polling layer for `/api/live/**` status flows.
 - Reworked the alert stack into a sessionStorage-backed notification center with a bell badge, `auto`/`hidden`/`persistent` display modes, quiet text actions that close their alert, Mercure/client-created alert parity, extracted alert JS helpers, and live-operation runner alerts that replace the default full-screen overlay until details are requested.
 - Polished the notification center presentation with a structured panel header, hide control, status icons, card spacing, bounded scroll area, and quieter market-ready alert action styling.
+- Stabilized operation runner notifications so repeated poll payloads update the same alert node without flashing, added operation labels as alert titles, and gave the notification-center panel a subtle shell wrapper for clearer overlay separation.
+- Fixed request-time alert closing by initializing the alert stack state before Stimulus target callbacks can register server-rendered alert nodes.
+- Added a quiet notification-center "close all" action and an empty-state fallback for panels without active alerts.
+- Aligned alert heading markup so runner spinners render inline with operation titles.
 - Updated `bin/lint --diff` focused CSS handling so known Tailwind directives are informational parser skips while `tailwind:build` remains the authoritative CSS validation step.
 - Removed the unused Alpine and ApexCharts application wiring, dropped the stale custom Apex chart Stimulus controller, and switched the package asset rewriter fixture to a neutral external import name.
 - Updated the design-system draft and class map for scoped Twig components, targeted UI alerts, notification-center behavior, reusable live polling, and the removed chart controller.

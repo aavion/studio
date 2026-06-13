@@ -1,5 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
-import { createAlertElement } from '../js/alerts/alert_element.js';
+import { createAlertElement, updateAlertElement } from '../js/alerts/alert_element.js';
 import {
     actionDetailFromElement,
     alertId,
@@ -10,7 +10,7 @@ import {
 } from '../js/alerts/alert_payload.js';
 
 export default class extends Controller {
-    static targets = ['alert', 'badge', 'list', 'panel', 'toggle'];
+    static targets = ['alert', 'badge', 'clearAll', 'empty', 'list', 'panel', 'toggle'];
     static values = {
         dismissDelay: { type: Number, default: 8000 },
     };
@@ -18,14 +18,19 @@ export default class extends Controller {
     static memoryAlerts = [];
     static storageKey = 'system.alerts.active';
 
-    connect() {
+    initialize() {
         this.alerts = new Map();
+    }
+
+    connect() {
+        this.ensureAlertState();
         this.hydrateStoredAlerts();
         this.hydrateServerAlerts();
         this.renderState();
     }
 
     alertTargetConnected(alert) {
+        this.ensureAlertState();
         this.registerAlert(alert, true);
     }
 
@@ -51,6 +56,19 @@ export default class extends Controller {
         this.closeAlert(event.currentTarget.closest('[data-alert-stack-target="alert"]'));
     }
 
+    closeAll(event) {
+        event.preventDefault();
+        this.ensureAlertState();
+
+        const ids = [...this.alerts.keys()];
+        for (const id of ids) {
+            this.removeAlertById(id);
+        }
+
+        this.persist();
+        this.renderState({ keepPanelOpen: true });
+    }
+
     action(event) {
         const action = event.currentTarget;
         const alert = action.closest('[data-alert-stack-target="alert"]');
@@ -71,6 +89,8 @@ export default class extends Controller {
     }
 
     upsertAlert(payload, store = true) {
+        this.ensureAlertState();
+
         for (const id of alertIds(payload.closes)) {
             this.closeAlertById(id, false);
         }
@@ -85,15 +105,33 @@ export default class extends Controller {
 
         const id = alertId(payload);
         const existing = this.alerts.get(id);
-        const alert = createAlertElement({ ...payload, id }, this.closeLabel);
+        const normalizedPayload = { ...payload, id };
+        const nextSignature = JSON.stringify(storableAlertPayload(normalizedPayload));
+        const existingSignature = existing ? JSON.stringify(storableAlertPayload(existing.payload)) : '';
 
-        if (existing?.element?.isConnected) {
-            existing.element.replaceWith(alert);
-        } else {
+        if (existing?.element?.isConnected && existingSignature === nextSignature) {
+            if (alertMode(payload) !== 'hidden') {
+                this.showPanel();
+            }
+
+            if (alertMode(payload) === 'auto') {
+                this.scheduleHide();
+            }
+
+            this.renderState();
+
+            return existing.element;
+        }
+
+        const alert = existing?.element?.isConnected
+            ? updateAlertElement(existing.element, normalizedPayload, this.closeLabel)
+            : createAlertElement(normalizedPayload, this.closeLabel);
+
+        if (!existing?.element?.isConnected) {
             this.listTarget.append(alert);
         }
 
-        this.registerAlert(alert, false);
+        this.registerAlert(alert, false, true);
 
         if (store) {
             this.persist();
@@ -112,8 +150,10 @@ export default class extends Controller {
         return alert;
     }
 
-    registerAlert(alert, store = true) {
-        if (!alert || alert.dataset.alertRegistered === 'true') {
+    registerAlert(alert, store = true, refresh = false) {
+        this.ensureAlertState();
+
+        if (!alert || (alert.dataset.alertRegistered === 'true' && !refresh)) {
             return;
         }
 
@@ -143,16 +183,11 @@ export default class extends Controller {
     }
 
     closeAlertById(id, store = true) {
-        if (!id || !this.alerts.has(id)) {
+        this.ensureAlertState();
+
+        if (!this.removeAlertById(id)) {
             return;
         }
-
-        const entry = this.alerts.get(id);
-        entry.element?.remove();
-        this.alerts.delete(id);
-        document.dispatchEvent(new CustomEvent('ui-alert:closed', {
-            detail: { id },
-        }));
 
         if (store) {
             this.persist();
@@ -202,11 +237,25 @@ export default class extends Controller {
         this.panelTarget.hidden = true;
     }
 
-    renderState() {
+    renderState(options = {}) {
         const count = this.activeCount;
         this.toggleTarget.hidden = count === 0;
         this.badgeTarget.hidden = count === 0;
         this.badgeTarget.textContent = String(count);
+
+        if (this.hasClearAllTarget) {
+            this.clearAllTarget.hidden = count === 0;
+        }
+
+        if (this.hasEmptyTarget) {
+            this.emptyTarget.hidden = count !== 0;
+        }
+
+        if (count === 0 && options.keepPanelOpen) {
+            this.panelTarget.hidden = false;
+
+            return;
+        }
 
         if (count === 0) {
             this.hidePanel();
@@ -214,6 +263,8 @@ export default class extends Controller {
     }
 
     persist() {
+        this.ensureAlertState();
+
         const payloads = [...this.alerts.values()].map((entry) => storableAlertPayload(entry.payload));
 
         try {
@@ -235,10 +286,33 @@ export default class extends Controller {
     }
 
     get activeCount() {
+        this.ensureAlertState();
+
         return this.alerts.size;
     }
 
     get closeLabel() {
         return this.element.dataset.alertCloseLabel || 'Close notification';
+    }
+
+    ensureAlertState() {
+        if (!(this.alerts instanceof Map)) {
+            this.alerts = new Map();
+        }
+    }
+
+    removeAlertById(id) {
+        if (!id || !this.alerts.has(id)) {
+            return false;
+        }
+
+        const entry = this.alerts.get(id);
+        entry.element?.remove();
+        this.alerts.delete(id);
+        document.dispatchEvent(new CustomEvent('ui-alert:closed', {
+            detail: { id },
+        }));
+
+        return true;
     }
 }

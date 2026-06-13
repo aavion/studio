@@ -1,9 +1,12 @@
 import { alertId, alertMode, normalizeAlertLevel } from './alert_payload.js';
 
 export function createAlertElement(payload, closeLabel) {
+    return updateAlertElement(document.createElement('section'), payload, closeLabel);
+}
+
+export function updateAlertElement(alert, payload, closeLabel) {
     const level = normalizeAlertLevel(payload.level || 'info');
     const mode = alertMode(payload);
-    const alert = document.createElement('section');
     alert.className = `system-alert system-alert-${level}`;
     alert.setAttribute('role', ['error', 'exception'].includes(level) ? 'alert' : 'status');
     alert.dataset.alertStackTarget = 'alert';
@@ -16,6 +19,7 @@ export function createAlertElement(payload, closeLabel) {
         level,
         mode,
     });
+    alert.replaceChildren();
 
     const statusIcon = document.createElement('span');
     statusIcon.className = `system-alert-icon ti ${alertIcon(level)}`;
@@ -25,14 +29,37 @@ export function createAlertElement(payload, closeLabel) {
     const content = document.createElement('div');
     content.className = 'system-alert-content';
 
-    if (payload.loading) {
+    const title = String(payload.title || '').trim();
+    const message = String(payload.message || '').trim();
+
+    if (payload.loading || title) {
+        const header = document.createElement('div');
+        header.className = 'system-alert-heading';
+
         const spinner = document.createElement('span');
-        spinner.className = 'system-alert-spinner';
-        spinner.setAttribute('aria-hidden', 'true');
-        content.append(spinner);
+        if (payload.loading) {
+            spinner.className = 'system-alert-spinner';
+            spinner.setAttribute('aria-hidden', 'true');
+            header.append(spinner);
+        }
+
+        if (title) {
+            const titleElement = document.createElement('strong');
+            titleElement.className = 'system-alert-title';
+            titleElement.textContent = title;
+            header.append(titleElement);
+        }
+
+        content.append(header);
     }
 
-    content.append(document.createTextNode(String(payload.message || '').trim()));
+    if (message) {
+        const messageElement = document.createElement('span');
+        messageElement.className = 'system-alert-message';
+        messageElement.textContent = message;
+        content.append(messageElement);
+    }
+
     appendActions(content, Array.isArray(payload.actions) ? payload.actions : []);
     alert.append(content);
     alert.append(closeButton(closeLabel));
