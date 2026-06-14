@@ -346,7 +346,7 @@ final class CookieConsentManagerTest extends TestCase
         $manager = $this->manager();
         $controller = new CookieConsentController($manager);
 
-        foreach (['https://evil.example.test', '//evil.example.test/path', 'relative/path', ''] as $target) {
+        foreach (['https://evil.example.test', '//evil.example.test/path', '/\\evil.example.test/path', "/privacy\nLocation: https://evil.example.test", 'relative/path', ''] as $target) {
             $request = Request::create('/privacy/cookie-consent', 'POST', [
                 '_cookie_consent_target_path' => $target,
                 '_cookie_consent_action' => 'reject_optional',
@@ -363,6 +363,11 @@ final class CookieConsentManagerTest extends TestCase
         $request->request->set('_csrf_token', $manager->csrfToken($request));
 
         self::assertSame('/privacy', $controller->store($request)->headers->get('Location'));
+    }
+
+    public function testConsentCookieUsesSystemOwnedName(): void
+    {
+        self::assertSame('system_cookie_consent', CookieConsentManager::CONSENT_COOKIE_NAME);
     }
 
     public function testCookieConsentCsrfTokenIsVisitorBound(): void
@@ -500,6 +505,7 @@ final class CookieConsentManagerTest extends TestCase
         yield 'javascript scheme' => ['javascript:alert(1)'];
         yield 'data scheme' => ['data:text/html,<script>alert(1)</script>'];
         yield 'protocol relative' => ['//evil.example.test/privacy'];
+        yield 'backslash redirect' => ['/\\evil.example.test/privacy'];
         yield 'http without host' => ['http:/privacy'];
         yield 'control character' => ["https://example.test/privacy\njavascript:alert(1)"];
     }

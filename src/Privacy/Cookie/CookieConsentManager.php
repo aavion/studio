@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class CookieConsentManager
 {
-    public const CONSENT_COOKIE_NAME = 'studio_cookie_consent';
+    public const CONSENT_COOKIE_NAME = 'system_cookie_consent';
     private const TTL_SECONDS = 31_536_000;
     private const CLOCK_SKEW_SECONDS = 300;
 

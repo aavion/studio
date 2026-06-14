@@ -72,7 +72,7 @@ final readonly class CookieConsentDefinition
     private function privacyUrlAllowed(string $url): bool
     {
         $url = trim($url);
-        if ('' === $url || str_starts_with($url, '//') || preg_match('/[\x00-\x1F\x7F]/', $url)) {
+        if ('' === $url || str_starts_with($url, '//') || str_contains($url, '\\') || preg_match('/[\x00-\x1F\x7F]/', $url)) {
             return false;
         }
 

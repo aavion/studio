@@ -41,10 +41,19 @@ final class CookieConsentController extends AbstractController
     private function redirectBack(Request $request): RedirectResponse
     {
         $target = (string) $request->request->get('_cookie_consent_target_path', '');
-        if ('' === $target || !str_starts_with($target, '/') || str_starts_with($target, '//')) {
+        if (!$this->isSafeLocalTarget($target)) {
             $target = '/';
         }
 
         return new RedirectResponse($target);
+    }
+
+    private function isSafeLocalTarget(string $target): bool
+    {
+        return '' !== $target
+            && str_starts_with($target, '/')
+            && !str_starts_with($target, '//')
+            && !str_contains($target, '\\')
+            && 1 !== preg_match('/[\x00-\x1F\x7F]/', $target);
     }
 }

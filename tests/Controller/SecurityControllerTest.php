@@ -157,9 +157,11 @@ final class SecurityControllerTest extends WebTestCase
 
         self::assertSelectorExists('input[name="_target_path"][value="/admin"]');
 
-        $client->request('GET', '/user/login?return_to=//example.test');
+        foreach (['//example.test', '/\\example.test/path', "/admin\nLocation: https://example.test"] as $target) {
+            $client->request('GET', '/user/login?return_to='.rawurlencode($target));
 
-        self::assertSelectorNotExists('input[name="_target_path"]');
+            self::assertSelectorNotExists('input[name="_target_path"]');
+        }
     }
 
     public function testRegistrationRouteIsHiddenWhenRegistrationIsDisabled(): void
