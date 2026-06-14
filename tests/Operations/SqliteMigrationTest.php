@@ -132,7 +132,7 @@ final class SqliteMigrationTest extends TestCase
             $schema = new Schema();
             $migration = new Version20260531000000($connection, new NullLogger());
 
-            foreach (TablePrefix::TABLES as $tableName) {
+            foreach ($this->initialMigrationTables() as $tableName) {
                 $table = $schema->createTable('studio_'.$tableName);
                 $table->addColumn('uid', 'string', ['length' => 36]);
 
@@ -176,6 +176,35 @@ final class SqliteMigrationTest extends TestCase
                 $_ENV['APP_DATABASE_PREFIX'] = $previousEnvPrefix;
             }
         }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function initialMigrationTables(): array
+    {
+        return [
+            'messenger_messages',
+            'config_entry',
+            'package_setting_entry',
+            'scheduler_task',
+            'scheduler_task_run',
+            'state_marker',
+            'access_statistic_event',
+            'acl_group',
+            'user_account',
+            'user_acl_group',
+            'account_token',
+            'api_key',
+            'extension_package',
+            'site_menu',
+            'site_menu_item',
+            'content_schema',
+            'content_schema_version',
+            'content_item',
+            'content_revision',
+            'content_field_value',
+        ];
     }
 
     private function insertContentProbe(PDO $pdo, string $uid, string $slug): void

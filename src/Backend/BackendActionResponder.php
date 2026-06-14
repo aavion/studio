@@ -7,6 +7,7 @@ namespace App\Backend;
 use App\Backend\BackendMessageKey;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
+use App\Core\Message\MessageLevel;
 use App\Core\Operation\Live\LiveOperationHttpResponder;
 use App\Core\Operation\OperationMessageKey;
 use App\Core\Workflow\WorkflowResult;
@@ -88,10 +89,24 @@ final readonly class BackendActionResponder
     private function flashResult(WorkflowResult $result): void
     {
         $message = $result->isSuccess()
-            ? ($result->messages()[0] ?? Message::success(BackendMessageKey::BACKEND_ACTION_CACHE_CLEAR_COMPLETED))
+            ? ($this->firstMessageWithLevel($result, MessageLevel::Success) ?? Message::success(BackendMessageKey::BACKEND_ACTION_CACHE_CLEAR_COMPLETED))
             : ($result->firstIssue() ?? Message::error(CommonMessageCode::E_OPERATION_FAILED, OperationMessageKey::OPERATION_EXCEPTION));
 
         $this->alerts->addAlert($message, UiAlertDelivery::Direct);
+    }
+
+    /**
+     * @param WorkflowResult<mixed> $result
+     */
+    private function firstMessageWithLevel(WorkflowResult $result, MessageLevel $level): ?Message
+    {
+        foreach ($result->messages() as $message) {
+            if ($message->level() === $level) {
+                return $message;
+            }
+        }
+
+        return null;
     }
 
     private function stringField(Request $request, string $name): string
