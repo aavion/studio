@@ -10,6 +10,7 @@ use App\Privacy\Cookie\CookieConsentManager;
 use App\Privacy\Cookie\CookieConsentProviderInterface;
 use App\Privacy\Cookie\CookieConsentRegistry;
 use App\Privacy\Cookie\CookieConsentTwigExtension;
+use App\Privacy\Cookie\CoreCookieConsentProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
@@ -117,6 +118,17 @@ final class CookieConsentManagerTest extends TestCase
             'aria-controls' => 'cookie-consent',
             'data-cookie-consent-open' => true,
         ], $extension->triggerAttributes());
+    }
+
+    public function testCoreProviderRegistersOnlyNecessaryCookies(): void
+    {
+        $definitions = (new CoreCookieConsentProvider())->cookieConsentDefinitions();
+
+        self::assertNotSame([], $definitions);
+        self::assertSame([], array_values(array_filter(
+            $definitions,
+            static fn (CookieConsentDefinition $definition): bool => !$definition->isNecessary(),
+        )));
     }
 
     /**
