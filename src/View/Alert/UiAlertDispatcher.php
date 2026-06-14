@@ -75,13 +75,7 @@ final readonly class UiAlertDispatcher implements UiAlertDispatcherInterface
             $flashed = $this->flasher->flash($uiAlert);
         }
 
-        if ($options->pushes()) {
-            try {
-                $pushed = null !== $this->publisher->publish($topic, $uiAlert, $options->locale(), $options->private());
-            } catch (Throwable) {
-                $pushed = false;
-            }
-        }
+        $pushed = $options->pushes() && $this->pushTopics([$topic], $uiAlert, $options);
 
         return $queued || $pushed || $flashed;
     }

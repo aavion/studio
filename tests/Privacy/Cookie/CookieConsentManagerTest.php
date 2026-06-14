@@ -11,6 +11,7 @@ use App\Privacy\Cookie\CookieConsentDefinition;
 use App\Privacy\Cookie\CookieConsentManager;
 use App\Privacy\Cookie\CookieConsentProviderInterface;
 use App\Privacy\Cookie\CookieConsentRegistry;
+use App\Privacy\Cookie\CookieConsentResponseSubscriber;
 use App\Privacy\Cookie\CookieConsentTwigExtension;
 use App\Privacy\Cookie\CoreCookieConsentProvider;
 use App\Tests\Support\FilesystemTestHelper;
@@ -21,6 +22,8 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 final class CookieConsentManagerTest extends TestCase
 {
@@ -112,6 +115,88 @@ final class CookieConsentManagerTest extends TestCase
         self::assertCount(1, $expired);
         self::assertSame('/tracking', $expired[0]->getPath());
         self::assertLessThan(time(), $expired[0]->getExpiresTime());
+    }
+
+    public function testItExpiresRejectedOptionalCookiesWithoutStoredConsent(): void
+    {
+        $definition = CookieConsentDefinition::optional(
+            Cookie::create('analytics_id', 'value', 0, '/tracking'),
+            'Analytics',
+            'Measure visits.',
+            'https://example.test/privacy',
+        );
+        $manager = $this->manager([$this->provider([$definition])]);
+        $request = Request::create('/');
+        $request->cookies->set('analytics_id', 'legacy-value');
+        $response = new Response();
+
+        $manager->attachConsentCookie($request, $response, []);
+
+        $expired = array_values(array_filter(
+            $response->headers->getCookies(),
+            static fn (Cookie $cookie): bool => 'analytics_id' === $cookie->getName(),
+        ));
+
+        self::assertCount(1, $expired);
+        self::assertSame('/tracking', $expired[0]->getPath());
+        self::assertLessThan(time(), $expired[0]->getExpiresTime());
+    }
+
+    public function testResponseSubscriberKeepsOptionalCookieClearHeaders(): void
+    {
+        $definition = CookieConsentDefinition::optional(
+            Cookie::create('analytics_id', 'value', 0, '/tracking'),
+            'Analytics',
+            'Measure visits.',
+            'https://example.test/privacy',
+        );
+        $registry = new CookieConsentRegistry([$this->provider([$definition])]);
+        $manager = $this->manager([$this->provider([$definition])]);
+        $request = Request::create('/');
+        $response = new Response();
+        $manager->attachConsentCookie($request, $response, []);
+
+        (new CookieConsentResponseSubscriber($registry, $manager))->filterCookies(new ResponseEvent(
+            new NullKernel(),
+            $request,
+            HttpKernelInterface::MAIN_REQUEST,
+            $response,
+        ));
+
+        $expired = array_values(array_filter(
+            $response->headers->getCookies(),
+            static fn (Cookie $cookie): bool => 'analytics_id' === $cookie->getName(),
+        ));
+
+        self::assertCount(1, $expired);
+        self::assertLessThan(time(), $expired[0]->getExpiresTime());
+    }
+
+    public function testResponseSubscriberRemovesActiveOptionalCookiesWithoutConsent(): void
+    {
+        $definition = CookieConsentDefinition::optional(
+            Cookie::create('analytics_id', 'value', 0, '/tracking'),
+            'Analytics',
+            'Measure visits.',
+            'https://example.test/privacy',
+        );
+        $registry = new CookieConsentRegistry([$this->provider([$definition])]);
+        $manager = $this->manager([$this->provider([$definition])]);
+        $request = Request::create('/');
+        $response = new Response();
+        $response->headers->setCookie(Cookie::create('analytics_id', 'value', 0, '/tracking'));
+
+        (new CookieConsentResponseSubscriber($registry, $manager))->filterCookies(new ResponseEvent(
+            new NullKernel(),
+            $request,
+            HttpKernelInterface::MAIN_REQUEST,
+            $response,
+        ));
+
+        self::assertSame([], array_values(array_filter(
+            $response->headers->getCookies(),
+            static fn (Cookie $cookie): bool => 'analytics_id' === $cookie->getName(),
+        )));
     }
 
     public function testItRejectsDuplicateCookieDefinitions(): void
@@ -220,6 +305,46 @@ final class CookieConsentManagerTest extends TestCase
         self::assertSame([], $response->headers->getCookies());
     }
 
+    public function testConsentCookieJarRejectsCustomCookiesWithDifferentIdentity(): void
+    {
+        $definition = CookieConsentDefinition::optional(
+            Cookie::create('analytics_id', 'value', 0, '/tracking', 'example.test'),
+            'Analytics',
+            'Measure visits.',
+            'https://example.test/privacy',
+        );
+        $manager = $this->manager([$this->provider([$definition])]);
+        $request = Request::create('/');
+        $consentResponse = new Response();
+        $manager->attachConsentCookie($request, $consentResponse, ['analytics_id']);
+        $consentCookie = $consentResponse->headers->getCookies()[0] ?? null;
+        self::assertInstanceOf(Cookie::class, $consentCookie);
+
+        $requestWithConsent = Request::create('/');
+        $requestWithConsent->cookies->set($consentCookie->getName(), $consentCookie->getValue());
+        $jar = new ConsentCookieJar($manager);
+
+        foreach ([
+            Cookie::create('other_cookie', 'value', 0, '/tracking', 'example.test'),
+            Cookie::create('analytics_id', 'value', 0, '/other', 'example.test'),
+            Cookie::create('analytics_id', 'value', 0, '/tracking', 'other.example.test'),
+        ] as $cookie) {
+            $response = new Response();
+
+            self::assertFalse($jar->set($requestWithConsent, $response, $definition, $cookie));
+            self::assertSame([], $response->headers->getCookies());
+        }
+
+        $response = new Response();
+        self::assertTrue($jar->set(
+            $requestWithConsent,
+            $response,
+            $definition,
+            Cookie::create('analytics_id', 'updated', 0, '/tracking', 'example.test'),
+        ));
+        self::assertCount(1, $response->headers->getCookies());
+    }
+
     public function testTwigExtensionExposesConsentTriggerAttributes(): void
     {
         $extension = new CookieConsentTwigExtension(new RequestStack(), new CookieConsentRegistry([]), $this->manager());
@@ -268,5 +393,13 @@ final class CookieConsentManagerTest extends TestCase
                 return $this->definitions;
             }
         };
+    }
+}
+
+final class NullKernel implements HttpKernelInterface
+{
+    public function handle(Request $request, int $type = self::MAIN_REQUEST, bool $catch = true): Response
+    {
+        return new Response();
     }
 }

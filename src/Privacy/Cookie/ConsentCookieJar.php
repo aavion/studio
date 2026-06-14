@@ -32,8 +32,20 @@ final readonly class ConsentCookieJar
             return false;
         }
 
-        $response->headers->setCookie($cookie ?? $definition->cookie());
+        $cookie ??= $definition->cookie();
+        if (!$this->sameCookieIdentity($definition->cookie(), $cookie)) {
+            return false;
+        }
+
+        $response->headers->setCookie($cookie);
 
         return true;
+    }
+
+    private function sameCookieIdentity(Cookie $expected, Cookie $actual): bool
+    {
+        return $expected->getName() === $actual->getName()
+            && $expected->getPath() === $actual->getPath()
+            && $expected->getDomain() === $actual->getDomain();
     }
 }

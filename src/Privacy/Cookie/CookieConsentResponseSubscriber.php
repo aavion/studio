@@ -29,6 +29,10 @@ final readonly class CookieConsentResponseSubscriber implements EventSubscriberI
         $request = $event->getRequest();
 
         foreach ($response->headers->getCookies() as $cookie) {
+            if (0 !== $cookie->getExpiresTime() && $cookie->getExpiresTime() <= time()) {
+                continue;
+            }
+
             $definition = $this->registry->definition($cookie->getName());
             if (!$definition instanceof CookieConsentDefinition || $this->consent->allowed($request, $definition)) {
                 continue;

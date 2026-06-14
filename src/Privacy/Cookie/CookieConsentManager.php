@@ -69,7 +69,7 @@ final readonly class CookieConsentManager
             $this->registry->optionalDefinitions(),
         );
         $accepted = array_values(array_intersect($allowedNames, array_unique($acceptedOptionalNames)));
-        $withdrawn = array_values(array_diff($this->acceptedOptionalNames($request), $accepted));
+        $rejected = array_values(array_diff($allowedNames, $accepted));
 
         $response->headers->setCookie(Cookie::create(
             self::CONSENT_COOKIE_NAME,
@@ -88,7 +88,7 @@ final readonly class CookieConsentManager
         ));
 
         foreach ($this->registry->optionalDefinitions() as $definition) {
-            if (!in_array($definition->name(), $withdrawn, true)) {
+            if (!in_array($definition->name(), $rejected, true)) {
                 continue;
             }
 
