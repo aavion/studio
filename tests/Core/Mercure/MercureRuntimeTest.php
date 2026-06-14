@@ -46,6 +46,19 @@ final class MercureRuntimeTest extends TestCase
         self::assertContains('--allow-anonymous', $runtime->startCommand());
     }
 
+    public function testItAcceptsReachabilityProbeStatusCodes(): void
+    {
+        $method = new ReflectionMethod(MercureRuntime::class, 'probeStatusAccepted');
+
+        foreach ([200, 201, 204, 400, 401] as $status) {
+            self::assertTrue($method->invoke(null, $status), sprintf('Status %d should be accepted.', $status));
+        }
+
+        foreach ([0, 301, 403, 404, 500] as $status) {
+            self::assertFalse($method->invoke(null, $status), sprintf('Status %d should not be accepted.', $status));
+        }
+    }
+
     private function hub(): HubInterface
     {
         return new class implements HubInterface {

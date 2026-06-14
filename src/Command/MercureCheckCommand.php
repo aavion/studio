@@ -34,7 +34,7 @@ final class MercureCheckCommand extends Command
             ['Listen address' => $this->runtime->listenAddress()],
             ['Hub endpoint' => $this->runtime->hubReachable() ? 'reachable' : 'not reachable'],
             ['Publish endpoint' => $this->runtime->publishHubUrl()],
-            ['Publish endpoint status' => $this->runtime->publishHealthProbe() ? 'functional' : 'not functional'],
+            ['Publish endpoint status' => $this->runtime->publishHealthProbe() ? 'reachable' : 'not reachable'],
             ['Public endpoint' => $this->runtime->publicHubUrl()],
             ['Public endpoint status' => $this->runtime->publicSubscribeProbe() ? 'reachable' : 'not reachable'],
         );

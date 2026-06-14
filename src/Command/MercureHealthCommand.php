@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
     name: 'mercure:health',
-    description: 'Check whether the configured Mercure hub accepts publish requests.',
+    description: 'Check whether the configured Mercure endpoints are reachable.',
 )]
 final class MercureHealthCommand extends Command
 {

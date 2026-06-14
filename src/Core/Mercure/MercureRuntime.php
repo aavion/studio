@@ -234,9 +234,7 @@ final readonly class MercureRuntime
                 ]),
             ]);
 
-            $response->getContent();
-
-            return true;
+            return self::probeStatusAccepted($response->getStatusCode());
         } catch (Throwable) {
             return false;
         }
@@ -249,24 +247,16 @@ final readonly class MercureRuntime
                 'timeout' => 2.0,
                 'max_duration' => 2.0,
             ])->request('GET', $url);
-            $body = $response->getContent(false);
-            $status = $response->getStatusCode();
 
-            if (400 === $status) {
-                return str_contains($body, 'Missing "topic" parameter')
-                    || str_contains($body, 'Missing topic parameter')
-                    || str_contains($body, 'missing "topic" parameter')
-                    || str_contains($body, 'missing topic parameter');
-            }
-
-            return 401 === $status
-                && (
-                    str_contains($body, 'Unauthorized')
-                    || str_contains($body, 'unauthorized')
-                );
+            return self::probeStatusAccepted($response->getStatusCode());
         } catch (Throwable) {
             return false;
         }
+    }
+
+    private static function probeStatusAccepted(int $status): bool
+    {
+        return ($status >= 200 && $status < 300) || 400 === $status || 401 === $status;
     }
 
     private function subscriberEndpointProbe(string $url): bool
