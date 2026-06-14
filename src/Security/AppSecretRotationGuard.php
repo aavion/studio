@@ -93,7 +93,7 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
             return;
         }
 
-        $this->stopMercureBeforeSecretRotation();
+        $mercureStopped = $this->stopMercureBeforeSecretRotation();
         $apiKeysRevoked = $this->revokeActiveApiKeys();
         $resetLinks = $this->issueOwnerPasswordResetLinks();
         $this->storeFingerprint($fingerprints, $environmentKey, $currentFingerprint);
@@ -123,7 +123,9 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
             );
         }
 
-        $this->refreshMercureAfterSecretRotation();
+        if ($mercureStopped) {
+            $this->refreshMercureAfterSecretRotation();
+        }
     }
 
     private function assertSupportedSecret(): void
@@ -138,11 +140,12 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
         ));
     }
 
-    private function stopMercureBeforeSecretRotation(): void
+    private function stopMercureBeforeSecretRotation(): bool
     {
         try {
-            $this->mercureRuntime?->stop();
+            return null === $this->mercureRuntime || $this->mercureRuntime->stop();
         } catch (Throwable) {
+            return false;
         }
     }
 
