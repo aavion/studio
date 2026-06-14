@@ -14,10 +14,10 @@ final class PackageDependencyLabelParserTest extends TestCase
         $parser = new PackageDependencyLabelParser();
 
         self::assertSame([
-            'system 0.2.0',
+            'system 0.2.4',
             'demo-module',
             'provider 1.0',
-        ], $parser->parse('[["system","0.2.0"],"demo-module",["provider","1.0",{"ignored":true}]]'));
+        ], $parser->parse('[["system","0.2.4"],"demo-module",["provider","1.0",{"ignored":true}]]'));
     }
 
     public function testItKeepsMalformedDependencyValuesVisible(): void
