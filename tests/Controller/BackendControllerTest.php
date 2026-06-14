@@ -22,6 +22,7 @@ use App\Entity\ExtensionPackage;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\Setup\SetupCompletionMarker;
+use App\Setup\SetupInputValidator;
 use App\Setup\SetupWizardState;
 use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
 use App\View\Injection\StaticViewInjection;
@@ -201,6 +202,42 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorNotExists('input[name="database_port"][required]');
             self::assertSelectorNotExists('input[name="database_name"][required]');
             self::assertSelectorNotExists('input[name="database_user"][required]');
+        } finally {
+            $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
+        }
+    }
+
+    public function testSetupAdminStepUsesConfiguredAppSecretMinimumLength(): void
+    {
+        $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
+        $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
+        $previousPutenvValue = getenv(SetupCompletionMarker::KEY);
+
+        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
+        putenv(SetupCompletionMarker::KEY);
+
+        try {
+            $client = self::createClient();
+            $client->request('GET', '/setup');
+            $this->setSetupWizardState($client, [
+                'values' => [
+                    'language' => 'en',
+                    'site_title' => 'Wizard Studio',
+                    'default_uri' => 'http://localhost',
+                    'database_driver' => 'sqlite',
+                    'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+                ],
+                'completed' => ['language', 'site', 'database'],
+                'workflow' => null,
+                'action_log' => null,
+            ]);
+            $crawler = $client->request('GET', '/setup/admin');
+
+            self::assertResponseIsSuccessful();
+            self::assertSame(
+                (string) SetupInputValidator::MIN_APP_SECRET_LENGTH,
+                $crawler->filter('input[name="app_secret"]')->attr('minlength'),
+            );
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
         }

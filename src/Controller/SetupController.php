@@ -152,6 +152,7 @@ final class SetupController extends AbstractController
             'setup_previous_step' => $this->wizardFlow->previousStep($step),
             'setup_next_step' => $this->wizardFlow->nextStep($step),
             'setup_app_name' => $this->systemPackageMetadata->metadata()['name'],
+            'setup_min_app_secret_length' => SetupWebInputFactory::MIN_APP_SECRET_LENGTH,
         ]);
     }
 

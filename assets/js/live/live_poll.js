@@ -6,6 +6,7 @@ export class LivePoller {
         onDone = () => {},
         fetcher = window.fetch.bind(window),
         invalidJsonMessage = 'The live endpoint returned an invalid response.',
+        retryOnError = false,
     } = {}) {
         this.interval = Number(interval || 0);
         this.onPayload = onPayload;
@@ -13,6 +14,7 @@ export class LivePoller {
         this.onDone = onDone;
         this.fetcher = fetcher;
         this.invalidJsonMessage = invalidJsonMessage;
+        this.retryOnError = retryOnError;
         this.active = false;
     }
 
@@ -22,10 +24,21 @@ export class LivePoller {
 
         try {
             while (this.active) {
-                const result = await this.fetchPayload(url, nextCursor);
+                let result = null;
+
+                try {
+                    result = await this.fetchPayload(url, nextCursor);
+                } catch (error) {
+                    this.onError(null, error);
+                }
 
                 if (!result) {
-                    return null;
+                    if (!this.retryOnError || !this.active) {
+                        return null;
+                    }
+
+                    await this.sleep(Math.max(this.interval, 1000));
+                    continue;
                 }
 
                 const { payload } = result;

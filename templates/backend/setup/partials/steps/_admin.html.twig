@@ -11,5 +11,5 @@
 <section class="system-panel">
     <h2>{{ 'setup.app_secret.title'|trans }}</h2>
     <p class="system-muted">{{ 'setup.app_secret.text'|trans }}</p>
-    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'app_secret', label: 'setup.form.app_secret.label'|trans, value: setup_display_values.app_secret, help: 'setup.form.app_secret.help'|trans, attributes: {autocomplete: 'off', minlength: 12}, errors: setup_errors.app_secret|default([])} only %}
+    {% include '@backend/partials/forms/fields/input.html.twig' with {name: 'app_secret', label: 'setup.form.app_secret.label'|trans, value: setup_display_values.app_secret, help: 'setup.form.app_secret.help'|trans, attributes: {autocomplete: 'off', minlength: setup_min_app_secret_length}, errors: setup_errors.app_secret|default([])} only %}
 </section>

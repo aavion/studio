@@ -24,19 +24,22 @@ export default class extends Controller {
     initialize() {
         this.alerts = new Map();
         this.closedAlertIds = new Set();
+        this.connected = false;
     }
 
     connect() {
+        this.connected = true;
         this.ensureAlertState();
         document.addEventListener('pointerdown', this.hideOnOutsidePointerDown, true);
         document.addEventListener('keydown', this.hideOnEscape);
         this.hydrateClosedAlerts();
-        this.hydrateStoredAlerts();
         this.hydrateServerAlerts();
+        this.hydrateStoredAlerts();
         this.renderState();
     }
 
     disconnect() {
+        this.connected = false;
         document.removeEventListener('pointerdown', this.hideOnOutsidePointerDown, true);
         document.removeEventListener('keydown', this.hideOnEscape);
         window.cancelAnimationFrame(this.panelRevealFrame);
@@ -46,7 +49,7 @@ export default class extends Controller {
 
     alertTargetConnected(alert) {
         this.ensureAlertState();
-        this.registerAlert(alert, true);
+        this.registerAlert(alert, this.connected);
     }
 
     toggle(event) {
@@ -134,7 +137,9 @@ export default class extends Controller {
         const nextSignature = JSON.stringify(storableAlertPayload(normalizedPayload));
         const existingSignature = existing ? JSON.stringify(storableAlertPayload(existing.payload)) : '';
 
-        if (existing?.element?.isConnected && existingSignature === nextSignature) {
+        const existingConnected = existing?.element?.isConnected === true;
+
+        if (existingConnected && existingSignature === nextSignature) {
             if (alertMode(payload) !== 'hidden') {
                 this.showPanel();
             }
@@ -162,7 +167,7 @@ export default class extends Controller {
             this.persist();
         }
 
-        if (notify) {
+        if (notify && !existingConnected) {
             document.dispatchEvent(new CustomEvent('ui-alert:shown', {
                 detail: storableAlertPayload(normalizedPayload),
             }));
@@ -229,6 +234,10 @@ export default class extends Controller {
 
     hydrateStoredAlerts() {
         for (const payload of this.readStoredAlerts()) {
+            if (this.alerts.has(alertId(payload))) {
+                continue;
+            }
+
             this.upsertAlert({ ...payload, mode: 'hidden' }, false, false);
         }
 
@@ -240,6 +249,7 @@ export default class extends Controller {
             const payload = payloadFromAlertElement(alert);
             const id = alertId(payload);
             if (this.closedAlertIds.has(id)) {
+                this.alerts.delete(id);
                 alert.remove();
 
                 continue;

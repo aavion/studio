@@ -36,7 +36,7 @@ final class MercureHealthCommand extends Command
         if (!$status['enabled']) {
             $output->writeln('Mercure is disabled; polling fallback remains active.');
 
-            return Command::FAILURE;
+            return Command::SUCCESS;
         }
 
         if ($status['publish']) {

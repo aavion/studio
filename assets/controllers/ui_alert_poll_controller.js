@@ -16,6 +16,7 @@ export default class extends Controller {
         this.poller = new LivePoller({
             interval: this.intervalValue,
             onPayload: (payload, cursor) => this.payload(payload, cursor),
+            retryOnError: true,
         });
         this.poller.poll(this.urlValue, this.cursorValue);
     }

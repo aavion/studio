@@ -70,6 +70,7 @@
             {% include '@backend/setup/partials/steps/_admin.html.twig' with {
                 setup_display_values: setup_display_values,
                 setup_errors: setup_errors,
+                setup_min_app_secret_length: setup_min_app_secret_length,
                 setup_values: setup_values,
             } only %}
         {% elseif setup_step == 'review' %}
