@@ -217,6 +217,13 @@ html {
     color: #ffffff;
 }
 
+.system-button:disabled,
+.system-backend-button:disabled,
+.system-backend-setup-nav-button:disabled {
+    cursor: wait;
+    opacity: 0.72;
+}
+
 .system-icon-button {
     display: inline-flex;
     align-items: center;

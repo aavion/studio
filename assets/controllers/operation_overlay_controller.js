@@ -16,6 +16,8 @@ export default class extends Controller {
         const stored = this.storedOperation();
 
         if (this.enabledValue && stored?.statusUrl) {
+            this.bindOperationButton(this.primaryOperationButton());
+            this.markOperationButtonRunning();
             this.prepareOverlay();
             this.updateOperationAlert({
                 status: stored.status || 'queued',
@@ -30,6 +32,7 @@ export default class extends Controller {
         document.removeEventListener('operation-overlay:show', this.showFromAlert);
         document.removeEventListener('ui-alert:closed', this.alertClosed);
         this.livePoller?.stop();
+        this.restoreOperationButton();
     }
 
     async submit(event) {
@@ -42,6 +45,8 @@ export default class extends Controller {
         const stored = this.storedOperation();
 
         if (stored?.statusUrl) {
+            this.bindOperationButton(event.submitter || this.primaryOperationButton());
+            this.markOperationButtonRunning();
             this.prepareOverlay();
             this.reset();
             await this.poll(stored.statusUrl, Number(stored.cursor || 0));
@@ -59,8 +64,10 @@ export default class extends Controller {
 
         this.starting = true;
         this.suppressRunningAlert = false;
+        this.bindOperationButton(submitter || this.primaryOperationButton());
         this.prepareOverlay();
         this.reset();
+        this.markOperationButtonRunning();
         this.updateOperationAlert({
             status: 'queued',
             progress: null,
@@ -250,6 +257,7 @@ export default class extends Controller {
         }
 
         this.reset();
+        this.markOperationButtonRunning();
 
         try {
             const response = await fetch(stored.continueUrl, {
@@ -295,6 +303,7 @@ export default class extends Controller {
 
     cancel = () => {
         this.clearStoredOperation();
+        this.restoreOperationButton();
         this.close();
     };
 
@@ -329,12 +338,14 @@ export default class extends Controller {
 
         if (status === 'success') {
             this.clearStoredOperation();
+            this.mapOperationButton('success');
             this.okButton.hidden = false;
 
             return;
         }
 
         if (status === 'requires_review') {
+            this.mapOperationButton('requires_review');
             this.continueButton.hidden = !payload.continue_url;
             this.cancelButton.hidden = false;
 
@@ -342,6 +353,7 @@ export default class extends Controller {
         }
 
         this.clearStoredOperation();
+        this.mapOperationButton('failed');
         this.retryButton.hidden = false;
         this.cancelButton.hidden = false;
     }
@@ -357,6 +369,7 @@ export default class extends Controller {
         });
         this.setSummary(message, 'error');
         this.hideButtons();
+        this.mapOperationButton('failed');
 
         if (refreshable) {
             this.refreshButton.hidden = false;
@@ -569,6 +582,100 @@ export default class extends Controller {
 
     operationAlertId() {
         return `operation:${this.storageKey()}`;
+    }
+
+    bindOperationButton(button) {
+        if (!button || !(button instanceof HTMLButtonElement)) {
+            return;
+        }
+
+        if (this.operationButton === button) {
+            return;
+        }
+
+        this.restoreOperationButton();
+        this.operationButton = button;
+        this.operationButtonInitial = {
+            className: button.className,
+            disabled: button.disabled,
+            html: button.innerHTML,
+            type: button.type || 'submit',
+        };
+    }
+
+    primaryOperationButton() {
+        return this.element.querySelector('button[type="submit"], button:not([type])');
+    }
+
+    markOperationButtonRunning() {
+        if (!this.operationButton) {
+            return;
+        }
+
+        this.operationButton.disabled = true;
+        this.operationButton.type = 'button';
+        this.operationButton.dataset.operationButtonState = 'running';
+        this.operationButton.setAttribute('aria-busy', 'true');
+        this.operationButton.textContent = this.label('waiting');
+    }
+
+    mapOperationButton(status) {
+        if (!this.operationButton) {
+            return;
+        }
+
+        const success = status === 'success';
+        this.operationButton.disabled = false;
+        this.operationButton.type = 'button';
+        this.operationButton.dataset.operationButtonState = status;
+        this.operationButton.removeAttribute('aria-busy');
+        this.operationButton.textContent = success ? this.label('ok') : this.label('showDetails');
+        this.setOperationButtonVariant(success ? 'success' : (status === 'requires_review' ? 'warning' : 'danger'));
+        this.operationButton.removeEventListener('click', this.operationButtonClick);
+        this.operationButton.addEventListener('click', this.operationButtonClick);
+    }
+
+    restoreOperationButton() {
+        if (!this.operationButton || !this.operationButtonInitial) {
+            return;
+        }
+
+        this.operationButton.removeEventListener('click', this.operationButtonClick);
+        this.operationButton.className = this.operationButtonInitial.className;
+        this.operationButton.disabled = this.operationButtonInitial.disabled;
+        this.operationButton.innerHTML = this.operationButtonInitial.html;
+        this.operationButton.type = this.operationButtonInitial.type;
+        this.operationButton.removeAttribute('aria-busy');
+        delete this.operationButton.dataset.operationButtonState;
+        this.operationButton = null;
+        this.operationButtonInitial = null;
+    }
+
+    operationButtonClick = (event) => {
+        const state = this.operationButton?.dataset.operationButtonState || '';
+
+        if (!state || state === 'running') {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (state === 'success') {
+            this.ok();
+
+            return;
+        }
+
+        this.open();
+    };
+
+    setOperationButtonVariant(variant) {
+        for (const name of ['primary', 'secondary', 'success', 'warning', 'danger', 'ghost']) {
+            this.operationButton.classList.remove(`system-button-${name}`);
+        }
+
+        this.operationButton.classList.add(`system-button-${variant}`);
     }
 
     get rootElement() {
