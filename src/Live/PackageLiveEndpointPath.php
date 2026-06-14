@@ -25,7 +25,19 @@ final class PackageLiveEndpointPath
 
     public static function path(string $packageName, string $path): string
     {
-        return '/api/live/'.self::slug($packageName).('/' === $path ? '' : '/'.ltrim($path, '/'));
+        $path = trim($path, '/');
+        if ('' === $path) {
+            throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_PATH_INVALID, [
+                '%path%' => '/api/live/'.self::slug($packageName).'/',
+            ]);
+        }
+
+        return self::prefix($packageName).$path;
+    }
+
+    public static function prefix(string $packageName): string
+    {
+        return '/api/live/'.self::slug($packageName).'/';
     }
 
     private function __construct()

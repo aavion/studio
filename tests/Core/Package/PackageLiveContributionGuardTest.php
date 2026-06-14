@@ -74,6 +74,30 @@ final class PackageLiveContributionGuardTest extends TestCase
         ));
     }
 
+    public function testItRejectsPackageLiveRootPaths(): void
+    {
+        $package = $this->package('captcha-pack');
+
+        $this->expectException(MessageException::class);
+
+        PackageLiveContributionGuard::assertEndpoint($package, new LiveEndpointDefinition(
+            'package',
+            Request::METHOD_GET,
+            '/api/live/captcha-pack/',
+            'api_live_package_dispatch',
+            'getCaptchaRoot',
+            'Return a captcha root payload.',
+            'packages.captcha-pack.live.root',
+        ));
+    }
+
+    public function testPackageLivePathHelperRejectsEmptyResourcePaths(): void
+    {
+        $this->expectException(MessageException::class);
+
+        PackageLiveEndpointPath::path('captcha-pack', '');
+    }
+
     public function testItRejectsLivePatternsThatEscapeOwnedNamespace(): void
     {
         $package = $this->package('captcha-pack');

@@ -25,8 +25,8 @@ final class PackageLiveContributionGuard
             ]);
         }
 
-        $expectedPrefix = PackageLiveEndpointPath::path($package->packageName(), '');
-        if (!str_starts_with($definition->path(), $expectedPrefix)) {
+        $expectedPrefix = PackageLiveEndpointPath::prefix($package->packageName());
+        if ($definition->path() === $expectedPrefix || !str_starts_with($definition->path(), $expectedPrefix)) {
             throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_LIVE_ENDPOINT_PATH_INVALID, [
                 '%package%' => $package->packageName(),
                 '%path%' => $definition->path(),
