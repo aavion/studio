@@ -10,6 +10,8 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 final readonly class CookieConsentResponseSubscriber implements EventSubscriberInterface
 {
+    private const RESPONSE_PRIORITY = -4096;
+
     public function __construct(
         private CookieConsentRegistry $registry,
         private CookieConsentManager $consent,
@@ -19,7 +21,7 @@ final readonly class CookieConsentResponseSubscriber implements EventSubscriberI
     public static function getSubscribedEvents(): array
     {
         return [
-            KernelEvents::RESPONSE => ['filterCookies', -64],
+            KernelEvents::RESPONSE => ['filterCookies', self::RESPONSE_PRIORITY],
         ];
     }
 

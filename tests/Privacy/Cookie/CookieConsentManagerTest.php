@@ -217,6 +217,15 @@ final class CookieConsentManagerTest extends TestCase
         self::assertLessThan(time(), $expired[0]->getExpiresTime());
     }
 
+    public function testResponseSubscriberRunsAfterCookieWriters(): void
+    {
+        $subscription = CookieConsentResponseSubscriber::getSubscribedEvents()[\Symfony\Component\HttpKernel\KernelEvents::RESPONSE] ?? null;
+
+        self::assertIsArray($subscription);
+        self::assertSame('filterCookies', $subscription[0] ?? null);
+        self::assertLessThanOrEqual(-4096, $subscription[1] ?? 0);
+    }
+
     public function testResponseSubscriberRemovesActiveOptionalCookiesWithoutConsent(): void
     {
         $definition = CookieConsentDefinition::optional(
