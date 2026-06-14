@@ -74,7 +74,6 @@ final class UserController extends AbstractController
         $success = false;
         $errors = [];
         $usernameChangeEnabled = $this->userFlowConfig->usernameChangeEnabled();
-        $nativeNotificationsAvailable = true;
 
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('user_profile', $this->stringField($request, '_csrf_token'))) {
@@ -134,9 +133,6 @@ final class UserController extends AbstractController
             if ([] === $errors) {
                 $settings = $user->settings();
                 $settings['language'] = $language;
-                if ($nativeNotificationsAvailable) {
-                    $settings['native_notifications'] = '1' === $this->stringField($request, 'native_notifications');
-                }
 
                 $user->updateProfile([
                     'display_name' => $this->stringField($request, 'display_name'),
@@ -162,7 +158,6 @@ final class UserController extends AbstractController
             'username_change_enabled' => $usernameChangeEnabled,
             'language_options' => $this->profileLocales->options(),
             'api_key_management_enabled' => $this->apiFeaturePolicy->canManageKeys($user),
-            'native_notifications_available' => $nativeNotificationsAvailable,
             'success' => $success,
             'errors' => $errors,
         ]);

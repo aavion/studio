@@ -99,10 +99,6 @@ ui:
       display_name: 'Anzeigename'
       language: 'Sprache'
       language_default: 'Standard'
-      native_notifications:
-        label: 'Native Browser-Benachrichtigungen'
-        help: 'Zeige Browser-Benachrichtigungen, wenn Echtzeit-Zustellung verfügbar ist.'
-        denied: 'Browser-Benachrichtigungen wurden nicht aktiviert, weil die Browser-Berechtigung nicht erteilt wurde.'
       submit: 'Profil speichern'
       success: 'Profil gespeichert.'
       close:

@@ -99,10 +99,6 @@ ui:
       display_name: 'Display name'
       language: 'Language'
       language_default: 'Default'
-      native_notifications:
-        label: 'Native browser notifications'
-        help: 'Show browser-level notifications when real-time delivery is available.'
-        denied: 'Browser notifications were not enabled because the browser permission was not granted.'
       submit: 'Save profile'
       success: 'Profile saved.'
       close:

@@ -1680,9 +1680,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     default_cookie_lifetime?: int|Param, // Default lifetime of the cookie containing the JWT, in seconds. Defaults to the value of "framework.session.cookie_lifetime". // Default: null
  *     enable_profiler?: bool|Param, // Deprecated: The child node "enable_profiler" at path "mercure.enable_profiler" is deprecated. // Enable Symfony Web Profiler integration.
  * }
- * @psalm-type NotifyConfig = array{
- *     mercure_hub?: scalar|Param|null, // Mercube hub service id // Default: "mercure.hub.default"
- * }
  * @psalm-type ReactConfig = array{
  *     controllers_path?: scalar|Param|null, // The path to the directory where React controller components are stored - relevant only when using symfony/asset-mapper. // Default: "%kernel.project_dir%/assets/react/controllers"
  *     name_glob?: list<scalar|Param|null>,
@@ -1721,7 +1718,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     ux_map?: UxMapConfig,
  *     ux_native?: UxNativeConfig,
  *     mercure?: MercureConfig,
- *     notify?: NotifyConfig,
  *     react?: ReactConfig,
  *     ux_translator?: UxTranslatorConfig,
  *     vue?: VueConfig,
@@ -1749,7 +1745,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         ux_map?: UxMapConfig,
  *         ux_native?: UxNativeConfig,
  *         mercure?: MercureConfig,
- *         notify?: NotifyConfig,
  *         react?: ReactConfig,
  *         ux_translator?: UxTranslatorConfig,
  *         vue?: VueConfig,
@@ -1775,7 +1770,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         ux_map?: UxMapConfig,
  *         ux_native?: UxNativeConfig,
  *         mercure?: MercureConfig,
- *         notify?: NotifyConfig,
  *         react?: ReactConfig,
  *         ux_translator?: UxTranslatorConfig,
  *         vue?: VueConfig,
@@ -1802,7 +1796,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         ux_map?: UxMapConfig,
  *         ux_native?: UxNativeConfig,
  *         mercure?: MercureConfig,
- *         notify?: NotifyConfig,
  *         react?: ReactConfig,
  *         ux_translator?: UxTranslatorConfig,
  *         vue?: VueConfig,
