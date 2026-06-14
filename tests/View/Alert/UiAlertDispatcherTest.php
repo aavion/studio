@@ -20,6 +20,7 @@ use App\View\Alert\UiAlertMessageFactory;
 use App\View\Alert\UiAlertPublisherInterface;
 use App\View\Alert\UiAlertTopicFactory;
 use App\View\Alert\UiAlertTranslation;
+use App\View\Alert\UiAlertUserIdentityResolverInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
@@ -66,7 +67,7 @@ final class UiAlertDispatcherTest extends TestCase
         );
 
         self::assertTrue($dispatcher->addAlertToTopic(
-            $topicFactory->userTopic('test-user'),
+            $topicFactory->userTopic('71000000-0000-7000-8000-000000000001'),
             UiAlert::fromLevel('success', 'Queued alert'),
             UiAlertDelivery::Queue,
         ));
@@ -93,13 +94,51 @@ final class UiAlertDispatcherTest extends TestCase
         self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM ui_alert_inbox'));
     }
 
-    private function dispatcher(Connection $connection, RecordingPublisher $publisher): UiAlertDispatcher
+    public function testUserDeliveryRejectsUsernameStrings(): void
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL DEFAULT 0, modified_at DATETIME DEFAULT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
+        $connection->executeStatement('CREATE TABLE ui_alert_inbox (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, topic VARCHAR(80) NOT NULL, payload CLOB NOT NULL, created_at DATETIME NOT NULL, expires_at DATETIME DEFAULT NULL)');
+        $publisher = new RecordingPublisher();
+        $dispatcher = $this->dispatcher($connection, $publisher);
+
+        self::assertFalse($dispatcher->addAlertToUser(
+            'admin',
+            UiAlert::fromLevel('success', 'Queued alert'),
+            UiAlertDelivery::Queue,
+        ));
+
+        self::assertSame([], $publisher->publishedTopics);
+        self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM ui_alert_inbox'));
+    }
+
+    public function testUserDeliveryNormalizesResolvedUsernameStrings(): void
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL DEFAULT 0, modified_at DATETIME DEFAULT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
+        $connection->executeStatement('CREATE TABLE ui_alert_inbox (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, topic VARCHAR(80) NOT NULL, payload CLOB NOT NULL, created_at DATETIME NOT NULL, expires_at DATETIME DEFAULT NULL)');
+        $publisher = new RecordingPublisher();
+        $dispatcher = $this->dispatcher($connection, $publisher, new RecordingUserAlertIdentityResolver([
+            'admin' => '71000000-0000-7000-8000-000000000001',
+        ]));
+
+        self::assertTrue($dispatcher->addAlertToUser(
+            'admin',
+            UiAlert::fromLevel('success', 'Queued alert'),
+            UiAlertDelivery::Queue,
+        ));
+
+        self::assertSame([], $publisher->publishedTopics);
+        self::assertSame(1, (int) $connection->fetchOne('SELECT COUNT(*) FROM ui_alert_inbox'));
+    }
+
+    private function dispatcher(Connection $connection, RecordingPublisher $publisher, ?UiAlertUserIdentityResolverInterface $resolver = null): UiAlertDispatcher
     {
         $config = new Config($connection);
         self::assertTrue($config->set(MercureAvailability::ENABLED_KEY, false, ConfigValueType::Boolean));
 
         return new UiAlertDispatcher(
-            new UiAlertTopicFactory('test-secret'),
+            new UiAlertTopicFactory('test-secret', $resolver),
             new UiAlertMessageFactory(new IdentityTranslator()),
             new UiAlertInbox($connection),
             $publisher,
@@ -118,6 +157,21 @@ final class UiAlertDispatcherTest extends TestCase
             new RequestStack(),
             new Security(new Container()),
         );
+    }
+}
+
+final readonly class RecordingUserAlertIdentityResolver implements UiAlertUserIdentityResolverInterface
+{
+    /**
+     * @param array<string, string> $uidsByUsername
+     */
+    public function __construct(private array $uidsByUsername)
+    {
+    }
+
+    public function resolveUid(string $identifier): ?string
+    {
+        return $this->uidsByUsername[$identifier] ?? null;
     }
 }
 

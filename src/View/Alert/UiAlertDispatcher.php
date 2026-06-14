@@ -7,6 +7,7 @@ namespace App\View\Alert;
 use App\Core\Message\Message;
 use App\Core\Id\UuidFactory;
 use App\Entity\UserAccount;
+use InvalidArgumentException;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -91,7 +92,13 @@ final readonly class UiAlertDispatcher implements UiAlertDispatcherInterface
         ?UiAlertPresentation $presentation = null,
     ): bool
     {
-        return $this->addAlertToTopic($this->topicFactory->userTopic($user), $alert, $delivery, $presentation);
+        try {
+            $topic = $this->topicFactory->userTopic($user);
+        } catch (InvalidArgumentException) {
+            return false;
+        }
+
+        return $this->addAlertToTopic($topic, $alert, $delivery, $presentation);
     }
 
     public function addAlertToSession(

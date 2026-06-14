@@ -6,6 +6,7 @@ namespace App\View\Alert;
 
 use App\Core\Message\Message;
 use App\Entity\UserAccount;
+use InvalidArgumentException;
 use JsonException;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Mercure\HubInterface;
@@ -44,7 +45,13 @@ final readonly class MercureUiAlertPublisher implements UiAlertPublisherInterfac
 
     public function publishToUser(UserAccount|UserInterface|string $user, UiAlert|Message|UiAlertTranslation $alert, ?string $locale = null): ?string
     {
-        return $this->publish($this->topicFactory->userTopic($user), $alert, $locale);
+        try {
+            $topic = $this->topicFactory->userTopic($user);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
+
+        return $this->publish($topic, $alert, $locale);
     }
 
     public function publishToSession(SessionInterface|string $session, UiAlert|Message|UiAlertTranslation $alert, ?string $locale = null): ?string

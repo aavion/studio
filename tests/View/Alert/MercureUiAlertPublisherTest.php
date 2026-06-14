@@ -11,6 +11,7 @@ use App\View\Alert\MercureUiAlertPublisher;
 use App\View\Alert\UiAlert;
 use App\View\Alert\UiAlertMessageFactory;
 use App\View\Alert\UiAlertTopicFactory;
+use App\View\Alert\UiAlertUserIdentityResolverInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Jwt\TokenFactoryInterface;
@@ -75,6 +76,30 @@ final class MercureUiAlertPublisherTest extends TestCase
         self::assertArrayNotHasKey('context', $payload);
     }
 
+    public function testItRejectsUsernameStringUserTopics(): void
+    {
+        $hub = new RecordingHub();
+        $publisher = $this->publisher($hub);
+
+        self::assertNull($publisher->publishToUser('admin', UiAlert::fromLevel('success', 'Saved')));
+        self::assertNull($hub->update);
+    }
+
+    public function testItNormalizesUsernameStringUserTopicsWhenResolvable(): void
+    {
+        $hub = new RecordingHub();
+        $publisher = new MercureUiAlertPublisher(
+            $hub,
+            new UiAlertTopicFactory('secret', new PublisherUserAlertIdentityResolver([
+                'admin' => '71000000-0000-7000-8000-000000000001',
+            ])),
+            new UiAlertMessageFactory(new IdentityTranslator()),
+        );
+
+        self::assertSame('update-id', $publisher->publishToUser('admin', UiAlert::fromLevel('success', 'Saved')));
+        self::assertInstanceOf(Update::class, $hub->update);
+    }
+
     private function publisher(RecordingHub $hub): MercureUiAlertPublisher
     {
         return new MercureUiAlertPublisher(
@@ -82,6 +107,21 @@ final class MercureUiAlertPublisherTest extends TestCase
             new UiAlertTopicFactory('secret'),
             new UiAlertMessageFactory(new IdentityTranslator()),
         );
+    }
+}
+
+final readonly class PublisherUserAlertIdentityResolver implements UiAlertUserIdentityResolverInterface
+{
+    /**
+     * @param array<string, string> $uidsByUsername
+     */
+    public function __construct(private array $uidsByUsername)
+    {
+    }
+
+    public function resolveUid(string $identifier): ?string
+    {
+        return $this->uidsByUsername[$identifier] ?? null;
     }
 }
 

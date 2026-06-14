@@ -124,6 +124,9 @@ services:
     App\View\Alert\UiAlertDispatcherInterface:
         alias: App\View\Alert\UiAlertDispatcher
 
+    App\View\Alert\UiAlertUserIdentityResolverInterface:
+        alias: App\View\Alert\DoctrineUiAlertUserIdentityResolver
+
     App\Api\Security\ApiAvailabilityCheckerInterface:
         alias: App\Api\Security\DatabaseApiAvailabilityChecker
 

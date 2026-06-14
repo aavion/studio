@@ -7,10 +7,13 @@ namespace App\Tests\View\Alert;
 use App\Entity\UserAccount;
 use App\Security\UserRole;
 use App\View\Alert\UiAlertTopicFactory;
+use App\View\Alert\UiAlertUserIdentityResolverInterface;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 final class UiAlertTopicFactoryTest extends TestCase
 {
@@ -33,8 +36,48 @@ final class UiAlertTopicFactoryTest extends TestCase
         self::assertStringNotContainsString($user->uid(), $userTopic);
         self::assertStringNotContainsString('session-id', $sessionTopic);
         self::assertSame($sessionTopic, $factory->sessionTopic('session-id'));
+        self::assertSame($userTopic, $factory->userTopic($user->uid()));
         self::assertTrue($factory->isUiAlertTopic($userTopic));
         self::assertTrue($factory->isUiAlertTopic($sessionTopic));
+    }
+
+    public function testItResolvesUsernameStringsToAccountUidTopics(): void
+    {
+        $factory = new UiAlertTopicFactory('secret', new FakeUserAlertIdentityResolver([
+            'admin' => '71000000-0000-7000-8000-000000000001',
+        ]));
+
+        self::assertSame($factory->userTopic('71000000-0000-7000-8000-000000000001'), $factory->userTopic('admin'));
+    }
+
+    public function testItRejectsUnresolvedUsernameTopics(): void
+    {
+        $factory = new UiAlertTopicFactory('secret');
+
+        $this->expectException(InvalidArgumentException::class);
+        $factory->userTopic('admin');
+    }
+
+    public function testItAcceptsGenericUserIdentifiersOnlyWhenTheyAreAccountUids(): void
+    {
+        $factory = new UiAlertTopicFactory('secret');
+        $user = new class implements UserInterface {
+            public function getRoles(): array
+            {
+                return ['ROLE_USER'];
+            }
+
+            public function eraseCredentials(): void
+            {
+            }
+
+            public function getUserIdentifier(): string
+            {
+                return '71000000-0000-7000-8000-000000000001';
+            }
+        };
+
+        self::assertSame($factory->userTopic('71000000-0000-7000-8000-000000000001'), $factory->userTopic($user));
     }
 
     public function testItRejectsNonUiAlertTopics(): void
@@ -60,5 +103,20 @@ final class UiAlertTopicFactoryTest extends TestCase
             $factory->sessionTopic('existing-session-id'),
         ], $factory->topicsFor($request, null));
         self::assertFalse($session->isStarted());
+    }
+}
+
+final readonly class FakeUserAlertIdentityResolver implements UiAlertUserIdentityResolverInterface
+{
+    /**
+     * @param array<string, string> $uidsByUsername
+     */
+    public function __construct(private array $uidsByUsername)
+    {
+    }
+
+    public function resolveUid(string $identifier): ?string
+    {
+        return $this->uidsByUsername[$identifier] ?? null;
     }
 }
