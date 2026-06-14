@@ -147,6 +147,10 @@ services:
         arguments:
             $providers: !tagged_iterator { tag: system.cookie_consent_provider }
 
+    App\Privacy\Cookie\CookieConsentManager:
+        arguments:
+            $secret: '%kernel.secret%'
+
     App\Content\Api\ContentApiPath: ~
 
     App\Core\Package\PackageTranslationNamespaceValidator:

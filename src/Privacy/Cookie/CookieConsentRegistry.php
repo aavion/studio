@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Privacy\Cookie;
 
+use LogicException;
+
 final readonly class CookieConsentRegistry
 {
     /**
@@ -22,7 +24,12 @@ final readonly class CookieConsentRegistry
 
         foreach ($this->providers as $provider) {
             foreach ($provider->cookieConsentDefinitions() as $definition) {
-                $definitions[$definition->name()] = $definition;
+                $name = $definition->name();
+                if (isset($definitions[$name])) {
+                    throw new LogicException(sprintf('Duplicate cookie consent definition for "%s".', $name));
+                }
+
+                $definitions[$name] = $definition;
             }
         }
 

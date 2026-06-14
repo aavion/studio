@@ -1,9 +1,11 @@
 {% set optional_cookies = cookie_consent_optional() %}
 {% set consent_prompt_required = cookie_consent_required() and optional_cookies is not empty %}
+{% set consent_form_required = cookie_consent_form_required() %}
 {% set selected_cookies = cookie_consent_selected_names() %}
 <section id="cookie-consent" class="system-cookie-consent" data-controller="cookie-consent" aria-label="{{ 'ui.cookie_consent.title'|trans }}" {% if not consent_prompt_required %}hidden{% endif %}>
+    {% if consent_form_required %}
     <form method="post" action="{{ path('privacy_cookie_consent') }}" class="system-cookie-consent-card">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token('privacy_cookie_consent') }}">
+        <input type="hidden" name="_csrf_token" value="{{ cookie_consent_csrf_token() }}">
         <input type="hidden" name="_cookie_consent_target_path" value="{{ app.request ? app.request.requestUri : '/' }}">
         <div class="system-cookie-consent-summary">
             <span class="system-cookie-consent-icon" aria-hidden="true">
@@ -62,4 +64,5 @@
             {% endif %}
         </div>
     </form>
+    {% endif %}
 </section>

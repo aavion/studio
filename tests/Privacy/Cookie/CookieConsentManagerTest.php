@@ -11,6 +11,7 @@ use App\Privacy\Cookie\CookieConsentProviderInterface;
 use App\Privacy\Cookie\CookieConsentRegistry;
 use App\Privacy\Cookie\CookieConsentTwigExtension;
 use App\Privacy\Cookie\CoreCookieConsentProvider;
+use LogicException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
@@ -63,6 +64,52 @@ final class CookieConsentManagerTest extends TestCase
 
         self::assertTrue($manager->allowed($nextRequest, $definition));
         self::assertFalse($manager->bannerRequired($nextRequest));
+    }
+
+    public function testItExpiresWithdrawnOptionalCookies(): void
+    {
+        $definition = CookieConsentDefinition::optional(
+            Cookie::create('analytics_id', 'value', 0, '/tracking'),
+            'Analytics',
+            'Measure visits.',
+            'https://example.test/privacy',
+        );
+        $manager = $this->manager([$this->provider([$definition])]);
+        $request = Request::create('/');
+        $acceptedResponse = new Response();
+        $manager->attachConsentCookie($request, $acceptedResponse, ['analytics_id']);
+        $consentCookie = $acceptedResponse->headers->getCookies()[0] ?? null;
+        self::assertInstanceOf(Cookie::class, $consentCookie);
+
+        $withdrawRequest = Request::create('/');
+        $withdrawRequest->cookies->set($consentCookie->getName(), $consentCookie->getValue());
+        $withdrawResponse = new Response();
+        $manager->attachConsentCookie($withdrawRequest, $withdrawResponse, []);
+
+        $expired = array_values(array_filter(
+            $withdrawResponse->headers->getCookies(),
+            static fn (Cookie $cookie): bool => 'analytics_id' === $cookie->getName(),
+        ));
+
+        self::assertCount(1, $expired);
+        self::assertSame('/tracking', $expired[0]->getPath());
+        self::assertLessThan(time(), $expired[0]->getExpiresTime());
+    }
+
+    public function testItRejectsDuplicateCookieDefinitions(): void
+    {
+        $registry = new CookieConsentRegistry([
+            $this->provider([CookieConsentDefinition::necessary(Cookie::create('PHPSESSID'))]),
+            $this->provider([CookieConsentDefinition::optional(
+                Cookie::create('PHPSESSID'),
+                'Other',
+                'Override the session cookie.',
+                'https://example.test/privacy',
+            )]),
+        ]);
+
+        $this->expectException(LogicException::class);
+        $registry->definitions();
     }
 
     public function testItReturnsSelectedOptionalNamesFromStoredConsentOrDefaults(): void
@@ -136,7 +183,7 @@ final class CookieConsentManagerTest extends TestCase
      */
     private function manager(iterable $providers = []): CookieConsentManager
     {
-        return new CookieConsentManager(new CookieConsentRegistry($providers));
+        return new CookieConsentManager(new CookieConsentRegistry($providers), 'test-secret');
     }
 
     /**

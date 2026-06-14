@@ -13,13 +13,30 @@ final readonly class CookieConsentManager
     public const CONSENT_COOKIE_NAME = 'studio_cookie_consent';
     private const TTL_SECONDS = 31_536_000;
 
-    public function __construct(private CookieConsentRegistry $registry)
+    public function __construct(
+        private CookieConsentRegistry $registry,
+        private string $secret,
+    ) {
+    }
+
+    public function csrfToken(): string
     {
+        return hash_hmac('sha256', 'privacy_cookie_consent', $this->secret);
+    }
+
+    public function validCsrfToken(string $token): bool
+    {
+        return hash_equals($this->csrfToken(), $token);
     }
 
     public function bannerRequired(Request $request): bool
     {
         return [] !== $this->registry->optionalDefinitions() && !$this->hasStoredConsent($request);
+    }
+
+    public function formRequired(Request $request): bool
+    {
+        return [] !== $this->registry->optionalDefinitions();
     }
 
     public function allowed(Request $request, CookieConsentDefinition|string $definition): bool
@@ -46,6 +63,7 @@ final readonly class CookieConsentManager
             $this->registry->optionalDefinitions(),
         );
         $accepted = array_values(array_intersect($allowedNames, array_unique($acceptedOptionalNames)));
+        $withdrawn = array_values(array_diff($this->acceptedOptionalNames($request), $accepted));
 
         $response->headers->setCookie(Cookie::create(
             self::CONSENT_COOKIE_NAME,
@@ -62,6 +80,22 @@ final readonly class CookieConsentManager
             false,
             Cookie::SAMESITE_LAX,
         ));
+
+        foreach ($this->registry->optionalDefinitions() as $definition) {
+            if (!in_array($definition->name(), $withdrawn, true)) {
+                continue;
+            }
+
+            $cookie = $definition->cookie();
+            $response->headers->clearCookie(
+                $cookie->getName(),
+                $cookie->getPath(),
+                $cookie->getDomain(),
+                $cookie->isSecure(),
+                $cookie->isHttpOnly(),
+                $cookie->getSameSite(),
+            );
+        }
     }
 
     public function defaultOptionalSelected(Request $request): bool

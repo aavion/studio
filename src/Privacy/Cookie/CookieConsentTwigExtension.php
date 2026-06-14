@@ -21,6 +21,8 @@ final class CookieConsentTwigExtension extends AbstractExtension
     {
         return [
             new TwigFunction('cookie_consent_required', $this->required(...)),
+            new TwigFunction('cookie_consent_form_required', $this->formRequired(...)),
+            new TwigFunction('cookie_consent_csrf_token', $this->csrfToken(...)),
             new TwigFunction('cookie_consent_optional', $this->optional(...)),
             new TwigFunction('cookie_consent_default_selected', $this->defaultSelected(...)),
             new TwigFunction('cookie_consent_selected_names', $this->selectedNames(...)),
@@ -33,6 +35,18 @@ final class CookieConsentTwigExtension extends AbstractExtension
         $request = $this->requestStack->getMainRequest();
 
         return null !== $request && $this->consent->bannerRequired($request);
+    }
+
+    public function formRequired(): bool
+    {
+        $request = $this->requestStack->getMainRequest();
+
+        return null !== $request && $this->consent->formRequired($request);
+    }
+
+    public function csrfToken(): string
+    {
+        return $this->consent->csrfToken();
     }
 
     /**

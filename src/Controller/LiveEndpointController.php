@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Core\Access\AccessActor;
+use App\Core\Access\AccessLevel;
 use App\Core\Output\JsonOutputRenderer;
+use App\Entity\UserAccount;
 use App\Live\LiveEndpointHandlerRegistry;
 use App\Live\LiveEndpointRegistry;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -34,10 +37,15 @@ final readonly class LiveEndpointController
             ], Response::HTTP_NOT_FOUND);
         }
 
-        if (!$endpoint->allowsPublic() && null === $this->security->getUser()) {
+        $minimumAccessLevel = $endpoint->minimumAccessLevel()
+            ?? ($endpoint->allowsPublic() ? AccessLevel::PUBLIC : AccessLevel::USER);
+        $user = $this->security->getUser();
+        $actor = $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
+
+        if ($actor->accessLevel() < $minimumAccessLevel) {
             return $this->json->render([
                 'status' => 'forbidden',
-                'message' => 'Authentication is required for this live endpoint.',
+                'message' => 'Access is not allowed for this live endpoint.',
                 'next_poll_ms' => 0,
             ], Response::HTTP_FORBIDDEN);
         }
