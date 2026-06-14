@@ -9,16 +9,18 @@ use App\Api\Endpoint\ApiEndpointHandlerInterface;
 use App\Api\Endpoint\ApiEndpointHandlerProviderInterface;
 use App\Api\Endpoint\ApiEndpointProviderInterface;
 use App\Core\Message\MessageException;
+use App\Core\Operation\ActionQueue;
 use App\Core\Package\Settings\PackageSettingDefinition;
 use App\Core\Package\Settings\PackageSettingProviderInterface;
 use App\Core\Package\Settings\PackageSettings;
-use App\Core\Operation\ActionQueue;
+use App\Core\Statistics\VisitorIdGenerator;
 use App\Entity\ExtensionPackage;
 use App\Live\LiveEndpointDefinition;
 use App\Live\LiveEndpointHandlerInterface;
 use App\Live\LiveEndpointHandlerProviderInterface;
 use App\Live\LiveEndpointProviderInterface;
 use App\Privacy\Cookie\CookieConsentDefinition;
+use App\Privacy\Cookie\CookieConsentManager;
 use App\Privacy\Cookie\CookieConsentProviderInterface;
 use App\Scheduler\SchedulerActionQueueProviderInterface;
 use App\Scheduler\SchedulerCallableProviderInterface;
@@ -33,6 +35,12 @@ use Symfony\Component\HttpFoundation\Cookie;
 
 final class PackageRuntimeContributionRegistry implements StaticViewInjectionProviderInterface, DynamicViewInjectionProviderInterface, PackageSettingProviderInterface, ApiEndpointProviderInterface, ApiEndpointHandlerProviderInterface, LiveEndpointProviderInterface, LiveEndpointHandlerProviderInterface, CookieConsentProviderInterface, SchedulerTaskProviderInterface, SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface
 {
+    private const RESERVED_COOKIE_NAMES = [
+        CookieConsentManager::CONSENT_COOKIE_NAME,
+        'PHPSESSID',
+        VisitorIdGenerator::COOKIE_NAME,
+    ];
+
     public function __construct(private ?PackageSettings $packageSettingsStore = null)
     {
     }
@@ -298,6 +306,13 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
 
     private function addCookieConsentDefinition(ExtensionPackage $package, CookieConsentDefinition $definition): void
     {
+        if (in_array($definition->name(), $this->existingCookieConsentNames(), true)) {
+            throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+                '%package%' => $package->packageName(),
+                '%type%' => CookieConsentDefinition::class.'('.$definition->name().') duplicate',
+            ]);
+        }
+
         if ($definition->isNecessary() && !$this->necessaryPackageCookieAllowed($package, $definition->cookie())) {
             throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
                 '%package%' => $package->packageName(),
@@ -306,6 +321,20 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
         }
 
         $this->cookieConsentDefinitions[] = $definition;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function existingCookieConsentNames(): array
+    {
+        return [
+            ...self::RESERVED_COOKIE_NAMES,
+            ...array_map(
+                static fn (CookieConsentDefinition $definition): string => $definition->name(),
+                $this->cookieConsentDefinitions,
+            ),
+        ];
     }
 
     private function necessaryPackageCookieAllowed(ExtensionPackage $package, Cookie $cookie): bool

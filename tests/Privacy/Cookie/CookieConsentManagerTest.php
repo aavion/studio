@@ -16,7 +16,9 @@ use App\Privacy\Cookie\CookieConsentTwigExtension;
 use App\Privacy\Cookie\CoreCookieConsentProvider;
 use App\Tests\Support\FilesystemTestHelper;
 use App\Controller\CookieConsentController;
+use InvalidArgumentException;
 use LogicException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
@@ -258,6 +260,31 @@ final class CookieConsentManagerTest extends TestCase
         $registry->definitions();
     }
 
+    #[DataProvider('unsafePrivacyUrls')]
+    public function testItRejectsUnsafeOptionalCookiePrivacyUrls(string $url): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        CookieConsentDefinition::optional(
+            Cookie::create('analytics_id'),
+            'Analytics',
+            'Measure visits.',
+            $url,
+        );
+    }
+
+    public function testItAcceptsHttpAndRelativeOptionalCookiePrivacyUrls(): void
+    {
+        foreach (['https://example.test/privacy', 'http://example.test/privacy', '/privacy', './privacy', '../privacy', 'privacy'] as $url) {
+            self::assertSame($url, CookieConsentDefinition::optional(
+                Cookie::create('analytics_id'),
+                'Analytics',
+                'Measure visits.',
+                $url,
+            )->privacyUrl());
+        }
+    }
+
     public function testItReturnsSelectedOptionalNamesFromStoredConsentOrDefaults(): void
     {
         $definition = CookieConsentDefinition::optional(
@@ -463,6 +490,18 @@ final class CookieConsentManagerTest extends TestCase
                 return $this->definitions;
             }
         };
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function unsafePrivacyUrls(): iterable
+    {
+        yield 'javascript scheme' => ['javascript:alert(1)'];
+        yield 'data scheme' => ['data:text/html,<script>alert(1)</script>'];
+        yield 'protocol relative' => ['//evil.example.test/privacy'];
+        yield 'http without host' => ['http:/privacy'];
+        yield 'control character' => ["https://example.test/privacy\njavascript:alert(1)"];
     }
 
     /**

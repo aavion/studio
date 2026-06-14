@@ -23,6 +23,10 @@ final readonly class CookieConsentDefinition
         if (!$necessary && ('' === trim($provider) || '' === trim($purpose) || '' === trim($privacyUrl))) {
             throw new InvalidArgumentException('Optional cookies require provider, purpose, and privacy URL metadata.');
         }
+
+        if (!$necessary && !$this->privacyUrlAllowed($privacyUrl)) {
+            throw new InvalidArgumentException('Optional cookie privacy URLs must be HTTP(S) or relative URLs.');
+        }
     }
 
     public static function necessary(Cookie $cookie): self
@@ -63,5 +67,25 @@ final readonly class CookieConsentDefinition
     public function privacyUrl(): string
     {
         return $this->privacyUrl;
+    }
+
+    private function privacyUrlAllowed(string $url): bool
+    {
+        $url = trim($url);
+        if ('' === $url || str_starts_with($url, '//') || preg_match('/[\x00-\x1F\x7F]/', $url)) {
+            return false;
+        }
+
+        $parts = parse_url($url);
+        if (false === $parts) {
+            return false;
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        if ('' === $scheme) {
+            return true;
+        }
+
+        return in_array($scheme, ['http', 'https'], true) && '' !== trim((string) ($parts['host'] ?? ''));
     }
 }
