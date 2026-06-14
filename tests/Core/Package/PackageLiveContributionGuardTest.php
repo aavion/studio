@@ -74,6 +74,42 @@ final class PackageLiveContributionGuardTest extends TestCase
         ));
     }
 
+    public function testItRejectsLivePatternsThatEscapeOwnedNamespace(): void
+    {
+        $package = $this->package('captcha-pack');
+
+        $this->expectException(MessageException::class);
+
+        PackageLiveContributionGuard::assertEndpoint($package, new LiveEndpointDefinition(
+            'package',
+            Request::METHOD_GET,
+            PackageLiveEndpointPath::path($package->packageName(), 'seed'),
+            'api_live_package_dispatch',
+            'getCaptchaSeed',
+            'Return a captcha seed.',
+            'packages.captcha-pack.live.seed',
+            pathPattern: '#^/api/live/captcha-pack/.*|^/api/live/other-pack/#',
+        ));
+    }
+
+    public function testItAllowsGroupedLivePatternAlternationInsideOwnedNamespace(): void
+    {
+        $package = $this->package('captcha-pack');
+
+        PackageLiveContributionGuard::assertEndpoint($package, new LiveEndpointDefinition(
+            'package',
+            Request::METHOD_GET,
+            PackageLiveEndpointPath::path($package->packageName(), 'seed'),
+            'api_live_package_dispatch',
+            'getCaptchaSeed',
+            'Return a captcha seed.',
+            'packages.captcha-pack.live.seed',
+            pathPattern: '#^/api/live/captcha-pack/(seed|refresh)$#',
+        ));
+
+        self::addToAssertionCount(1);
+    }
+
     public function testItRejectsForeignHandlerNamespaces(): void
     {
         $package = $this->package('captcha-pack');

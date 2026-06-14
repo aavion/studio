@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Privacy\Cookie;
 
+use App\Core\Statistics\VisitorIdGenerator;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,18 +16,23 @@ final readonly class CookieConsentManager
 
     public function __construct(
         private CookieConsentRegistry $registry,
+        private VisitorIdGenerator $visitorIdGenerator,
         private string $secret,
     ) {
     }
 
-    public function csrfToken(): string
+    public function csrfToken(Request $request): string
     {
-        return hash_hmac('sha256', 'privacy_cookie_consent', $this->secret);
+        return hash_hmac(
+            'sha256',
+            'privacy_cookie_consent|'.$this->visitorIdGenerator->generate($request),
+            $this->secret,
+        );
     }
 
-    public function validCsrfToken(string $token): bool
+    public function validCsrfToken(Request $request, string $token): bool
     {
-        return hash_equals($this->csrfToken(), $token);
+        return hash_equals($this->csrfToken($request), $token);
     }
 
     public function bannerRequired(Request $request): bool

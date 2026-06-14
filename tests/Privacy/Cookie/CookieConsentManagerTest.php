@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Privacy\Cookie;
 
+use App\Core\Statistics\FileVisitorIdentityStore;
+use App\Core\Statistics\VisitorIdGenerator;
 use App\Privacy\Cookie\ConsentCookieJar;
 use App\Privacy\Cookie\CookieConsentDefinition;
 use App\Privacy\Cookie\CookieConsentManager;
@@ -11,6 +13,7 @@ use App\Privacy\Cookie\CookieConsentProviderInterface;
 use App\Privacy\Cookie\CookieConsentRegistry;
 use App\Privacy\Cookie\CookieConsentTwigExtension;
 use App\Privacy\Cookie\CoreCookieConsentProvider;
+use App\Tests\Support\FilesystemTestHelper;
 use App\Controller\CookieConsentController;
 use LogicException;
 use PHPUnit\Framework\TestCase;
@@ -21,6 +24,20 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class CookieConsentManagerTest extends TestCase
 {
+    use FilesystemTestHelper;
+
+    private string $cacheDir;
+
+    protected function setUp(): void
+    {
+        $this->cacheDir = $this->createTemporaryDirectory('cookie-consent-visitors');
+    }
+
+    protected function tearDown(): void
+    {
+        $this->removeDirectory($this->cacheDir);
+    }
+
     public function testItRequiresBannerOnlyForOptionalCookiesWithoutStoredConsent(): void
     {
         $manager = $this->manager([$this->provider([
@@ -153,11 +170,11 @@ final class CookieConsentManagerTest extends TestCase
         $manager = $this->manager([$this->provider([$definition])]);
         $controller = new CookieConsentController($manager);
         $request = Request::create('/privacy/cookie-consent', 'POST', [
-            '_csrf_token' => $manager->csrfToken(),
             '_cookie_consent_target_path' => '/',
             '_cookie_consent_action' => 'reject_optional',
             'cookies' => ['analytics_id'],
         ]);
+        $request->request->set('_csrf_token', $manager->csrfToken($request));
 
         $response = $controller->store($request);
         $cookie = $response->headers->getCookies()[0] ?? null;
@@ -167,6 +184,24 @@ final class CookieConsentManagerTest extends TestCase
         $nextRequest->cookies->set($cookie->getName(), $cookie->getValue());
 
         self::assertFalse($manager->allowed($nextRequest, $definition));
+    }
+
+    public function testCookieConsentCsrfTokenIsVisitorBound(): void
+    {
+        $manager = $this->manager();
+        $firstRequest = Request::create('/privacy/cookie-consent', 'POST', server: [
+            'REMOTE_ADDR' => '203.0.113.10',
+            'HTTP_USER_AGENT' => 'Studio Browser/1.0',
+        ]);
+        $secondRequest = Request::create('/privacy/cookie-consent', 'POST', server: [
+            'REMOTE_ADDR' => '198.51.100.24',
+            'HTTP_USER_AGENT' => 'Other Browser/2.0',
+        ]);
+
+        $token = $manager->csrfToken($firstRequest);
+
+        self::assertTrue($manager->validCsrfToken($firstRequest, $token));
+        self::assertFalse($manager->validCsrfToken($secondRequest, $token));
     }
 
     public function testConsentCookieJarBlocksOptionalCookiesWithoutConsent(): void
@@ -211,7 +246,11 @@ final class CookieConsentManagerTest extends TestCase
      */
     private function manager(iterable $providers = []): CookieConsentManager
     {
-        return new CookieConsentManager(new CookieConsentRegistry($providers), 'test-secret');
+        return new CookieConsentManager(
+            new CookieConsentRegistry($providers),
+            new VisitorIdGenerator('test-secret', new FileVisitorIdentityStore($this->cacheDir, 'test')),
+            'test-secret',
+        );
     }
 
     /**

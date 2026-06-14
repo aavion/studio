@@ -39,6 +39,14 @@ final readonly class LiveEndpointController
             ], Response::HTTP_NOT_FOUND);
         }
 
+        if (!$this->endpointMatchesRouteSlug($request, $endpoint->path())) {
+            return $this->json->render([
+                'status' => 'not_found',
+                'message' => $this->translator->trans('ui.live_endpoint.not_found'),
+                'next_poll_ms' => 0,
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         $minimumAccessLevel = $endpoint->minimumAccessLevel() ?? AccessLevel::PUBLIC;
         $user = $this->security->getUser();
         $actor = $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
@@ -61,5 +69,15 @@ final readonly class LiveEndpointController
         }
 
         return $handler->handleLiveRequest($request, $endpoint);
+    }
+
+    private function endpointMatchesRouteSlug(Request $request, string $endpointPath): bool
+    {
+        $slug = (string) $request->attributes->get('packageSlug', '');
+        if ('' === $slug && 1 === preg_match('#^/api/live/([a-z0-9]+(?:-[a-z0-9]+)*)/#', $request->getPathInfo(), $matches)) {
+            $slug = $matches[1];
+        }
+
+        return '' !== $slug && str_starts_with($endpointPath, '/api/live/'.$slug.'/');
     }
 }

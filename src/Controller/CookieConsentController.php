@@ -20,7 +20,7 @@ final class CookieConsentController extends AbstractController
     #[Route('/privacy/cookie-consent', name: 'privacy_cookie_consent', methods: ['POST'])]
     public function store(Request $request): Response
     {
-        if (!$this->consent->validCsrfToken((string) $request->request->get('_csrf_token', ''))) {
+        if (!$this->consent->validCsrfToken($request, (string) $request->request->get('_csrf_token', ''))) {
             return $this->redirectBack($request);
         }
 

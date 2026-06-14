@@ -46,7 +46,9 @@ final class CookieConsentTwigExtension extends AbstractExtension
 
     public function csrfToken(): string
     {
-        return $this->consent->csrfToken();
+        $request = $this->requestStack->getMainRequest();
+
+        return null !== $request ? $this->consent->csrfToken($request) : '';
     }
 
     /**

@@ -62,7 +62,26 @@ final class LiveEndpointControllerTest extends TestCase
         self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
     }
 
-    private function controller(LiveEndpointDefinition $endpoint, ?UserAccount $user): LiveEndpointController
+    public function testItRejectsPatternMatchesOutsideTheRequestedPackageSlug(): void
+    {
+        $endpoint = new LiveEndpointDefinition(
+            'package',
+            Request::METHOD_GET,
+            '/api/live/demo-pack/admin-action',
+            'api_live_package_dispatch',
+            'runAdminAction',
+            'Run an admin live action.',
+            'packages.demo-pack.live.admin_action',
+            pathPattern: '#^/api/live/other-pack/.*$#',
+        );
+        $controller = $this->controller($endpoint, null, expectsUser: false);
+
+        $response = $controller->dispatch(Request::create('/api/live/other-pack/admin-action', Request::METHOD_GET));
+
+        self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
+    }
+
+    private function controller(LiveEndpointDefinition $endpoint, ?UserAccount $user, bool $expectsUser = true): LiveEndpointController
     {
         $handler = new class implements LiveEndpointHandlerInterface {
             public function liveEndpointHandlerKey(): string
@@ -86,7 +105,7 @@ final class LiveEndpointControllerTest extends TestCase
             }
         };
         $security = $this->createMock(Security::class);
-        $security->expects($this->once())->method('getUser')->willReturn($user);
+        $security->expects($expectsUser ? $this->once() : $this->never())->method('getUser')->willReturn($user);
 
         return new LiveEndpointController(
             new LiveEndpointRegistry([$provider]),

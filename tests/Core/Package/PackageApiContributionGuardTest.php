@@ -71,6 +71,44 @@ final class PackageApiContributionGuardTest extends TestCase
         ));
     }
 
+    public function testItRejectsPackageEndpointPatternsWithEscapingAlternation(): void
+    {
+        $package = $this->package('demo-module');
+
+        $this->expectException(MessageException::class);
+
+        PackageApiContributionGuard::assertEndpoint($package, new ApiEndpointDefinition(
+            'package',
+            'GET',
+            PackageApiEndpointPath::path($package->packageName(), 'demo'),
+            'api_v1_endpoint_dispatch',
+            'getDemoModuleContribution',
+            'Return demo contribution.',
+            'packages.demo-module.demo',
+            ['packages-demo-module-demo'],
+            pathPattern: '#^/api/v1/packages/demo-module/.*|^/api/v1/packages/other/#',
+        ));
+    }
+
+    public function testItAllowsGroupedPackageEndpointPatternAlternationInsideOwnedNamespace(): void
+    {
+        $package = $this->package('demo-module');
+
+        PackageApiContributionGuard::assertEndpoint($package, new ApiEndpointDefinition(
+            'package',
+            'GET',
+            PackageApiEndpointPath::path($package->packageName(), 'demo'),
+            'api_v1_endpoint_dispatch',
+            'getDemoModuleContribution',
+            'Return demo contribution.',
+            'packages.demo-module.demo',
+            ['packages-demo-module-demo'],
+            pathPattern: '#^/api/v1/packages/demo-module/(demo|status)$#',
+        ));
+
+        self::addToAssertionCount(1);
+    }
+
     public function testItRejectsForeignHandlerNamespaces(): void
     {
         $package = $this->package('demo-module');
