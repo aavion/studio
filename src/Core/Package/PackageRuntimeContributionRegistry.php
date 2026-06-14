@@ -29,6 +29,7 @@ use App\View\Injection\DynamicViewInjection;
 use App\View\Injection\DynamicViewInjectionProviderInterface;
 use App\View\Injection\StaticViewInjection;
 use App\View\Injection\StaticViewInjectionProviderInterface;
+use Symfony\Component\HttpFoundation\Cookie;
 
 final class PackageRuntimeContributionRegistry implements StaticViewInjectionProviderInterface, DynamicViewInjectionProviderInterface, PackageSettingProviderInterface, ApiEndpointProviderInterface, ApiEndpointHandlerProviderInterface, LiveEndpointProviderInterface, LiveEndpointHandlerProviderInterface, CookieConsentProviderInterface, SchedulerTaskProviderInterface, SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface
 {
@@ -128,7 +129,7 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
         }
 
         if ($contribution instanceof CookieConsentDefinition) {
-            $this->cookieConsentDefinitions[] = $contribution;
+            $this->addCookieConsentDefinition($package, $contribution);
 
             return;
         }
@@ -293,6 +294,55 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
     {
         PackageLiveContributionGuard::assertHandler($package, $handler);
         $this->liveEndpointHandlers[] = $handler;
+    }
+
+    private function addCookieConsentDefinition(ExtensionPackage $package, CookieConsentDefinition $definition): void
+    {
+        if ($definition->isNecessary() && !$this->necessaryPackageCookieAllowed($package, $definition->cookie())) {
+            throw MessageException::invalidArgument(PackageMessageKey::PACKAGE_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+                '%package%' => $package->packageName(),
+                '%type%' => CookieConsentDefinition::class.'::necessary('.$definition->name().')',
+            ]);
+        }
+
+        $this->cookieConsentDefinitions[] = $definition;
+    }
+
+    private function necessaryPackageCookieAllowed(ExtensionPackage $package, Cookie $cookie): bool
+    {
+        $prefixes = $this->cookieNamePrefixes($package);
+        $sameSite = $cookie->getSameSite();
+
+        return $this->cookieNameHasPackagePrefix($cookie->getName(), $prefixes)
+            && (null === $cookie->getDomain() || '' === trim($cookie->getDomain()))
+            && in_array($sameSite, [Cookie::SAMESITE_LAX, Cookie::SAMESITE_STRICT], true);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function cookieNamePrefixes(ExtensionPackage $package): array
+    {
+        $slug = strtolower($package->packageName());
+
+        return array_values(array_unique([
+            $slug.'_',
+            str_replace('-', '_', $slug).'_',
+        ]));
+    }
+
+    /**
+     * @param list<string> $prefixes
+     */
+    private function cookieNameHasPackagePrefix(string $name, array $prefixes): bool
+    {
+        foreach ($prefixes as $prefix) {
+            if (str_starts_with($name, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function staticViewInjections(): array

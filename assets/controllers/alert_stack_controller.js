@@ -285,7 +285,7 @@ export default class extends Controller {
                 continue;
             }
 
-            changed = this.removeAlertById(id, false, false) || changed;
+            changed = this.removeAlertById(id, true, false) || changed;
         }
 
         if (!changed) {

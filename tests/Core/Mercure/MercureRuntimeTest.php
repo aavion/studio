@@ -14,6 +14,7 @@ use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Jwt\StaticTokenProvider;
 use Symfony\Component\Mercure\Jwt\TokenFactoryInterface;
 use Symfony\Component\Mercure\Update;
+use Symfony\Component\Process\Process;
 
 final class MercureRuntimeTest extends TestCase
 {
@@ -128,6 +129,36 @@ final class MercureRuntimeTest extends TestCase
             self::assertFalse($manager->isInstalled());
             self::assertFileDoesNotExist($manager->binaryPath());
         } finally {
+            $this->removeDirectory($root);
+        }
+    }
+
+    public function testStopIgnoresStalePidFilesThatPointToAnotherProcess(): void
+    {
+        $root = sys_get_temp_dir().'/studio-mercure-stale-pid-test-'.bin2hex(random_bytes(4));
+        $binaryManager = new MercureBinaryManager($root);
+        $runtime = new MercureRuntime(
+            $binaryManager,
+            $this->hub(),
+            'http://127.0.0.1:8000',
+            $root,
+        );
+        $process = new Process([PHP_BINARY, '-r', 'sleep(30);']);
+        $process->start();
+
+        try {
+            $pid = $process->getPid();
+            self::assertIsInt($pid);
+            @mkdir(dirname($runtime->pidPath()), 0775, true);
+            @mkdir(dirname($binaryManager->binaryPath()), 0775, true);
+            file_put_contents($binaryManager->binaryPath(), 'not the running process');
+            file_put_contents($runtime->pidPath(), (string) $pid);
+
+            self::assertTrue($runtime->stop());
+            self::assertTrue($process->isRunning());
+            self::assertFileDoesNotExist($runtime->pidPath());
+        } finally {
+            $process->stop(0);
             $this->removeDirectory($root);
         }
     }

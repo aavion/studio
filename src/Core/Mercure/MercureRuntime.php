@@ -86,14 +86,14 @@ final readonly class MercureRuntime
     {
         $pid = $this->pid();
 
-        return null !== $pid && $this->isProcessRunning($pid) ? $pid : null;
+        return null !== $pid && $this->pidBelongsToBinary($pid) ? $pid : null;
     }
 
     public function isRunning(): bool
     {
         $pid = $this->pid();
 
-        if (null !== $pid && $this->isProcessRunning($pid)) {
+        if (null !== $pid && $this->pidBelongsToBinary($pid)) {
             return true;
         }
 
@@ -127,7 +127,7 @@ final readonly class MercureRuntime
             return [] === $this->binaryProcessIds();
         }
 
-        if (!$this->isProcessRunning($pid)) {
+        if (!$this->pidBelongsToBinary($pid)) {
             if ($this->terminateBinaryProcesses()) {
                 $this->removePidFile();
 
@@ -438,6 +438,11 @@ final readonly class MercureRuntime
         }
 
         return false;
+    }
+
+    private function pidBelongsToBinary(int $pid): bool
+    {
+        return in_array($pid, $this->binaryProcessIds(), true);
     }
 
     private function terminate(int $pid): bool

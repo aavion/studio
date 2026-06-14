@@ -94,12 +94,16 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
         }
 
         $mercureStopped = $this->stopMercureBeforeSecretRotation();
+        if (!$mercureStopped) {
+            $this->markMercureUnavailableAfterFailedStop();
+        }
         $apiKeysRevoked = $this->revokeActiveApiKeys();
         $resetLinks = $this->issueOwnerPasswordResetLinks();
         $this->storeFingerprint($fingerprints, $environmentKey, $currentFingerprint);
 
         $this->auditLogger->log(AccessActor::fromAccess(9, [], username: 'system'), 'security.app_secret_rotated', [
             'environment' => $this->environment,
+            'mercure_stopped' => $mercureStopped,
             'api_keys_revoked' => $apiKeysRevoked,
             'password_reset_link_owners' => $resetLinks['owners'],
             'password_reset_links_issued' => $resetLinks['issued'],
@@ -146,6 +150,14 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
             return null === $this->mercureRuntime || $this->mercureRuntime->stop();
         } catch (Throwable) {
             return false;
+        }
+    }
+
+    private function markMercureUnavailableAfterFailedStop(): void
+    {
+        try {
+            $this->config->set(MercureAvailability::AVAILABLE_KEY, false, ConfigValueType::Boolean);
+        } catch (Throwable) {
         }
     }
 

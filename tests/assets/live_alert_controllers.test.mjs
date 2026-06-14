@@ -117,7 +117,7 @@ test('alert stack stores new alerts, deduplicates updates, and closes all active
     assert.deepEqual(JSON.parse(sessionStorage.getItem(controller.closedStorageKey)), ['alert-1']);
 });
 
-test('alert stack auto-dismiss removes transient alerts without closing future duplicates', () => {
+test('alert stack auto-dismiss removes transient alerts and remembers delivered ids', () => {
     const { sessionStorage, window } = installDom();
     let scheduled = null;
     window.setTimeout = (callback) => {
@@ -156,13 +156,13 @@ test('alert stack auto-dismiss removes transient alerts without closing future d
     assert.equal(controller.activeCount, 0);
     assert.equal(list.children.length, 0);
     assert.deepEqual(JSON.parse(sessionStorage.getItem(controller.storageKey)), []);
-    assert.equal(sessionStorage.getItem(controller.closedStorageKey), null);
+    assert.deepEqual(JSON.parse(sessionStorage.getItem(controller.closedStorageKey)), ['auto-alert']);
     assert.deepEqual(closed, []);
 
     controller.upsertAlert({ id: 'auto-alert', level: 'success', message: 'Saved again', mode: 'auto' });
 
-    assert.equal(controller.activeCount, 1);
-    assert.equal(list.children.length, 1);
+    assert.equal(controller.activeCount, 0);
+    assert.equal(list.children.length, 0);
 });
 
 test('alert stack auto-dismiss keeps persistent alerts active', () => {
@@ -259,6 +259,72 @@ test('UI alert stream opens EventSource with credentials and forwards valid aler
     assert.deepEqual(sources[0].options, { withCredentials: true });
     assert.deepEqual(received, [{ id: 'push', message: 'Pushed' }]);
     assert.equal(sources[0].closed, true);
+});
+
+test('UI alert stream performs a one-time queue catch-up when the stream opens', async () => {
+    const { window } = installDom();
+
+    const sources = [];
+    const fetches = [];
+    window.fetch = async (url, options) => {
+        fetches.push({ url, options });
+
+        return {
+            ok: true,
+            async json() {
+                return {
+                    cursor: 42,
+                    alerts: [{ id: 'queued', message: 'Queued fallback' }],
+                };
+            },
+        };
+    };
+
+    class FakeEventSource {
+        static CLOSED = 2;
+
+        constructor() {
+            this.listeners = new Map();
+            sources.push(this);
+        }
+
+        addEventListener(type, listener) {
+            this.listeners.set(type, listener);
+        }
+
+        removeEventListener(type) {
+            this.listeners.delete(type);
+        }
+
+        close() {}
+    }
+    window.EventSource = FakeEventSource;
+    globalThis.EventSource = FakeEventSource;
+
+    const controller = new UiAlertStreamController();
+    const element = new FakeElement();
+    const received = [];
+    element.addEventListener('ui-alert:received', (event) => received.push(event.detail));
+    controller.element = element;
+    controller.hasUrlValue = true;
+    controller.urlValue = 'http://127.0.0.1:3000/.well-known/mercure?topic=alerts';
+    controller.hasCatchUpUrlValue = true;
+    controller.catchUpUrlValue = '/api/live/alerts';
+    controller.catchUpCursorValue = 7;
+    controller.credentialsValue = false;
+
+    controller.connect();
+    sources[0].listeners.get('open')();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal(fetches.length, 1);
+    assert.equal(fetches[0].url, 'http://127.0.0.1:8000/api/live/alerts?cursor=7');
+    assert.deepEqual(fetches[0].options, {
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+    });
+    assert.equal(controller.catchUpCursorValue, 42);
+    assert.deepEqual(received, [{ id: 'queued', message: 'Queued fallback' }]);
 });
 
 test('UI alert stream schedules reconnect when the stream closes', () => {

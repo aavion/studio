@@ -31,7 +31,15 @@ final readonly class MercureUiAlertPublisher implements UiAlertPublisherInterfac
             return null;
         }
 
-        return $this->hub->publish(new Update($topic, $data, private: $private, type: 'ui-alert'));
+        $id = $payload['id'] ?? null;
+
+        return $this->hub->publish(new Update(
+            $topic,
+            $data,
+            private: $private,
+            id: is_string($id) ? $id : null,
+            type: 'ui-alert',
+        ));
     }
 
     public function publishToUser(UserAccount|UserInterface|string $user, UiAlert|Message|UiAlertTranslation $alert, ?string $locale = null): ?string

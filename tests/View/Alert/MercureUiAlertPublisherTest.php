@@ -29,6 +29,7 @@ final class MercureUiAlertPublisherTest extends TestCase
         self::assertInstanceOf(Update::class, $hub->update);
         self::assertSame(['https://example.test/ui-alerts/session/topic'], $hub->update->getTopics());
         self::assertFalse($hub->update->isPrivate());
+        self::assertNull($hub->update->getId());
         self::assertSame('ui-alert', $hub->update->getType());
         self::assertSame([
             'message' => 'Saved',
@@ -47,6 +48,16 @@ final class MercureUiAlertPublisherTest extends TestCase
         $publisher->publish('https://example.test/ui-alerts/session/topic', UiAlert::fromLevel('success', 'Saved'), private: true);
 
         self::assertTrue($hub->update?->isPrivate());
+    }
+
+    public function testItUsesStableAlertIdsAsMercureEventIds(): void
+    {
+        $hub = new RecordingHub();
+        $publisher = $this->publisher($hub);
+
+        $publisher->publish('https://example.test/ui-alerts/session/topic', UiAlert::fromLevel('success', 'Saved', id: 'ui-alert-stable'));
+
+        self::assertSame('ui-alert-stable', $hub->update?->getId());
     }
 
     public function testItTranslatesStructuredMessagesBeforePublishing(): void

@@ -6,6 +6,8 @@ export default class extends Controller {
 
     static values = {
         url: String,
+        catchUpUrl: String,
+        catchUpCursor: { type: Number, default: 0 },
         credentials: { type: Boolean, default: false },
     };
 
@@ -43,6 +45,7 @@ export default class extends Controller {
 
     open = () => {
         this.reconnectAttempts = 0;
+        this.catchUp();
     };
 
     error = () => {
@@ -74,6 +77,39 @@ export default class extends Controller {
             // Ignore malformed updates; the stream can continue with the next event.
         }
     };
+
+    async catchUp() {
+        if (!this.hasCatchUpUrlValue || !this.catchUpUrlValue || typeof window.fetch !== 'function') {
+            return;
+        }
+
+        try {
+            const url = new URL(this.catchUpUrlValue, window.location.origin);
+            url.searchParams.set('cursor', String(Math.max(0, this.catchUpCursorValue || 0)));
+            const response = await window.fetch(url.toString(), {
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json' },
+            });
+            if (!response.ok) {
+                return;
+            }
+
+            const payload = await response.json();
+            const cursor = Number(payload.cursor);
+            if (Number.isFinite(cursor)) {
+                this.catchUpCursorValue = Math.max(0, this.catchUpCursorValue || 0, cursor);
+            }
+
+            for (const alert of Array.isArray(payload.alerts) ? payload.alerts : []) {
+                this.element.dispatchEvent(new CustomEvent('ui-alert:received', {
+                    bubbles: true,
+                    detail: alert,
+                }));
+            }
+        } catch {
+            // Stream delivery remains active; the next open/reconnect can catch up again.
+        }
+    }
 
     scheduleReconnect(delay = null) {
         if (!this.shouldReconnect || this.reconnectTimer) {
