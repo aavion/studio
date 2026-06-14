@@ -352,6 +352,22 @@ html {
     pointer-events: none;
 }
 
+.system-chart-panel,
+.system-map-view {
+    min-width: 0;
+}
+
+.system-chart-panel-canvas,
+.system-map-view-canvas {
+    min-height: 20rem;
+}
+
+.system-map-view-canvas {
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--system-radius-sm);
+}
+
 .system-alert {
     padding: 0.875rem 1rem;
     border: var(--system-border);

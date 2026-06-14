@@ -64,7 +64,7 @@
 
     <section class="system-panel">
         <h2>{{ 'admin.users.accounts.title'|trans }}</h2>
-        <form method="get" class="system-form system-backend-log-filter-form">
+        <form method="get" class="system-form system-backend-log-filter-form" data-controller="filter-form" data-action="input->filter-form#queue change->filter-form#queue submit->filter-form#submit">
             <div class="system-form-grid">
                 <label>
                     <span>{{ 'admin.users.filters.search'|trans }}</span>
