@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Package;
 
+use App\Api\ApiMessageKey;
+use App\Core\Access\AccessLevel;
 use App\Core\Message\MessageException;
 use App\Core\Package\ExtensionPackageStatus;
 use App\Core\Package\PackageLiveContributionGuard;
@@ -33,7 +35,6 @@ final class PackageLiveContributionGuardTest extends TestCase
             'getCaptchaSeed',
             'Return a captcha seed.',
             'packages.captcha-pack.live.seed',
-            allowPublic: true,
         ));
 
         self::addToAssertionCount(1);
@@ -53,7 +54,6 @@ final class PackageLiveContributionGuardTest extends TestCase
             'getAlertDemo',
             'Return alert demo payload.',
             'packages.alerts.live.demo',
-            allowPublic: true,
         ));
     }
 
@@ -71,7 +71,6 @@ final class PackageLiveContributionGuardTest extends TestCase
             'getCaptchaSeed',
             'Return a captcha seed.',
             'packages.captcha-pack.live.seed',
-            allowPublic: true,
         ));
     }
 
@@ -89,8 +88,24 @@ final class PackageLiveContributionGuardTest extends TestCase
             'getCaptchaSeed',
             'Return a captcha seed.',
             'packages.captcha-pack.seed',
-            allowPublic: true,
         ));
+    }
+
+    public function testItRejectsMutatingLiveEndpointMethods(): void
+    {
+        $this->expectException(MessageException::class);
+        $this->expectExceptionMessage(ApiMessageKey::API_ENDPOINT_METHOD_INVALID);
+
+        new LiveEndpointDefinition(
+            'package',
+            Request::METHOD_POST,
+            PackageLiveEndpointPath::path('captcha-pack', 'seed'),
+            'api_live_package_dispatch',
+            'refreshCaptchaSeed',
+            'Refresh a captcha seed.',
+            'packages.captcha-pack.live.seed',
+            minimumAccessLevel: AccessLevel::PUBLIC,
+        );
     }
 
     public function testRuntimeRegistryExposesLiveEndpointAndHandlerContributions(): void
@@ -104,7 +119,6 @@ final class PackageLiveContributionGuardTest extends TestCase
             'getCaptchaSeed',
             'Return a captcha seed.',
             'packages.captcha-pack.live.seed',
-            allowPublic: true,
         );
         $handler = new class implements LiveEndpointHandlerInterface {
             public function liveEndpointHandlerKey(): string

@@ -10,7 +10,6 @@ use InvalidArgumentException;
 final readonly class UiAlert
 {
     /**
-     * @param array<string, mixed> $context
      * @param list<array<string, mixed>> $actions
      */
     public function __construct(
@@ -133,7 +132,7 @@ final readonly class UiAlert
     }
 
     /**
-     * @return array{message: string, level: string, persistent: bool, mode: string, loading: bool, title?: string, id?: string, actions?: list<array<string, mixed>>, code?: string, translation_key?: string, context?: array<string, mixed>}
+     * @return array{message: string, level: string, persistent: bool, mode: string, loading: bool, title?: string, id?: string, actions?: list<array<string, mixed>>, code?: string, translation_key?: string}
      */
     public function toArray(): array
     {
@@ -163,10 +162,6 @@ final readonly class UiAlert
 
         if (null !== $this->translationKey) {
             $payload['translation_key'] = $this->translationKey;
-        }
-
-        if ([] !== $this->context) {
-            $payload['context'] = $this->context;
         }
 
         return $payload;

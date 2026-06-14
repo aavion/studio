@@ -52,4 +52,18 @@ final class UiAlertTest extends TestCase
         self::assertTrue($alert->hasId());
         self::assertSame('ui-alert-test', $alert->toArray()['id']);
     }
+
+    public function testItDoesNotSerializeDiagnosticContext(): void
+    {
+        $alert = UiAlert::translated(
+            'Package failed.',
+            'error',
+            'package.runtime.failure',
+            'message.package.runtime_failure',
+            ['path' => '/srv/example/private.log', 'exception' => 'RuntimeException'],
+        );
+
+        self::assertArrayNotHasKey('context', $alert->toArray());
+        self::assertSame('message.package.runtime_failure', $alert->toArray()['translation_key']);
+    }
 }

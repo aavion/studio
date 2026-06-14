@@ -27,7 +27,7 @@ final class LiveEndpointControllerTest extends TestCase
     {
         $controller = $this->controller($this->endpoint(AccessLevel::ADMIN), $this->user(AccessLevel::USER));
 
-        $response = $controller->dispatch(Request::create('/api/live/demo-pack/admin-action', Request::METHOD_POST));
+        $response = $controller->dispatch(Request::create('/api/live/demo-pack/admin-action', Request::METHOD_GET));
 
         self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
         self::assertStringContainsString('forbidden', (string) $response->getContent());
@@ -37,7 +37,7 @@ final class LiveEndpointControllerTest extends TestCase
     {
         $controller = $this->controller($this->endpoint(AccessLevel::ADMIN), $this->user(AccessLevel::ADMIN));
 
-        $response = $controller->dispatch(Request::create('/api/live/demo-pack/admin-action', Request::METHOD_POST));
+        $response = $controller->dispatch(Request::create('/api/live/demo-pack/admin-action', Request::METHOD_GET));
 
         self::assertSame(Response::HTTP_OK, $response->getStatusCode());
         self::assertSame('{"status":"ok","next_poll_ms":0}', (string) $response->getContent());
@@ -53,7 +53,6 @@ final class LiveEndpointControllerTest extends TestCase
             'runAdminAction',
             'Run an admin live action.',
             'packages.demo-pack.live.admin_action',
-            allowPublic: true,
             minimumAccessLevel: AccessLevel::ADMIN,
         );
         $controller = $this->controller($endpoint, null);
@@ -102,7 +101,7 @@ final class LiveEndpointControllerTest extends TestCase
     {
         return new LiveEndpointDefinition(
             'package',
-            Request::METHOD_POST,
+            Request::METHOD_GET,
             '/api/live/demo-pack/admin-action',
             'api_live_package_dispatch',
             'runAdminAction',

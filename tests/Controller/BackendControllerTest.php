@@ -273,7 +273,7 @@ final class BackendControllerTest extends WebTestCase
                     'admin_password' => 'Safe1!pass',
                     'admin_password_confirm' => 'Safe1!pass',
                     'admin_email' => 'admin@localhost.local',
-                    'app_secret' => 'custom-secret-12',
+                    'app_secret' => 'custom-setup-app-secret-not-secure',
                     'dry_run' => true,
                 ],
                 'completed' => ['language', 'site', 'database', 'admin'],
@@ -291,7 +291,7 @@ final class BackendControllerTest extends WebTestCase
             $encodedState = json_encode($storedState, JSON_THROW_ON_ERROR);
             self::assertIsString($encodedState);
             self::assertStringNotContainsString('Safe1!pass', $encodedState);
-            self::assertStringNotContainsString('custom-secret-12', $encodedState);
+            self::assertStringNotContainsString('custom-setup-app-secret-not-secure', $encodedState);
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
         }

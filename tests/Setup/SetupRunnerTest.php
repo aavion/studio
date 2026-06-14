@@ -71,7 +71,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         );
         $seed = new SetupDefaultSeed();
 
@@ -81,8 +81,8 @@ final class SetupRunnerTest extends TestCase
         self::assertInstanceOf(ActionLog::class, $result->value());
         self::assertFalse($result->context()['halt_on_error']);
         self::assertFileExists($this->root.'/.env.test.local');
-        self::assertStringContainsString("APP_SECRET='test-secret-12'", (string) file_get_contents($this->root.'/.env.test.local'));
-        self::assertStringContainsString("MERCURE_JWT_SECRET='".hash('sha256', 'test-secret-12')."'", (string) file_get_contents($this->root.'/.env.test.local'));
+        self::assertStringContainsString("APP_SECRET='test-setup-app-secret-not-secure'", (string) file_get_contents($this->root.'/.env.test.local'));
+        self::assertStringContainsString("MERCURE_JWT_SECRET='".hash('sha256', 'test-setup-app-secret-not-secure')."'", (string) file_get_contents($this->root.'/.env.test.local'));
         $storedPhpBinary = (new PhpCliBinaryPreferenceStore())->read($this->root, 'test');
         self::assertIsString($storedPhpBinary);
         self::assertTrue((new PhpCliBinaryValidator())->validate([$storedPhpBinary], $this->root)->isValid());
@@ -173,7 +173,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'short',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -223,7 +223,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertTrue($result->isSuccess());
@@ -252,7 +252,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertTrue($result->isSuccess());
@@ -280,7 +280,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -304,7 +304,7 @@ final class SetupRunnerTest extends TestCase
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: $this->sqliteUrl($this->root.'/var/setup.db'),
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -341,7 +341,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -376,7 +376,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -409,7 +409,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -432,7 +432,7 @@ final class SetupRunnerTest extends TestCase
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: $this->sqliteUrl($this->root.'/var/setup.db'),
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -461,7 +461,7 @@ final class SetupRunnerTest extends TestCase
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: $this->sqliteUrl($databasePath),
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertTrue($result->isSuccess());
@@ -604,7 +604,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertTrue($result->isSuccess());

@@ -28,7 +28,7 @@ final readonly class DispatchUiAlertMessageHandler
                 (bool) ($message->payload['persistent'] ?? false),
                 is_string($message->payload['code'] ?? null) ? $message->payload['code'] : null,
                 is_string($message->payload['translation_key'] ?? null) ? $message->payload['translation_key'] : null,
-                is_array($message->payload['context'] ?? null) ? $message->payload['context'] : [],
+                [],
                 (string) ($message->payload['mode'] ?? 'auto'),
                 is_string($message->payload['id'] ?? null) ? $message->payload['id'] : null,
                 is_array($message->payload['actions'] ?? null) ? $message->payload['actions'] : [],

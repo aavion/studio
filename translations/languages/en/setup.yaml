@@ -318,3 +318,4 @@ setup:
     clear_cache: 'Clear cache'
     run_package_discovery: 'Run package discovery'
     run_asset_rebuild: 'Rebuild assets'
+    run_mercure_health: 'Check Mercure hub'

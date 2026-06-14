@@ -11,7 +11,7 @@ use App\Security\PasswordPolicy;
 
 final readonly class SetupInputValidator
 {
-    public const MIN_APP_SECRET_LENGTH = 12;
+    public const MIN_APP_SECRET_LENGTH = 32;
 
     public function __construct(
         private SetupPasswordPolicy $passwordPolicy = new SetupPasswordPolicy(),

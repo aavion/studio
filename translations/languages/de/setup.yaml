@@ -318,3 +318,4 @@ setup:
     clear_cache: 'Cache leeren'
     run_package_discovery: 'Paket-Discovery ausführen'
     run_asset_rebuild: 'Assets neu bauen'
+    run_mercure_health: 'Mercure-Hub prüfen'

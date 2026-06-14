@@ -31,7 +31,6 @@ final readonly class UiAlertMessageFactory
             $alert->level(),
             $alert->code(),
             $alert->translationKey(),
-            $alert->context(),
         )->withPresentation($presentation);
     }
 

@@ -27,7 +27,7 @@ final readonly class LiveEndpointController
     ) {
     }
 
-    #[Route('/api/live/{packageSlug}/{resourcePath}', name: 'api_live_package_dispatch', requirements: ['packageSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'resourcePath' => '.+'], methods: ['GET', 'HEAD', 'OPTIONS', 'POST'], priority: -100)]
+    #[Route('/api/live/{packageSlug}/{resourcePath}', name: 'api_live_package_dispatch', requirements: ['packageSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'resourcePath' => '.+'], methods: ['GET'], priority: -100)]
     public function dispatch(Request $request): Response
     {
         $endpoint = $this->endpoints->endpointForRequest($request);
@@ -39,8 +39,7 @@ final readonly class LiveEndpointController
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $minimumAccessLevel = $endpoint->minimumAccessLevel()
-            ?? ($endpoint->allowsPublic() ? AccessLevel::PUBLIC : AccessLevel::USER);
+        $minimumAccessLevel = $endpoint->minimumAccessLevel() ?? AccessLevel::PUBLIC;
         $user = $this->security->getUser();
         $actor = $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
 

@@ -20,7 +20,6 @@ final readonly class LiveEndpointDefinition
         private string $operationId,
         private string $summary,
         private string $handlerKey,
-        private bool $allowPublic = false,
         private ?int $minimumAccessLevel = null,
         private ?string $pathPattern = null,
     ) {
@@ -31,7 +30,6 @@ final readonly class LiveEndpointDefinition
         $this->assertOperationId($operationId);
         $this->assertHandlerKey($handlerKey);
         $this->assertSummary($summary);
-        $this->assertPublicAccess($method, $allowPublic);
         AccessLevel::assert($minimumAccessLevel);
         $this->assertPathPattern($pathPattern);
     }
@@ -71,11 +69,6 @@ final readonly class LiveEndpointDefinition
         return $this->handlerKey;
     }
 
-    public function allowsPublic(): bool
-    {
-        return $this->allowPublic;
-    }
-
     public function minimumAccessLevel(): ?int
     {
         return $this->minimumAccessLevel;
@@ -106,12 +99,7 @@ final readonly class LiveEndpointDefinition
 
     private function assertMethod(string $method): void
     {
-        if (!in_array($method, [
-            Request::METHOD_GET,
-            Request::METHOD_HEAD,
-            Request::METHOD_OPTIONS,
-            Request::METHOD_POST,
-        ], true)) {
+        if (Request::METHOD_GET !== $method) {
             throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_METHOD_INVALID, [
                 '%method%' => $method,
             ]);
@@ -150,17 +138,6 @@ final readonly class LiveEndpointDefinition
         if ('' === trim($summary)) {
             throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_SUMMARY_EMPTY);
         }
-    }
-
-    private function assertPublicAccess(string $method, bool $allowPublic): void
-    {
-        if (!$allowPublic || in_array($method, [Request::METHOD_GET, Request::METHOD_HEAD, Request::METHOD_OPTIONS], true)) {
-            return;
-        }
-
-        throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_METHOD_INVALID, [
-            '%method%' => $method,
-        ]);
     }
 
     private function assertPathPattern(?string $pattern): void

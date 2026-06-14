@@ -61,6 +61,7 @@ final class MercureUiAlertPublisherTest extends TestCase
         self::assertSame('success', $payload['level']);
         self::assertSame(CommonMessageCode::SUCCESS, $payload['code']);
         self::assertSame('message.package.discovery_completed', $payload['translation_key']);
+        self::assertArrayNotHasKey('context', $payload);
     }
 
     private function publisher(RecordingHub $hub): MercureUiAlertPublisher

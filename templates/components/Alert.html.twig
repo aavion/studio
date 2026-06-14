@@ -37,7 +37,7 @@
         'data-alert-id': alert_id,
         'data-alert-mode': alert_mode,
         'data-alert-persistent': alert_mode == 'persistent' or alert_persistent ? 'true' : 'false',
-        'data-alert-payload': alert|merge({
+        'data-alert-payload': {
             id: alert_id,
             level: normalized_level,
             title: alert_title,
@@ -46,7 +46,9 @@
             persistent: alert_persistent,
             actions: alert_actions,
             loading: alert_loading,
-        })|json_encode|e('html_attr'),
+            code: alert.code|default(null),
+            translation_key: alert.translation_key|default(null),
+        }|json_encode|e('html_attr'),
     }) }}
 >
     <span class="system-alert-icon ti {{ alert_icon }}" aria-hidden="true"></span>
