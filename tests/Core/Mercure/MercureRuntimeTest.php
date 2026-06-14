@@ -133,6 +133,26 @@ final class MercureRuntimeTest extends TestCase
         }
     }
 
+    public function testItNormalizesColonOnlyConfiguredHubUrls(): void
+    {
+        $mercureUrlState = $this->setEnvironment('MERCURE_URL', 'http://:3000/.well-known/mercure');
+        $publicUrlState = $this->setEnvironment('MERCURE_PUBLIC_URL', 'https://:3443/.well-known/mercure');
+        $runtime = new MercureRuntime(
+            new MercureBinaryManager('/tmp/studio'),
+            $this->hub(),
+            'http://127.0.0.1:8000',
+            '/tmp/studio',
+        );
+
+        try {
+            self::assertSame('http://127.0.0.1:3000/.well-known/mercure', $runtime->publishHubUrl());
+            self::assertSame('https://127.0.0.1:3443/.well-known/mercure', $runtime->publicHubUrl());
+        } finally {
+            $this->restoreEnvironment('MERCURE_URL', $mercureUrlState);
+            $this->restoreEnvironment('MERCURE_PUBLIC_URL', $publicUrlState);
+        }
+    }
+
     public function testPublishHealthProbeRequiresSuccessfulPublishResponse(): void
     {
         foreach ([200, 201, 204] as $status) {

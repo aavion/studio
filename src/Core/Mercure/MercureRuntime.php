@@ -225,14 +225,23 @@ final readonly class MercureRuntime
     {
         $url = trim((string) ($_SERVER['MERCURE_URL'] ?? $_ENV['MERCURE_URL'] ?? getenv('MERCURE_URL') ?: ''));
 
-        return '' !== $url ? $url : $this->localHubUrl();
+        return '' !== $url ? $this->normalizeHubUrl($url) : $this->localHubUrl();
     }
 
     public function publicHubUrl(): string
     {
         $url = trim((string) ($_SERVER['MERCURE_PUBLIC_URL'] ?? $_ENV['MERCURE_PUBLIC_URL'] ?? getenv('MERCURE_PUBLIC_URL') ?: ''));
 
-        return '' !== $url ? $url : $this->localHubUrl();
+        return '' !== $url ? $this->normalizeHubUrl($url) : $this->localHubUrl();
+    }
+
+    private function normalizeHubUrl(string $url): string
+    {
+        if (1 === preg_match('#^(https?://):(\d+)(/.*)?$#', $url, $matches)) {
+            return $matches[1].'127.0.0.1:'.$matches[2].($matches[3] ?? '');
+        }
+
+        return $url;
     }
 
     private function publishDirectly(string $url): bool
