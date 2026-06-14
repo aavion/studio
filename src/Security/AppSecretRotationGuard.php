@@ -18,7 +18,9 @@ use App\Entity\ApiKey;
 use App\Entity\UserAccount;
 use App\Mail\AccountMailFlow;
 use App\Mail\MailLocaleResolver;
+use App\Setup\SetupInputValidator;
 use Doctrine\ORM\EntityManagerInterface;
+use RuntimeException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -62,6 +64,8 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
 
     public function handle(): void
     {
+        $this->assertSupportedSecret();
+
         if (null !== $this->databaseReadyState && !$this->databaseReadyState->isReady()) {
             return;
         }
@@ -113,6 +117,18 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
                 ],
             );
         }
+    }
+
+    private function assertSupportedSecret(): void
+    {
+        if (strlen($this->secret) >= SetupInputValidator::MIN_APP_SECRET_LENGTH) {
+            return;
+        }
+
+        throw new RuntimeException(sprintf(
+            'The configured APP_SECRET is unsupported: it must be at least %d bytes.',
+            SetupInputValidator::MIN_APP_SECRET_LENGTH,
+        ));
     }
 
     private function schemaReady(): bool
