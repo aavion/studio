@@ -141,6 +141,7 @@ final readonly class MercureAvailability
                 $this->projectDir,
                 $this->runtime->logPath(),
                 $this->runtime->pidPath(),
+                $this->runtime->startEnvironment(),
             );
         } catch (Throwable) {
             return false;

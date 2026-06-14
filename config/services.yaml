@@ -151,6 +151,10 @@ services:
         arguments:
             $secret: '%kernel.secret%'
 
+    App\View\Twig\UiAlertTwigExtension:
+        arguments:
+            $secret: '%kernel.secret%'
+
     App\Content\Api\ContentApiPath: ~
 
     App\Core\Package\PackageTranslationNamespaceValidator:

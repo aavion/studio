@@ -7,6 +7,7 @@
     'data-controller': 'alert-stack native-notifications',
     'data-action': 'ui-alert:received->alert-stack#append',
     'data-alert-stack-dismiss-delay-value': dismiss_delay,
+    'data-alert-stack-storage-scope-value': ui_alert_storage_scope(),
     'data-alert-close-label': 'ui.alert.close'|trans,
     'data-alert-notifications-label': 'ui.alert.notifications'|trans,
     'data-native-notifications-enabled-value': app.user and app.user.settings.native_notifications|default(false) ? 'true' : 'false',

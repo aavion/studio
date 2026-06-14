@@ -469,6 +469,9 @@ admin:
       live_operation_cleanup:
         label: 'Live operation cleanup'
         description: 'Removes expired live-operation state files.'
+      ui_alert_inbox_cleanup:
+        label: 'UI alert inbox cleanup'
+        description: 'Removes queued UI alerts after their delivery retention expires.'
       package_discovery:
         label: 'Package discovery'
         description: 'Discovers packages and updates the package registry.'

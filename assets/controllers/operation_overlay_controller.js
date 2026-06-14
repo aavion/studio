@@ -118,6 +118,7 @@ export default class extends Controller {
         this.polling = true;
         this.livePoller = new LivePoller({
             interval: 750,
+            invalidJsonMessage: this.label('statusError'),
             onPayload: (payload, nextCursor) => {
                 this.storeOperation(
                     statusUrl,

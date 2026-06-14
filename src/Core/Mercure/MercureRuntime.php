@@ -29,21 +29,28 @@ final readonly class MercureRuntime
      */
     public function startCommand(): array
     {
-        $jwtSecret = $this->jwtSecret();
-
         return [
             $this->binaryManager->binaryPath(),
             '--addr',
             $this->listenAddress(),
-            '--publisher-jwt-key',
-            $jwtSecret,
-            '--subscriber-jwt-key',
-            $jwtSecret,
             '--allow-anonymous',
             '--cors-allowed-origins',
             '*',
             '--transport-url',
             $this->transportUrl(),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function startEnvironment(): array
+    {
+        $jwtSecret = $this->jwtSecret();
+
+        return [
+            'MERCURE_PUBLISHER_JWT_KEY' => $jwtSecret,
+            'MERCURE_SUBSCRIBER_JWT_KEY' => $jwtSecret,
         ];
     }
 
@@ -158,9 +165,7 @@ final readonly class MercureRuntime
 
     public function publishHealthProbe(): bool
     {
-        $url = $this->publishHubUrl();
-
-        return $this->hubEndpointProbe($url) || $this->publishDirectly($url);
+        return $this->publishDirectly($this->publishHubUrl());
     }
 
     public function publicSubscribeProbe(): bool
@@ -238,7 +243,7 @@ final readonly class MercureRuntime
                 ]),
             ]);
 
-            return self::probeStatusAccepted($response->getStatusCode());
+            return self::publishStatusAccepted($response->getStatusCode());
         } catch (Throwable) {
             return false;
         }
@@ -258,6 +263,11 @@ final readonly class MercureRuntime
     private static function probeStatusAccepted(int $status): bool
     {
         return ($status >= 200 && $status < 300) || 400 === $status || 401 === $status;
+    }
+
+    private static function publishStatusAccepted(int $status): bool
+    {
+        return $status >= 200 && $status < 300;
     }
 
     private function subscriberEndpointProbe(string $url): bool

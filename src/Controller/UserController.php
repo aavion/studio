@@ -76,7 +76,7 @@ final class UserController extends AbstractController
         $success = false;
         $errors = [];
         $usernameChangeEnabled = $this->userFlowConfig->usernameChangeEnabled();
-        $nativeNotificationsAvailable = $this->mercureAvailability->available(refreshIfStale: true);
+        $nativeNotificationsAvailable = $this->mercureAvailability->available();
 
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('user_profile', $this->stringField($request, '_csrf_token'))) {
@@ -134,14 +134,16 @@ final class UserController extends AbstractController
             }
 
             if ([] === $errors) {
+                $settings = $user->settings();
+                $settings['language'] = $language;
+                if ($nativeNotificationsAvailable) {
+                    $settings['native_notifications'] = '1' === $this->stringField($request, 'native_notifications');
+                }
+
                 $user->updateProfile([
                     'display_name' => $this->stringField($request, 'display_name'),
                 ]);
-                $user->updateSettings([
-                    ...$user->settings(),
-                    'language' => $language,
-                    'native_notifications' => $nativeNotificationsAvailable && '1' === $this->stringField($request, 'native_notifications'),
-                ]);
+                $user->updateSettings($settings);
                 try {
                     $this->stateMarkers->record(StateSubjectType::USER_ACCOUNT, $user->uid(), StateMarkerKey::MODIFIED, $user->username(), 'profile');
                     $this->entityManager->flush();

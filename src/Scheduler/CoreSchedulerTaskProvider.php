@@ -20,6 +20,13 @@ final readonly class CoreSchedulerTaskProvider implements SchedulerTaskProviderI
                 '*/15 * * * *',
             ),
             SchedulerTaskDefinition::command(
+                'system.ui_alert_inbox_cleanup',
+                'admin.scheduler.tasks.ui_alert_inbox_cleanup.label',
+                'admin.scheduler.tasks.ui_alert_inbox_cleanup.description',
+                'ui-alerts:cleanup-inbox',
+                '23 * * * *',
+            ),
+            SchedulerTaskDefinition::command(
                 'system.package_discovery',
                 'admin.scheduler.tasks.package_discovery.label',
                 'admin.scheduler.tasks.package_discovery.description',

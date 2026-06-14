@@ -24,10 +24,13 @@ final class CookieConsentController extends AbstractController
             return $this->redirectBack($request);
         }
 
-        $accepted = $request->request->all('cookies');
-        $accepted = is_array($accepted)
-            ? array_values(array_filter(array_map('strval', $accepted), 'strlen'))
-            : [];
+        $accepted = [];
+        if ('reject_optional' !== (string) $request->request->get('_cookie_consent_action', 'save_selection')) {
+            $accepted = $request->request->all('cookies');
+            $accepted = is_array($accepted)
+                ? array_values(array_filter(array_map('strval', $accepted), 'strlen'))
+                : [];
+        }
 
         $response = $this->redirectBack($request);
         $this->consent->attachConsentCookie($request, $response, $accepted);

@@ -21,12 +21,12 @@
                 <button class="system-button system-button-secondary" type="button" data-action="cookie-consent#toggleDetails">
                     {{ 'ui.cookie_consent.configure'|trans }}
                 </button>
-                <button class="system-button system-button-secondary" type="submit" data-action="cookie-consent#rejectOptional">
+                <button class="system-button system-button-secondary" type="submit" name="_cookie_consent_action" value="reject_optional" data-action="cookie-consent#rejectOptional">
                     {{ 'ui.cookie_consent.reject_optional'|trans }}
                 </button>
-                    <button class="system-button system-button-primary" type="submit">
-                        {{ 'ui.cookie_consent.accept_selected'|trans }}
-                    </button>
+                <button class="system-button system-button-primary" type="submit" name="_cookie_consent_action" value="save_selection">
+                    {{ 'ui.cookie_consent.accept_selected'|trans }}
+                </button>
             {% endif %}
             {% if not consent_prompt_required %}
                 <button class="system-button system-button-secondary" type="button" data-action="cookie-consent#close">

@@ -13,10 +13,11 @@ export default class extends Controller {
     static targets = ['alert', 'badge', 'clearAll', 'empty', 'list', 'panel', 'toggle'];
     static values = {
         dismissDelay: { type: Number, default: 8000 },
+        storageScope: { type: String, default: 'public' },
     };
 
-    static memoryAlerts = [];
-    static memoryClosedAlerts = [];
+    static memoryAlerts = new Map();
+    static memoryClosedAlerts = new Map();
     static storageKey = 'system.alerts.active';
     static closedStorageKey = 'system.alerts.closed';
 
@@ -328,20 +329,20 @@ export default class extends Controller {
         const payloads = [...this.alerts.values()].map((entry) => storableAlertPayload(entry.payload));
 
         try {
-            window.sessionStorage.setItem(this.constructor.storageKey, JSON.stringify(payloads));
+            window.sessionStorage.setItem(this.storageKey, JSON.stringify(payloads));
         } catch {
-            this.constructor.memoryAlerts = payloads;
+            this.constructor.memoryAlerts.set(this.storageKey, payloads);
         }
     }
 
     readStoredAlerts() {
         try {
-            const raw = window.sessionStorage.getItem(this.constructor.storageKey);
+            const raw = window.sessionStorage.getItem(this.storageKey);
             const parsed = raw ? JSON.parse(raw) : [];
 
             return Array.isArray(parsed) ? parsed.filter((payload) => payload && typeof payload === 'object') : [];
         } catch {
-            return this.constructor.memoryAlerts;
+            return this.constructor.memoryAlerts.get(this.storageKey) || [];
         }
     }
 
@@ -354,20 +355,20 @@ export default class extends Controller {
         this.closedAlertIds = new Set(ids);
 
         try {
-            window.sessionStorage.setItem(this.constructor.closedStorageKey, JSON.stringify(ids));
+            window.sessionStorage.setItem(this.closedStorageKey, JSON.stringify(ids));
         } catch {
-            this.constructor.memoryClosedAlerts = ids;
+            this.constructor.memoryClosedAlerts.set(this.closedStorageKey, ids);
         }
     }
 
     readClosedAlertIds() {
         try {
-            const raw = window.sessionStorage.getItem(this.constructor.closedStorageKey);
+            const raw = window.sessionStorage.getItem(this.closedStorageKey);
             const parsed = raw ? JSON.parse(raw) : [];
 
             return Array.isArray(parsed) ? parsed.map((id) => String(id || '').trim()).filter(Boolean) : [];
         } catch {
-            return this.constructor.memoryClosedAlerts;
+            return this.constructor.memoryClosedAlerts.get(this.closedStorageKey) || [];
         }
     }
 
@@ -379,6 +380,18 @@ export default class extends Controller {
 
     get closeLabel() {
         return this.element.dataset.alertCloseLabel || 'Close notification';
+    }
+
+    get storageKey() {
+        return `${this.constructor.storageKey}.${this.normalizedStorageScope}`;
+    }
+
+    get closedStorageKey() {
+        return `${this.constructor.closedStorageKey}.${this.normalizedStorageScope}`;
+    }
+
+    get normalizedStorageScope() {
+        return String(this.storageScopeValue || 'public').replace(/[^a-zA-Z0-9_.:-]/g, '_').slice(0, 120) || 'public';
     }
 
     ensureAlertState() {

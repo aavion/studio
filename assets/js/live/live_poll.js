@@ -5,12 +5,14 @@ export class LivePoller {
         onError = () => {},
         onDone = () => {},
         fetcher = window.fetch.bind(window),
+        invalidJsonMessage = 'The live endpoint returned an invalid response.',
     } = {}) {
         this.interval = Number(interval || 0);
         this.onPayload = onPayload;
         this.onError = onError;
         this.onDone = onDone;
         this.fetcher = fetcher;
+        this.invalidJsonMessage = invalidJsonMessage;
         this.active = false;
     }
 
@@ -109,7 +111,7 @@ export class LivePoller {
         const contentType = response.headers.get('content-type') || '';
 
         if (!contentType.includes('application/json')) {
-            throw new Error('Expected a JSON response from the live endpoint.');
+            throw new Error(this.invalidJsonMessage);
         }
 
         return response.json();

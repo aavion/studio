@@ -8,6 +8,7 @@ use App\View\Alert\UiAlertTopicFactory;
 use App\View\Alert\MercureAvailability;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Mercure\Twig\MercureExtension;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Throwable;
@@ -21,6 +22,7 @@ final class UiAlertTwigExtension extends AbstractExtension
         private readonly Security $security,
         private readonly UiAlertTopicFactory $topicFactory,
         private readonly MercureAvailability $mercureAvailability,
+        private readonly string $secret,
         private readonly ?MercureExtension $mercure = null,
     ) {
     }
@@ -30,6 +32,7 @@ final class UiAlertTwigExtension extends AbstractExtension
         return [
             new TwigFunction('ui_alert_stream_topics', $this->streamTopics(...)),
             new TwigFunction('ui_alert_stream_url', $this->streamUrl(...)),
+            new TwigFunction('ui_alert_storage_scope', $this->storageScope(...)),
         ];
     }
 
@@ -62,5 +65,27 @@ final class UiAlertTwigExtension extends AbstractExtension
         } catch (Throwable) {
             return null;
         }
+    }
+
+    public function storageScope(): string
+    {
+        $request = $this->requestStack->getMainRequest();
+        $surface = str_starts_with((string) $request?->getPathInfo(), '/admin') ? 'backend' : 'frontend';
+        $user = $this->security->getUser();
+        $userScope = $user instanceof UserInterface ? $user->getUserIdentifier() : 'anonymous';
+        $sessionScope = 'no-session';
+
+        if ($request?->hasSession()) {
+            try {
+                $session = $request->getSession();
+                if ($session instanceof SessionInterface && $session->isStarted()) {
+                    $sessionScope = $session->getId();
+                }
+            } catch (Throwable) {
+                $sessionScope = 'no-session';
+            }
+        }
+
+        return $surface.'.'.substr(hash_hmac('sha256', $surface.'|'.$userScope.'|'.$sessionScope, $this->secret), 0, 32);
     }
 }

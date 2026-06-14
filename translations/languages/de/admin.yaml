@@ -469,6 +469,9 @@ admin:
       live_operation_cleanup:
         label: 'Live-Operation-Cleanup'
         description: 'Entfernt abgelaufene Live-Operation-State-Dateien.'
+      ui_alert_inbox_cleanup:
+        label: 'UI-Alert-Inbox-Cleanup'
+        description: 'Entfernt zwischengespeicherte Benachrichtigungen nach Ablauf ihrer Zustell-Aufbewahrung.'
       package_discovery:
         label: 'Paket-Discovery'
         description: 'Findet Pakete und aktualisiert die Paket-Registry.'

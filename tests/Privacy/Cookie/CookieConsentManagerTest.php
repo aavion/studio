@@ -11,6 +11,7 @@ use App\Privacy\Cookie\CookieConsentProviderInterface;
 use App\Privacy\Cookie\CookieConsentRegistry;
 use App\Privacy\Cookie\CookieConsentTwigExtension;
 use App\Privacy\Cookie\CoreCookieConsentProvider;
+use App\Controller\CookieConsentController;
 use LogicException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Cookie;
@@ -139,6 +140,33 @@ final class CookieConsentManagerTest extends TestCase
         $nextRequest->cookies->set($cookie->getName(), $cookie->getValue());
 
         self::assertSame([], $manager->selectedOptionalNames($nextRequest));
+    }
+
+    public function testCookieConsentRejectActionIgnoresPostedOptionalCookies(): void
+    {
+        $definition = CookieConsentDefinition::optional(
+            Cookie::create('analytics_id'),
+            'Analytics',
+            'Measure visits.',
+            'https://example.test/privacy',
+        );
+        $manager = $this->manager([$this->provider([$definition])]);
+        $controller = new CookieConsentController($manager);
+        $request = Request::create('/privacy/cookie-consent', 'POST', [
+            '_csrf_token' => $manager->csrfToken(),
+            '_cookie_consent_target_path' => '/',
+            '_cookie_consent_action' => 'reject_optional',
+            'cookies' => ['analytics_id'],
+        ]);
+
+        $response = $controller->store($request);
+        $cookie = $response->headers->getCookies()[0] ?? null;
+        self::assertInstanceOf(Cookie::class, $cookie);
+
+        $nextRequest = Request::create('/');
+        $nextRequest->cookies->set($cookie->getName(), $cookie->getValue());
+
+        self::assertFalse($manager->allowed($nextRequest, $definition));
     }
 
     public function testConsentCookieJarBlocksOptionalCookiesWithoutConsent(): void
