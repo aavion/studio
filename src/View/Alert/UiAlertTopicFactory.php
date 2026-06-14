@@ -46,8 +46,9 @@ final readonly class UiAlertTopicFactory
 
         if (null !== $request && $request->hasSession()) {
             $session = $request->getSession();
-            if ($session->isStarted()) {
-                $topics[] = $this->sessionTopic($session);
+            $sessionId = $this->sessionId($request, $session);
+            if (null !== $sessionId) {
+                $topics[] = $this->sessionTopic($sessionId);
             }
         }
 
@@ -69,5 +70,21 @@ final readonly class UiAlertTopicFactory
     private function hash(string $scope, string $identity): string
     {
         return hash_hmac('sha256', $scope.':'.$identity, $this->secret);
+    }
+
+    private function sessionId(Request $request, SessionInterface $session): ?string
+    {
+        if ($session->isStarted()) {
+            return $session->getId();
+        }
+
+        $cookieValue = $request->cookies->get($session->getName());
+        if (!is_string($cookieValue)) {
+            return null;
+        }
+
+        $sessionId = trim($cookieValue);
+
+        return '' !== $sessionId ? $sessionId : null;
     }
 }

@@ -155,16 +155,36 @@ final readonly class SetupRuntimeCommandRunner
         array $environment,
         SetupCommandExecutorInterface $commandExecutor,
     ): array {
-        $command = [
-            ...$this->phpCliCommandPrefix($projectDir, $input, $environment, true),
+        $commandEnvironment = $this->databaseEnvironmentScope->commandEnvironment($environment);
+        $phpCommand = $this->phpCliCommandPrefix($projectDir, $input, $environment, true);
+        $stopCommand = [
+            ...$phpCommand,
+            $projectDir.'/bin/console',
+            'mercure:stop',
+            '--env='.$input->appEnv(),
+        ];
+        $healthCommand = [
+            ...$phpCommand,
             $projectDir.'/bin/console',
             'mercure:health',
             '--env='.$input->appEnv(),
         ];
-        $result = $commandExecutor->run($command, $projectDir, $this->databaseEnvironmentScope->commandEnvironment($environment));
+        $stopResult = $commandExecutor->run($stopCommand, $projectDir, $commandEnvironment);
+        if (!$stopResult->isSuccessful()) {
+            return [
+                'stop_command' => $stopCommand,
+                'command' => $healthCommand,
+                'stopped' => false,
+                'available' => false,
+            ];
+        }
+
+        $result = $commandExecutor->run($healthCommand, $projectDir, $commandEnvironment);
 
         return [
-            'command' => $command,
+            'stop_command' => $stopCommand,
+            'command' => $healthCommand,
+            'stopped' => true,
             'available' => $result->isSuccessful(),
         ];
     }

@@ -85,6 +85,7 @@ final readonly class SetupDryRunPlanner
             ], ActionLogStatus::Skipped],
             ['run_mercure_health', fn (): array => [
                 'dry_run' => true,
+                'stop_command' => [...$phpCommand, $projectDir.'/bin/console', 'mercure:stop', '--env='.$input->appEnv()],
                 'command' => [...$phpCommand, $projectDir.'/bin/console', 'mercure:health', '--env='.$input->appEnv()],
             ], ActionLogStatus::Skipped],
             ['mark_setup_completed', fn (): array => [

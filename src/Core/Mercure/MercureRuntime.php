@@ -119,7 +119,7 @@ final readonly class MercureRuntime
             if ($this->terminateBinaryProcesses()) {
                 $this->removePidFile();
 
-                return true;
+                return $this->waitUntilNoBinaryProcesses();
             }
 
             $this->removePidFile();
@@ -131,7 +131,7 @@ final readonly class MercureRuntime
             if ($this->terminateBinaryProcesses()) {
                 $this->removePidFile();
 
-                return true;
+                return $this->waitUntilNoBinaryProcesses();
             }
 
             $this->removePidFile();
@@ -143,27 +143,24 @@ final readonly class MercureRuntime
             if ($this->terminateBinaryProcesses()) {
                 $this->removePidFile();
 
-                return true;
+                return $this->waitUntilNoBinaryProcesses();
             }
 
             return false;
         }
 
-        for ($attempt = 0; $attempt < 10; ++$attempt) {
-            usleep(100000);
-            if (!$this->isProcessRunning($pid)) {
-                $this->removePidFile();
+        if (!$this->waitUntilProcessStopped($pid)) {
+            return false;
+        }
 
-                return true;
+        if ([] !== $this->binaryProcessIds()) {
+            if (!$this->terminateBinaryProcesses()) {
+                return false;
             }
-        }
 
-        if ($this->isProcessRunning($pid)) {
-            return false;
-        }
-
-        if ([] !== $this->binaryProcessIds() && !$this->terminateBinaryProcesses()) {
-            return false;
+            if (!$this->waitUntilNoBinaryProcesses()) {
+                return false;
+            }
         }
 
         $this->removePidFile();
@@ -495,6 +492,31 @@ final readonly class MercureRuntime
         }
 
         return $stopped;
+    }
+
+    private function waitUntilProcessStopped(int $pid): bool
+    {
+        for ($attempt = 0; $attempt < 10; ++$attempt) {
+            usleep(100000);
+            if (!$this->isProcessRunning($pid)) {
+                return true;
+            }
+        }
+
+        return !$this->isProcessRunning($pid);
+    }
+
+    private function waitUntilNoBinaryProcesses(): bool
+    {
+        for ($attempt = 0; $attempt < 10; ++$attempt) {
+            if ([] === $this->binaryProcessIds()) {
+                return true;
+            }
+
+            usleep(100000);
+        }
+
+        return [] === $this->binaryProcessIds();
     }
 
     /**

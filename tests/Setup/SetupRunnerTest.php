@@ -113,6 +113,7 @@ final class SetupRunnerTest extends TestCase
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
+            [PHP_BINARY, $this->root.'/bin/console', 'mercure:stop', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'],
         ], $executor->commands);
 
@@ -154,6 +155,44 @@ final class SetupRunnerTest extends TestCase
             'schema_identifier' => $schema['identifier'],
         ], $home);
         self::assertSame($seed->homeContentFields($input)['title'][$input->language()], json_decode((string) $homeTitle, true, flags: JSON_THROW_ON_ERROR));
+    }
+
+    public function testItDoesNotRunMercureHealthWhenMercureStopFails(): void
+    {
+        $databasePath = $this->root.'/var/setup.db';
+        $this->createSchema($databasePath);
+        $executor = new RecordingSetupCommandExecutor(onRun: static function (array $command): ?SetupCommandResult {
+            if (in_array('mercure:stop', $command, true)) {
+                return new SetupCommandResult(1, '', 'stop failed');
+            }
+
+            return null;
+        });
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Example Studio',
+            defaultUri: 'https://example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: $this->sqliteUrl($databasePath),
+            adminUsername: 'admin',
+            adminPassword: 'Secret1!password',
+            adminEmail: 'admin@example.test',
+            appSecret: 'test-setup-app-secret-not-secure',
+        ));
+
+        self::assertTrue($result->isSuccess());
+        self::assertContainsEquals([PHP_BINARY, $this->root.'/bin/console', 'mercure:stop', '--env=test'], $executor->commands);
+        self::assertNotContainsEquals([PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'], $executor->commands);
+
+        $log = $result->value();
+        self::assertInstanceOf(ActionLog::class, $log);
+        $entries = $log->toArray()['entries'];
+        self::assertSame('run_mercure_health', $entries[11]['name']);
+        self::assertFalse($entries[11]['context']['stopped']);
+        self::assertFalse($entries[11]['context']['available']);
     }
 
     public function testItRejectsShortAdminPasswordBeforeSetupSteps(): void
@@ -473,6 +512,7 @@ final class SetupRunnerTest extends TestCase
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
+            [PHP_BINARY, $this->root.'/bin/console', 'mercure:stop', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'],
         ], $executor->commands);
     }
@@ -524,6 +564,7 @@ final class SetupRunnerTest extends TestCase
         self::assertSame('run_asset_rebuild', $entries[9]['name']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'], $entries[9]['context']['command']);
         self::assertSame('run_mercure_health', $entries[10]['name']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'mercure:stop', '--env=test'], $entries[10]['context']['stop_command']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'], $entries[10]['context']['command']);
         self::assertSame('mark_setup_completed', $entries[11]['name']);
     }

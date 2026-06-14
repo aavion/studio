@@ -11,6 +11,7 @@ use App\Core\Config\ConfigValueType;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
+use App\Core\Mercure\MercureRuntime;
 use App\Core\Routing\AbsoluteUriGenerator;
 use App\Database\DatabaseReadyState;
 use App\Entity\AccountToken;
@@ -19,6 +20,7 @@ use App\Entity\UserAccount;
 use App\Mail\AccountMailFlow;
 use App\Mail\MailLocaleResolver;
 use App\Setup\SetupInputValidator;
+use App\View\Alert\MercureAvailability;
 use Doctrine\ORM\EntityManagerInterface;
 use RuntimeException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -43,6 +45,8 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
         private string $secret,
         private string $environment,
         private ?DatabaseReadyState $databaseReadyState = null,
+        private ?MercureRuntime $mercureRuntime = null,
+        private ?MercureAvailability $mercureAvailability = null,
     ) {
     }
 
@@ -89,6 +93,7 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
             return;
         }
 
+        $this->stopMercureBeforeSecretRotation();
         $apiKeysRevoked = $this->revokeActiveApiKeys();
         $resetLinks = $this->issueOwnerPasswordResetLinks();
         $this->storeFingerprint($fingerprints, $environmentKey, $currentFingerprint);
@@ -117,6 +122,8 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
                 ],
             );
         }
+
+        $this->refreshMercureAfterSecretRotation();
     }
 
     private function assertSupportedSecret(): void
@@ -129,6 +136,22 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
             'The configured APP_SECRET is unsupported: it must be at least %d bytes.',
             SetupInputValidator::MIN_APP_SECRET_LENGTH,
         ));
+    }
+
+    private function stopMercureBeforeSecretRotation(): void
+    {
+        try {
+            $this->mercureRuntime?->stop();
+        } catch (Throwable) {
+        }
+    }
+
+    private function refreshMercureAfterSecretRotation(): void
+    {
+        try {
+            $this->mercureAvailability?->refresh(recover: true);
+        } catch (Throwable) {
+        }
     }
 
     private function schemaReady(): bool

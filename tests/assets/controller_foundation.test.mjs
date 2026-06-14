@@ -269,6 +269,70 @@ test('native notification preference requests permission before submitting', asy
     }]);
 });
 
+test('native notification preference blocks unsupported opt-ins before submitting', async () => {
+    installDom();
+
+    const alerts = [];
+    document.addEventListener('ui-alert:received', (receivedEvent) => alerts.push(receivedEvent.detail));
+    window.Notification = undefined;
+    delete globalThis.Notification;
+
+    const controller = new NativeNotificationPreferenceController();
+    const form = new FakeFormElement();
+    const input = new FakeInputElement('checkbox');
+    input.checked = true;
+    controller.element = form;
+    controller.hasInputTarget = true;
+    controller.inputTarget = input;
+    controller.deniedMessageValue = 'Permission denied';
+
+    const submitEvent = event();
+    await controller.submit(submitEvent);
+
+    assert.equal(submitEvent.defaultPrevented, true);
+    assert.equal(input.checked, false);
+    assert.equal(form.submitted, true);
+    assert.deepEqual(alerts, [{
+        level: 'warning',
+        message: 'Permission denied',
+        mode: 'auto',
+    }]);
+});
+
+test('native notification preference blocks denied opt-ins before submitting', async () => {
+    installDom();
+
+    const alerts = [];
+    document.addEventListener('ui-alert:received', (receivedEvent) => alerts.push(receivedEvent.detail));
+
+    function Notification() {}
+    Notification.permission = 'denied';
+    Notification.requestPermission = async () => 'granted';
+    window.Notification = Notification;
+    globalThis.Notification = Notification;
+
+    const controller = new NativeNotificationPreferenceController();
+    const form = new FakeFormElement();
+    const input = new FakeInputElement('checkbox');
+    input.checked = true;
+    controller.element = form;
+    controller.hasInputTarget = true;
+    controller.inputTarget = input;
+    controller.deniedMessageValue = 'Permission denied';
+
+    const submitEvent = event();
+    await controller.submit(submitEvent);
+
+    assert.equal(submitEvent.defaultPrevented, true);
+    assert.equal(input.checked, false);
+    assert.equal(form.submitted, true);
+    assert.deepEqual(alerts, [{
+        level: 'warning',
+        message: 'Permission denied',
+        mode: 'auto',
+    }]);
+});
+
 function tab(id) {
     const element = new FakeElement('button');
     element.dataset.tabsId = id;

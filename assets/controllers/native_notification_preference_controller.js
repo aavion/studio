@@ -7,18 +7,35 @@ export default class extends Controller {
     };
 
     async submit(event) {
-        if (this.submitting || !this.hasInputTarget || !this.inputTarget.checked || !this.needsPermission) {
+        if (this.submitting || !this.hasInputTarget || !this.inputTarget.checked) {
+            return;
+        }
+
+        if (!this.canRequestPermission) {
+            event.preventDefault();
+            this.inputTarget.checked = false;
+            this.showDeniedMessage();
+            this.submitWithCurrentState(event);
+
+            return;
+        }
+
+        if (!this.needsPermission) {
             return;
         }
 
         event.preventDefault();
 
-        const permission = await Notification.requestPermission();
+        const permission = await window.Notification.requestPermission();
         if (permission !== 'granted') {
             this.inputTarget.checked = false;
             this.showDeniedMessage();
         }
 
+        this.submitWithCurrentState(event);
+    }
+
+    submitWithCurrentState(event) {
         this.submitting = true;
         this.element.requestSubmit(event.submitter || undefined);
     }
@@ -43,6 +60,14 @@ export default class extends Controller {
     }
 
     get needsPermission() {
-        return typeof window.Notification === 'function' && Notification.permission === 'default';
+        return this.canRequestPermission && window.Notification.permission === 'default';
+    }
+
+    get canRequestPermission() {
+        const notification = window.Notification;
+
+        return typeof notification === 'function'
+            && typeof notification.requestPermission === 'function'
+            && notification.permission !== 'denied';
     }
 }
