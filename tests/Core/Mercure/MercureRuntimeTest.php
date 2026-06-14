@@ -20,8 +20,9 @@ final class MercureRuntimeTest extends TestCase
     public function testItStartsLocalHubWithAnonymousSubscribersEnabled(): void
     {
         $root = sys_get_temp_dir().'/studio-mercure-runtime-test-'.bin2hex(random_bytes(4));
+        $binaryManager = new MercureBinaryManager($root);
         $runtime = new MercureRuntime(
-            new MercureBinaryManager($root),
+            $binaryManager,
             $this->hub(),
             'http://127.0.0.1:8000',
             $root,
@@ -29,12 +30,12 @@ final class MercureRuntimeTest extends TestCase
 
         try {
             self::assertSame([
-                $root.'/var/mercure/0.24.2/mercure',
+                $binaryManager->binaryPath(),
                 'run',
                 '--envfile',
                 $root.'/var/mercure/mercure.env',
                 '--config',
-                $root.'/var/mercure/0.24.2/Caddyfile',
+                $binaryManager->caddyfilePath(),
                 '--adapter',
                 'caddyfile',
             ], $runtime->startCommand());
@@ -45,9 +46,11 @@ final class MercureRuntimeTest extends TestCase
             self::assertArrayNotHasKey('MERCURE_SUBSCRIBER_JWT_KEY', $runtime->startEnvironment());
             self::assertStringContainsString('anonymous', $runtime->startEnvironment()['MERCURE_EXTRA_DIRECTIVES']);
             self::assertStringContainsString('cors_origins *', $runtime->startEnvironment()['MERCURE_EXTRA_DIRECTIVES']);
-            self::assertStringContainsString('path "'.$root.'/var/mercure/updates.db"', $runtime->startEnvironment()['MERCURE_EXTRA_DIRECTIVES']);
+            self::assertStringContainsString('path "'.str_replace('\\', '/', $root.'/var/mercure/updates.db').'"', $runtime->startEnvironment()['MERCURE_EXTRA_DIRECTIVES']);
             self::assertStringContainsString('SERVER_NAME=http://127.0.0.1:3000', (string) file_get_contents($root.'/var/mercure/mercure.env'));
-            self::assertSame('0600', substr(sprintf('%o', fileperms($root.'/var/mercure/mercure.env')), -4));
+            if ('\\' !== DIRECTORY_SEPARATOR) {
+                self::assertSame('0600', substr(sprintf('%o', fileperms($root.'/var/mercure/mercure.env')), -4));
+            }
         } finally {
             $this->removeDirectory($root);
         }
