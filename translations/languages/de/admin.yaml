@@ -6,6 +6,11 @@ ui:
     navigation: 'Admin-Navigation'
 
 admin:
+  autocomplete:
+    acl_group:
+      placeholder: 'ACL-Gruppen suchen'
+    user:
+      placeholder: 'Benutzer suchen'
   navigation:
     dashboard: 'Dashboard'
     users: 'Benutzer'
