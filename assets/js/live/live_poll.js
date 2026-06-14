@@ -20,31 +20,26 @@ export class LivePoller {
 
         try {
             while (this.active) {
-                const response = await this.fetcher(this.urlWithCursor(url, nextCursor), {
-                    headers: {
-                        Accept: 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                });
+                const result = await this.fetchPayload(url, nextCursor);
 
-                if (!response.ok) {
-                    this.onError(response, null);
-
+                if (!result) {
                     return null;
                 }
 
-                const payload = await this.readJson(response);
-                nextCursor = Number(payload.cursor || nextCursor);
+                const { payload } = result;
+                nextCursor = result.cursor;
                 this.onPayload(payload, nextCursor);
 
-                if (this.isTerminal(payload) || 0 === this.interval) {
+                const nextDelay = Number(payload.next_poll_ms ?? this.interval);
+
+                if (this.isTerminal(payload) || nextDelay <= 0) {
                     this.active = false;
                     this.onDone(payload);
 
                     return payload;
                 }
 
-                await this.sleep(Number(payload.next_poll_ms || this.interval));
+                await this.sleep(nextDelay);
             }
         } catch (error) {
             this.active = false;
@@ -54,8 +49,53 @@ export class LivePoller {
         return null;
     }
 
+    async pollOnce(url, cursor = 0) {
+        this.active = true;
+
+        try {
+            const result = await this.fetchPayload(url, Number(cursor || 0));
+
+            if (!result) {
+                return null;
+            }
+
+            this.onPayload(result.payload, result.cursor);
+            this.onDone(result.payload);
+
+            return result.payload;
+        } catch (error) {
+            this.onError(null, error);
+
+            return null;
+        } finally {
+            this.active = false;
+        }
+    }
+
     stop() {
         this.active = false;
+    }
+
+    async fetchPayload(url, cursor) {
+        const response = await this.fetcher(this.urlWithCursor(url, cursor), {
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+
+        if (!response.ok) {
+            this.onError(response, null);
+
+            return null;
+        }
+
+        const payload = await this.readJson(response);
+
+        return {
+            cursor: Number(payload.cursor || cursor),
+            payload,
+        };
     }
 
     urlWithCursor(url, cursor) {

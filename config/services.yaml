@@ -26,6 +26,18 @@ services:
         App\Api\Endpoint\ApiEndpointHandlerProviderInterface:
             tags:
                 - { name: 'system.api_endpoint_handler', priority: 0 }
+        App\Live\LiveEndpointProviderInterface:
+            tags:
+                - { name: 'system.live_endpoint_provider', priority: 0 }
+        App\Live\LiveEndpointHandlerInterface:
+            tags:
+                - { name: 'system.live_endpoint_handler', priority: 0 }
+        App\Live\LiveEndpointHandlerProviderInterface:
+            tags:
+                - { name: 'system.live_endpoint_handler', priority: 0 }
+        App\Privacy\Cookie\CookieConsentProviderInterface:
+            tags:
+                - { name: 'system.cookie_consent_provider', priority: 0 }
         App\Core\Event\EventHookDescriptorProviderInterface:
             tags:
                 - { name: 'system.event_hook_provider', priority: 0 }
@@ -122,6 +134,18 @@ services:
     App\Api\Endpoint\ApiEndpointHandlerRegistry:
         arguments:
             $handlers: !tagged_iterator { tag: system.api_endpoint_handler }
+
+    App\Live\LiveEndpointRegistry:
+        arguments:
+            $providers: !tagged_iterator { tag: system.live_endpoint_provider }
+
+    App\Live\LiveEndpointHandlerRegistry:
+        arguments:
+            $handlers: !tagged_iterator { tag: system.live_endpoint_handler }
+
+    App\Privacy\Cookie\CookieConsentRegistry:
+        arguments:
+            $providers: !tagged_iterator { tag: system.cookie_consent_provider }
 
     App\Content\Api\ContentApiPath: ~
 

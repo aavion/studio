@@ -14,6 +14,12 @@ use App\Core\Package\Settings\PackageSettingProviderInterface;
 use App\Core\Package\Settings\PackageSettings;
 use App\Core\Operation\ActionQueue;
 use App\Entity\ExtensionPackage;
+use App\Live\LiveEndpointDefinition;
+use App\Live\LiveEndpointHandlerInterface;
+use App\Live\LiveEndpointHandlerProviderInterface;
+use App\Live\LiveEndpointProviderInterface;
+use App\Privacy\Cookie\CookieConsentDefinition;
+use App\Privacy\Cookie\CookieConsentProviderInterface;
 use App\Scheduler\SchedulerActionQueueProviderInterface;
 use App\Scheduler\SchedulerCallableProviderInterface;
 use App\Scheduler\SchedulerTaskDefinition;
@@ -24,7 +30,7 @@ use App\View\Injection\DynamicViewInjectionProviderInterface;
 use App\View\Injection\StaticViewInjection;
 use App\View\Injection\StaticViewInjectionProviderInterface;
 
-final class PackageRuntimeContributionRegistry implements StaticViewInjectionProviderInterface, DynamicViewInjectionProviderInterface, PackageSettingProviderInterface, ApiEndpointProviderInterface, ApiEndpointHandlerProviderInterface, SchedulerTaskProviderInterface, SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface
+final class PackageRuntimeContributionRegistry implements StaticViewInjectionProviderInterface, DynamicViewInjectionProviderInterface, PackageSettingProviderInterface, ApiEndpointProviderInterface, ApiEndpointHandlerProviderInterface, LiveEndpointProviderInterface, LiveEndpointHandlerProviderInterface, CookieConsentProviderInterface, SchedulerTaskProviderInterface, SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface
 {
     public function __construct(private ?PackageSettings $packageSettingsStore = null)
     {
@@ -41,6 +47,12 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
     private array $apiEndpointDefinitions = [];
 
     private array $apiEndpointHandlers = [];
+
+    private array $liveEndpointDefinitions = [];
+
+    private array $liveEndpointHandlers = [];
+
+    private array $cookieConsentDefinitions = [];
 
     private array $schedulerTaskDefinitions = [];
 
@@ -103,6 +115,24 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
             return;
         }
 
+        if ($contribution instanceof LiveEndpointDefinition) {
+            $this->addLiveEndpointDefinition($package, $contribution);
+
+            return;
+        }
+
+        if ($contribution instanceof LiveEndpointHandlerInterface) {
+            $this->addLiveEndpointHandler($package, $contribution);
+
+            return;
+        }
+
+        if ($contribution instanceof CookieConsentDefinition) {
+            $this->cookieConsentDefinitions[] = $contribution;
+
+            return;
+        }
+
         $providerHandled = false;
 
         if ($contribution instanceof StaticViewInjectionProviderInterface) {
@@ -140,6 +170,30 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
         if ($contribution instanceof ApiEndpointHandlerProviderInterface) {
             foreach ($contribution->apiEndpointHandlers() as $handler) {
                 $this->addToRegistry($package, $handler);
+            }
+
+            $providerHandled = true;
+        }
+
+        if ($contribution instanceof LiveEndpointProviderInterface) {
+            foreach ($contribution->liveEndpoints() as $definition) {
+                $this->addToRegistry($package, $definition);
+            }
+
+            $providerHandled = true;
+        }
+
+        if ($contribution instanceof LiveEndpointHandlerProviderInterface) {
+            foreach ($contribution->liveEndpointHandlers() as $handler) {
+                $this->addToRegistry($package, $handler);
+            }
+
+            $providerHandled = true;
+        }
+
+        if ($contribution instanceof CookieConsentProviderInterface) {
+            foreach ($contribution->cookieConsentDefinitions() as $definition) {
+                $this->addToRegistry($package, $definition);
             }
 
             $providerHandled = true;
@@ -189,6 +243,9 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
         $this->packageSettingDefinitions = $registry->packageSettingDefinitions;
         $this->apiEndpointDefinitions = $registry->apiEndpointDefinitions;
         $this->apiEndpointHandlers = $registry->apiEndpointHandlers;
+        $this->liveEndpointDefinitions = $registry->liveEndpointDefinitions;
+        $this->liveEndpointHandlers = $registry->liveEndpointHandlers;
+        $this->cookieConsentDefinitions = $registry->cookieConsentDefinitions;
         $this->schedulerTaskDefinitions = $registry->schedulerTaskDefinitions;
         $this->schedulerCallableProviders = $registry->schedulerCallableProviders;
         $this->schedulerActionQueueProviders = $registry->schedulerActionQueueProviders;
@@ -226,6 +283,18 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
         $this->apiEndpointHandlers[] = $handler;
     }
 
+    private function addLiveEndpointDefinition(ExtensionPackage $package, LiveEndpointDefinition $definition): void
+    {
+        PackageLiveContributionGuard::assertEndpoint($package, $definition);
+        $this->liveEndpointDefinitions[] = $definition;
+    }
+
+    private function addLiveEndpointHandler(ExtensionPackage $package, LiveEndpointHandlerInterface $handler): void
+    {
+        PackageLiveContributionGuard::assertHandler($package, $handler);
+        $this->liveEndpointHandlers[] = $handler;
+    }
+
     public function staticViewInjections(): array
     {
         $injections = $this->staticViewInjections;
@@ -260,6 +329,21 @@ final class PackageRuntimeContributionRegistry implements StaticViewInjectionPro
     public function apiEndpointHandlers(): array
     {
         return $this->apiEndpointHandlers;
+    }
+
+    public function liveEndpoints(): array
+    {
+        return $this->liveEndpointDefinitions;
+    }
+
+    public function liveEndpointHandlers(): array
+    {
+        return $this->liveEndpointHandlers;
+    }
+
+    public function cookieConsentDefinitions(): array
+    {
+        return $this->cookieConsentDefinitions;
     }
 
     public function schedulerTasks(): array

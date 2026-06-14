@@ -10,6 +10,12 @@ use App\Api\Endpoint\ApiEndpointHandlerProviderInterface;
 use App\Api\Endpoint\ApiEndpointProviderInterface;
 use App\Core\Package\Settings\PackageSettingDefinition;
 use App\Core\Package\Settings\PackageSettingProviderInterface;
+use App\Live\LiveEndpointDefinition;
+use App\Live\LiveEndpointHandlerInterface;
+use App\Live\LiveEndpointHandlerProviderInterface;
+use App\Live\LiveEndpointProviderInterface;
+use App\Privacy\Cookie\CookieConsentDefinition;
+use App\Privacy\Cookie\CookieConsentProviderInterface;
 use App\Scheduler\SchedulerActionQueueProviderInterface;
 use App\Scheduler\SchedulerCallableProviderInterface;
 use App\Scheduler\SchedulerTaskDefinition;
@@ -38,7 +44,7 @@ final class PackageContributions implements \IteratorAggregate
     }
 
     public function add(
-        StaticViewInjection|ConfigurableStaticViewInjectionSet|DynamicViewInjection|PackageSettingDefinition|SchedulerTaskDefinition|ApiEndpointDefinition|ApiEndpointHandlerInterface|StaticViewInjectionProviderInterface|DynamicViewInjectionProviderInterface|PackageSettingProviderInterface|ApiEndpointProviderInterface|ApiEndpointHandlerProviderInterface|SchedulerTaskProviderInterface|SchedulerCallableProviderInterface|SchedulerActionQueueProviderInterface $contribution,
+        StaticViewInjection|ConfigurableStaticViewInjectionSet|DynamicViewInjection|PackageSettingDefinition|SchedulerTaskDefinition|ApiEndpointDefinition|ApiEndpointHandlerInterface|LiveEndpointDefinition|LiveEndpointHandlerInterface|CookieConsentDefinition|StaticViewInjectionProviderInterface|DynamicViewInjectionProviderInterface|PackageSettingProviderInterface|ApiEndpointProviderInterface|ApiEndpointHandlerProviderInterface|LiveEndpointProviderInterface|LiveEndpointHandlerProviderInterface|CookieConsentProviderInterface|SchedulerTaskProviderInterface|SchedulerCallableProviderInterface|SchedulerActionQueueProviderInterface $contribution,
     ): self {
         $this->items[] = $contribution;
 
@@ -80,6 +86,21 @@ final class PackageContributions implements \IteratorAggregate
         return $this->add($handler);
     }
 
+    public function liveEndpoint(LiveEndpointDefinition $definition): self
+    {
+        return $this->add($definition);
+    }
+
+    public function liveEndpointHandler(LiveEndpointHandlerInterface $handler): self
+    {
+        return $this->add($handler);
+    }
+
+    public function cookie(CookieConsentDefinition $definition): self
+    {
+        return $this->add($definition);
+    }
+
     public function staticViewProvider(StaticViewInjectionProviderInterface $provider): self
     {
         return $this->add($provider);
@@ -101,6 +122,21 @@ final class PackageContributions implements \IteratorAggregate
     }
 
     public function apiEndpointHandlerProvider(ApiEndpointHandlerProviderInterface $provider): self
+    {
+        return $this->add($provider);
+    }
+
+    public function liveEndpointProvider(LiveEndpointProviderInterface $provider): self
+    {
+        return $this->add($provider);
+    }
+
+    public function liveEndpointHandlerProvider(LiveEndpointHandlerProviderInterface $provider): self
+    {
+        return $this->add($provider);
+    }
+
+    public function cookieProvider(CookieConsentProviderInterface $provider): self
     {
         return $this->add($provider);
     }

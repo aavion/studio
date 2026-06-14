@@ -34,6 +34,31 @@ export default class extends Controller {
         this.poller.poll(this.endpoint, this.cursorValue);
     }
 
+    async pollOnce(event) {
+        event?.preventDefault();
+
+        if (!this.endpoint) {
+            return;
+        }
+
+        const poller = new LivePoller({
+            interval: this.intervalValue,
+            onPayload: (payload, cursor) => this.payload(payload, cursor),
+            onError: (response, error) => this.error(response, error),
+            onDone: (payload) => this.done(payload),
+        });
+
+        await poller.pollOnce(this.endpoint, this.cursorValue);
+    }
+
+    async poll(event) {
+        await this.pollOnce(event);
+    }
+
+    async refresh(event) {
+        await this.pollOnce(event);
+    }
+
     stop() {
         this.poller?.stop();
     }

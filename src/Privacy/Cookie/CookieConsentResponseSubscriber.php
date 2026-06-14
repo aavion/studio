@@ -1,0 +1,40 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Privacy\Cookie;
+
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\KernelEvents;
+
+final readonly class CookieConsentResponseSubscriber implements EventSubscriberInterface
+{
+    public function __construct(
+        private CookieConsentRegistry $registry,
+        private CookieConsentManager $consent,
+    ) {
+    }
+
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            KernelEvents::RESPONSE => ['filterCookies', -64],
+        ];
+    }
+
+    public function filterCookies(ResponseEvent $event): void
+    {
+        $response = $event->getResponse();
+        $request = $event->getRequest();
+
+        foreach ($response->headers->getCookies() as $cookie) {
+            $definition = $this->registry->definition($cookie->getName());
+            if (!$definition instanceof CookieConsentDefinition || $this->consent->allowed($request, $definition)) {
+                continue;
+            }
+
+            $response->headers->removeCookie($cookie->getName(), $cookie->getPath(), $cookie->getDomain());
+        }
+    }
+}
