@@ -7,6 +7,7 @@ namespace App\Core\Mercure;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Internal\QueryBuilder;
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -19,6 +20,7 @@ final readonly class MercureRuntime
         private HubInterface $hub,
         private string $defaultUri,
         private string $projectDir,
+        private ?HttpClientInterface $httpClient = null,
     ) {
     }
 
@@ -156,7 +158,9 @@ final readonly class MercureRuntime
 
     public function publishHealthProbe(): bool
     {
-        return $this->publishDirectly($this->publishHubUrl());
+        $url = $this->publishHubUrl();
+
+        return $this->hubEndpointProbe($url) || $this->publishDirectly($url);
     }
 
     public function publicSubscribeProbe(): bool
@@ -224,7 +228,7 @@ final readonly class MercureRuntime
                 return false;
             }
 
-            $response = HttpClient::create(['timeout' => 2.0])->request('POST', $url, [
+            $response = $this->httpClient()->request('POST', $url, [
                 'auth_bearer' => $this->hub->getProvider()->getJwt(),
                 'headers' => ['Content-Type' => 'application/x-www-form-urlencoded'],
                 'body' => QueryBuilder::build([
@@ -243,10 +247,7 @@ final readonly class MercureRuntime
     private function hubEndpointProbe(string $url): bool
     {
         try {
-            $response = HttpClient::create([
-                'timeout' => 2.0,
-                'max_duration' => 2.0,
-            ])->request('GET', $url);
+            $response = $this->httpClient()->request('GET', $url);
 
             return self::probeStatusAccepted($response->getStatusCode());
         } catch (Throwable) {
@@ -262,10 +263,7 @@ final readonly class MercureRuntime
     private function subscriberEndpointProbe(string $url): bool
     {
         try {
-            $response = HttpClient::create([
-                'timeout' => 2.0,
-                'max_duration' => 2.0,
-            ])->request('GET', $url, [
+            $response = $this->httpClient()->request('GET', $url, [
                 'headers' => ['Accept' => 'text/event-stream'],
             ]);
             $status = $response->getStatusCode();
@@ -276,6 +274,14 @@ final readonly class MercureRuntime
         } catch (Throwable) {
             return false;
         }
+    }
+
+    private function httpClient(): HttpClientInterface
+    {
+        return $this->httpClient ?? HttpClient::create([
+            'timeout' => 2.0,
+            'max_duration' => 2.0,
+        ]);
     }
 
     private function jwtSecret(): string

@@ -8,6 +8,8 @@ use App\Core\Mercure\MercureBinaryManager;
 use App\Core\Mercure\MercureRuntime;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Jwt\TokenFactoryInterface;
 use Symfony\Component\Mercure\Update;
@@ -56,6 +58,26 @@ final class MercureRuntimeTest extends TestCase
 
         foreach ([0, 301, 403, 404, 500] as $status) {
             self::assertFalse($method->invoke(null, $status), sprintf('Status %d should not be accepted.', $status));
+        }
+    }
+
+    public function testPublishHealthProbeAcceptsUnauthorizedOrMissingTopicReachability(): void
+    {
+        foreach ([400, 401] as $status) {
+            $runtime = new MercureRuntime(
+                new MercureBinaryManager('/tmp/studio'),
+                $this->hub(),
+                'http://127.0.0.1:8000',
+                '/tmp/studio',
+                new MockHttpClient(static function (string $method, string $url, array $options = []) use ($status): MockResponse {
+                    self::assertSame('GET', $method);
+                    self::assertStringContainsString('/.well-known/mercure', $url);
+
+                    return new MockResponse('', ['http_code' => $status]);
+                }),
+            );
+
+            self::assertTrue($runtime->publishHealthProbe(), sprintf('Status %d should make the publish endpoint reachable.', $status));
         }
     }
 
