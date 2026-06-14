@@ -58,6 +58,7 @@ export default class extends Controller {
         }
 
         this.starting = true;
+        this.suppressRunningAlert = false;
         this.prepareOverlay();
         this.reset();
         this.updateOperationAlert({
@@ -267,6 +268,7 @@ export default class extends Controller {
             }
 
             this.storeOperation(payload.value.status_url, 0, null, 'queued', null, payload.value.label || payload.value.operation || null);
+            this.suppressRunningAlert = false;
             await this.poll(payload.value.status_url);
         } catch (error) {
             this.fail(error instanceof Error ? error.message : this.label('requestError'));
@@ -512,6 +514,7 @@ export default class extends Controller {
 
         this.dispatchAlert({
             id: this.operationAlertId(),
+            reopen: true,
             title,
             level: status === 'success' ? 'success' : (status === 'requires_review' ? 'warning' : (status === 'failed' ? 'error' : 'info')),
             message,

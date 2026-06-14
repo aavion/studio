@@ -343,7 +343,7 @@ html {
 
 .system-alert-stack {
     position: fixed;
-    z-index: 70;
+    z-index: 90;
     top: clamp(0.75rem, 2vw, 1.25rem);
     right: clamp(0.75rem, 2vw, 1.25rem);
     display: grid;

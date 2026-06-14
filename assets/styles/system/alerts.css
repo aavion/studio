@@ -315,12 +315,16 @@
     height: 1.2rem;
 }
 
-.system-cookie-consent-summary p,
-.system-cookie-consent-required p {
+.system-cookie-consent-summary p {
     margin: 0.25rem 0 0;
     color: var(--color-muted);
     font-size: var(--system-text-sm);
     line-height: 1.5;
+}
+
+.system-cookie-consent-section-title {
+    color: var(--color-ink);
+    font-size: var(--system-text-sm);
 }
 
 .system-cookie-consent-empty {
@@ -340,10 +344,18 @@
 .system-cookie-consent-details {
     display: grid;
     gap: 0.75rem;
-    max-height: min(18rem, calc(100vh - 18rem));
-    overflow: auto;
+    min-height: 0;
     padding-top: 0.75rem;
     border-top: 1px solid color-mix(in srgb, var(--color-gray-200) 78%, transparent);
+}
+
+.system-cookie-consent-options {
+    display: grid;
+    gap: 0.65rem;
+    max-height: min(18rem, calc(100vh - 18rem));
+    overflow: auto;
+    padding-right: 0.15rem;
+    scrollbar-width: thin;
 }
 
 .system-cookie-consent-option {

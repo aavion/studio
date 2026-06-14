@@ -15,8 +15,7 @@ ui:
     reject_optional: 'Reject optional'
     accept_selected: 'Save selection'
     close: 'Close'
-    required_title: 'Required cookies'
-    required_message: 'Required cookies keep sessions, security checks, and basic preferences working and cannot be disabled here.'
+    optional_title: 'Optional cookies'
     no_optional: 'No optional cookies are registered right now.'
     privacy_link: 'Privacy information'
   navigation:

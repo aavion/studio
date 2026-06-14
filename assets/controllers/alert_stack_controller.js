@@ -110,7 +110,12 @@ export default class extends Controller {
 
         const id = alertId(payload);
         if (this.closedAlertIds.has(id)) {
-            return null;
+            if (!payload.reopen) {
+                return null;
+            }
+
+            this.closedAlertIds.delete(id);
+            this.persistClosedAlerts();
         }
 
         const existing = this.alerts.get(id);

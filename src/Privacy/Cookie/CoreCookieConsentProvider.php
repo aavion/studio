@@ -15,6 +15,12 @@ final readonly class CoreCookieConsentProvider implements CookieConsentProviderI
             CookieConsentDefinition::necessary(Cookie::create(CookieConsentManager::CONSENT_COOKIE_NAME)),
             CookieConsentDefinition::necessary(Cookie::create('PHPSESSID')),
             CookieConsentDefinition::necessary(Cookie::create(VisitorIdGenerator::COOKIE_NAME)),
+            CookieConsentDefinition::optional(
+                Cookie::create('_ga'),
+                'Google Analytics',
+                'Measures visits and interaction patterns to improve the site experience.',
+                'https://policies.google.com/privacy',
+            ),
         ];
     }
 }

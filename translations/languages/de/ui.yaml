@@ -15,8 +15,7 @@ ui:
     reject_optional: 'Optionale ablehnen'
     accept_selected: 'Auswahl speichern'
     close: 'Schließen'
-    required_title: 'Notwendige Cookies'
-    required_message: 'Notwendige Cookies halten Sessions, Sicherheitsprüfungen und grundlegende Einstellungen funktionsfähig und können hier nicht deaktiviert werden.'
+    optional_title: 'Optionale Cookies'
     no_optional: 'Aktuell sind keine optionalen Cookies registriert.'
     privacy_link: 'Datenschutzhinweise'
   navigation:
