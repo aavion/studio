@@ -64,16 +64,28 @@ final readonly class ApiEndpointRegistry
 
     public function endpointForPath(string $path, string $method): ?ApiEndpointDefinition
     {
-        foreach ($this->endpoints() as $endpoint) {
-            if (!$endpoint->matchesPath($path)) {
-                continue;
-            }
+        $candidates = array_values(array_filter(
+            $this->endpoints(),
+            static fn (ApiEndpointDefinition $endpoint): bool => $endpoint->matchesPath($path)
+                && ($endpoint->method() === $method || ('HEAD' === $method && 'GET' === $endpoint->method())),
+        ));
+        usort($candidates, static function (ApiEndpointDefinition $left, ApiEndpointDefinition $right) use ($path): int {
+            $leftExact = $left->path() === $path ? 1 : 0;
+            $rightExact = $right->path() === $path ? 1 : 0;
 
-            if ($endpoint->method() === $method || ('HEAD' === $method && 'GET' === $endpoint->method())) {
-                return $endpoint;
-            }
-        }
+            return [
+                $rightExact,
+                strlen($right->path()),
+                $right->path(),
+                $right->operationId(),
+            ] <=> [
+                $leftExact,
+                strlen($left->path()),
+                $left->path(),
+                $left->operationId(),
+            ];
+        });
 
-        return null;
+        return $candidates[0] ?? null;
     }
 }

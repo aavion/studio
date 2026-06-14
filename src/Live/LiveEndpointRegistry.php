@@ -49,16 +49,28 @@ final readonly class LiveEndpointRegistry
 
     public function endpointForPath(string $path, string $method): ?LiveEndpointDefinition
     {
-        foreach ($this->endpoints() as $endpoint) {
-            if (!$endpoint->matchesPath($path)) {
-                continue;
-            }
+        $candidates = array_values(array_filter(
+            $this->endpoints(),
+            static fn (LiveEndpointDefinition $endpoint): bool => $endpoint->matchesPath($path)
+                && ($endpoint->method() === $method || ('HEAD' === $method && 'GET' === $endpoint->method())),
+        ));
+        usort($candidates, static function (LiveEndpointDefinition $left, LiveEndpointDefinition $right) use ($path): int {
+            $leftExact = $left->path() === $path ? 1 : 0;
+            $rightExact = $right->path() === $path ? 1 : 0;
 
-            if ($endpoint->method() === $method || ('HEAD' === $method && 'GET' === $endpoint->method())) {
-                return $endpoint;
-            }
-        }
+            return [
+                $rightExact,
+                strlen($right->path()),
+                $right->path(),
+                $right->operationId(),
+            ] <=> [
+                $leftExact,
+                strlen($left->path()),
+                $left->path(),
+                $left->operationId(),
+            ];
+        });
 
-        return null;
+        return $candidates[0] ?? null;
     }
 }

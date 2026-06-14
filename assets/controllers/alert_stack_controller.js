@@ -104,7 +104,7 @@ export default class extends Controller {
         this.upsertAlert(event.detail || {}, true);
     }
 
-    upsertAlert(payload, store = true) {
+    upsertAlert(payload, store = true, notify = true) {
         this.ensureAlertState();
 
         for (const id of alertIds(payload.closes)) {
@@ -162,9 +162,11 @@ export default class extends Controller {
             this.persist();
         }
 
-        document.dispatchEvent(new CustomEvent('ui-alert:shown', {
-            detail: storableAlertPayload(normalizedPayload),
-        }));
+        if (notify) {
+            document.dispatchEvent(new CustomEvent('ui-alert:shown', {
+                detail: storableAlertPayload(normalizedPayload),
+            }));
+        }
 
         if (alertMode(payload) !== 'hidden') {
             this.showPanel();
@@ -227,7 +229,7 @@ export default class extends Controller {
 
     hydrateStoredAlerts() {
         for (const payload of this.readStoredAlerts()) {
-            this.upsertAlert({ ...payload, mode: 'hidden' }, false);
+            this.upsertAlert({ ...payload, mode: 'hidden' }, false, false);
         }
 
         this.persist();

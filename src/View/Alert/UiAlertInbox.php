@@ -99,15 +99,11 @@ final readonly class UiAlertInbox
 
     public function cleanupExpired(): int
     {
-        try {
-            return $this->connection->executeStatement(
-                'DELETE FROM ui_alert_inbox WHERE expires_at IS NOT NULL AND expires_at <= ?',
-                [new DateTimeImmutable()],
-                [Types::DATETIME_IMMUTABLE],
-            );
-        } catch (Throwable) {
-            return 0;
-        }
+        return $this->connection->executeStatement(
+            'DELETE FROM ui_alert_inbox WHERE expires_at IS NOT NULL AND expires_at <= ?',
+            [new DateTimeImmutable()],
+            [Types::DATETIME_IMMUTABLE],
+        );
     }
 
     /**

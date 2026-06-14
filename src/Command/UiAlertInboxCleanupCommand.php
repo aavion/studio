@@ -9,6 +9,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Throwable;
 
 #[AsCommand(
     name: 'ui-alerts:cleanup-inbox',
@@ -23,7 +24,14 @@ final class UiAlertInboxCleanupCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $removed = $this->inbox->cleanupExpired();
+        try {
+            $removed = $this->inbox->cleanupExpired();
+        } catch (Throwable $exception) {
+            $output->writeln(sprintf('UI alert inbox cleanup failed: %s', $exception->getMessage()));
+
+            return Command::FAILURE;
+        }
+
         $output->writeln(sprintf('UI alert inbox cleanup removed %d expired row(s).', $removed));
 
         return Command::SUCCESS;
