@@ -210,6 +210,10 @@ final readonly class MercureRuntime
     public function localHubUrl(): string
     {
         $listen = $this->listenAddress();
+        if (str_starts_with($listen, ':')) {
+            return 'http://127.0.0.1'.$listen.'/.well-known/mercure';
+        }
+
         if (str_starts_with($listen, 'http://') || str_starts_with($listen, 'https://')) {
             return rtrim($listen, '/').'/.well-known/mercure';
         }

@@ -117,6 +117,94 @@ test('alert stack stores new alerts, deduplicates updates, and closes all active
     assert.deepEqual(JSON.parse(sessionStorage.getItem(controller.closedStorageKey)), ['alert-1']);
 });
 
+test('alert stack auto-dismiss removes transient alerts without closing future duplicates', () => {
+    const { sessionStorage, window } = installDom();
+    let scheduled = null;
+    window.setTimeout = (callback) => {
+        scheduled = callback;
+
+        return 1;
+    };
+
+    const controller = new AlertStackController();
+    const element = new FakeElement();
+    const list = new FakeElement();
+    const panel = new FakeElement();
+    const badge = new FakeElement();
+    const toggle = new FakeElement('button');
+    const clearAll = new FakeElement('button');
+    const empty = new FakeElement();
+    const closed = [];
+    document.addEventListener('ui-alert:closed', (event) => closed.push(event.detail));
+    panel.hidden = true;
+    controller.element = element;
+    controller.listTarget = list;
+    controller.panelTarget = panel;
+    controller.badgeTarget = badge;
+    controller.toggleTarget = toggle;
+    controller.clearAllTarget = clearAll;
+    controller.emptyTarget = empty;
+    controller.hasClearAllTarget = true;
+    controller.hasEmptyTarget = true;
+    controller.storageScopeValue = 'session:auto';
+    controller.dismissDelayValue = 10;
+    controller.initialize();
+
+    controller.upsertAlert({ id: 'auto-alert', level: 'success', message: 'Saved', mode: 'auto' });
+    scheduled();
+
+    assert.equal(controller.activeCount, 0);
+    assert.equal(list.children.length, 0);
+    assert.deepEqual(JSON.parse(sessionStorage.getItem(controller.storageKey)), []);
+    assert.equal(sessionStorage.getItem(controller.closedStorageKey), null);
+    assert.deepEqual(closed, []);
+
+    controller.upsertAlert({ id: 'auto-alert', level: 'success', message: 'Saved again', mode: 'auto' });
+
+    assert.equal(controller.activeCount, 1);
+    assert.equal(list.children.length, 1);
+});
+
+test('alert stack auto-dismiss keeps persistent alerts active', () => {
+    const { sessionStorage, window } = installDom();
+    let scheduled = null;
+    window.setTimeout = (callback) => {
+        scheduled = callback;
+
+        return 1;
+    };
+
+    const controller = new AlertStackController();
+    const element = new FakeElement();
+    const list = new FakeElement();
+    const panel = new FakeElement();
+    const badge = new FakeElement();
+    const toggle = new FakeElement('button');
+    const clearAll = new FakeElement('button');
+    const empty = new FakeElement();
+    panel.hidden = true;
+    controller.element = element;
+    controller.listTarget = list;
+    controller.panelTarget = panel;
+    controller.badgeTarget = badge;
+    controller.toggleTarget = toggle;
+    controller.clearAllTarget = clearAll;
+    controller.emptyTarget = empty;
+    controller.hasClearAllTarget = true;
+    controller.hasEmptyTarget = true;
+    controller.storageScopeValue = 'session:persistent';
+    controller.dismissDelayValue = 10;
+    controller.initialize();
+
+    controller.upsertAlert({ id: 'persistent-alert', level: 'info', message: 'Review details', mode: 'persistent' });
+    controller.scheduleHide();
+    scheduled();
+
+    assert.equal(controller.activeCount, 1);
+    assert.equal(list.children.length, 1);
+    assert.equal(JSON.parse(sessionStorage.getItem(controller.storageKey))[0].id, 'persistent-alert');
+});
+
 test('UI alert stream opens EventSource with credentials and forwards valid alert events', () => {
     installDom();
 

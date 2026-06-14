@@ -115,6 +115,24 @@ final class MercureRuntimeTest extends TestCase
         }
     }
 
+    public function testItNormalizesColonOnlyListenAddressForLocalHubUrls(): void
+    {
+        $state = $this->setEnvironment('MERCURE_HUB_LISTEN', ':3000');
+        $runtime = new MercureRuntime(
+            new MercureBinaryManager('/tmp/studio'),
+            $this->hub(),
+            'http://127.0.0.1:8000',
+            '/tmp/studio',
+        );
+
+        try {
+            self::assertSame(':3000', $runtime->listenAddress());
+            self::assertSame('http://127.0.0.1:3000/.well-known/mercure', $runtime->localHubUrl());
+        } finally {
+            $this->restoreEnvironment('MERCURE_HUB_LISTEN', $state);
+        }
+    }
+
     public function testPublishHealthProbeRequiresSuccessfulPublishResponse(): void
     {
         foreach ([200, 201, 204] as $status) {
@@ -208,5 +226,45 @@ final class MercureRuntimeTest extends TestCase
         }
 
         @rmdir($path);
+    }
+
+    /**
+     * @return array{server_exists: bool, server: mixed, env_exists: bool, env: mixed, getenv: string|false}
+     */
+    private function setEnvironment(string $key, string $value): array
+    {
+        $state = [
+            'server_exists' => array_key_exists($key, $_SERVER),
+            'server' => $_SERVER[$key] ?? null,
+            'env_exists' => array_key_exists($key, $_ENV),
+            'env' => $_ENV[$key] ?? null,
+            'getenv' => getenv($key),
+        ];
+
+        $_SERVER[$key] = $value;
+        $_ENV[$key] = $value;
+        putenv($key.'='.$value);
+
+        return $state;
+    }
+
+    /**
+     * @param array{server_exists: bool, server: mixed, env_exists: bool, env: mixed, getenv: string|false} $state
+     */
+    private function restoreEnvironment(string $key, array $state): void
+    {
+        if ($state['server_exists']) {
+            $_SERVER[$key] = $state['server'];
+        } else {
+            unset($_SERVER[$key]);
+        }
+
+        if ($state['env_exists']) {
+            $_ENV[$key] = $state['env'];
+        } else {
+            unset($_ENV[$key]);
+        }
+
+        false === $state['getenv'] ? putenv($key) : putenv($key.'='.$state['getenv']);
     }
 }

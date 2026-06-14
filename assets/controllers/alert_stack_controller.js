@@ -221,7 +221,7 @@ export default class extends Controller {
     closeAlertById(id, store = true) {
         this.ensureAlertState();
 
-        if (!this.removeAlertById(id)) {
+        if (!this.removeAlertById(id, true)) {
             return;
         }
 
@@ -271,7 +271,31 @@ export default class extends Controller {
 
     scheduleHide() {
         window.clearTimeout(this.hideTimer);
-        this.hideTimer = window.setTimeout(() => this.hidePanel(), this.dismissDelayValue);
+        this.hideTimer = window.setTimeout(() => this.dismissAutoAlerts(), this.dismissDelayValue);
+    }
+
+    dismissAutoAlerts() {
+        this.ensureAlertState();
+
+        let changed = false;
+
+        for (const [id, entry] of this.alerts.entries()) {
+            const payload = entry.payload || {};
+            if (alertMode(payload) !== 'auto' || payload.persistent) {
+                continue;
+            }
+
+            changed = this.removeAlertById(id, false, false) || changed;
+        }
+
+        if (!changed) {
+            this.hidePanel();
+
+            return;
+        }
+
+        this.persist();
+        this.renderState();
     }
 
     showPanel() {
@@ -428,7 +452,7 @@ export default class extends Controller {
         this.hidePanel();
     };
 
-    removeAlertById(id) {
+    removeAlertById(id, rememberClosed = true, dispatchClosedEvent = true) {
         if (!id || !this.alerts.has(id)) {
             return false;
         }
@@ -436,11 +460,15 @@ export default class extends Controller {
         const entry = this.alerts.get(id);
         entry.element?.remove();
         this.alerts.delete(id);
-        this.closedAlertIds.add(id);
-        this.persistClosedAlerts();
-        document.dispatchEvent(new CustomEvent('ui-alert:closed', {
-            detail: { id },
-        }));
+        if (rememberClosed) {
+            this.closedAlertIds.add(id);
+            this.persistClosedAlerts();
+        }
+        if (dispatchClosedEvent) {
+            document.dispatchEvent(new CustomEvent('ui-alert:closed', {
+                detail: { id },
+            }));
+        }
 
         return true;
     }

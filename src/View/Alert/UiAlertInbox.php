@@ -37,7 +37,7 @@ final readonly class UiAlertInbox
         }
 
         try {
-            $cursor = null;
+            $inserted = 0;
 
             foreach ($topics as $topic) {
                 $this->connection->insert('ui_alert_inbox', [
@@ -51,10 +51,10 @@ final readonly class UiAlertInbox
                     'created_at' => Types::DATETIME_IMMUTABLE,
                     'expires_at' => Types::DATETIME_IMMUTABLE,
                 ]);
-                $cursor = max($cursor ?? 0, (int) $this->connection->lastInsertId());
+                ++$inserted;
             }
 
-            return $cursor;
+            return $inserted;
         } catch (Throwable) {
             return null;
         }
