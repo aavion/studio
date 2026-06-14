@@ -29,7 +29,13 @@
                 <dd>{{ ('ui.user.roles.' ~ user_account.role.value)|trans }}</dd>
             </div>
         </dl>
-        <form method="post" class="system-frontend-auth-form">
+        <form
+            method="post"
+            class="system-frontend-auth-form"
+            data-controller="native-notification-preference"
+            data-action="submit->native-notification-preference#submit"
+            data-native-notification-preference-denied-message-value="{{ 'ui.user.profile.native_notifications.denied'|trans|e('html_attr') }}"
+        >
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_profile') }}">
             {% if username_change_enabled|default(false) %}
                 {% include '@frontend/partials/forms/fields/input.html.twig' with {
@@ -67,6 +73,7 @@
                     label: 'ui.user.profile.native_notifications.label'|trans,
                     help: 'ui.user.profile.native_notifications.help'|trans,
                     checked: user_account.settings.native_notifications|default(false),
+                    attr: {'data-native-notification-preference-target': 'input'},
                 } only %}
             {% endif %}
             {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.profile.submit'|trans} only %}

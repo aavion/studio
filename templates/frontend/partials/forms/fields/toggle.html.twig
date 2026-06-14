@@ -8,6 +8,9 @@
             role="switch"
             name="{{ name }}"
             value="{{ value|default('1') }}"
+            {% for attr_name, attr_value in attr|default({}) %}
+                {{ attr_name }}="{{ attr_value }}"
+            {% endfor %}
             {% if checked|default(false) %}checked{% endif %}
             {% if disabled|default(false) %}disabled{% endif %}
         >

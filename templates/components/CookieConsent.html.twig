@@ -1,0 +1,64 @@
+{% set optional_cookies = cookie_consent_optional() %}
+{% set consent_prompt_required = cookie_consent_required() and optional_cookies is not empty %}
+{% set selected_cookies = cookie_consent_selected_names() %}
+<section id="cookie-consent" class="system-cookie-consent" data-controller="cookie-consent" aria-label="{{ 'ui.cookie_consent.title'|trans }}" {% if not consent_prompt_required %}hidden{% endif %}>
+    <form method="post" action="{{ path('privacy_cookie_consent') }}" class="system-cookie-consent-card">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('privacy_cookie_consent') }}">
+        <input type="hidden" name="_cookie_consent_target_path" value="{{ app.request ? app.request.requestUri : '/' }}">
+        <div class="system-cookie-consent-summary">
+            <span class="system-cookie-consent-icon" aria-hidden="true">
+                {{ ux_icon('tabler:cookie', {class: 'system-cookie-consent-icon-svg', 'aria-hidden': true}) }}
+            </span>
+            <div>
+                <strong>{{ 'ui.cookie_consent.title'|trans }}</strong>
+                <p>{{ 'ui.cookie_consent.message'|trans }}</p>
+            </div>
+        </div>
+        <div class="system-cookie-consent-actions">
+            {% if optional_cookies is not empty %}
+                <button class="system-button system-button-secondary" type="button" data-action="cookie-consent#toggleDetails">
+                    {{ 'ui.cookie_consent.configure'|trans }}
+                </button>
+                <button class="system-button system-button-secondary" type="submit" data-action="cookie-consent#rejectOptional">
+                    {{ 'ui.cookie_consent.reject_optional'|trans }}
+                </button>
+                <button class="system-button" type="submit">
+                    {{ 'ui.cookie_consent.accept_selected'|trans }}
+                </button>
+            {% endif %}
+            {% if not consent_prompt_required %}
+                <button class="system-button system-button-secondary" type="button" data-action="cookie-consent#close">
+                    {{ 'ui.cookie_consent.close'|trans }}
+                </button>
+            {% endif %}
+        </div>
+        <div class="system-cookie-consent-details" data-cookie-consent-target="details" {% if optional_cookies is not empty %}hidden{% endif %}>
+            <div class="system-cookie-consent-required">
+                <strong>{{ 'ui.cookie_consent.required_title'|trans }}</strong>
+                <p>{{ 'ui.cookie_consent.required_message'|trans }}</p>
+            </div>
+            {% if optional_cookies is empty %}
+                <p class="system-cookie-consent-empty">{{ 'ui.cookie_consent.no_optional'|trans }}</p>
+            {% endif %}
+            {% for cookie in optional_cookies %}
+                <label class="system-cookie-consent-option">
+                    <input
+                        type="checkbox"
+                        name="cookies[]"
+                        value="{{ cookie.name }}"
+                        data-cookie-consent-target="option"
+                        {% if cookie.name in selected_cookies %}checked{% endif %}
+                    >
+                    <span>
+                        <strong>{{ cookie.name }}</strong>
+                        <small>{{ cookie.provider }}</small>
+                        <span>{{ cookie.purpose }}</span>
+                        <a href="{{ cookie.privacy_url }}" target="_blank" rel="noopener noreferrer">
+                            {{ 'ui.cookie_consent.privacy_link'|trans }}
+                        </a>
+                    </span>
+                </label>
+            {% endfor %}
+        </div>
+    </form>
+</section>

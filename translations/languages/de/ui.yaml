@@ -8,6 +8,17 @@ ui:
     empty_title: 'Keine Benachrichtigungen'
     hide: 'Benachrichtigungen ausblenden'
     notifications: 'Benachrichtigungen'
+  cookie_consent:
+    title: 'Cookie-Einstellungen'
+    message: 'Diese Seite nutzt notwendige Cookies für Kernfunktionen. Optionale Cookies werden nur nach deiner Zustimmung verwendet.'
+    configure: 'Konfigurieren'
+    reject_optional: 'Optionale ablehnen'
+    accept_selected: 'Auswahl speichern'
+    close: 'Schließen'
+    required_title: 'Notwendige Cookies'
+    required_message: 'Notwendige Cookies halten Sessions, Sicherheitsprüfungen und grundlegende Einstellungen funktionsfähig und können hier nicht deaktiviert werden.'
+    no_optional: 'Aktuell sind keine optionalen Cookies registriert.'
+    privacy_link: 'Datenschutzhinweise'
   navigation:
     skip_to_content: 'Zum Inhalt springen'
   frontend:
@@ -88,6 +99,7 @@ ui:
       native_notifications:
         label: 'Native Browser-Benachrichtigungen'
         help: 'Zeige Browser-Benachrichtigungen, wenn Echtzeit-Zustellung verfügbar ist.'
+        denied: 'Browser-Benachrichtigungen wurden nicht aktiviert, weil die Browser-Berechtigung nicht erteilt wurde.'
       submit: 'Profil speichern'
       success: 'Profil gespeichert.'
       close:

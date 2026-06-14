@@ -4,15 +4,17 @@
 {% set poll_url = stream_topics is not empty ? path('api_live_alerts') : null %}
 {% set stack_attributes = {
     class: 'system-alert-stack',
-    'data-controller': 'alert-stack',
+    'data-controller': 'alert-stack native-notifications',
     'data-action': 'ui-alert:received->alert-stack#append',
     'data-alert-stack-dismiss-delay-value': dismiss_delay,
     'data-alert-close-label': 'ui.alert.close'|trans,
     'data-alert-notifications-label': 'ui.alert.notifications'|trans,
+    'data-native-notifications-enabled-value': app.user and app.user.settings.native_notifications|default(false) ? 'true' : 'false',
+    'data-native-notifications-title-value': 'ui.alert.notifications'|trans,
 } %}
 {% if stream_url %}
     {% set stack_attributes = stack_attributes|merge({
-        'data-controller': 'alert-stack ui-alert-stream',
+        'data-controller': stack_attributes['data-controller'] ~ ' ui-alert-stream',
         'data-ui-alert-stream-url-value': stream_url,
     }) %}
 {% endif %}

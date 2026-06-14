@@ -146,6 +146,10 @@ export default class extends Controller {
             this.persist();
         }
 
+        document.dispatchEvent(new CustomEvent('ui-alert:shown', {
+            detail: storableAlertPayload(normalizedPayload),
+        }));
+
         if (alertMode(payload) !== 'hidden') {
             this.showPanel();
         }

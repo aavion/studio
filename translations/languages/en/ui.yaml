@@ -8,6 +8,17 @@ ui:
     empty_title: 'No notifications'
     hide: 'Hide notifications'
     notifications: 'Notifications'
+  cookie_consent:
+    title: 'Cookie preferences'
+    message: 'This site uses required cookies for core functions. Optional cookies are only used after you allow them.'
+    configure: 'Configure'
+    reject_optional: 'Reject optional'
+    accept_selected: 'Save selection'
+    close: 'Close'
+    required_title: 'Required cookies'
+    required_message: 'Required cookies keep sessions, security checks, and basic preferences working and cannot be disabled here.'
+    no_optional: 'No optional cookies are registered right now.'
+    privacy_link: 'Privacy information'
   navigation:
     skip_to_content: 'Skip to content'
   frontend:
@@ -88,6 +99,7 @@ ui:
       native_notifications:
         label: 'Native browser notifications'
         help: 'Show browser-level notifications when real-time delivery is available.'
+        denied: 'Browser notifications were not enabled because the browser permission was not granted.'
       submit: 'Save profile'
       success: 'Profile saved.'
       close:
