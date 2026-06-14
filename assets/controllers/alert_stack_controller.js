@@ -27,10 +27,20 @@ export default class extends Controller {
 
     connect() {
         this.ensureAlertState();
+        document.addEventListener('pointerdown', this.hideOnOutsidePointerDown, true);
+        document.addEventListener('keydown', this.hideOnEscape);
         this.hydrateClosedAlerts();
         this.hydrateStoredAlerts();
         this.hydrateServerAlerts();
         this.renderState();
+    }
+
+    disconnect() {
+        document.removeEventListener('pointerdown', this.hideOnOutsidePointerDown, true);
+        document.removeEventListener('keydown', this.hideOnEscape);
+        window.cancelAnimationFrame(this.panelRevealFrame);
+        window.clearTimeout(this.panelHideTimer);
+        window.clearTimeout(this.hideTimer);
     }
 
     alertTargetConnected(alert) {
@@ -256,11 +266,35 @@ export default class extends Controller {
             return;
         }
 
+        this.revealPanel();
+    }
+
+    revealPanel() {
+        window.cancelAnimationFrame(this.panelRevealFrame);
+        window.clearTimeout(this.hideTimer);
+        window.clearTimeout(this.panelHideTimer);
         this.panelTarget.hidden = false;
+        this.panelTarget.classList.remove('is-closing');
+        this.panelRevealFrame = window.requestAnimationFrame(() => {
+            this.panelRevealFrame = null;
+            this.panelTarget.classList.add('is-open');
+        });
     }
 
     hidePanel() {
-        this.panelTarget.hidden = true;
+        if (this.panelTarget.hidden) {
+            return;
+        }
+
+        window.cancelAnimationFrame(this.panelRevealFrame);
+        this.panelRevealFrame = null;
+        this.panelTarget.classList.remove('is-open');
+        this.panelTarget.classList.add('is-closing');
+        window.clearTimeout(this.panelHideTimer);
+        this.panelHideTimer = window.setTimeout(() => {
+            this.panelTarget.hidden = true;
+            this.panelTarget.classList.remove('is-closing');
+        }, 180);
     }
 
     renderState(options = {}) {
@@ -278,7 +312,7 @@ export default class extends Controller {
         }
 
         if (count === 0 && options.keepPanelOpen) {
-            this.panelTarget.hidden = false;
+            this.revealPanel();
 
             return;
         }
@@ -352,6 +386,22 @@ export default class extends Controller {
             this.alerts = new Map();
         }
     }
+
+    hideOnOutsidePointerDown = (event) => {
+        if (this.panelTarget.hidden || this.element.contains(event.target)) {
+            return;
+        }
+
+        this.hidePanel();
+    };
+
+    hideOnEscape = (event) => {
+        if (event.key !== 'Escape' || this.panelTarget.hidden) {
+            return;
+        }
+
+        this.hidePanel();
+    };
 
     removeAlertById(id) {
         if (!id || !this.alerts.has(id)) {

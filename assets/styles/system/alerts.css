@@ -52,8 +52,25 @@
     border-radius: calc(var(--system-radius) + 0.35rem);
     background: color-mix(in srgb, var(--color-brand-canvas) 10%, transparent);
     box-shadow: 0 1.35rem 3.25rem color-mix(in srgb, var(--color-brand-canvas) 28%, transparent);
+    opacity: 0;
     pointer-events: auto;
+    transform: translateY(-0.35rem) scale(0.98);
+    transform-origin: top right;
+    transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+    visibility: hidden;
     backdrop-filter: blur(18px);
+}
+
+.system-alert-panel-shell.is-open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    visibility: visible;
+}
+
+.system-alert-panel-shell.is-closing {
+    opacity: 0;
+    transform: translateY(-0.35rem) scale(0.98);
+    visibility: hidden;
 }
 
 .system-alert-panel {

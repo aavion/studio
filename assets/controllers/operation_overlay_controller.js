@@ -32,6 +32,7 @@ export default class extends Controller {
         document.removeEventListener('operation-overlay:show', this.showFromAlert);
         document.removeEventListener('ui-alert:closed', this.alertClosed);
         this.livePoller?.stop();
+        this.stopSuccessfulCompletionTimer();
         this.restoreOperationButton();
     }
 
@@ -216,6 +217,11 @@ export default class extends Controller {
     open() {
         this.rootElement.hidden = false;
         this.wireControls();
+
+        if (this.finishedStatus === 'success') {
+            this.stopSuccessfulCompletionTimer();
+            this.okButton.hidden = false;
+        }
     }
 
     prepareOverlay() {
@@ -338,8 +344,7 @@ export default class extends Controller {
 
         if (status === 'success') {
             this.clearStoredOperation();
-            this.mapOperationButton('success');
-            this.okButton.hidden = false;
+            this.finishSuccessfulOperation();
 
             return;
         }
@@ -379,6 +384,29 @@ export default class extends Controller {
         }
 
         this.showCloseControls();
+    }
+
+    finishSuccessfulOperation() {
+        if (!this.rootElement.hidden) {
+            this.okButton.hidden = false;
+
+            return;
+        }
+
+        this.stopSuccessfulCompletionTimer();
+        this.successfulCompletionTimer = window.setTimeout(() => {
+            this.successfulCompletionTimer = null;
+            this.ok();
+        }, 2000);
+    }
+
+    stopSuccessfulCompletionTimer() {
+        if (!this.successfulCompletionTimer) {
+            return;
+        }
+
+        window.clearTimeout(this.successfulCompletionTimer);
+        this.successfulCompletionTimer = null;
     }
 
     hideButtons() {
@@ -624,13 +652,12 @@ export default class extends Controller {
             return;
         }
 
-        const success = status === 'success';
         this.operationButton.disabled = false;
         this.operationButton.type = 'button';
         this.operationButton.dataset.operationButtonState = status;
         this.operationButton.removeAttribute('aria-busy');
-        this.operationButton.textContent = success ? this.label('ok') : this.label('showDetails');
-        this.setOperationButtonVariant(success ? 'success' : (status === 'requires_review' ? 'warning' : 'danger'));
+        this.operationButton.textContent = this.label('showDetails');
+        this.setOperationButtonVariant(status === 'requires_review' ? 'warning' : 'danger');
         this.operationButton.removeEventListener('click', this.operationButtonClick);
         this.operationButton.addEventListener('click', this.operationButtonClick);
     }
@@ -660,12 +687,6 @@ export default class extends Controller {
 
         event.preventDefault();
         event.stopPropagation();
-
-        if (state === 'success') {
-            this.ok();
-
-            return;
-        }
 
         this.open();
     };
