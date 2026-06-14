@@ -11,7 +11,7 @@ $arguments = array_slice($argv, 1);
 $node = getenv('NODE_BINARY') ?: 'node';
 
 if (!nodeAvailable($node, $root)) {
-    fwrite(STDOUT, "Node.js is not available; JavaScript tests skipped.\n");
+    fwrite(STDOUT, "Node.js is not available or not executable; JavaScript tests require Node.js and were skipped successfully.\n");
 
     exit(0);
 }
@@ -29,7 +29,7 @@ $process = @proc_open(
 );
 
 if (!is_resource($process)) {
-    fwrite(STDOUT, "Node.js could not be started; JavaScript tests skipped.\n");
+    fwrite(STDOUT, "Node.js could not be started; JavaScript tests require Node.js and were skipped successfully.\n");
 
     exit(0);
 }
