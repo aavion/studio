@@ -11,8 +11,9 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 final readonly class UiAlertTopicFactory
 {
+    public const PREFIX = 'urn:system:ui-alerts:';
+
     public function __construct(
-        private string $defaultUri,
         private string $secret,
     ) {
     }
@@ -55,16 +56,16 @@ final readonly class UiAlertTopicFactory
         return array_values(array_unique($topics));
     }
 
-    private function topic(string $scope, string $identity): string
+    public function isUiAlertTopic(string $topic): bool
     {
-        return rtrim($this->baseUri(), '/').'/ui-alerts/'.$scope.'/'.$this->hash($scope, $identity);
+        $matches = preg_match('/^'.preg_quote(self::PREFIX, '/').'(user|session):[a-f0-9]{64}$/', $topic);
+
+        return 1 === $matches;
     }
 
-    private function baseUri(): string
+    private function topic(string $scope, string $identity): string
     {
-        $uri = rtrim($this->defaultUri, '/');
-
-        return '' !== $uri ? $uri : 'https://localhost';
+        return self::PREFIX.$scope.':'.$this->hash($scope, $identity);
     }
 
     private function hash(string $scope, string $identity): string

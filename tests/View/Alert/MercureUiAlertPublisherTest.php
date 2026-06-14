@@ -23,11 +23,11 @@ final class MercureUiAlertPublisherTest extends TestCase
         $hub = new RecordingHub();
         $publisher = $this->publisher($hub);
 
-        $id = $publisher->publish('https://example.test/ui-alerts/session/topic', UiAlert::fromLevel('danger', 'Saved'));
+        $id = $publisher->publish('urn:system:ui-alerts:session:topic', UiAlert::fromLevel('danger', 'Saved'));
 
         self::assertSame('update-id', $id);
         self::assertInstanceOf(Update::class, $hub->update);
-        self::assertSame(['https://example.test/ui-alerts/session/topic'], $hub->update->getTopics());
+        self::assertSame(['urn:system:ui-alerts:session:topic'], $hub->update->getTopics());
         self::assertFalse($hub->update->isPrivate());
         self::assertNull($hub->update->getId());
         self::assertSame('ui-alert', $hub->update->getType());
@@ -45,7 +45,7 @@ final class MercureUiAlertPublisherTest extends TestCase
         $hub = new RecordingHub();
         $publisher = $this->publisher($hub);
 
-        $publisher->publish('https://example.test/ui-alerts/session/topic', UiAlert::fromLevel('success', 'Saved'), private: true);
+        $publisher->publish('urn:system:ui-alerts:session:topic', UiAlert::fromLevel('success', 'Saved'), private: true);
 
         self::assertTrue($hub->update?->isPrivate());
     }
@@ -55,7 +55,7 @@ final class MercureUiAlertPublisherTest extends TestCase
         $hub = new RecordingHub();
         $publisher = $this->publisher($hub);
 
-        $publisher->publish('https://example.test/ui-alerts/session/topic', UiAlert::fromLevel('success', 'Saved', id: 'ui-alert-stable'));
+        $publisher->publish('urn:system:ui-alerts:session:topic', UiAlert::fromLevel('success', 'Saved', id: 'ui-alert-stable'));
 
         self::assertSame('ui-alert-stable', $hub->update?->getId());
     }
@@ -79,7 +79,7 @@ final class MercureUiAlertPublisherTest extends TestCase
     {
         return new MercureUiAlertPublisher(
             $hub,
-            new UiAlertTopicFactory('https://example.test', 'secret'),
+            new UiAlertTopicFactory('secret'),
             new UiAlertMessageFactory(new IdentityTranslator()),
         );
     }

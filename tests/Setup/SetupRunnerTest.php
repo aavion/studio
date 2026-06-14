@@ -106,6 +106,8 @@ final class SetupRunnerTest extends TestCase
         self::assertFalse($assetRebuildEnvironment['DATABASE_URL'] ?? null);
         self::assertFalse($assetRebuildEnvironment['APP_DATABASE_PREFIX'] ?? null);
         self::assertFalse($assetRebuildEnvironment['DEFAULT_URI'] ?? null);
+        self::assertSame('test-setup-app-secret-not-secure', $executor->environments[6]['MERCURE_JWT_SECRET'] ?? null);
+        self::assertSame('test-setup-app-secret-not-secure', $executor->environments[7]['MERCURE_JWT_SECRET'] ?? null);
         self::assertSame([
             ['composer', '--version'],
             ['composer', 'dump-env', 'test'],
@@ -878,6 +880,11 @@ final class RecordingSetupCommandExecutor implements SetupCommandExecutorInterfa
      */
     public array $commands = [];
 
+    /**
+     * @var list<array<string, string|false>>
+     */
+    public array $environments = [];
+
     public function __construct(
         private readonly ?int $failureAt = null,
         private readonly ?SetupCommandResult $failure = null,
@@ -889,6 +896,7 @@ final class RecordingSetupCommandExecutor implements SetupCommandExecutorInterfa
     public function run(array $command, string $cwd, array $environment = []): SetupCommandResult
     {
         $this->commands[] = $command;
+        $this->environments[] = $environment;
         if (is_callable($this->onRun)) {
             $result = ($this->onRun)($command, $cwd, $environment);
 

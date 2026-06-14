@@ -80,6 +80,11 @@ final class UiAlertTwigExtension extends AbstractExtension
                 $session = $request->getSession();
                 if ($session instanceof SessionInterface && $session->isStarted()) {
                     $sessionScope = $session->getId();
+                } elseif ($session instanceof SessionInterface) {
+                    $cookieValue = $request->cookies->get($session->getName());
+                    $sessionScope = is_string($cookieValue) && '' !== trim($cookieValue)
+                        ? trim($cookieValue)
+                        : $sessionScope;
                 }
             } catch (Throwable) {
                 $sessionScope = 'no-session';

@@ -155,7 +155,7 @@ final readonly class SetupRuntimeCommandRunner
         array $environment,
         SetupCommandExecutorInterface $commandExecutor,
     ): array {
-        $commandEnvironment = $this->databaseEnvironmentScope->commandEnvironment($environment);
+        $commandEnvironment = $this->mercureHealthCommandEnvironment($environment);
         $phpCommand = $this->phpCliCommandPrefix($projectDir, $input, $environment, true);
         $stopCommand = [
             ...$phpCommand,
@@ -294,6 +294,23 @@ final readonly class SetupRuntimeCommandRunner
             'SHELL_VERBOSITY' => '0',
             DatabaseReadyState::ALLOW_UNREADY_KEY => '1',
         ];
+    }
+
+    /**
+     * @param array<string, string> $environment
+     *
+     * @return array<string, string>
+     */
+    private function mercureHealthCommandEnvironment(array $environment): array
+    {
+        $environment = $this->databaseEnvironmentScope->commandEnvironment($environment);
+        $appSecret = trim($environment['APP_SECRET'] ?? '');
+
+        if ('' !== $appSecret) {
+            $environment['MERCURE_JWT_SECRET'] = $appSecret;
+        }
+
+        return $environment;
     }
 
     /**

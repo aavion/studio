@@ -62,7 +62,7 @@ final class TwigComponentNamespaceTest extends KernelTestCase
     private function renderAlertStack(Environment $twig): string
     {
         return $twig
-            ->createTemplate('<twig:root:AlertStack :alerts="[]" :stream_topics="[\'https://example.test/ui-alerts/user/test\']" />')
+            ->createTemplate('<twig:root:AlertStack :alerts="[]" :stream_topics="[\'urn:system:ui-alerts:user:test\']" />')
             ->render();
     }
 }

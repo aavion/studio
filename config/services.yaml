@@ -478,7 +478,6 @@ services:
 
     App\View\Alert\UiAlertTopicFactory:
         arguments:
-            $defaultUri: '%env(DEFAULT_URI)%'
             $secret: '%kernel.secret%'
 
     App\View\Alert\MercureAvailability:

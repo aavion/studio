@@ -333,7 +333,7 @@ final readonly class MercureRuntime
 
     private function healthTopic(): string
     {
-        return rtrim($this->defaultUri, '/').'/ui-alerts/health';
+        return 'urn:system:ui-alerts:health';
     }
 
     private function urlWithTopic(string $url): string

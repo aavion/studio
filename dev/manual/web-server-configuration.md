@@ -61,7 +61,7 @@ Override `MERCURE_PUBLIC_URL` only when the browser-facing URL differs from the 
 
 The reverse proxy must keep Server-Sent Events usable: disable response buffering for `/.well-known/mercure`, use a long read timeout, preserve the request host and scheme with forwarded headers, and forward the request to the local Mercure hub port.
 
-Studio UI-alert push uses unguessable HMAC-bound public topics. The local `mercure:start` command therefore starts the hub with anonymous subscribers enabled. External Mercure hub deployments must allow anonymous subscribers for public UI-alert topics or provide an equivalent subscriber authorization strategy before `mercure:health` can mark push delivery as available.
+Studio UI-alert push uses unguessable HMAC-bound public URN topics under `urn:system:ui-alerts:*`. The local `mercure:start` command therefore starts the hub with anonymous subscribers enabled. External Mercure hub deployments must allow anonymous subscribers for public UI-alert topics or provide an equivalent subscriber authorization strategy before `mercure:health` can mark push delivery as available.
 
 If no public Mercure endpoint is reachable, `mercure:health` stores Mercure as unavailable. Studio then skips EventSource stream URLs and push publishing attempts while continuing to deliver alerts through the polling inbox. Use `php bin/console mercure:check` for read-only diagnostics without starting or stopping the hub.
 

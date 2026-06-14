@@ -32,7 +32,7 @@ final class Version20260531000000 extends AbstractMigration
 
         $uiAlertInbox = $schema->createTable('ui_alert_inbox');
         $uiAlertInbox->addColumn('id', 'bigint', ['autoincrement' => true]);
-        $uiAlertInbox->addColumn('topic', 'string', ['length' => 255]);
+        $uiAlertInbox->addColumn('topic', 'string', ['length' => 80]);
         $uiAlertInbox->addColumn('payload', 'json');
         $uiAlertInbox->addColumn('created_at', 'datetime_immutable');
         $uiAlertInbox->addColumn('expires_at', 'datetime_immutable', ['notnull' => false]);

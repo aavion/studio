@@ -114,9 +114,14 @@ final readonly class UiAlertInbox
     private function normalizeTopics(array $topics): array
     {
         return array_values(array_unique(array_filter(
-            array_map(static fn (mixed $topic): string => trim((string) $topic), $topics),
+            array_map(static fn (mixed $topic): string => self::topicKey(trim((string) $topic)), $topics),
             static fn (string $topic): bool => '' !== $topic,
         )));
+    }
+
+    private static function topicKey(string $topic): string
+    {
+        return '' === $topic ? '' : 'sha256:'.hash('sha256', $topic);
     }
 
     /**

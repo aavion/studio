@@ -16,7 +16,7 @@ final class UiAlertTopicFactoryTest extends TestCase
 {
     public function testItBuildsStableHashedUserAndSessionTopics(): void
     {
-        $factory = new UiAlertTopicFactory('https://example.test', 'secret');
+        $factory = new UiAlertTopicFactory('secret');
         $user = new UserAccount(
             '71000000-0000-7000-8000-000000000001',
             'admin',
@@ -28,16 +28,28 @@ final class UiAlertTopicFactoryTest extends TestCase
         $userTopic = $factory->userTopic($user);
         $sessionTopic = $factory->sessionTopic('session-id');
 
-        self::assertStringStartsWith('https://example.test/ui-alerts/user/', $userTopic);
-        self::assertStringStartsWith('https://example.test/ui-alerts/session/', $sessionTopic);
+        self::assertStringStartsWith('urn:system:ui-alerts:user:', $userTopic);
+        self::assertStringStartsWith('urn:system:ui-alerts:session:', $sessionTopic);
         self::assertStringNotContainsString($user->uid(), $userTopic);
         self::assertStringNotContainsString('session-id', $sessionTopic);
         self::assertSame($sessionTopic, $factory->sessionTopic('session-id'));
+        self::assertTrue($factory->isUiAlertTopic($userTopic));
+        self::assertTrue($factory->isUiAlertTopic($sessionTopic));
+    }
+
+    public function testItRejectsNonUiAlertTopics(): void
+    {
+        $factory = new UiAlertTopicFactory('secret');
+
+        self::assertFalse($factory->isUiAlertTopic('https://example.test/ui-alerts/user/topic'));
+        self::assertFalse($factory->isUiAlertTopic('urn:system:ui-alerts:health'));
+        self::assertFalse($factory->isUiAlertTopic('urn:system:ui-alerts:user:not-a-hash'));
+        self::assertFalse($factory->isUiAlertTopic('urn:other:ui-alerts:user:'.str_repeat('a', 64)));
     }
 
     public function testItUsesExistingSessionCookieForRequestTopicsWithoutStartingSession(): void
     {
-        $factory = new UiAlertTopicFactory('https://example.test', 'secret');
+        $factory = new UiAlertTopicFactory('secret');
         $request = Request::create('/api/live/alerts');
         $session = new Session(new MockArraySessionStorage());
         $session->setName('PHPSESSID');

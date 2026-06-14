@@ -14,7 +14,7 @@ final class UiAlertInboxTest extends TestCase
     public function testItAppendsAndPollsQueuedAlertsWithoutRequiringInsertIds(): void
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
-        $connection->executeStatement('CREATE TABLE ui_alert_inbox (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, topic VARCHAR(255) NOT NULL, payload CLOB NOT NULL, created_at DATETIME NOT NULL, expires_at DATETIME DEFAULT NULL)');
+        $connection->executeStatement('CREATE TABLE ui_alert_inbox (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, topic VARCHAR(80) NOT NULL, payload CLOB NOT NULL, created_at DATETIME NOT NULL, expires_at DATETIME DEFAULT NULL)');
         $inbox = new UiAlertInbox($connection);
 
         $result = $inbox->append(['topic.one', 'topic.two'], UiAlert::fromLevel('success', 'Queued'));
@@ -30,6 +30,21 @@ final class UiAlertInboxTest extends TestCase
                 'loading' => false,
             ]],
         ], $inbox->poll(['topic.one']));
+    }
+
+    public function testItStoresBoundedTopicKeysForLongPublicTopics(): void
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE ui_alert_inbox (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, topic VARCHAR(80) NOT NULL, payload CLOB NOT NULL, created_at DATETIME NOT NULL, expires_at DATETIME DEFAULT NULL)');
+        $inbox = new UiAlertInbox($connection);
+        $topic = 'urn:system:ui-alerts:user:'.str_repeat('a', 64);
+
+        self::assertSame(1, $inbox->append([$topic], UiAlert::fromLevel('success', 'Queued')));
+
+        $storedTopic = (string) $connection->fetchOne('SELECT topic FROM ui_alert_inbox');
+        self::assertSame(71, strlen($storedTopic));
+        self::assertStringStartsWith('sha256:', $storedTopic);
+        self::assertSame('Queued', $inbox->poll([$topic])['alerts'][0]['message'] ?? null);
     }
 
     public function testAppendReturnsNullForEmptyTopics(): void

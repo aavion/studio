@@ -20,6 +20,7 @@ use App\View\Alert\UiAlertMessageFactory;
 use App\View\Alert\UiAlertPublisherInterface;
 use App\View\Alert\UiAlertTopicFactory;
 use App\View\Alert\UiAlertTranslation;
+use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -38,11 +39,11 @@ final class UiAlertDispatcherTest extends TestCase
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL DEFAULT 0, modified_at DATETIME DEFAULT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
-        $connection->executeStatement('CREATE TABLE ui_alert_inbox (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, topic VARCHAR(255) NOT NULL, payload CLOB NOT NULL, created_at DATETIME NOT NULL, expires_at DATETIME DEFAULT NULL)');
+        $connection->executeStatement('CREATE TABLE ui_alert_inbox (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, topic VARCHAR(80) NOT NULL, payload CLOB NOT NULL, created_at DATETIME NOT NULL, expires_at DATETIME DEFAULT NULL)');
         $config = new Config($connection);
         self::assertTrue($config->set(MercureAvailability::ENABLED_KEY, false, ConfigValueType::Boolean));
         $publisher = new RecordingPublisher();
-        $topicFactory = new UiAlertTopicFactory('https://studio.example.test', 'test-secret');
+        $topicFactory = new UiAlertTopicFactory('test-secret');
         $dispatcher = new UiAlertDispatcher(
             $topicFactory,
             new UiAlertMessageFactory(new IdentityTranslator()),
@@ -65,13 +66,58 @@ final class UiAlertDispatcherTest extends TestCase
         );
 
         self::assertTrue($dispatcher->addAlertToTopic(
-            'https://studio.example.test/ui-alerts/user/test',
+            $topicFactory->userTopic('test-user'),
             UiAlert::fromLevel('success', 'Queued alert'),
             UiAlertDelivery::Queue,
         ));
 
         self::assertSame([], $publisher->publishedTopics);
         self::assertSame(1, (int) $connection->fetchOne('SELECT COUNT(*) FROM ui_alert_inbox'));
+    }
+
+    public function testTopicDeliveryRejectsNonUiAlertTopics(): void
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL DEFAULT 0, modified_at DATETIME DEFAULT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
+        $connection->executeStatement('CREATE TABLE ui_alert_inbox (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, topic VARCHAR(80) NOT NULL, payload CLOB NOT NULL, created_at DATETIME NOT NULL, expires_at DATETIME DEFAULT NULL)');
+        $publisher = new RecordingPublisher();
+        $dispatcher = $this->dispatcher($connection, $publisher);
+
+        self::assertFalse($dispatcher->addAlertToTopic(
+            'https://example.test/ui-alerts/user/topic',
+            UiAlert::fromLevel('success', 'Queued alert'),
+            UiAlertDelivery::Queue,
+        ));
+
+        self::assertSame([], $publisher->publishedTopics);
+        self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM ui_alert_inbox'));
+    }
+
+    private function dispatcher(Connection $connection, RecordingPublisher $publisher): UiAlertDispatcher
+    {
+        $config = new Config($connection);
+        self::assertTrue($config->set(MercureAvailability::ENABLED_KEY, false, ConfigValueType::Boolean));
+
+        return new UiAlertDispatcher(
+            new UiAlertTopicFactory('test-secret'),
+            new UiAlertMessageFactory(new IdentityTranslator()),
+            new UiAlertInbox($connection),
+            $publisher,
+            new MercureAvailability(
+                $config,
+                new MercureRuntime(
+                    new MercureBinaryManager('/tmp/studio'),
+                    new SilentHub(),
+                    'https://studio.example.test',
+                    '/tmp/studio',
+                ),
+                new DetachedProcessStarter(),
+                '/tmp/studio',
+            ),
+            new RequestUiAlertFlasher(new RequestStack()),
+            new RequestStack(),
+            new Security(new Container()),
+        );
     }
 }
 

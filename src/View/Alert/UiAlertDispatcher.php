@@ -60,6 +60,10 @@ final readonly class UiAlertDispatcher implements UiAlertDispatcherInterface
         ?UiAlertPresentation $presentation = null,
     ): bool
     {
+        if (!$this->topicFactory->isUiAlertTopic($topic)) {
+            return false;
+        }
+
         $options = $this->options($delivery);
         $uiAlert = $this->alertFactory->create($alert, $options->locale(), $presentation);
         if (!$options->flashes()) {
