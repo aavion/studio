@@ -25,6 +25,8 @@
             options: field_options,
             required: field.required,
             attributes: field.attributes,
+            autocomplete_enabled: field.metadata.autocomplete_enabled|default(false),
+            autocomplete_options: field.metadata.autocomplete_options|default({}),
             help: field_help,
             errors: field.errors,
         } only %}

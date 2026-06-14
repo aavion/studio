@@ -1,6 +1,17 @@
 {% set field_id = id|default(name|default('field')) %}
+{% set autocomplete_attributes = autocomplete_enabled|default(false)
+    ? stimulus_controller('symfony/ux-autocomplete/autocomplete', autocomplete_options|default({}))
+    : ''
+%}
 {% set select_control %}
-    <select id="{{ field_id }}" class="system-select" name="{{ name }}" {% if required|default(false) %}required{% endif %}>
+    <select
+        id="{{ field_id }}"
+        class="system-select"
+        name="{{ name }}"
+        {% if required|default(false) %}required{% endif %}
+        {{ html_attributes(attributes|default({})) }}
+        {{ autocomplete_attributes }}
+    >
         {% for option_value, option_label in options|default({}) %}
             <option value="{{ option_value }}" {% if option_value == value|default(null) %}selected{% endif %}>{{ option_label }}</option>
         {% endfor %}
