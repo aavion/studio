@@ -182,6 +182,9 @@ ui:
         link: 'Anzeigen'
         password: 'Passwort'
         submit: 'Key anzeigen'
+        copy: 'Key kopieren'
+        copy_success: 'Kopiert.'
+        copy_failure: 'Kopieren fehlgeschlagen.'
       errors:
         invalid_csrf: 'Das API-Key-Formular ist abgelaufen. Bitte versuche es erneut.'
         create_failed: 'Der API-Key konnte nicht erstellt werden.'

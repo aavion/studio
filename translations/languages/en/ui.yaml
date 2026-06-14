@@ -182,6 +182,9 @@ ui:
         link: 'Reveal'
         password: 'Password'
         submit: 'Reveal key'
+        copy: 'Copy key'
+        copy_success: 'Copied.'
+        copy_failure: 'Copy failed.'
       errors:
         invalid_csrf: 'The API-key form expired. Please try again.'
         create_failed: 'The API key could not be created.'
