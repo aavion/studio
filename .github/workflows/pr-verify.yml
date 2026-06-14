@@ -62,5 +62,8 @@ jobs:
         if: matrix.lint
         run: php bin/lint
 
-      - name: Run test suite
+      - name: Run PHPUnit test suite
         run: php bin/phpunit
+
+      - name: Run JavaScript test suite
+        run: php bin/jstest
