@@ -46,6 +46,9 @@ final readonly class ConsentCookieJar
     {
         return $expected->getName() === $actual->getName()
             && $expected->getPath() === $actual->getPath()
-            && $expected->getDomain() === $actual->getDomain();
+            && $expected->getDomain() === $actual->getDomain()
+            && $expected->isSecure() === $actual->isSecure()
+            && $expected->isHttpOnly() === $actual->isHttpOnly()
+            && $expected->getSameSite() === $actual->getSameSite();
     }
 }

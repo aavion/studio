@@ -102,6 +102,36 @@ final class MercureRuntimeTest extends TestCase
         self::assertNull($method->invoke(null, 'Linux', 'riscv64'));
     }
 
+    public function testItPinsReleaseAssetChecksums(): void
+    {
+        $method = new ReflectionMethod(MercureBinaryManager::class, 'assetChecksum');
+        $manager = new MercureBinaryManager('/tmp/studio');
+
+        self::assertSame(
+            '0447e2db7f7819692c72544f19371a93c4162a50d9fae849b3c99df50e212fd0',
+            $method->invoke($manager, 'mercure_Linux_x86_64.tar.gz'),
+        );
+        self::assertNull($method->invoke($manager, 'mercure_Linux_riscv64.tar.gz'));
+    }
+
+    public function testItRejectsDownloadedArchivesWithUnexpectedChecksum(): void
+    {
+        $root = sys_get_temp_dir().'/studio-mercure-download-test-'.bin2hex(random_bytes(4));
+        $manager = new MercureBinaryManager(
+            $root,
+            MercureBinaryManager::DEFAULT_VERSION,
+            new MockHttpClient(new MockResponse('not a valid mercure archive')),
+        );
+
+        try {
+            self::assertFalse($manager->install());
+            self::assertFalse($manager->isInstalled());
+            self::assertFileDoesNotExist($manager->binaryPath());
+        } finally {
+            $this->removeDirectory($root);
+        }
+    }
+
     public function testItAcceptsReachabilityProbeStatusCodes(): void
     {
         $method = new ReflectionMethod(MercureRuntime::class, 'probeStatusAccepted');

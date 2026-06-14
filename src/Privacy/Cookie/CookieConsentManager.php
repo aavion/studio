@@ -13,6 +13,7 @@ final readonly class CookieConsentManager
 {
     public const CONSENT_COOKIE_NAME = 'studio_cookie_consent';
     private const TTL_SECONDS = 31_536_000;
+    private const CLOCK_SKEW_SECONDS = 300;
 
     public function __construct(
         private CookieConsentRegistry $registry,
@@ -73,7 +74,7 @@ final readonly class CookieConsentManager
 
         $response->headers->setCookie(Cookie::create(
             self::CONSENT_COOKIE_NAME,
-            $this->encode([
+            $this->encodeConsent([
                 'accepted' => $accepted,
                 'created_at' => time(),
                 'version' => 1,
@@ -157,16 +158,78 @@ final readonly class CookieConsentManager
             return null;
         }
 
-        $decoded = json_decode(base64_decode($value, true) ?: '', true);
+        $payload = $this->decodeConsent($value);
+        if (null === $payload) {
+            return null;
+        }
 
-        return is_array($decoded) ? $decoded : null;
+        $createdAt = $payload['created_at'] ?? null;
+        if (($payload['version'] ?? null) !== 1 || !is_int($createdAt)) {
+            return null;
+        }
+
+        $now = time();
+        if ($createdAt > $now + self::CLOCK_SKEW_SECONDS || $createdAt < $now - self::TTL_SECONDS) {
+            return null;
+        }
+
+        return $payload;
     }
 
     /**
      * @param array<string, mixed> $payload
      */
-    private function encode(array $payload): string
+    private function encodeConsent(array $payload): string
     {
-        return base64_encode(json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+        $body = $this->base64UrlEncode(json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+
+        return $body.'.'.$this->signature($body);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function decodeConsent(string $value): ?array
+    {
+        $parts = explode('.', trim($value));
+        if (2 !== count($parts) || !hash_equals($this->signature($parts[0]), $parts[1])) {
+            return null;
+        }
+
+        $json = $this->base64UrlDecode($parts[0]);
+        if (null === $json) {
+            return null;
+        }
+
+        try {
+            $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
+            return is_array($decoded) ? $decoded : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function signature(string $body): string
+    {
+        return hash_hmac('sha256', 'privacy-cookie-consent|'.$body, $this->secret);
+    }
+
+    private function base64UrlEncode(string $value): string
+    {
+        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    }
+
+    private function base64UrlDecode(string $value): ?string
+    {
+        if (1 !== preg_match('/\A[A-Za-z0-9_-]+\z/', $value)) {
+            return null;
+        }
+
+        $base64 = strtr($value, '-_', '+/');
+        $base64 .= str_repeat('=', (4 - strlen($base64) % 4) % 4);
+        $decoded = base64_decode($base64, true);
+
+        return false === $decoded ? null : $decoded;
     }
 }

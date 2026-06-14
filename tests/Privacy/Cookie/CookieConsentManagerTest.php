@@ -87,6 +87,49 @@ final class CookieConsentManagerTest extends TestCase
         self::assertFalse($manager->bannerRequired($nextRequest));
     }
 
+    public function testItIgnoresTamperedConsentCookies(): void
+    {
+        $definition = CookieConsentDefinition::optional(
+            Cookie::create('analytics_id'),
+            'Analytics',
+            'Measure visits.',
+            'https://example.test/privacy',
+        );
+        $manager = $this->manager([$this->provider([$definition])]);
+        $request = Request::create('/');
+        $response = new Response();
+
+        $manager->attachConsentCookie($request, $response, ['analytics_id']);
+        $cookie = $response->headers->getCookies()[0] ?? null;
+        self::assertInstanceOf(Cookie::class, $cookie);
+
+        $nextRequest = Request::create('/');
+        $nextRequest->cookies->set($cookie->getName(), $cookie->getValue().'tampered');
+
+        self::assertFalse($manager->allowed($nextRequest, $definition));
+        self::assertTrue($manager->bannerRequired($nextRequest));
+    }
+
+    public function testItIgnoresExpiredConsentCookies(): void
+    {
+        $definition = CookieConsentDefinition::optional(
+            Cookie::create('analytics_id'),
+            'Analytics',
+            'Measure visits.',
+            'https://example.test/privacy',
+        );
+        $manager = $this->manager([$this->provider([$definition])]);
+        $request = Request::create('/');
+        $request->cookies->set(CookieConsentManager::CONSENT_COOKIE_NAME, $this->signedConsentCookie([
+            'accepted' => ['analytics_id'],
+            'created_at' => time() - 31_536_001,
+            'version' => 1,
+        ]));
+
+        self::assertFalse($manager->allowed($request, $definition));
+        self::assertTrue($manager->bannerRequired($request));
+    }
+
     public function testItExpiresWithdrawnOptionalCookies(): void
     {
         $definition = CookieConsentDefinition::optional(
@@ -271,6 +314,30 @@ final class CookieConsentManagerTest extends TestCase
         self::assertFalse($manager->allowed($nextRequest, $definition));
     }
 
+    public function testCookieConsentRedirectsOnlyToSafeRelativeTargets(): void
+    {
+        $manager = $this->manager();
+        $controller = new CookieConsentController($manager);
+
+        foreach (['https://evil.example.test', '//evil.example.test/path', 'relative/path', ''] as $target) {
+            $request = Request::create('/privacy/cookie-consent', 'POST', [
+                '_cookie_consent_target_path' => $target,
+                '_cookie_consent_action' => 'reject_optional',
+            ]);
+            $request->request->set('_csrf_token', $manager->csrfToken($request));
+
+            self::assertSame('/', $controller->store($request)->headers->get('Location'));
+        }
+
+        $request = Request::create('/privacy/cookie-consent', 'POST', [
+            '_cookie_consent_target_path' => '/privacy',
+            '_cookie_consent_action' => 'reject_optional',
+        ]);
+        $request->request->set('_csrf_token', $manager->csrfToken($request));
+
+        self::assertSame('/privacy', $controller->store($request)->headers->get('Location'));
+    }
+
     public function testCookieConsentCsrfTokenIsVisitorBound(): void
     {
         $manager = $this->manager();
@@ -328,6 +395,9 @@ final class CookieConsentManagerTest extends TestCase
             Cookie::create('other_cookie', 'value', 0, '/tracking', 'example.test'),
             Cookie::create('analytics_id', 'value', 0, '/other', 'example.test'),
             Cookie::create('analytics_id', 'value', 0, '/tracking', 'other.example.test'),
+            Cookie::create('analytics_id', 'value', 0, '/tracking', 'example.test', true),
+            Cookie::create('analytics_id', 'value', 0, '/tracking', 'example.test', false, false),
+            Cookie::create('analytics_id', 'value', 0, '/tracking', 'example.test', false, true, false, Cookie::SAMESITE_STRICT),
         ] as $cookie) {
             $response = new Response();
 
@@ -393,6 +463,16 @@ final class CookieConsentManagerTest extends TestCase
                 return $this->definitions;
             }
         };
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function signedConsentCookie(array $payload): string
+    {
+        $body = rtrim(strtr(base64_encode(json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)), '+/', '-_'), '=');
+
+        return $body.'.'.hash_hmac('sha256', 'privacy-cookie-consent|'.$body, 'test-secret');
     }
 }
 
