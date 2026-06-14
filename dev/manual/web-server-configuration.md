@@ -55,7 +55,7 @@ MERCURE_PUBLIC_URL=${DEFAULT_URI}/.well-known/mercure
 MERCURE_JWT_SECRET=...
 ```
 
-`MERCURE_JWT_SECRET` must provide at least 256 bits of HMAC-SHA256 key material. Setup writes an installation-specific value derived from `APP_SECRET` automatically; manual environments should use a high-entropy `APP_SECRET` or a dedicated high-entropy `MERCURE_JWT_SECRET` with at least 32 bytes.
+`MERCURE_JWT_SECRET` must provide at least 256 bits of HMAC-SHA256 key material. The committed default derives it from `APP_SECRET`, and setup validates/generates a long enough `APP_SECRET`; manual environments should keep that derivation or use a dedicated high-entropy `MERCURE_JWT_SECRET` with at least 32 bytes.
 
 Override `MERCURE_PUBLIC_URL` only when the browser-facing URL differs from the canonical `DEFAULT_URI` host, for example when Mercure is exposed through a dedicated subdomain, Cloudflare Tunnel, or a supported public HTTPS port.
 
