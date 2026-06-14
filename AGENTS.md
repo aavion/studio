@@ -115,6 +115,7 @@
 - `php bin/console doctrine:migrations:migrate` applies schema migrations.
 - `php bin/phpunit` runs the full PHPUnit suite.
 - `php bin/phpunit --coverage-text` runs PHPUnit with quick coverage feedback before PRs.
+- `bin/jstest` runs native Node.js JavaScript behavior tests from `tests/assets/**/*.test.mjs` through `node --test`; pass test files or Node test-runner options for focused runs. If Node.js is not available, the command prints a skip notice and exits successfully so only real JavaScript test failures fail CI.
 - `bin/lint` includes the translation source catalogue file/key comparison for release-safe validation without requiring `.codex/`.
 - Before committing, use `bin/lint --diff` or the relevant focused `bin/lint <path...>` for Git-aware whitespace checks. Markdown files may contain intentional two-space hard line breaks; preserve those hard breaks when reviewing whitespace output from raw Git commands.
 - `php bin/console render:route /<route>` renders a route for Twig, translation, and debug user/role review.
@@ -123,7 +124,7 @@
 - PHP-only logic: run targeted PHPUnit coverage and `php -l` for edited PHP files.
 - Service, DI, security, or configuration changes: run targeted tests and `php bin/console lint:container`.
 - Twig, translation, or UX copy changes: run `bin/lint <changed translation/template paths...>` and render affected routes with `php bin/console render:route /<route>` when available.
-- Asset or Stimulus changes: prefer `bin/lint <changed path...>` for focused JavaScript, JSON, CSS, YAML, Twig, Markdown, and PHP syntax checks, then run the relevant development asset build command and targeted UI/functional checks when build output or rendering can change. Do not use production-only `asset-map:compile` for local verification.
+- Asset or Stimulus changes: prefer `bin/lint <changed path...>` for focused JavaScript, JSON, CSS, YAML, Twig, Markdown, and PHP syntax checks, run `bin/jstest` or focused `bin/jstest <test-file...>` when DOM-free JavaScript behavior can be covered, then run the relevant development asset build command and targeted UI/functional checks when build output or rendering can change. Do not use production-only `asset-map:compile` for local verification.
 - Focused CSS checks use the strict CSS parser and may report Tailwind-specific directives or generated modern at-rules such as `@apply`, `@theme`, or `@supports` as unsupported syntax; treat the accompanying linter note as context, and use `php bin/console tailwind:build` for the authoritative full Tailwind validation.
 - Doctrine mapping or entity changes: generate or update migrations and run tests covering persistence behavior.
 - Documentation changes: run `bin/lint <changed markdown paths...>` for Markdown parse coverage, then verify style, relative links, and alignment with current behavior.

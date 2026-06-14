@@ -602,6 +602,10 @@ function lintFileType(string $path): ?string
 {
     $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
+    if ('mjs' === $extension) {
+        return 'js';
+    }
+
     if ('' !== $extension) {
         return $extension;
     }

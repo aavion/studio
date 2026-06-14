@@ -1,0 +1,63 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+ini_set('memory_limit', '512M');
+ini_set('max_execution_time', 0);
+
+$root = dirname(__DIR__);
+$arguments = array_slice($argv, 1);
+$node = getenv('NODE_BINARY') ?: 'node';
+
+if (!nodeAvailable($node, $root)) {
+    fwrite(STDOUT, "Node.js is not available; JavaScript tests skipped.\n");
+
+    exit(0);
+}
+
+$command = [$node, '--test', ...([] === $arguments ? ['tests/assets/**/*.test.mjs'] : $arguments)];
+$process = @proc_open(
+    $command,
+    [
+        0 => STDIN,
+        1 => STDOUT,
+        2 => STDERR,
+    ],
+    $pipes,
+    $root,
+);
+
+if (!is_resource($process)) {
+    fwrite(STDOUT, "Node.js could not be started; JavaScript tests skipped.\n");
+
+    exit(0);
+}
+
+exit(proc_close($process));
+
+function nodeAvailable(string $node, string $root): bool
+{
+    $process = @proc_open(
+        [$node, '--version'],
+        [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ],
+        $pipes,
+        $root,
+    );
+
+    if (!is_resource($process)) {
+        return false;
+    }
+
+    foreach ($pipes as $pipe) {
+        if (is_resource($pipe)) {
+            fclose($pipe);
+        }
+    }
+
+    return 0 === proc_close($process);
+}
