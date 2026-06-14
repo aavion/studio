@@ -23,6 +23,7 @@ final readonly class SetupEnvironmentWriter
         $path = $projectDir.'/.env.'.$input->appEnv().'.local';
         $values = [
             'APP_SECRET' => $appSecret,
+            'MERCURE_JWT_SECRET' => hash('sha256', $appSecret),
             'DEFAULT_URI' => $input->defaultUri(),
             'DATABASE_URL' => $databaseUrl,
             'APP_DATABASE_PREFIX' => $input->databasePrefix() ?? '',

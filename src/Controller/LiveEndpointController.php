@@ -14,6 +14,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final readonly class LiveEndpointController
 {
@@ -22,6 +23,7 @@ final readonly class LiveEndpointController
         private LiveEndpointHandlerRegistry $handlers,
         private JsonOutputRenderer $json,
         private Security $security,
+        private TranslatorInterface $translator,
     ) {
     }
 
@@ -32,7 +34,7 @@ final readonly class LiveEndpointController
         if (null === $endpoint) {
             return $this->json->render([
                 'status' => 'not_found',
-                'message' => 'Live endpoint not found.',
+                'message' => $this->translator->trans('ui.live_endpoint.not_found'),
                 'next_poll_ms' => 0,
             ], Response::HTTP_NOT_FOUND);
         }
@@ -45,7 +47,7 @@ final readonly class LiveEndpointController
         if ($actor->accessLevel() < $minimumAccessLevel) {
             return $this->json->render([
                 'status' => 'forbidden',
-                'message' => 'Access is not allowed for this live endpoint.',
+                'message' => $this->translator->trans('ui.live_endpoint.forbidden'),
                 'next_poll_ms' => 0,
             ], Response::HTTP_FORBIDDEN);
         }
@@ -54,7 +56,7 @@ final readonly class LiveEndpointController
         if (null === $handler) {
             return $this->json->render([
                 'status' => 'unavailable',
-                'message' => 'Live endpoint handler is not available.',
+                'message' => $this->translator->trans('ui.live_endpoint.handler_unavailable'),
                 'next_poll_ms' => 0,
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }

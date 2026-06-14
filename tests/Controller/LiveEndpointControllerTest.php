@@ -19,6 +19,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class LiveEndpointControllerTest extends TestCase
 {
@@ -93,6 +94,7 @@ final class LiveEndpointControllerTest extends TestCase
             new LiveEndpointHandlerRegistry([$handler]),
             new JsonOutputRenderer(),
             $security,
+            $this->translator(),
         );
     }
 
@@ -119,5 +121,20 @@ final class LiveEndpointControllerTest extends TestCase
             'hash',
             role: UserRole::fromAccessLevel($accessLevel),
         );
+    }
+
+    private function translator(): TranslatorInterface
+    {
+        return new class implements TranslatorInterface {
+            public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
+            {
+                return strtr((string) $id, $parameters);
+            }
+
+            public function getLocale(): string
+            {
+                return 'en';
+            }
+        };
     }
 }

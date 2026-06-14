@@ -82,6 +82,7 @@ final class SetupRunnerTest extends TestCase
         self::assertFalse($result->context()['halt_on_error']);
         self::assertFileExists($this->root.'/.env.test.local');
         self::assertStringContainsString("APP_SECRET='test-secret-12'", (string) file_get_contents($this->root.'/.env.test.local'));
+        self::assertStringContainsString("MERCURE_JWT_SECRET='".hash('sha256', 'test-secret-12')."'", (string) file_get_contents($this->root.'/.env.test.local'));
         $storedPhpBinary = (new PhpCliBinaryPreferenceStore())->read($this->root, 'test');
         self::assertIsString($storedPhpBinary);
         self::assertTrue((new PhpCliBinaryValidator())->validate([$storedPhpBinary], $this->root)->isValid());

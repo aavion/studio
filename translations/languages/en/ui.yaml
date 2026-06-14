@@ -40,6 +40,10 @@ ui:
     pending: 'Pending'
   empty_state:
     title: 'Nothing to show'
+  live_endpoint:
+    forbidden: 'Access is not allowed for this live endpoint.'
+    handler_unavailable: 'Live endpoint handler is not available.'
+    not_found: 'Live endpoint not found.'
   markdown:
     embed:
       video_title: 'Embedded video'

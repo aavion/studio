@@ -29,7 +29,7 @@ final class MercureCheckCommand extends Command
 
         $io->title('Mercure status');
         $io->definitionList(
-            ['Binary' => $this->runtime->binaryInstalled() ? 'available at '.$this->runtime->binaryPath() : 'not installed'],
+            ['Binary' => $this->runtime->binaryInstalled() ? 'available at '.$this->runtime->binaryPath() : 'not installed at '.$this->runtime->binaryPath()],
             ['Hub process' => $this->runtime->isRunning() ? 'running'.(null === $pid ? '' : ' (PID '.$pid.')') : 'not running'],
             ['Listen address' => $this->runtime->listenAddress()],
             ['Hub endpoint' => $this->runtime->hubReachable() ? 'reachable' : 'not reachable'],

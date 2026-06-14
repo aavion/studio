@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Core\Mercure;
 
-use PharData;
 use RuntimeException;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\Process\Process;
@@ -26,11 +25,19 @@ final readonly class MercureBinaryManager
         return $this->installDir().DIRECTORY_SEPARATOR.$this->binaryName();
     }
 
+    public function caddyfilePath(): string
+    {
+        return $this->installDir().DIRECTORY_SEPARATOR.'Caddyfile';
+    }
+
     public function isInstalled(): bool
     {
         $path = $this->binaryPath();
 
-        return is_file($path) && is_executable($path);
+        return is_file($path)
+            && is_executable($path)
+            && is_file($this->assetMarkerPath())
+            && trim((string) @file_get_contents($this->assetMarkerPath())) === $this->assetName();
     }
 
     public function install(): bool
@@ -63,6 +70,7 @@ final readonly class MercureBinaryManager
 
             @chmod($binary, 0755);
             $this->releaseMacQuarantine($binary);
+            file_put_contents($this->assetMarkerPath(), (string) $asset, LOCK_EX);
 
             return $this->isInstalled();
         } catch (Throwable) {
@@ -93,16 +101,23 @@ final readonly class MercureBinaryManager
 
     private function assetName(): ?string
     {
-        $os = match (PHP_OS_FAMILY) {
+        return self::assetNameFor(PHP_OS_FAMILY, php_uname('m'));
+    }
+
+    private static function assetNameFor(string $osFamily, string $machine): ?string
+    {
+        $os = match ($osFamily) {
             'Darwin' => 'Darwin',
             'Linux' => 'Linux',
             'Windows' => 'Windows',
             default => null,
         };
-        $arch = match (strtolower(php_uname('m'))) {
+        $arch = match (strtolower($machine)) {
             'x86_64', 'amd64' => 'x86_64',
             'aarch64', 'arm64' => 'arm64',
-            'armv6l' => 'armv6',
+            'armv5', 'armv5l' => 'armv5',
+            'armv6', 'armv6l' => 'armv6',
+            'armv7', 'armv7l' => 'armv7',
             'i386', 'i686' => 'i386',
             default => null,
         };
@@ -113,7 +128,12 @@ final readonly class MercureBinaryManager
 
         $extension = 'Windows' === $os ? 'zip' : 'tar.gz';
 
-        return sprintf('mercure-legacy_%s_%s.%s', $os, $arch, $extension);
+        return sprintf('mercure_%s_%s.%s', $os, $arch, $extension);
+    }
+
+    private function assetMarkerPath(): string
+    {
+        return $this->installDir().DIRECTORY_SEPARATOR.'.asset-name';
     }
 
     private function downloadUrl(string $asset): string
@@ -155,13 +175,13 @@ final readonly class MercureBinaryManager
             return;
         }
 
-        $tarPath = preg_replace('/\.gz$/', '', $archivePath) ?: $archivePath.'.tar';
-        if (!is_file($tarPath)) {
-            $archive = new PharData($archivePath);
-            $archive->decompress();
-        }
+        $process = new Process(['tar', '-xzf', $archivePath, '-C', $this->installDir()]);
+        $process->setTimeout(30);
+        $process->run();
 
-        (new PharData($tarPath))->extractTo($this->installDir(), null, true);
+        if (!$process->isSuccessful()) {
+            throw new RuntimeException('Mercure archive could not be extracted.');
+        }
     }
 
     private function releaseMacQuarantine(string $binary): void

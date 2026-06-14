@@ -52,7 +52,10 @@ Default environment:
 MERCURE_HUB_LISTEN=127.0.0.1:3000
 MERCURE_URL=http://${MERCURE_HUB_LISTEN}/.well-known/mercure
 MERCURE_PUBLIC_URL=${DEFAULT_URI}/.well-known/mercure
+MERCURE_JWT_SECRET=...
 ```
+
+`MERCURE_JWT_SECRET` must be long enough for HMAC-SHA256 signing. Setup writes an installation-specific derived value automatically; manual environments should use a dedicated high-entropy value instead of the short committed `APP_SECRET` development placeholder.
 
 Override `MERCURE_PUBLIC_URL` only when the browser-facing URL differs from the canonical `DEFAULT_URI` host, for example when Mercure is exposed through a dedicated subdomain, Cloudflare Tunnel, or a supported public HTTPS port.
 

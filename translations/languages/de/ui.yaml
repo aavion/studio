@@ -40,6 +40,10 @@ ui:
     pending: 'Ausstehend'
   empty_state:
     title: 'Nichts anzuzeigen'
+  live_endpoint:
+    forbidden: 'Zugriff auf diesen Live-Endpunkt ist nicht erlaubt.'
+    handler_unavailable: 'Der Live-Endpunkt-Handler ist nicht verfügbar.'
+    not_found: 'Live-Endpunkt nicht gefunden.'
   markdown:
     embed:
       video_title: 'Eingebettetes Video'

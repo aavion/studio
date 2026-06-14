@@ -31,13 +31,13 @@ final readonly class MercureRuntime
     {
         return [
             $this->binaryManager->binaryPath(),
-            '--addr',
-            $this->listenAddress(),
-            '--allow-anonymous',
-            '--cors-allowed-origins',
-            '*',
-            '--transport-url',
-            $this->transportUrl(),
+            'run',
+            '--envfile',
+            $this->envFilePath(),
+            '--config',
+            $this->binaryManager->caddyfilePath(),
+            '--adapter',
+            'caddyfile',
         ];
     }
 
@@ -46,11 +46,19 @@ final readonly class MercureRuntime
      */
     public function startEnvironment(): array
     {
-        $jwtSecret = $this->jwtSecret();
-
         return [
-            'MERCURE_PUBLISHER_JWT_KEY' => $jwtSecret,
-            'MERCURE_SUBSCRIBER_JWT_KEY' => $jwtSecret,
+            'MERCURE_EXTRA_DIRECTIVES' => implode("\n", [
+                'anonymous',
+                'cors_origins *',
+                'transport bolt {',
+                '    path '.$this->caddyfileString($this->transportPath()),
+                '    size 1000',
+                '    cleanup_frequency 0.3',
+                '}',
+            ]),
+            'HOME' => $this->mercureCachePath(),
+            'XDG_CONFIG_HOME' => $this->mercureCachePath(),
+            'XDG_DATA_HOME' => $this->mercureCachePath(),
         ];
     }
 
@@ -325,24 +333,76 @@ final readonly class MercureRuntime
         return $url.$separator.QueryBuilder::build(['topic' => $this->healthTopic()]);
     }
 
-    private function transportUrl(): string
+    private function serverName(): string
+    {
+        $listen = $this->listenAddress();
+        if (str_starts_with($listen, 'http://') || str_starts_with($listen, 'https://') || str_starts_with($listen, ':')) {
+            return $listen;
+        }
+
+        return 'http://'.$listen;
+    }
+
+    private function envFilePath(): string
+    {
+        $path = $this->mercureDirectory().'/mercure.env';
+        $jwtSecret = $this->jwtSecret();
+        $contents = implode("\n", [
+            'SERVER_NAME='.$this->envFileValue($this->serverName()),
+            'MERCURE_PUBLISHER_JWT_KEY='.$this->envFileValue($jwtSecret),
+            'MERCURE_SUBSCRIBER_JWT_KEY='.$this->envFileValue($jwtSecret),
+            'MERCURE_PUBLISHER_JWT_ALG=HS256',
+            'MERCURE_SUBSCRIBER_JWT_ALG=HS256',
+            '',
+        ]);
+
+        if (!is_file($path) || (string) @file_get_contents($path) !== $contents) {
+            @file_put_contents($path, $contents, LOCK_EX);
+        }
+
+        @chmod($path, 0600);
+
+        return $path;
+    }
+
+    private function transportPath(): string
+    {
+        return str_replace('\\', '/', $this->mercureDirectory().'/updates.db');
+    }
+
+    private function mercureCachePath(): string
+    {
+        $directory = $this->mercureDirectory().'/cache';
+        if (!is_dir($directory)) {
+            @mkdir($directory, 0775, true);
+        }
+
+        return $directory;
+    }
+
+    private function mercureDirectory(): string
     {
         $directory = $this->projectDir.'/var/mercure';
         if (!is_dir($directory)) {
             @mkdir($directory, 0775, true);
         }
 
-        return $this->boltTransportUrl($directory.'/updates.db');
+        return $directory;
     }
 
-    private function boltTransportUrl(string $path): string
+    private function caddyfileString(string $value): string
     {
-        $normalized = str_replace('\\', '/', $path);
-        if (1 === preg_match('/^[A-Za-z]:\//', $normalized)) {
-            $normalized = '/'.$normalized;
+        return '"'.str_replace(['\\', '"'], ['\\\\', '\\"'], $value).'"';
+    }
+
+    private function envFileValue(string $value): string
+    {
+        $value = str_replace(["\r", "\n"], ['', '\n'], $value);
+        if (1 === preg_match('/^[A-Za-z0-9_@%+=:,.\/-]*$/', $value)) {
+            return $value;
         }
 
-        return 'bolt://'.$normalized.'?size=1000&cleanup_frequency=0.3';
+        return '"'.str_replace(['\\', '"'], ['\\\\', '\\"'], $value).'"';
     }
 
     private function pid(): ?int
