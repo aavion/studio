@@ -10,6 +10,7 @@ use App\Entity\UserAccount;
 use App\Security\AccountTokenIssuer;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\View\Alert\MercureAvailability;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -50,6 +51,38 @@ final class UserProfileControllerTest extends WebTestCase
         self::assertSelectorTextContains('.system-frontend-user-summary', 'profileuser');
         self::assertSelectorTextContains('.system-frontend-user-summary', 'profileuser@example.test');
         self::assertSelectorNotExists('input[name="username"]');
+    }
+
+    public function testProfileCanEnableNativeNotificationsWhenMercureIsDisabled(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        self::assertTrue($config->set(MercureAvailability::ENABLED_KEY, false));
+        self::assertTrue($config->set(MercureAvailability::AVAILABLE_KEY, false));
+        $user = $this->createUserWithLevel(1, 'pollnotify', 'profile-password');
+
+        $this->loginTestUser($client, $user);
+        $crawler = $client->request('GET', '/user/profile');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('input[name="native_notifications"]');
+
+        $client->request('POST', '/user/profile', [
+            '_csrf_token' => (string) $crawler->filter('input[name="_csrf_token"]')->attr('value'),
+            'email' => $user->email(),
+            'display_name' => 'Polling Notifications',
+            'language' => 'default',
+            'native_notifications' => '1',
+        ]);
+
+        self::assertResponseRedirects('/user/profile');
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $updatedUser = $entityManager->find(UserAccount::class, $user->uid());
+
+        self::assertInstanceOf(UserAccount::class, $updatedUser);
+        self::assertTrue($updatedUser->settings()['native_notifications'] ?? false);
     }
 
     public function testProfileUsernameChangeRequiresSetting(): void

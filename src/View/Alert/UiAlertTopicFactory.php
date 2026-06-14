@@ -77,9 +77,10 @@ final readonly class UiAlertTopicFactory
             ? $user->uid()
             : ($user instanceof UserInterface ? $user->getUserIdentifier() : $user);
 
-        $identity = strtolower(trim($identity));
-        if (1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $identity)) {
-            return $identity;
+        $identity = trim($identity);
+        $normalizedUid = strtolower($identity);
+        if (1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $normalizedUid)) {
+            return $normalizedUid;
         }
 
         $resolvedUid = $this->userIdentityResolver?->resolveUid($identity);

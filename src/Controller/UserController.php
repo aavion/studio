@@ -23,7 +23,6 @@ use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\Security\UserPasswordChangeService;
 use App\View\Http\HttpErrorRenderer;
-use App\View\Alert\MercureAvailability;
 use App\View\Alert\UiAlertDelivery;
 use App\View\Alert\UiAlertDispatcherInterface;
 use App\View\Alert\UiAlertTranslation;
@@ -49,7 +48,6 @@ final class UserController extends AbstractController
         private readonly UserAccountClosureService $accountClosureService,
         private readonly UserProfileLocaleService $profileLocales,
         private readonly ApiFeaturePolicy $apiFeaturePolicy,
-        private readonly MercureAvailability $mercureAvailability,
         private readonly UiAlertDispatcherInterface $alerts,
     ) {
     }
@@ -76,7 +74,7 @@ final class UserController extends AbstractController
         $success = false;
         $errors = [];
         $usernameChangeEnabled = $this->userFlowConfig->usernameChangeEnabled();
-        $nativeNotificationsAvailable = $this->mercureAvailability->available();
+        $nativeNotificationsAvailable = true;
 
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('user_profile', $this->stringField($request, '_csrf_token'))) {

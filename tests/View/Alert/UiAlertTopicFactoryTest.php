@@ -44,10 +44,10 @@ final class UiAlertTopicFactoryTest extends TestCase
     public function testItResolvesUsernameStringsToAccountUidTopics(): void
     {
         $factory = new UiAlertTopicFactory('secret', new FakeUserAlertIdentityResolver([
-            'admin' => '71000000-0000-7000-8000-000000000001',
+            'AdminUser' => '71000000-0000-7000-8000-000000000001',
         ]));
 
-        self::assertSame($factory->userTopic('71000000-0000-7000-8000-000000000001'), $factory->userTopic('admin'));
+        self::assertSame($factory->userTopic('71000000-0000-7000-8000-000000000001'), $factory->userTopic('AdminUser'));
     }
 
     public function testItRejectsUnresolvedUsernameTopics(): void
@@ -74,6 +74,30 @@ final class UiAlertTopicFactoryTest extends TestCase
             public function getUserIdentifier(): string
             {
                 return '71000000-0000-7000-8000-000000000001';
+            }
+        };
+
+        self::assertSame($factory->userTopic('71000000-0000-7000-8000-000000000001'), $factory->userTopic($user));
+    }
+
+    public function testItResolvesGenericUserIdentifierUsernamesWithoutChangingCase(): void
+    {
+        $factory = new UiAlertTopicFactory('secret', new FakeUserAlertIdentityResolver([
+            'AdminUser' => '71000000-0000-7000-8000-000000000001',
+        ]));
+        $user = new class implements UserInterface {
+            public function getRoles(): array
+            {
+                return ['ROLE_USER'];
+            }
+
+            public function eraseCredentials(): void
+            {
+            }
+
+            public function getUserIdentifier(): string
+            {
+                return 'AdminUser';
             }
         };
 
