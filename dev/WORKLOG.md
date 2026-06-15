@@ -81,6 +81,7 @@
 - Compacted the completed `feat-security-planning` worklog entry into `dev/WORKLOG_HISTORY.md` so the active worklog stays focused on the policy-docs branch.
 - Raised the first IconCaptcha challenge TTL default to 15 minutes for realistic form completion time while keeping one-shot validation, scoped failure buckets, context binding, refresh abuse signals, and answer-leak checks as required bot-protection controls.
 - Split the website global rate-limit default into deliberate burst and sustained buckets, with Turbo/browser prefetch tracked through a separate lower-confidence observation path so speculative requests do not drain user-facing navigation budgets.
+- Adjusted scheduler and probe policies: scheduler trigger limits now support minutely cron, high-signal probes are limited to one per 10 minutes with generic `400` handling, probe paths are configurable with broad defaults, auto-ban defaults to on, and active Admin/Owner recovery protections are explicit.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

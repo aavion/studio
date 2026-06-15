@@ -56,8 +56,8 @@ These are first implementation defaults. Branches may adjust them only with test
 | Versioned API read | 600 safe requests per minute | API key fingerprint or visitor/anonymous subject | No success reset |
 | Versioned API write | 60 mutating requests per minute | API key fingerprint | No success reset |
 | Public anonymous API read | 120 safe requests per minute | Visitor ID; IP bucket as secondary signal | No success reset |
-| Scheduler trigger | 5 trigger attempts per minute and 30 per hour | API key fingerprint plus scheduler endpoint subject | No success reset |
-| Suspicious probes | 10 high-signal probes per 10 minutes | Visitor ID plus IP bucket | No success reset; may drain suspicious buckets |
+| Scheduler trigger | 5 trigger attempts per minute and 60 per hour | API key fingerprint plus scheduler endpoint subject | No success reset |
+| Suspicious probes | 1 high-signal probe per 10 minutes | Visitor ID plus IP bucket | No success reset; return generic `400`; may drain suspicious buckets |
 
 Website global buckets count application/browser route handling, not static assets, generated assets, or `/api/live/**` polling. The first implementation should enforce both deliberate website buckets: the burst bucket catches very fast click/submit loops, while the sustained bucket catches automated crawling that stays just below the per-minute limit.
 
@@ -65,8 +65,22 @@ Website global buckets count application/browser route handling, not static asse
 
 Turbo/browser prefetch for safe `GET` requests should not spend the same budget as deliberate navigation. Use a dedicated prefetch observation bucket or lower-confidence passive signal weighting; do not let spoofable prefetch headers bypass authentication, authorization, CSRF, or domain validation. Expensive or side-effect-adjacent links should disable prefetch rather than relying on rate-limit forgiveness.
 
+Scheduler trigger limits must support a normal once-per-minute external cron. The scheduled tasks still use internal due-state logic, run locks, and task policies, so frequent legitimate scheduler calls are expected and should not be treated as abuse by themselves.
+
+Registered authenticated users receive higher limits than anonymous visitors where the workflow is not already account-specific. The first default is a 2x multiplier for deliberate website navigation and public-read style API usage after the request resolves to an active authenticated user. Login, registration, password-reset, captcha, scheduler, and suspicious-probe policies keep their explicit workflow limits.
+
+Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner session are exempt from ordinary rate-limit rejection. They may still record diagnostics and passive signals, but the request path must preserve Owner recovery and administrative operation access.
+
+## Probe Path Policy
+
+- Probe paths are configurable and ship with extensive defaults for high-signal requests such as `.env`, `.git`, backup archives, database dumps, common admin panels from other software, shell upload probes, and known scanner paths.
+- High-signal probes are never treated as normal website navigation. The default response is a generic `400 Bad Request` without revealing whether the path exists, and the event records a suspicious probe signal.
+- One high-signal probe per subject per 10 minutes is the first threshold. Further probes may drain suspicious buckets and feed auto-ban decisions when auto-ban is enabled.
+- Honeypot probe paths should remain restrictive. They may share the same generic `400` response and signal path even when they do not map to real routes.
+
 ## Auto-Ban Defaults
 
+- Auto-ban is enabled by default and can be disabled through Security policy/settings once the auto-ban branch introduces bounded configuration.
 - Visitor-ID bans are the preferred continuity mechanism:
   - first temporary ban: 1 hour;
   - repeated ban within 24 hours: 24 hours;
@@ -81,8 +95,11 @@ Turbo/browser prefetch for safe `GET` requests should not spend the same budget 
   - invalid-key probe ban: 15 minutes;
   - repeated invalid-key probe ban: 1 hour;
   - compromised or revoked-key replay review may escalate to 24 hours.
-- Authenticated users start with softer handling such as throttling, captcha, warnings, or session/token review unless explicit compromise signals justify a hard block.
+- Authenticated users start with higher limits and softer handling such as throttling, captcha, warnings, or session/token review unless explicit compromise signals justify a hard block.
+- Visitor IDs and IP buckets that resolve to an active Admin or Owner session must not be banned.
+- API keys owned by an active Owner and Visitor-ID/IP subjects that resolve to an active Owner session must not be rate-limited by ordinary application buckets.
 - Owner accounts must retain at least one documented recovery path. A policy that could deny all Owners is invalid.
+- Provide a recovery login route that renders the login form even when the current Visitor ID or IP bucket is banned. Successful credential login re-evaluates the current limiter/ban state under authenticated policies, including Admin ban protection and Owner rate-limit exemption.
 - Manual unban takes effect immediately and must be audited.
 
 ## Captcha Defaults

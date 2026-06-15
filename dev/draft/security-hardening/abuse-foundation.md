@@ -40,6 +40,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Client identity must respect Symfony trusted-proxy configuration and must not trust raw forwarding headers outside that configuration.
 - Prefetch detection uses `X-Sec-Purpose: prefetch` and `Sec-Purpose: prefetch`; spoofable hints only lower confidence for classification, never bypass checks.
 - Signals store only normalized subject keys, intent, reason code, count/weight, timestamps, and safe request metadata.
+- Probe-path detection is configurable and ships with extensive high-signal defaults for `.env`, VCS metadata, backup/database dumps, common foreign admin panels, upload shells, and known scanner paths.
 - First implementation uses a portable database table for short-lived passive signals. Suggested fields are normalized subject type/key, request family, intent, reason code, confidence, weight/count, first-seen timestamp, last-seen timestamp, expiry timestamp, safe context hash, and optional audit reference.
 - Passive-signal rows are observational only in this branch. The rate and auto-ban branches decide how to consume them for enforcement.
 - Keep passive signals separate from raw file logs. If a broader database-backed security event projection is introduced later, this branch's signal store should either feed it through a documented boundary or remain the focused enforcement-oriented read model.
@@ -51,6 +52,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Missing visitor cookie uses the existing fallback visitor identity.
 - Invalid Bearer API keys should still classify as API activity without trusting the key as an authenticated subject.
 - Authenticated Owner requests still classify normally; Owner lockout protection is enforced in later branches.
+- High-signal probe paths are suspicious even when the route does not exist or is only a honeypot; later enforcement should return a generic `400` without revealing route existence.
 - Prefetch for state-changing methods is suspicious; normal GET prefetch remains low-confidence.
 - Expired passive signals must not affect later enforcement once rate/ban branches start consuming the store.
 - Passive-signal storage failure records a safe diagnostic and must not change request outcome in this foundation branch.
@@ -60,6 +62,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 - Test subject resolution for anonymous, visitor-cookie, authenticated user, valid API key, invalid API key, and scheduler trigger.
 - Test intent classification for browser, prefetch, API read/write, `/api/live/**`, login, registration, password reset, and suspicious probes.
+- Test configurable probe-path defaults and high-signal probe classification.
 - Test redaction in passive signal messages.
 - Test passive-signal persistence, aggregation by normalized subject/intent/reason, expiry filtering, and cleanup command/task behavior.
 - Test IP-derived signal retention stays below 30 days and that longer-lived visitor-based signals do not keep recoverable IP material.

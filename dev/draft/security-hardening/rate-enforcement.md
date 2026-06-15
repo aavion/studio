@@ -42,6 +42,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Registration and password-reset success do not reset global buckets by default.
 - The branch must commit initial threshold defaults from the Security policy defaults as named configuration/constants with behavior tests. Later branches may tune those defaults only with matching draft/worklog notes.
 - Website global policy uses separate deliberate burst and sustained buckets. Turbo/browser prefetch uses a separate lower-confidence observation path so speculative `GET` requests do not exhaust user-facing navigation budgets.
+- Scheduler trigger policy must allow normal once-per-minute external cron calls; task due-state logic, locks, and task policies decide whether work actually runs.
+- Authenticated users receive higher ordinary navigation/API limits than anonymous visitors where a workflow does not define its own explicit bucket. Owner-owned API keys and subjects tied to an active Owner session are exempt from ordinary rate-limit rejection.
 - Workflows that do not exist in the current codebase receive catalogue entries only when doing so does not create dead services, routes, or unreachable tests.
 - Limiter keys come only from the shared subject/client-identity resolver and never from raw request headers or user-submitted identifiers.
 - Limiter storage degradation must be explicit and tested, including safe diagnostics and Owner recovery behavior.
@@ -59,6 +61,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test each guarded workflow below and above threshold.
 - Test global burst and sustained website budgets catch mixed suspicious actions without counting static assets or ordinary `/api/live/**` polling.
 - Test Turbo/browser prefetch does not exhaust deliberate website buckets and still records passive signals for excessive speculative traffic.
+- Test scheduler triggers allow normal minutely cron calls while still limiting obvious trigger storms.
+- Test authenticated-user higher limits and Owner ordinary-rate-limit exemptions for active sessions and Owner-owned API keys.
 - Test successful login resets only the login bucket.
 - Test `/api/live/**` never receives ordinary rate-limit `429`.
 - Test browser HTML and API JSON `429` shapes.

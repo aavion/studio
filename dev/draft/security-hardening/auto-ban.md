@@ -39,6 +39,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Public interfaces and data decisions
 
 - First implementation uses database-backed TTL records; cache may be added later as an optimization.
+- Auto-ban is enabled by default, with bounded configuration to disable it when the auto-ban branch introduces Security settings.
 - Ban subject types are IP bucket, visitor ID, API key, combined anonymous subject, and optional authenticated user only for explicit compromise cases.
 - Ban reasons use stable message/code catalogues.
 - Ban responses use HTML or JSON according to request family and never expose raw signal internals.
@@ -51,6 +52,9 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Edge cases
 
 - Expired bans must not block while cleanup is pending.
+- Visitor IDs and IP buckets that resolve to an active Admin or Owner session must not be banned.
+- API keys owned by an active Owner must not be banned or rate-limited by ordinary application buckets.
+- A recovery login route must render even when the current Visitor ID or IP bucket is banned, then re-evaluate the ban after successful credential login under authenticated policies.
 - Owner accounts must not be locked out by IP/visitor bans without an alternate documented recovery path.
 - Shared IPs can be blocked only for clear anonymous abuse and should not permanently deny authenticated users.
 - Invalid API keys may be banned by key fingerprint/prefix where safe, but raw submitted keys are never stored.
@@ -64,6 +68,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test active, expired, manually revoked, and cleanup states.
 - Test anonymous enforcement and softer authenticated behavior.
 - Test Owner recovery protection.
+- Test active Admin/Owner session ban protection, Owner API-key protection, and recovery-login re-evaluation.
 - Test HTML/JSON ban responses and redaction.
 - Test Admin manual unban writes audit entries.
 - Test repeat-ban TTL escalation stays bounded and does not create permanent bans.
