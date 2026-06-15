@@ -33,13 +33,15 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 3. Add workflow keys for first expected consumers: registration, contact, guest comments, and future login step-up.
 4. Add a global captcha form field that delegates rendering/validation to the resolver.
 5. Add validation mapping for recoverable failures and suspicious failures.
-6. Add success/failure hooks to the abuse facade so success can reset scoped buckets and failure can record signals.
+6. Add success/failure hooks to the abuse facade so verified provider success can reset scoped buckets and failure can record signals.
 
 ## Public interfaces and data decisions
 
 - Provider key `none` always validates successfully.
 - Missing or disabled provider validates successfully unless a future provider-required policy is explicitly configured for a workflow.
+- Successful validation from `none`, a missing provider, or a disabled provider is graceful workflow success, not verified human success. It must not trigger rate-limit resets, ban relief, budget refill, or `429` recovery behavior.
 - Captcha result exposes only stable failure codes and safe context.
+- Captcha result must distinguish graceful unavailable-provider success from verified challenge success.
 - Provider contracts are package-facing extension points and must be documented.
 - Provider-required behavior is not enabled in the first contract branch; workflow policy may declare the shape for later enforcement, but default runtime behavior remains graceful success for unavailable providers.
 
@@ -47,12 +49,15 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 - Captcha must not create anonymous sessions by default.
 - Captcha validation never replaces CSRF, authentication, ACL, rate limiting, or domain validation.
+- Captcha-on-`429` recovery is available only when an active provider can render and validate a real challenge.
 - Provider render failures should degrade according to workflow policy and report safe diagnostics.
 - Multi-language validation messages use deterministic translation keys.
 
 ## Tests and validation
 
 - Test `none`, missing provider, disabled provider, success, recoverable failure, and suspicious failure.
+- Test `none`, missing provider, and disabled provider do not call reset/refill/recovery hooks.
+- Test verified provider success is the only captcha result that may call scoped reset hooks.
 - Test form integration does not break workflows with no provider.
 - Test abuse hooks are called with safe context.
 - Test provider registration rejects duplicate provider keys.

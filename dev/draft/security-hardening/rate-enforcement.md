@@ -30,7 +30,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 1. Configure named Symfony limiters for implemented workflows: login, registration, password reset, website global, API read, API write, scheduler trigger, suspicious probes, and any already-present contact/import/captcha-failure flows.
 2. Add a rate decision service that maps classified intents and subjects to one or more limiter consumes.
 3. Use costed `consume(n)` calls based on the action-cost catalogue.
-4. Add scoped `reset()` calls after successful password login and successful captcha validation where the workflow explicitly allows it.
+4. Add scoped `reset()` calls after successful password login and verified provider-backed captcha validation where the workflow explicitly allows it.
 5. Add stable `429` rendering: HTML through the shared error renderer for browser workflows and JSON through API responders for versioned API/scheduler flows.
 6. Explicitly exclude `/api/live/**` from ordinary rate-limit rejection while preserving passive signal recording.
 
@@ -41,6 +41,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Config names use stable system/security namespaces; thresholds are defaults that can become Admin settings later.
 - Registration and password-reset success do not reset global buckets by default.
 - The branch must commit initial threshold defaults from the Security policy defaults as named configuration/constants with behavior tests. Later branches may tune those defaults only with matching draft/worklog notes.
+- Captcha-triggered limiter resets or `429` recovery require verified provider-backed challenge success. Provider `none`, missing-provider, and disabled-provider auto-success must not reset or refill any bucket.
 - Website global policy uses separate deliberate burst and sustained buckets. Turbo/browser prefetch uses a separate lower-confidence observation path so speculative `GET` requests do not exhaust user-facing navigation budgets.
 - Scheduler trigger policy must allow normal once-per-minute external cron calls; task due-state logic, locks, and task policies decide whether work actually runs.
 - Authenticated users receive higher ordinary navigation/API limits than anonymous visitors where a workflow does not define its own explicit bucket. Owner-owned API keys and subjects tied to an active Owner session are exempt from ordinary rate-limit rejection.
@@ -56,6 +57,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Read-only API keys hitting write routes should still follow API write policy before or alongside authorization failure as decided by the handler order.
 - `/api/live/**` operation polling must continue to function during long admin operations.
 - Concurrent failures and immediate success/reset sequences must not accidentally reset unrelated global buckets or hide suspicious mixed-action behavior.
+- HTML `429` pages may render a captcha recovery step only when an active provider can render and validate a real challenge. Without that provider, use ordinary retry-after behavior.
 
 ## Tests and validation
 
@@ -66,6 +68,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test authenticated-user higher limits and Owner ordinary-rate-limit exemptions for active sessions and Owner-owned API keys.
 - Test recovery-login bypass rendering, dedicated recovery bucket exhaustion, retry-after behavior, and successful-login policy re-evaluation.
 - Test successful login resets only the login bucket.
+- Test verified captcha success can reset only the configured scoped bucket, while provider `none`/missing/disabled success resets nothing.
+- Test captcha-on-`429` is unavailable without an active provider and falls back to retry-after behavior.
 - Test `/api/live/**` never receives ordinary rate-limit `429`.
 - Test browser HTML and API JSON `429` shapes.
 - Test that non-existing optional workflows are not wired as dead routes/services and that later workflow branches have a clear catalogue attachment point.

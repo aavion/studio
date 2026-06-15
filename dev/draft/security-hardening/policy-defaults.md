@@ -50,7 +50,7 @@ These are first implementation defaults. Branches may adjust them only with test
 | Registration submissions | 3 submissions per hour and 10 per day | Visitor ID; IP bucket as secondary signal | No automatic global reset |
 | Password-reset requests | 3 requests per hour and 10 per day | Visitor ID plus normalized email hash where safe; IP bucket as secondary signal | No automatic global reset |
 | Contact form submissions | 3 submissions per 10 minutes and 20 per day | Visitor ID; IP bucket as secondary signal | No automatic global reset |
-| Captcha failures | 5 failures per 10 minutes | Challenge subject plus visitor ID | Successful captcha may reset the scoped challenge/form bucket only |
+| Captcha failures | 5 failures per 10 minutes | Challenge subject plus visitor ID | Verified provider-backed captcha may reset the scoped challenge/form bucket only |
 | Website deliberate burst | 30 deliberate browser route requests per minute | Visitor ID; IP bucket as secondary signal | No success reset |
 | Website deliberate sustained | 300 deliberate browser route requests per 30 minutes | Visitor ID; IP bucket as secondary signal | No success reset |
 | Turbo/browser prefetch observation | 120 safe prefetch `GET` requests per minute and 600 per 30 minutes | Visitor ID; IP bucket as secondary signal | No ordinary rejection by itself; records lower-confidence passive signals |
@@ -107,10 +107,13 @@ Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner 
 ## Captcha Defaults
 
 - `none`, missing provider, and disabled provider validate successfully until a workflow explicitly introduces provider-required policy.
+- `none`, missing-provider, and disabled-provider success means "do not block the workflow because captcha is unavailable"; it is not verified human challenge success.
 - IconCaptcha challenge TTL is 15 minutes so humans can complete longer forms without unnecessary expiry.
 - Every validation attempt consumes the challenge ID, successful or failed.
 - The longer challenge TTL is safe only when repeated guesses against the same challenge are impossible. Keep one-shot invalidation, context binding, tight captcha-failure buckets, refresh abuse signals, and answer-leak tests in place.
-- Captcha success may reset only the scoped challenge/form bucket when the workflow policy allows it.
+- Captcha success may reset only the scoped challenge/form bucket when the workflow policy allows it and when a real provider validated a real challenge.
+- Provider `none`, missing-provider, or disabled-provider auto-success must never reset rate-limit buckets, refill budgets, clear bans, or satisfy a captcha-based `429` recovery step.
+- Rendering captcha on a `429` recovery/error page is allowed only when the workflow has an active captcha provider that can validate a real challenge. Without such a provider, the response must fall back to ordinary retry-after behavior.
 - Visual IconCaptcha must not expose answer-bearing names through DOM, SVG, asset paths, translation keys, hidden text, or ARIA labels.
 - If neutral labels are not sufficient for assistive technology, the preferred fallback is a provider-owned quiz challenge that shares the same one-shot, TTL, context-binding, refresh, and abuse-signal rules.
 
