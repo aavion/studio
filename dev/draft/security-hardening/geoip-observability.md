@@ -51,6 +51,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - License key configuration is sensitive. Empty sensitive form submissions preserve existing stored values, API/settings read models return redacted display values, and PHPUnit coverage must use fakes or dummy strings rather than real MaxMind credentials.
 - The default local database path is `var/geoip2/GeoLite2-City.mmdb`. Admin-triggered downloads and scheduler downloads must write through a temporary workspace and atomically replace the configured target where the platform supports atomic rename.
 - The Statistics settings page may link operators to the official MaxMind GeoLite signup page for a free license key. A saved key reveals the database download action; missing keys make the scheduler callable fail with a translated Message-layer diagnostic so normal scheduler failure policy can disable repeatedly failing tasks.
+- Because MaxMind authenticates the database download through a license-key query parameter, the download client must not use a logger/profiler-wrapped HTTP client service and must never include the request URL in Operation, Scheduler, Message, audit, or access-log context. Shared log redaction treats `license_key` as sensitive defense in depth.
 
 ## Edge cases
 

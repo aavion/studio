@@ -41,7 +41,7 @@ final class MonologMessageLoggerTest extends TestCase
             ProcessMessageCode::PROCESS_COMMAND_FAILED,
             ProcessMessageKey::PROCESS_COMMAND_FAILED,
             ['%command%' => 'bin/console demo'],
-            ['exit_code' => 1, 'database_password' => 'secret'],
+            ['exit_code' => 1, 'database_password' => 'secret', 'license_key' => 'maxmind-secret'],
         );
         $message = Message::info(
             PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED,
@@ -74,6 +74,7 @@ final class MonologMessageLoggerTest extends TestCase
         self::assertSame('process.command_failed', $records[0]->context['code']);
         self::assertSame('demo', $records[0]->context['queue']);
         self::assertSame('[redacted]', $records[0]->context['message_context']['database_password']);
+        self::assertSame('[redacted]', $records[0]->context['message_context']['license_key']);
         self::assertSame('[redacted]', $records[0]->context['app_secret']);
         self::assertSame(Level::Info, $records[1]->level);
         self::assertSame('[redacted]', $records[1]->context['message_context']['api_token']);

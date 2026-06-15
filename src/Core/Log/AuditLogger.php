@@ -94,6 +94,6 @@ final readonly class AuditLogger implements AuditLoggerInterface
     {
         $normalized = strtolower((string) preg_replace('/[^a-zA-Z0-9]+/', '_', $key));
 
-        return 1 === preg_match('/(?:password|secret|token|credential|authorization|cookie|hmac|encrypted|api_key|private_key)/', $normalized);
+        return 1 === preg_match('/(?:password|secret|token|credential|authorization|cookie|hmac|encrypted|api_key|private_key|license_key)/', $normalized);
     }
 }

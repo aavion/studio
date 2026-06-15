@@ -391,6 +391,10 @@ services:
     App\Core\Geo\MaxMindGeoIpArchiveExtractorInterface:
         alias: App\Core\Geo\MaxMindGeoIpArchiveExtractor
 
+    App\Core\Geo\HttpMaxMindGeoIpDownloadClient:
+        arguments:
+            $httpClient: null
+
     App\Core\Geo\MaxMindGeoIpProvider:
         arguments:
             $projectDir: '%kernel.project_dir%'
