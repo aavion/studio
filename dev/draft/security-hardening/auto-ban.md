@@ -54,7 +54,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Expired bans must not block while cleanup is pending.
 - Visitor IDs and IP buckets that resolve to an active Admin or Owner session must not be banned.
 - API keys owned by an active Owner must not be banned or rate-limited by ordinary application buckets.
-- A recovery login route must render even when the current Visitor ID or IP bucket is banned, then re-evaluate the ban after successful credential login under authenticated policies.
+- A recovery login route, for example `/user/login?bypass=1`, must render the normal login form even when the current Visitor ID or IP bucket is banned, then re-evaluate the ban after successful credential login under authenticated policies.
 - Owner accounts must not be locked out by IP/visitor bans without an alternate documented recovery path.
 - Shared IPs can be blocked only for clear anonymous abuse and should not permanently deny authenticated users.
 - Invalid API keys may be banned by key fingerprint/prefix where safe, but raw submitted keys are never stored.
@@ -69,6 +69,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test anonymous enforcement and softer authenticated behavior.
 - Test Owner recovery protection.
 - Test active Admin/Owner session ban protection, Owner API-key protection, and recovery-login re-evaluation.
+- Test that recovery-login bypass does not bypass CSRF, credential validation, the dedicated recovery-login bucket, or audit logging.
 - Test HTML/JSON ban responses and redaction.
 - Test Admin manual unban writes audit entries.
 - Test repeat-ban TTL escalation stays bounded and does not create permanent bans.
