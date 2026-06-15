@@ -85,6 +85,7 @@
 - Documented recovery login bypass policy using the normal login route plus a bypass flag, guarded by a dedicated 2/minute and 10/hour bucket with 30-minute retry behavior and no bypass of CSRF, credential checks, login-failure accounting, or audit logging.
 - Clarified captcha auto-success policy: provider `none`, missing providers, and disabled providers keep workflows graceful but never reset/refill rate-limit buckets, clear bans, or satisfy captcha-based `429` recovery.
 - Added cross-cutting Security policy decisions for deterministic enforcement order, block-response semantics, probe-pattern validation, configuration bounds, and auditable Owner/Admin exemptions.
+- Added a first configuration-surface matrix that separates fixed policy, code/config defaults, protected secrets, bounded Admin settings, and later-tunable thresholds for follow-up Security branches.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

@@ -162,6 +162,35 @@ Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner 
 - More restrictive settings that affect login, account recovery, scheduler operation, captcha, mail delivery, or Owner/Admin access need tests for recovery behavior and false-positive handling.
 - User-facing copy is required whenever a configurable policy affects public behavior, recovery, captcha, mail delivery, remember-me, account access, or data retention.
 
+## Configuration Surface Defaults
+
+These are first soft decisions for which values should stay fixed, become protected environment/config values, or become audited Admin settings later. A branch may choose code constants for its first implementation, but it should keep the target surface in mind so later configuration does not require redesign.
+
+| Area | First implementation surface | Later configurable? | Boundaries |
+| --- | --- | --- | --- |
+| Enforcement order, Owner recovery, Admin/Owner lockout protection | Code-level policy and tests | No ordinary Admin setting | Requires a policy update and explicit recovery tests to change |
+| IP privacy ceiling and raw-secret redaction | Code-level policy and tests | No increase allowed | IP-derived data max 30 days; raw credentials, API keys, visitor tokens, session IDs, captcha answers, and full user agents are never policy records |
+| Raw file-log retention | Existing log configuration or code default | Yes, bounded | Default 30 days; IP-bearing logs must not become queryable beyond 30 days through archives, projections, exports, or support bundles |
+| Database security event projection | Feature branch decision | Yes, bounded | Stores minimized/redacted read-model data only; must degrade without hiding diagnostics or weakening enforcement |
+| GeoIP provider selection, database path, and update policy | Protected config/Admin setting with null fallback | Yes, protected and audited | Provider secrets never public; disabled/unconfigured state uses `NullGeoIpResolver`; no geo-blocking |
+| GeoIP account/license key | Secret/protected setting | Yes, protected only | Never rendered, exported, logged, or included in diagnostics |
+| Probe-path defaults | Code defaults plus config descriptor | Yes, audited | Defaults remain broad; patterns are anchored/normalized and tested against false positives |
+| Auto-ban enabled flag | Code default `on` | Yes, bounded | Disabling requires diagnostics; cannot disable Owner recovery, audit, or passive signal recording by accident |
+| Auto-ban TTLs and escalation windows | Code/config defaults | Yes, bounded | No permanent bans; IP-ban TTL stays below the documented max and IP retention ceiling |
+| Rate-limit thresholds and windows | Named code/config defaults | Yes, bounded | Lower values that affect login, scheduler, captcha, or recovery require false-positive/recovery tests; higher public-entry values require policy review |
+| Authenticated-user multiplier | Code/config default | Yes, bounded | Applies only to ordinary navigation/public-read usage, not explicit workflow buckets |
+| Owner ordinary-rate-limit exemption | Code-level policy and tests | No ordinary Admin setting | Does not bypass authentication, authorization, API-key revocation, CSRF, audit, or diagnostics |
+| Recovery-login bypass path and bucket | Code/config default | Path and thresholds may be bounded later | Must keep an equivalent Owner/Admin recovery path; bypass never skips credential, CSRF, audit, or failure accounting |
+| Captcha provider selection and workflow map | Contract-level configuration | Yes, audited | Provider `none`/missing/disabled remains graceful success only, not verified human success |
+| Captcha challenge TTL | Code/config default | Yes, bounded | Default 15 minutes; recommended range 10-30 minutes; longer values need policy review and brute-force/refresh tests |
+| Captcha reset/recovery eligibility | Code-level policy and tests | No ordinary Admin setting | Only verified provider-backed success may reset scoped buckets or satisfy captcha-based recovery |
+| IconCaptcha provider secret | Secret/protected setting | Yes, protected only | Never stored in package metadata, public assets, cache payloads, logs, or diagnostics |
+| Remember-me trust window | Code/config default | Possibly later | Default seven days; longer windows require explicit token-rotation, revocation, visitor-binding, and privacy review |
+| Scheduler trigger thresholds | Named code/config defaults | Yes, bounded | Must support minutely external cron; task due-state and locks remain authoritative |
+| Mailer transport and debug log delivery | Environment/protected config | Yes, protected | Production must not depend on message-log action URLs; debug log delivery remains debug-gated |
+
+Config descriptors should include the setting key, unit, default, minimum, maximum, disabled behavior, source priority, audit behavior, and safe diagnostics shape. Invalid security configuration should fail early in development/test and degrade to the safest documented behavior in production only when that degradation cannot lock out Owners or hide a security failure.
+
 ## Review Requirements
 
 - Every branch that implements one of these policies must update this file when thresholds, TTLs, subject types, or retention rules change.

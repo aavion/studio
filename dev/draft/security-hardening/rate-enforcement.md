@@ -51,6 +51,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Limiter storage degradation must be explicit and tested, including safe diagnostics and Owner recovery behavior.
 - Enforcement follows the Security policy order so workflow buckets, global buckets, suspicious buckets, active bans, recovery-login rendering, and Owner/Admin protections interact predictably.
 - Rate-limit responses use the documented response semantics: `429`, `Retry-After` when available, family-specific HTML/JSON bodies, redacted diagnostics, and `no-store`.
+- Threshold/window configuration should be represented through named policy descriptors with units, defaults, min/max bounds, disabled behavior, and diagnostics labels, even if the first implementation keeps those descriptors as code constants.
 
 ## Edge cases
 
@@ -69,6 +70,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test scheduler triggers allow normal minutely cron calls while still limiting obvious trigger storms.
 - Test authenticated-user higher limits and Owner ordinary-rate-limit exemptions for active sessions and Owner-owned API keys.
 - Test recovery-login bypass rendering, dedicated recovery bucket exhaustion, retry-after behavior, and successful-login policy re-evaluation.
+- Test policy descriptor validation for invalid, missing, overly permissive, and overly restrictive threshold/window values where configuration is introduced.
 - Test successful login resets only the login bucket.
 - Test verified captcha success can reset only the configured scoped bucket, while provider `none`/missing/disabled success resets nothing.
 - Test captcha-on-`429` is unavailable without an active provider and falls back to retry-after behavior.

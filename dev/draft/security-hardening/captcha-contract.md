@@ -44,6 +44,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Captcha result must distinguish graceful unavailable-provider success from verified challenge success.
 - Provider contracts are package-facing extension points and must be documented.
 - Provider-required behavior is not enabled in the first contract branch; workflow policy may declare the shape for later enforcement, but default runtime behavior remains graceful success for unavailable providers.
+- Provider selection and workflow mapping should be represented as audited configuration descriptors. Reset/recovery eligibility is not an ordinary setting: only verified provider-backed success may trigger scoped rate-limit reset or captcha-based recovery hooks.
 
 ## Edge cases
 
@@ -61,6 +62,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test form integration does not break workflows with no provider.
 - Test abuse hooks are called with safe context.
 - Test provider registration rejects duplicate provider keys.
+- Test configuration descriptor behavior for provider `none`, missing provider, disabled provider, and provider-required policy declarations where introduced.
 - Test translation catalogue synchronization for user-facing errors.
 
 ## Documentation and tracking

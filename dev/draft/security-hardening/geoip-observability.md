@@ -42,6 +42,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Scheduler task identifiers use stable system-owned names and do not expose provider credentials.
 - Update state records last attempt, last success, database edition, database build date, next suggested update, and redacted failure code.
 - No public API response adds GeoIP data in this branch.
+- Provider selection, database path/status, and update policy are protected/audited configuration surfaces; account and license material remains secret-only. Disabled, unconfigured, expired, or failed providers must fall back to `NullGeoIpResolver`.
 
 ## Edge cases
 
@@ -58,6 +59,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test trusted-proxy/client-identity behavior for lookup input.
 - Test scheduler task no-op and failure message behavior.
 - Test that the task remains inactive until provider configuration and update policy are both present.
+- Test protected configuration redaction and null fallback for disabled, missing, invalid, and expired provider states.
 - Run focused container lint when services/config are added.
 
 ## Documentation and tracking

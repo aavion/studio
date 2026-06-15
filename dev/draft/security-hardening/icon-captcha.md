@@ -46,6 +46,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Inline-rendered graphics and symbol SVGs must not expose answer-bearing names through file names, element IDs, CSS classes, `data-*` attributes, titles, descriptions, or translation keys. Use opaque challenge-local identifiers and randomized or non-semantic button identifiers.
 - Accessibility labels must describe the control purpose without revealing the visual answer. Prefer neutral labels such as option numbers and state/status text over labels that name the target icon or symbol. If this makes the visual challenge insufficient for assistive technology, document and implement a separate accessible fallback flow instead of leaking the answer through ARIA.
 - The preferred accessible fallback is a provider-owned quiz challenge using a spoken question/task and multiple answer options. The quiz mode must share the same challenge ID, TTL, one-shot invalidation, context binding, failure codes, refresh handling, and passive abuse signals as the visual IconCaptcha mode.
+- Challenge TTL may become bounded configuration, but starts at 15 minutes. The recommended range is 10-30 minutes; longer TTLs require explicit policy review plus brute-force, one-shot, refresh, and replay tests.
+- Provider secrets are secret/protected configuration only and must never be stored in package metadata, public assets, serialized challenge payloads, cache payloads, logs, or diagnostics.
 
 ## Edge cases
 
@@ -66,6 +68,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test every failure model.
 - Test one-shot replay prevention and TTL expiry.
 - Test cache-pool fallback and secret absence from cached/public challenge payloads.
+- Test configured TTL bounds if challenge TTL becomes configurable.
 - Test refresh no-store behavior and passive signal recording.
 - Test package asset/template/translation registration.
 - Test keyboard/accessibility behavior where practical with JS tests.

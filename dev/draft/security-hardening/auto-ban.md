@@ -50,6 +50,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Expiry and cleanup use an injectable clock/time boundary.
 - Ban decisions follow the Security policy enforcement order so Admin/Owner context and recovery-login rendering are resolved before visitor/IP bans can deny access.
 - Active temporary ban responses default to generic `403` with `Retry-After` when expiry is known, request-family-specific HTML/JSON bodies, redacted diagnostics, and `no-store`.
+- Auto-ban enablement, TTLs, and escalation windows should use named bounded policy descriptors. Disabling auto-ban must not disable passive signal recording, audit, manual review, or recovery protections.
 
 ## Edge cases
 
@@ -76,6 +77,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test ban response status, retry metadata, cache headers, and route-existence redaction.
 - Test Admin manual unban writes audit entries.
 - Test repeat-ban TTL escalation stays bounded and does not create permanent bans.
+- Test disabling auto-ban preserves passive signals, diagnostics, and recovery behavior.
 - Test IP-derived ban TTL validation rejects or clamps values at 30 days and cleanup removes expired IP-derived records from review/export surfaces.
 - Test trusted-proxy/client-identity behavior, ban-store degradation, and concurrent create/unban/cleanup behavior.
 - Test migration applies on SQLite.
