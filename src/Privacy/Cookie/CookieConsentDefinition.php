@@ -71,10 +71,20 @@ final readonly class CookieConsentDefinition
 
     public function matchesCookieIdentity(Cookie $cookie): bool
     {
+        return $this->matchesCookieIdentityWithSecurity($cookie, true);
+    }
+
+    public function matchesResponseCookie(Cookie $cookie): bool
+    {
+        return $this->matchesCookieIdentityWithSecurity($cookie, !$this->necessary);
+    }
+
+    private function matchesCookieIdentityWithSecurity(Cookie $cookie, bool $compareSecure): bool
+    {
         return $this->cookie->getName() === $cookie->getName()
             && $this->cookie->getPath() === $cookie->getPath()
             && $this->cookie->getDomain() === $cookie->getDomain()
-            && $this->cookie->isSecure() === $cookie->isSecure()
+            && (!$compareSecure || $this->cookie->isSecure() === $cookie->isSecure())
             && $this->cookie->isHttpOnly() === $cookie->isHttpOnly()
             && $this->cookie->getSameSite() === $cookie->getSameSite();
     }

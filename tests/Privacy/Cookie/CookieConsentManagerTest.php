@@ -253,6 +253,53 @@ final class CookieConsentManagerTest extends TestCase
         )));
     }
 
+    public function testResponseSubscriberKeepsAutoSecureNecessaryCookies(): void
+    {
+        $definition = CookieConsentDefinition::necessary(Cookie::create('PHPSESSID'));
+        $registry = new CookieConsentRegistry([$this->provider([$definition])]);
+        $manager = $this->manager([$this->provider([$definition])]);
+        $request = Request::create('https://example.test/');
+        $response = new Response();
+        $response->headers->setCookie(Cookie::create('PHPSESSID', 'session', 0, '/', null, true));
+
+        (new CookieConsentResponseSubscriber($registry, $manager))->filterCookies(new ResponseEvent(
+            new NullKernel(),
+            $request,
+            HttpKernelInterface::MAIN_REQUEST,
+            $response,
+        ));
+
+        $remaining = array_values(array_filter(
+            $response->headers->getCookies(),
+            static fn (Cookie $cookie): bool => 'PHPSESSID' === $cookie->getName(),
+        ));
+
+        self::assertCount(1, $remaining);
+        self::assertTrue($remaining[0]->isSecure());
+    }
+
+    public function testResponseSubscriberStillRejectsNecessaryCookiesWithDifferentNonSecureIdentity(): void
+    {
+        $definition = CookieConsentDefinition::necessary(Cookie::create('PHPSESSID'));
+        $registry = new CookieConsentRegistry([$this->provider([$definition])]);
+        $manager = $this->manager([$this->provider([$definition])]);
+        $request = Request::create('https://example.test/');
+        $response = new Response();
+        $response->headers->setCookie(Cookie::create('PHPSESSID', 'session', 0, '/', null, true, false));
+
+        (new CookieConsentResponseSubscriber($registry, $manager))->filterCookies(new ResponseEvent(
+            new NullKernel(),
+            $request,
+            HttpKernelInterface::MAIN_REQUEST,
+            $response,
+        ));
+
+        self::assertSame([], array_values(array_filter(
+            $response->headers->getCookies(),
+            static fn (Cookie $cookie): bool => 'PHPSESSID' === $cookie->getName(),
+        )));
+    }
+
     public function testResponseSubscriberRejectsAcceptedOptionalCookieWithDifferentIdentity(): void
     {
         $definition = CookieConsentDefinition::optional(

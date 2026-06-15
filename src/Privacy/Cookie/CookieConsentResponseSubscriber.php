@@ -40,7 +40,7 @@ final readonly class CookieConsentResponseSubscriber implements EventSubscriberI
                 continue;
             }
 
-            if ($definition->matchesCookieIdentity($cookie) && $this->consent->allowed($request, $definition)) {
+            if ($definition->matchesResponseCookie($cookie) && $this->consent->allowed($request, $definition)) {
                 continue;
             }
 
