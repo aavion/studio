@@ -22,7 +22,7 @@ Codex may create local commits for this branch when each commit has a clear them
 
 ## Implementation sequence
 
-1. Configure named Symfony limiters for login, registration, password reset, contact, captcha failure, website global, API read, API write, scheduler trigger, import, and suspicious probes where the workflow exists.
+1. Configure named Symfony limiters for implemented workflows: login, registration, password reset, website global, API read, API write, scheduler trigger, suspicious probes, and any already-present contact/import/captcha-failure flows.
 2. Add a rate decision service that maps classified intents and subjects to one or more limiter consumes.
 3. Use costed `consume(n)` calls based on the action-cost catalogue.
 4. Add scoped `reset()` calls after successful password login and successful captcha validation where the workflow explicitly allows it.
@@ -35,6 +35,8 @@ Codex may create local commits for this branch when each commit has a clear them
 - Response metadata includes retry timing where Symfony provides it, without exposing internal bucket identifiers.
 - Config names use stable system/security namespaces; thresholds are defaults that can become Admin settings later.
 - Registration and password-reset success do not reset global buckets by default.
+- The branch must commit initial threshold defaults as named configuration/constants with behavior tests. Later branches may tune those defaults only with matching draft/worklog notes.
+- Workflows that do not exist in the current codebase receive catalogue entries only when doing so does not create dead services, routes, or unreachable tests.
 
 ## Edge cases
 
@@ -50,6 +52,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Test successful login resets only the login bucket.
 - Test `/api/live/**` never receives ordinary rate-limit `429`.
 - Test browser HTML and API JSON `429` shapes.
+- Test that non-existing optional workflows are not wired as dead routes/services and that later workflow branches have a clear catalogue attachment point.
 - Test configured limiter service wiring with `lint:container`.
 
 ## Documentation and tracking

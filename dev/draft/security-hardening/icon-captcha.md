@@ -24,7 +24,7 @@ Codex may create local commits for this branch when each commit has a clear them
 
 1. Add the first-party provider package skeleton with captcha-provider scope, package-owned services, templates, assets, translations, and JavaScript.
 2. Implement deterministic challenge generation from provider secret, challenge ID, timestamp, workflow key, route context, user agent, and optional existing session/visitor signal.
-3. Store one-shot challenge IDs and short-lived challenge metadata in Symfony cache or another documented short-lived store.
+3. Store one-shot challenge IDs and short-lived challenge metadata in a dedicated Symfony cache pool where practical, falling back to `cache.app` if the project has no dedicated pool yet.
 4. Implement validation for missing, expired, reused, invalid choice, wrong choice, context mismatch, asset error, and provider unavailable.
 5. Add lightweight refresh through `/api/live/**` or a provider-owned JSON route with no ordinary rate-limit rejection; record passive abuse signals for aggressive refreshes.
 6. Add accessible, layout-stable UI with fixed button grid, translated labels, keyboard support, and back-forward-cache refresh handling.
@@ -34,6 +34,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Provider key is `icon_captcha`.
 - Public challenge payload contains only challenge ID, timestamp, render metadata, and button identifiers needed for display.
 - Provider secret is generated/configured outside manifests and public assets.
+- Default challenge TTL is five minutes, and validation invalidates the challenge after every attempt, successful or failed.
 - SVG/icons must be allowlisted or sanitized before inline rendering.
 
 ## Edge cases
@@ -49,6 +50,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Test challenge generation determinism and answer validation.
 - Test every failure model.
 - Test one-shot replay prevention and TTL expiry.
+- Test cache-pool fallback and secret absence from cached/public challenge payloads.
 - Test refresh no-store behavior and passive signal recording.
 - Test package asset/template/translation registration.
 - Test keyboard/accessibility behavior where practical with JS tests.

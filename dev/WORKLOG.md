@@ -82,6 +82,7 @@
 - Recorded planning decisions for `/api/live/**` rate-limit exclusion, Turbo/browser prefetch classification, action-aware limiter costs, scoped `reset()`-based bucket recovery, cross-action abuse signals, TTL auto-bans, Owner lockout protection, and GeoIP as observability before enforcement.
 - Aligned the Security, API, Contact/Mail/Logging, and IconCaptcha drafts with the planning branch decisions, including treating live captcha refreshes as passive abuse signals rather than ordinary rate-limit `429` responses.
 - Compacted the non-Security `feat-symfony-ux-integration` and `docs-cleanup` active branch logs into `dev/WORKLOG_HISTORY.md` so the active worklog stays focused on Security planning.
+- Re-reviewed every Security detail plan for implementation readiness and tightened unresolved planning language around passive-signal persistence, GeoIP update tasks, rate-limit workflow wiring, auto-ban TTL records, captcha provider policy, IconCaptcha cache/TTL behavior, account-mail delivery guards, and remember-me token management UI.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

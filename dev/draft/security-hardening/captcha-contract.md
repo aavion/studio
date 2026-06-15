@@ -18,7 +18,7 @@ Codex may create local commits for this branch when each commit has a clear them
 ## Dependencies
 
 - Abuse facade from `feat-security-abuse-foundation`.
-- Rate reset hooks from `feat-security-rate-enforcement` where available.
+- Rate reset hooks from `feat-security-rate-enforcement`.
 - Existing Symfony Form, Validator, Translation, package contribution, and settings foundations.
 
 ## Implementation sequence
@@ -36,6 +36,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Missing or disabled provider validates successfully unless a future provider-required policy is explicitly configured for a workflow.
 - Captcha result exposes only stable failure codes and safe context.
 - Provider contracts are package-facing extension points and must be documented.
+- Provider-required behavior is not enabled in the first contract branch; workflow policy may declare the shape for later enforcement, but default runtime behavior remains graceful success for unavailable providers.
 
 ## Edge cases
 
@@ -57,7 +58,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Update Security and IconCaptcha drafts with final contract names.
 - Update package developer guidance for provider registration.
 - Update class map for provider interface, resolver, form type, and validation services.
-- Record provider-required policy as deferred unless implemented.
+- Record provider-required policy as deferred design context; do not enforce it in this branch.
 
 ## Non-goals
 

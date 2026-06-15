@@ -31,7 +31,7 @@ Codex may create local commits for this branch when each commit has a clear them
 ## Public interfaces and data decisions
 
 - No runtime interfaces, routes, entities, configuration, services, commands, migrations, or translations are added in this branch.
-- Documentation establishes fixed defaults for later branches: database-backed auto-ban TTL records, anonymous-first enforcement, lower-confidence prefetch signals, scoped `reset()` before partial refunds, and ordinary rate-limit exclusion for `/api/live/**`.
+- Documentation establishes fixed defaults for later branches: database-backed passive-signal and auto-ban TTL records, anonymous-first enforcement, lower-confidence prefetch signals, scoped `reset()` before partial refunds, ordinary rate-limit exclusion for `/api/live/**`, IconCaptcha challenge cache/TTL behavior, account-mail transport guard expectations, and minimal remember-me token management UI.
 
 ## Edge cases
 
@@ -57,8 +57,10 @@ Codex may create local commits for this branch when each commit has a clear them
 - No runtime behavior.
 - No threshold tuning.
 - No branch implementation beyond planning and archive cleanup.
+- No new open product questions unless the answer blocks a later branch from being implemented safely.
 
 ## Acceptance criteria
 
 - A future implementer can start any `feat-security-*` branch from its detail plan without inventing product policy.
+- Remaining calibration points are explicitly framed as implementation defaults to be committed and tested in the owning branch, not as unresolved product direction.
 - The active worklog is short enough to serve as review notes for Security planning.

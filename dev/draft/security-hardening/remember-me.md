@@ -29,6 +29,7 @@ Codex may create local commits for this branch when each commit has a clear them
 5. Rotate token value on successful automatic login while preserving original expiry unless a full credential login issues a new token.
 6. Revoke tokens on manual logout, password change/reset, account inactive/deleted status, security-review dispute, APP_SECRET emergency handling, and suspicious reuse.
 7. Add audit entries for issue, auto-login success, logout revocation, mismatch, reuse, and lifecycle revocation.
+8. Add a minimal profile/security UI for active persistent tokens with revoke-current, revoke-other, and revoke-all actions.
 
 ## Public interfaces and data decisions
 
@@ -36,7 +37,8 @@ Codex may create local commits for this branch when each commit has a clear them
 - Browser cookie contains only opaque selector/token material.
 - Server stores only hashed token values.
 - Remember-me never bypasses `UserAccountChecker`, account status, role checks, or session visitor binding.
-- Token list/revocation UI may be added to profile if branch scope remains small; otherwise record as follow-up.
+- Token records include selector, hashed token, user, visitor binding hash, issued at, last used at, expires at, status, revocation reason, last IP bucket, last user-agent hash, and token family identifier.
+- Token list/revocation UI is part of the branch scope so users can operate the feature without direct database access.
 
 ## Edge cases
 
@@ -45,6 +47,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Deleted/inactive users cannot auto-login.
 - Owner accounts may use remember-me, but lifecycle revocation and recovery protection still apply.
 - APP_SECRET rotation revokes active persistent tokens unless a tested re-encryption/rehash path exists.
+- Revoking all other tokens must not destroy the current authenticated session unless the user explicitly revokes the current token/session.
 
 ## Tests and validation
 
@@ -52,12 +55,13 @@ Codex may create local commits for this branch when each commit has a clear them
 - Test visitor mismatch and token reuse audit.
 - Test inactive/deleted user denial.
 - Test cookie attributes and absence of raw token storage.
+- Test profile token list and revoke actions, including current-token and other-token behavior.
 - Test container/security firewall wiring.
 
 ## Documentation and tracking
 
 - Update Security draft with final remember-me model.
-- Update user account docs if UI is exposed.
+- Update user account docs for the persistent-token review/revocation UI.
 - Update class map for entity/provider/services/subscribers.
 - Record verification around copied-cookie risk.
 

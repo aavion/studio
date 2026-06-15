@@ -35,6 +35,8 @@ Codex may create local commits for this branch when each commit has a clear them
 - Allowed replacement keys are defined by the mail-flow registry/provider metadata.
 - Clear action URLs may exist in queued mail payloads but must not be duplicated into log context.
 - Missing localized templates fall back to default language and record safe warnings.
+- The first transport guard allows one queued account-flow message per user action, requires configured sender/transport before production delivery, and relies on Messenger retry/backoff instead of controller-level loops.
+- Built-in account flows must remain registered by provider metadata even if no third-party provider exists yet.
 
 ## Edge cases
 
@@ -42,6 +44,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Queue failures should not leave account tokens silently unreachable; callers receive a generic delivery failure.
 - Debug log delivery must be unavailable or strongly warned in production-like environments.
 - APP_SECRET recovery owner links need safe partial-failure reporting.
+- Duplicate delivery attempts for the same token/action should be idempotent or clearly audited so operators can distinguish retries from new security events.
 
 ## Tests and validation
 
@@ -50,6 +53,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Test Messenger queue payload redaction.
 - Test account flows use real delivery when configured and debug delivery only when allowed.
 - Test transport guard behavior and safe failure messages.
+- Test duplicate/retry behavior for token-bearing account messages.
 
 ## Documentation and tracking
 
