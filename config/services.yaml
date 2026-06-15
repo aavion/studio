@@ -41,6 +41,9 @@ services:
         App\Core\Event\EventHookDescriptorProviderInterface:
             tags:
                 - { name: 'system.event_hook_provider', priority: 0 }
+        App\Core\Geo\GeoIpProviderInterface:
+            tags:
+                - { name: 'system.geoip_provider', priority: 0 }
         App\Backend\BackendViewProviderInterface:
             tags:
                 - { name: 'system.backend_view_provider', priority: 0 }
@@ -372,7 +375,12 @@ services:
         alias: App\Core\Log\AccessLogger
 
     App\Core\Geo\GeoIpResolverInterface:
-        alias: App\Core\Geo\NullGeoIpResolver
+        alias: App\Core\Geo\GeoIpResolver
+
+    App\Core\Geo\GeoIpResolver:
+        arguments:
+            $providers: !tagged_iterator { tag: system.geoip_provider }
+            $fallbackProvider: '@App\Core\Geo\NullGeoIpProvider'
 
     App\Core\Log\OperationLoggerInterface:
         alias: App\Core\Log\OperationLogger

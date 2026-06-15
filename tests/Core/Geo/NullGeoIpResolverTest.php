@@ -20,4 +20,12 @@ final class NullGeoIpResolverTest extends TestCase
             'continent' => 'n/a',
         ], $result->toArray());
     }
+
+    public function testItReportsDisabledStatus(): void
+    {
+        $status = (new NullGeoIpResolver())->status();
+
+        self::assertSame('none', $status->providerKey);
+        self::assertSame('disabled', $status->status);
+    }
 }

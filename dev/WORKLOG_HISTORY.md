@@ -9,6 +9,12 @@
 Move completed branch or PR logs from `dev/WORKLOG.md` into this file when switching branches or after a PR is merged. Keep the active worklog focused on the current branch so reviewers can see the full PR context while older project history stays available.
 
 ## Archived Branches
+### 2026-06-15 feat-security-policy-docs
+- Added `dev/draft/security-hardening/policy-defaults.md` as the central first-implementation policy source for Security hardening TTLs, rate-limit thresholds, auto-ban defaults, captcha defaults, privacy ceilings, logging projection posture, and configuration rules.
+- Linked policy defaults from the master Security hardening plan, the Security/API/Contact-Mail-Logging drafts, and the affected branch plans; then refined captcha TTLs, website burst/sustained budgets, scheduler trigger limits, high-signal probe limits, recovery login bypass behavior, captcha auto-success policy, and Admin/Owner protections.
+- Added cross-cutting Security policy decisions for deterministic enforcement order, block-response semantics, probe-pattern validation, configuration bounds, auditable exemptions, configuration-surface ownership, privacy/storage ceilings, and follow-up coverage for setup/install, CORS preflight, uploads, archives, exports, diagnostics, trusted proxy identity, browser storage, and HTTP security headers.
+- Added Admin-vs-Owner authority policy plus the detailed `feat-security-admin-acl-enforcement` branch plan, including default authority matrix, bounded Owner configurability, concrete domain defaults, enforcement boundaries, and test expectations.
+
 ### 2026-06-15 feat-security-planning
 - Created the Security hardening planning package: master branch-tree plan plus detailed `feat-security-*` plans for policy docs, GeoIP observability, abuse foundations, rate enforcement, auto-ban, captcha contracts, IconCaptcha, mailer account delivery, and remember-me.
 - Recorded core product decisions for `/api/live/**` rate-limit exclusion, Turbo/browser prefetch classification, scoped `reset()` behavior, database-backed passive signals/auto-bans, Owner recovery protection, GeoIP observability, IconCaptcha asset/accessibility rules, PR-readiness checks, and the inspiration-only `sec-lookup` legacy reference.

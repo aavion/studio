@@ -10,4 +10,9 @@ final readonly class NullGeoIpResolver implements GeoIpResolverInterface
     {
         return new GeoIpResult();
     }
+
+    public function status(): GeoIpProviderStatus
+    {
+        return GeoIpProviderStatus::disabled(NullGeoIpProvider::KEY);
+    }
 }

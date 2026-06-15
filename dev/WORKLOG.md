@@ -76,21 +76,10 @@
 ## Branch Logs
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place new entries chronologically under the matching branch/date heading so reviewers can follow the PR context without reading full verification transcripts. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
-### 2026-06-15 feat-security-policy-docs
-- Added `dev/draft/security-hardening/policy-defaults.md` as the central first-implementation source for Security hardening TTLs, rate-limit thresholds, auto-ban defaults, captcha defaults, privacy ceilings, logging projection posture, and configuration rules.
-- Linked policy defaults from the master Security hardening plan, the Security/API/Contact-Mail-Logging drafts, and the affected branch detail plans so later implementation branches can cite one policy reference.
-- Compacted the completed `feat-security-planning` worklog entry into `dev/WORKLOG_HISTORY.md` so the active worklog stays focused on the policy-docs branch.
-- Raised the first IconCaptcha challenge TTL default to 15 minutes for realistic form completion time while keeping one-shot validation, scoped failure buckets, context binding, refresh abuse signals, and answer-leak checks as required bot-protection controls.
-- Split the website global rate-limit default into deliberate burst and sustained buckets, with Turbo/browser prefetch tracked through a separate lower-confidence observation path so speculative requests do not drain user-facing navigation budgets.
-- Adjusted scheduler and probe policies: scheduler trigger limits now support minutely cron, high-signal probes are limited to one per 10 minutes with generic `400` handling, probe paths are configurable with broad defaults, auto-ban defaults to on, and active Admin/Owner recovery protections are explicit.
-- Documented recovery login bypass policy using the normal login route plus a bypass flag, guarded by a dedicated 2/minute and 10/hour bucket with 30-minute retry behavior and no bypass of CSRF, credential checks, login-failure accounting, or audit logging.
-- Clarified captcha auto-success policy: provider `none`, missing providers, and disabled providers keep workflows graceful but never reset/refill rate-limit buckets, clear bans, or satisfy captcha-based `429` recovery.
-- Added cross-cutting Security policy decisions for deterministic enforcement order, block-response semantics, probe-pattern validation, configuration bounds, and auditable Owner/Admin exemptions.
-- Added a first configuration-surface matrix that separates fixed policy, code/config defaults, protected secrets, bounded Admin settings, and later-tunable thresholds for follow-up Security branches.
-- Scanned feature drafts and code surfaces for remaining Security planning gaps; added coverage notes for setup/install, CORS preflight, high-impact admin operations, uploads/archives, exports/downloads, diagnostic bundles, trusted proxy identity, browser storage, and deferred HTTP security-header policy.
-- Added Admin-vs-Owner authority policy so non-user-management Admin features can distinguish delegated Admin visibility/mutation from Owner-only site-control actions.
-- Added `feat-security-admin-acl-enforcement` as a dedicated branch plan for shared Admin-vs-Owner action authority before package, scheduler, backup, settings, diagnostics, update, and security-management workflows expand.
-- Expanded the Admin ACL enforcement plan with a default authority matrix, bounded Owner-only configurability policy, concrete Admin/Owner domain defaults, enforcement boundaries, and test expectations.
+### 2026-06-15 feat-security-geoip-observability
+- Started the GeoIP observability branch by compacting the completed `feat-security-policy-docs` notes into `dev/WORKLOG_HISTORY.md`.
+- Added a narrow provider-neutral GeoIP resolver foundation so access logs and access statistics keep using normalized `n/a` fallback fields until a real provider returns data.
+- Verified the foundation with focused GeoIP/access-log/statistics PHPUnit coverage, PHP syntax checks, container linting, focused linting for changed files, and Git whitespace checks.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

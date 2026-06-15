@@ -6,11 +6,13 @@ namespace App\Core\Geo;
 
 final readonly class GeoIpResult
 {
+    public const PLACEHOLDER = 'n/a';
+
     public function __construct(
-        public string $city = 'n/a',
-        public string $state = 'n/a',
-        public string $country = 'n/a',
-        public string $continent = 'n/a',
+        public string $city = self::PLACEHOLDER,
+        public string $state = self::PLACEHOLDER,
+        public string $country = self::PLACEHOLDER,
+        public string $continent = self::PLACEHOLDER,
     ) {
     }
 

@@ -27,6 +27,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 ## Implementation sequence
 
+0. Establish the provider-neutral foundation: `GeoIpProviderInterface`, `GeoIpProviderStatus`, a delegating `GeoIpResolver`, and a null provider that keeps current log/statistic placeholders as the default output.
 1. Add a MaxMind-backed resolver behind the existing GeoIP resolver interface.
 2. Add protected administrator-only settings for provider selection, database path/status, account/license key, and update policy.
 3. Keep `NullGeoIpResolver` active whenever the provider is disabled, unconfigured, missing a local database, or unable to read data.
@@ -37,6 +38,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Public interfaces and data decisions
 
 - GeoIP output uses normalized nullable or `n/a` fields for country, region, city, latitude/longitude where available, provider status, and lookup status.
+- The foundation keeps `n/a` placeholders as the stable default for access logs and statistics whenever lookup input is missing, providers are disabled/unconfigured/unavailable, or a provider throws.
+- Providers expose only safe status fields: provider key, coarse status, database edition/build date, update timestamps, next suggested update, and redacted failure code. No raw paths, IP inputs, license/account data, or full exception messages belong in provider status.
 - Lookup input uses the shared client-identity resolver and Symfony trusted-proxy configuration; raw forwarding headers are never parsed directly by the provider.
 - Provider secrets are protected config values and never rendered outside authorized Admin settings.
 - Scheduler task identifiers use stable system-owned names and do not expose provider credentials.
