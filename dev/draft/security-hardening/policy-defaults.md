@@ -50,16 +50,20 @@ These are first implementation defaults. Branches may adjust them only with test
 | Password-reset requests | 3 requests per hour and 10 per day | Visitor ID plus normalized email hash where safe; IP bucket as secondary signal | No automatic global reset |
 | Contact form submissions | 3 submissions per 10 minutes and 20 per day | Visitor ID; IP bucket as secondary signal | No automatic global reset |
 | Captcha failures | 5 failures per 10 minutes | Challenge subject plus visitor ID | Successful captcha may reset the scoped challenge/form bucket only |
-| Website global budget | 120 ordinary requests per minute | Visitor ID; IP bucket as secondary signal | No success reset |
+| Website deliberate burst | 30 deliberate browser route requests per minute | Visitor ID; IP bucket as secondary signal | No success reset |
+| Website deliberate sustained | 300 deliberate browser route requests per 30 minutes | Visitor ID; IP bucket as secondary signal | No success reset |
+| Turbo/browser prefetch observation | 120 safe prefetch `GET` requests per minute and 600 per 30 minutes | Visitor ID; IP bucket as secondary signal | No ordinary rejection by itself; records lower-confidence passive signals |
 | Versioned API read | 600 safe requests per minute | API key fingerprint or visitor/anonymous subject | No success reset |
 | Versioned API write | 60 mutating requests per minute | API key fingerprint | No success reset |
 | Public anonymous API read | 120 safe requests per minute | Visitor ID; IP bucket as secondary signal | No success reset |
 | Scheduler trigger | 5 trigger attempts per minute and 30 per hour | API key fingerprint plus scheduler endpoint subject | No success reset |
 | Suspicious probes | 10 high-signal probes per 10 minutes | Visitor ID plus IP bucket | No success reset; may drain suspicious buckets |
 
+Website global buckets count application/browser route handling, not static assets, generated assets, or `/api/live/**` polling. The first implementation should enforce both deliberate website buckets: the burst bucket catches very fast click/submit loops, while the sustained bucket catches automated crawling that stays just below the per-minute limit.
+
 `/api/live/**` remains outside ordinary rate-limit rejection. Clear abuse on live endpoints records passive signals and may affect global suspicious handling, but live polling and captcha refreshes should not receive the normal website/API `429` path.
 
-Turbo/browser prefetch for safe `GET` requests should not spend the same budget as deliberate navigation. Use lower-confidence passive signal weighting; do not let spoofable prefetch headers bypass authentication, authorization, CSRF, or domain validation.
+Turbo/browser prefetch for safe `GET` requests should not spend the same budget as deliberate navigation. Use a dedicated prefetch observation bucket or lower-confidence passive signal weighting; do not let spoofable prefetch headers bypass authentication, authorization, CSRF, or domain validation. Expensive or side-effect-adjacent links should disable prefetch rather than relying on rate-limit forgiveness.
 
 ## Auto-Ban Defaults
 

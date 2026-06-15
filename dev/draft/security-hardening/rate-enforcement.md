@@ -41,6 +41,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Config names use stable system/security namespaces; thresholds are defaults that can become Admin settings later.
 - Registration and password-reset success do not reset global buckets by default.
 - The branch must commit initial threshold defaults from the Security policy defaults as named configuration/constants with behavior tests. Later branches may tune those defaults only with matching draft/worklog notes.
+- Website global policy uses separate deliberate burst and sustained buckets. Turbo/browser prefetch uses a separate lower-confidence observation path so speculative `GET` requests do not exhaust user-facing navigation budgets.
 - Workflows that do not exist in the current codebase receive catalogue entries only when doing so does not create dead services, routes, or unreachable tests.
 - Limiter keys come only from the shared subject/client-identity resolver and never from raw request headers or user-submitted identifiers.
 - Limiter storage degradation must be explicit and tested, including safe diagnostics and Owner recovery behavior.
@@ -56,7 +57,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Tests and validation
 
 - Test each guarded workflow below and above threshold.
-- Test global budget catches mixed suspicious actions.
+- Test global burst and sustained website budgets catch mixed suspicious actions without counting static assets or ordinary `/api/live/**` polling.
+- Test Turbo/browser prefetch does not exhaust deliberate website buckets and still records passive signals for excessive speculative traffic.
 - Test successful login resets only the login bucket.
 - Test `/api/live/**` never receives ordinary rate-limit `429`.
 - Test browser HTML and API JSON `429` shapes.
