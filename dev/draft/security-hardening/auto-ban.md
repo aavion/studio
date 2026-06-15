@@ -68,6 +68,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Update Admin/security diagnostics notes for review UI.
 - Update class map for entity, repository, decision service, cleanup command/task, and Admin routes.
 - Record threshold and false-positive assumptions in worklog.
+- Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 
 ## Non-goals
 

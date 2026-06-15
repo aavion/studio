@@ -61,6 +61,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Update Security draft where the debug stub is replaced/gated.
 - Update class map for registry providers, renderer, queued message/handler, and settings UI.
 - Update user/admin docs if Mail settings become visible.
+- Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 
 ## Non-goals
 

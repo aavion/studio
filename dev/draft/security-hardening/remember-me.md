@@ -64,6 +64,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Update user account docs for the persistent-token review/revocation UI.
 - Update class map for entity/provider/services/subscribers.
 - Record verification around copied-cookie risk.
+- Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 
 ## Non-goals
 

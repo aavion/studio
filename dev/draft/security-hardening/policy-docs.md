@@ -51,6 +51,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Update `dev/draft/README.md` if new draft paths need discoverability.
 - Update `dev/WORKLOG.md` with concise planning notes only.
 - Update `dev/WORKLOG_HISTORY.md` with compact archived branch summaries.
+- Add or maintain the Security PR-readiness checklist in the master hardening plan when review expectations change.
 
 ## Non-goals
 

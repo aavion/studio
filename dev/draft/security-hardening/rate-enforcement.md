@@ -65,6 +65,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Update API/Scheduler notes for JSON `429` behavior.
 - Update class map for facade/enforcement services.
 - Record focused test commands and any threshold changes in the worklog.
+- Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 
 ## Non-goals
 

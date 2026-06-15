@@ -63,6 +63,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Update class map for the facade and value objects only if they are contributor-facing services.
 - Update class map for the passive-signal entity/repository/cleanup command if they are added.
 - Record default cost catalogue decisions in the worklog.
+- Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 
 ## Non-goals
 

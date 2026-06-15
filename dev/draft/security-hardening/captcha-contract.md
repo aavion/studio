@@ -63,6 +63,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Update package developer guidance for provider registration.
 - Update class map for provider interface, resolver, form type, and validation services.
 - Record provider-required policy as deferred design context; do not enforce it in this branch.
+- Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 
 ## Non-goals
 

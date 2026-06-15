@@ -63,6 +63,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Update Scheduler notes if a task definition is added.
 - Update class map for resolver, task, settings, and diagnostics entry points.
 - Add worklog verification notes for redaction and fallback tests.
+- Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 
 ## Non-goals
 
