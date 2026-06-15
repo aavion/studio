@@ -1,7 +1,7 @@
 # Project Outline and Feature Drafts
 
 > **Status**: Draft  
-> **Updated**: 2026-05-20   
+> **Updated**: 2026-06-15   
 > **Owner**: Core  
 > **Purpose:** Description of planned features and technical specification drafts for use as guidance alongside implementation.  
 
@@ -47,6 +47,7 @@ The feature drafts should be created in dependency order. Start with architectur
 ### 0.2.x security and extension baseline drafts
 
 - [Security and access control](0.2.x-SecurityAccessControl.md)
+- [Security hardening implementation plan](0.2.x-SecurityHardeningPlan.md)
 - [Admin interface and setup UI](0.2.x-AdminInterfaceSetupUi.md)
 - [Package modules and providers](0.2.x-PluginModules.md)
 - [Event hooks and buses](0.2.x-EventHooksBuses.md)

@@ -1,7 +1,7 @@
 # Developer Worklog History
 
 > **Status**: Active  
-> **Updated**: 2026-06-13  
+> **Updated**: 2026-06-15  
 > **Owner**: Core  
 > **Purpose:** Preserve compacted branch/PR history moved out of `dev/WORKLOG.md` at branch boundaries.
 
@@ -9,6 +9,16 @@
 Move completed branch or PR logs from `dev/WORKLOG.md` into this file when switching branches or after a PR is merged. Keep the active worklog focused on the current branch so reviewers can see the full PR context while older project history stays available.
 
 ## Archived Branches
+### 2026-06-13 to 2026-06-14 feat-symfony-ux-integration
+- Added the Symfony UX/UI foundation: namespace-aware Twig components, shared alert stacks, reusable Stimulus/live-polling controllers, notification center behavior, package live endpoints, package-aware cookie consent, local Mercure tooling, and lazy UX integrations.
+- Hardened live/API/cookie/Mercure boundaries through repeated review passes, including exact-before-pattern dispatch, reserved live slugs, GET-only package live endpoints, alert topic scoping, consent cookie signing, protected Mercure env handling, URL/link sink validation, and safe fallback polling.
+- Added JavaScript behavior coverage and UI/operation overlay refinements while recording follow-ups for public privacy triggers, live endpoint docs/navigation, captcha seed flows, notification preferences, package callbacks, and future LiveComponent filter slices.
+
+### 2026-06-12 to 2026-06-13 docs-cleanup
+- Refreshed repository guidance and context docs: moved binding project rules into `AGENTS.md`, updated `.codex` environment/tooling notes, refreshed dependency recap for Symfony 8.1-era packages, and restored branch-oriented worklog archival rules.
+- Improved local developer tooling documentation and commands: expanded `bin/lint` with diff/staged/changed modes, Markdown parsing, extensionless PHP checks, Git whitespace handling, route rendering through `php bin/console render:route`, and Symfony UX icon reference checks.
+- Recorded Symfony UX integration notes, icon locking behavior, cache warmup/UX Translator expectations, production-only AssetMapper guidance, and ext-sodium platform requirements while archiving obsolete `.codex` helper context.
+
 ### 2026-06-07
 - Completed the API foundation and hardening slice: stateless Bearer API-key authentication, endpoint definitions/handlers, OpenAPI 3.2 generation, public/private navigation, admin/user/content/package endpoints, CORS, trace headers, feature policy settings, response/error schemas, and Message-layer localized feedback.
 - Hardened API access and review boundaries around disabled/setup/maintenance responses, package-owned route patterns, read-only method gates, endpoint permissions, API-key parsing, deleted users, ACL denial status, retained-deleted account mutations, content revisions, package slug identity, pagination/filtering/sorting, and public published-content status leakage.
