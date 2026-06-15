@@ -83,6 +83,7 @@
 - Added the MaxMind GeoIP2 provider slice on top of the foundation: local `.mmdb` lookups via the installed `geoip2/geoip2` dependency, safe provider status, project-relative database path config, sensitive credential preservation/redaction, password-form support for secret fields, and hermetic fake-reader tests without real MaxMind credentials or network access.
 - Added the narrow GeoIP2 update foundation: moved the intentionally small GeoIP settings surface to Statistics, changed the default database path to `var/geoip2/GeoLite2-City.mmdb`, derived MaxMind lookup locales from the site default language with `en` fallback, exposed a MaxMind signup help link, added an Admin Operations-backed database download action with non-JS POST fallback, added a daily scheduler callable, and added hermetic updater/scheduler tests that do not use real MaxMind credentials or network access.
 - Hardened GeoIP2 download logging: the MaxMind download client now bypasses the autowired Symfony HTTP client service so the license-key query string cannot be captured by HttpClient logging/profiling, and shared log redaction treats `license_key` as sensitive context.
+- Aligned first-run setup seeding with the GeoIP2 defaults by explicitly persisting GeoIP disabled, the default `var/geoip2/GeoLite2-City.mmdb` path, and an intentionally empty sensitive MaxMind license-key setting.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
