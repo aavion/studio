@@ -41,6 +41,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Signals store only normalized subject keys, intent, reason code, count/weight, timestamps, and safe request metadata.
 - First implementation uses a portable database table for short-lived passive signals. Suggested fields are normalized subject type/key, request family, intent, reason code, confidence, weight/count, first-seen timestamp, last-seen timestamp, expiry timestamp, safe context hash, and optional audit reference.
 - Passive-signal rows are observational only in this branch. The rate and auto-ban branches decide how to consume them for enforcement.
+- Keep passive signals separate from raw file logs. If a broader database-backed security event projection is introduced later, this branch's signal store should either feed it through a documented boundary or remain the focused enforcement-oriented read model.
 - TTL and expiry use an injectable clock/time boundary for deterministic tests.
 
 ## Edge cases
@@ -67,6 +68,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Update class map for the facade and value objects only if they are contributor-facing services.
 - Update class map for the passive-signal entity/repository/cleanup command if they are added.
 - Record default cost catalogue decisions in the worklog.
+- Record whether the branch keeps only the passive-signal store or also introduces/reuses a broader security event projection.
 - Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 
 ## Non-goals

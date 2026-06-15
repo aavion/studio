@@ -87,6 +87,7 @@
 - Added IconCaptcha asset/license, inline-rendering, bot-resistance, and neutral accessibility-label requirements, and documented Security PR-readiness checks that must be completed from the actual branch diff before PRs.
 - Recorded quiz-style IconCaptcha as the preferred accessible fallback when neutral labels are insufficient, keeping quiz prompts/options under the same one-shot challenge, TTL, context-binding, and answer-leak resistance rules.
 - Added final cross-cutting planning guardrails for shared client identity/trusted-proxy handling, injectable time boundaries, degraded storage behavior, and race/idempotency review across Security branches.
+- Recorded the open logging architecture question of keeping 30-day rotating file logs as the durable raw source while evaluating a parallel database-backed security event projection for query-heavy Security review and abuse correlation.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
