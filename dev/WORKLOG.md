@@ -84,7 +84,8 @@
 - Added the narrow GeoIP2 update foundation: moved the intentionally small GeoIP settings surface to Statistics, changed the default database path to `var/geoip2/GeoLite2-City.mmdb`, derived MaxMind lookup locales from the site default language with `en` fallback, exposed a MaxMind signup help link, added an Admin Operations-backed database download action with non-JS POST fallback, added a daily scheduler callable, and added hermetic updater/scheduler tests that do not use real MaxMind credentials or network access.
 - Hardened GeoIP2 download logging: the MaxMind download client now bypasses the autowired Symfony HTTP client service so the license-key query string cannot be captured by HttpClient logging/profiling, and shared log redaction treats `license_key` as sensitive context.
 - Aligned first-run setup seeding with the GeoIP2 defaults by explicitly persisting GeoIP disabled, the default `var/geoip2/GeoLite2-City.mmdb` path, and an intentionally empty sensitive MaxMind license-key setting.
-- Re-audited the GeoIP observability plan against the implementation, added safe Statistics settings status rendering, and clarified that persistent update-state history and coordinate fields are outside the first implementation.
+- Re-audited the GeoIP observability plan against the implementation, added safe Statistics settings status rendering, and clarified that persistent update-state history and coordinate fields are not planned for this branch.
+- Simplified GeoIP status and the branch plan after product review: latitude/longitude and separate persistent GeoIP update-history storage are intentionally not planned because Scheduler run history and live Operation feedback cover update success/failure.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

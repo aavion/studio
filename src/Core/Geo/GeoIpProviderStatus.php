@@ -16,9 +16,6 @@ final readonly class GeoIpProviderStatus
         public string $status,
         public ?string $databaseEdition = null,
         public ?string $databaseBuildDate = null,
-        public ?string $lastUpdateAttemptAt = null,
-        public ?string $lastUpdateSuccessAt = null,
-        public ?string $nextSuggestedUpdateAt = null,
         public ?string $failureCode = null,
     ) {
     }
@@ -27,18 +24,12 @@ final readonly class GeoIpProviderStatus
         string $providerKey,
         ?string $databaseEdition = null,
         ?string $databaseBuildDate = null,
-        ?string $lastUpdateAttemptAt = null,
-        ?string $lastUpdateSuccessAt = null,
-        ?string $nextSuggestedUpdateAt = null,
     ): self {
         return new self(
             $providerKey,
             self::READY,
             $databaseEdition,
             $databaseBuildDate,
-            $lastUpdateAttemptAt,
-            $lastUpdateSuccessAt,
-            $nextSuggestedUpdateAt,
         );
     }
 
@@ -68,9 +59,6 @@ final readonly class GeoIpProviderStatus
      *     status: string,
      *     database_edition: ?string,
      *     database_build_date: ?string,
-     *     last_update_attempt_at: ?string,
-     *     last_update_success_at: ?string,
-     *     next_suggested_update_at: ?string,
      *     failure_code: ?string
      * }
      */
@@ -81,9 +69,6 @@ final readonly class GeoIpProviderStatus
             'status' => $this->status,
             'database_edition' => $this->databaseEdition,
             'database_build_date' => $this->databaseBuildDate,
-            'last_update_attempt_at' => $this->lastUpdateAttemptAt,
-            'last_update_success_at' => $this->lastUpdateSuccessAt,
-            'next_suggested_update_at' => $this->nextSuggestedUpdateAt,
             'failure_code' => $this->failureCode,
         ];
     }

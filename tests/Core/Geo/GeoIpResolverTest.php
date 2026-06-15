@@ -88,9 +88,6 @@ final class GeoIpResolverTest extends TestCase
             'maxmind',
             databaseEdition: 'GeoLite2-City',
             databaseBuildDate: '2026-06-15',
-            lastUpdateAttemptAt: '2026-06-15T10:00:00+00:00',
-            lastUpdateSuccessAt: '2026-06-15T10:00:01+00:00',
-            nextSuggestedUpdateAt: '2026-06-22T10:00:00+00:00',
         );
 
         self::assertSame([
@@ -98,9 +95,6 @@ final class GeoIpResolverTest extends TestCase
             'status' => 'ready',
             'database_edition' => 'GeoLite2-City',
             'database_build_date' => '2026-06-15',
-            'last_update_attempt_at' => '2026-06-15T10:00:00+00:00',
-            'last_update_success_at' => '2026-06-15T10:00:01+00:00',
-            'next_suggested_update_at' => '2026-06-22T10:00:00+00:00',
             'failure_code' => null,
         ], $status->toSafeArray());
     }

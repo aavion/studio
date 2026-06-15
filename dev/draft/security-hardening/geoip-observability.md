@@ -32,18 +32,18 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 2. Add protected administrator-only Statistics settings for GeoIP enablement, the local database path, and the MaxMind license key.
 3. Keep `NullGeoIpResolver` active whenever the provider is disabled, unconfigured, missing a local database, or unable to read data.
 4. Add a scheduler-ready update task definition for GeoIP database refresh; keep it inactive by default until an administrator enables the task and stores a MaxMind license key.
-5. Add safe Admin diagnostics for provider status, database edition/build date when available, and disabled/unconfigured/unavailable state. Persistent last-update attempt/success state can be added later when a dedicated update-state store exists.
+5. Add safe Admin diagnostics for provider status, database edition/build date when available, and disabled/unconfigured/unavailable state. Do not add a persistent GeoIP update-history store; Scheduler task runs already record scheduled update success/failure, and live Operations already provide immediate feedback for manual downloads.
 6. Wire access logs and statistics to consume normalized provider output only through the resolver interface and the shared client-identity resolver.
 
 ## Public interfaces and data decisions
 
-- GeoIP output uses normalized `n/a` fields for city, state/region, country, and continent. Latitude/longitude are intentionally out of scope for the first implementation because current logs/statistics do not persist or display coordinates.
+- GeoIP output uses normalized `n/a` fields for city, state/region, country, and continent. Latitude/longitude storage is intentionally not planned because current logs/statistics and security review flows do not need coordinates.
 - The foundation keeps `n/a` placeholders as the stable default for access logs and statistics whenever lookup input is missing, providers are disabled/unconfigured/unavailable, or a provider throws.
-- Providers expose only safe status fields: provider key, coarse status, database edition/build date, update timestamps, next suggested update, and redacted failure code. No raw paths, IP inputs, license/account data, or full exception messages belong in provider status.
+- Providers expose only safe status fields: provider key, coarse status, database edition/build date, and redacted failure code. No raw paths, IP inputs, license/account data, update-history state, or full exception messages belong in provider status.
 - Lookup input uses the shared client-identity resolver and Symfony trusted-proxy configuration; raw forwarding headers are never parsed directly by the provider.
 - Provider secrets are protected config values and never rendered outside authorized Admin settings.
 - Scheduler task identifiers use stable system-owned names and do not expose provider credentials. The MaxMind database update task is a trusted callable scheduled daily by default and remains inactive until an operator activates it in Scheduler.
-- Update state records last attempt, last success, database edition, database build date, next suggested update, and redacted failure code when persistent update-state storage is added. The first foundation reports update context through Operations, Scheduler runs, and the Message layer, while the Admin settings surface shows the safe resolver/provider status available at request time.
+- Update success/failure reporting stays with the existing Operation, Scheduler, and Message layers. A separate persistent GeoIP update-history table or settings blob is intentionally not planned for this branch because it would duplicate Scheduler run history and live Operation feedback.
 - No public API response adds GeoIP data in this branch.
 - GeoIP enablement, database path/status, and the MaxMind license key are protected/audited Statistics configuration surfaces; license material remains secret-only. Disabled, unconfigured, expired, or failed providers must fall back to `NullGeoIpResolver`.
 - The first MaxMind implementation uses the installed `geoip2/geoip2` package against a configured local `.mmdb` database. Request-time lookups must not download databases or require outbound network access.
@@ -86,6 +86,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - No geo-blocking.
 - No country allow/deny lists.
 - No abuse scoring based on GeoIP.
+- No latitude/longitude storage.
+- No separate persistent GeoIP update-history storage.
 
 ## Acceptance criteria
 
