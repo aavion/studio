@@ -935,6 +935,24 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists(sprintf('input[name="%s"]', ConfigAuditLogPolicy::ENABLED_KEY));
         self::assertSelectorExists(sprintf('input[name="%s[]"]', ConfigAuditLogPolicy::EVENTS_KEY));
 
+        $client->request('GET', '/admin/settings/statistics');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Statistics settings');
+        self::assertSelectorExists('form#admin-settings-statistics');
+        self::assertSelectorExists('input[name="statistics.geoip.enabled"]');
+        self::assertSelectorExists('input[name="statistics.geoip.maxmind.license_key"][type="password"]');
+        self::assertSelectorExists('a[href="https://www.maxmind.com/en/geolite2/signup"]');
+        self::assertSelectorNotExists('input[name="_backend_action"][value="geoip_database_update"]');
+
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+        $config->set('statistics.geoip.maxmind.license_key', 'saved-test-key', ConfigValueType::String, sensitive: true);
+        $client->request('GET', '/admin/settings/statistics');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('input[name="_backend_action"][value="geoip_database_update"]');
+
         $client->request('GET', '/admin/settings/scheduler');
 
         self::assertResponseIsSuccessful();

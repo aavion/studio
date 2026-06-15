@@ -9,18 +9,12 @@ use App\Core\Config\Config;
 final readonly class MaxMindGeoIpConfig
 {
     public const PROVIDER_KEY = 'maxmind';
-    public const ENABLED_KEY = 'security.geoip.enabled';
-    public const SELECTED_PROVIDER_KEY = 'security.geoip.provider';
-    public const DATABASE_PATH_KEY = 'security.geoip.maxmind.database_path';
-    public const LOCALES_KEY = 'security.geoip.maxmind.locales';
-    public const UPDATE_ENABLED_KEY = 'security.geoip.maxmind.update_enabled';
-    public const UPDATE_INTERVAL_KEY = 'security.geoip.maxmind.update_interval';
-    public const ACCOUNT_ID_KEY = 'security.geoip.maxmind.account_id';
-    public const LICENSE_KEY_KEY = 'security.geoip.maxmind.license_key';
+    public const DATABASE_EDITION = 'GeoLite2-City';
+    public const ENABLED_KEY = 'statistics.geoip.enabled';
+    public const DATABASE_PATH_KEY = 'statistics.geoip.maxmind.database_path';
+    public const LICENSE_KEY_KEY = 'statistics.geoip.maxmind.license_key';
 
-    public const DEFAULT_DATABASE_PATH = 'var/geoip/GeoLite2-City.mmdb';
-    public const DEFAULT_LOCALES = ['en'];
-    public const DEFAULT_UPDATE_INTERVAL = 'weekly';
+    public const DEFAULT_DATABASE_PATH = 'var/geoip2/GeoLite2-City.mmdb';
 
     public function __construct(private Config $config)
     {
@@ -28,15 +22,7 @@ final readonly class MaxMindGeoIpConfig
 
     public function enabled(): bool
     {
-        return true === $this->config->get(self::ENABLED_KEY, false)
-            && self::PROVIDER_KEY === $this->provider();
-    }
-
-    public function provider(): string
-    {
-        $provider = $this->config->get(self::SELECTED_PROVIDER_KEY, self::PROVIDER_KEY);
-
-        return is_string($provider) && '' !== trim($provider) ? trim($provider) : self::PROVIDER_KEY;
+        return true === $this->config->get(self::ENABLED_KEY, false);
     }
 
     public function databasePath(): string
@@ -51,39 +37,55 @@ final readonly class MaxMindGeoIpConfig
      */
     public function locales(): array
     {
-        $locales = $this->config->get(self::LOCALES_KEY, self::DEFAULT_LOCALES);
-        $locales = is_array($locales) ? $locales : self::DEFAULT_LOCALES;
-        $normalized = [];
+        $defaultLanguage = $this->config->get('localization.default_language', 'en');
+        $defaultLanguage = is_string($defaultLanguage) ? trim($defaultLanguage) : 'en';
 
-        foreach ($locales as $locale) {
-            if (!is_string($locale)) {
-                continue;
-            }
-
-            $locale = trim($locale);
-            if (1 !== preg_match('/^[a-z]{2}(?:-[A-Z]{2})?$/', $locale)) {
-                continue;
-            }
-
-            $normalized[$locale] = $locale;
+        if (1 !== preg_match('/^[a-z]{2}(?:-[A-Z]{2})?$/', $defaultLanguage)) {
+            $defaultLanguage = 'en';
         }
 
-        $normalized['en'] ??= 'en';
-
-        return array_slice(array_values($normalized), 0, 8);
+        return 'en' === $defaultLanguage ? ['en'] : [$defaultLanguage, 'en'];
     }
 
-    public function updateEnabled(): bool
+    public function databaseAbsolutePath(string $projectDir): ?string
     {
-        return true === $this->config->get(self::UPDATE_ENABLED_KEY, false);
+        $relativePath = str_replace('\\', '/', $this->databasePath());
+
+        if (
+            '' === trim($relativePath)
+            || str_contains($relativePath, "\0")
+            || str_starts_with($relativePath, '/')
+            || str_starts_with($relativePath, '//')
+            || str_starts_with($relativePath, '\\\\')
+            || 1 === preg_match('/^[A-Za-z]:\//', $relativePath)
+            || str_contains('/'.$relativePath.'/', '/../')
+        ) {
+            return null;
+        }
+
+        return rtrim($projectDir, DIRECTORY_SEPARATOR.'/\\')
+            .DIRECTORY_SEPARATOR
+            .str_replace('/', DIRECTORY_SEPARATOR, ltrim($relativePath, '/'));
     }
 
-    public function updateInterval(): string
+    public function licenseKey(): string
     {
-        $interval = $this->config->get(self::UPDATE_INTERVAL_KEY, self::DEFAULT_UPDATE_INTERVAL);
+        $licenseKey = $this->config->get(self::LICENSE_KEY_KEY, '');
 
-        return is_string($interval) && in_array($interval, ['manual', 'daily', 'weekly'], true)
-            ? $interval
-            : self::DEFAULT_UPDATE_INTERVAL;
+        return is_string($licenseKey) ? trim($licenseKey) : '';
+    }
+
+    public function hasLicenseKey(): bool
+    {
+        return '' !== $this->licenseKey();
+    }
+
+    public function downloadUrl(): string
+    {
+        return sprintf(
+            'https://download.maxmind.com/app/geoip_download?edition_id=%s&license_key=%s&suffix=tar.gz',
+            rawurlencode(self::DATABASE_EDITION),
+            rawurlencode($this->licenseKey()),
+        );
     }
 }

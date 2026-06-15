@@ -200,8 +200,8 @@ These are first soft decisions for which values should stay fixed, become protec
 | IP privacy ceiling and raw-secret redaction | Code-level policy and tests | No increase allowed | IP-derived data max 30 days; raw credentials, API keys, visitor tokens, session IDs, captcha answers, and full user agents are never policy records |
 | Raw file-log retention | Existing log configuration or code default | Yes, bounded | Default 30 days; IP-bearing logs must not become queryable beyond 30 days through archives, projections, exports, or support bundles |
 | Database security event projection | Feature branch decision | Yes, bounded | Stores minimized/redacted read-model data only; must degrade without hiding diagnostics or weakening enforcement |
-| GeoIP provider selection, database path, and update policy | Protected config/Admin setting with null fallback | Yes, protected and audited | Provider secrets never public; disabled/unconfigured state uses `NullGeoIpResolver`; no geo-blocking |
-| GeoIP account/license key | Secret/protected setting | Yes, protected only | Never rendered, exported, logged, or included in diagnostics |
+| GeoIP enablement, database path, license key, and update task | Protected config/Admin setting with null fallback | Yes, protected and audited | License key never public; disabled/unconfigured state uses `NullGeoIpResolver`; no geo-blocking |
+| GeoIP license key | Secret/protected setting | Yes, protected only | Never rendered, exported, logged, or included in diagnostics |
 | Probe-path defaults | Code defaults plus config descriptor | Yes, audited | Defaults remain broad; patterns are anchored/normalized and tested against false positives |
 | Auto-ban enabled flag | Code default `on` | Yes, bounded | Disabling requires diagnostics; cannot disable Owner recovery, audit, or passive signal recording by accident |
 | Auto-ban TTLs and escalation windows | Code/config defaults | Yes, bounded | No permanent bans; IP-ban TTL stays below the documented max and IP retention ceiling |

@@ -18,27 +18,39 @@ final class MaxMindGeoIpConfigTest extends TestCase
         $config = new MaxMindGeoIpConfig(new Config($this->connection()));
 
         self::assertFalse($config->enabled());
-        self::assertSame(MaxMindGeoIpConfig::PROVIDER_KEY, $config->provider());
         self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $config->databasePath());
         self::assertSame(['en'], $config->locales());
-        self::assertFalse($config->updateEnabled());
-        self::assertSame('weekly', $config->updateInterval());
+        self::assertSame('', $config->licenseKey());
+        self::assertFalse($config->hasLicenseKey());
     }
 
-    public function testItNormalizesLocalesAndUpdateInterval(): void
+    public function testItUsesConfiguredDefaultLanguageForLocalesAndNormalizesSensitiveSettings(): void
     {
         $connection = $this->connection();
         $store = new Config($connection);
         $store->set(MaxMindGeoIpConfig::ENABLED_KEY, true, ConfigValueType::Boolean);
-        $store->set(MaxMindGeoIpConfig::SELECTED_PROVIDER_KEY, MaxMindGeoIpConfig::PROVIDER_KEY, ConfigValueType::String);
-        $store->set(MaxMindGeoIpConfig::LOCALES_KEY, ['de', 'invalid', 'en', 'de', 'fr-FR'], ConfigValueType::Json);
-        $store->set(MaxMindGeoIpConfig::UPDATE_INTERVAL_KEY, 'hourly', ConfigValueType::String);
+        $store->set('localization.default_language', 'de', ConfigValueType::String);
+        $store->set(MaxMindGeoIpConfig::LICENSE_KEY_KEY, ' test-license ', ConfigValueType::String, sensitive: true);
 
         $config = new MaxMindGeoIpConfig($store);
 
         self::assertTrue($config->enabled());
-        self::assertSame(['de', 'en', 'fr-FR'], $config->locales());
-        self::assertSame('weekly', $config->updateInterval());
+        self::assertSame(['de', 'en'], $config->locales());
+        self::assertSame('test-license', $config->licenseKey());
+        self::assertTrue($config->hasLicenseKey());
+        self::assertStringContainsString('license_key=test-license', $config->downloadUrl());
+    }
+
+    public function testItResolvesSafeProjectRelativeDatabasePath(): void
+    {
+        $store = new Config($this->connection());
+        $config = new MaxMindGeoIpConfig($store);
+
+        self::assertSame('/project/var/geoip2/GeoLite2-City.mmdb', $config->databaseAbsolutePath('/project'));
+
+        $store->set(MaxMindGeoIpConfig::DATABASE_PATH_KEY, '../secret.mmdb', ConfigValueType::String);
+
+        self::assertNull((new MaxMindGeoIpConfig($store))->databaseAbsolutePath('/project'));
     }
 
     private function connection(): Connection

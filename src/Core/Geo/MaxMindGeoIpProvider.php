@@ -87,23 +87,7 @@ final class MaxMindGeoIpProvider implements GeoIpProviderInterface
 
     private function databasePath(): ?string
     {
-        $relativePath = str_replace('\\', '/', $this->config->databasePath());
-
-        if (
-            '' === trim($relativePath)
-            || str_contains($relativePath, "\0")
-            || str_starts_with($relativePath, '/')
-            || str_starts_with($relativePath, '//')
-            || str_starts_with($relativePath, '\\\\')
-            || 1 === preg_match('/^[A-Za-z]:\//', $relativePath)
-            || str_contains('/'.$relativePath.'/', '/../')
-        ) {
-            return null;
-        }
-
-        return rtrim($this->projectDir, DIRECTORY_SEPARATOR.'/\\')
-            .DIRECTORY_SEPARATOR
-            .str_replace('/', DIRECTORY_SEPARATOR, ltrim($relativePath, '/'));
+        return $this->config->databaseAbsolutePath($this->projectDir);
     }
 
     private function isPublicIp(?string $ipAddress): bool

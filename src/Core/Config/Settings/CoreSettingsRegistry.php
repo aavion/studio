@@ -83,24 +83,18 @@ final readonly class CoreSettingsRegistry
                 ConfigAuditLogPolicy::CATEGORY_SETTINGS => 'admin.settings.options.audit.settings',
                 ConfigAuditLogPolicy::CATEGORY_OTHER => 'admin.settings.options.audit.other',
             ], sortOrder: 50),
-            new CoreSettingDefinition('security', MaxMindGeoIpConfig::ENABLED_KEY, 'admin.settings.fields.geoip_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.geoip_enabled.help', sortOrder: 60),
-            new CoreSettingDefinition('security', MaxMindGeoIpConfig::SELECTED_PROVIDER_KEY, 'admin.settings.fields.geoip_provider.label', MaxMindGeoIpConfig::PROVIDER_KEY, ConfigValueType::String, FormInputType::Select, options: [
-                'none' => 'admin.settings.options.geoip.none',
-                MaxMindGeoIpConfig::PROVIDER_KEY => 'admin.settings.options.geoip.maxmind',
-            ], validation: ['required' => true], sortOrder: 70),
-            new CoreSettingDefinition('security', MaxMindGeoIpConfig::DATABASE_PATH_KEY, 'admin.settings.fields.geoip_database_path.label', MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, ConfigValueType::String, help: 'admin.settings.fields.geoip_database_path.help', validation: ['required' => true, 'max_length' => 255], sortOrder: 80),
-            new CoreSettingDefinition('security', MaxMindGeoIpConfig::LOCALES_KEY, 'admin.settings.fields.geoip_locales.label', MaxMindGeoIpConfig::DEFAULT_LOCALES, ConfigValueType::Json, FormInputType::Textarea, help: 'admin.settings.fields.geoip_locales.help', sortOrder: 90),
-            new CoreSettingDefinition('security', MaxMindGeoIpConfig::UPDATE_ENABLED_KEY, 'admin.settings.fields.geoip_update_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.geoip_update_enabled.help', sortOrder: 100),
-            new CoreSettingDefinition('security', MaxMindGeoIpConfig::UPDATE_INTERVAL_KEY, 'admin.settings.fields.geoip_update_interval.label', MaxMindGeoIpConfig::DEFAULT_UPDATE_INTERVAL, ConfigValueType::String, FormInputType::Select, options: [
-                'manual' => 'admin.settings.options.interval.manual',
-                'daily' => 'admin.settings.options.interval.daily',
-                'weekly' => 'admin.settings.options.interval.weekly',
-            ], validation: ['required' => true], sortOrder: 110),
-            new CoreSettingDefinition('security', MaxMindGeoIpConfig::ACCOUNT_ID_KEY, 'admin.settings.fields.geoip_account_id.label', '', ConfigValueType::String, help: 'admin.settings.fields.geoip_account_id.help', validation: ['max_length' => 80], metadata: ['sensitive' => true], sortOrder: 120),
-            new CoreSettingDefinition('security', MaxMindGeoIpConfig::LICENSE_KEY_KEY, 'admin.settings.fields.geoip_license_key.label', '', ConfigValueType::String, FormInputType::Password, help: 'admin.settings.fields.geoip_license_key.help', validation: ['max_length' => 180], metadata: ['sensitive' => true], sortOrder: 130),
-
             new CoreSettingDefinition('statistics', AccessStatisticsPolicy::ENABLED_KEY, 'admin.settings.fields.statistics_enabled.label', true, ConfigValueType::Boolean, sortOrder: 10),
             new CoreSettingDefinition('statistics', AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'admin.settings.fields.statistics_respect_dnt.label', true, ConfigValueType::Boolean, sortOrder: 20),
+            new CoreSettingDefinition('statistics', MaxMindGeoIpConfig::ENABLED_KEY, 'admin.settings.fields.geoip_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.geoip_enabled.help', metadata: [
+                'help_link_url' => 'https://www.maxmind.com/en/geolite2/signup',
+                'help_link_label' => 'admin.settings.fields.geoip_license_link.label',
+            ], sortOrder: 30),
+            new CoreSettingDefinition('statistics', MaxMindGeoIpConfig::DATABASE_PATH_KEY, 'admin.settings.fields.geoip_database_path.label', MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, ConfigValueType::String, help: 'admin.settings.fields.geoip_database_path.help', validation: ['required' => true, 'max_length' => 255], sortOrder: 40),
+            new CoreSettingDefinition('statistics', MaxMindGeoIpConfig::LICENSE_KEY_KEY, 'admin.settings.fields.geoip_license_key.label', '', ConfigValueType::String, FormInputType::Password, help: 'admin.settings.fields.geoip_license_key.help', validation: ['max_length' => 180], metadata: [
+                'sensitive' => true,
+                'help_link_url' => 'https://www.maxmind.com/en/geolite2/signup',
+                'help_link_label' => 'admin.settings.fields.geoip_license_link.label',
+            ], sortOrder: 50),
 
             new CoreSettingDefinition('api', ApiFeaturePolicy::ENABLED_KEY, 'admin.settings.fields.api_enabled.label', true, ConfigValueType::Boolean, help: 'admin.settings.fields.api_enabled.help', sortOrder: 10),
             new CoreSettingDefinition('api', ApiFeaturePolicy::CORS_ENABLED_KEY, 'admin.settings.fields.api_cors_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.api_cors_enabled.help', sortOrder: 20),

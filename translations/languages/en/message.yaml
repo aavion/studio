@@ -106,6 +106,17 @@ message:
     snapshot_store_failed: 'Access statistics snapshot storage failed.'
     cleanup_failed: 'Access statistics retention cleanup failed.'
     trace_id_invalid: 'Access statistics received an invalid %label%.'
+  geoip:
+    download:
+      missing_license_key: 'GeoIP2 database download needs a MaxMind license key.'
+      invalid_license_key: 'MaxMind rejected the GeoIP2 database download. Check the configured license key.'
+      server_unreachable: 'The MaxMind download server could not be reached. Try again later.'
+      failed: 'The GeoIP2 database download failed. Check the diagnostic context for the HTTP status.'
+      archive_invalid: 'The downloaded GeoIP2 archive could not be extracted.'
+      database_missing: 'The downloaded GeoIP2 archive did not contain a database file.'
+      database_invalid: 'The downloaded GeoIP2 database could not be validated.'
+      write_failed: 'The GeoIP2 database could not be written.'
+      completed: 'GeoIP2 database was updated at "%path%".'
   account_app_secret_rotation:
     manual_owner_reset_required: 'APP_SECRET rotation recovery could not deliver every owner reset link. Use the emergency recovery file when available, or run "%command%" manually for the listed owners.'
   event:

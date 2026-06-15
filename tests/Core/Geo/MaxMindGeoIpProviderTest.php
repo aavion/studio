@@ -118,7 +118,6 @@ final class MaxMindGeoIpProviderTest extends TestCase
     {
         $store = new Config($this->connection());
         $store->set(MaxMindGeoIpConfig::ENABLED_KEY, true, ConfigValueType::Boolean);
-        $store->set(MaxMindGeoIpConfig::SELECTED_PROVIDER_KEY, MaxMindGeoIpConfig::PROVIDER_KEY, ConfigValueType::String);
 
         return new MaxMindGeoIpConfig($store);
     }

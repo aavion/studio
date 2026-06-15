@@ -385,7 +385,17 @@ services:
     App\Core\Geo\MaxMindGeoIpDatabaseReaderFactoryInterface:
         alias: App\Core\Geo\GeoIp2MaxMindDatabaseReaderFactory
 
+    App\Core\Geo\MaxMindGeoIpDownloadClientInterface:
+        alias: App\Core\Geo\HttpMaxMindGeoIpDownloadClient
+
+    App\Core\Geo\MaxMindGeoIpArchiveExtractorInterface:
+        alias: App\Core\Geo\MaxMindGeoIpArchiveExtractor
+
     App\Core\Geo\MaxMindGeoIpProvider:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Core\Geo\MaxMindGeoIpDatabaseUpdater:
         arguments:
             $projectDir: '%kernel.project_dir%'
 

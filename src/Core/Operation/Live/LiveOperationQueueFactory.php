@@ -20,6 +20,7 @@ final readonly class LiveOperationQueueFactory
     public const PACKAGE_INSTALL_APPLY = 'package.install.apply';
     public const ACL_GROUP_APPLY = 'acl.group.apply';
     public const SETUP_APPLY = 'setup.apply';
+    public const GEOIP_DATABASE_UPDATE = 'geoip.database_update';
 
     /**
      * @param iterable<LiveOperationQueueProviderInterface> $providers

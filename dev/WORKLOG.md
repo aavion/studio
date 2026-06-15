@@ -80,7 +80,8 @@
 - Started the GeoIP observability branch by compacting the completed `feat-security-policy-docs` notes into `dev/WORKLOG_HISTORY.md`.
 - Added a narrow provider-neutral GeoIP resolver foundation so access logs and access statistics keep using normalized `n/a` fallback fields until a real provider returns data.
 - Verified the foundation with focused GeoIP/access-log/statistics PHPUnit coverage, PHP syntax checks, container linting, focused linting for changed files, and Git whitespace checks.
-- Added the MaxMind GeoIP2 provider slice on top of the foundation: local `.mmdb` lookups via the installed `geoip2/geoip2` dependency, safe provider status, project-relative database path config, provider/update settings, sensitive credential preservation/redaction, password-form support for secret fields, and hermetic fake-reader tests without real MaxMind credentials or network access.
+- Added the MaxMind GeoIP2 provider slice on top of the foundation: local `.mmdb` lookups via the installed `geoip2/geoip2` dependency, safe provider status, project-relative database path config, sensitive credential preservation/redaction, password-form support for secret fields, and hermetic fake-reader tests without real MaxMind credentials or network access.
+- Added the narrow GeoIP2 update foundation: moved the intentionally small GeoIP settings surface to Statistics, changed the default database path to `var/geoip2/GeoLite2-City.mmdb`, derived MaxMind lookup locales from the site default language with `en` fallback, exposed a MaxMind signup help link, added an Admin Operations-backed database download action with non-JS POST fallback, added a daily scheduler callable, and added hermetic updater/scheduler tests that do not use real MaxMind credentials or network access.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

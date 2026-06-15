@@ -24,6 +24,7 @@ final readonly class BackendActions
     public const PACKAGE_DISCOVERY = 'package_discovery';
     public const ASSET_REBUILD = 'asset_rebuild';
     public const CACHE_CLEAR = 'cache_clear';
+    public const GEOIP_DATABASE_UPDATE = 'geoip_database_update';
 
     public function __construct(
         private KernelInterface $kernel,
@@ -61,6 +62,12 @@ final readonly class BackendActions
                 'variant' => 'secondary',
                 'live' => true,
             ],
+            self::GEOIP_DATABASE_UPDATE => [
+                'id' => self::GEOIP_DATABASE_UPDATE,
+                'label_key' => 'admin.actions.geoip_database_update.label',
+                'variant' => 'secondary',
+                'live' => true,
+            ],
         ];
 
         if ([] === $ids) {
@@ -81,6 +88,7 @@ final readonly class BackendActions
             self::PACKAGE_DISCOVERY => ($this->packageDiscoveryRunner)('admin_ui'),
             self::ASSET_REBUILD => $this->assetRebuildDispatcher->dispatch($this->kernel->getEnvironment(), 'admin_ui'),
             self::CACHE_CLEAR => $this->clearCache(),
+            self::GEOIP_DATABASE_UPDATE => $this->startLive($action),
             default => WorkflowResult::invalid([
                 Message::warning(
                     BackendMessageCode::BACKEND_ACTION_UNKNOWN,
@@ -112,6 +120,11 @@ final readonly class BackendActions
                 LiveOperationQueueFactory::BACKEND_CACHE_CLEAR,
                 ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
                 'Cache clear',
+            ),
+            self::GEOIP_DATABASE_UPDATE => $this->liveOperationStarter->start(
+                LiveOperationQueueFactory::GEOIP_DATABASE_UPDATE,
+                ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
+                'GeoIP2 database update',
             ),
             default => WorkflowResult::invalid([
                 Message::warning(

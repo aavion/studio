@@ -106,6 +106,17 @@ message:
     snapshot_store_failed: 'Speicherung des Zugriffsstatistik-Snapshots ist fehlgeschlagen.'
     cleanup_failed: 'Aufbewahrungs-Cleanup der Zugriffsstatistiken ist fehlgeschlagen.'
     trace_id_invalid: 'Zugriffsstatistiken haben eine ungültige %label% erhalten.'
+  geoip:
+    download:
+      missing_license_key: 'Der GeoIP2-Datenbankdownload benötigt einen MaxMind-License-Key.'
+      invalid_license_key: 'MaxMind hat den GeoIP2-Datenbankdownload abgelehnt. Prüfe den konfigurierten License-Key.'
+      server_unreachable: 'Der MaxMind-Downloadserver konnte nicht erreicht werden. Versuche es später erneut.'
+      failed: 'Der GeoIP2-Datenbankdownload ist fehlgeschlagen. Prüfe den Diagnosekontext für den HTTP-Status.'
+      archive_invalid: 'Das heruntergeladene GeoIP2-Archiv konnte nicht entpackt werden.'
+      database_missing: 'Das heruntergeladene GeoIP2-Archiv enthielt keine Datenbankdatei.'
+      database_invalid: 'Die heruntergeladene GeoIP2-Datenbank konnte nicht validiert werden.'
+      write_failed: 'Die GeoIP2-Datenbank konnte nicht geschrieben werden.'
+      completed: 'GeoIP2-Datenbank wurde unter "%path%" aktualisiert.'
   account_app_secret_rotation:
     manual_owner_reset_required: 'APP_SECRET-Rotation-Recovery konnte nicht alle Owner-Reset-Links zustellen. Nutze die Emergency-Recovery-Datei, sofern vorhanden, oder führe "%command%" für die gelisteten Owner manuell aus.'
   event:

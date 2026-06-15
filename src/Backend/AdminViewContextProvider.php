@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Backend;
 
 use App\Core\Diagnostics\SystemInfoProvider;
+use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\LogFileBrowser;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Statistics\AccessStatisticsSnapshotProvider;
@@ -17,6 +18,7 @@ final readonly class AdminViewContextProvider
         private LogFileBrowser $logFileBrowser,
         private AccessStatisticsSnapshotProvider $accessStatisticsSnapshotProvider,
         private SystemInfoProvider $systemInfoProvider,
+        private MaxMindGeoIpConfig $maxMindGeoIpConfig,
     ) {
     }
 
@@ -40,6 +42,11 @@ final readonly class AdminViewContextProvider
             ],
             'backend-admin-settings-system-info' => [
                 'system_info' => $this->systemInfoProvider->report($request->server->all()),
+            ],
+            'backend-admin-settings-statistics' => [
+                'geoip_settings' => [
+                    'has_license_key' => $this->maxMindGeoIpConfig->hasLicenseKey(),
+                ],
             ],
             default => [],
         };

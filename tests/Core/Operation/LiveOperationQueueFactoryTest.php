@@ -54,6 +54,10 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
             'package' => 'demo-module',
             'trigger' => 'admin_ui',
         ]);
+        $geoIpUpdate = $factory->create(LiveOperationQueueFactory::GEOIP_DATABASE_UPDATE, [
+            'environment' => 'test',
+            'trigger' => 'admin_ui',
+        ]);
 
         self::assertTrue($backendCacheClear->isSuccess());
         self::assertSame('backend cache clear', $backendCacheClear->value()?->name());
@@ -71,6 +75,9 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
         self::assertSame('package install verification', $packageInstallVerify->value()?->name());
         self::assertTrue($packageInstallApply->isSuccess());
         self::assertSame('demo-module', $packageInstallApply->value()?->context()['package']);
+        self::assertTrue($geoIpUpdate->isSuccess());
+        self::assertSame('geoip database update', $geoIpUpdate->value()?->name());
+        self::assertSame('admin_ui', $geoIpUpdate->value()?->context()['trigger']);
     }
 
     public function testItRejectsUnknownOperationsAndInvalidPayloads(): void

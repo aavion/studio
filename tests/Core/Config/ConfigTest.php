@@ -127,10 +127,10 @@ final class ConfigTest extends TestCase
         $connection = $this->connection();
         $config = new Config($connection);
 
-        self::assertTrue($config->set('security.geoip.maxmind.license_key', 'secret-value', ConfigValueType::String, sensitive: true, modifiedBy: 'test'));
+        self::assertTrue($config->set('statistics.geoip.maxmind.license_key', 'secret-value', ConfigValueType::String, sensitive: true, modifiedBy: 'test'));
 
         $row = $connection->fetchAssociative('SELECT value, value_type, sensitive, modified_by FROM config_entry WHERE config_key = ?', [
-            'security.geoip.maxmind.license_key',
+            'statistics.geoip.maxmind.license_key',
         ]);
 
         self::assertIsArray($row);

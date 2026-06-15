@@ -41,6 +41,8 @@ admin:
       label: 'Assets neu bauen'
     cache_clear:
       label: 'Cache leeren'
+    geoip_database_update:
+      label: 'GeoIP2-Datenbank laden'
   dashboard:
     title: 'Admin-Dashboard'
     foundation_title: 'Backend-Fundament'
@@ -484,6 +486,9 @@ admin:
       mercure_health:
         label: 'Mercure-Health'
         description: 'Prüft den Mercure-Hub und startet den lokalen Hub, sofern unterstützt.'
+      geoip2_database_update:
+        label: 'GeoIP2-Datenbankupdate'
+        description: 'Lädt die lokale MaxMind GeoIP2-City-Datenbank herunter und ersetzt sie atomar, wenn ein License-Key konfiguriert ist.'
     table:
       job: 'Job'
       source: 'Quelle'
@@ -700,7 +705,7 @@ admin:
     statistics:
       title: 'Statistik-Einstellungen'
       foundation_title: 'Statistik-Konfiguration'
-      foundation_text: 'Aufzeichnung und Anzeige von Zugriffsstatistiken können unabhängig vom Raw-Access-Logging deaktiviert werden. Raw-Access-Logs bleiben für operative Sicherheit verfügbar und werden 30 Tage aufbewahrt.'
+      foundation_text: 'Aufzeichnung, Anzeige und GeoIP-Anreicherung von Zugriffsstatistiken können unabhängig vom Raw-Access-Logging deaktiviert werden. Raw-Access-Logs bleiben für operative Sicherheit verfügbar und werden 30 Tage aufbewahrt.'
     api:
       title: 'API-Einstellungen'
       foundation_title: 'API-Verfügbarkeit'
@@ -793,25 +798,14 @@ admin:
       geoip_enabled:
         label: 'GeoIP-Lookups aktivieren'
         help: 'Wenn deaktiviert oder nicht verfügbar, behalten Logs und Statistiken normalisierte n/a-Ortswerte.'
-      geoip_provider:
-        label: 'GeoIP-Provider'
+      geoip_license_link:
+        label: 'Kostenlosen GeoLite2-License-Key bei MaxMind erhalten'
       geoip_database_path:
         label: 'MaxMind-Datenbankpfad'
-        help: 'Projektrelativer Pfad zur lokalen .mmdb-Datenbank. Request-Lookups laden Datenbanken niemals automatisch herunter.'
-      geoip_locales:
-        label: 'GeoIP-Locales'
-        help: 'JSON-Array von Locale-Codes, sortiert von bevorzugt bis Fallback, zum Beispiel ["en", "de"].'
-      geoip_update_enabled:
-        label: 'GeoIP-Datenbankupdates aktivieren'
-        help: 'Für den Scheduler-Update-Task reserviert. Lookups verwenden nur eine vorhandene lokale Datenbank.'
-      geoip_update_interval:
-        label: 'GeoIP-Update-Intervall'
-      geoip_account_id:
-        label: 'MaxMind-Account-ID'
-        help: 'Wird als sensitive Konfiguration gespeichert und nur vom zukünftigen Update-Task verwendet.'
+        help: 'Projektrelativer Pfad zur lokalen .mmdb-Datenbank. Downloads werden atomar in diesen Pfad geschrieben.'
       geoip_license_key:
         label: 'MaxMind-License-Key'
-        help: 'Wird als sensitive Konfiguration gespeichert und niemals für PHPUnit-Tests benötigt.'
+        help: 'Wird als sensitive Konfiguration gespeichert. Ein gespeicherter Key aktiviert die GeoIP2-Download-Aktion auf dieser Seite.'
       statistics_enabled:
         label: 'Zugriffsstatistiken aktivieren'
       statistics_respect_dnt:
@@ -848,9 +842,6 @@ admin:
         setup_warnings: 'Setup-Warnungen'
       captcha:
         none: 'Kein Captcha-Provider'
-      geoip:
-        none: 'Kein GeoIP-Provider'
-        maxmind: 'MaxMind GeoIP2'
       audit:
         authentication: 'Authentifizierungsereignisse'
         backend_actions: 'Backend-Wartungsaktionen'
