@@ -51,6 +51,7 @@ final class TwigComponentNamespaceTest extends KernelTestCase
             self::assertStringContainsString('ui-alert-stream', $stream);
             self::assertStringContainsString('data-ui-alert-stream-url-value', $stream);
             self::assertStringContainsString('data-ui-alert-stream-catch-up-url-value', $stream);
+            self::assertStringContainsString('data-ui-alert-stream-fallback-url-value', $stream);
             self::assertStringNotContainsString('ui-alert-poll', $stream);
             self::assertStringNotContainsString('data-ui-alert-poll-url-value', $stream);
         } finally {

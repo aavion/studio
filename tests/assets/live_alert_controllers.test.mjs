@@ -368,9 +368,121 @@ test('UI alert stream schedules reconnect when the stream closes', () => {
     controller.credentialsValue = false;
 
     controller.connect();
+    sources[0].listeners.get('open')();
     sources[0].readyState = FakeEventSource.CLOSED;
     sources[0].listeners.get('error')();
 
     assert.equal(scheduledDelay, UiAlertStreamController.reconnectBaseDelay);
     assert.equal(sources.length, 2);
+});
+
+test('UI alert stream falls back to polling when EventSource is unavailable', async () => {
+    const { window } = installDom();
+    window.EventSource = undefined;
+    globalThis.EventSource = undefined;
+
+    const fetches = [];
+    window.fetch = async (url, options) => {
+        fetches.push({ url, options });
+
+        return {
+            ok: true,
+            headers: { get: () => 'application/json' },
+            async json() {
+                return {
+                    cursor: 12,
+                    next_poll_ms: 0,
+                    alerts: [{ id: 'fallback', message: 'Fallback delivery' }],
+                };
+            },
+        };
+    };
+
+    const controller = new UiAlertStreamController();
+    const element = new FakeElement();
+    const received = [];
+    element.addEventListener('ui-alert:received', (event) => received.push(event.detail));
+    controller.element = element;
+    controller.hasUrlValue = true;
+    controller.urlValue = 'http://127.0.0.1:3000/.well-known/mercure?topic=alerts';
+    controller.hasFallbackUrlValue = true;
+    controller.fallbackUrlValue = '/api/live/alerts';
+    controller.fallbackIntervalValue = 15000;
+    controller.catchUpCursorValue = 5;
+
+    controller.connect();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal(fetches.length, 1);
+    assert.equal(fetches[0].url, 'http://127.0.0.1:8000/api/live/alerts?cursor=5');
+    assert.equal(controller.catchUpCursorValue, 12);
+    assert.deepEqual(received, [{ id: 'fallback', message: 'Fallback delivery' }]);
+});
+
+test('UI alert stream falls back to polling when the first stream open fails', async () => {
+    const { window } = installDom();
+
+    const fetches = [];
+    window.fetch = async (url) => {
+        fetches.push(url);
+
+        return {
+            ok: true,
+            headers: { get: () => 'application/json' },
+            async json() {
+                return {
+                    cursor: 9,
+                    next_poll_ms: 0,
+                    alerts: [{ id: 'early-fallback', message: 'Early fallback' }],
+                };
+            },
+        };
+    };
+
+    const sources = [];
+    class FakeEventSource {
+        static CLOSED = 2;
+
+        constructor() {
+            this.listeners = new Map();
+            this.readyState = 0;
+            this.closed = false;
+            sources.push(this);
+        }
+
+        addEventListener(type, listener) {
+            this.listeners.set(type, listener);
+        }
+
+        removeEventListener(type) {
+            this.listeners.delete(type);
+        }
+
+        close() {
+            this.closed = true;
+        }
+    }
+    window.EventSource = FakeEventSource;
+    globalThis.EventSource = FakeEventSource;
+
+    const controller = new UiAlertStreamController();
+    const element = new FakeElement();
+    const received = [];
+    element.addEventListener('ui-alert:received', (event) => received.push(event.detail));
+    controller.element = element;
+    controller.hasUrlValue = true;
+    controller.urlValue = 'http://127.0.0.1:3000/.well-known/mercure?topic=alerts';
+    controller.hasFallbackUrlValue = true;
+    controller.fallbackUrlValue = '/api/live/alerts';
+    controller.catchUpCursorValue = 4;
+
+    controller.connect();
+    sources[0].readyState = FakeEventSource.CLOSED;
+    sources[0].listeners.get('error')();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal(sources.length, 1);
+    assert.equal(sources[0].closed, true);
+    assert.deepEqual(fetches, ['http://127.0.0.1:8000/api/live/alerts?cursor=4']);
+    assert.deepEqual(received, [{ id: 'early-fallback', message: 'Early fallback' }]);
 });

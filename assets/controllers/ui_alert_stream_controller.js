@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { LivePoller } from '../js/live/live_poll.js';
 
 export default class extends Controller {
     static reconnectBaseDelay = 1000;
@@ -9,17 +10,27 @@ export default class extends Controller {
         catchUpUrl: String,
         catchUpCursor: { type: Number, default: 0 },
         credentials: { type: Boolean, default: false },
+        fallbackUrl: String,
+        fallbackInterval: { type: Number, default: 15000 },
     };
 
     connect() {
-        if (!this.hasUrlValue || !this.urlValue || typeof window.EventSource !== 'function') {
+        if (!this.hasUrlValue || !this.urlValue) {
             return;
         }
 
         this.reconnectAttempts = 0;
         this.shouldReconnect = true;
+        this.streamOpened = false;
         document.addEventListener('visibilitychange', this.reconnectWhenActive);
         window.addEventListener('online', this.reconnectWhenActive);
+
+        if (typeof window.EventSource !== 'function') {
+            this.startFallbackPolling();
+
+            return;
+        }
+
         this.openSource();
     }
 
@@ -28,6 +39,7 @@ export default class extends Controller {
         window.clearTimeout(this.reconnectTimer);
         document.removeEventListener('visibilitychange', this.reconnectWhenActive);
         window.removeEventListener('online', this.reconnectWhenActive);
+        this.fallbackPoller?.stop();
         this.closeSource();
     }
 
@@ -45,12 +57,19 @@ export default class extends Controller {
 
     open = () => {
         this.reconnectAttempts = 0;
+        this.streamOpened = true;
         this.catchUp();
     };
 
     error = () => {
         if (this.source?.readyState === EventSource.CLOSED) {
             this.closeSource();
+            if (!this.streamOpened) {
+                this.startFallbackPolling();
+
+                return;
+            }
+
             this.scheduleReconnect();
         }
     };
@@ -97,18 +116,51 @@ export default class extends Controller {
             const payload = await response.json();
             const cursor = Number(payload.cursor);
             if (Number.isFinite(cursor)) {
-                this.catchUpCursorValue = Math.max(0, this.catchUpCursorValue || 0, cursor);
+                this.updateCursor(cursor);
             }
 
             for (const alert of Array.isArray(payload.alerts) ? payload.alerts : []) {
-                this.element.dispatchEvent(new CustomEvent('ui-alert:received', {
-                    bubbles: true,
-                    detail: alert,
-                }));
+                this.dispatchAlert(alert);
             }
         } catch {
             // Stream delivery remains active; the next open/reconnect can catch up again.
         }
+    }
+
+    startFallbackPolling() {
+        this.shouldReconnect = false;
+        if (!this.hasFallbackUrlValue || !this.fallbackUrlValue || this.fallbackPoller) {
+            return;
+        }
+
+        this.closeSource();
+        this.fallbackPoller = new LivePoller({
+            interval: this.fallbackIntervalValue,
+            onPayload: (payload, cursor) => this.fallbackPayload(payload, cursor),
+            retryOnError: true,
+        });
+        this.fallbackPoller.poll(this.fallbackUrlValue, this.catchUpCursorValue);
+    }
+
+    fallbackPayload(payload, cursor) {
+        this.updateCursor(cursor);
+
+        for (const alert of Array.isArray(payload.alerts) ? payload.alerts : []) {
+            this.dispatchAlert(alert);
+        }
+    }
+
+    updateCursor(cursor) {
+        if (Number.isFinite(Number(cursor))) {
+            this.catchUpCursorValue = Math.max(0, this.catchUpCursorValue || 0, Number(cursor));
+        }
+    }
+
+    dispatchAlert(alert) {
+        this.element.dispatchEvent(new CustomEvent('ui-alert:received', {
+            bubbles: true,
+            detail: alert,
+        }));
     }
 
     scheduleReconnect(delay = null) {

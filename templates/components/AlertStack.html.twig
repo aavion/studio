@@ -16,6 +16,8 @@
         'data-controller': stack_attributes['data-controller'] ~ ' ui-alert-stream',
         'data-ui-alert-stream-url-value': stream_url,
         'data-ui-alert-stream-catch-up-url-value': stream_topics is not empty ? path('api_live_alerts') : null,
+        'data-ui-alert-stream-fallback-url-value': stream_topics is not empty ? path('api_live_alerts') : null,
+        'data-ui-alert-stream-fallback-interval-value': 15000,
     }) %}
 {% endif %}
 {% if poll_url %}
