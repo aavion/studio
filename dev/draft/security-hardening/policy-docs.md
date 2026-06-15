@@ -34,6 +34,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - No runtime interfaces, routes, entities, configuration, services, commands, migrations, or translations are added in this branch.
 - Documentation establishes fixed defaults for later branches: database-backed passive-signal and auto-ban TTL records, anonymous-first enforcement, lower-confidence prefetch signals, scoped `reset()` before partial refunds, ordinary rate-limit exclusion for `/api/live/**`, IconCaptcha challenge cache/TTL behavior, account-mail transport guard expectations, minimal remember-me token management UI, and privacy-first IP retention ceilings.
 - `policy-defaults.md` is the first implementation source for thresholds and TTLs until an owning branch updates it with tested evidence.
+- The planning baseline also records adjacent coverage for setup/install, CORS preflight, high-impact admin operations, Admin-vs-Owner authority, uploads/archives, exports/downloads, diagnostic bundles, trusted-proxy identity, browser storage, and deferred HTTP security-header policy.
 
 ## Edge cases
 

@@ -51,6 +51,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Ban decisions follow the Security policy enforcement order so Admin/Owner context and recovery-login rendering are resolved before visitor/IP bans can deny access.
 - Active temporary ban responses default to generic `403` with `Retry-After` when expiry is known, request-family-specific HTML/JSON bodies, redacted diagnostics, and `no-store`.
 - Auto-ban enablement, TTLs, and escalation windows should use named bounded policy descriptors. Disabling auto-ban must not disable passive signal recording, audit, manual review, or recovery protections.
+- Invalid CORS/API probing, repeated failed setup apply attempts, upload/archive abuse, and repeated diagnostic/export probing may feed auto-ban decisions for anonymous or API subjects when the underlying signals are high confidence.
 
 ## Edge cases
 
@@ -60,6 +61,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - A recovery login route, for example `/user/login?bypass=1`, must render the normal login form even when the current Visitor ID or IP bucket is banned, then re-evaluate the ban after successful credential login under authenticated policies.
 - Owner accounts must not be locked out by IP/visitor bans without an alternate documented recovery path.
 - Shared IPs can be blocked only for clear anonymous abuse and should not permanently deny authenticated users.
+- Setup/install abuse happens before Owner identity may exist. Auto-ban must avoid turning setup into an unrecoverable installer lockout; allow documented manual/CLI recovery where no authenticated recovery path exists yet.
 - Invalid API keys may be banned by key fingerprint/prefix where safe, but raw submitted keys are never stored.
 - IP-derived bans must expire and be cleaned up before the 30-day IP retention limit; expired IP bans must not remain searchable as historical Admin records with recoverable IP material.
 - Manual unban must take effect immediately even if passive signals that created the ban still exist.

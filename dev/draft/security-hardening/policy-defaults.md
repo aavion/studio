@@ -27,6 +27,7 @@ The defaults are not an Admin UI requirement. Admin-configurable policy can be a
 - Visitor-ID-backed policy is preferred for continuity. IP-backed policy is a short-lived secondary layer to reduce cookie-reset bypasses and shared-host abuse.
 - Raw credentials, raw API keys, raw visitor-cookie tokens, session IDs, full user agents, and captcha answer material must not be stored in policy records.
 - GeoIP values are operational metadata. They may support diagnostics and aggregate statistics, but they do not create allow/deny decisions in this policy slice.
+- Browser storage may hold only transient UI state, such as operation overlay resume data. It must not hold raw credentials, API keys, captcha answers, remember-me token material, CSRF secrets beyond Symfony's intended browser-side double-submit flow, or live-operation polling tokens longer than the underlying operation TTL.
 
 ## Retention Defaults
 
@@ -56,6 +57,21 @@ Runtime enforcement must use one deterministic order so the same request is not 
 11. Record audit events and passive signals with redacted context regardless of whether the request was allowed or blocked.
 
 Owner/Admin protection does not bypass authentication validity, account status, role checks, ACL decisions, CSRF validation, API-key revocation, or explicit workflow authorization. Exempted requests should still record diagnostics so unusual administrative traffic remains reviewable.
+
+## Admin And Owner Authority
+
+`Admin` is a delegated operations role. `Owner` is the site-control role. Admins may enter the Admin area, but high-impact actions need an explicit action policy instead of inheriting blanket mutation rights from the `/admin` route prefix.
+
+Default authority policy:
+
+- Admins may view normal Admin dashboards, package/theme overviews, scheduler status, redacted log/audit/security diagnostics, non-secret settings, user review queues, and operational summaries.
+- Admins may mutate non-owner user accounts, ACL groups below their own role level, registration approvals, password-reset link creation, bounded non-secret settings, cache/asset rebuilds, and clearly non-destructive scheduler run-now actions when the owning workflow allows it.
+- Owners are required for Owner/Admin account promotion or demotion, peer Admin changes, last-Owner-sensitive actions, protected secret configuration, security policy bounds, public API/CORS expansion, scheduler web-trigger/GET-token enablement, package install/activate/purge/update, backup restore, backup/download/export of full system data, self-update/release actions, destructive package/data purge, and emergency operational controls that can affect global runtime state.
+- Admins may perform manual unban or abuse review for ordinary anonymous/user subjects, but Owner/Admin subject relief, disabling auto-ban, weakening recovery protections, or changing privacy ceilings remains Owner-only.
+- Protected values remain write-only or status-only even for Owners unless a workflow explicitly implements a reveal flow with re-authentication, audit, and redaction rules.
+- Permission-aware navigation is not the security boundary. Controllers, API handlers, live-operation starters, scheduler triggers, and service-layer workflows must all call the same action policy before mutating or revealing high-impact data.
+
+The first implementation should introduce a route/action authority matrix or policy service for existing Admin surfaces instead of relying on ad hoc controller checks. Existing user-management guardrails remain the model for peer-role and last-Owner protection, but they are not sufficient for package, scheduler, backup, settings, diagnostics, and update workflows.
 
 ## Rate-Limit Defaults
 
@@ -107,6 +123,18 @@ Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner 
 - Browser responses use the shared HTML error/recovery renderer. Versioned API, scheduler, and JSON-request responses use the stable JSON error shape for their request family.
 - Security block, recovery, captcha, login, and bypass responses are `no-store` by default.
 - `/api/live/**` should return cheap JSON, token/access checks where needed, `no-store`, and passive signals; it should not enter ordinary website/API `429` rendering.
+
+## Additional Security Surface Coverage
+
+The codebase and other feature drafts expose several security-relevant surfaces beyond login, captcha, API, scheduler, and probes. The first Security branches should cover them through classification, cost catalogues, diagnostics, or explicit deferred follow-ups rather than inventing separate local policies later.
+
+- Setup/install mode is its own request family. Before setup completion, final setup apply attempts should receive a workflow bucket and passive signals because no Owner session exists yet. After setup completion, setup routes must not become public alternative admin entry points. Setup ActionLog/live-operation payloads must stay tokenized, `no-store`, and redacted.
+- CORS preflight and API metadata requests are API-family traffic, not write attempts. Successful allowed `OPTIONS` preflights should be cheap and must not spend mutating API budget; invalid origin/method/header combinations may record passive signals. Invalid Bearer credentials remain authentication failures and must never fall back to anonymous public reads.
+- High-impact authenticated/admin workflows need explicit intents and authority decisions even when Owner requests are exempt from ordinary rate-limit rejection: settings mutations, user/ACL changes, package install/activate/purge, backup restore, import apply, export/download, cache or asset rebuild, self-update, scheduler run-now, and diagnostic/support-bundle generation.
+- Upload and archive handling, including media, package ZIPs, import bundles, backups, and restore artifacts, should not be treated as suspicious probe traffic by path alone. Failed extension, MIME, size, path traversal, nested archive, and manifest-validation checks should feed passive signals with redacted context.
+- Log views, diagnostic downloads, exports, backups, and support bundles must be permission-aware, `no-store`, redacted, and retention-aware. They must not expose raw IP data beyond the 30-day ceiling or raw tokens/secrets through downloadable output.
+- Trusted-proxy configuration is part of the security boundary. Client identity, GeoIP, IP-bucket policy, access logs, API diagnostics, and auto-ban decisions must use one trusted client-identity resolver and must not parse raw forwarding headers directly.
+- HTTP security headers are an adjacent production-hardening follow-up. Before production readiness, define and test the response policy for CSP, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sensitive-route `no-store`, and any route-specific exceptions needed by the editor, package assets, or external integrations.
 
 ## Auto-Ban Defaults
 
@@ -178,6 +206,9 @@ These are first soft decisions for which values should stay fixed, become protec
 | Auto-ban enabled flag | Code default `on` | Yes, bounded | Disabling requires diagnostics; cannot disable Owner recovery, audit, or passive signal recording by accident |
 | Auto-ban TTLs and escalation windows | Code/config defaults | Yes, bounded | No permanent bans; IP-ban TTL stays below the documented max and IP retention ceiling |
 | Rate-limit thresholds and windows | Named code/config defaults | Yes, bounded | Lower values that affect login, scheduler, captcha, or recovery require false-positive/recovery tests; higher public-entry values require policy review |
+| Setup apply/finalization bucket | Named code/config default | Yes, bounded | Must avoid installer lockout; stricter values need documented CLI/manual recovery |
+| High-impact admin action costs | Action-cost catalogue constants | Possibly later | Authorization, confirmation, audit, and redaction stay mandatory; Owner ordinary-rate exemption does not bypass workflow safety |
+| Admin/Owner action authority matrix | Code-level policy and tests | Possibly later | Navigation is not enforcement; Owner-only actions require service/API/live-operation checks |
 | Authenticated-user multiplier | Code/config default | Yes, bounded | Applies only to ordinary navigation/public-read usage, not explicit workflow buckets |
 | Owner ordinary-rate-limit exemption | Code-level policy and tests | No ordinary Admin setting | Does not bypass authentication, authorization, API-key revocation, CSRF, audit, or diagnostics |
 | Recovery-login bypass path and bucket | Code/config default | Path and thresholds may be bounded later | Must keep an equivalent Owner/Admin recovery path; bypass never skips credential, CSRF, audit, or failure accounting |
@@ -188,6 +219,8 @@ These are first soft decisions for which values should stay fixed, become protec
 | Remember-me trust window | Code/config default | Possibly later | Default seven days; longer windows require explicit token-rotation, revocation, visitor-binding, and privacy review |
 | Scheduler trigger thresholds | Named code/config defaults | Yes, bounded | Must support minutely external cron; task due-state and locks remain authoritative |
 | Mailer transport and debug log delivery | Environment/protected config | Yes, protected | Production must not depend on message-log action URLs; debug log delivery remains debug-gated |
+| HTTP security-header policy | Code/config defaults | Possibly later | Defaults must be production-safe; route exceptions need tests and documentation |
+| Trusted proxy/client identity | Symfony/deployment config plus resolver tests | Yes, deployment-level only | Raw forwarding headers are never trusted outside configured proxies |
 
 Config descriptors should include the setting key, unit, default, minimum, maximum, disabled behavior, source priority, audit behavior, and safe diagnostics shape. Invalid security configuration should fail early in development/test and degrade to the safest documented behavior in production only when that degradation cannot lock out Owners or hide a security failure.
 

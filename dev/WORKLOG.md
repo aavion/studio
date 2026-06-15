@@ -69,6 +69,7 @@
 - [ ] Audit follow-up: design copied-session plus copied-visitor-cookie risk scoring in the Security branch; current hard session binding intentionally covers visitor changes, not complete cookie-pair duplication.
 - [ ] Audit follow-up: implement remember-me with Symfony-style persistent server-side tokens, visitor binding, explicit revocation, token rotation, and audit signals in the Security branch.
 - [ ] Audit follow-up: replace the debug account-link mail/message-log delivery stub with the real Mailer delivery contract and a dedicated Mail Message/API catalogue.
+- [ ] Security follow-up: define and test production HTTP security-header policy, including CSP, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sensitive-route `no-store`, and documented route exceptions.
 - [ ] Audit follow-up: decide whether optional branding packages need capabilities beyond `system-template`; package CSS class namespace validation is now enforced for package-owned selectors.
 - [ ] Evaluate whether the documented minimum memory requirement should become 256M after PHPUnit 13.2/full-suite runs needed a higher CLI memory limit; do not fix this requirement until setup/init/lint/runtime memory behavior has been reviewed across target hosting platforms.
 
@@ -86,6 +87,8 @@
 - Clarified captcha auto-success policy: provider `none`, missing providers, and disabled providers keep workflows graceful but never reset/refill rate-limit buckets, clear bans, or satisfy captcha-based `429` recovery.
 - Added cross-cutting Security policy decisions for deterministic enforcement order, block-response semantics, probe-pattern validation, configuration bounds, and auditable Owner/Admin exemptions.
 - Added a first configuration-surface matrix that separates fixed policy, code/config defaults, protected secrets, bounded Admin settings, and later-tunable thresholds for follow-up Security branches.
+- Scanned feature drafts and code surfaces for remaining Security planning gaps; added coverage notes for setup/install, CORS preflight, high-impact admin operations, uploads/archives, exports/downloads, diagnostic bundles, trusted proxy identity, browser storage, and deferred HTTP security-header policy.
+- Added Admin-vs-Owner authority policy so non-user-management Admin features can distinguish delegated Admin visibility/mutation from Owner-only site-control actions.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

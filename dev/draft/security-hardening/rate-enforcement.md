@@ -27,7 +27,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 ## Implementation sequence
 
-1. Configure named Symfony limiters for implemented workflows: login, registration, password reset, website global, API read, API write, scheduler trigger, suspicious probes, and any already-present contact/import/captcha-failure flows.
+1. Configure named Symfony limiters for implemented workflows: login, registration, password reset, website global, API read, API write, scheduler trigger, suspicious probes, setup apply, and any already-present contact/import/captcha-failure/high-impact admin flows.
 2. Add a rate decision service that maps classified intents and subjects to one or more limiter consumes.
 3. Use costed `consume(n)` calls based on the action-cost catalogue.
 4. Add scoped `reset()` calls after successful password login and verified provider-backed captcha validation where the workflow explicitly allows it.
@@ -52,13 +52,18 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Enforcement follows the Security policy order so workflow buckets, global buckets, suspicious buckets, active bans, recovery-login rendering, and Owner/Admin protections interact predictably.
 - Rate-limit responses use the documented response semantics: `429`, `Retry-After` when available, family-specific HTML/JSON bodies, redacted diagnostics, and `no-store`.
 - Threshold/window configuration should be represented through named policy descriptors with units, defaults, min/max bounds, disabled behavior, and diagnostics labels, even if the first implementation keeps those descriptors as code constants.
+- Valid CORS preflights should be cheap and must not spend mutating API budget; invalid preflight probing may spend suspicious/API metadata budget and record passive signals.
+- High-impact authenticated/admin operations should use explicit action costs or workflow buckets where the current codebase exposes them. Owner ordinary-rate-limit exemption does not remove workflow confirmation, Admin/Owner action authorization, audit, or redaction requirements.
+- Setup finalization/apply attempts need a dedicated workflow bucket because this surface exists before normal Owner/Admin session protections are available.
 
 ## Edge cases
 
 - Multiple buckets may be consumed for one request; rejection should report the most user-relevant failed policy without leaking all internal counters.
 - Failed login consumes login and global website budget; successful login resets only the login-attempt bucket for that subject.
 - Read-only API keys hitting write routes should still follow API write policy before or alongside authorization failure as decided by the handler order.
+- CORS preflight storms should not block legitimate configured browser clients through the write limiter, but invalid origin/header/method scans should remain visible to abuse diagnostics.
 - `/api/live/**` operation polling must continue to function during long admin operations.
+- Export/download/log/support-bundle endpoints must use `no-store`, redaction, and permission checks even when the rate limiter allows them.
 - Concurrent failures and immediate success/reset sequences must not accidentally reset unrelated global buckets or hide suspicious mixed-action behavior.
 - HTML `429` pages may render a captcha recovery step only when an active provider can render and validate a real challenge. Without that provider, use ordinary retry-after behavior.
 
@@ -68,6 +73,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test global burst and sustained website budgets catch mixed suspicious actions without counting static assets or ordinary `/api/live/**` polling.
 - Test Turbo/browser prefetch does not exhaust deliberate website buckets and still records passive signals for excessive speculative traffic.
 - Test scheduler triggers allow normal minutely cron calls while still limiting obvious trigger storms.
+- Test setup apply, CORS preflight, high-impact admin operation, Admin-vs-Owner authority outcomes, export/download, and upload/archive validation classification attach to the expected buckets when those workflows exist.
 - Test authenticated-user higher limits and Owner ordinary-rate-limit exemptions for active sessions and Owner-owned API keys.
 - Test recovery-login bypass rendering, dedicated recovery bucket exhaustion, retry-after behavior, and successful-login policy re-evaluation.
 - Test policy descriptor validation for invalid, missing, overly permissive, and overly restrictive threshold/window values where configuration is introduced.
