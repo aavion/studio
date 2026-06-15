@@ -308,11 +308,11 @@ function lintCssFiles(string $root, array $files): int
         $result = $linter->lint($contents, $relative);
 
         foreach ($result->issues() as $issue) {
-            if (isTailwindDirectiveCssIssue($contents, $issue->line())
-                && $linter->lint(CssLinter::withoutTailwindDirectiveLines($contents), $relative)->isSuccess()
+            if (isStrictParserUnsupportedCssIssue($contents, $issue->line())
+                && $linter->lint(CssLinter::forStrictParser($contents), $relative)->isSuccess()
             ) {
                 fwrite(STDOUT, sprintf(
-                    "%s:%s:%s strict CSS parser skipped a Tailwind directive; tailwind:build remains authoritative for this file.\n",
+                    "%s:%s:%s strict CSS parser skipped a supported build-time or modern CSS construct; tailwind:build remains authoritative for this file.\n",
                     $relative,
                     $issue->line() ?? 1,
                     $issue->column() ?? 1,
@@ -339,9 +339,9 @@ function lintCssFiles(string $root, array $files): int
     return $failures;
 }
 
-function isTailwindDirectiveCssIssue(string $contents, ?int $line): bool
+function isStrictParserUnsupportedCssIssue(string $contents, ?int $line): bool
 {
-    return CssLinter::isTailwindDirectiveLine($contents, $line);
+    return CssLinter::isStrictParserUnsupportedLine($contents, $line);
 }
 
 /**

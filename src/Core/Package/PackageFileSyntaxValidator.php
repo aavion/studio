@@ -85,8 +85,8 @@ final readonly class PackageFileSyntaxValidator
 
             foreach ($lintResult->issues() as $lintIssue) {
                 if ($linter instanceof CssLinter
-                    && CssLinter::isTailwindDirectiveLine($contents, $lintIssue->line())
-                    && $linter->lint(CssLinter::withoutTailwindDirectiveLines($contents), $file)->isSuccess()
+                    && CssLinter::isStrictParserUnsupportedLine($contents, $lintIssue->line())
+                    && $linter->lint(CssLinter::forStrictParser($contents), $file)->isSuccess()
                 ) {
                     continue;
                 }
