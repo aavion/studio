@@ -24,14 +24,17 @@ Codex may create local commits for this branch when each commit has a clear them
 
 1. Expand the master security hardening plan with links to every detailed branch plan.
 2. Add one detail file for each `feat-security-*` branch under `dev/draft/security-hardening/`.
-3. Align related drafts only where product decisions changed: `/api/live/**` rate-limit exclusion, GeoIP as observability first, IconCaptcha as a dedicated branch, scoped limiter resets, Turbo/browser prefetch classification, and database-backed auto-bans.
-4. Move non-Security active branch logs from `dev/WORKLOG.md` to compact sections in `dev/WORKLOG_HISTORY.md`.
-5. Keep global roadmap and global To-Do items in the active worklog.
+3. Add a policy-defaults reference for first implementation TTLs, rate thresholds, retention ceilings, auto-ban defaults, captcha defaults, logging projection posture, and configuration rules.
+4. Align related drafts only where product decisions changed: `/api/live/**` rate-limit exclusion, GeoIP as observability first, IconCaptcha as a dedicated branch, scoped limiter resets, Turbo/browser prefetch classification, database-backed auto-bans, and IP-retention privacy limits.
+5. Move non-Security active branch logs from `dev/WORKLOG.md` to compact sections in `dev/WORKLOG_HISTORY.md`.
+6. Keep global roadmap and global To-Do items in the active worklog.
 
 ## Public interfaces and data decisions
 
 - No runtime interfaces, routes, entities, configuration, services, commands, migrations, or translations are added in this branch.
-- Documentation establishes fixed defaults for later branches: database-backed passive-signal and auto-ban TTL records, anonymous-first enforcement, lower-confidence prefetch signals, scoped `reset()` before partial refunds, ordinary rate-limit exclusion for `/api/live/**`, IconCaptcha challenge cache/TTL behavior, account-mail transport guard expectations, and minimal remember-me token management UI.
+- Documentation establishes fixed defaults for later branches: database-backed passive-signal and auto-ban TTL records, anonymous-first enforcement, lower-confidence prefetch signals, scoped `reset()` before partial refunds, ordinary rate-limit exclusion for `/api/live/**`, IconCaptcha challenge cache/TTL behavior, account-mail transport guard expectations, minimal remember-me token management UI, and privacy-first IP retention ceilings.
+- `policy-defaults.md` is the first implementation source for thresholds and TTLs until an owning branch updates it with tested evidence.
+- The planning baseline also records adjacent coverage for setup/install, CORS preflight, high-impact admin operations, Admin-vs-Owner authority through a dedicated Admin ACL enforcement branch, uploads/archives, exports/downloads, diagnostic bundles, trusted-proxy identity, browser storage, and deferred HTTP security-header policy.
 
 ## Edge cases
 
@@ -52,6 +55,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Update `dev/WORKLOG.md` with concise planning notes only.
 - Update `dev/WORKLOG_HISTORY.md` with compact archived branch summaries.
 - Add or maintain the Security PR-readiness checklist in the master hardening plan when review expectations change.
+- Link `policy-defaults.md` from the master plan and relevant draft indexes.
 
 ## Non-goals
 
@@ -64,4 +68,5 @@ Codex may create local commits for this branch when each commit has a clear them
 
 - A future implementer can start any `feat-security-*` branch from its detail plan without inventing product policy.
 - Remaining calibration points are explicitly framed as implementation defaults to be committed and tested in the owning branch, not as unresolved product direction.
+- The first thresholds and TTLs are discoverable in one policy-defaults document.
 - The active worklog is short enough to serve as review notes for Security planning.

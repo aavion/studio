@@ -18,6 +18,7 @@ Codex may create local commits for this branch when each commit has a clear them
 ## Dependencies
 
 - `feat-security-captcha-contract`.
+- [Security policy defaults](policy-defaults.md).
 - Package lifecycle, AssetMapper/Tailwind, translation aggregation, `/api/live/**`, and abuse passive signal foundations.
 
 ## Legacy inspiration
@@ -39,12 +40,14 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Provider key is `icon_captcha`.
 - Public challenge payload contains only challenge ID, timestamp, render metadata, and button identifiers needed for display.
 - Provider secret is generated/configured outside manifests and public assets.
-- Default challenge TTL is five minutes, and validation invalidates the challenge after every attempt, successful or failed.
+- Default challenge TTL is 15 minutes, and validation invalidates the challenge after every attempt, successful or failed.
 - Challenge expiry and one-shot state use an injectable clock/time boundary where practical for deterministic tests.
 - SVG/icons must be allowlisted or sanitized before inline rendering.
 - Inline-rendered graphics and symbol SVGs must not expose answer-bearing names through file names, element IDs, CSS classes, `data-*` attributes, titles, descriptions, or translation keys. Use opaque challenge-local identifiers and randomized or non-semantic button identifiers.
 - Accessibility labels must describe the control purpose without revealing the visual answer. Prefer neutral labels such as option numbers and state/status text over labels that name the target icon or symbol. If this makes the visual challenge insufficient for assistive technology, document and implement a separate accessible fallback flow instead of leaking the answer through ARIA.
 - The preferred accessible fallback is a provider-owned quiz challenge using a spoken question/task and multiple answer options. The quiz mode must share the same challenge ID, TTL, one-shot invalidation, context binding, failure codes, refresh handling, and passive abuse signals as the visual IconCaptcha mode.
+- Challenge TTL may become bounded configuration, but starts at 15 minutes. The recommended range is 10-30 minutes; longer TTLs require explicit policy review plus brute-force, one-shot, refresh, and replay tests.
+- Provider secrets are secret/protected configuration only and must never be stored in package metadata, public assets, serialized challenge payloads, cache payloads, logs, or diagnostics.
 
 ## Edge cases
 
@@ -57,6 +60,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Browser inspection should not reveal the correct answer through DOM order, source file names, SVG IDs, ARIA labels, visible hidden text, or static asset URLs.
 - Quiz-mode questions and answer options must be generated from vetted provider-owned prompt pools and opaque option IDs so the correct answer is not inferable from stable DOM metadata or static translation keys.
 - Concurrent double-submit validation must remain one-shot: one attempt wins, later attempts fail recoverably or suspiciously according to the failure model.
+- The 15-minute TTL must not permit brute-force attempts. A submitted challenge is consumed after the first validation attempt, captcha failures feed the scoped failure bucket, and aggressive refresh behavior records passive abuse signals.
 
 ## Tests and validation
 
@@ -64,6 +68,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test every failure model.
 - Test one-shot replay prevention and TTL expiry.
 - Test cache-pool fallback and secret absence from cached/public challenge payloads.
+- Test configured TTL bounds if challenge TTL becomes configurable.
 - Test refresh no-store behavior and passive signal recording.
 - Test package asset/template/translation registration.
 - Test keyboard/accessibility behavior where practical with JS tests.
@@ -75,6 +80,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Documentation and tracking
 
 - Update IconCaptcha draft with final payload/storage choices.
+- Update Security policy defaults if challenge TTL, quiz fallback policy, refresh handling, or captcha reset behavior changes.
 - Update package developer guidance if provider package layout adds a reusable pattern.
 - Update class map for provider, challenge services, controller/live endpoint, assets, and templates.
 - Record asset licensing, provenance, sanitization, and bot-resistance notes.

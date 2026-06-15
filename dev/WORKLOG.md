@@ -69,26 +69,28 @@
 - [ ] Audit follow-up: design copied-session plus copied-visitor-cookie risk scoring in the Security branch; current hard session binding intentionally covers visitor changes, not complete cookie-pair duplication.
 - [ ] Audit follow-up: implement remember-me with Symfony-style persistent server-side tokens, visitor binding, explicit revocation, token rotation, and audit signals in the Security branch.
 - [ ] Audit follow-up: replace the debug account-link mail/message-log delivery stub with the real Mailer delivery contract and a dedicated Mail Message/API catalogue.
+- [ ] Security follow-up: define and test production HTTP security-header policy, including CSP, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sensitive-route `no-store`, and documented route exceptions.
 - [ ] Audit follow-up: decide whether optional branding packages need capabilities beyond `system-template`; package CSS class namespace validation is now enforced for package-owned selectors.
 - [ ] Evaluate whether the documented minimum memory requirement should become 256M after PHPUnit 13.2/full-suite runs needed a higher CLI memory limit; do not fix this requirement until setup/init/lint/runtime memory behavior has been reviewed across target hosting platforms.
 
 ## Branch Logs
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place new entries chronologically under the matching branch/date heading so reviewers can follow the PR context without reading full verification transcripts. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
-### 2026-06-15 feat-security-planning
-- Added the security hardening implementation plan draft, splitting the next Security work into focused `feat-security-*` branches for policy docs, GeoIP observability, abuse foundations, rate enforcement, auto-ban handling, captcha contracts, IconCaptcha, mailer account delivery, and remember-me.
-- Added handoff-ready detail plans under `dev/draft/security-hardening/` for every planned `feat-security-*` branch and linked them from the master hardening plan.
-- Documented the Security branch Git policy: Codex may create thematically clear local commits, while pushes require explicit user instruction.
-- Recorded planning decisions for `/api/live/**` rate-limit exclusion, Turbo/browser prefetch classification, action-aware limiter costs, scoped `reset()`-based bucket recovery, cross-action abuse signals, TTL auto-bans, Owner lockout protection, and GeoIP as observability before enforcement.
-- Aligned the Security, API, Contact/Mail/Logging, and IconCaptcha drafts with the planning branch decisions, including treating live captcha refreshes as passive abuse signals rather than ordinary rate-limit `429` responses.
-- Compacted the non-Security `feat-symfony-ux-integration` and `docs-cleanup` active branch logs into `dev/WORKLOG_HISTORY.md` so the active worklog stays focused on Security planning.
-- Re-reviewed every Security detail plan for implementation readiness and tightened unresolved planning language around passive-signal persistence, GeoIP update tasks, rate-limit workflow wiring, auto-ban TTL records, captcha provider policy, IconCaptcha cache/TTL behavior, account-mail delivery guards, and remember-me token management UI.
-- Added the legacy Grav `sec-lookup` plugin at `/Volumes/Projekte/temp/sec-lookup` as an inspiration-only reference for GeoIP, abuse, rate-limit, auto-ban, captcha, and IconCaptcha planning, with current Symfony product decisions taking priority over historical implementation details.
-- Added IconCaptcha asset/license, inline-rendering, bot-resistance, and neutral accessibility-label requirements, and documented Security PR-readiness checks that must be completed from the actual branch diff before PRs.
-- Recorded quiz-style IconCaptcha as the preferred accessible fallback when neutral labels are insufficient, keeping quiz prompts/options under the same one-shot challenge, TTL, context-binding, and answer-leak resistance rules.
-- Added final cross-cutting planning guardrails for shared client identity/trusted-proxy handling, injectable time boundaries, degraded storage behavior, and race/idempotency review across Security branches.
-- Recorded the open logging architecture question of keeping 30-day rotating file logs as the durable raw source while evaluating a parallel database-backed security event projection for query-heavy Security review and abuse correlation.
-- Recorded the privacy rule that raw IPs, IP buckets, and stable IP-derived hashes remain queryable for at most 30 days, with longer-term Security/statistics correlation handled through internal visitor IDs or other non-IP subjects.
+### 2026-06-15 feat-security-policy-docs
+- Added `dev/draft/security-hardening/policy-defaults.md` as the central first-implementation source for Security hardening TTLs, rate-limit thresholds, auto-ban defaults, captcha defaults, privacy ceilings, logging projection posture, and configuration rules.
+- Linked policy defaults from the master Security hardening plan, the Security/API/Contact-Mail-Logging drafts, and the affected branch detail plans so later implementation branches can cite one policy reference.
+- Compacted the completed `feat-security-planning` worklog entry into `dev/WORKLOG_HISTORY.md` so the active worklog stays focused on the policy-docs branch.
+- Raised the first IconCaptcha challenge TTL default to 15 minutes for realistic form completion time while keeping one-shot validation, scoped failure buckets, context binding, refresh abuse signals, and answer-leak checks as required bot-protection controls.
+- Split the website global rate-limit default into deliberate burst and sustained buckets, with Turbo/browser prefetch tracked through a separate lower-confidence observation path so speculative requests do not drain user-facing navigation budgets.
+- Adjusted scheduler and probe policies: scheduler trigger limits now support minutely cron, high-signal probes are limited to one per 10 minutes with generic `400` handling, probe paths are configurable with broad defaults, auto-ban defaults to on, and active Admin/Owner recovery protections are explicit.
+- Documented recovery login bypass policy using the normal login route plus a bypass flag, guarded by a dedicated 2/minute and 10/hour bucket with 30-minute retry behavior and no bypass of CSRF, credential checks, login-failure accounting, or audit logging.
+- Clarified captcha auto-success policy: provider `none`, missing providers, and disabled providers keep workflows graceful but never reset/refill rate-limit buckets, clear bans, or satisfy captcha-based `429` recovery.
+- Added cross-cutting Security policy decisions for deterministic enforcement order, block-response semantics, probe-pattern validation, configuration bounds, and auditable Owner/Admin exemptions.
+- Added a first configuration-surface matrix that separates fixed policy, code/config defaults, protected secrets, bounded Admin settings, and later-tunable thresholds for follow-up Security branches.
+- Scanned feature drafts and code surfaces for remaining Security planning gaps; added coverage notes for setup/install, CORS preflight, high-impact admin operations, uploads/archives, exports/downloads, diagnostic bundles, trusted proxy identity, browser storage, and deferred HTTP security-header policy.
+- Added Admin-vs-Owner authority policy so non-user-management Admin features can distinguish delegated Admin visibility/mutation from Owner-only site-control actions.
+- Added `feat-security-admin-acl-enforcement` as a dedicated branch plan for shared Admin-vs-Owner action authority before package, scheduler, backup, settings, diagnostics, update, and security-management workflows expand.
+- Expanded the Admin ACL enforcement plan with a default authority matrix, bounded Owner-only configurability policy, concrete Admin/Owner domain defaults, enforcement boundaries, and test expectations.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

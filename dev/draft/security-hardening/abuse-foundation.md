@@ -17,6 +17,7 @@ Codex may create local commits for this branch when each commit has a clear them
 
 ## Dependencies
 
+- [Security policy defaults](policy-defaults.md).
 - Existing visitor identity, access logging, audit logging, API-key authentication, Scheduler API authentication, and `/api/live/**` route boundaries.
 - Symfony Request data and Turbo/browser prefetch headers.
 
@@ -28,7 +29,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 1. Add an abuse namespace with value objects for subject, request family, request intent, action cost, and passive signal.
 2. Add subject resolution for IP bucket, visitor ID, authenticated user UID, API key UID/prefix, and safe combined subject keys through one reviewed client-identity resolver.
-3. Add request-intent classification for browser navigation, Turbo/browser prefetch, form submit, API read, API write, scheduler trigger, captcha refresh, captcha failure, login, registration, password reset, contact, import, and suspicious probe.
+3. Add request-intent classification for browser navigation, Turbo/browser prefetch, form submit, API read, API write, CORS preflight, scheduler trigger, captcha refresh, captcha failure, login, registration, password reset, contact, setup apply, package/admin operation, upload/archive validation, export/download, import, and suspicious probe.
 4. Add a central action-cost catalogue with website and API families. Costs are symbolic defaults, not limiter calls yet.
 5. Add database-backed passive suspicious-signal recording with TTL-ready metadata, cleanup support, and redacted message/audit reporting.
 6. Add explicit `/api/live/**` classification: no ordinary enforcement, but passive signal recording can happen for clear abuse patterns.
@@ -39,18 +40,27 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Client identity must respect Symfony trusted-proxy configuration and must not trust raw forwarding headers outside that configuration.
 - Prefetch detection uses `X-Sec-Purpose: prefetch` and `Sec-Purpose: prefetch`; spoofable hints only lower confidence for classification, never bypass checks.
 - Signals store only normalized subject keys, intent, reason code, count/weight, timestamps, and safe request metadata.
+- Probe-path detection is configurable and ships with extensive high-signal defaults for `.env`, VCS metadata, backup/database dumps, common foreign admin panels, upload shells, and known scanner paths.
 - First implementation uses a portable database table for short-lived passive signals. Suggested fields are normalized subject type/key, request family, intent, reason code, confidence, weight/count, first-seen timestamp, last-seen timestamp, expiry timestamp, safe context hash, and optional audit reference.
 - Passive-signal rows are observational only in this branch. The rate and auto-ban branches decide how to consume them for enforcement.
 - Keep passive signals separate from raw file logs. If a broader database-backed security event projection is introduced later, this branch's signal store should either feed it through a documented boundary or remain the focused enforcement-oriented read model.
 - IP subjects and stable IP-derived hashes must expire within 30 days. Longer-lived passive signals must use visitor ID, authenticated user ID, API key fingerprint, or aggregate keys without retaining the IP-derived subject.
 - TTL and expiry use an injectable clock/time boundary for deterministic tests.
+- Classification must expose enough request-family, intent, subject, Admin/Owner context, `/api/live/**`, and recovery-login metadata for later branches to follow the Security policy enforcement order without re-reading controllers.
+- Probe-path configuration uses anchored, normalized patterns and must be tested against normal app/package/media/editor routes to avoid false positives.
+- High-impact operation intents must exist even when their first implementation only records passive signals: setup apply, settings mutation, user/ACL mutation, package lifecycle, backup/restore, import apply, export/download, self-update, scheduler run-now, diagnostics/support bundles, and upload/archive validation.
+- Classification should include the resolved Admin/Owner authority outcome for high-impact operations so rate/ban diagnostics can distinguish a denied delegated Admin action from anonymous/API abuse.
+- CORS preflight classification must distinguish allowed preflights from invalid origin/method/header combinations so the API layer can stay cheap for valid browser clients while still recording suspicious probing.
 
 ## Edge cases
 
 - Missing visitor cookie uses the existing fallback visitor identity.
 - Invalid Bearer API keys should still classify as API activity without trusting the key as an authenticated subject.
 - Authenticated Owner requests still classify normally; Owner lockout protection is enforced in later branches.
+- High-signal probe paths are suspicious even when the route does not exist or is only a honeypot; later enforcement should return a generic `400` without revealing route existence.
 - Prefetch for state-changing methods is suspicious; normal GET prefetch remains low-confidence.
+- Setup/install requests happen before an Owner session exists, so classification must not depend on authenticated recovery context for pre-setup protection.
+- Upload, package, import, backup, and restore paths must not be classified as high-signal probes solely because their filenames resemble archive/database defaults; failed validation results should emit separate upload/archive signals.
 - Expired passive signals must not affect later enforcement once rate/ban branches start consuming the store.
 - Passive-signal storage failure records a safe diagnostic and must not change request outcome in this foundation branch.
 - Cleanup must remove or anonymize expired IP-derived signal keys before any Admin export, support bundle, or statistics projection can expose them.
@@ -58,7 +68,10 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Tests and validation
 
 - Test subject resolution for anonymous, visitor-cookie, authenticated user, valid API key, invalid API key, and scheduler trigger.
-- Test intent classification for browser, prefetch, API read/write, `/api/live/**`, login, registration, password reset, and suspicious probes.
+- Test intent classification for browser, prefetch, API read/write/preflight, `/api/live/**`, login, registration, password reset, setup apply, privileged admin operations, upload/archive validation, export/download, and suspicious probes.
+- Test configurable probe-path defaults and high-signal probe classification.
+- Test suspicious probe rules do not collide with legitimate upload, package, import, backup, restore, media, and editor routes.
+- Test probe-pattern normalization and false-positive avoidance for ordinary application routes.
 - Test redaction in passive signal messages.
 - Test passive-signal persistence, aggregation by normalized subject/intent/reason, expiry filtering, and cleanup command/task behavior.
 - Test IP-derived signal retention stays below 30 days and that longer-lived visitor-based signals do not keep recoverable IP material.
@@ -71,6 +84,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Update class map for the facade and value objects only if they are contributor-facing services.
 - Update class map for the passive-signal entity/repository/cleanup command if they are added.
 - Record default cost catalogue decisions in the worklog.
+- Update Security policy defaults if implementation evidence changes signal retention, subject composition, or suspicious-intent weighting.
 - Record whether the branch keeps only the passive-signal store or also introduces/reuses a broader security event projection.
 - Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 

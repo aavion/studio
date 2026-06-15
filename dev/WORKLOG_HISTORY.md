@@ -9,6 +9,11 @@
 Move completed branch or PR logs from `dev/WORKLOG.md` into this file when switching branches or after a PR is merged. Keep the active worklog focused on the current branch so reviewers can see the full PR context while older project history stays available.
 
 ## Archived Branches
+### 2026-06-15 feat-security-planning
+- Created the Security hardening planning package: master branch-tree plan plus detailed `feat-security-*` plans for policy docs, GeoIP observability, abuse foundations, rate enforcement, auto-ban, captcha contracts, IconCaptcha, mailer account delivery, and remember-me.
+- Recorded core product decisions for `/api/live/**` rate-limit exclusion, Turbo/browser prefetch classification, scoped `reset()` behavior, database-backed passive signals/auto-bans, Owner recovery protection, GeoIP observability, IconCaptcha asset/accessibility rules, PR-readiness checks, and the inspiration-only `sec-lookup` legacy reference.
+- Tightened privacy and architecture guardrails around shared client identity/trusted proxies, injectable clocks, degraded storage, race/idempotency, database-backed security event projection as an open question, and a 30-day maximum for queryable IP-derived data.
+
 ### 2026-06-13 to 2026-06-14 feat-symfony-ux-integration
 - Added the Symfony UX/UI foundation: namespace-aware Twig components, shared alert stacks, reusable Stimulus/live-polling controllers, notification center behavior, package live endpoints, package-aware cookie consent, local Mercure tooling, and lazy UX integrations.
 - Hardened live/API/cookie/Mercure boundaries through repeated review passes, including exact-before-pattern dispatch, reserved live slugs, GET-only package live endpoints, alert topic scoping, consent cookie signing, protected Mercure env handling, URL/link sink validation, and safe fallback polling.
