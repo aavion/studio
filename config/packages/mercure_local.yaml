@@ -1,0 +1,4 @@
+parameters:
+    # Specify the exact Mercure Hub version to download for local tooling.
+    # The optional binary is stored below var/mercure/{version}/ and is not committed.
+    app.mercure_binary_version: '0.24.2'

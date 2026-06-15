@@ -1,8 +1,8 @@
 # Studio
 
-> **Version**: 0.2.0  
+> **Version**: 0.2.4  
 > **Status**: Active development  
-> **Updated**: 2026-06-01  
+> **Updated**: 2026-06-14  
 > **Owner**: Dominik Letica  
 > **Purpose:** A Symfony-based CMS foundation for structured, extensible project websites.  
 

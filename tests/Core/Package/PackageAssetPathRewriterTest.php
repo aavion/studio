@@ -41,9 +41,9 @@ import helper from "./lib/helper.js";
 export { widget } from "../shared/widget.js";
 const lazy = () => import("./lib/lazy.js");
 const shared = await import('../shared/chunk.mjs?v=1#lazy');
-const external = () => import("alpinejs");
+const external = () => import("external-library");
 const variable = (path) => import(path);
-import "alpinejs";
+import "external-library";
 JS,
             'packages/demo/assets/frontend/app.js',
             'packages/demo/assets',
@@ -55,9 +55,9 @@ JS,
         self::assertStringContainsString('export { widget } from "./shared/widget.js";', $javaScript);
         self::assertStringContainsString('const lazy = () => import("./frontend/lib/lazy.js");', $javaScript);
         self::assertStringContainsString("const shared = await import('./shared/chunk.mjs?v=1#lazy');", $javaScript);
-        self::assertStringContainsString('const external = () => import("alpinejs");', $javaScript);
+        self::assertStringContainsString('const external = () => import("external-library");', $javaScript);
         self::assertStringContainsString('const variable = (path) => import(path);', $javaScript);
-        self::assertStringContainsString('import "alpinejs";', $javaScript);
+        self::assertStringContainsString('import "external-library";', $javaScript);
     }
 
     public function testItDoesNotRewriteVendoredCssOrJavaScript(): void

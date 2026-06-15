@@ -11,6 +11,7 @@ use App\Core\Config\ConfigValueType;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
+use App\Core\Mercure\MercureRuntime;
 use App\Core\Routing\AbsoluteUriGenerator;
 use App\Database\DatabaseReadyState;
 use App\Entity\AccountToken;
@@ -18,7 +19,10 @@ use App\Entity\ApiKey;
 use App\Entity\UserAccount;
 use App\Mail\AccountMailFlow;
 use App\Mail\MailLocaleResolver;
+use App\Setup\SetupInputValidator;
+use App\View\Alert\MercureAvailability;
 use Doctrine\ORM\EntityManagerInterface;
+use RuntimeException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -41,6 +45,8 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
         private string $secret,
         private string $environment,
         private ?DatabaseReadyState $databaseReadyState = null,
+        private ?MercureRuntime $mercureRuntime = null,
+        private ?MercureAvailability $mercureAvailability = null,
     ) {
     }
 
@@ -62,6 +68,8 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
 
     public function handle(): void
     {
+        $this->assertSupportedSecret();
+
         if (null !== $this->databaseReadyState && !$this->databaseReadyState->isReady()) {
             return;
         }
@@ -85,12 +93,17 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
             return;
         }
 
+        $mercureStopped = $this->stopMercureBeforeSecretRotation();
+        if (!$mercureStopped) {
+            $this->markMercureUnavailableAfterFailedStop();
+        }
         $apiKeysRevoked = $this->revokeActiveApiKeys();
         $resetLinks = $this->issueOwnerPasswordResetLinks();
         $this->storeFingerprint($fingerprints, $environmentKey, $currentFingerprint);
 
         $this->auditLogger->log(AccessActor::fromAccess(9, [], username: 'system'), 'security.app_secret_rotated', [
             'environment' => $this->environment,
+            'mercure_stopped' => $mercureStopped,
             'api_keys_revoked' => $apiKeysRevoked,
             'password_reset_link_owners' => $resetLinks['owners'],
             'password_reset_links_issued' => $resetLinks['issued'],
@@ -112,6 +125,47 @@ final readonly class AppSecretRotationGuard implements EventSubscriberInterface
                     'failed_submissions' => $resetLinks['failed_submissions'],
                 ],
             );
+        }
+
+        if ($mercureStopped) {
+            $this->refreshMercureAfterSecretRotation();
+        }
+    }
+
+    private function assertSupportedSecret(): void
+    {
+        if (strlen($this->secret) >= SetupInputValidator::MIN_APP_SECRET_LENGTH) {
+            return;
+        }
+
+        throw new RuntimeException(sprintf(
+            'The configured APP_SECRET is unsupported: it must be at least %d bytes.',
+            SetupInputValidator::MIN_APP_SECRET_LENGTH,
+        ));
+    }
+
+    private function stopMercureBeforeSecretRotation(): bool
+    {
+        try {
+            return null === $this->mercureRuntime || $this->mercureRuntime->stop();
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function markMercureUnavailableAfterFailedStop(): void
+    {
+        try {
+            $this->config->set(MercureAvailability::AVAILABLE_KEY, false, ConfigValueType::Boolean);
+        } catch (Throwable) {
+        }
+    }
+
+    private function refreshMercureAfterSecretRotation(): void
+    {
+        try {
+            $this->mercureAvailability?->refresh(recover: true);
+        } catch (Throwable) {
         }
     }
 

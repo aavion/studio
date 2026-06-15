@@ -1,0 +1,20 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Privacy\Cookie;
+
+use App\Core\Statistics\VisitorIdGenerator;
+use Symfony\Component\HttpFoundation\Cookie;
+
+final readonly class CoreCookieConsentProvider implements CookieConsentProviderInterface
+{
+    public function cookieConsentDefinitions(): array
+    {
+        return [
+            CookieConsentDefinition::necessary(Cookie::create(CookieConsentManager::CONSENT_COOKIE_NAME)),
+            CookieConsentDefinition::necessary(Cookie::create('PHPSESSID')),
+            CookieConsentDefinition::necessary(Cookie::create(VisitorIdGenerator::COOKIE_NAME)),
+        ];
+    }
+}

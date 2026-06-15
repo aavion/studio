@@ -51,12 +51,6 @@
                 }
             }
         },
-        "@symfony/ux-notify": {
-            "notify": {
-                "enabled": true,
-                "fetch": "lazy"
-            }
-        },
         "@symfony/ux-react": {
             "react": {
                 "enabled": true,

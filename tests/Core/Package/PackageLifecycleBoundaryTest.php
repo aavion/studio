@@ -31,6 +31,7 @@ use App\Tests\Support\RecordingMessageBus;
 use App\View\ViewContextEvent;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
+use InvalidArgumentException;
 use RuntimeException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
@@ -297,6 +298,198 @@ final class PackageLifecycleBoundaryTest extends KernelTestCase
         self::assertSame('message.package.runtime.contribution_unsupported', $result->firstIssue()?->context()['previous_message']['key'] ?? null);
         self::assertSame([], $registry->staticViewInjections());
         self::assertSame('faulty', $this->packageStatus('broken-module'));
+    }
+
+    public function testPackagePhpLoaderAcceptsScopedNecessaryCookieConsentContributions(): void
+    {
+        $this->insertPackage('captcha-provider', ['captcha-provider'], 'active');
+        $this->writeTestFile($this->projectDir, 'packages/captcha-provider/package.php', <<<'PHP'
+            <?php
+
+            use App\Privacy\Cookie\CookieConsentDefinition;
+            use Symfony\Component\HttpFoundation\Cookie;
+
+            return CookieConsentDefinition::necessary(Cookie::create('captcha_provider_state'));
+            PHP);
+        $registry = new PackageRuntimeContributionRegistry();
+
+        $result = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActivePackages();
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('captcha_provider_state', $registry->cookieConsentDefinitions()[0]->name());
+    }
+
+    public function testPackagePhpLoaderRejectsUnscopedNecessaryCookieConsentContributions(): void
+    {
+        $this->insertPackage('tracking-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'packages/tracking-module/package.php', <<<'PHP'
+            <?php
+
+            use App\Privacy\Cookie\CookieConsentDefinition;
+            use Symfony\Component\HttpFoundation\Cookie;
+
+            return CookieConsentDefinition::necessary(Cookie::create('analytics_id'));
+            PHP);
+        $registry = new PackageRuntimeContributionRegistry();
+
+        $result = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActivePackages();
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame('message.package.runtime.contribution_unsupported', $result->firstIssue()?->context()['previous_message']['key'] ?? null);
+        self::assertSame([], $registry->cookieConsentDefinitions());
+        self::assertSame('faulty', $this->packageStatus('tracking-module'));
+    }
+
+    public function testPackagePhpLoaderRejectsCrossSiteNecessaryCookieConsentContributions(): void
+    {
+        $this->insertPackage('captcha-provider', ['captcha-provider'], 'active');
+        $this->writeTestFile($this->projectDir, 'packages/captcha-provider/package.php', <<<'PHP'
+            <?php
+
+            use App\Privacy\Cookie\CookieConsentDefinition;
+            use Symfony\Component\HttpFoundation\Cookie;
+
+            return CookieConsentDefinition::necessary(Cookie::create(
+                'captcha_provider_state',
+                domain: '.example.test',
+                sameSite: Cookie::SAMESITE_NONE,
+            ));
+            PHP);
+        $registry = new PackageRuntimeContributionRegistry();
+
+        $result = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActivePackages();
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame('message.package.runtime.contribution_unsupported', $result->firstIssue()?->context()['previous_message']['key'] ?? null);
+        self::assertSame([], $registry->cookieConsentDefinitions());
+        self::assertSame('faulty', $this->packageStatus('captcha-provider'));
+    }
+
+    public function testPackagePhpLoaderRejectsDuplicateCookieConsentContributions(): void
+    {
+        $this->insertPackage('cookie-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'packages/cookie-module/package.php', <<<'PHP'
+            <?php
+
+            use App\Privacy\Cookie\CookieConsentDefinition;
+            use Symfony\Component\HttpFoundation\Cookie;
+
+            return [
+                CookieConsentDefinition::optional(
+                    Cookie::create('cookie_module_tracking'),
+                    'Tracking',
+                    'Measure visits.',
+                    'https://example.test/privacy',
+                ),
+                CookieConsentDefinition::optional(
+                    Cookie::create('cookie_module_tracking'),
+                    'Tracking',
+                    'Duplicate.',
+                    'https://example.test/privacy',
+                ),
+            ];
+            PHP);
+        $registry = new PackageRuntimeContributionRegistry();
+
+        $result = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActivePackages();
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame('message.package.runtime.contribution_unsupported', $result->firstIssue()?->context()['previous_message']['key'] ?? null);
+        self::assertSame([], $registry->cookieConsentDefinitions());
+        self::assertSame('faulty', $this->packageStatus('cookie-module'));
+    }
+
+    public function testPackagePhpLoaderRejectsReservedCoreCookieConsentContributions(): void
+    {
+        $this->insertPackage('session-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'packages/session-module/package.php', <<<'PHP'
+            <?php
+
+            use App\Privacy\Cookie\CookieConsentDefinition;
+            use Symfony\Component\HttpFoundation\Cookie;
+
+            return CookieConsentDefinition::optional(
+                Cookie::create('PHPSESSID'),
+                'Session Module',
+                'Override the core session cookie.',
+                'https://example.test/privacy',
+            );
+            PHP);
+        $registry = new PackageRuntimeContributionRegistry();
+
+        $result = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActivePackages();
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame('message.package.runtime.contribution_unsupported', $result->firstIssue()?->context()['previous_message']['key'] ?? null);
+        self::assertSame([], $registry->cookieConsentDefinitions());
+        self::assertSame('faulty', $this->packageStatus('session-module'));
+    }
+
+    public function testPackagePhpLoaderRejectsUnsafeOptionalCookiePrivacyUrls(): void
+    {
+        $this->insertPackage('tracking-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'packages/tracking-module/package.php', <<<'PHP'
+            <?php
+
+            use App\Privacy\Cookie\CookieConsentDefinition;
+            use Symfony\Component\HttpFoundation\Cookie;
+
+            return CookieConsentDefinition::optional(
+                Cookie::create('tracking_module_id'),
+                'Tracking',
+                'Measure visits.',
+                'javascript:alert(1)',
+            );
+            PHP);
+        $registry = new PackageRuntimeContributionRegistry();
+
+        $result = (new PackagePhpLoader(
+            new ActivePackageProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActivePackages();
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame(InvalidArgumentException::class, $result->firstIssue()?->context()['exception'] ?? null);
+        self::assertSame([], $registry->cookieConsentDefinitions());
+        self::assertSame('faulty', $this->packageStatus('tracking-module'));
     }
 
     public function testPackagePhpLoaderRejectsElevatedSchedulerContributions(): void

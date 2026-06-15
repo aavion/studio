@@ -7,9 +7,14 @@ namespace App\Controller;
 use App\Backend\BackendAccessGuard;
 use App\Backend\BackendArea;
 use App\Core\Access\AccessActor;
+use App\Core\Message\CommonMessageCode;
+use App\Core\Message\Message;
 use App\Entity\UserAccount;
 use App\Security\AdminUserInvitationWorkflow;
 use App\Security\UserRole;
+use App\View\Alert\UiAlertDelivery;
+use App\View\Alert\UiAlertDispatcherInterface;
+use App\View\Alert\UiAlertTranslation;
 use App\View\Http\HttpErrorRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +27,7 @@ final class AdminUserInvitationController extends AbstractController
         private readonly BackendAccessGuard $accessGuard,
         private readonly HttpErrorRenderer $httpError,
         private readonly AdminUserInvitationWorkflow $invitationWorkflow,
+        private readonly UiAlertDispatcherInterface $alerts,
     ) {
     }
 
@@ -33,7 +39,7 @@ final class AdminUserInvitationController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('admin_user_invite', $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectAfterTokenAction($request);
         }
@@ -41,7 +47,7 @@ final class AdminUserInvitationController extends AbstractController
         $groups = $this->groupIdentifiers($request->request->all('groups'));
         $role = UserRole::tryFrom($this->field($request, 'role'));
         $result = $this->invitationWorkflow->invite($this->actor(), $this->field($request, 'email'), $role, $groups);
-        $this->addFlash($result->successLevel(), $result->flashKey());
+        $this->alertKey($result->successLevel(), $result->flashKey());
 
         return $this->redirectToRoute('backend_admin_users');
     }
@@ -54,13 +60,13 @@ final class AdminUserInvitationController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('admin_user_token_'.$uid, $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectAfterTokenAction($request);
         }
 
         $result = $this->invitationWorkflow->approve($this->actor(), $uid);
-        $this->addFlash($result->successLevel(), $result->flashKey());
+        $this->alertKey($result->successLevel(), $result->flashKey());
 
         return $this->redirectAfterTokenAction($request);
     }
@@ -73,13 +79,13 @@ final class AdminUserInvitationController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('admin_user_token_'.$uid, $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectAfterTokenAction($request);
         }
 
         $result = $this->invitationWorkflow->reissue($this->actor(), $uid);
-        $this->addFlash($result->successLevel(), $result->flashKey());
+        $this->alertKey($result->successLevel(), $result->flashKey());
 
         return $this->redirectAfterTokenAction($request);
     }
@@ -92,13 +98,13 @@ final class AdminUserInvitationController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('admin_user_token_'.$uid, $this->field($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.users.form.errors.invalid_csrf');
+            $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
 
             return $this->redirectAfterTokenAction($request);
         }
 
         $result = $this->invitationWorkflow->revoke($this->actor(), $uid);
-        $this->addFlash($result->successLevel(), $result->flashKey());
+        $this->alertKey($result->successLevel(), $result->flashKey());
 
         return $this->redirectAfterTokenAction($request);
     }
@@ -153,6 +159,11 @@ final class AdminUserInvitationController extends AbstractController
         $value = $request->request->get($name);
 
         return is_scalar($value) ? trim((string) $value) : '';
+    }
+
+    private function alertKey(string $level, string $key): void
+    {
+        $this->alerts->addAlert(UiAlertTranslation::forLevel($level, $key), UiAlertDelivery::Direct);
     }
 
 }

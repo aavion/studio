@@ -176,7 +176,16 @@ final readonly class HttpErrorRenderer
     {
         $uri = $request->getRequestUri();
 
-        return str_starts_with($uri, '/') && !str_starts_with($uri, '//') ? $uri : null;
+        return $this->isSafeLocalTarget($uri) ? $uri : null;
+    }
+
+    private function isSafeLocalTarget(string $target): bool
+    {
+        return '' !== $target
+            && str_starts_with($target, '/')
+            && !str_starts_with($target, '//')
+            && !str_contains($target, '\\')
+            && 1 !== preg_match('/[\x00-\x1F\x7F]/', $target);
     }
 
     private function isAuthenticated(): bool

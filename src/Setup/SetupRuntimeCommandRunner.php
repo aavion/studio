@@ -145,6 +145,51 @@ final readonly class SetupRuntimeCommandRunner
     }
 
     /**
+     * @param array<string, string> $environment
+     *
+     * @return array<string, mixed>
+     */
+    public function runMercureHealth(
+        string $projectDir,
+        SetupInput $input,
+        array $environment,
+        SetupCommandExecutorInterface $commandExecutor,
+    ): array {
+        $commandEnvironment = $this->mercureHealthCommandEnvironment($environment);
+        $phpCommand = $this->phpCliCommandPrefix($projectDir, $input, $environment, true);
+        $stopCommand = [
+            ...$phpCommand,
+            $projectDir.'/bin/console',
+            'mercure:stop',
+            '--env='.$input->appEnv(),
+        ];
+        $healthCommand = [
+            ...$phpCommand,
+            $projectDir.'/bin/console',
+            'mercure:health',
+            '--env='.$input->appEnv(),
+        ];
+        $stopResult = $commandExecutor->run($stopCommand, $projectDir, $commandEnvironment);
+        if (!$stopResult->isSuccessful()) {
+            return [
+                'stop_command' => $stopCommand,
+                'command' => $healthCommand,
+                'stopped' => false,
+                'available' => false,
+            ];
+        }
+
+        $result = $commandExecutor->run($healthCommand, $projectDir, $commandEnvironment);
+
+        return [
+            'stop_command' => $stopCommand,
+            'command' => $healthCommand,
+            'stopped' => true,
+            'available' => $result->isSuccessful(),
+        ];
+    }
+
+    /**
      * @return list<string>
      */
     public function dryRunMigrationCommand(string $projectDir, SetupInput $input): array
@@ -249,6 +294,23 @@ final readonly class SetupRuntimeCommandRunner
             'SHELL_VERBOSITY' => '0',
             DatabaseReadyState::ALLOW_UNREADY_KEY => '1',
         ];
+    }
+
+    /**
+     * @param array<string, string> $environment
+     *
+     * @return array<string, string>
+     */
+    private function mercureHealthCommandEnvironment(array $environment): array
+    {
+        $environment = $this->databaseEnvironmentScope->commandEnvironment($environment);
+        $appSecret = trim($environment['APP_SECRET'] ?? '');
+
+        if ('' !== $appSecret) {
+            $environment['MERCURE_JWT_SECRET'] = $appSecret;
+        }
+
+        return $environment;
     }
 
     /**

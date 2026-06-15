@@ -65,6 +65,7 @@ final class InitScriptTest extends TestCase
         self::assertStringContainsString("'ux:icons:lock'", $contents);
         self::assertStringContainsString('runOptionalCommand', $contents);
         self::assertStringContainsString("'tailwind:build'", $contents);
+        self::assertStringContainsString("'cache:warmup'", $contents);
         self::assertStringContainsString("'asset-map:compile'", $contents);
         self::assertStringNotContainsString("'doctrine:migrations:migrate'", $contents);
         self::assertStringNotContainsString("'doctrine:schema:validate'", $contents);

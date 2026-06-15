@@ -35,6 +35,7 @@ final class SqliteMigrationTest extends TestCase
 
         self::assertContains('doctrine_migration_versions', $tables);
         self::assertContains('messenger_messages', $tables);
+        self::assertContains('ui_alert_inbox', $tables);
         self::assertContains('config_entry', $tables);
         self::assertContains('state_marker', $tables);
         self::assertContains('access_statistic_event', $tables);
@@ -94,6 +95,10 @@ final class SqliteMigrationTest extends TestCase
                 static fn ($index): string => $index->getName(),
                 $schema->getTable('user_account')->getIndexes(),
             );
+            $alertIndexes = array_map(
+                static fn ($index): string => $index->getName(),
+                $schema->getTable('ui_alert_inbox')->getIndexes(),
+            );
             $userGroupForeignKeys = array_map(
                 static fn ($foreignKey): string => $foreignKey->getName(),
                 $schema->getTable('user_acl_group')->getForeignKeys(),
@@ -102,6 +107,9 @@ final class SqliteMigrationTest extends TestCase
             self::assertContains('studio_uniq_user_account_username', $userIndexes);
             self::assertContains('studio_uniq_user_account_email', $userIndexes);
             self::assertContains('studio_pk_user_account', $userIndexes);
+            self::assertContains('studio_pk_ui_alert_inbox', $alertIndexes);
+            self::assertContains('studio_idx_ui_alert_inbox_topic_cursor', $alertIndexes);
+            self::assertContains('studio_idx_ui_alert_inbox_expires_at', $alertIndexes);
             self::assertContains('studio_fk_user_acl_group_user', $userGroupForeignKeys);
             self::assertContains('studio_fk_user_acl_group_group', $userGroupForeignKeys);
         } finally {
@@ -132,7 +140,7 @@ final class SqliteMigrationTest extends TestCase
             $schema = new Schema();
             $migration = new Version20260531000000($connection, new NullLogger());
 
-            foreach (TablePrefix::TABLES as $tableName) {
+            foreach ($this->initialMigrationTables() as $tableName) {
                 $table = $schema->createTable('studio_'.$tableName);
                 $table->addColumn('uid', 'string', ['length' => 36]);
 
@@ -176,6 +184,36 @@ final class SqliteMigrationTest extends TestCase
                 $_ENV['APP_DATABASE_PREFIX'] = $previousEnvPrefix;
             }
         }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function initialMigrationTables(): array
+    {
+        return [
+            'messenger_messages',
+            'ui_alert_inbox',
+            'config_entry',
+            'package_setting_entry',
+            'scheduler_task',
+            'scheduler_task_run',
+            'state_marker',
+            'access_statistic_event',
+            'acl_group',
+            'user_account',
+            'user_acl_group',
+            'account_token',
+            'api_key',
+            'extension_package',
+            'site_menu',
+            'site_menu_item',
+            'content_schema',
+            'content_schema_version',
+            'content_item',
+            'content_revision',
+            'content_field_value',
+        ];
     }
 
     private function insertContentProbe(PDO $pdo, string $uid, string $slug): void

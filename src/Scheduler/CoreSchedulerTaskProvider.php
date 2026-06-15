@@ -20,6 +20,13 @@ final readonly class CoreSchedulerTaskProvider implements SchedulerTaskProviderI
                 '*/15 * * * *',
             ),
             SchedulerTaskDefinition::command(
+                'system.ui_alert_inbox_cleanup',
+                'admin.scheduler.tasks.ui_alert_inbox_cleanup.label',
+                'admin.scheduler.tasks.ui_alert_inbox_cleanup.description',
+                'ui-alerts:cleanup-inbox',
+                '23 * * * *',
+            ),
+            SchedulerTaskDefinition::command(
                 'system.package_discovery',
                 'admin.scheduler.tasks.package_discovery.label',
                 'admin.scheduler.tasks.package_discovery.description',
@@ -39,6 +46,13 @@ final readonly class CoreSchedulerTaskProvider implements SchedulerTaskProviderI
                 'admin.scheduler.tasks.cache_clear.description',
                 'cache:clear',
                 '0 4 * * *',
+            ),
+            SchedulerTaskDefinition::command(
+                'system.mercure_health',
+                'admin.scheduler.tasks.mercure_health.label',
+                'admin.scheduler.tasks.mercure_health.description',
+                'mercure:health',
+                '7 * * * *',
             ),
         ];
     }

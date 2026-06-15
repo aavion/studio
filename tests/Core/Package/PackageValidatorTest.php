@@ -808,6 +808,82 @@ CSS);
         self::assertTrue($result->isSuccess());
     }
 
+    public function testItAcceptsTailwindDirectivesInPackageCssSyntaxChecks(): void
+    {
+        $this->writeFile('assets/module.css', <<<'CSS'
+.demo-module-card {
+    @apply grid gap-4 rounded-lg border p-4;
+}
+CSS);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module']),
+            PackageSpec::create()->withInventoryDepth(4)->withCssLinting(),
+        );
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+    }
+
+    public function testItRejectsCssSyntaxErrorsNextToTailwindDirectives(): void
+    {
+        $this->writeFile('assets/module.css', <<<'CSS'
+.demo-module-card {
+    @apply grid gap-4 rounded-lg border p-4;
+    color red;
+}
+CSS);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module']),
+            PackageSpec::create()->withInventoryDepth(4)->withCssLinting(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.css_syntax_error', $result->issues()[0]->code());
+    }
+
+    public function testItAcceptsModernCssAtRulesInPackageCssSyntaxChecks(): void
+    {
+        $this->writeFile('assets/module.css', <<<'CSS'
+.demo-module-card {
+    transform: var(--tw-rotate-x,) var(--tw-rotate-y,);
+    @custom-variant demo-module-dark (&:where(.demo-module-dark, .demo-module-dark *));
+    @supports (color: color-mix(in lab, red, red)) {
+        color: color-mix(in oklab, currentcolor 50%, transparent);
+    }
+    @media (width >= 40rem) {
+        max-width: 40rem;
+    }
+}
+CSS);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module']),
+            PackageSpec::create()->withInventoryDepth(4)->withCssLinting(),
+        );
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+    }
+
+    public function testItRejectsCssSyntaxErrorsInsideModernAtRules(): void
+    {
+        $this->writeFile('assets/module.css', <<<'CSS'
+.demo-module-card {
+    @supports (color: color-mix(in lab, red, red)) {
+        color red;
+    }
+}
+CSS);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module']),
+            PackageSpec::create()->withInventoryDepth(4)->withCssLinting(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.css_syntax_error', $result->issues()[0]->code());
+    }
+
     public function testItRejectsCssRulesTargetingClassesOutsidePackageNamespace(): void
     {
         $this->writeFile('assets/module.css', <<<'CSS'

@@ -35,6 +35,91 @@ Keep this setting scoped to the web server service. Other setup subprocess check
 
 When Apache runs behind a reverse proxy such as Cloudflare, prefer `mod_remoteip` at the web-server layer. This rewrites `REMOTE_ADDR` before PHP handles the request, so Symfony's normal `Request::getClientIp()` resolution and Studio access logging use the verified client IP without application-level proxy lists.
 
+### Mercure push notifications
+
+Studio treats Mercure push delivery as an optional enhancement. The polling alert inbox remains the portable fallback and must keep working on shared hosting without reverse-proxy support.
+
+For push delivery, configure the public Mercure endpoint so browser `EventSource` requests reach the Mercure hub:
+
+```text
+Browser -> https://example.com/.well-known/mercure -> reverse proxy -> http://127.0.0.1:3000/.well-known/mercure
+Symfony -> http://127.0.0.1:3000/.well-known/mercure
+```
+
+Default environment:
+
+```dotenv
+MERCURE_HUB_LISTEN=127.0.0.1:3000
+MERCURE_URL=http://${MERCURE_HUB_LISTEN}/.well-known/mercure
+MERCURE_PUBLIC_URL=${DEFAULT_URI}/.well-known/mercure
+MERCURE_JWT_SECRET=...
+```
+
+`MERCURE_JWT_SECRET` must provide at least 256 bits of HMAC-SHA256 key material. The committed default derives it from `APP_SECRET`, and setup validates/generates a long enough `APP_SECRET`; manual environments should keep that derivation or use a dedicated high-entropy `MERCURE_JWT_SECRET` with at least 32 bytes.
+
+Override `MERCURE_PUBLIC_URL` only when the browser-facing URL differs from the canonical `DEFAULT_URI` host, for example when Mercure is exposed through a dedicated subdomain, Cloudflare Tunnel, or a supported public HTTPS port.
+
+The reverse proxy must keep Server-Sent Events usable: disable response buffering for `/.well-known/mercure`, use a long read timeout, preserve the request host and scheme with forwarded headers, and forward the request to the local Mercure hub port.
+
+Studio UI-alert push uses unguessable HMAC-bound public URN topics under `urn:system:ui-alerts:*`. The local `mercure:start` command therefore starts the hub with anonymous subscribers enabled. External Mercure hub deployments must allow anonymous subscribers for public UI-alert topics or provide an equivalent subscriber authorization strategy before `mercure:health` can mark push delivery as available.
+
+If no public Mercure endpoint is reachable, `mercure:health` stores Mercure as unavailable. Studio then skips EventSource stream URLs and push publishing attempts while continuing to deliver alerts through the polling inbox. Use `php bin/console mercure:check` for read-only diagnostics without starting or stopping the hub.
+
+Apache example:
+
+```apache
+# Required modules: mod_proxy, mod_proxy_http, mod_headers.
+ProxyPreserveHost On
+
+ProxyPass "/.well-known/mercure" "http://127.0.0.1:3000/.well-known/mercure" retry=0 timeout=86400 flushpackets=on
+ProxyPassReverse "/.well-known/mercure" "http://127.0.0.1:3000/.well-known/mercure"
+
+# Use "http" instead when this virtual host is intentionally served without TLS.
+RequestHeader set X-Forwarded-Proto "https" early
+SetEnvIf Request_URI "^/\.well-known/mercure" no-gzip=1
+```
+
+nginx example:
+
+```nginx
+location /.well-known/mercure {
+    proxy_pass http://127.0.0.1:3000/.well-known/mercure;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_buffering off;
+    proxy_cache off;
+    gzip off;
+    proxy_read_timeout 24h;
+}
+```
+
+IIS example using URL Rewrite and Application Request Routing:
+
+```xml
+<configuration>
+  <system.webServer>
+    <rewrite>
+      <rules>
+        <rule name="Mercure reverse proxy" stopProcessing="true">
+          <match url="^\.well-known/mercure(.*)$" />
+          <action type="Rewrite" url="http://127.0.0.1:3000/.well-known/mercure{R:1}" />
+          <serverVariables>
+            <set name="HTTP_X_FORWARDED_PROTO" value="https" />
+            <set name="HTTP_X_FORWARDED_HOST" value="{HTTP_HOST}" />
+          </serverVariables>
+        </rule>
+      </rules>
+    </rewrite>
+  </system.webServer>
+</configuration>
+```
+
+For IIS, enable ARR proxying at server level and allow the `HTTP_X_FORWARDED_PROTO` and `HTTP_X_FORWARDED_HOST` server variables if IIS blocks them by default. Keep ARR response buffering disabled or minimized for this route when available; if the hosting environment cannot stream long responses reliably, leave Mercure unavailable and use the polling fallback.
+
 ## nginx
 
 Use `config/webserver/nginx.conf` as a template. Adjust `server_name`, `root`, `fastcgi_pass`, TLS, log paths, and upload limits for the target system.

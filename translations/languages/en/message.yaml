@@ -77,6 +77,10 @@ message:
       rolled_back: 'Package lifecycle changes were rolled back for %count% package(s).'
     runtime:
       contribution_unsupported: 'Package "%package%" returned unsupported runtime contribution type "%type%".'
+    live:
+      endpoint_path_invalid: 'Package "%package%" tried to register live endpoint path "%path%" outside its own /api/live/{package}/ namespace.'
+      endpoint_handler_invalid: 'Package "%package%" tried to register live endpoint handler "%handler%" outside its own handler namespace.'
+      endpoint_reserved: 'Package "%package%" cannot register live endpoints with reserved system slug "%slug%".'
     setting:
       read_failed: 'Package setting "%package%:%key%" could not be read.'
       write_failed: 'Package setting "%package%:%key%" could not be written.'

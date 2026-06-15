@@ -9,9 +9,20 @@
             subtitle: 'ui.user.api_keys.reveal.subtitle'|trans,
         } only %}
         {% if plain_api_key|default(null) %}
-            <section class="system-panel">
+            <section
+                class="system-panel"
+                data-controller="clipboard"
+                data-clipboard-success-value="{{ 'ui.user.api_keys.reveal.copy_success'|trans }}"
+                data-clipboard-failure-value="{{ 'ui.user.api_keys.reveal.copy_failure'|trans }}"
+            >
                 <h2>{{ api_key.prefix }}</h2>
-                <code class="system-code">{{ plain_api_key }}</code>
+                <code class="system-code" data-clipboard-target="source">{{ plain_api_key }}</code>
+                <div class="system-toolbar">
+                    <button class="system-button system-button-secondary" type="button" data-action="clipboard#copy">
+                        {{ 'ui.user.api_keys.reveal.copy'|trans }}
+                    </button>
+                    <span class="system-muted" data-clipboard-target="status" hidden></span>
+                </div>
             </section>
         {% else %}
             {% if errors|default([]) is not empty %}

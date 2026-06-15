@@ -1,6 +1,1 @@
-<section class="system-backend-empty-state">
-    <h2>{{ title|default('ui.empty_state.title'|trans) }}</h2>
-    {% if message|default(null) %}
-        <p>{{ message }}</p>
-    {% endif %}
-</section>
+<twig:backend:EmptyState :title="title|default('ui.empty_state.title'|trans)" :message="message|default(null)" />

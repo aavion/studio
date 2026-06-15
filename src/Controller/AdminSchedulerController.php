@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Backend\AdminControllerContext;
+use App\Core\Message\CommonMessageCode;
+use App\Core\Message\Message;
 use App\Entity\SchedulerTask;
 use App\Entity\SchedulerTaskRun;
 use App\Scheduler\SchedulerCron;
@@ -13,6 +15,9 @@ use App\Scheduler\SchedulerRunner;
 use App\Scheduler\SchedulerTaskStatus;
 use App\Scheduler\SchedulerTaskType;
 use App\Scheduler\SchedulerTaskSynchronizer;
+use App\View\Alert\UiAlertDelivery;
+use App\View\Alert\UiAlertDispatcherInterface;
+use App\View\Alert\UiAlertTranslation;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -30,6 +35,7 @@ final class AdminSchedulerController extends AbstractController
         private readonly SchedulerSettings $settings,
         private readonly SchedulerRunner $runner,
         private readonly HttpErrorRenderer $httpError,
+        private readonly UiAlertDispatcherInterface $alerts,
     ) {
     }
 
@@ -42,7 +48,7 @@ final class AdminSchedulerController extends AbstractController
 
         $token = $request->request->get('_csrf_token');
         if (!is_string($token) || !$this->isCsrfTokenValid('scheduler-task-run-'.$identifier, $token)) {
-            $this->addFlash('error', ['translation_key' => 'admin.scheduler.form.errors.invalid_csrf', 'parameters' => []]);
+            $this->alertKey('error', 'admin.scheduler.form.errors.invalid_csrf');
 
             return $this->redirectToRoute('backend_admin_scheduler_detail', ['identifier' => $identifier]);
         }
@@ -55,7 +61,7 @@ final class AdminSchedulerController extends AbstractController
         }
 
         if (SchedulerTaskStatus::Active !== $task->status()) {
-            $this->addFlash('error', ['translation_key' => 'admin.scheduler.actions.run_now_inactive', 'parameters' => []]);
+            $this->alertKey('error', 'admin.scheduler.actions.run_now_inactive');
 
             return $this->redirectToRoute('backend_admin_scheduler_detail', ['identifier' => $identifier]);
         }
@@ -120,15 +126,13 @@ final class AdminSchedulerController extends AbstractController
         $status = is_string($result['status'] ?? null) ? $result['status'] : 'unknown';
 
         if ('locked' === $status) {
-            $this->addFlash('warning', ['translation_key' => 'admin.scheduler.actions.run_now_locked', 'parameters' => []]);
+            $this->alertKey('warning', 'admin.scheduler.actions.run_now_locked');
 
             return;
         }
 
         if ('completed' !== $status) {
-            $this->addFlash('warning', ['translation_key' => 'admin.scheduler.actions.run_now_unavailable', 'parameters' => [
-                '%status%' => $status,
-            ]]);
+            $this->alertKey('warning', 'admin.scheduler.actions.run_now_unavailable', ['%status%' => $status]);
 
             return;
         }
@@ -139,31 +143,25 @@ final class AdminSchedulerController extends AbstractController
         )));
 
         if (in_array('failed', $taskStatuses, true)) {
-            $this->addFlash('error', ['translation_key' => 'admin.scheduler.actions.run_now_failed', 'parameters' => [
-                '%status%' => $status,
-            ]]);
+            $this->alertKey('error', 'admin.scheduler.actions.run_now_failed', ['%status%' => $status]);
 
             return;
         }
 
         if ([] === $taskStatuses || in_array('skipped', $taskStatuses, true)) {
-            $this->addFlash('warning', ['translation_key' => 'admin.scheduler.actions.run_now_skipped', 'parameters' => [
-                '%status%' => $status,
-            ]]);
+            $this->alertKey('warning', 'admin.scheduler.actions.run_now_skipped', ['%status%' => $status]);
 
             return;
         }
 
-        $this->addFlash('success', ['translation_key' => 'admin.scheduler.actions.run_now_started', 'parameters' => [
-            '%status%' => $status,
-        ]]);
+        $this->alertKey('success', 'admin.scheduler.actions.run_now_started', ['%status%' => $status]);
     }
 
     private function handleUpdate(Request $request, SchedulerTask $task): void
     {
         $token = $request->request->get('_csrf_token');
         if (!is_string($token) || !$this->isCsrfTokenValid('scheduler-task-'.$task->identifier(), $token)) {
-            $this->addFlash('error', ['translation_key' => 'admin.scheduler.form.errors.invalid_csrf', 'parameters' => []]);
+            $this->alertKey('error', 'admin.scheduler.form.errors.invalid_csrf');
 
             return;
         }
@@ -172,14 +170,14 @@ final class AdminSchedulerController extends AbstractController
         $cronExpression = is_string($cronExpression) ? trim($cronExpression) : '';
 
         if (!SchedulerCron::isValid($cronExpression)) {
-            $this->addFlash('error', ['translation_key' => 'admin.scheduler.form.errors.cron_invalid', 'parameters' => []]);
+            $this->alertKey('error', 'admin.scheduler.form.errors.cron_invalid');
 
             return;
         }
 
         $enabled = '1' === $request->request->get('enabled');
         if ($enabled && !$task->trusted() && SchedulerTaskType::ActionQueue === $task->type() && '1' !== $request->request->get('confirm_package_action_queue')) {
-            $this->addFlash('error', ['translation_key' => 'admin.scheduler.form.errors.package_action_queue_confirmation_required', 'parameters' => []]);
+            $this->alertKey('error', 'admin.scheduler.form.errors.package_action_queue_confirmation_required');
 
             return;
         }
@@ -191,7 +189,7 @@ final class AdminSchedulerController extends AbstractController
         }
 
         $this->entityManager->flush();
-        $this->addFlash('success', ['translation_key' => 'admin.scheduler.form.saved', 'parameters' => []]);
+        $this->alertKey('success', 'admin.scheduler.form.saved');
     }
 
     /**
@@ -215,5 +213,13 @@ final class AdminSchedulerController extends AbstractController
         }
 
         return null;
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     */
+    private function alertKey(string $level, string $key, array $parameters = []): void
+    {
+        $this->alerts->addAlert(UiAlertTranslation::forLevel($level, $key, $parameters), UiAlertDelivery::Direct);
     }
 }

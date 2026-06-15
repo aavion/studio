@@ -29,8 +29,8 @@ final readonly class DetachedProcessStarter
             return $this->startWindows($command, $cwd, $outputPath, $pidPath, $environment);
         }
 
-        $shellCommand = implode(' ', array_map('escapeshellarg', $command))
-            .' > '.escapeshellarg($outputPath).' 2>&1 & echo $! > '.escapeshellarg($pidPath);
+        $shellCommand = 'nohup '.implode(' ', array_map('escapeshellarg', $command))
+            .' > '.escapeshellarg($outputPath).' 2>&1 < /dev/null & echo $! > '.escapeshellarg($pidPath);
 
         return $this->runShellCommand($shellCommand, $cwd, $environment);
     }

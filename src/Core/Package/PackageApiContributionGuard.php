@@ -57,36 +57,13 @@ final class PackageApiContributionGuard
             return;
         }
 
-        $body = self::pathPatternBody($pathPattern);
-        $delimiter = $pathPattern[0] ?? '#';
-        $expectedStart = '^'.preg_quote($expectedPrefix, $delimiter);
-
-        if (null !== $body && str_starts_with($body, $expectedStart)) {
+        if (PackagePathPatternScope::isScopedToPrefix($pathPattern, $expectedPrefix)) {
             return;
         }
 
         throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_PATH_INVALID, [
             '%path%' => $pathPattern,
         ]);
-    }
-
-    private static function pathPatternBody(string $pathPattern): ?string
-    {
-        if ('' === $pathPattern) {
-            return null;
-        }
-
-        $delimiter = $pathPattern[0];
-        if (ctype_alnum($delimiter) || '\\' === $delimiter || ctype_space($delimiter)) {
-            return null;
-        }
-
-        $end = strrpos($pathPattern, $delimiter);
-        if (false === $end || 0 === $end) {
-            return null;
-        }
-
-        return substr($pathPattern, 1, $end - 1);
     }
 
     /**

@@ -22,6 +22,7 @@ use App\Entity\ExtensionPackage;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\Setup\SetupCompletionMarker;
+use App\Setup\SetupInputValidator;
 use App\Setup\SetupWizardState;
 use App\View\Injection\Event\StaticViewInjectionRegistryEvent;
 use App\View\Injection\StaticViewInjection;
@@ -206,6 +207,42 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
+    public function testSetupAdminStepUsesConfiguredAppSecretMinimumLength(): void
+    {
+        $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
+        $previousEnvValue = $_ENV[SetupCompletionMarker::KEY] ?? null;
+        $previousPutenvValue = getenv(SetupCompletionMarker::KEY);
+
+        unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
+        putenv(SetupCompletionMarker::KEY);
+
+        try {
+            $client = self::createClient();
+            $client->request('GET', '/setup');
+            $this->setSetupWizardState($client, [
+                'values' => [
+                    'language' => 'en',
+                    'site_title' => 'Wizard Studio',
+                    'default_uri' => 'http://localhost',
+                    'database_driver' => 'sqlite',
+                    'database_url' => 'sqlite:///%kernel.project_dir%/var/data_test.db',
+                ],
+                'completed' => ['language', 'site', 'database'],
+                'workflow' => null,
+                'action_log' => null,
+            ]);
+            $crawler = $client->request('GET', '/setup/admin');
+
+            self::assertResponseIsSuccessful();
+            self::assertSame(
+                (string) SetupInputValidator::MIN_APP_SECRET_LENGTH,
+                $crawler->filter('input[name="app_secret"]')->attr('minlength'),
+            );
+        } finally {
+            $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
+        }
+    }
+
     public function testSetupDatabaseStepCanClearStoredDatabasePassword(): void
     {
         $previousServerValue = $_SERVER[SetupCompletionMarker::KEY] ?? null;
@@ -273,7 +310,7 @@ final class BackendControllerTest extends WebTestCase
                     'admin_password' => 'Safe1!pass',
                     'admin_password_confirm' => 'Safe1!pass',
                     'admin_email' => 'admin@localhost.local',
-                    'app_secret' => 'custom-secret-12',
+                    'app_secret' => 'custom-setup-app-secret-not-secure',
                     'dry_run' => true,
                 ],
                 'completed' => ['language', 'site', 'database', 'admin'],
@@ -291,7 +328,7 @@ final class BackendControllerTest extends WebTestCase
             $encodedState = json_encode($storedState, JSON_THROW_ON_ERROR);
             self::assertIsString($encodedState);
             self::assertStringNotContainsString('Safe1!pass', $encodedState);
-            self::assertStringNotContainsString('custom-secret-12', $encodedState);
+            self::assertStringNotContainsString('custom-setup-app-secret-not-secure', $encodedState);
         } finally {
             $this->restoreSetupMarker($previousServerValue, $previousEnvValue, $previousPutenvValue);
         }

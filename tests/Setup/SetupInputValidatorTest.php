@@ -60,7 +60,7 @@ final class SetupInputValidatorTest extends TestCase
         (new SetupInputValidator())->assertValidInput($this->input(appSecret: 'short'), ['en']);
     }
 
-    private function input(string $language = 'en', ?string $appSecret = 'app-secret-12'): SetupInput
+    private function input(string $language = 'en', ?string $appSecret = 'interactive-app-secret-not-secure'): SetupInput
     {
         return new SetupInput(
             appEnv: 'test',

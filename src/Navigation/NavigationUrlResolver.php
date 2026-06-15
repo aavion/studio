@@ -49,11 +49,11 @@ final readonly class NavigationUrlResolver
     {
         $targetValue = trim($targetValue);
 
-        if ('' === $targetValue || 1 === preg_match('/[\x00-\x1F\x7F]/', $targetValue)) {
+        if ('' === $targetValue || str_contains($targetValue, '\\') || 1 === preg_match('/[\x00-\x1F\x7F]/', $targetValue)) {
             return '#';
         }
 
-        if (str_starts_with($targetValue, '//') || str_starts_with($targetValue, '/\\')) {
+        if (str_starts_with($targetValue, '//')) {
             return '#';
         }
 

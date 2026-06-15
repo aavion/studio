@@ -15,6 +15,7 @@ ui:
         cancel: 'Cancel'
         refresh: 'Refresh'
         close: 'Close'
+        show_details: 'Show details'
       states:
         starting: 'Starting operation...'
         waiting: 'Please wait...'

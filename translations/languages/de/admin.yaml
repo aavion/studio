@@ -6,6 +6,11 @@ ui:
     navigation: 'Admin-Navigation'
 
 admin:
+  autocomplete:
+    acl_group:
+      placeholder: 'ACL-Gruppen suchen'
+    user:
+      placeholder: 'Benutzer suchen'
   navigation:
     dashboard: 'Dashboard'
     users: 'Benutzer'
@@ -464,6 +469,9 @@ admin:
       live_operation_cleanup:
         label: 'Live-Operation-Cleanup'
         description: 'Entfernt abgelaufene Live-Operation-State-Dateien.'
+      ui_alert_inbox_cleanup:
+        label: 'UI-Alert-Inbox-Cleanup'
+        description: 'Entfernt zwischengespeicherte Benachrichtigungen nach Ablauf ihrer Zustell-Aufbewahrung.'
       package_discovery:
         label: 'Paket-Discovery'
         description: 'Findet Pakete und aktualisiert die Paket-Registry.'
@@ -473,6 +481,9 @@ admin:
       cache_clear:
         label: 'Cache leeren'
         description: 'Leert und wärmt den Symfony-Anwendungscache.'
+      mercure_health:
+        label: 'Mercure-Health'
+        description: 'Prüft den Mercure-Hub und startet den lokalen Hub, sofern unterstützt.'
     table:
       job: 'Job'
       source: 'Quelle'

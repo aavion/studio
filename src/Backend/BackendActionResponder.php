@@ -8,9 +8,11 @@ use App\Backend\BackendMessageKey;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Core\Operation\Live\LiveOperationHttpResponder;
-use App\Core\Operation\OperationMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Form\FormTokenValidator;
+use App\View\Alert\UiAlertDelivery;
+use App\View\Alert\UiAlertDispatcherInterface;
+use App\View\Alert\WorkflowResultAlertSelector;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,6 +24,8 @@ final readonly class BackendActionResponder
         private AdminControllerContext $adminContext,
         private LiveOperationHttpResponder $liveOperationResponder,
         private FormTokenValidator $formTokenValidator,
+        private UiAlertDispatcherInterface $alerts,
+        private WorkflowResultAlertSelector $alertSelector,
     ) {
     }
 
@@ -47,7 +51,7 @@ final readonly class BackendActionResponder
         }
 
         $result = $validToken ? $this->backendActions->run($action) : $this->invalidCsrfResult($action);
-        $this->flashResult($request, $result);
+        $this->flashResult($result);
         $this->audit($user, $action, $result, 'sync');
 
         return new RedirectResponse($request->getPathInfo());
@@ -82,16 +86,9 @@ final readonly class BackendActionResponder
     /**
      * @param WorkflowResult<mixed> $result
      */
-    private function flashResult(Request $request, WorkflowResult $result): void
+    private function flashResult(WorkflowResult $result): void
     {
-        $message = $result->isSuccess()
-            ? ($result->messages()[0] ?? Message::success(BackendMessageKey::BACKEND_ACTION_CACHE_CLEAR_COMPLETED))
-            : ($result->firstIssue() ?? Message::error(CommonMessageCode::E_OPERATION_FAILED, OperationMessageKey::OPERATION_EXCEPTION));
-
-        $request->getSession()->getFlashBag()->add($result->isSuccess() ? 'success' : 'error', [
-            'translation_key' => $message->translationKey(),
-            'parameters' => $message->parameters(),
-        ]);
+        $this->alerts->addAlert($this->alertSelector->fromResult($result), UiAlertDelivery::Direct);
     }
 
     private function stringField(Request $request, string $name): string

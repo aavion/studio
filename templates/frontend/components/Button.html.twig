@@ -1,0 +1,9 @@
+{% props label, href = null, type = null, variant = 'primary', class = '' %}
+{% set button_type = type|default(href ? null : 'button') %}
+{% set button_class = ['system-button', 'system-button-' ~ variant, class]|filter(item => item is not empty)|join(' ') %}
+
+{% if href %}
+    <a {{ attributes.defaults({class: button_class, href: href}) }}>{{ label }}</a>
+{% else %}
+    <button {{ attributes.defaults({class: button_class, type: button_type}) }}>{{ label }}</button>
+{% endif %}

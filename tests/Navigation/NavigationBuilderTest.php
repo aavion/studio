@@ -145,6 +145,13 @@ final class NavigationBuilderTest extends KernelTestCase
                     'https://example.test/docs',
                     sortOrder: 33,
                 ));
+                $event->addItem(new NavigationItem(
+                    '30000000-0000-7000-8000-000000000957',
+                    'Backslash Redirect',
+                    'url',
+                    '/\\evil.example.test/path',
+                    sortOrder: 32,
+                ));
             },
         );
 
@@ -156,6 +163,7 @@ final class NavigationBuilderTest extends KernelTestCase
 
             self::assertSame('https://example.test/docs', $urlsByLabel['External Docs']);
             self::assertSame('#', $urlsByLabel['Hook Script']);
+            self::assertSame('#', $urlsByLabel['Backslash Redirect']);
             self::assertSame('#', $urlsByLabel['Persisted Script']);
         } finally {
             $connection->delete('site_menu_item', ['uid' => $persistedUid]);

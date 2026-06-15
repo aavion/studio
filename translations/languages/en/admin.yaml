@@ -6,6 +6,11 @@ ui:
     navigation: 'Admin navigation'
 
 admin:
+  autocomplete:
+    acl_group:
+      placeholder: 'Search ACL groups'
+    user:
+      placeholder: 'Search users'
   navigation:
     dashboard: 'Dashboard'
     users: 'Users'
@@ -464,6 +469,9 @@ admin:
       live_operation_cleanup:
         label: 'Live operation cleanup'
         description: 'Removes expired live-operation state files.'
+      ui_alert_inbox_cleanup:
+        label: 'UI alert inbox cleanup'
+        description: 'Removes queued UI alerts after their delivery retention expires.'
       package_discovery:
         label: 'Package discovery'
         description: 'Discovers packages and updates the package registry.'
@@ -473,6 +481,9 @@ admin:
       cache_clear:
         label: 'Cache clear'
         description: 'Clears and warms the Symfony application cache.'
+      mercure_health:
+        label: 'Mercure health'
+        description: 'Checks the Mercure hub and starts the local hub when supported.'
     table:
       job: 'Job'
       source: 'Source'

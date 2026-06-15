@@ -296,6 +296,57 @@ function lintSourceFiles(string $root, array $files, LinterInterface $linter, st
 /**
  * @param list<string> $files
  */
+function lintCssFiles(string $root, array $files): int
+{
+    fwrite(STDOUT, "\n==> CSS syntax\n");
+    $failures = 0;
+    $linter = new CssLinter();
+
+    foreach ($files as $file) {
+        $relative = relativePath($root, $file);
+        $contents = (string) file_get_contents($file);
+        $result = $linter->lint($contents, $relative);
+
+        foreach ($result->issues() as $issue) {
+            if (isStrictParserUnsupportedCssIssue($contents, $issue->line())
+                && $linter->lint(CssLinter::forStrictParser($contents), $relative)->isSuccess()
+            ) {
+                fwrite(STDOUT, sprintf(
+                    "%s:%s:%s strict CSS parser skipped a supported build-time or modern CSS construct; tailwind:build remains authoritative for this file.\n",
+                    $relative,
+                    $issue->line() ?? 1,
+                    $issue->column() ?? 1,
+                ));
+
+                continue;
+            }
+
+            fwrite(STDERR, sprintf(
+                "%s:%s:%s %s\n",
+                $relative,
+                $issue->line() ?? 1,
+                $issue->column() ?? 1,
+                $issue->details()['error'] ?? $issue->message(),
+            ));
+            ++$failures;
+        }
+    }
+
+    if (0 === $failures) {
+        fwrite(STDOUT, "CSS syntax OK.\n");
+    }
+
+    return $failures;
+}
+
+function isStrictParserUnsupportedCssIssue(string $contents, ?int $line): bool
+{
+    return CssLinter::hasStrictParserUnsupportedContext($contents, $line);
+}
+
+/**
+ * @param list<string> $files
+ */
 function lintMarkdownFiles(string $root, array $files): int
 {
     fwrite(STDOUT, "\n==> Markdown parse\n");
@@ -531,6 +582,10 @@ function relativePath(string $root, string $path): string
 function lintFileType(string $path): ?string
 {
     $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+    if ('mjs' === $extension) {
+        return 'js';
+    }
 
     if ('' !== $extension) {
         return $extension;
@@ -964,7 +1019,7 @@ if ($diffMode || $stagedMode || [] !== $targets) {
 
     if (isset($filesByExtension['css'])) {
         fwrite(STDOUT, "\nNote: focused CSS lint uses the strict CSS parser and may report Tailwind-specific directives or generated modern at-rules such as @apply, @theme, or @supports as unsupported syntax.\n");
-        $failures += lintSourceFiles($root, $filesByExtension['css'], new CssLinter(), 'CSS syntax');
+        $failures += lintCssFiles($root, $filesByExtension['css']);
     }
 
     if (containsTranslationSource($root, $collected['files'])) {

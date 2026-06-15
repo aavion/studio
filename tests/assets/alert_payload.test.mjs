@@ -1,0 +1,156 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+    actionDetailFromElement,
+    alertIds,
+    alertMode,
+    normalizeAlertLevel,
+    payloadFromAlertElement,
+    storableAlertPayload,
+} from '../../assets/js/alerts/alert_payload.js';
+import { createAlertElement } from '../../assets/js/alerts/alert_element.js';
+import { installDom } from './support/fake_dom.mjs';
+
+test('alertIds normalizes single and list values', () => {
+    assert.deepEqual(alertIds(' alert-1 '), ['alert-1']);
+    assert.deepEqual(alertIds(['one', '', null, ' two ']), ['one', 'two']);
+    assert.deepEqual(alertIds(''), []);
+});
+
+test('alertMode falls back to auto for unknown modes', () => {
+    assert.equal(alertMode({ mode: 'hidden' }), 'hidden');
+    assert.equal(alertMode({ mode: 'persistent' }), 'persistent');
+    assert.equal(alertMode({ mode: 'unexpected' }), 'auto');
+});
+
+test('normalizeAlertLevel maps aliases to supported levels', () => {
+    assert.equal(normalizeAlertLevel('danger'), 'error');
+    assert.equal(normalizeAlertLevel('warn'), 'warning');
+    assert.equal(normalizeAlertLevel('notice'), 'info');
+    assert.equal(normalizeAlertLevel('debug'), 'debug');
+    assert.equal(normalizeAlertLevel('unknown'), 'info');
+});
+
+test('storableAlertPayload keeps only display-safe alert fields', () => {
+    const payload = storableAlertPayload({
+        id: 'alert-1',
+        title: 'Title',
+        message: 'Message',
+        level: 'danger',
+        mode: 'persistent',
+        persistent: true,
+        loading: true,
+        actions: [{ label: 'Open' }],
+        context: { localPath: '/secret' },
+    });
+
+    assert.deepEqual(payload, {
+        id: 'alert-1',
+        title: 'Title',
+        message: 'Message',
+        level: 'error',
+        mode: 'persistent',
+        persistent: true,
+        loading: true,
+        actions: [{ label: 'Open' }],
+    });
+    assert.equal(Object.hasOwn(payload, 'context'), false);
+});
+
+test('payloadFromAlertElement reads structured dataset payloads', () => {
+    const alert = {
+        dataset: {
+            alertId: 'server-alert',
+            alertMode: 'persistent',
+            alertPayload: JSON.stringify({
+                title: 'Server',
+                message: 'Rendered',
+                level: 'success',
+            }),
+        },
+    };
+
+    assert.deepEqual(payloadFromAlertElement(alert), {
+        id: 'server-alert',
+        title: 'Server',
+        message: 'Rendered',
+        level: 'success',
+        mode: 'persistent',
+    });
+});
+
+test('payloadFromAlertElement falls back to text content when JSON is invalid', () => {
+    const alert = {
+        dataset: {
+            alertId: 'fallback-alert',
+            alertMode: 'auto',
+            alertPersistent: 'true',
+            alertPayload: '{broken',
+        },
+        classList: ['system-alert', 'system-alert-warning'],
+        querySelector(selector) {
+            const text = {
+                '.system-alert-title': 'Fallback title',
+                '.system-alert-message': 'Fallback message',
+                '.system-alert-content': 'Fallback content',
+            }[selector];
+
+            return text ? { textContent: text } : null;
+        },
+    };
+
+    assert.deepEqual(payloadFromAlertElement(alert), {
+        id: 'fallback-alert',
+        title: 'Fallback title',
+        message: 'Fallback message',
+        level: 'warning',
+        mode: 'auto',
+        persistent: true,
+        actions: [],
+    });
+});
+
+test('actionDetailFromElement parses action details safely', () => {
+    assert.deepEqual(actionDetailFromElement({
+        dataset: {
+            alertActionDetail: '{"id":"operation"}',
+        },
+    }), { id: 'operation' });
+
+    assert.deepEqual(actionDetailFromElement({
+        dataset: {
+            alertActionDetail: '{broken',
+        },
+    }), {});
+});
+
+test('createAlertElement filters unsafe action links before rendering and storage', () => {
+    installDom();
+
+    const alert = createAlertElement({
+        id: 'client-alert',
+        message: 'Client alert',
+        actions: [
+            { label: 'Open', href: '/admin/packages', target: '_blank' },
+            { label: 'Script', href: 'javascript:alert(1)' },
+            { label: 'Hostless http', href: 'http:evil.example.test' },
+            { label: 'External', href: 'https://example.test/privacy', target: '_self' },
+            { label: 'Event', event: 'operation-overlay:show', detail: { id: 'operation-1' } },
+        ],
+    }, 'Close');
+    const actions = alert.querySelectorAll('.system-alert-action');
+    const payload = JSON.parse(alert.dataset.alertPayload);
+
+    assert.equal(actions.length, 3);
+    assert.equal(actions[0].href, '/admin/packages');
+    assert.equal(actions[0].target, '_blank');
+    assert.equal(actions[0].rel, 'noopener noreferrer');
+    assert.equal(actions[1].href, 'https://example.test/privacy');
+    assert.equal(actions[2].dataset.alertActionEvent, 'operation-overlay:show');
+    assert.deepEqual(payload.actions, [
+        { label: 'Open', href: '/admin/packages', target: '_blank' },
+        { label: 'External', href: 'https://example.test/privacy', target: '_self' },
+        { label: 'Event', event: 'operation-overlay:show', detail: { id: 'operation-1' } },
+    ]);
+});

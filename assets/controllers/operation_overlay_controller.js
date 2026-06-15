@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { LivePoller } from '../js/live/live_poll.js';
 
 export default class extends Controller {
     static values = {
@@ -9,13 +10,30 @@ export default class extends Controller {
     static storedOperationMaxAgeMs = 60 * 60 * 1000;
 
     connect() {
+        document.addEventListener('operation-overlay:show', this.showFromAlert);
+        document.addEventListener('ui-alert:closed', this.alertClosed);
+
         const stored = this.storedOperation();
 
         if (this.enabledValue && stored?.statusUrl) {
-            this.open();
+            this.bindOperationButton(this.primaryOperationButton());
+            this.markOperationButtonRunning();
+            this.prepareOverlay();
+            this.updateOperationAlert({
+                status: stored.status || 'queued',
+                progress: stored.progress || null,
+            });
             this.reset();
             this.poll(stored.statusUrl, Number(stored.cursor || 0));
         }
+    }
+
+    disconnect() {
+        document.removeEventListener('operation-overlay:show', this.showFromAlert);
+        document.removeEventListener('ui-alert:closed', this.alertClosed);
+        this.livePoller?.stop();
+        this.stopSuccessfulCompletionTimer();
+        this.restoreOperationButton();
     }
 
     async submit(event) {
@@ -28,7 +46,9 @@ export default class extends Controller {
         const stored = this.storedOperation();
 
         if (stored?.statusUrl) {
-            this.open();
+            this.bindOperationButton(event.submitter || this.primaryOperationButton());
+            this.markOperationButtonRunning();
+            this.prepareOverlay();
             this.reset();
             await this.poll(stored.statusUrl, Number(stored.cursor || 0));
 
@@ -44,8 +64,15 @@ export default class extends Controller {
         }
 
         this.starting = true;
-        this.open();
+        this.suppressRunningAlert = false;
+        this.bindOperationButton(submitter || this.primaryOperationButton());
+        this.prepareOverlay();
         this.reset();
+        this.markOperationButtonRunning();
+        this.updateOperationAlert({
+            status: 'queued',
+            progress: null,
+        });
 
         const formData = new FormData(this.element);
         if (submitter?.name) {
@@ -77,7 +104,7 @@ export default class extends Controller {
                 return;
             }
 
-            this.storeOperation(payload.value.status_url, 0, null, 'queued');
+            this.storeOperation(payload.value.status_url, 0, null, 'queued', null);
             await this.poll(payload.value.status_url);
         } catch (error) {
             this.clearStoredOperation();
@@ -89,53 +116,45 @@ export default class extends Controller {
 
     async poll(statusUrl, cursor = 0) {
         this.polling = true;
-
-        try {
-            while (this.polling) {
-                const url = new URL(statusUrl, window.location.origin);
-                url.searchParams.set('cursor', String(cursor));
-                const response = await fetch(url.toString(), {
-                    headers: {
-                        Accept: 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                });
-
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        this.clearStoredOperation();
-                        this.fail(this.label('statusError'));
-                        this.retryButton.hidden = false;
-
-                        return;
-                    }
-
-                    this.fail(this.label('statusError'), true);
-
-                    return;
-                }
-
-                const payload = await this.readJson(response);
-                cursor = Number(payload.cursor || cursor);
-                this.storeOperation(statusUrl, cursor, payload.continue_url || null, payload.status || null);
+        this.livePoller = new LivePoller({
+            interval: 750,
+            invalidJsonMessage: this.label('statusError'),
+            onPayload: (payload, nextCursor) => {
+                this.storeOperation(
+                    statusUrl,
+                    nextCursor,
+                    payload.continue_url || null,
+                    payload.status || null,
+                    payload.progress || null,
+                    payload.label || payload.operation || null,
+                );
                 this.render(payload);
-
-                if (['success', 'requires_review', 'failed'].includes(payload.status)) {
-                    this.finish(payload);
+            },
+            onError: (response, error) => {
+                if (response?.status === 404) {
+                    this.clearStoredOperation();
+                    this.fail(this.label('statusError'));
+                    this.retryButton.hidden = false;
 
                     return;
                 }
 
-                await this.sleep(Number(payload.next_poll_ms || 750));
-            }
-        } catch (error) {
-            this.fail(error instanceof Error ? error.message : this.label('requestError'), true);
-        }
+                this.fail(error instanceof Error ? error.message : this.label('statusError'), true);
+            },
+            onDone: (payload) => {
+                if (payload) {
+                    this.finish(payload);
+                }
+            },
+        });
+
+        await this.livePoller.poll(statusUrl, cursor);
     }
 
     render(payload) {
         if (!['success', 'requires_review', 'failed'].includes(payload.status)) {
             this.setSummary(this.label('waiting'), 'running');
+            this.updateOperationAlert(payload);
         }
         this.emptyElement?.remove();
 
@@ -198,8 +217,22 @@ export default class extends Controller {
 
     open() {
         this.rootElement.hidden = false;
+        this.wireControls();
+
+        if (this.finishedStatus === 'success') {
+            this.stopSuccessfulCompletionTimer();
+            this.okButton.hidden = false;
+        }
+    }
+
+    prepareOverlay() {
         this.finishedStatus = null;
+        this.wireControls();
         this.hideButtons();
+        this.rootElement.hidden = true;
+    }
+
+    wireControls() {
         this.okButton.onclick = this.ok;
         this.continueButton.onclick = this.continueOperation;
         this.retryButton.onclick = this.retry;
@@ -231,6 +264,7 @@ export default class extends Controller {
         }
 
         this.reset();
+        this.markOperationButtonRunning();
 
         try {
             const response = await fetch(stored.continueUrl, {
@@ -248,7 +282,8 @@ export default class extends Controller {
                 return;
             }
 
-            this.storeOperation(payload.value.status_url, 0, null, 'queued');
+            this.storeOperation(payload.value.status_url, 0, null, 'queued', null, payload.value.label || payload.value.operation || null);
+            this.suppressRunningAlert = false;
             await this.poll(payload.value.status_url);
         } catch (error) {
             this.fail(error instanceof Error ? error.message : this.label('requestError'));
@@ -275,11 +310,19 @@ export default class extends Controller {
 
     cancel = () => {
         this.clearStoredOperation();
+        this.restoreOperationButton();
         this.close();
     };
 
     close = () => {
+        if (this.polling || this.starting) {
+            this.rootElement.hidden = true;
+
+            return;
+        }
+
         this.polling = false;
+        this.livePoller?.stop();
         this.rootElement.hidden = true;
     };
 
@@ -290,6 +333,7 @@ export default class extends Controller {
         this.resultRendered = false;
         this.stepElements = new Map();
         this.hideButtons();
+        this.showCloseControls();
     }
 
     finish(payload) {
@@ -297,6 +341,7 @@ export default class extends Controller {
         this.finishedStatus = status;
         this.polling = false;
         this.spinnerElement.hidden = true;
+        this.updateOperationAlert(payload);
         this.setSummary(
             status === 'success'
                 ? this.label('completed')
@@ -307,12 +352,13 @@ export default class extends Controller {
 
         if (status === 'success') {
             this.clearStoredOperation();
-            this.okButton.hidden = false;
+            this.finishSuccessfulOperation();
 
             return;
         }
 
         if (status === 'requires_review') {
+            this.mapOperationButton('requires_review');
             this.continueButton.hidden = !payload.continue_url;
             this.cancelButton.hidden = false;
 
@@ -320,6 +366,7 @@ export default class extends Controller {
         }
 
         this.clearStoredOperation();
+        this.mapOperationButton('failed');
         this.retryButton.hidden = false;
         this.cancelButton.hidden = false;
     }
@@ -327,8 +374,15 @@ export default class extends Controller {
     fail(message, refreshable = false) {
         this.polling = false;
         this.spinnerElement.hidden = true;
+        this.updateOperationAlert({
+            status: 'failed',
+            result: {
+                issues: [{ message }],
+            },
+        });
         this.setSummary(message, 'error');
         this.hideButtons();
+        this.mapOperationButton('failed');
 
         if (refreshable) {
             this.refreshButton.hidden = false;
@@ -338,6 +392,29 @@ export default class extends Controller {
         }
 
         this.showCloseControls();
+    }
+
+    finishSuccessfulOperation() {
+        if (!this.rootElement.hidden) {
+            this.okButton.hidden = false;
+
+            return;
+        }
+
+        this.stopSuccessfulCompletionTimer();
+        this.successfulCompletionTimer = window.setTimeout(() => {
+            this.successfulCompletionTimer = null;
+            this.ok();
+        }, 2000);
+    }
+
+    stopSuccessfulCompletionTimer() {
+        if (!this.successfulCompletionTimer) {
+            return;
+        }
+
+        window.clearTimeout(this.successfulCompletionTimer);
+        this.successfulCompletionTimer = null;
     }
 
     hideButtons() {
@@ -353,10 +430,6 @@ export default class extends Controller {
     showCloseControls() {
         this.closeButton.hidden = false;
         this.closeIconButton.hidden = false;
-    }
-
-    sleep(ms) {
-        return new Promise((resolve) => window.setTimeout(resolve, ms));
     }
 
     async readJson(response) {
@@ -415,13 +488,15 @@ export default class extends Controller {
         }
     }
 
-    storeOperation(statusUrl, cursor, continueUrl = null, status = null) {
+    storeOperation(statusUrl, cursor, continueUrl = null, status = null, progress = null, label = null) {
         try {
             window.sessionStorage.setItem(this.storageKey(), JSON.stringify({
                 statusUrl,
                 cursor,
                 continueUrl,
                 status,
+                progress,
+                label,
                 updatedAt: new Date().toISOString(),
             }));
         } catch {
@@ -445,6 +520,192 @@ export default class extends Controller {
 
     storedOperationTerminal(stored) {
         return ['success', 'failed'].includes(stored.status) || (stored.status === 'requires_review' && !stored.continueUrl);
+    }
+
+    showFromAlert = (event) => {
+        const storageKey = event.detail?.storageKey || '';
+
+        if (storageKey && storageKey !== this.storageKey()) {
+            return;
+        }
+
+        this.suppressRunningAlert = true;
+        this.open();
+    };
+
+    alertClosed = (event) => {
+        if (event.detail?.id === this.operationAlertId()) {
+            this.suppressRunningAlert = true;
+        }
+    };
+
+    updateOperationAlert(payload) {
+        const status = String(payload.status || 'queued');
+        const terminal = ['success', 'requires_review', 'failed'].includes(status);
+
+        if (!terminal && this.suppressRunningAlert) {
+            return;
+        }
+
+        if (terminal) {
+            this.suppressRunningAlert = false;
+        }
+
+        const issue = payload.result?.issues?.[0] || null;
+        const title = this.operationTitle(payload);
+        const message = terminal
+            ? (status === 'success'
+                ? this.label('completed')
+                : (status === 'requires_review'
+                    ? this.label('requiresReview')
+                    : (issue?.message || issue?.translation_key || issue?.code || this.label('failed'))))
+            : this.runningMessage(payload);
+
+        this.dispatchAlert({
+            id: this.operationAlertId(),
+            reopen: true,
+            title,
+            level: status === 'success' ? 'success' : (status === 'requires_review' ? 'warning' : (status === 'failed' ? 'error' : 'info')),
+            message,
+            mode: terminal && status === 'success' ? 'auto' : 'persistent',
+            loading: !terminal,
+            actions: [{
+                label: this.label('showDetails'),
+                event: 'operation-overlay:show',
+                detail: {
+                    storageKey: this.storageKey(),
+                    keepAlert: !terminal,
+                },
+            }],
+        });
+    }
+
+    operationTitle(payload) {
+        const label = String(payload.label || '').trim();
+
+        if (label) {
+            return label;
+        }
+
+        const operation = String(payload.operation || '').trim();
+
+        return operation ? this.actionLabel(operation) : this.label('operation');
+    }
+
+    runningMessage(payload) {
+        const progress = payload.progress || {};
+        const total = Number(progress.total || 0);
+        const index = Number(progress.index || 0);
+
+        if (total > 0) {
+            return `${this.label('waiting')} [${Math.max(0, index)}/${total}]`;
+        }
+
+        return this.label('waiting');
+    }
+
+    dispatchAlert(payload) {
+        const stack = document.querySelector('[data-controller~="alert-stack"]');
+
+        if (!stack) {
+            return;
+        }
+
+        stack.dispatchEvent(new CustomEvent('ui-alert:received', {
+            bubbles: true,
+            detail: payload,
+        }));
+    }
+
+    operationAlertId() {
+        return `operation:${this.storageKey()}`;
+    }
+
+    bindOperationButton(button) {
+        if (!button || !(button instanceof HTMLButtonElement)) {
+            return;
+        }
+
+        if (this.operationButton === button) {
+            return;
+        }
+
+        this.restoreOperationButton();
+        this.operationButton = button;
+        this.operationButtonInitial = {
+            className: button.className,
+            disabled: button.disabled,
+            html: button.innerHTML,
+            type: button.type || 'submit',
+        };
+    }
+
+    primaryOperationButton() {
+        return this.element.querySelector('button[type="submit"], button:not([type])');
+    }
+
+    markOperationButtonRunning() {
+        if (!this.operationButton) {
+            return;
+        }
+
+        this.operationButton.disabled = true;
+        this.operationButton.type = 'button';
+        this.operationButton.dataset.operationButtonState = 'running';
+        this.operationButton.setAttribute('aria-busy', 'true');
+        this.operationButton.textContent = this.label('waiting');
+    }
+
+    mapOperationButton(status) {
+        if (!this.operationButton) {
+            return;
+        }
+
+        this.operationButton.disabled = false;
+        this.operationButton.type = 'button';
+        this.operationButton.dataset.operationButtonState = status;
+        this.operationButton.removeAttribute('aria-busy');
+        this.operationButton.textContent = this.label('showDetails');
+        this.setOperationButtonVariant(status === 'requires_review' ? 'warning' : 'danger');
+        this.operationButton.removeEventListener('click', this.operationButtonClick);
+        this.operationButton.addEventListener('click', this.operationButtonClick);
+    }
+
+    restoreOperationButton() {
+        if (!this.operationButton || !this.operationButtonInitial) {
+            return;
+        }
+
+        this.operationButton.removeEventListener('click', this.operationButtonClick);
+        this.operationButton.className = this.operationButtonInitial.className;
+        this.operationButton.disabled = this.operationButtonInitial.disabled;
+        this.operationButton.innerHTML = this.operationButtonInitial.html;
+        this.operationButton.type = this.operationButtonInitial.type;
+        this.operationButton.removeAttribute('aria-busy');
+        delete this.operationButton.dataset.operationButtonState;
+        this.operationButton = null;
+        this.operationButtonInitial = null;
+    }
+
+    operationButtonClick = (event) => {
+        const state = this.operationButton?.dataset.operationButtonState || '';
+
+        if (!state || state === 'running') {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        this.open();
+    };
+
+    setOperationButtonVariant(variant) {
+        for (const name of ['primary', 'secondary', 'success', 'warning', 'danger', 'ghost']) {
+            this.operationButton.classList.remove(`system-button-${name}`);
+        }
+
+        this.operationButton.classList.add(`system-button-${variant}`);
     }
 
     get rootElement() {

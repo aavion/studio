@@ -62,4 +62,14 @@ final class LinterTest extends TestCase
         self::assertSame('virtual/path', $result->firstIssue()?->details()['path']);
         self::assertArrayHasKey('error', $result->firstIssue()?->context());
     }
+
+    public function testCssLinterAcceptsCommentOnlyRegistryStubs(): void
+    {
+        $result = (new CssLinter())->lint(<<<'CSS'
+/* Generated CSS package asset registry. */
+/* Package lifecycle owns this file after activation changes. */
+CSS);
+
+        self::assertTrue($result->isSuccess());
+    }
 }

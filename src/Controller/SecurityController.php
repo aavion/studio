@@ -46,6 +46,15 @@ final class SecurityController extends AbstractController
     {
         $returnTo = $request->query->get('return_to');
 
-        return is_string($returnTo) && str_starts_with($returnTo, '/') && !str_starts_with($returnTo, '//') ? $returnTo : null;
+        return is_string($returnTo) && $this->isSafeLocalTarget($returnTo) ? $returnTo : null;
+    }
+
+    private function isSafeLocalTarget(string $target): bool
+    {
+        return '' !== $target
+            && str_starts_with($target, '/')
+            && !str_starts_with($target, '//')
+            && !str_contains($target, '\\')
+            && 1 !== preg_match('/[\x00-\x1F\x7F]/', $target);
     }
 }

@@ -3,6 +3,21 @@ ui:
     name: 'Studio'
   alert:
     close: 'Close notification'
+    close_all: 'Close all'
+    empty_message: 'No active notifications are waiting.'
+    empty_title: 'No notifications'
+    hide: 'Hide notifications'
+    notifications: 'Notifications'
+  cookie_consent:
+    title: 'Cookie preferences'
+    message: 'This site uses required cookies for core functions. Optional cookies are only used after you allow them.'
+    configure: 'Configure'
+    reject_optional: 'Reject optional'
+    accept_selected: 'Save selection'
+    close: 'Close'
+    optional_title: 'Optional cookies'
+    no_optional: 'No optional cookies are registered right now.'
+    privacy_link: 'Privacy information'
   navigation:
     skip_to_content: 'Skip to content'
   frontend:
@@ -25,6 +40,10 @@ ui:
     pending: 'Pending'
   empty_state:
     title: 'Nothing to show'
+  live_endpoint:
+    forbidden: 'Access is not allowed for this live endpoint.'
+    handler_unavailable: 'Live endpoint handler is not available.'
+    not_found: 'Live endpoint not found.'
   markdown:
     embed:
       video_title: 'Embedded video'
@@ -163,6 +182,9 @@ ui:
         link: 'Reveal'
         password: 'Password'
         submit: 'Reveal key'
+        copy: 'Copy key'
+        copy_success: 'Copied.'
+        copy_failure: 'Copy failed.'
       errors:
         invalid_csrf: 'The API-key form expired. Please try again.'
         create_failed: 'The API key could not be created.'

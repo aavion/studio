@@ -71,7 +71,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         );
         $seed = new SetupDefaultSeed();
 
@@ -81,7 +81,8 @@ final class SetupRunnerTest extends TestCase
         self::assertInstanceOf(ActionLog::class, $result->value());
         self::assertFalse($result->context()['halt_on_error']);
         self::assertFileExists($this->root.'/.env.test.local');
-        self::assertStringContainsString("APP_SECRET='test-secret-12'", (string) file_get_contents($this->root.'/.env.test.local'));
+        self::assertStringContainsString("APP_SECRET='test-setup-app-secret-not-secure'", (string) file_get_contents($this->root.'/.env.test.local'));
+        self::assertStringNotContainsString('MERCURE_JWT_SECRET', (string) file_get_contents($this->root.'/.env.test.local'));
         $storedPhpBinary = (new PhpCliBinaryPreferenceStore())->read($this->root, 'test');
         self::assertIsString($storedPhpBinary);
         self::assertTrue((new PhpCliBinaryValidator())->validate([$storedPhpBinary], $this->root)->isValid());
@@ -105,6 +106,8 @@ final class SetupRunnerTest extends TestCase
         self::assertFalse($assetRebuildEnvironment['DATABASE_URL'] ?? null);
         self::assertFalse($assetRebuildEnvironment['APP_DATABASE_PREFIX'] ?? null);
         self::assertFalse($assetRebuildEnvironment['DEFAULT_URI'] ?? null);
+        self::assertSame('test-setup-app-secret-not-secure', $executor->environments[6]['MERCURE_JWT_SECRET'] ?? null);
+        self::assertSame('test-setup-app-secret-not-secure', $executor->environments[7]['MERCURE_JWT_SECRET'] ?? null);
         self::assertSame([
             ['composer', '--version'],
             ['composer', 'dump-env', 'test'],
@@ -112,6 +115,8 @@ final class SetupRunnerTest extends TestCase
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
+            [PHP_BINARY, $this->root.'/bin/console', 'mercure:stop', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'],
         ], $executor->commands);
 
         $pdo = new PDO('sqlite:'.$databasePath);
@@ -154,6 +159,44 @@ final class SetupRunnerTest extends TestCase
         self::assertSame($seed->homeContentFields($input)['title'][$input->language()], json_decode((string) $homeTitle, true, flags: JSON_THROW_ON_ERROR));
     }
 
+    public function testItDoesNotRunMercureHealthWhenMercureStopFails(): void
+    {
+        $databasePath = $this->root.'/var/setup.db';
+        $this->createSchema($databasePath);
+        $executor = new RecordingSetupCommandExecutor(onRun: static function (array $command): ?SetupCommandResult {
+            if (in_array('mercure:stop', $command, true)) {
+                return new SetupCommandResult(1, '', 'stop failed');
+            }
+
+            return null;
+        });
+        $runner = new SetupRunner($this->root, new NullWorkflowResultMessageReporter(), $executor);
+
+        $result = $runner->run(new SetupInput(
+            appEnv: 'test',
+            language: 'en',
+            siteTitle: 'Example Studio',
+            defaultUri: 'https://example.test',
+            databaseDriver: DatabaseDriver::SQLite,
+            databaseUrl: $this->sqliteUrl($databasePath),
+            adminUsername: 'admin',
+            adminPassword: 'Secret1!password',
+            adminEmail: 'admin@example.test',
+            appSecret: 'test-setup-app-secret-not-secure',
+        ));
+
+        self::assertTrue($result->isSuccess());
+        self::assertContainsEquals([PHP_BINARY, $this->root.'/bin/console', 'mercure:stop', '--env=test'], $executor->commands);
+        self::assertNotContainsEquals([PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'], $executor->commands);
+
+        $log = $result->value();
+        self::assertInstanceOf(ActionLog::class, $log);
+        $entries = $log->toArray()['entries'];
+        self::assertSame('run_mercure_health', $entries[11]['name']);
+        self::assertFalse($entries[11]['context']['stopped']);
+        self::assertFalse($entries[11]['context']['available']);
+    }
+
     public function testItRejectsShortAdminPasswordBeforeSetupSteps(): void
     {
         $databasePath = $this->root.'/var/setup.db';
@@ -171,7 +214,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'short',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -221,7 +264,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertTrue($result->isSuccess());
@@ -250,7 +293,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertTrue($result->isSuccess());
@@ -278,7 +321,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -302,7 +345,7 @@ final class SetupRunnerTest extends TestCase
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: $this->sqliteUrl($this->root.'/var/setup.db'),
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -339,7 +382,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -374,7 +417,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -407,7 +450,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -430,7 +473,7 @@ final class SetupRunnerTest extends TestCase
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: $this->sqliteUrl($this->root.'/var/setup.db'),
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertFalse($result->isSuccess());
@@ -459,7 +502,7 @@ final class SetupRunnerTest extends TestCase
             defaultUri: 'https://example.test',
             databaseDriver: DatabaseDriver::SQLite,
             databaseUrl: $this->sqliteUrl($databasePath),
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertTrue($result->isSuccess());
@@ -471,6 +514,8 @@ final class SetupRunnerTest extends TestCase
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
+            [PHP_BINARY, $this->root.'/bin/console', 'mercure:stop', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'],
         ], $executor->commands);
     }
 
@@ -520,7 +565,10 @@ final class SetupRunnerTest extends TestCase
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'], $entries[8]['context']['command']);
         self::assertSame('run_asset_rebuild', $entries[9]['name']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'], $entries[9]['context']['command']);
-        self::assertSame('mark_setup_completed', $entries[10]['name']);
+        self::assertSame('run_mercure_health', $entries[10]['name']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'mercure:stop', '--env=test'], $entries[10]['context']['stop_command']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'], $entries[10]['context']['command']);
+        self::assertSame('mark_setup_completed', $entries[11]['name']);
     }
 
     public function testDryRunUsesPhpCliPlaceholderWhenResolverValidationFails(): void
@@ -599,7 +647,7 @@ final class SetupRunnerTest extends TestCase
             adminUsername: 'admin',
             adminPassword: 'Secret1!password',
             adminEmail: 'admin@example.test',
-            appSecret: 'test-secret-12',
+            appSecret: 'test-setup-app-secret-not-secure',
         ));
 
         self::assertTrue($result->isSuccess());
@@ -832,6 +880,11 @@ final class RecordingSetupCommandExecutor implements SetupCommandExecutorInterfa
      */
     public array $commands = [];
 
+    /**
+     * @var list<array<string, string|false>>
+     */
+    public array $environments = [];
+
     public function __construct(
         private readonly ?int $failureAt = null,
         private readonly ?SetupCommandResult $failure = null,
@@ -843,6 +896,7 @@ final class RecordingSetupCommandExecutor implements SetupCommandExecutorInterfa
     public function run(array $command, string $cwd, array $environment = []): SetupCommandResult
     {
         $this->commands[] = $command;
+        $this->environments[] = $environment;
         if (is_callable($this->onRun)) {
             $result = ($this->onRun)($command, $cwd, $environment);
 

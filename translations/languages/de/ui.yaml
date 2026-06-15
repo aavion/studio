@@ -3,6 +3,21 @@ ui:
     name: 'Studio'
   alert:
     close: 'Benachrichtigung schließen'
+    close_all: 'Alle schließen'
+    empty_message: 'Es liegen keine aktiven Benachrichtigungen vor.'
+    empty_title: 'Keine Benachrichtigungen'
+    hide: 'Benachrichtigungen ausblenden'
+    notifications: 'Benachrichtigungen'
+  cookie_consent:
+    title: 'Cookie-Einstellungen'
+    message: 'Diese Seite nutzt notwendige Cookies für Kernfunktionen. Optionale Cookies werden nur nach deiner Zustimmung verwendet.'
+    configure: 'Konfigurieren'
+    reject_optional: 'Optionale ablehnen'
+    accept_selected: 'Auswahl speichern'
+    close: 'Schließen'
+    optional_title: 'Optionale Cookies'
+    no_optional: 'Aktuell sind keine optionalen Cookies registriert.'
+    privacy_link: 'Datenschutzhinweise'
   navigation:
     skip_to_content: 'Zum Inhalt springen'
   frontend:
@@ -25,6 +40,10 @@ ui:
     pending: 'Ausstehend'
   empty_state:
     title: 'Nichts anzuzeigen'
+  live_endpoint:
+    forbidden: 'Zugriff auf diesen Live-Endpunkt ist nicht erlaubt.'
+    handler_unavailable: 'Der Live-Endpunkt-Handler ist nicht verfügbar.'
+    not_found: 'Live-Endpunkt nicht gefunden.'
   markdown:
     embed:
       video_title: 'Eingebettetes Video'
@@ -163,6 +182,9 @@ ui:
         link: 'Anzeigen'
         password: 'Passwort'
         submit: 'Key anzeigen'
+        copy: 'Key kopieren'
+        copy_success: 'Kopiert.'
+        copy_failure: 'Kopieren fehlgeschlagen.'
       errors:
         invalid_csrf: 'Das API-Key-Formular ist abgelaufen. Bitte versuche es erneut.'
         create_failed: 'Der API-Key konnte nicht erstellt werden.'

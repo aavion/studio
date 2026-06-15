@@ -29,7 +29,10 @@
                 <dd>{{ ('ui.user.roles.' ~ user_account.role.value)|trans }}</dd>
             </div>
         </dl>
-        <form method="post" class="system-frontend-auth-form">
+        <form
+            method="post"
+            class="system-frontend-auth-form"
+        >
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_profile') }}">
             {% if username_change_enabled|default(false) %}
                 {% include '@frontend/partials/forms/fields/input.html.twig' with {

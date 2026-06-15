@@ -30,6 +30,16 @@ final class Version20260531000000 extends AbstractMigration
         $this->addPrimaryKey($messenger, 'id');
         $this->addIndex($messenger, ['queue_name', 'available_at', 'delivered_at', 'id'], 'idx_messenger_queue_available');
 
+        $uiAlertInbox = $schema->createTable('ui_alert_inbox');
+        $uiAlertInbox->addColumn('id', 'bigint', ['autoincrement' => true]);
+        $uiAlertInbox->addColumn('topic', 'string', ['length' => 80]);
+        $uiAlertInbox->addColumn('payload', 'json');
+        $uiAlertInbox->addColumn('created_at', 'datetime_immutable');
+        $uiAlertInbox->addColumn('expires_at', 'datetime_immutable', ['notnull' => false]);
+        $this->addPrimaryKey($uiAlertInbox, 'id');
+        $this->addIndex($uiAlertInbox, ['topic', 'id'], 'idx_ui_alert_inbox_topic_cursor');
+        $this->addIndex($uiAlertInbox, ['expires_at'], 'idx_ui_alert_inbox_expires_at');
+
         $config = $schema->createTable('config_entry');
         $config->addColumn('config_key', 'string', ['length' => 160]);
         $config->addColumn('value', 'json');
@@ -386,6 +396,7 @@ final class Version20260531000000 extends AbstractMigration
             'config_entry',
             'access_statistic_event',
             'state_marker',
+            'ui_alert_inbox',
             'messenger_messages',
         ] as $table) {
             $schema->dropTable($this->tableName($table));

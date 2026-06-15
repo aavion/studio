@@ -65,6 +65,9 @@ final class PackageMessageCode
     public const PACKAGE_LIFECYCLE_RUNTIME_FAILURE = 'package.lifecycle.runtime_failure';
     public const PACKAGE_LIFECYCLE_PHP_LOAD_FAILED = 'package.lifecycle.php_load_failed';
     public const PACKAGE_LIFECYCLE_ROLLED_BACK = 'package.lifecycle.rolled_back';
+    public const PACKAGE_LIVE_ENDPOINT_PATH_INVALID = 'package.live.endpoint_path_invalid';
+    public const PACKAGE_LIVE_ENDPOINT_HANDLER_INVALID = 'package.live.endpoint_handler_invalid';
+    public const PACKAGE_LIVE_ENDPOINT_RESERVED = 'package.live.endpoint_reserved';
     public const PACKAGE_SETTING_READ_FAILED = 'package.setting.read_failed';
     public const PACKAGE_SETTING_WRITE_FAILED = 'package.setting.write_failed';
     public const PACKAGE_SETTING_DELETE_FAILED = 'package.setting.delete_failed';

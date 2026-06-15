@@ -183,7 +183,9 @@ final class InitCommand
         $this->runRequiredCommand([...$console, 'assets:install', 'public'], 'Bundle assets are installed.');
         $this->runRequiredCommand([...$console, 'importmap:install'], 'Importmap packages are installed.');
         $this->runOptionalCommand([...$console, 'ux:icons:lock'], 'Symfony UX icons are locked locally.');
+        $this->runOptionalCommand([...$console, 'mercure:install'], 'Optional Mercure hub binary is installed when supported.');
         $this->runRequiredCommand([...$console, 'tailwind:build'], 'Tailwind CSS is built.');
+        $this->runRequiredCommand([...$console, 'cache:warmup'], 'Symfony cache is warmed.');
     }
 
     private function ensurePackageAssetRegistries(): void

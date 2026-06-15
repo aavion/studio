@@ -1,0 +1,13 @@
+{% props title = null, chart = null, empty_message = null %}
+<section {{ attributes.defaults({class: 'system-panel system-chart-panel'}) }}>
+    {% if title %}
+        <h2>{{ title }}</h2>
+    {% endif %}
+    {% if chart %}
+        <div class="system-chart-panel-canvas">
+            {{ render_chart(chart) }}
+        </div>
+    {% elseif empty_message %}
+        <p class="system-muted">{{ empty_message }}</p>
+    {% endif %}
+</section>

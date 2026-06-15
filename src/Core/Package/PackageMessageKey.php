@@ -66,6 +66,9 @@ final class PackageMessageKey
     public const PACKAGE_LIFECYCLE_PHP_LOAD_FAILED = 'message.package.lifecycle.php_load_failed';
     public const PACKAGE_LIFECYCLE_ROLLED_BACK = 'message.package.lifecycle.rolled_back';
     public const PACKAGE_RUNTIME_CONTRIBUTION_UNSUPPORTED = 'message.package.runtime.contribution_unsupported';
+    public const PACKAGE_LIVE_ENDPOINT_PATH_INVALID = 'message.package.live.endpoint_path_invalid';
+    public const PACKAGE_LIVE_ENDPOINT_HANDLER_INVALID = 'message.package.live.endpoint_handler_invalid';
+    public const PACKAGE_LIVE_ENDPOINT_RESERVED = 'message.package.live.endpoint_reserved';
     public const PACKAGE_SETTING_READ_FAILED = 'message.package.setting.read_failed';
     public const PACKAGE_SETTING_WRITE_FAILED = 'message.package.setting.write_failed';
     public const PACKAGE_SETTING_DELETE_FAILED = 'message.package.setting.delete_failed';

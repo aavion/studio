@@ -6,9 +6,13 @@ namespace App\Controller;
 
 use App\Backend\AdminControllerContext;
 use App\Backend\BackendArea;
+use App\Core\Message\Message;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Operation\Live\LiveOperationStarter;
 use App\Form\FormTokenValidator;
+use App\View\Alert\UiAlertDelivery;
+use App\View\Alert\UiAlertDispatcherInterface;
+use App\View\Alert\UiAlertTranslation;
 use App\View\Http\HttpErrorRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,6 +27,7 @@ final class AdminOperationController extends AbstractController
         private readonly LiveOperationRunStore $liveOperationRunStore,
         private readonly LiveOperationStarter $liveOperationStarter,
         private readonly FormTokenValidator $formTokenValidator,
+        private readonly UiAlertDispatcherInterface $alerts,
     ) {
     }
 
@@ -36,7 +41,7 @@ final class AdminOperationController extends AbstractController
         }
 
         if (!$this->formTokenValidator->isValid('admin-operations', $this->stringField($request, '_form_id'), $this->stringField($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.operations.actions.invalid_csrf');
+            $this->alertKey('warning', 'admin.operations.actions.invalid_csrf');
 
             return $this->redirect($request->getPathInfo());
         }
@@ -49,10 +54,7 @@ final class AdminOperationController extends AbstractController
                 'removed' => $result['removed'],
                 'ttl_seconds' => 3600,
             ]);
-            $this->addFlash('success', [
-                'translation_key' => 'admin.operations.actions.cleanup_completed',
-                'parameters' => ['%removed%' => $result['removed']],
-            ]);
+            $this->alertKey('success', 'admin.operations.actions.cleanup_completed', ['%removed%' => $result['removed']]);
 
             return $this->redirect($request->getPathInfo());
         }
@@ -61,7 +63,7 @@ final class AdminOperationController extends AbstractController
             $this->audit('operations.clear_stale_lock', [
                 'ttl_seconds' => 3600,
             ]);
-            $this->addFlash('success', 'admin.operations.actions.stale_lock_cleared');
+            $this->alertKey('success', 'admin.operations.actions.stale_lock_cleared');
 
             return $this->redirect($request->getPathInfo());
         }
@@ -75,10 +77,9 @@ final class AdminOperationController extends AbstractController
                 'pid' => $result['pid'] ?? null,
                 'ttl_seconds' => 3600,
             ]);
-            $this->addFlash($result['killed'] || $result['lock_cleared'] ? 'success' : 'warning', [
-                'translation_key' => 'admin.operations.actions.kill_'.$result['reason'],
-                'parameters' => ['%pid%' => (string) ($result['pid'] ?? '')],
-            ]);
+            $message = 'admin.operations.actions.kill_'.$result['reason'];
+            $parameters = ['%pid%' => (string) ($result['pid'] ?? '')];
+            $this->alertKey($result['killed'] || $result['lock_cleared'] ? 'success' : 'warning', $message, $parameters);
 
             return $this->redirect($request->getPathInfo());
         }
@@ -86,7 +87,7 @@ final class AdminOperationController extends AbstractController
         $this->audit('operations.noop', [
             'requested_action' => $action,
         ]);
-        $this->addFlash('warning', 'admin.operations.actions.noop');
+        $this->alertKey('warning', 'admin.operations.actions.noop');
 
         return $this->redirect($request->getPathInfo());
     }
@@ -126,7 +127,7 @@ final class AdminOperationController extends AbstractController
         }
 
         if (!$this->formTokenValidator->isValid('admin-operations', 'admin-operations', $this->stringField($request, '_csrf_token'))) {
-            $this->addFlash('error', 'admin.operations.actions.invalid_csrf');
+            $this->alertKey('warning', 'admin.operations.actions.invalid_csrf');
 
             return $this->redirectToRoute('backend_admin_operation_detail', ['operationId' => $operationId]);
         }
@@ -152,7 +153,7 @@ final class AdminOperationController extends AbstractController
         }
 
         foreach ($result->issues() as $issue) {
-            $this->addFlash('error', $issue->translationKey());
+            $this->alert($issue);
         }
 
         return $this->redirectToRoute('backend_admin_operation_detail', ['operationId' => $operationId]);
@@ -174,5 +175,18 @@ final class AdminOperationController extends AbstractController
         $value = $request->request->get($name);
 
         return is_string($value) ? $value : '';
+    }
+
+    private function alert(Message $message): void
+    {
+        $this->alerts->addAlert($message, UiAlertDelivery::Direct);
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     */
+    private function alertKey(string $level, string $key, array $parameters = []): void
+    {
+        $this->alerts->addAlert(UiAlertTranslation::forLevel($level, $key, $parameters), UiAlertDelivery::Direct);
     }
 }

@@ -1,0 +1,10 @@
+{% props center = [51.1657, 10.4515], zoom = 6, markers = [], fit_bounds_to_markers = false %}
+<section {{ attributes.defaults({class: 'system-panel system-map-view'}) }}>
+    <twig:ux:map
+        :center="center"
+        :zoom="zoom"
+        :markers="markers"
+        :fitBoundsToMarkers="fit_bounds_to_markers"
+        class="system-map-view-canvas"
+    />
+</section>

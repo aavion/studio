@@ -17,6 +17,7 @@
     data-label-cancel="{{ 'ui.operations.action_log.actions.cancel'|trans }}"
     data-label-refresh="{{ 'ui.operations.action_log.actions.refresh'|trans }}"
     data-label-close="{{ 'ui.operations.action_log.actions.close'|trans }}"
+    data-label-show-details="{{ 'ui.operations.action_log.actions.show_details'|trans }}"
     data-label-status-queued="{{ 'ui.operations.action_log.statuses.queued'|trans }}"
     data-label-status-pending="{{ 'ui.operations.action_log.statuses.pending'|trans }}"
     data-label-status-running="{{ 'ui.operations.action_log.statuses.running'|trans }}"
@@ -36,6 +37,7 @@
         clear_cache: 'setup.steps.clear_cache'|trans,
         run_package_discovery: 'setup.steps.run_package_discovery'|trans,
         run_asset_rebuild: 'setup.steps.run_asset_rebuild'|trans,
+        run_mercure_health: 'setup.steps.run_mercure_health'|trans,
         mark_setup_completed: 'setup.steps.mark_setup_completed'|trans,
     }|json_encode|e('html_attr') }}"
     hidden

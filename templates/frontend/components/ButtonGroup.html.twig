@@ -1,0 +1,13 @@
+{% props actions = [], class = '' %}
+
+<div {{ attributes.defaults({class: ['system-button-group', class]|filter(item => item is not empty)|join(' ')}) }}>
+    {% for action in actions %}
+        <twig:frontend:Button
+            :label="action.label"
+            :href="action.href|default(null)"
+            :type="action.type|default(null)"
+            :variant="action.variant|default('secondary')"
+            :class="action.class|default('')"
+        />
+    {% endfor %}
+</div>

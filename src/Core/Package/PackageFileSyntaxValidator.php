@@ -84,6 +84,13 @@ final readonly class PackageFileSyntaxValidator
             $lintResult = $linter->lint($contents, $file);
 
             foreach ($lintResult->issues() as $lintIssue) {
+                if ($linter instanceof CssLinter
+                    && CssLinter::hasStrictParserUnsupportedContext($contents, $lintIssue->line())
+                    && $linter->lint(CssLinter::forStrictParser($contents), $file)->isSuccess()
+                ) {
+                    continue;
+                }
+
                 $issues[] = Message::create(
                     $issueCode,
                     $translationKey,

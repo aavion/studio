@@ -8,10 +8,15 @@ use App\Api\ApiFeaturePolicy;
 use App\Core\Access\AccessActor;
 use App\Core\Id\UuidFactory;
 use App\Core\Log\AuditLoggerInterface;
+use App\Core\Message\CommonMessageCode;
+use App\Core\Message\Message;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
 use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
+use App\View\Alert\UiAlertDelivery;
+use App\View\Alert\UiAlertDispatcherInterface;
+use App\View\Alert\UiAlertTranslation;
 use App\View\Http\HttpErrorRenderer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,6 +36,7 @@ final class UserApiKeyController extends AbstractController
         private readonly ApiKeyVault $apiKeyVault,
         private readonly UuidFactory $uuidFactory,
         private readonly ApiFeaturePolicy $apiFeaturePolicy,
+        private readonly UiAlertDispatcherInterface $alerts,
     ) {
     }
 
@@ -51,7 +57,7 @@ final class UserApiKeyController extends AbstractController
 
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('user_api_key_create', $this->stringField($request, '_csrf_token'))) {
-                $this->addFlash('error', 'ui.user.api_keys.errors.invalid_csrf');
+                $this->alertKey('error', 'ui.user.api_keys.errors.invalid_csrf');
             } else {
                 $prefix = $this->stringField($request, 'prefix');
                 $plainKey = $this->apiKeyVault->generatePlainKey($prefix);
@@ -64,7 +70,7 @@ final class UserApiKeyController extends AbstractController
                     $this->audit($user, 'api_key.created', ['api_key_uid' => $apiKey->uid(), 'prefix' => $apiKey->prefix(), 'status' => $status->value]);
                     $newPlainKey = $plainKey;
                 } catch (Throwable) {
-                    $this->addFlash('error', 'ui.user.api_keys.errors.create_failed');
+                    $this->alertKey('error', 'ui.user.api_keys.errors.create_failed');
                 }
             }
         }
@@ -183,6 +189,11 @@ final class UserApiKeyController extends AbstractController
         } catch (Throwable) {
             return;
         }
+    }
+
+    private function alertKey(string $level, string $key): void
+    {
+        $this->alerts->addAlert(UiAlertTranslation::forLevel($level, $key), UiAlertDelivery::Direct);
     }
 
 }

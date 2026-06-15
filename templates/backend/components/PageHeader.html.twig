@@ -1,0 +1,11 @@
+{% props title, eyebrow = 'ui.admin.area'|trans, actions = null %}
+
+<header {{ attributes.defaults({class: 'system-page-header'}) }}>
+    <div>
+        <div class="system-kicker">{{ eyebrow }}</div>
+        <h1>{{ title }}</h1>
+    </div>
+    {% if actions is not empty %}
+        <div class="system-page-actions">{{ actions|raw }}</div>
+    {% endif %}
+</header>

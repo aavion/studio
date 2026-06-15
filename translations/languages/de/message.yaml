@@ -77,6 +77,10 @@ message:
       rolled_back: 'Paket-Lifecycle-Änderungen wurden für %count% Paket(e) zurückgerollt.'
     runtime:
       contribution_unsupported: 'Paket "%package%" hat einen nicht unterstützten Runtime-Contribution-Typ "%type%" zurückgegeben.'
+    live:
+      endpoint_path_invalid: 'Paket "%package%" wollte den Live-Endpunkt-Pfad "%path%" außerhalb des eigenen /api/live/{package}/-Namespace registrieren.'
+      endpoint_handler_invalid: 'Paket "%package%" wollte den Live-Endpunkt-Handler "%handler%" außerhalb des eigenen Handler-Namespace registrieren.'
+      endpoint_reserved: 'Paket "%package%" kann keine Live-Endpunkte mit reserviertem System-Slug "%slug%" registrieren.'
     setting:
       read_failed: 'Paket-Einstellung "%package%:%key%" konnte nicht gelesen werden.'
       write_failed: 'Paket-Einstellung "%package%:%key%" konnte nicht geschrieben werden.'

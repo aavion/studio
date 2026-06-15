@@ -217,6 +217,13 @@ html {
     color: #ffffff;
 }
 
+.system-button:disabled,
+.system-backend-button:disabled,
+.system-backend-setup-nav-button:disabled {
+    cursor: wait;
+    opacity: 0.72;
+}
+
 .system-icon-button {
     display: inline-flex;
     align-items: center;
@@ -343,13 +350,29 @@ html {
 
 .system-alert-stack {
     position: fixed;
-    z-index: 70;
+    z-index: 90;
     top: clamp(0.75rem, 2vw, 1.25rem);
     right: clamp(0.75rem, 2vw, 1.25rem);
     display: grid;
     width: min(calc(100vw - 1.5rem), 26rem);
     gap: 0.45rem;
     pointer-events: none;
+}
+
+.system-chart-panel,
+.system-map-view {
+    min-width: 0;
+}
+
+.system-chart-panel-canvas,
+.system-map-view-canvas {
+    min-height: 20rem;
+}
+
+.system-map-view-canvas {
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--system-radius-sm);
 }
 
 .system-alert {

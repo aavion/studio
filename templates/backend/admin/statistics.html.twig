@@ -20,7 +20,7 @@
             <p class="system-muted">{{ 'admin.statistics.disabled'|trans }}</p>
         {% endif %}
         <p class="system-muted">{{ 'admin.statistics.summary'|trans({'%count%': access_statistics.total_requests}) }}</p>
-        <form method="get" class="system-form system-backend-log-filter-form">
+        <form method="get" class="system-form system-backend-log-filter-form" data-controller="filter-form" data-action="input->filter-form#queue change->filter-form#queue submit->filter-form#submit">
             <label>
                 <span>{{ 'admin.statistics.window'|trans }}</span>
                 <select name="statistics_window">

@@ -11,6 +11,7 @@ use App\Content\Routing\ContentRedirectTargetType;
 use App\Repository\ContentItemRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class ContentRedirectResolverTest extends KernelTestCase
@@ -88,6 +89,28 @@ final class ContentRedirectResolverTest extends KernelTestCase
 
         self::assertSame(ContentRedirectResolveStatus::InvalidTarget, $result->status());
         self::assertSame('javascript:alert(1)', $result->redirectRoute());
+    }
+
+    #[DataProvider('unsafeExternalRedirectTargets')]
+    public function testItRejectsUnsafeExternalRedirectTargets(string $target): void
+    {
+        $this->connection->update('content_item', ['redirect_target' => $target], ['slug' => 'about']);
+        $this->entityManager->clear();
+
+        $result = $this->resolver->resolveByPath('/about');
+
+        self::assertSame(ContentRedirectResolveStatus::InvalidTarget, $result->status());
+        self::assertSame($target, $result->redirectRoute());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function unsafeExternalRedirectTargets(): iterable
+    {
+        yield 'missing host' => ['https:///target'];
+        yield 'backslash' => ['https://example.test\\@evil.example.test/target'];
+        yield 'control character' => ["https://example.test/target\nLocation: https://evil.example.test"];
     }
 
     public function testItDetectsRedirectLoops(): void
