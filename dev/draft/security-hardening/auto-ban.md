@@ -43,6 +43,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Ban responses use HTML or JSON according to request family and never expose raw signal internals.
 - Suggested record fields are subject type/key, reason code, source signal digest, status, created at, expires at, lifted at, lifted by, lift reason, actor context hash, last matched at, match count, and audit reference.
 - Initial TTL defaults should be conservative and test-backed: short anonymous/probe bans first, longer repeat bans only after repeated signals within the review window, and no permanent bans.
+- Prefer Visitor-ID-backed bans for continuity. Add IP-bucket bans as a shorter secondary layer to reduce cookie-reset bypasses, and keep every IP-derived ban TTL below 30 days.
 - Ban keys come only from the shared subject/client-identity resolver. Raw IP strings, raw API keys, and raw forwarding headers must never be stored as ban keys.
 - Expiry and cleanup use an injectable clock/time boundary.
 
@@ -52,6 +53,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Owner accounts must not be locked out by IP/visitor bans without an alternate documented recovery path.
 - Shared IPs can be blocked only for clear anonymous abuse and should not permanently deny authenticated users.
 - Invalid API keys may be banned by key fingerprint/prefix where safe, but raw submitted keys are never stored.
+- IP-derived bans must expire and be cleaned up before the 30-day IP retention limit; expired IP bans must not remain searchable as historical Admin records with recoverable IP material.
 - Manual unban must take effect immediately even if passive signals that created the ban still exist.
 - Concurrent ban creation, expiry cleanup, and manual unban must be idempotent and auditable.
 - Ban-store degradation must not create an invisible permanent block or lock out Owner recovery.
@@ -64,6 +66,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test HTML/JSON ban responses and redaction.
 - Test Admin manual unban writes audit entries.
 - Test repeat-ban TTL escalation stays bounded and does not create permanent bans.
+- Test IP-derived ban TTL validation rejects or clamps values at 30 days and cleanup removes expired IP-derived records from review/export surfaces.
 - Test trusted-proxy/client-identity behavior, ban-store degradation, and concurrent create/unban/cleanup behavior.
 - Test migration applies on SQLite.
 

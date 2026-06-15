@@ -42,6 +42,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - First implementation uses a portable database table for short-lived passive signals. Suggested fields are normalized subject type/key, request family, intent, reason code, confidence, weight/count, first-seen timestamp, last-seen timestamp, expiry timestamp, safe context hash, and optional audit reference.
 - Passive-signal rows are observational only in this branch. The rate and auto-ban branches decide how to consume them for enforcement.
 - Keep passive signals separate from raw file logs. If a broader database-backed security event projection is introduced later, this branch's signal store should either feed it through a documented boundary or remain the focused enforcement-oriented read model.
+- IP subjects and stable IP-derived hashes must expire within 30 days. Longer-lived passive signals must use visitor ID, authenticated user ID, API key fingerprint, or aggregate keys without retaining the IP-derived subject.
 - TTL and expiry use an injectable clock/time boundary for deterministic tests.
 
 ## Edge cases
@@ -52,6 +53,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Prefetch for state-changing methods is suspicious; normal GET prefetch remains low-confidence.
 - Expired passive signals must not affect later enforcement once rate/ban branches start consuming the store.
 - Passive-signal storage failure records a safe diagnostic and must not change request outcome in this foundation branch.
+- Cleanup must remove or anonymize expired IP-derived signal keys before any Admin export, support bundle, or statistics projection can expose them.
 
 ## Tests and validation
 
@@ -59,6 +61,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test intent classification for browser, prefetch, API read/write, `/api/live/**`, login, registration, password reset, and suspicious probes.
 - Test redaction in passive signal messages.
 - Test passive-signal persistence, aggregation by normalized subject/intent/reason, expiry filtering, and cleanup command/task behavior.
+- Test IP-derived signal retention stays below 30 days and that longer-lived visitor-based signals do not keep recoverable IP material.
 - Test trusted-proxy/client-identity behavior and storage-failure degradation.
 - Test no limiter or ban enforcement occurs in this branch.
 
