@@ -14,7 +14,11 @@ use App\Core\Geo\MaxMindGeoIpDatabaseReaderFactoryInterface;
 use App\Core\Geo\MaxMindGeoIpDatabaseReaderInterface;
 use App\Core\Geo\MaxMindGeoIpDatabaseUpdater;
 use App\Core\Geo\MaxMindGeoIpDownloadClientInterface;
+use App\Core\Geo\MaxMindGeoIpUpdateAction;
 use App\Core\Message\Message;
+use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Operation\ActionQueue;
+use App\Core\Operation\OperationExecutor;
 use App\Core\Workflow\WorkflowResult;
 use App\Tests\Support\FilesystemTestHelper;
 use Doctrine\DBAL\Connection;
@@ -95,6 +99,34 @@ final class MaxMindGeoIpDatabaseUpdaterTest extends TestCase
         self::assertStringNotContainsString('sensitive-test-license', $encoded);
     }
 
+    public function testOperationExecutionStateDoesNotLeakLicenseKey(): void
+    {
+        $licenseKey = 'sensitive-operation-license';
+        $config = $this->configuredConfig($licenseKey);
+        $updater = new MaxMindGeoIpDatabaseUpdater(
+            $config,
+            new FailingGeoIpDownloadClient(),
+            new SuccessfulGeoIpArchiveExtractor(),
+            new ValidGeoIpReaderFactory(),
+            $this->projectDir,
+        );
+        $executor = new OperationExecutor(new SilentWorkflowResultMessageReporter());
+        $queue = ActionQueue::create('geoip database update', [
+            new MaxMindGeoIpUpdateAction($updater, 'admin_ui'),
+        ], context: [
+            'operation' => 'geoip.database_update',
+            'environment' => 'test',
+            'trigger' => 'admin_ui',
+        ]);
+
+        $execution = $executor->executeQueue($queue);
+        $encoded = json_encode($execution->toArray(), JSON_THROW_ON_ERROR);
+
+        self::assertFalse($execution->result()->isSuccess());
+        self::assertStringNotContainsString($licenseKey, $encoded);
+        self::assertStringNotContainsString('license_key=', $encoded);
+    }
+
     private function configuredConfig(string $licenseKey): MaxMindGeoIpConfig
     {
         $store = new Config($this->connection());
@@ -109,6 +141,14 @@ final class MaxMindGeoIpDatabaseUpdaterTest extends TestCase
         $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL DEFAULT 0, modified_at DATETIME DEFAULT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
 
         return $connection;
+    }
+}
+
+final readonly class SilentWorkflowResultMessageReporter implements WorkflowResultMessageReporterInterface
+{
+    public function report(WorkflowResult $result, array $operationContext = []): WorkflowResult
+    {
+        return $result;
     }
 }
 
