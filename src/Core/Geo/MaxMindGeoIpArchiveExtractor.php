@@ -31,6 +31,14 @@ final readonly class MaxMindGeoIpArchiveExtractor implements MaxMindGeoIpArchive
                 @unlink($tarPath);
             }
 
+            if (!$this->tarPathsAreSafe($archivePath, compressed: true)) {
+                return $this->failure(
+                    GeoIpMessageCode::GEOIP_DOWNLOAD_ARCHIVE_INVALID,
+                    GeoIpMessageKey::GEOIP_DOWNLOAD_ARCHIVE_INVALID,
+                    ['stage' => 'extract', 'reason' => 'unsafe_archive_path'],
+                );
+            }
+
             $archive = new PharData($archivePath);
             $archive->decompress();
             if (!$this->tarPathsAreSafe($tarPath)) {
@@ -83,16 +91,16 @@ final readonly class MaxMindGeoIpArchiveExtractor implements MaxMindGeoIpArchive
         return null;
     }
 
-    private function tarPathsAreSafe(string $tarPath): bool
+    private function tarPathsAreSafe(string $tarPath, bool $compressed = false): bool
     {
-        $handle = @fopen($tarPath, 'rb');
+        $handle = $compressed ? @gzopen($tarPath, 'rb') : @fopen($tarPath, 'rb');
         if (!is_resource($handle)) {
             return false;
         }
 
         try {
-            while (!feof($handle)) {
-                $header = fread($handle, 512);
+            while (true) {
+                $header = $compressed ? gzread($handle, 512) : fread($handle, 512);
                 if (!is_string($header) || '' === $header) {
                     break;
                 }
@@ -112,18 +120,26 @@ final readonly class MaxMindGeoIpArchiveExtractor implements MaxMindGeoIpArchive
                     return false;
                 }
 
+                $type = substr($header, 156, 1);
+                if (!in_array($type, ["\0", '0', '5'], true)) {
+                    return false;
+                }
+
                 $size = octdec(trim(rtrim(substr($header, 124, 12), "\0 ")) ?: '0');
-                if ($size > 0) {
-                    $skip = (int) (ceil($size / 512) * 512);
-                    if (0 !== fseek($handle, $skip, SEEK_CUR)) {
+                $skip = $size > 0 ? (int) (ceil($size / 512) * 512) : 0;
+                while ($skip > 0) {
+                    $chunk = $compressed ? gzread($handle, min(8192, $skip)) : fread($handle, min(8192, $skip));
+                    if (!is_string($chunk) || '' === $chunk) {
                         return false;
                     }
+
+                    $skip -= strlen($chunk);
                 }
             }
 
             return true;
         } finally {
-            fclose($handle);
+            $compressed ? gzclose($handle) : fclose($handle);
         }
     }
 

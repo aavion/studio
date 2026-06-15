@@ -51,8 +51,21 @@ final class MaxMindGeoIpArchiveExtractorTest extends TestCase
         self::assertFileDoesNotExist(dirname($this->workspaceDir).DIRECTORY_SEPARATOR.'escape.mmdb');
     }
 
+    public function testItRejectsUnsupportedArchiveEntryTypes(): void
+    {
+        $archivePath = $this->archivePath('unsupported-type', [
+            'GeoLite2-City/link' => ['type' => '2', 'link' => '/tmp'],
+        ]);
+
+        $result = (new MaxMindGeoIpArchiveExtractor())->extractDatabase($archivePath, $this->workspaceDir);
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame(GeoIpMessageCode::GEOIP_DOWNLOAD_ARCHIVE_INVALID, $result->firstIssue()?->code());
+        self::assertSame('unsafe_archive_path', $result->context()['reason'] ?? null);
+    }
+
     /**
-     * @param array<string, string> $files
+     * @param array<string, string|array{contents?: string, type?: string, link?: string}> $files
      */
     private function archivePath(string $name, array $files): string
     {
@@ -63,14 +76,17 @@ final class MaxMindGeoIpArchiveExtractorTest extends TestCase
     }
 
     /**
-     * @param array<string, string> $files
+     * @param array<string, string|array{contents?: string, type?: string, link?: string}> $files
      */
     private function tarContents(array $files): string
     {
         $tar = '';
 
-        foreach ($files as $path => $contents) {
-            $tar .= $this->tarHeader($path, strlen($contents));
+        foreach ($files as $path => $entry) {
+            $contents = is_array($entry) ? (string) ($entry['contents'] ?? '') : $entry;
+            $type = is_array($entry) ? (string) ($entry['type'] ?? '0') : '0';
+            $link = is_array($entry) ? (string) ($entry['link'] ?? '') : '';
+            $tar .= $this->tarHeader($path, strlen($contents), $type, $link);
             $tar .= $contents;
             $tar .= str_repeat("\0", (512 - (strlen($contents) % 512)) % 512);
         }
@@ -78,7 +94,7 @@ final class MaxMindGeoIpArchiveExtractorTest extends TestCase
         return $tar.str_repeat("\0", 1024);
     }
 
-    private function tarHeader(string $path, int $size): string
+    private function tarHeader(string $path, int $size, string $type = '0', string $link = ''): string
     {
         $header = str_pad(substr($path, 0, 100), 100, "\0");
         $header .= str_pad('0000644', 8, "\0");
@@ -87,8 +103,8 @@ final class MaxMindGeoIpArchiveExtractorTest extends TestCase
         $header .= str_pad(decoct($size), 11, '0', STR_PAD_LEFT)."\0";
         $header .= str_pad(decoct(0), 11, '0', STR_PAD_LEFT)."\0";
         $header .= str_repeat(' ', 8);
-        $header .= '0';
-        $header .= str_repeat("\0", 100);
+        $header .= $type[0] ?? '0';
+        $header .= str_pad(substr($link, 0, 100), 100, "\0");
         $header .= "ustar\0";
         $header .= "00";
         $header .= str_repeat("\0", 247);
