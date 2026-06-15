@@ -706,6 +706,20 @@ admin:
       title: 'Statistics settings'
       foundation_title: 'Statistics configuration'
       foundation_text: 'Access statistics recording, display, and GeoIP enrichment can be disabled independently from raw access logging. Raw access logs remain available for operational security and are retained for 30 days.'
+    geoip:
+      status:
+        title: 'GeoIP2 status'
+        provider: 'Provider'
+        state: 'State'
+        database_edition: 'Database edition'
+        database_build_date: 'Database build date'
+        failure_code: 'Failure code'
+        values:
+          ready: 'Ready'
+          disabled: 'Disabled'
+          unconfigured: 'Unconfigured'
+          unavailable: 'Unavailable'
+          unknown: 'Unknown'
     api:
       title: 'API settings'
       foundation_title: 'API availability'

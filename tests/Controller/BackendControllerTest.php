@@ -943,6 +943,8 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('input[name="statistics.geoip.enabled"]');
         self::assertSelectorExists('input[name="statistics.geoip.maxmind.license_key"][type="password"]');
         self::assertSelectorExists('a[href="https://www.maxmind.com/en/geolite2/signup"]');
+        self::assertSelectorTextContains('h3', 'GeoIP2 status');
+        self::assertSelectorTextContains('.system-definition-list', 'Disabled');
         self::assertSelectorNotExists('input[name="_backend_action"][value="geoip_database_update"]');
 
         $config = self::getContainer()->get(Config::class);

@@ -26,6 +26,34 @@
         {% if settings_form %}
             {% include '@backend/partials/forms/_dynamic.html.twig' with {form: settings_form} only %}
         {% endif %}
+        {% if settings_section == 'statistics' and geoip_settings.status|default(null) %}
+            {% set geoip_status = geoip_settings.status %}
+            <h3>{{ 'admin.settings.geoip.status.title'|trans }}</h3>
+            <dl class="system-definition-list">
+                <div>
+                    <dt>{{ 'admin.settings.geoip.status.provider'|trans }}</dt>
+                    <dd>{{ geoip_status.provider_key|default('n/a') }}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'admin.settings.geoip.status.state'|trans }}</dt>
+                    <dd>{{ ('admin.settings.geoip.status.values.' ~ (geoip_status.status|default('unknown')))|trans }}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'admin.settings.geoip.status.database_edition'|trans }}</dt>
+                    <dd>{{ geoip_status.database_edition|default('n/a') ?: 'n/a' }}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'admin.settings.geoip.status.database_build_date'|trans }}</dt>
+                    <dd>{{ geoip_status.database_build_date|default('n/a') ?: 'n/a' }}</dd>
+                </div>
+                {% if geoip_status.failure_code|default(null) %}
+                    <div>
+                        <dt>{{ 'admin.settings.geoip.status.failure_code'|trans }}</dt>
+                        <dd>{{ geoip_status.failure_code }}</dd>
+                    </div>
+                {% endif %}
+            </dl>
+        {% endif %}
         {% if settings_section == 'statistics' and geoip_settings.has_license_key|default(false) %}
             {% include '@backend/admin/partials/_backend-actions.html.twig' with {
                 actions: backend_actions(['geoip_database_update']),

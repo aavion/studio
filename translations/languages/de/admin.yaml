@@ -706,6 +706,20 @@ admin:
       title: 'Statistik-Einstellungen'
       foundation_title: 'Statistik-Konfiguration'
       foundation_text: 'Aufzeichnung, Anzeige und GeoIP-Anreicherung von Zugriffsstatistiken können unabhängig vom Raw-Access-Logging deaktiviert werden. Raw-Access-Logs bleiben für operative Sicherheit verfügbar und werden 30 Tage aufbewahrt.'
+    geoip:
+      status:
+        title: 'GeoIP2-Status'
+        provider: 'Provider'
+        state: 'Status'
+        database_edition: 'Datenbank-Edition'
+        database_build_date: 'Datenbank-Build-Datum'
+        failure_code: 'Fehlercode'
+        values:
+          ready: 'Bereit'
+          disabled: 'Deaktiviert'
+          unconfigured: 'Nicht konfiguriert'
+          unavailable: 'Nicht verfügbar'
+          unknown: 'Unbekannt'
     api:
       title: 'API-Einstellungen'
       foundation_title: 'API-Verfügbarkeit'

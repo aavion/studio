@@ -1,7 +1,7 @@
 # GeoIP observability branch plan
 
 > **Status**: Draft  
-> **Updated**: 2026-06-15  
+> **Updated**: 2026-06-16
 > **Owner**: Core  
 > **Purpose:** Define the `feat-security-geoip-observability` implementation plan.  
 
@@ -32,22 +32,23 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 2. Add protected administrator-only Statistics settings for GeoIP enablement, the local database path, and the MaxMind license key.
 3. Keep `NullGeoIpResolver` active whenever the provider is disabled, unconfigured, missing a local database, or unable to read data.
 4. Add a scheduler-ready update task definition for GeoIP database refresh; keep it inactive by default until an administrator enables the task and stores a MaxMind license key.
-5. Add safe Admin diagnostics for provider status, last update attempt, database freshness, and disabled/unconfigured state.
+5. Add safe Admin diagnostics for provider status, database edition/build date when available, and disabled/unconfigured/unavailable state. Persistent last-update attempt/success state can be added later when a dedicated update-state store exists.
 6. Wire access logs and statistics to consume normalized provider output only through the resolver interface and the shared client-identity resolver.
 
 ## Public interfaces and data decisions
 
-- GeoIP output uses normalized nullable or `n/a` fields for country, region, city, latitude/longitude where available, provider status, and lookup status.
+- GeoIP output uses normalized `n/a` fields for city, state/region, country, and continent. Latitude/longitude are intentionally out of scope for the first implementation because current logs/statistics do not persist or display coordinates.
 - The foundation keeps `n/a` placeholders as the stable default for access logs and statistics whenever lookup input is missing, providers are disabled/unconfigured/unavailable, or a provider throws.
 - Providers expose only safe status fields: provider key, coarse status, database edition/build date, update timestamps, next suggested update, and redacted failure code. No raw paths, IP inputs, license/account data, or full exception messages belong in provider status.
 - Lookup input uses the shared client-identity resolver and Symfony trusted-proxy configuration; raw forwarding headers are never parsed directly by the provider.
 - Provider secrets are protected config values and never rendered outside authorized Admin settings.
 - Scheduler task identifiers use stable system-owned names and do not expose provider credentials. The MaxMind database update task is a trusted callable scheduled daily by default and remains inactive until an operator activates it in Scheduler.
-- Update state records last attempt, last success, database edition, database build date, next suggested update, and redacted failure code when persistent update-state storage is added. The first foundation reports equivalent context through Operations, Scheduler runs, and the Message layer.
+- Update state records last attempt, last success, database edition, database build date, next suggested update, and redacted failure code when persistent update-state storage is added. The first foundation reports update context through Operations, Scheduler runs, and the Message layer, while the Admin settings surface shows the safe resolver/provider status available at request time.
 - No public API response adds GeoIP data in this branch.
 - GeoIP enablement, database path/status, and the MaxMind license key are protected/audited Statistics configuration surfaces; license material remains secret-only. Disabled, unconfigured, expired, or failed providers must fall back to `NullGeoIpResolver`.
 - The first MaxMind implementation uses the installed `geoip2/geoip2` package against a configured local `.mmdb` database. Request-time lookups must not download databases or require outbound network access.
 - The first production settings surface intentionally avoids a provider dropdown, Account ID field, and explicit GeoIP locale field until the product has a concrete need for them. MaxMind Reader locales are derived from `localization.default_language` with `en` as stable fallback.
+- New setups explicitly seed GeoIP as disabled, keep the MaxMind license key empty and sensitive, and use `var/geoip2/GeoLite2-City.mmdb` as the default project-relative database path.
 - License key configuration is sensitive. Empty sensitive form submissions preserve existing stored values, API/settings read models return redacted display values, and PHPUnit coverage must use fakes or dummy strings rather than real MaxMind credentials.
 - The default local database path is `var/geoip2/GeoLite2-City.mmdb`. Admin-triggered downloads and scheduler downloads must write through a temporary workspace and atomically replace the configured target where the platform supports atomic rename.
 - The Statistics settings page may link operators to the official MaxMind GeoLite signup page for a free license key. A saved key reveals the database download action; missing keys make the scheduler callable fail with a translated Message-layer diagnostic so normal scheduler failure policy can disable repeatedly failing tasks.
@@ -69,6 +70,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test scheduler task definition and missing-key failure message behavior.
 - Test that the task remains inactive until explicitly activated by an operator and that missing credentials produce clear failure context.
 - Test protected configuration redaction and null fallback for disabled, missing, invalid, and expired provider states.
+- Test the Statistics settings status rendering so operators can see disabled/unconfigured/ready state without exposing secrets.
 - Run focused container lint when services/config are added.
 
 ## Documentation and tracking
@@ -87,6 +89,6 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 ## Acceptance criteria
 
-- Operators can see whether GeoIP is configured and fresh.
+- Operators can see whether GeoIP is disabled, unconfigured, unavailable, or ready, and can see safe database edition/build-date data when the local database can be opened.
 - Logs/statistics gain GeoIP fields when available and continue cleanly when unavailable.
 - No secret or sensitive provider detail leaks through logs, diagnostics, tests, or exports.
