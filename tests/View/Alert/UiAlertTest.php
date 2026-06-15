@@ -66,4 +66,37 @@ final class UiAlertTest extends TestCase
         self::assertArrayNotHasKey('context', $alert->toArray());
         self::assertSame('message.package.runtime_failure', $alert->toArray()['translation_key']);
     }
+
+    public function testPresentationFiltersUnsafeActionLinks(): void
+    {
+        $alert = UiAlert::fromLevel('info', 'Saved')->withPresentation(UiAlertPresentation::persistent(actions: [
+            UiAlertAction::link('Open', '/admin/packages', '_blank'),
+            UiAlertAction::link('Script', 'javascript:alert(1)'),
+            ['label' => 'Data', 'href' => 'data:text/html,boom'],
+            ['label' => 'Protocol-relative', 'href' => '//evil.example.test/path'],
+            ['label' => 'Hostless http', 'href' => 'http:evil.example.test'],
+            ['label' => 'External', 'href' => 'https://example.test/privacy', 'target' => '_self'],
+            ['label' => 'Event', 'event' => 'operation-overlay:show', 'detail' => ['id' => 'operation-1']],
+        ]));
+
+        self::assertSame([
+            ['label' => 'Open', 'href' => '/admin/packages', 'target' => '_blank'],
+            ['label' => 'External', 'href' => 'https://example.test/privacy', 'target' => '_self'],
+            ['label' => 'Event', 'event' => 'operation-overlay:show', 'detail' => ['id' => 'operation-1']],
+        ], $alert->toArray()['actions']);
+    }
+
+    public function testDirectAlertActionsUseTheSameLinkPolicy(): void
+    {
+        $alert = UiAlert::fromLevel('info', 'Saved', actions: [
+            ['label' => 'Open', 'href' => '/admin/packages'],
+            ['label' => 'Script', 'href' => 'javascript:alert(1)'],
+            ['label' => 'Event', 'event' => 'operation-overlay:show'],
+        ]);
+
+        self::assertSame([
+            ['label' => 'Open', 'href' => '/admin/packages'],
+            ['label' => 'Event', 'event' => 'operation-overlay:show'],
+        ], $alert->toArray()['actions']);
+    }
 }

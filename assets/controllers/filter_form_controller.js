@@ -2,7 +2,7 @@ import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
     static fallbackStorage = new Map();
-    static storagePrefix = 'studio.filter-form.focus.';
+    static storagePrefix = 'system.filter-form.focus.';
 
     static values = {
         autoSubmit: { type: Boolean, default: true },

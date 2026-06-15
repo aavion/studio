@@ -9,6 +9,8 @@ import {
     payloadFromAlertElement,
     storableAlertPayload,
 } from '../../assets/js/alerts/alert_payload.js';
+import { createAlertElement } from '../../assets/js/alerts/alert_element.js';
+import { installDom } from './support/fake_dom.mjs';
 
 test('alertIds normalizes single and list values', () => {
     assert.deepEqual(alertIds(' alert-1 '), ['alert-1']);
@@ -121,4 +123,34 @@ test('actionDetailFromElement parses action details safely', () => {
             alertActionDetail: '{broken',
         },
     }), {});
+});
+
+test('createAlertElement filters unsafe action links before rendering and storage', () => {
+    installDom();
+
+    const alert = createAlertElement({
+        id: 'client-alert',
+        message: 'Client alert',
+        actions: [
+            { label: 'Open', href: '/admin/packages', target: '_blank' },
+            { label: 'Script', href: 'javascript:alert(1)' },
+            { label: 'Hostless http', href: 'http:evil.example.test' },
+            { label: 'External', href: 'https://example.test/privacy', target: '_self' },
+            { label: 'Event', event: 'operation-overlay:show', detail: { id: 'operation-1' } },
+        ],
+    }, 'Close');
+    const actions = alert.querySelectorAll('.system-alert-action');
+    const payload = JSON.parse(alert.dataset.alertPayload);
+
+    assert.equal(actions.length, 3);
+    assert.equal(actions[0].href, '/admin/packages');
+    assert.equal(actions[0].target, '_blank');
+    assert.equal(actions[0].rel, 'noopener noreferrer');
+    assert.equal(actions[1].href, 'https://example.test/privacy');
+    assert.equal(actions[2].dataset.alertActionEvent, 'operation-overlay:show');
+    assert.deepEqual(payload.actions, [
+        { label: 'Open', href: '/admin/packages', target: '_blank' },
+        { label: 'External', href: 'https://example.test/privacy', target: '_self' },
+        { label: 'Event', event: 'operation-overlay:show', detail: { id: 'operation-1' } },
+    ]);
 });

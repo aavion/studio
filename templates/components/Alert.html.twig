@@ -76,6 +76,7 @@
                                 class="system-alert-action"
                                 href="{{ action.href }}"
                                 {% if action.target|default('') %}target="{{ action.target }}"{% endif %}
+                                {% if action.target|default('') == '_blank' %}rel="noopener noreferrer"{% endif %}
                                 data-action="alert-stack#action"
                             >{{ label }}</a>
                         {% else %}

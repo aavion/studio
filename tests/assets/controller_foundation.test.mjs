@@ -148,6 +148,7 @@ test('filter form submit stores focus state, resets pagination, and submits the 
 
     assert.equal(page.value, '1');
     assert.equal(form.submitted, true);
+    assert.match(controller.storageKey, /^system\.filter-form\.focus\./);
     assert.equal(JSON.parse([...sessionStorage.entries.values()][0]).name, 'q');
 });
 

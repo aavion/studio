@@ -16,6 +16,7 @@ final class PackageAdminLinkResolverTest extends TestCase
         self::assertSame('https://example.test/package', $resolver->safeExternalUrl(' https://example.test/package '));
         self::assertNull($resolver->safeExternalUrl('javascript:alert(1)'));
         self::assertNull($resolver->safeExternalUrl('https:///missing-host'));
+        self::assertNull($resolver->safeExternalUrl('https://example.test\\@evil.example.test/package'));
         self::assertNull($resolver->safeExternalUrl("https://example.test/\nheader"));
     }
 

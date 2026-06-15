@@ -80,9 +80,11 @@ final readonly class UiAlertPresentation
     public function actions(): array
     {
         return array_values(array_filter(array_map(
-            static fn (UiAlertAction|array $action): array => $action instanceof UiAlertAction ? $action->toArray() : $action,
+            static fn (UiAlertAction|array $action): ?array => $action instanceof UiAlertAction
+                ? UiAlertAction::normalize($action->toArray())
+                : UiAlertAction::normalize($action),
             $this->actions,
-        ), static fn (array $action): bool => is_string($action['label'] ?? null) && '' !== trim($action['label'])));
+        )));
     }
 
     public function isLoading(): ?bool

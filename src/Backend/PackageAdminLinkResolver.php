@@ -38,7 +38,7 @@ final readonly class PackageAdminLinkResolver
 
         $url = trim($url);
 
-        if (1 === preg_match('/[\x00-\x1F\x7F]/', $url)) {
+        if (str_contains($url, '\\') || 1 === preg_match('/[\x00-\x1F\x7F]/', $url)) {
             return null;
         }
 

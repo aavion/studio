@@ -96,7 +96,13 @@ final readonly class ContentRedirectResolver
         $redirectRoute = trim($redirectRoute);
 
         if (1 === preg_match('/^https?:\/\//i', $redirectRoute)) {
-            if (str_contains($redirectRoute, "\0") || str_contains($redirectRoute, '\\')) {
+            $host = parse_url($redirectRoute, PHP_URL_HOST);
+            if (
+                !is_string($host)
+                || '' === trim($host)
+                || str_contains($redirectRoute, '\\')
+                || 1 === preg_match('/[\x00-\x1F\x7F]/', $redirectRoute)
+            ) {
                 return null;
             }
 
@@ -104,7 +110,7 @@ final readonly class ContentRedirectResolver
         }
 
         if (
-            str_contains($redirectRoute, "\0")
+            1 === preg_match('/[\x00-\x1F\x7F]/', $redirectRoute)
             || str_contains($redirectRoute, '\\')
             || str_contains($redirectRoute, '?')
             || str_contains($redirectRoute, '#')

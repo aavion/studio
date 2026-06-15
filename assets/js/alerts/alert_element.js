@@ -7,6 +7,7 @@ export function createAlertElement(payload, closeLabel) {
 export function updateAlertElement(alert, payload, closeLabel) {
     const level = normalizeAlertLevel(payload.level || 'info');
     const mode = alertMode(payload);
+    const actions = normalizeActions(Array.isArray(payload.actions) ? payload.actions : []);
     alert.className = `system-alert system-alert-${level}`;
     alert.setAttribute('role', ['error', 'exception'].includes(level) ? 'alert' : 'status');
     alert.dataset.alertStackTarget = 'alert';
@@ -18,6 +19,7 @@ export function updateAlertElement(alert, payload, closeLabel) {
         id: alert.dataset.alertId,
         level,
         mode,
+        actions,
     });
     alert.replaceChildren();
 
@@ -60,7 +62,7 @@ export function updateAlertElement(alert, payload, closeLabel) {
         content.append(messageElement);
     }
 
-    appendActions(content, Array.isArray(payload.actions) ? payload.actions : []);
+    appendActions(content, actions);
     alert.append(content);
     alert.append(closeButton(closeLabel));
 
@@ -81,16 +83,14 @@ function alertIcon(level) {
 }
 
 function appendActions(content, actions) {
-    const validActions = actions.filter((action) => action && String(action.label || '').trim());
-
-    if (validActions.length === 0) {
+    if (actions.length === 0) {
         return;
     }
 
     const actionList = document.createElement('div');
     actionList.className = 'system-alert-actions';
 
-    for (const action of validActions) {
+    for (const action of actions) {
         actionList.append(actionElement(action));
     }
 
@@ -98,15 +98,19 @@ function appendActions(content, actions) {
 }
 
 function actionElement(action) {
-    const element = action.href ? document.createElement('a') : document.createElement('button');
+    const href = String(action.href || '').trim();
+    const element = href ? document.createElement('a') : document.createElement('button');
     element.className = 'system-alert-action';
     element.dataset.action = 'alert-stack#action';
     element.textContent = String(action.label).trim();
 
-    if (action.href) {
-        element.href = String(action.href);
+    if (href) {
+        element.href = href;
         if (action.target) {
             element.target = String(action.target);
+            if (element.target === '_blank') {
+                element.rel = 'noopener noreferrer';
+            }
         }
     } else {
         element.type = 'button';
@@ -121,6 +125,79 @@ function actionElement(action) {
     }
 
     return element;
+}
+
+function normalizeActions(actions) {
+    return actions.map(normalizeAction).filter(Boolean);
+}
+
+function normalizeAction(action) {
+    if (!action || typeof action !== 'object') {
+        return null;
+    }
+
+    const label = String(action.label || '').trim();
+    if (!label) {
+        return null;
+    }
+
+    const href = String(action.href || '').trim();
+    if (href) {
+        if (!hrefAllowed(href)) {
+            return null;
+        }
+
+        const normalized = { label, href };
+        const target = String(action.target || '').trim();
+        if (targetAllowed(target)) {
+            normalized.target = target;
+        }
+
+        return normalized;
+    }
+
+    const event = String(action.event || '').trim();
+    if (!event) {
+        return null;
+    }
+
+    const normalized = { label, event };
+    if (action.detail && typeof action.detail === 'object' && !Array.isArray(action.detail)) {
+        normalized.detail = action.detail;
+    }
+
+    return normalized;
+}
+
+function hrefAllowed(href) {
+    if (!href || href.includes('\\') || /[\x00-\x1F\x7F]/.test(href)) {
+        return false;
+    }
+
+    if (href.startsWith('/')) {
+        return !href.startsWith('//');
+    }
+
+    const lowerHref = href.toLowerCase();
+    if ((lowerHref.startsWith('http:') && !lowerHref.startsWith('http://'))
+        || (lowerHref.startsWith('https:') && !lowerHref.startsWith('https://'))
+    ) {
+        return false;
+    }
+
+    let parsed;
+    try {
+        parsed = new URL(href);
+    } catch {
+        return false;
+    }
+
+    return ['http:', 'https:', 'mailto:'].includes(parsed.protocol)
+        && (parsed.protocol === 'mailto:' || parsed.hostname.trim() !== '');
+}
+
+function targetAllowed(target) {
+    return ['_blank', '_self', '_parent', '_top'].includes(target);
 }
 
 function closeButton(closeLabel) {

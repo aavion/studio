@@ -152,8 +152,9 @@ final readonly class UiAlert
             $payload['id'] = $this->id;
         }
 
-        if ([] !== $this->actions) {
-            $payload['actions'] = $this->actions;
+        $actions = $this->normalizedActions();
+        if ([] !== $actions) {
+            $payload['actions'] = $actions;
         }
 
         if (null !== $this->code) {
@@ -186,5 +187,16 @@ final readonly class UiAlert
             'persistent' => 'persistent',
             default => 'auto',
         };
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function normalizedActions(): array
+    {
+        return array_values(array_filter(array_map(
+            static fn (array $action): ?array => UiAlertAction::normalize($action),
+            $this->actions,
+        )));
     }
 }

@@ -367,7 +367,18 @@ final readonly class MercureRuntime
         ]);
 
         if (!is_file($path) || (string) @file_get_contents($path) !== $contents) {
-            @file_put_contents($path, $contents, LOCK_EX);
+            $temporaryPath = $path.'.tmp.'.str_replace('.', '', uniqid('', true));
+            @touch($temporaryPath);
+            @chmod($temporaryPath, 0600);
+            $written = @file_put_contents($temporaryPath, $contents, LOCK_EX);
+            if (strlen($contents) === $written) {
+                @chmod($temporaryPath, 0600);
+                if (!@rename($temporaryPath, $path)) {
+                    @unlink($temporaryPath);
+                }
+            } else {
+                @unlink($temporaryPath);
+            }
         }
 
         @chmod($path, 0600);
