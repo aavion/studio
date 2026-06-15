@@ -46,6 +46,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Keep passive signals separate from raw file logs. If a broader database-backed security event projection is introduced later, this branch's signal store should either feed it through a documented boundary or remain the focused enforcement-oriented read model.
 - IP subjects and stable IP-derived hashes must expire within 30 days. Longer-lived passive signals must use visitor ID, authenticated user ID, API key fingerprint, or aggregate keys without retaining the IP-derived subject.
 - TTL and expiry use an injectable clock/time boundary for deterministic tests.
+- Classification must expose enough request-family, intent, subject, Admin/Owner context, `/api/live/**`, and recovery-login metadata for later branches to follow the Security policy enforcement order without re-reading controllers.
+- Probe-path configuration uses anchored, normalized patterns and must be tested against normal app/package/media/editor routes to avoid false positives.
 
 ## Edge cases
 
@@ -63,6 +65,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test subject resolution for anonymous, visitor-cookie, authenticated user, valid API key, invalid API key, and scheduler trigger.
 - Test intent classification for browser, prefetch, API read/write, `/api/live/**`, login, registration, password reset, and suspicious probes.
 - Test configurable probe-path defaults and high-signal probe classification.
+- Test probe-pattern normalization and false-positive avoidance for ordinary application routes.
 - Test redaction in passive signal messages.
 - Test passive-signal persistence, aggregation by normalized subject/intent/reason, expiry filtering, and cleanup command/task behavior.
 - Test IP-derived signal retention stays below 30 days and that longer-lived visitor-based signals do not keep recoverable IP material.

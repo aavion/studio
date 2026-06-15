@@ -39,6 +39,24 @@ The defaults are not an Admin UI requirement. Admin-configurable policy can be a
 - Remember-me trust window: seven days.
 - Account invitation/registration links: 24 hours by default. Password-reset links: one hour.
 
+## Enforcement Order
+
+Runtime enforcement must use one deterministic order so the same request is not handled differently by unrelated branches:
+
+1. Resolve trusted client identity, visitor identity, authenticated session/user, API key context, request family, request intent, and safe subject keys.
+2. Apply static asset, generated asset, setup/maintenance, and `/api/live/**` classification before ordinary website/API rate decisions.
+3. Resolve active Admin/Owner context before ban and rate checks so recovery protections and ordinary rate-limit exemptions can be evaluated safely.
+4. Allow the recovery-login bypass path to render the normal login form before active visitor/IP bans or exhausted ordinary website buckets block it, while still applying the dedicated recovery-login bucket.
+5. Classify high-signal probes early and return the generic probe response without revealing route existence.
+6. Check active bans except where Admin/Owner protection or the recovery-login rendering rule applies.
+7. Consume rate buckets in a stable order: workflow-specific bucket, request-family/global bucket, then suspicious/abuse bucket where applicable.
+8. When multiple buckets fail, report the most user-actionable policy to the client and keep internal bucket names in diagnostics only.
+9. Run the guarded workflow only after the decision is allowed.
+10. Apply scoped resets only after clear success, such as successful credential login or verified provider-backed captcha success.
+11. Record audit events and passive signals with redacted context regardless of whether the request was allowed or blocked.
+
+Owner/Admin protection does not bypass authentication validity, account status, role checks, ACL decisions, CSRF validation, API-key revocation, or explicit workflow authorization. Exempted requests should still record diagnostics so unusual administrative traffic remains reviewable.
+
 ## Rate-Limit Defaults
 
 These are first implementation defaults. Branches may adjust them only with tests and a worklog note explaining the review reason.
@@ -78,6 +96,17 @@ Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner 
 - High-signal probes are never treated as normal website navigation. The default response is a generic `400 Bad Request` without revealing whether the path exists, and the event records a suspicious probe signal.
 - One high-signal probe per subject per 10 minutes is the first threshold. Further probes may drain suspicious buckets and feed auto-ban decisions when auto-ban is enabled.
 - Honeypot probe paths should remain restrictive. They may share the same generic `400` response and signal path even when they do not map to real routes.
+- Probe-path configuration should use anchored, normalized path patterns with tests that prove common application routes, package routes, media routes, and editor routes are not accidentally captured.
+- Probe-path configuration changes should be auditable once Security settings exist.
+
+## Response Semantics
+
+- Rate-limit exhaustion returns `429 Too Many Requests` with `Retry-After` when a reliable retry time exists.
+- Active temporary bans return a generic `403 Forbidden` by default, also with `Retry-After` when the ban expiry is known. The response must not expose raw reason internals, subject keys, IP data, or bucket names.
+- High-signal probes return generic `400 Bad Request` and must not reveal whether a probed path, file, or package exists.
+- Browser responses use the shared HTML error/recovery renderer. Versioned API, scheduler, and JSON-request responses use the stable JSON error shape for their request family.
+- Security block, recovery, captcha, login, and bypass responses are `no-store` by default.
+- `/api/live/**` should return cheap JSON, token/access checks where needed, `no-store`, and passive signals; it should not enter ordinary website/API `429` rendering.
 
 ## Auto-Ban Defaults
 
@@ -128,6 +157,9 @@ Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner 
 
 - First implementations may ship policy defaults as code-level constants or configuration values with tests.
 - Admin-configurable settings require bounded validation, safe defaults, documentation, and tests for disabled/missing settings.
+- Security policy bounds must prevent accidental lockout and privacy drift. Configuration must not allow IP-derived retention above 30 days, IP-ban TTLs above the documented maximum, disabling Owner recovery, disabling the recovery-login bypass without an equivalent path, or treating captcha `none` auto-success as verified human success.
+- More permissive settings for public entry points should require an explicit policy update, not only a local configuration change.
+- More restrictive settings that affect login, account recovery, scheduler operation, captcha, mail delivery, or Owner/Admin access need tests for recovery behavior and false-positive handling.
 - User-facing copy is required whenever a configurable policy affects public behavior, recovery, captcha, mail delivery, remember-me, account access, or data retention.
 
 ## Review Requirements

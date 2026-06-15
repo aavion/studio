@@ -48,6 +48,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Prefer Visitor-ID-backed bans for continuity. Add IP-bucket bans as a shorter secondary layer to reduce cookie-reset bypasses, and keep every IP-derived ban TTL below 30 days.
 - Ban keys come only from the shared subject/client-identity resolver. Raw IP strings, raw API keys, and raw forwarding headers must never be stored as ban keys.
 - Expiry and cleanup use an injectable clock/time boundary.
+- Ban decisions follow the Security policy enforcement order so Admin/Owner context and recovery-login rendering are resolved before visitor/IP bans can deny access.
+- Active temporary ban responses default to generic `403` with `Retry-After` when expiry is known, request-family-specific HTML/JSON bodies, redacted diagnostics, and `no-store`.
 
 ## Edge cases
 
@@ -71,6 +73,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test active Admin/Owner session ban protection, Owner API-key protection, and recovery-login re-evaluation.
 - Test that recovery-login bypass does not bypass CSRF, credential validation, the dedicated recovery-login bucket, or audit logging.
 - Test HTML/JSON ban responses and redaction.
+- Test ban response status, retry metadata, cache headers, and route-existence redaction.
 - Test Admin manual unban writes audit entries.
 - Test repeat-ban TTL escalation stays bounded and does not create permanent bans.
 - Test IP-derived ban TTL validation rejects or clamps values at 30 days and cleanup removes expired IP-derived records from review/export surfaces.

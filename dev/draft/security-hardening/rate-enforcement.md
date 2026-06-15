@@ -49,6 +49,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Workflows that do not exist in the current codebase receive catalogue entries only when doing so does not create dead services, routes, or unreachable tests.
 - Limiter keys come only from the shared subject/client-identity resolver and never from raw request headers or user-submitted identifiers.
 - Limiter storage degradation must be explicit and tested, including safe diagnostics and Owner recovery behavior.
+- Enforcement follows the Security policy order so workflow buckets, global buckets, suspicious buckets, active bans, recovery-login rendering, and Owner/Admin protections interact predictably.
+- Rate-limit responses use the documented response semantics: `429`, `Retry-After` when available, family-specific HTML/JSON bodies, redacted diagnostics, and `no-store`.
 
 ## Edge cases
 
@@ -72,6 +74,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test captcha-on-`429` is unavailable without an active provider and falls back to retry-after behavior.
 - Test `/api/live/**` never receives ordinary rate-limit `429`.
 - Test browser HTML and API JSON `429` shapes.
+- Test response cache headers and redaction for browser/API/scheduler limit failures.
 - Test that non-existing optional workflows are not wired as dead routes/services and that later workflow branches have a clear catalogue attachment point.
 - Test limiter storage degradation and concurrent consume/reset behavior for the highest-risk workflows.
 - Test configured limiter service wiring with `lint:container`.
