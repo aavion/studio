@@ -27,7 +27,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Implementation sequence
 
 1. Add an abuse namespace with value objects for subject, request family, request intent, action cost, and passive signal.
-2. Add subject resolution for IP bucket, visitor ID, authenticated user UID, API key UID/prefix, and safe combined subject keys.
+2. Add subject resolution for IP bucket, visitor ID, authenticated user UID, API key UID/prefix, and safe combined subject keys through one reviewed client-identity resolver.
 3. Add request-intent classification for browser navigation, Turbo/browser prefetch, form submit, API read, API write, scheduler trigger, captcha refresh, captcha failure, login, registration, password reset, contact, import, and suspicious probe.
 4. Add a central action-cost catalogue with website and API families. Costs are symbolic defaults, not limiter calls yet.
 5. Add database-backed passive suspicious-signal recording with TTL-ready metadata, cleanup support, and redacted message/audit reporting.
@@ -36,10 +36,12 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Public interfaces and data decisions
 
 - Controllers and future packages call a Studio-owned abuse facade instead of Symfony RateLimiter directly.
+- Client identity must respect Symfony trusted-proxy configuration and must not trust raw forwarding headers outside that configuration.
 - Prefetch detection uses `X-Sec-Purpose: prefetch` and `Sec-Purpose: prefetch`; spoofable hints only lower confidence for classification, never bypass checks.
 - Signals store only normalized subject keys, intent, reason code, count/weight, timestamps, and safe request metadata.
 - First implementation uses a portable database table for short-lived passive signals. Suggested fields are normalized subject type/key, request family, intent, reason code, confidence, weight/count, first-seen timestamp, last-seen timestamp, expiry timestamp, safe context hash, and optional audit reference.
 - Passive-signal rows are observational only in this branch. The rate and auto-ban branches decide how to consume them for enforcement.
+- TTL and expiry use an injectable clock/time boundary for deterministic tests.
 
 ## Edge cases
 
@@ -48,6 +50,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Authenticated Owner requests still classify normally; Owner lockout protection is enforced in later branches.
 - Prefetch for state-changing methods is suspicious; normal GET prefetch remains low-confidence.
 - Expired passive signals must not affect later enforcement once rate/ban branches start consuming the store.
+- Passive-signal storage failure records a safe diagnostic and must not change request outcome in this foundation branch.
 
 ## Tests and validation
 
@@ -55,6 +58,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test intent classification for browser, prefetch, API read/write, `/api/live/**`, login, registration, password reset, and suspicious probes.
 - Test redaction in passive signal messages.
 - Test passive-signal persistence, aggregation by normalized subject/intent/reason, expiry filtering, and cleanup command/task behavior.
+- Test trusted-proxy/client-identity behavior and storage-failure degradation.
 - Test no limiter or ban enforcement occurs in this branch.
 
 ## Documentation and tracking

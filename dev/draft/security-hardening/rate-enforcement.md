@@ -41,6 +41,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Registration and password-reset success do not reset global buckets by default.
 - The branch must commit initial threshold defaults as named configuration/constants with behavior tests. Later branches may tune those defaults only with matching draft/worklog notes.
 - Workflows that do not exist in the current codebase receive catalogue entries only when doing so does not create dead services, routes, or unreachable tests.
+- Limiter keys come only from the shared subject/client-identity resolver and never from raw request headers or user-submitted identifiers.
+- Limiter storage degradation must be explicit and tested, including safe diagnostics and Owner recovery behavior.
 
 ## Edge cases
 
@@ -48,6 +50,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Failed login consumes login and global website budget; successful login resets only the login-attempt bucket for that subject.
 - Read-only API keys hitting write routes should still follow API write policy before or alongside authorization failure as decided by the handler order.
 - `/api/live/**` operation polling must continue to function during long admin operations.
+- Concurrent failures and immediate success/reset sequences must not accidentally reset unrelated global buckets or hide suspicious mixed-action behavior.
 
 ## Tests and validation
 
@@ -57,6 +60,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test `/api/live/**` never receives ordinary rate-limit `429`.
 - Test browser HTML and API JSON `429` shapes.
 - Test that non-existing optional workflows are not wired as dead routes/services and that later workflow branches have a clear catalogue attachment point.
+- Test limiter storage degradation and concurrent consume/reset behavior for the highest-risk workflows.
 - Test configured limiter service wiring with `lint:container`.
 
 ## Documentation and tracking

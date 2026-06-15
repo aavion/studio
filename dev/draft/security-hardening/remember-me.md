@@ -39,6 +39,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Remember-me never bypasses `UserAccountChecker`, account status, role checks, or session visitor binding.
 - Token records include selector, hashed token, user, visitor binding hash, issued at, last used at, expires at, status, revocation reason, last IP bucket, last user-agent hash, and token family identifier.
 - Token list/revocation UI is part of the branch scope so users can operate the feature without direct database access.
+- Token expiry and rotation use an injectable clock/time boundary for deterministic tests.
 
 ## Edge cases
 
@@ -48,6 +49,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Owner accounts may use remember-me, but lifecycle revocation and recovery protection still apply.
 - APP_SECRET rotation revokes active persistent tokens unless a tested re-encryption/rehash path exists.
 - Revoking all other tokens must not destroy the current authenticated session unless the user explicitly revokes the current token/session.
+- Concurrent automatic logins with the same selector/token must rotate or revoke deterministically and audit reuse/mismatch without creating two valid successor tokens.
 
 ## Tests and validation
 
@@ -56,6 +58,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Test inactive/deleted user denial.
 - Test cookie attributes and absence of raw token storage.
 - Test profile token list and revoke actions, including current-token and other-token behavior.
+- Test concurrent auto-login/rotation behavior and deterministic expiry through the time boundary.
 - Test container/security firewall wiring.
 
 ## Documentation and tracking

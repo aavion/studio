@@ -86,6 +86,7 @@
 - Added the legacy Grav `sec-lookup` plugin at `/Volumes/Projekte/temp/sec-lookup` as an inspiration-only reference for GeoIP, abuse, rate-limit, auto-ban, captcha, and IconCaptcha planning, with current Symfony product decisions taking priority over historical implementation details.
 - Added IconCaptcha asset/license, inline-rendering, bot-resistance, and neutral accessibility-label requirements, and documented Security PR-readiness checks that must be completed from the actual branch diff before PRs.
 - Recorded quiz-style IconCaptcha as the preferred accessible fallback when neutral labels are insufficient, keeping quiz prompts/options under the same one-shot challenge, TTL, context-binding, and answer-leak resistance rules.
+- Added final cross-cutting planning guardrails for shared client identity/trusted-proxy handling, injectable time boundaries, degraded storage behavior, and race/idempotency review across Security branches.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

@@ -40,6 +40,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Public challenge payload contains only challenge ID, timestamp, render metadata, and button identifiers needed for display.
 - Provider secret is generated/configured outside manifests and public assets.
 - Default challenge TTL is five minutes, and validation invalidates the challenge after every attempt, successful or failed.
+- Challenge expiry and one-shot state use an injectable clock/time boundary where practical for deterministic tests.
 - SVG/icons must be allowlisted or sanitized before inline rendering.
 - Inline-rendered graphics and symbol SVGs must not expose answer-bearing names through file names, element IDs, CSS classes, `data-*` attributes, titles, descriptions, or translation keys. Use opaque challenge-local identifiers and randomized or non-semantic button identifiers.
 - Accessibility labels must describe the control purpose without revealing the visual answer. Prefer neutral labels such as option numbers and state/status text over labels that name the target icon or symbol. If this makes the visual challenge insufficient for assistive technology, document and implement a separate accessible fallback flow instead of leaking the answer through ARIA.
@@ -55,6 +56,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Asset license gaps or unclear provenance block the provider branch until the asset is replaced or the license is documented as acceptable.
 - Browser inspection should not reveal the correct answer through DOM order, source file names, SVG IDs, ARIA labels, visible hidden text, or static asset URLs.
 - Quiz-mode questions and answer options must be generated from vetted provider-owned prompt pools and opaque option IDs so the correct answer is not inferable from stable DOM metadata or static translation keys.
+- Concurrent double-submit validation must remain one-shot: one attempt wins, later attempts fail recoverably or suspiciously according to the failure model.
 
 ## Tests and validation
 
@@ -67,6 +69,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test keyboard/accessibility behavior where practical with JS tests.
 - Test that rendered DOM, inline SVG, ARIA labels, asset paths, and serialized challenge payloads do not expose answer-bearing names or reusable answer material.
 - Test accessible quiz-mode success, wrong answer, expiry, replay prevention, context mismatch, refresh behavior, and answer-leak resistance.
+- Test concurrent double-submit/replay behavior against the cache store.
 - Verify asset licenses/provenance and record the result in branch documentation or package metadata.
 
 ## Documentation and tracking
