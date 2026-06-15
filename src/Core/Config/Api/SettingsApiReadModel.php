@@ -69,8 +69,8 @@ final readonly class SettingsApiReadModel
                 'attributes' => [
                     'section' => $definition->section(),
                     'key' => $field->name(),
-                    'value' => $this->config->get($field->name(), $field->defaultValue()),
-                    'default_value' => $field->defaultValue(),
+                    'value' => $this->apiValue($field->metadata(), $this->config->get($field->name(), $field->defaultValue())),
+                    'default_value' => $this->apiValue($field->metadata(), $field->defaultValue()),
                     'value_type' => $field->valueType()->value,
                     'input_type' => $field->inputType()->value,
                     'label_key' => $field->label(),
@@ -93,13 +93,33 @@ final readonly class SettingsApiReadModel
     {
         $values = [];
 
-        foreach ($this->settings($section) as $resource) {
-            $id = $resource['id'] ?? null;
-            if (is_string($id)) {
-                $values[$id] = $resource['attributes']['value'] ?? null;
+        foreach ($this->settings->allDefinitions() as $definition) {
+            if ($definition->section() !== $section) {
+                continue;
             }
+
+            $field = $definition->formField();
+            if (false === ($field->metadata()['persist'] ?? true)) {
+                continue;
+            }
+
+            $values[$field->name()] = true === ($field->metadata()['sensitive'] ?? false)
+                ? ''
+                : $this->config->get($field->name(), $field->defaultValue());
         }
 
         return $values;
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    private function apiValue(array $metadata, mixed $value): mixed
+    {
+        if (true !== ($metadata['sensitive'] ?? false)) {
+            return $value;
+        }
+
+        return is_string($value) && '' !== trim($value) ? '[protected]' : '';
     }
 }

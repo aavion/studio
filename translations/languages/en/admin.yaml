@@ -790,6 +790,28 @@ admin:
         label: 'Enable audit logging'
       audit_events:
         label: 'Audit event categories'
+      geoip_enabled:
+        label: 'Enable GeoIP lookups'
+        help: 'When disabled or unavailable, logs and statistics keep normalized n/a location values.'
+      geoip_provider:
+        label: 'GeoIP provider'
+      geoip_database_path:
+        label: 'MaxMind database path'
+        help: 'Project-relative path to the local .mmdb database. Request lookups never download databases automatically.'
+      geoip_locales:
+        label: 'GeoIP locales'
+        help: 'JSON array of locale codes, ordered from most preferred to least preferred, for example ["en", "de"].'
+      geoip_update_enabled:
+        label: 'Enable GeoIP database updates'
+        help: 'Reserved for the scheduler update task. Lookups only use an existing local database.'
+      geoip_update_interval:
+        label: 'GeoIP update interval'
+      geoip_account_id:
+        label: 'MaxMind account ID'
+        help: 'Stored as sensitive configuration and used only by the future update task.'
+      geoip_license_key:
+        label: 'MaxMind license key'
+        help: 'Stored as sensitive configuration and never required for PHPUnit tests.'
       statistics_enabled:
         label: 'Enable access statistics'
       statistics_respect_dnt:
@@ -826,6 +848,9 @@ admin:
         setup_warnings: 'Setup warnings'
       captcha:
         none: 'No captcha provider'
+      geoip:
+        none: 'No GeoIP provider'
+        maxmind: 'MaxMind GeoIP2'
       audit:
         authentication: 'Authentication events'
         backend_actions: 'Backend maintenance actions'

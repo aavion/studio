@@ -119,7 +119,12 @@ final class AdminViewTwigExtension extends AbstractExtension
         $request = $this->requestStack->getCurrentRequest();
 
         foreach ($definitions as $definition) {
-            $values[$definition->key()] = $this->config->get($definition->key()) ?? $definition->defaultValue();
+            $value = $this->config->get($definition->key()) ?? $definition->defaultValue();
+            if (true === ($definition->metadata()['sensitive'] ?? false)) {
+                $value = '';
+            }
+
+            $values[$definition->key()] = $value;
         }
 
         $values = array_replace($values, $this->requestFormValues($request));

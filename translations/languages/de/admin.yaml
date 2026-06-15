@@ -790,6 +790,28 @@ admin:
         label: 'Audit-Logging aktivieren'
       audit_events:
         label: 'Audit-Ereigniskategorien'
+      geoip_enabled:
+        label: 'GeoIP-Lookups aktivieren'
+        help: 'Wenn deaktiviert oder nicht verfügbar, behalten Logs und Statistiken normalisierte n/a-Ortswerte.'
+      geoip_provider:
+        label: 'GeoIP-Provider'
+      geoip_database_path:
+        label: 'MaxMind-Datenbankpfad'
+        help: 'Projektrelativer Pfad zur lokalen .mmdb-Datenbank. Request-Lookups laden Datenbanken niemals automatisch herunter.'
+      geoip_locales:
+        label: 'GeoIP-Locales'
+        help: 'JSON-Array von Locale-Codes, sortiert von bevorzugt bis Fallback, zum Beispiel ["en", "de"].'
+      geoip_update_enabled:
+        label: 'GeoIP-Datenbankupdates aktivieren'
+        help: 'Für den Scheduler-Update-Task reserviert. Lookups verwenden nur eine vorhandene lokale Datenbank.'
+      geoip_update_interval:
+        label: 'GeoIP-Update-Intervall'
+      geoip_account_id:
+        label: 'MaxMind-Account-ID'
+        help: 'Wird als sensitive Konfiguration gespeichert und nur vom zukünftigen Update-Task verwendet.'
+      geoip_license_key:
+        label: 'MaxMind-License-Key'
+        help: 'Wird als sensitive Konfiguration gespeichert und niemals für PHPUnit-Tests benötigt.'
       statistics_enabled:
         label: 'Zugriffsstatistiken aktivieren'
       statistics_respect_dnt:
@@ -826,6 +848,9 @@ admin:
         setup_warnings: 'Setup-Warnungen'
       captcha:
         none: 'Kein Captcha-Provider'
+      geoip:
+        none: 'Kein GeoIP-Provider'
+        maxmind: 'MaxMind GeoIP2'
       audit:
         authentication: 'Authentifizierungsereignisse'
         backend_actions: 'Backend-Wartungsaktionen'

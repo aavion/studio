@@ -8,6 +8,7 @@ use App\Api\ApiFeaturePolicy;
 use App\Core\Config\Settings\CoreSettingDefinition;
 use App\Core\Config\Settings\CoreConfigDefaultProvider;
 use App\Core\Config\Settings\CoreSettingsRegistry;
+use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
@@ -58,10 +59,23 @@ final class CoreSettingsRegistryTest extends TestCase
             'security.captcha.preview',
             ConfigAuditLogPolicy::ENABLED_KEY,
             ConfigAuditLogPolicy::EVENTS_KEY,
+            MaxMindGeoIpConfig::ENABLED_KEY,
+            MaxMindGeoIpConfig::SELECTED_PROVIDER_KEY,
+            MaxMindGeoIpConfig::DATABASE_PATH_KEY,
+            MaxMindGeoIpConfig::LOCALES_KEY,
+            MaxMindGeoIpConfig::UPDATE_ENABLED_KEY,
+            MaxMindGeoIpConfig::UPDATE_INTERVAL_KEY,
+            MaxMindGeoIpConfig::ACCOUNT_ID_KEY,
+            MaxMindGeoIpConfig::LICENSE_KEY_KEY,
         ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $security));
         self::assertSame(FormInputType::Captcha, $security[2]->formField()->inputType());
         self::assertSame(FormInputType::MultiSelect, $security[4]->formField()->inputType());
         self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $security[4]->defaultValue());
+        self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $security[7]->defaultValue());
+        self::assertSame(MaxMindGeoIpConfig::DEFAULT_LOCALES, $security[8]->defaultValue());
+        self::assertSame(['sensitive' => true], $security[11]->metadata());
+        self::assertSame(['sensitive' => true], $security[12]->metadata());
+        self::assertSame(FormInputType::Password, $security[12]->formField()->inputType());
 
         self::assertSame([
             AccessStatisticsPolicy::ENABLED_KEY,
@@ -100,6 +114,9 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertTrue($provider->defaultValue(ApiFeaturePolicy::ENABLED_KEY));
         self::assertFalse($provider->defaultValue(ApiFeaturePolicy::CORS_ENABLED_KEY));
         self::assertSame([], $provider->defaultValue(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY));
+        self::assertFalse($provider->defaultValue(MaxMindGeoIpConfig::ENABLED_KEY));
+        self::assertSame(MaxMindGeoIpConfig::PROVIDER_KEY, $provider->defaultValue(MaxMindGeoIpConfig::SELECTED_PROVIDER_KEY));
+        self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $provider->defaultValue(MaxMindGeoIpConfig::DATABASE_PATH_KEY));
         self::assertFalse($provider->hasDefault('security.captcha.preview'));
         self::assertNull($provider->defaultValue('security.captcha.preview'));
     }

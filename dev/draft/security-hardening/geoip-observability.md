@@ -46,6 +46,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Update state records last attempt, last success, database edition, database build date, next suggested update, and redacted failure code.
 - No public API response adds GeoIP data in this branch.
 - Provider selection, database path/status, and update policy are protected/audited configuration surfaces; account and license material remains secret-only. Disabled, unconfigured, expired, or failed providers must fall back to `NullGeoIpResolver`.
+- The first MaxMind implementation uses the installed `geoip2/geoip2` package against a configured local `.mmdb` database. Request-time lookups must not download databases or require outbound network access.
+- Account ID and license key configuration are sensitive values. Empty sensitive form submissions preserve existing stored values, API/settings read models return redacted display values, and PHPUnit coverage must use fakes or dummy strings rather than real MaxMind credentials.
 
 ## Edge cases
 

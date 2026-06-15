@@ -50,7 +50,21 @@ final readonly class CoreSettingsFormHandler
                 continue;
             }
 
-            if (!$this->config->set($definition->key(), $result->value($definition->key()), $definition->valueType(), modifiedBy: $modifiedBy)) {
+            $metadata = $definition->metadata();
+            if (
+                true === ($metadata['sensitive'] ?? false)
+                && $this->isEmptySensitiveValue($result->value($definition->key()))
+            ) {
+                continue;
+            }
+
+            if (!$this->config->set(
+                $definition->key(),
+                $result->value($definition->key()),
+                $definition->valueType(),
+                sensitive: true === ($metadata['sensitive'] ?? false),
+                modifiedBy: $modifiedBy,
+            )) {
                 return new FormSubmissionResult($result->values(), [
                     '__form' => [FormErrorKey::SAVE_FAILED],
                 ]);
@@ -155,5 +169,10 @@ final readonly class CoreSettingsFormHandler
         }
 
         return is_string($email) && ('' === trim($email) || EmailAddress::isValid($email));
+    }
+
+    private function isEmptySensitiveValue(mixed $value): bool
+    {
+        return null === $value || (is_string($value) && '' === trim($value));
     }
 }

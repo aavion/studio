@@ -382,6 +382,13 @@ services:
             $providers: !tagged_iterator { tag: system.geoip_provider }
             $fallbackProvider: '@App\Core\Geo\NullGeoIpProvider'
 
+    App\Core\Geo\MaxMindGeoIpDatabaseReaderFactoryInterface:
+        alias: App\Core\Geo\GeoIp2MaxMindDatabaseReaderFactory
+
+    App\Core\Geo\MaxMindGeoIpProvider:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\Core\Log\OperationLoggerInterface:
         alias: App\Core\Log\OperationLogger
 
