@@ -35,7 +35,7 @@ The defaults are not an Admin UI requirement. Admin-configurable policy can be a
 - IP-derived auto-ban records: maximum 7 days, even though the privacy ceiling is 30 days.
 - Visitor-ID auto-ban records: maximum 30 days unless a later policy explicitly defines longer visitor retention and user-facing privacy copy.
 - Passive suspicious signals: default 7 days for visitor/user/API subjects; default 24 hours for IP-only subjects; maximum 30 days for any IP-derived subject.
-- Captcha challenge state: five minutes, one-shot invalidation after every validation attempt.
+- Captcha challenge state: 15 minutes, one-shot invalidation after every validation attempt.
 - Remember-me trust window: seven days.
 - Account invitation/registration links: 24 hours by default. Password-reset links: one hour.
 
@@ -84,8 +84,9 @@ Turbo/browser prefetch for safe `GET` requests should not spend the same budget 
 ## Captcha Defaults
 
 - `none`, missing provider, and disabled provider validate successfully until a workflow explicitly introduces provider-required policy.
-- IconCaptcha challenge TTL is five minutes.
+- IconCaptcha challenge TTL is 15 minutes so humans can complete longer forms without unnecessary expiry.
 - Every validation attempt consumes the challenge ID, successful or failed.
+- The longer challenge TTL is safe only when repeated guesses against the same challenge are impossible. Keep one-shot invalidation, context binding, tight captcha-failure buckets, refresh abuse signals, and answer-leak tests in place.
 - Captcha success may reset only the scoped challenge/form bucket when the workflow policy allows it.
 - Visual IconCaptcha must not expose answer-bearing names through DOM, SVG, asset paths, translation keys, hidden text, or ARIA labels.
 - If neutral labels are not sufficient for assistive technology, the preferred fallback is a provider-owned quiz challenge that shares the same one-shot, TTL, context-binding, refresh, and abuse-signal rules.

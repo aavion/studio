@@ -79,6 +79,7 @@
 - Added `dev/draft/security-hardening/policy-defaults.md` as the central first-implementation source for Security hardening TTLs, rate-limit thresholds, auto-ban defaults, captcha defaults, privacy ceilings, logging projection posture, and configuration rules.
 - Linked policy defaults from the master Security hardening plan, the Security/API/Contact-Mail-Logging drafts, and the affected branch detail plans so later implementation branches can cite one policy reference.
 - Compacted the completed `feat-security-planning` worklog entry into `dev/WORKLOG_HISTORY.md` so the active worklog stays focused on the policy-docs branch.
+- Raised the first IconCaptcha challenge TTL default to 15 minutes for realistic form completion time while keeping one-shot validation, scoped failure buckets, context binding, refresh abuse signals, and answer-leak checks as required bot-protection controls.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
