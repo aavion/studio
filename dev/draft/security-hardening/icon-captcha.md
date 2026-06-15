@@ -43,6 +43,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - SVG/icons must be allowlisted or sanitized before inline rendering.
 - Inline-rendered graphics and symbol SVGs must not expose answer-bearing names through file names, element IDs, CSS classes, `data-*` attributes, titles, descriptions, or translation keys. Use opaque challenge-local identifiers and randomized or non-semantic button identifiers.
 - Accessibility labels must describe the control purpose without revealing the visual answer. Prefer neutral labels such as option numbers and state/status text over labels that name the target icon or symbol. If this makes the visual challenge insufficient for assistive technology, document and implement a separate accessible fallback flow instead of leaking the answer through ARIA.
+- The preferred accessible fallback is a provider-owned quiz challenge using a spoken question/task and multiple answer options. The quiz mode must share the same challenge ID, TTL, one-shot invalidation, context binding, failure codes, refresh handling, and passive abuse signals as the visual IconCaptcha mode.
 
 ## Edge cases
 
@@ -53,6 +54,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Asset loading failures produce safe diagnostics and recoverable user feedback where possible.
 - Asset license gaps or unclear provenance block the provider branch until the asset is replaced or the license is documented as acceptable.
 - Browser inspection should not reveal the correct answer through DOM order, source file names, SVG IDs, ARIA labels, visible hidden text, or static asset URLs.
+- Quiz-mode questions and answer options must be generated from vetted provider-owned prompt pools and opaque option IDs so the correct answer is not inferable from stable DOM metadata or static translation keys.
 
 ## Tests and validation
 
@@ -64,6 +66,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test package asset/template/translation registration.
 - Test keyboard/accessibility behavior where practical with JS tests.
 - Test that rendered DOM, inline SVG, ARIA labels, asset paths, and serialized challenge payloads do not expose answer-bearing names or reusable answer material.
+- Test accessible quiz-mode success, wrong answer, expiry, replay prevention, context mismatch, refresh behavior, and answer-leak resistance.
 - Verify asset licenses/provenance and record the result in branch documentation or package metadata.
 
 ## Documentation and tracking
@@ -72,6 +75,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Update package developer guidance if provider package layout adds a reusable pattern.
 - Update class map for provider, challenge services, controller/live endpoint, assets, and templates.
 - Record asset licensing, provenance, sanitization, and bot-resistance notes.
+- Document whether the first implementation ships neutral-label-only visual mode, quiz fallback, or both, and record the accessibility/security trade-off.
 - Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 
 ## Non-goals
