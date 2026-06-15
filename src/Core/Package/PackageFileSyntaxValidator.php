@@ -85,7 +85,7 @@ final readonly class PackageFileSyntaxValidator
 
             foreach ($lintResult->issues() as $lintIssue) {
                 if ($linter instanceof CssLinter
-                    && CssLinter::isStrictParserUnsupportedLine($contents, $lintIssue->line())
+                    && CssLinter::hasStrictParserUnsupportedContext($contents, $lintIssue->line())
                     && $linter->lint(CssLinter::forStrictParser($contents), $file)->isSuccess()
                 ) {
                     continue;

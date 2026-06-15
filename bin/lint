@@ -341,7 +341,7 @@ function lintCssFiles(string $root, array $files): int
 
 function isStrictParserUnsupportedCssIssue(string $contents, ?int $line): bool
 {
-    return CssLinter::isStrictParserUnsupportedLine($contents, $line);
+    return CssLinter::hasStrictParserUnsupportedContext($contents, $line);
 }
 
 /**

@@ -12,6 +12,17 @@ use Sabberworm\CSS\Settings;
 
 final class CssLinter implements LinterInterface
 {
+    public static function hasStrictParserUnsupportedContext(string $contents, ?int $line): bool
+    {
+        if (null === $line) {
+            return false;
+        }
+
+        return self::isStrictParserUnsupportedLine($contents, $line - 1)
+            || self::isStrictParserUnsupportedLine($contents, $line)
+            || self::isStrictParserUnsupportedLine($contents, $line + 1);
+    }
+
     public static function isTailwindDirectiveLine(string $contents, ?int $line): bool
     {
         return self::isStrictParserUnsupportedLine($contents, $line);
@@ -101,6 +112,10 @@ final class CssLinter implements LinterInterface
 
     public function lint(string $contents, ?string $path = null): LintResult
     {
+        if (self::isEffectivelyEmpty($contents)) {
+            return LintResult::success();
+        }
+
         try {
             (new Parser($contents, Settings::create()->beStrict()))->parse();
         } catch (SourceException $error) {
@@ -116,5 +131,12 @@ final class CssLinter implements LinterInterface
         }
 
         return LintResult::success();
+    }
+
+    private static function isEffectivelyEmpty(string $contents): bool
+    {
+        $withoutComments = preg_replace('/\/\*.*?\*\//s', '', $contents);
+
+        return '' === trim((string) $withoutComments);
     }
 }

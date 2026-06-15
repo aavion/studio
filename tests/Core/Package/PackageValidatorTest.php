@@ -847,6 +847,7 @@ CSS);
         $this->writeFile('assets/module.css', <<<'CSS'
 .demo-module-card {
     transform: var(--tw-rotate-x,) var(--tw-rotate-y,);
+    @custom-variant demo-module-dark (&:where(.demo-module-dark, .demo-module-dark *));
     @supports (color: color-mix(in lab, red, red)) {
         color: color-mix(in oklab, currentcolor 50%, transparent);
     }
