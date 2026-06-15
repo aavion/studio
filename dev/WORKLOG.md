@@ -90,6 +90,7 @@
 - Scanned feature drafts and code surfaces for remaining Security planning gaps; added coverage notes for setup/install, CORS preflight, high-impact admin operations, uploads/archives, exports/downloads, diagnostic bundles, trusted proxy identity, browser storage, and deferred HTTP security-header policy.
 - Added Admin-vs-Owner authority policy so non-user-management Admin features can distinguish delegated Admin visibility/mutation from Owner-only site-control actions.
 - Added `feat-security-admin-acl-enforcement` as a dedicated branch plan for shared Admin-vs-Owner action authority before package, scheduler, backup, settings, diagnostics, update, and security-management workflows expand.
+- Expanded the Admin ACL enforcement plan with a default authority matrix, bounded Owner-only configurability policy, concrete Admin/Owner domain defaults, enforcement boundaries, and test expectations.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
