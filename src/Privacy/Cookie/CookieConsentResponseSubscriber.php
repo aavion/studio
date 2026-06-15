@@ -36,7 +36,11 @@ final readonly class CookieConsentResponseSubscriber implements EventSubscriberI
             }
 
             $definition = $this->registry->definition($cookie->getName());
-            if (!$definition instanceof CookieConsentDefinition || $this->consent->allowed($request, $definition)) {
+            if (!$definition instanceof CookieConsentDefinition) {
+                continue;
+            }
+
+            if ($definition->matchesCookieIdentity($cookie) && $this->consent->allowed($request, $definition)) {
                 continue;
             }
 

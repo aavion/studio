@@ -69,6 +69,16 @@ final readonly class CookieConsentDefinition
         return $this->privacyUrl;
     }
 
+    public function matchesCookieIdentity(Cookie $cookie): bool
+    {
+        return $this->cookie->getName() === $cookie->getName()
+            && $this->cookie->getPath() === $cookie->getPath()
+            && $this->cookie->getDomain() === $cookie->getDomain()
+            && $this->cookie->isSecure() === $cookie->isSecure()
+            && $this->cookie->isHttpOnly() === $cookie->isHttpOnly()
+            && $this->cookie->getSameSite() === $cookie->getSameSite();
+    }
+
     private function privacyUrlAllowed(string $url): bool
     {
         $url = trim($url);

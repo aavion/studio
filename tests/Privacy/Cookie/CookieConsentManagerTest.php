@@ -253,6 +253,61 @@ final class CookieConsentManagerTest extends TestCase
         )));
     }
 
+    public function testResponseSubscriberRejectsAcceptedOptionalCookieWithDifferentIdentity(): void
+    {
+        $definition = CookieConsentDefinition::optional(
+            Cookie::create('analytics_id', 'value', 0, '/tracking', 'example.test'),
+            'Analytics',
+            'Measure visits.',
+            'https://example.test/privacy',
+        );
+        $registry = new CookieConsentRegistry([$this->provider([$definition])]);
+        $manager = $this->manager([$this->provider([$definition])]);
+        $consentResponse = new Response();
+        $manager->attachConsentCookie(Request::create('/'), $consentResponse, ['analytics_id']);
+        $consentCookie = $consentResponse->headers->getCookies()[0] ?? null;
+        self::assertInstanceOf(Cookie::class, $consentCookie);
+
+        $request = Request::create('/');
+        $request->cookies->set($consentCookie->getName(), $consentCookie->getValue());
+        $response = new Response();
+        $response->headers->setCookie(Cookie::create('analytics_id', 'allowed', 0, '/tracking', 'example.test'));
+        $response->headers->setCookie(Cookie::create('analytics_id', 'wrong-path', 0, '/other', 'example.test'));
+        $response->headers->setCookie(Cookie::create('analytics_id', 'wrong-domain', 0, '/tracking', 'other.example.test'));
+
+        (new CookieConsentResponseSubscriber($registry, $manager))->filterCookies(new ResponseEvent(
+            new NullKernel(),
+            $request,
+            HttpKernelInterface::MAIN_REQUEST,
+            $response,
+        ));
+
+        $remaining = array_values(array_filter(
+            $response->headers->getCookies(),
+            static fn (Cookie $cookie): bool => 'analytics_id' === $cookie->getName(),
+        ));
+
+        self::assertCount(1, $remaining);
+        self::assertSame('allowed', $remaining[0]->getValue());
+        self::assertSame('/tracking', $remaining[0]->getPath());
+        self::assertSame('example.test', $remaining[0]->getDomain());
+
+        $securityVariantResponse = new Response();
+        $securityVariantResponse->headers->setCookie(Cookie::create('analytics_id', 'wrong-secure', 0, '/tracking', 'example.test', true));
+
+        (new CookieConsentResponseSubscriber($registry, $manager))->filterCookies(new ResponseEvent(
+            new NullKernel(),
+            $request,
+            HttpKernelInterface::MAIN_REQUEST,
+            $securityVariantResponse,
+        ));
+
+        self::assertSame([], array_values(array_filter(
+            $securityVariantResponse->headers->getCookies(),
+            static fn (Cookie $cookie): bool => 'analytics_id' === $cookie->getName(),
+        )));
+    }
+
     public function testItRejectsDuplicateCookieDefinitions(): void
     {
         $registry = new CookieConsentRegistry([

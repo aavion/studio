@@ -7,13 +7,12 @@ namespace App\Backend;
 use App\Backend\BackendMessageKey;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
-use App\Core\Message\MessageLevel;
 use App\Core\Operation\Live\LiveOperationHttpResponder;
-use App\Core\Operation\OperationMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Form\FormTokenValidator;
 use App\View\Alert\UiAlertDelivery;
 use App\View\Alert\UiAlertDispatcherInterface;
+use App\View\Alert\WorkflowResultAlertSelector;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,6 +25,7 @@ final readonly class BackendActionResponder
         private LiveOperationHttpResponder $liveOperationResponder,
         private FormTokenValidator $formTokenValidator,
         private UiAlertDispatcherInterface $alerts,
+        private WorkflowResultAlertSelector $alertSelector,
     ) {
     }
 
@@ -88,25 +88,7 @@ final readonly class BackendActionResponder
      */
     private function flashResult(WorkflowResult $result): void
     {
-        $message = $result->isSuccess()
-            ? ($this->firstMessageWithLevel($result, MessageLevel::Success) ?? Message::success(BackendMessageKey::BACKEND_ACTION_CACHE_CLEAR_COMPLETED))
-            : ($result->firstIssue() ?? Message::error(CommonMessageCode::E_OPERATION_FAILED, OperationMessageKey::OPERATION_EXCEPTION));
-
-        $this->alerts->addAlert($message, UiAlertDelivery::Direct);
-    }
-
-    /**
-     * @param WorkflowResult<mixed> $result
-     */
-    private function firstMessageWithLevel(WorkflowResult $result, MessageLevel $level): ?Message
-    {
-        foreach ($result->messages() as $message) {
-            if ($message->level() === $level) {
-                return $message;
-            }
-        }
-
-        return null;
+        $this->alerts->addAlert($this->alertSelector->fromResult($result), UiAlertDelivery::Direct);
     }
 
     private function stringField(Request $request, string $name): string

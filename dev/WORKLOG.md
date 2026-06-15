@@ -116,6 +116,7 @@
 - Hardened follow-up alert edges by preserving username case during username-to-UID topic resolution.
 - Removed the native browser notification opt-in and `symfony/ux-notify` dependency because UX Notify only works while a page keeps an active Mercure/EventSource stream; real closed-browser notifications need a separate future Web Push design.
 - Follow-up: when the next feature branch starts, evaluate focused controller foundations for public consent/privacy settings, package live endpoint documentation/navigation, captcha provider/live seed flows, notification preference detail settings, and package-owned webhook/job callback endpoints before adding more broad UI surface.
+- Follow-up: add a public privacy/footer trigger for `cookie_consent_trigger_attributes()` so visitors with stored consent can reopen cookie preferences and withdraw or adjust optional-cookie consent.
 - Follow-up: evaluate converting high-use backend filters from GET-refresh enhancement to Symfony UX LiveComponent slices with URL-bound writable `LiveProp`s so filter input updates can re-render only the list component while keeping shareable query parameters.
 - Follow-up: revisit the full operation overlay controller after the first real UI/UX feature slice; the polling core is now shared, but renderer/storage responsibilities can still be split further when more live consumers exist.
 

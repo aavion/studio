@@ -14,12 +14,12 @@ use App\Core\Message\Message;
 use App\Core\Operation\Live\LiveOperationHttpResponder;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationStarter;
-use App\Core\Operation\OperationMessageKey;
 use App\Core\Package\Install\PackageZipInstaller;
 use App\Core\Workflow\WorkflowResult;
 use App\Form\FormTokenValidator;
 use App\View\Alert\UiAlertDelivery;
 use App\View\Alert\UiAlertDispatcherInterface;
+use App\View\Alert\WorkflowResultAlertSelector;
 use App\View\Http\HttpErrorRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -39,6 +39,7 @@ final class AdminPackageController extends AbstractController
         private readonly LiveOperationHttpResponder $liveOperationResponder,
         private readonly FormTokenValidator $formTokenValidator,
         private readonly UiAlertDispatcherInterface $alerts,
+        private readonly WorkflowResultAlertSelector $alertSelector,
     ) {
     }
 
@@ -236,11 +237,7 @@ final class AdminPackageController extends AbstractController
      */
     private function flashResult(WorkflowResult $result): void
     {
-        $message = $result->isSuccess()
-            ? ($result->messages()[0] ?? Message::success(BackendMessageKey::BACKEND_ACTION_CACHE_CLEAR_COMPLETED))
-            : ($result->firstIssue() ?? Message::error(CommonMessageCode::E_OPERATION_FAILED, OperationMessageKey::OPERATION_EXCEPTION));
-
-        $this->alerts->addAlert($message, UiAlertDelivery::Direct);
+        $this->alerts->addAlert($this->alertSelector->fromResult($result), UiAlertDelivery::Direct);
     }
 
     private function stringField(Request $request, string $name): string
