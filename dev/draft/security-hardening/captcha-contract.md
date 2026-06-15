@@ -19,6 +19,7 @@ Codex may create local commits for this branch when each commit has a clear them
 
 - Abuse facade from `feat-security-abuse-foundation`.
 - Rate reset hooks from `feat-security-rate-enforcement`.
+- [Security policy defaults](policy-defaults.md).
 - Existing Symfony Form, Validator, Translation, package contribution, and settings foundations.
 
 ## Legacy inspiration
@@ -60,6 +61,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Documentation and tracking
 
 - Update Security and IconCaptcha drafts with final contract names.
+- Update Security policy defaults if provider-required workflow behavior or captcha success reset policy changes.
 - Update package developer guidance for provider registration.
 - Update class map for provider interface, resolver, form type, and validation services.
 - Record provider-required policy as deferred design context; do not enforce it in this branch.

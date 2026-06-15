@@ -19,6 +19,7 @@ Codex may create local commits for this branch when each commit has a clear them
 
 - `feat-security-abuse-foundation`.
 - `feat-security-rate-enforcement`.
+- [Security policy defaults](policy-defaults.md).
 - Existing Admin, audit, message, user-role, visitor identity, and API-key foundations.
 
 ## Legacy inspiration
@@ -42,7 +43,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Ban reasons use stable message/code catalogues.
 - Ban responses use HTML or JSON according to request family and never expose raw signal internals.
 - Suggested record fields are subject type/key, reason code, source signal digest, status, created at, expires at, lifted at, lifted by, lift reason, actor context hash, last matched at, match count, and audit reference.
-- Initial TTL defaults should be conservative and test-backed: short anonymous/probe bans first, longer repeat bans only after repeated signals within the review window, and no permanent bans.
+- Initial TTL defaults come from the Security policy defaults and must stay test-backed: short anonymous/probe bans first, longer repeat bans only after repeated signals within the review window, and no permanent bans.
 - Prefer Visitor-ID-backed bans for continuity. Add IP-bucket bans as a shorter secondary layer to reduce cookie-reset bypasses, and keep every IP-derived ban TTL below 30 days.
 - Ban keys come only from the shared subject/client-identity resolver. Raw IP strings, raw API keys, and raw forwarding headers must never be stored as ban keys.
 - Expiry and cleanup use an injectable clock/time boundary.
@@ -73,6 +74,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Documentation and tracking
 
 - Update Security draft with final subject types, statuses, and Owner protections.
+- Update Security policy defaults if implementation evidence changes ban TTLs, maximums, subject types, or authenticated/Owner handling.
 - Update Admin/security diagnostics notes for review UI.
 - Update class map for entity, repository, decision service, cleanup command/task, and Admin routes.
 - Record threshold and false-positive assumptions in worklog.

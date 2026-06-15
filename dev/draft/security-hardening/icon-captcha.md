@@ -18,6 +18,7 @@ Codex may create local commits for this branch when each commit has a clear them
 ## Dependencies
 
 - `feat-security-captcha-contract`.
+- [Security policy defaults](policy-defaults.md).
 - Package lifecycle, AssetMapper/Tailwind, translation aggregation, `/api/live/**`, and abuse passive signal foundations.
 
 ## Legacy inspiration
@@ -75,6 +76,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Documentation and tracking
 
 - Update IconCaptcha draft with final payload/storage choices.
+- Update Security policy defaults if challenge TTL, quiz fallback policy, refresh handling, or captcha reset behavior changes.
 - Update package developer guidance if provider package layout adds a reusable pattern.
 - Update class map for provider, challenge services, controller/live endpoint, assets, and templates.
 - Record asset licensing, provenance, sanitization, and bot-resistance notes.

@@ -48,6 +48,7 @@ The feature drafts should be created in dependency order. Start with architectur
 
 - [Security and access control](0.2.x-SecurityAccessControl.md)
 - [Security hardening implementation plan](0.2.x-SecurityHardeningPlan.md)
+- [Security policy defaults](security-hardening/policy-defaults.md)
 - [Admin interface and setup UI](0.2.x-AdminInterfaceSetupUi.md)
 - [Package modules and providers](0.2.x-PluginModules.md)
 - [Event hooks and buses](0.2.x-EventHooksBuses.md)

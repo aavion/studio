@@ -17,6 +17,7 @@ Codex may create local commits for this branch when each commit has a clear them
 
 ## Dependencies
 
+- [Security policy defaults](policy-defaults.md).
 - Existing visitor identity, access logging, audit logging, API-key authentication, Scheduler API authentication, and `/api/live/**` route boundaries.
 - Symfony Request data and Turbo/browser prefetch headers.
 
@@ -71,6 +72,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Update class map for the facade and value objects only if they are contributor-facing services.
 - Update class map for the passive-signal entity/repository/cleanup command if they are added.
 - Record default cost catalogue decisions in the worklog.
+- Update Security policy defaults if implementation evidence changes signal retention, subject composition, or suspicious-intent weighting.
 - Record whether the branch keeps only the passive-signal store or also introduces/reuses a broader security event projection.
 - Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 

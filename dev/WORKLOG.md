@@ -75,20 +75,10 @@
 ## Branch Logs
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place new entries chronologically under the matching branch/date heading so reviewers can follow the PR context without reading full verification transcripts. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
-### 2026-06-15 feat-security-planning
-- Added the security hardening implementation plan draft, splitting the next Security work into focused `feat-security-*` branches for policy docs, GeoIP observability, abuse foundations, rate enforcement, auto-ban handling, captcha contracts, IconCaptcha, mailer account delivery, and remember-me.
-- Added handoff-ready detail plans under `dev/draft/security-hardening/` for every planned `feat-security-*` branch and linked them from the master hardening plan.
-- Documented the Security branch Git policy: Codex may create thematically clear local commits, while pushes require explicit user instruction.
-- Recorded planning decisions for `/api/live/**` rate-limit exclusion, Turbo/browser prefetch classification, action-aware limiter costs, scoped `reset()`-based bucket recovery, cross-action abuse signals, TTL auto-bans, Owner lockout protection, and GeoIP as observability before enforcement.
-- Aligned the Security, API, Contact/Mail/Logging, and IconCaptcha drafts with the planning branch decisions, including treating live captcha refreshes as passive abuse signals rather than ordinary rate-limit `429` responses.
-- Compacted the non-Security `feat-symfony-ux-integration` and `docs-cleanup` active branch logs into `dev/WORKLOG_HISTORY.md` so the active worklog stays focused on Security planning.
-- Re-reviewed every Security detail plan for implementation readiness and tightened unresolved planning language around passive-signal persistence, GeoIP update tasks, rate-limit workflow wiring, auto-ban TTL records, captcha provider policy, IconCaptcha cache/TTL behavior, account-mail delivery guards, and remember-me token management UI.
-- Added the legacy Grav `sec-lookup` plugin at `/Volumes/Projekte/temp/sec-lookup` as an inspiration-only reference for GeoIP, abuse, rate-limit, auto-ban, captcha, and IconCaptcha planning, with current Symfony product decisions taking priority over historical implementation details.
-- Added IconCaptcha asset/license, inline-rendering, bot-resistance, and neutral accessibility-label requirements, and documented Security PR-readiness checks that must be completed from the actual branch diff before PRs.
-- Recorded quiz-style IconCaptcha as the preferred accessible fallback when neutral labels are insufficient, keeping quiz prompts/options under the same one-shot challenge, TTL, context-binding, and answer-leak resistance rules.
-- Added final cross-cutting planning guardrails for shared client identity/trusted-proxy handling, injectable time boundaries, degraded storage behavior, and race/idempotency review across Security branches.
-- Recorded the open logging architecture question of keeping 30-day rotating file logs as the durable raw source while evaluating a parallel database-backed security event projection for query-heavy Security review and abuse correlation.
-- Recorded the privacy rule that raw IPs, IP buckets, and stable IP-derived hashes remain queryable for at most 30 days, with longer-term Security/statistics correlation handled through internal visitor IDs or other non-IP subjects.
+### 2026-06-15 feat-security-policy-docs
+- Added `dev/draft/security-hardening/policy-defaults.md` as the central first-implementation source for Security hardening TTLs, rate-limit thresholds, auto-ban defaults, captcha defaults, privacy ceilings, logging projection posture, and configuration rules.
+- Linked policy defaults from the master Security hardening plan, the Security/API/Contact-Mail-Logging drafts, and the affected branch detail plans so later implementation branches can cite one policy reference.
+- Compacted the completed `feat-security-planning` worklog entry into `dev/WORKLOG_HISTORY.md` so the active worklog stays focused on the policy-docs branch.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

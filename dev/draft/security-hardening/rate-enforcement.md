@@ -18,6 +18,7 @@ Codex may create local commits for this branch when each commit has a clear them
 ## Dependencies
 
 - `feat-security-abuse-foundation`.
+- [Security policy defaults](policy-defaults.md).
 - Existing form, API, scheduler, login, account-token, message, and error-rendering foundations.
 
 ## Legacy inspiration
@@ -39,7 +40,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Response metadata includes retry timing where Symfony provides it, without exposing internal bucket identifiers.
 - Config names use stable system/security namespaces; thresholds are defaults that can become Admin settings later.
 - Registration and password-reset success do not reset global buckets by default.
-- The branch must commit initial threshold defaults as named configuration/constants with behavior tests. Later branches may tune those defaults only with matching draft/worklog notes.
+- The branch must commit initial threshold defaults from the Security policy defaults as named configuration/constants with behavior tests. Later branches may tune those defaults only with matching draft/worklog notes.
 - Workflows that do not exist in the current codebase receive catalogue entries only when doing so does not create dead services, routes, or unreachable tests.
 - Limiter keys come only from the shared subject/client-identity resolver and never from raw request headers or user-submitted identifiers.
 - Limiter storage degradation must be explicit and tested, including safe diagnostics and Owner recovery behavior.
@@ -66,6 +67,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Documentation and tracking
 
 - Update Security draft thresholds and reset behavior.
+- Update Security policy defaults if implementation evidence changes any threshold, subject, or reset policy.
 - Update API/Scheduler notes for JSON `429` behavior.
 - Update class map for facade/enforcement services.
 - Record focused test commands and any threshold changes in the worklog.
