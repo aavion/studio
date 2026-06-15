@@ -103,28 +103,46 @@ export default class extends Controller {
         }
 
         try {
-            const url = new URL(this.catchUpUrlValue, window.location.origin);
-            url.searchParams.set('cursor', String(Math.max(0, this.catchUpCursorValue || 0)));
-            const response = await window.fetch(url.toString(), {
-                credentials: 'same-origin',
-                headers: { Accept: 'application/json' },
-            });
-            if (!response.ok) {
-                return;
-            }
+            let previousCursor = -1;
 
-            const payload = await response.json();
-            const cursor = Number(payload.cursor);
-            if (Number.isFinite(cursor)) {
-                this.updateCursor(cursor);
-            }
+            do {
+                previousCursor = Math.max(0, this.catchUpCursorValue || 0);
 
-            for (const alert of Array.isArray(payload.alerts) ? payload.alerts : []) {
-                this.dispatchAlert(alert);
-            }
+                const payload = await this.fetchCatchUpPage(previousCursor);
+                if (!payload) {
+                    return;
+                }
+
+                const cursor = Number(payload.cursor);
+                if (Number.isFinite(cursor)) {
+                    this.updateCursor(cursor);
+                }
+
+                for (const alert of Array.isArray(payload.alerts) ? payload.alerts : []) {
+                    this.dispatchAlert(alert);
+                }
+
+                if (payload.has_more !== true) {
+                    return;
+                }
+            } while (this.catchUpCursorValue > previousCursor);
         } catch {
             // Stream delivery remains active; the next open/reconnect can catch up again.
         }
+    }
+
+    async fetchCatchUpPage(cursor) {
+        const url = new URL(this.catchUpUrlValue, window.location.origin);
+        url.searchParams.set('cursor', String(Math.max(0, cursor || 0)));
+        const response = await window.fetch(url.toString(), {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) {
+            return null;
+        }
+
+        return response.json();
     }
 
     startFallbackPolling() {

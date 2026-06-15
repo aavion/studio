@@ -84,7 +84,10 @@ final readonly class PackageFileSyntaxValidator
             $lintResult = $linter->lint($contents, $file);
 
             foreach ($lintResult->issues() as $lintIssue) {
-                if ($linter instanceof CssLinter && $this->isTailwindDirectiveCssIssue($contents, $lintIssue->line())) {
+                if ($linter instanceof CssLinter
+                    && CssLinter::isTailwindDirectiveLine($contents, $lintIssue->line())
+                    && $linter->lint(CssLinter::withoutTailwindDirectiveLines($contents), $file)->isSuccess()
+                ) {
                     continue;
                 }
 
@@ -99,31 +102,5 @@ final readonly class PackageFileSyntaxValidator
         }
 
         return $issues;
-    }
-
-    private function isTailwindDirectiveCssIssue(string $contents, ?int $line): bool
-    {
-        if (null === $line) {
-            return false;
-        }
-
-        $lines = preg_split('/\R/', $contents) ?: [];
-        $texts = [
-            trim((string) ($lines[$line - 2] ?? '')),
-            trim((string) ($lines[$line - 1] ?? '')),
-            trim((string) ($lines[$line] ?? '')),
-        ];
-
-        foreach ($texts as $text) {
-            if (str_starts_with($text, '@apply ')
-                || str_starts_with($text, '@theme ')
-                || str_starts_with($text, '@custom-variant ')
-                || str_starts_with($text, '@source ')
-            ) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

@@ -63,28 +63,31 @@ final readonly class UiAlertInbox
     /**
      * @param list<string> $topics
      *
-     * @return array{cursor: int, alerts: list<array<string, mixed>>}
+     * @return array{cursor: int, alerts: list<array<string, mixed>>, has_more: bool}
      */
     public function poll(array $topics, int $cursor = 0, int $limit = self::DEFAULT_LIMIT): array
     {
         $topics = $this->normalizeTopics($topics);
         if ([] === $topics) {
-            return ['cursor' => max(0, $cursor), 'alerts' => []];
+            return ['cursor' => max(0, $cursor), 'alerts' => [], 'has_more' => false];
         }
 
         try {
             $now = new DateTimeImmutable();
+            $limit = max(1, min(250, $limit));
             $rows = $this->connection->fetchAllAssociative(
                 'SELECT id, payload FROM ui_alert_inbox WHERE topic IN (?) AND id > ? AND (expires_at IS NULL OR expires_at > ?) ORDER BY id ASC LIMIT ?',
-                [$topics, max(0, $cursor), $now, max(1, min(250, $limit))],
+                [$topics, max(0, $cursor), $now, $limit + 1],
                 [ArrayParameterType::STRING, ParameterType::INTEGER, Types::DATETIME_IMMUTABLE, ParameterType::INTEGER],
             );
         } catch (Throwable) {
-            return ['cursor' => max(0, $cursor), 'alerts' => []];
+            return ['cursor' => max(0, $cursor), 'alerts' => [], 'has_more' => false];
         }
 
         $alerts = [];
         $nextCursor = max(0, $cursor);
+        $hasMore = count($rows) > $limit;
+        $rows = array_slice($rows, 0, $limit);
 
         foreach ($rows as $row) {
             $nextCursor = max($nextCursor, (int) ($row['id'] ?? 0));
@@ -94,7 +97,7 @@ final readonly class UiAlertInbox
             }
         }
 
-        return ['cursor' => $nextCursor, 'alerts' => $alerts];
+        return ['cursor' => $nextCursor, 'alerts' => $alerts, 'has_more' => $hasMore];
     }
 
     public function cleanupExpired(): int

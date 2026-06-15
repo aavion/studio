@@ -61,7 +61,7 @@ final class UiAlertTwigExtension extends AbstractExtension
         }
 
         try {
-            return $this->mercure->mercure($topics);
+            return $this->mercure->mercure($topics, $this->authorizationOptions($topics));
         } catch (Throwable) {
             return null;
         }
@@ -92,5 +92,20 @@ final class UiAlertTwigExtension extends AbstractExtension
         }
 
         return $surface.'.'.substr(hash_hmac('sha256', $surface.'|'.$userScope.'|'.$sessionScope, $this->secret), 0, 32);
+    }
+
+    /**
+     * @param list<string> $topics
+     *
+     * @return array{subscribe?: list<string>}
+     */
+    private function authorizationOptions(array $topics): array
+    {
+        $request = $this->requestStack->getMainRequest();
+        if (null !== $request && [] !== $request->attributes->get('_mercure_authorization_cookies', [])) {
+            return [];
+        }
+
+        return ['subscribe' => $topics];
     }
 }

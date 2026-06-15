@@ -307,21 +307,22 @@ test('UI alert stream opens EventSource with credentials and forwards valid aler
     assert.equal(sources[0].closed, true);
 });
 
-test('UI alert stream performs a one-time queue catch-up when the stream opens', async () => {
+test('UI alert stream drains queued catch-up pages when the stream opens', async () => {
     const { window } = installDom();
 
     const sources = [];
     const fetches = [];
+    const pages = [
+        { cursor: 42, has_more: true, alerts: [{ id: 'queued-1', message: 'Queued one' }] },
+        { cursor: 45, has_more: false, alerts: [{ id: 'queued-2', message: 'Queued two' }] },
+    ];
     window.fetch = async (url, options) => {
         fetches.push({ url, options });
 
         return {
             ok: true,
             async json() {
-                return {
-                    cursor: 42,
-                    alerts: [{ id: 'queued', message: 'Queued fallback' }],
-                };
+                return pages.shift();
             },
         };
     };
@@ -363,14 +364,18 @@ test('UI alert stream performs a one-time queue catch-up when the stream opens',
     sources[0].listeners.get('open')();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    assert.equal(fetches.length, 1);
+    assert.equal(fetches.length, 2);
     assert.equal(fetches[0].url, 'http://127.0.0.1:8000/api/live/alerts?cursor=7');
+    assert.equal(fetches[1].url, 'http://127.0.0.1:8000/api/live/alerts?cursor=42');
     assert.deepEqual(fetches[0].options, {
         credentials: 'same-origin',
         headers: { Accept: 'application/json' },
     });
-    assert.equal(controller.catchUpCursorValue, 42);
-    assert.deepEqual(received, [{ id: 'queued', message: 'Queued fallback' }]);
+    assert.equal(controller.catchUpCursorValue, 45);
+    assert.deepEqual(received, [
+        { id: 'queued-1', message: 'Queued one' },
+        { id: 'queued-2', message: 'Queued two' },
+    ]);
 });
 
 test('UI alert stream schedules reconnect when the stream closes', () => {

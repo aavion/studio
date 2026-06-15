@@ -29,7 +29,26 @@ final class UiAlertInboxTest extends TestCase
                 'mode' => 'auto',
                 'loading' => false,
             ]],
+            'has_more' => false,
         ], $inbox->poll(['topic.one']));
+    }
+
+    public function testItReportsWhenAnotherPollPageIsAvailable(): void
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE ui_alert_inbox (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, topic VARCHAR(80) NOT NULL, payload CLOB NOT NULL, created_at DATETIME NOT NULL, expires_at DATETIME DEFAULT NULL)');
+        $inbox = new UiAlertInbox($connection);
+
+        self::assertSame(1, $inbox->append(['topic.one'], UiAlert::fromLevel('success', 'First')));
+        self::assertSame(1, $inbox->append(['topic.one'], UiAlert::fromLevel('success', 'Second')));
+
+        $firstPage = $inbox->poll(['topic.one'], limit: 1);
+        $secondPage = $inbox->poll(['topic.one'], $firstPage['cursor'], limit: 1);
+
+        self::assertSame(['First'], array_column($firstPage['alerts'], 'message'));
+        self::assertTrue($firstPage['has_more']);
+        self::assertSame(['Second'], array_column($secondPage['alerts'], 'message'));
+        self::assertFalse($secondPage['has_more']);
     }
 
     public function testItStoresBoundedTopicKeysForLongPublicTopics(): void

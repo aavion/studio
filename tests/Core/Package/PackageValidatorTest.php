@@ -824,6 +824,24 @@ CSS);
         self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
     }
 
+    public function testItRejectsCssSyntaxErrorsNextToTailwindDirectives(): void
+    {
+        $this->writeFile('assets/module.css', <<<'CSS'
+.demo-module-card {
+    @apply grid gap-4 rounded-lg border p-4;
+    color red;
+}
+CSS);
+
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_SLUG' => 'demo-module']),
+            PackageSpec::create()->withInventoryDepth(4)->withCssLinting(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.css_syntax_error', $result->issues()[0]->code());
+    }
+
     public function testItRejectsCssRulesTargetingClassesOutsidePackageNamespace(): void
     {
         $this->writeFile('assets/module.css', <<<'CSS'

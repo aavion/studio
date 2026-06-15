@@ -12,6 +12,39 @@ use Sabberworm\CSS\Settings;
 
 final class CssLinter implements LinterInterface
 {
+    public static function isTailwindDirectiveLine(string $contents, ?int $line): bool
+    {
+        if (null === $line) {
+            return false;
+        }
+
+        $lines = preg_split('/\R/', $contents) ?: [];
+        $text = trim((string) ($lines[$line - 1] ?? ''));
+
+        return self::isTailwindDirectiveText($text);
+    }
+
+    public static function withoutTailwindDirectiveLines(string $contents): string
+    {
+        $lines = preg_split('/\R/', $contents) ?: [];
+
+        foreach ($lines as $index => $line) {
+            if (self::isTailwindDirectiveText(trim((string) $line))) {
+                $lines[$index] = '/* Tailwind directive omitted for strict CSS parsing. */';
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private static function isTailwindDirectiveText(string $text): bool
+    {
+        return str_starts_with($text, '@apply ')
+            || str_starts_with($text, '@theme ')
+            || str_starts_with($text, '@custom-variant ')
+            || str_starts_with($text, '@source ');
+    }
+
     public function lint(string $contents, ?string $path = null): LintResult
     {
         try {

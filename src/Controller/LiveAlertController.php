@@ -50,6 +50,7 @@ final class LiveAlertController extends AbstractController
         return $this->json->render([
             'cursor' => $payload['cursor'],
             'alerts' => $payload['alerts'],
+            'has_more' => $payload['has_more'],
             'next_poll_ms' => self::POLL_INTERVAL_MS,
         ]);
     }
