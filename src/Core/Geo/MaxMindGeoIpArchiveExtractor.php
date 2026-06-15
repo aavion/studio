@@ -33,6 +33,14 @@ final readonly class MaxMindGeoIpArchiveExtractor implements MaxMindGeoIpArchive
 
             $archive = new PharData($archivePath);
             $archive->decompress();
+            if (!$this->tarPathsAreSafe($tarPath)) {
+                return $this->failure(
+                    GeoIpMessageCode::GEOIP_DOWNLOAD_ARCHIVE_INVALID,
+                    GeoIpMessageKey::GEOIP_DOWNLOAD_ARCHIVE_INVALID,
+                    ['stage' => 'extract', 'reason' => 'unsafe_archive_path'],
+                );
+            }
+
             $tar = new PharData($tarPath);
             $tar->extractTo($extractDir, null, true);
         } catch (Throwable $error) {
@@ -73,6 +81,62 @@ final readonly class MaxMindGeoIpArchiveExtractor implements MaxMindGeoIpArchive
         }
 
         return null;
+    }
+
+    private function tarPathsAreSafe(string $tarPath): bool
+    {
+        $handle = @fopen($tarPath, 'rb');
+        if (!is_resource($handle)) {
+            return false;
+        }
+
+        try {
+            while (!feof($handle)) {
+                $header = fread($handle, 512);
+                if (!is_string($header) || '' === $header) {
+                    break;
+                }
+
+                if (512 !== strlen($header)) {
+                    return false;
+                }
+
+                if (str_repeat("\0", 512) === $header) {
+                    return true;
+                }
+
+                $name = rtrim(substr($header, 0, 100), "\0");
+                $prefix = rtrim(substr($header, 345, 155), "\0");
+                $path = '' === $prefix ? $name : $prefix.'/'.$name;
+                if (!$this->pathIsSafe($path)) {
+                    return false;
+                }
+
+                $size = octdec(trim(rtrim(substr($header, 124, 12), "\0 ")) ?: '0');
+                if ($size > 0) {
+                    $skip = (int) (ceil($size / 512) * 512);
+                    if (0 !== fseek($handle, $skip, SEEK_CUR)) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    private function pathIsSafe(string $path): bool
+    {
+        $path = str_replace('\\', '/', $path);
+
+        return '' !== trim($path)
+            && !str_starts_with($path, '/')
+            && !str_starts_with($path, '//')
+            && 1 !== preg_match('/^[A-Za-z]:\//', $path)
+            && !str_contains('/'.$path.'/', '/../')
+            && !str_contains($path, "\0");
     }
 
     /**

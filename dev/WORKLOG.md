@@ -86,6 +86,7 @@
 - Aligned first-run setup seeding with the GeoIP2 defaults by explicitly persisting GeoIP disabled, the default `var/geoip2/GeoLite2-City.mmdb` path, and an intentionally empty sensitive MaxMind license-key setting.
 - Re-audited the GeoIP observability plan against the implementation, added safe Statistics settings status rendering, and clarified that persistent update-state history and coordinate fields are not planned for this branch.
 - Simplified GeoIP status and the branch plan after product review: latitude/longitude and separate persistent GeoIP update-history storage are intentionally not planned because Scheduler run history and live Operation feedback cover update success/failure.
+- During PR-readiness review, hardened GeoIP archive extraction by rejecting unsafe TAR member paths before extraction and added direct extractor coverage for safe and unsafe archives.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
