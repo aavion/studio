@@ -20,6 +20,10 @@ Codex may create local commits for this branch when each commit has a clear them
 - Existing visitor identity, access logging, audit logging, API-key authentication, Scheduler API authentication, and `/api/live/**` route boundaries.
 - Symfony Request data and Turbo/browser prefetch headers.
 
+## Legacy inspiration
+
+The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be reviewed for suspicious-request categories, passive-signal examples, and diagnostics language. Current subject-resolution, privacy, database-portability, and no-enforcement decisions in this branch have priority. Do not copy legacy logic or framework-specific request handling directly.
+
 ## Implementation sequence
 
 1. Add an abuse namespace with value objects for subject, request family, request intent, action cost, and passive signal.

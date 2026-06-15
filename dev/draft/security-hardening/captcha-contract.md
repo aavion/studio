@@ -21,6 +21,10 @@ Codex may create local commits for this branch when each commit has a clear them
 - Rate reset hooks from `feat-security-rate-enforcement`.
 - Existing Symfony Form, Validator, Translation, package contribution, and settings foundations.
 
+## Legacy inspiration
+
+The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be reviewed for captcha workflow expectations and human-recovery signals. Current provider-contract, graceful `none` behavior, Symfony Form integration, and package-facing extension rules have priority. Do not copy legacy logic or provider coupling directly.
+
 ## Implementation sequence
 
 1. Define captcha provider and result contracts for render, validate, provider key, label key, and failure reason.

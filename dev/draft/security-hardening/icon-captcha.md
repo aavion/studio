@@ -20,6 +20,10 @@ Codex may create local commits for this branch when each commit has a clear them
 - `feat-security-captcha-contract`.
 - Package lifecycle, AssetMapper/Tailwind, translation aggregation, `/api/live/**`, and abuse passive signal foundations.
 
+## Legacy inspiration
+
+The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be reviewed for IconCaptcha challenge flow, refresh behavior, accessibility pitfalls, and abuse-signal ideas. Current provider-owned package boundaries, deterministic one-shot challenge policy, cache/TTL decisions, `/api/live/**` behavior, and product decisions in this plan have priority. Do not copy legacy logic, assets, templates, secrets, identifiers, or framework-specific shortcuts directly.
+
 ## Implementation sequence
 
 1. Add the first-party provider package skeleton with captcha-provider scope, package-owned services, templates, assets, translations, and JavaScript.

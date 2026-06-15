@@ -83,6 +83,7 @@
 - Aligned the Security, API, Contact/Mail/Logging, and IconCaptcha drafts with the planning branch decisions, including treating live captcha refreshes as passive abuse signals rather than ordinary rate-limit `429` responses.
 - Compacted the non-Security `feat-symfony-ux-integration` and `docs-cleanup` active branch logs into `dev/WORKLOG_HISTORY.md` so the active worklog stays focused on Security planning.
 - Re-reviewed every Security detail plan for implementation readiness and tightened unresolved planning language around passive-signal persistence, GeoIP update tasks, rate-limit workflow wiring, auto-ban TTL records, captcha provider policy, IconCaptcha cache/TTL behavior, account-mail delivery guards, and remember-me token management UI.
+- Added the legacy Grav `sec-lookup` plugin at `/Volumes/Projekte/temp/sec-lookup` as an inspiration-only reference for GeoIP, abuse, rate-limit, auto-ban, captcha, and IconCaptcha planning, with current Symfony product decisions taking priority over historical implementation details.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

@@ -20,6 +20,10 @@ Codex may create local commits for this branch when each commit has a clear them
 - `feat-security-abuse-foundation`.
 - Existing form, API, scheduler, login, account-token, message, and error-rendering foundations.
 
+## Legacy inspiration
+
+The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be reviewed for rate-limit pressure patterns, bucket naming ideas, and human-recovery behavior. Current Symfony RateLimiter integration, Studio facade boundaries, `/api/live/**` exclusion, and scoped `reset()` policy have priority. Do not copy legacy logic or thresholds directly.
+
 ## Implementation sequence
 
 1. Configure named Symfony limiters for implemented workflows: login, registration, password reset, website global, API read, API write, scheduler trigger, suspicious probes, and any already-present contact/import/captcha-failure flows.

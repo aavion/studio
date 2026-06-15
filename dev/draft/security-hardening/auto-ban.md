@@ -21,6 +21,10 @@ Codex may create local commits for this branch when each commit has a clear them
 - `feat-security-rate-enforcement`.
 - Existing Admin, audit, message, user-role, visitor identity, and API-key foundations.
 
+## Legacy inspiration
+
+The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be reviewed for temporary-block workflows, ban-review ergonomics, and false-positive lessons. Current database-backed TTL records, authenticated soft handling, Owner recovery protection, and Admin audit requirements have priority. Do not copy legacy logic, thresholds, or persistence directly.
+
 ## Implementation sequence
 
 1. Add database-backed ban records with subject type, normalized subject key, reason code, source signal summary, status, created/expiry timestamps, actor context where available, and manual unban metadata.

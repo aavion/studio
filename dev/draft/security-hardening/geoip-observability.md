@@ -21,6 +21,10 @@ Codex may create local commits for this branch when each commit has a clear them
 - Existing protected settings, scheduler, message, audit, access-log, and statistics foundations.
 - MaxMind/GeoIP2 package already listed as the first provider choice.
 
+## Legacy inspiration
+
+The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be reviewed for GeoIP provider behavior, update diagnostics, fallback handling, and operator-facing status ideas. Current Symfony product decisions, protected-settings rules, resolver boundaries, and redaction requirements have priority. Do not copy legacy logic or storage shape directly.
+
 ## Implementation sequence
 
 1. Add a MaxMind-backed resolver behind the existing GeoIP resolver interface.
