@@ -25,7 +25,7 @@ final class SettingsApiReadModelTest extends TestCase
         $readModel = new SettingsApiReadModel($this->registry(), $config);
 
         $licenseSetting = null;
-        foreach ($readModel->settings('security') as $setting) {
+        foreach ($readModel->settings('statistics') as $setting) {
             if (MaxMindGeoIpConfig::LICENSE_KEY_KEY === $setting['id']) {
                 $licenseSetting = $setting;
             }
@@ -33,7 +33,7 @@ final class SettingsApiReadModelTest extends TestCase
 
         self::assertIsArray($licenseSetting);
         self::assertSame('[protected]', $licenseSetting['attributes']['value']);
-        self::assertSame('', $readModel->values('security')[MaxMindGeoIpConfig::LICENSE_KEY_KEY]);
+        self::assertSame('', $readModel->values('statistics')[MaxMindGeoIpConfig::LICENSE_KEY_KEY]);
     }
 
     private function registry(): CoreSettingsRegistry
