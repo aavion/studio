@@ -92,12 +92,17 @@ export default class extends Controller {
         const action = event.currentTarget;
         const alert = action.closest('[data-alert-stack-target="alert"]');
         const eventName = action.dataset.alertActionEvent || '';
+        const detail = actionDetailFromElement(action);
 
         if (eventName) {
             event.preventDefault();
             document.dispatchEvent(new CustomEvent(eventName, {
-                detail: actionDetailFromElement(action),
+                detail,
             }));
+        }
+
+        if (detail.keepAlert === true) {
+            return;
         }
 
         this.closeAlert(alert);

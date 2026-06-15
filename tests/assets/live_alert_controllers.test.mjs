@@ -205,6 +205,52 @@ test('alert stack auto-dismiss keeps persistent alerts active', () => {
     assert.equal(JSON.parse(sessionStorage.getItem(controller.storageKey))[0].id, 'persistent-alert');
 });
 
+test('alert stack can keep action alerts open for reusable detail actions', () => {
+    installDom();
+
+    const controller = new AlertStackController();
+    const element = new FakeElement();
+    const list = new FakeElement();
+    const panel = new FakeElement();
+    const badge = new FakeElement();
+    const toggle = new FakeElement('button');
+    const clearAll = new FakeElement('button');
+    const empty = new FakeElement();
+    const events = [];
+    document.addEventListener('operation-overlay:show', (event) => events.push(event.detail));
+    panel.hidden = true;
+    controller.element = element;
+    controller.listTarget = list;
+    controller.panelTarget = panel;
+    controller.badgeTarget = badge;
+    controller.toggleTarget = toggle;
+    controller.clearAllTarget = clearAll;
+    controller.emptyTarget = empty;
+    controller.hasClearAllTarget = true;
+    controller.hasEmptyTarget = true;
+    controller.storageScopeValue = 'session:actions';
+    controller.initialize();
+
+    controller.upsertAlert({
+        id: 'operation-alert',
+        level: 'info',
+        message: 'Operation running',
+        mode: 'persistent',
+        actions: [{
+            label: 'Show details',
+            event: 'operation-overlay:show',
+            detail: { storageKey: 'operation-key', keepAlert: true },
+        }],
+    });
+
+    const action = list.children[0].querySelector('.system-alert-action');
+    controller.action({ currentTarget: action, preventDefault() {} });
+
+    assert.deepEqual(events, [{ storageKey: 'operation-key', keepAlert: true }]);
+    assert.equal(controller.activeCount, 1);
+    assert.equal(list.children.length, 1);
+});
+
 test('UI alert stream opens EventSource with credentials and forwards valid alert events', () => {
     installDom();
 

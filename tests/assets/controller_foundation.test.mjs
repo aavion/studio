@@ -16,6 +16,7 @@ const { default: CookieConsentController } = await loadStimulusController('asset
 const { default: DialogController } = await loadStimulusController('assets/controllers/dialog_controller.js');
 const { default: DisclosureController } = await loadStimulusController('assets/controllers/disclosure_controller.js');
 const { default: FilterFormController } = await loadStimulusController('assets/controllers/filter_form_controller.js');
+const { default: OperationOverlayController } = await loadStimulusController('assets/controllers/operation_overlay_controller.js');
 const { default: TabsController } = await loadStimulusController('assets/controllers/tabs_controller.js');
 
 test('disclosure updates panels and trigger state when the open value changes', () => {
@@ -206,6 +207,68 @@ test('cookie consent opens from a trigger and can reject optional choices', () =
     assert.equal(option.checked, false);
 });
 
+test('operation overlay keeps a hide control available while polling continues', () => {
+    const { document } = installDom();
+    const root = operationOverlayRoot();
+    document.body.append(root);
+
+    const controller = new OperationOverlayController();
+    controller.element = new FakeFormElement();
+    controller.reset();
+
+    assert.equal(controller.closeButton.hidden, false);
+    assert.equal(controller.closeIconButton.hidden, false);
+
+    const poller = {
+        stopped: false,
+        stop() {
+            this.stopped = true;
+        },
+    };
+    controller.livePoller = poller;
+    controller.polling = true;
+    root.hidden = false;
+
+    controller.close();
+
+    assert.equal(root.hidden, true);
+    assert.equal(controller.polling, true);
+    assert.equal(poller.stopped, false);
+});
+
+test('operation overlay marks running detail actions as reusable', () => {
+    const { document } = installDom();
+    const root = operationOverlayRoot();
+    document.body.append(root);
+
+    let alertPayload = null;
+
+    const controller = new OperationOverlayController();
+    const form = new FakeFormElement();
+    form.action = '/admin/operations/run';
+    controller.element = form;
+    controller.storageKey = () => 'system.operation.test';
+    controller.dispatchAlert = (payload) => {
+        alertPayload = payload;
+    };
+
+    controller.updateOperationAlert({
+        status: 'running',
+        progress: { index: 1, total: 3 },
+        label: 'Package registry refresh',
+    });
+
+    assert.equal(alertPayload.actions[0].event, 'operation-overlay:show');
+    assert.equal(alertPayload.actions[0].detail.keepAlert, true);
+
+    controller.updateOperationAlert({
+        status: 'success',
+        label: 'Package registry refresh',
+    });
+
+    assert.equal(alertPayload.actions[0].detail.keepAlert, false);
+});
+
 function tab(id) {
     const element = new FakeElement('button');
     element.dataset.tabsId = id;
@@ -218,6 +281,33 @@ function panel(id) {
     element.dataset.tabsId = id;
 
     return element;
+}
+
+function operationOverlayRoot() {
+    const root = new FakeElement('section');
+    root.setAttribute('data-operation-overlay-root', '');
+    root.setAttribute('data-label-starting', 'Starting');
+    root.setAttribute('data-label-close', 'Close');
+    const summary = new FakeElement('div');
+    summary.setAttribute('data-operation-overlay-summary', '');
+    const list = new FakeElement('ol');
+    list.setAttribute('data-operation-overlay-list', '');
+    const scroll = new FakeElement('div');
+    scroll.setAttribute('data-operation-overlay-scroll', '');
+    const empty = new FakeElement('li');
+    empty.setAttribute('data-operation-overlay-empty', '');
+    const spinner = new FakeElement('span');
+    spinner.setAttribute('data-operation-overlay-spinner', '');
+    scroll.append(list);
+    root.append(summary, scroll, empty, spinner);
+
+    for (const name of ['ok', 'continue', 'retry', 'refresh', 'cancel', 'close', 'close-icon']) {
+        const button = new FakeElement('button');
+        button.setAttribute(`data-operation-overlay-${name}`, '');
+        root.append(button);
+    }
+
+    return root;
 }
 
 function defineReactiveValue(controller, name, initialValue) {

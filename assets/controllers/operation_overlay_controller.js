@@ -315,6 +315,12 @@ export default class extends Controller {
     };
 
     close = () => {
+        if (this.polling || this.starting) {
+            this.rootElement.hidden = true;
+
+            return;
+        }
+
         this.polling = false;
         this.livePoller?.stop();
         this.rootElement.hidden = true;
@@ -327,6 +333,7 @@ export default class extends Controller {
         this.resultRendered = false;
         this.stepElements = new Map();
         this.hideButtons();
+        this.showCloseControls();
     }
 
     finish(payload) {
@@ -567,6 +574,7 @@ export default class extends Controller {
                 event: 'operation-overlay:show',
                 detail: {
                     storageKey: this.storageKey(),
+                    keepAlert: !terminal,
                 },
             }],
         });
