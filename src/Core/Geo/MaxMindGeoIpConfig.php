@@ -57,7 +57,7 @@ final readonly class MaxMindGeoIpConfig
             || str_starts_with($relativePath, '/')
             || str_starts_with($relativePath, '//')
             || str_starts_with($relativePath, '\\\\')
-            || 1 === preg_match('/^[A-Za-z]:\//', $relativePath)
+            || 1 === preg_match('/^[A-Za-z]:/', $relativePath)
             || str_contains('/'.$relativePath.'/', '/../')
         ) {
             return null;

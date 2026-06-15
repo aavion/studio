@@ -76,7 +76,7 @@ final class MaxMindGeoIpDatabaseUpdaterTest extends TestCase
 
         self::assertTrue($result->isSuccess());
         self::assertSame(['database_path' => MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH], $result->value());
-        self::assertSame('new database', file_get_contents($this->projectDir.'/'.MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH));
+        self::assertSame('new database', file_get_contents($this->defaultDatabasePath()));
         self::assertSame(GeoIpMessageKey::GEOIP_DOWNLOAD_COMPLETED, $result->messages()[0]->translationKey());
     }
 
@@ -142,6 +142,11 @@ final class MaxMindGeoIpDatabaseUpdaterTest extends TestCase
 
         return $connection;
     }
+
+    private function defaultDatabasePath(): string
+    {
+        return $this->projectDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH);
+    }
 }
 
 final readonly class SilentWorkflowResultMessageReporter implements WorkflowResultMessageReporterInterface
@@ -184,7 +189,7 @@ final readonly class SuccessfulGeoIpArchiveExtractor implements MaxMindGeoIpArch
 
     public function extractDatabase(string $archivePath, string $workspaceDir): WorkflowResult
     {
-        $databasePath = $workspaceDir.'/GeoLite2-City.mmdb';
+        $databasePath = $workspaceDir.DIRECTORY_SEPARATOR.'GeoLite2-City.mmdb';
         file_put_contents($databasePath, $this->databaseContents);
 
         return WorkflowResult::success(['database_path' => $databasePath]);

@@ -134,7 +134,7 @@ final readonly class MaxMindGeoIpArchiveExtractor implements MaxMindGeoIpArchive
         return '' !== trim($path)
             && !str_starts_with($path, '/')
             && !str_starts_with($path, '//')
-            && 1 !== preg_match('/^[A-Za-z]:\//', $path)
+            && 1 !== preg_match('/^[A-Za-z]:/', $path)
             && !str_contains('/'.$path.'/', '/../')
             && !str_contains($path, "\0");
     }

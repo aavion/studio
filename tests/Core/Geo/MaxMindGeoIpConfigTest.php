@@ -45,12 +45,35 @@ final class MaxMindGeoIpConfigTest extends TestCase
     {
         $store = new Config($this->connection());
         $config = new MaxMindGeoIpConfig($store);
+        $projectDir = 'project-root';
 
-        self::assertSame('/project/var/geoip2/GeoLite2-City.mmdb', $config->databaseAbsolutePath('/project'));
+        self::assertSame(
+            $projectDir.DIRECTORY_SEPARATOR.'var'.DIRECTORY_SEPARATOR.'geoip2'.DIRECTORY_SEPARATOR.'GeoLite2-City.mmdb',
+            $config->databaseAbsolutePath($projectDir),
+        );
 
         $store->set(MaxMindGeoIpConfig::DATABASE_PATH_KEY, '../secret.mmdb', ConfigValueType::String);
 
-        self::assertNull((new MaxMindGeoIpConfig($store))->databaseAbsolutePath('/project'));
+        self::assertNull((new MaxMindGeoIpConfig($store))->databaseAbsolutePath($projectDir));
+    }
+
+    public function testItRejectsAbsoluteOrEscapingDatabasePaths(): void
+    {
+        $store = new Config($this->connection());
+        $projectDir = 'project-root';
+
+        foreach ([
+            '/secret.mmdb',
+            '//server/share/secret.mmdb',
+            '\\\\server\\share\\secret.mmdb',
+            'C:/secret.mmdb',
+            'C:secret.mmdb',
+            'var/../secret.mmdb',
+        ] as $unsafePath) {
+            $store->set(MaxMindGeoIpConfig::DATABASE_PATH_KEY, $unsafePath, ConfigValueType::String);
+
+            self::assertNull((new MaxMindGeoIpConfig($store))->databaseAbsolutePath($projectDir), $unsafePath);
+        }
     }
 
     private function connection(): Connection

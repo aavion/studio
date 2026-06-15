@@ -48,7 +48,7 @@ final class MaxMindGeoIpArchiveExtractorTest extends TestCase
         self::assertFalse($result->isSuccess());
         self::assertSame(GeoIpMessageCode::GEOIP_DOWNLOAD_ARCHIVE_INVALID, $result->firstIssue()?->code());
         self::assertSame('unsafe_archive_path', $result->context()['reason'] ?? null);
-        self::assertFileDoesNotExist(dirname($this->workspaceDir).'/escape.mmdb');
+        self::assertFileDoesNotExist(dirname($this->workspaceDir).DIRECTORY_SEPARATOR.'escape.mmdb');
     }
 
     /**
@@ -56,7 +56,7 @@ final class MaxMindGeoIpArchiveExtractorTest extends TestCase
      */
     private function archivePath(string $name, array $files): string
     {
-        $archivePath = $this->workspaceDir.'/'.$name.'.tar.gz';
+        $archivePath = $this->workspaceDir.DIRECTORY_SEPARATOR.$name.'.tar.gz';
         file_put_contents($archivePath, gzencode($this->tarContents($files)));
 
         return $archivePath;

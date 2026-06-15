@@ -88,5 +88,8 @@
 - Simplified GeoIP status and the branch plan after product review: latitude/longitude and separate persistent GeoIP update-history storage are intentionally not planned because Scheduler run history and live Operation feedback cover update success/failure.
 - During PR-readiness review, hardened GeoIP archive extraction by rejecting unsafe TAR member paths before extraction and added direct extractor coverage for safe and unsafe archives.
 
+### 2026-06-16 feat-security-geoip-observability
+- Rechecked GeoIP portability and project-rule compliance, tightened Windows drive-letter rejection for configured database paths and TAR member paths, made GeoIP path tests separator-neutral, and reran full PHPUnit, JavaScript, lint, and Git whitespace verification.
+
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

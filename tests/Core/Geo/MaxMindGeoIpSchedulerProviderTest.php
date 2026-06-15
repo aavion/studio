@@ -76,7 +76,7 @@ final readonly class SchedulerGeoIpArchiveExtractor implements MaxMindGeoIpArchi
 {
     public function extractDatabase(string $archivePath, string $workspaceDir): WorkflowResult
     {
-        $databasePath = $workspaceDir.'/GeoLite2-City.mmdb';
+        $databasePath = $workspaceDir.DIRECTORY_SEPARATOR.'GeoLite2-City.mmdb';
         file_put_contents($databasePath, 'database');
 
         return WorkflowResult::success(['database_path' => $databasePath]);

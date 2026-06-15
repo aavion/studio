@@ -75,7 +75,7 @@ final class MaxMindGeoIpProviderTest extends TestCase
             'continent' => 'Europe',
         ], $provider->resolve('8.8.8.8')->toArray());
         self::assertSame(1, $factory->openCount);
-        self::assertSame($this->projectDir.'/'.MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $factory->lastDatabasePath);
+        self::assertSame($this->defaultDatabasePath(), $factory->lastDatabasePath);
         self::assertSame(['en'], $factory->lastLocales);
         self::assertSame(1, $reader->cityLookupCount);
     }
@@ -140,6 +140,11 @@ final class MaxMindGeoIpProviderTest extends TestCase
             'country' => ['names' => ['en' => 'Germany'], 'iso_code' => 'DE'],
             'continent' => ['names' => ['en' => 'Europe'], 'code' => 'EU'],
         ]));
+    }
+
+    private function defaultDatabasePath(): string
+    {
+        return $this->projectDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH);
     }
 }
 
