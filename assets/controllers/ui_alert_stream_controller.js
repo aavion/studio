@@ -31,6 +31,7 @@ export default class extends Controller {
             return;
         }
 
+        this.catchUp();
         this.openSource();
     }
 
@@ -102,6 +103,14 @@ export default class extends Controller {
             return;
         }
 
+        if (this.catchUpRunning) {
+            this.catchUpRequested = true;
+
+            return;
+        }
+
+        this.catchUpRunning = true;
+
         try {
             let previousCursor = -1;
 
@@ -128,6 +137,12 @@ export default class extends Controller {
             } while (this.catchUpCursorValue > previousCursor);
         } catch {
             // Stream delivery remains active; the next open/reconnect can catch up again.
+        } finally {
+            this.catchUpRunning = false;
+            if (this.catchUpRequested && this.shouldReconnect) {
+                this.catchUpRequested = false;
+                this.catchUp();
+            }
         }
     }
 

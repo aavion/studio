@@ -312,17 +312,22 @@ test('UI alert stream drains queued catch-up pages when the stream opens', async
 
     const sources = [];
     const fetches = [];
-    const pages = [
-        { cursor: 42, has_more: true, alerts: [{ id: 'queued-1', message: 'Queued one' }] },
-        { cursor: 45, has_more: false, alerts: [{ id: 'queued-2', message: 'Queued two' }] },
-    ];
     window.fetch = async (url, options) => {
         fetches.push({ url, options });
+        const cursor = Number(new URL(url).searchParams.get('cursor'));
 
         return {
             ok: true,
             async json() {
-                return pages.shift();
+                if (cursor === 7) {
+                    return { cursor: 42, has_more: true, alerts: [{ id: 'queued-1', message: 'Queued one' }] };
+                }
+
+                if (cursor === 42) {
+                    return { cursor: 45, has_more: false, alerts: [{ id: 'queued-2', message: 'Queued two' }] };
+                }
+
+                return { cursor: 45, has_more: false, alerts: [] };
             },
         };
     };
@@ -364,9 +369,10 @@ test('UI alert stream drains queued catch-up pages when the stream opens', async
     sources[0].listeners.get('open')();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    assert.equal(fetches.length, 2);
+    assert.equal(fetches.length, 3);
     assert.equal(fetches[0].url, 'http://127.0.0.1:8000/api/live/alerts?cursor=7');
     assert.equal(fetches[1].url, 'http://127.0.0.1:8000/api/live/alerts?cursor=42');
+    assert.equal(fetches[2].url, 'http://127.0.0.1:8000/api/live/alerts?cursor=45');
     assert.deepEqual(fetches[0].options, {
         credentials: 'same-origin',
         headers: { Accept: 'application/json' },
@@ -376,6 +382,72 @@ test('UI alert stream drains queued catch-up pages when the stream opens', async
         { id: 'queued-1', message: 'Queued one' },
         { id: 'queued-2', message: 'Queued two' },
     ]);
+});
+
+test('UI alert stream drains queued alerts before the stream opens', async () => {
+    const { window } = installDom();
+
+    const sources = [];
+    const fetches = [];
+    window.fetch = async (url, options) => {
+        fetches.push({ url, options });
+
+        return {
+            ok: true,
+            async json() {
+                return {
+                    cursor: 11,
+                    has_more: false,
+                    alerts: [{ id: 'pre-open', message: 'Before open' }],
+                };
+            },
+        };
+    };
+
+    class FakeEventSource {
+        constructor() {
+            this.listeners = new Map();
+            sources.push(this);
+        }
+
+        addEventListener(type, listener) {
+            this.listeners.set(type, listener);
+        }
+
+        removeEventListener(type) {
+            this.listeners.delete(type);
+        }
+
+        close() {}
+    }
+    window.EventSource = FakeEventSource;
+    globalThis.EventSource = FakeEventSource;
+
+    const controller = new UiAlertStreamController();
+    const element = new FakeElement();
+    const received = [];
+    element.addEventListener('ui-alert:received', (event) => received.push(event.detail));
+    controller.element = element;
+    controller.hasUrlValue = true;
+    controller.urlValue = 'http://127.0.0.1:3000/.well-known/mercure?topic=alerts';
+    controller.hasCatchUpUrlValue = true;
+    controller.catchUpUrlValue = '/api/live/alerts';
+    controller.catchUpCursorValue = 4;
+    controller.credentialsValue = false;
+
+    controller.connect();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal(sources.length, 1);
+    assert.deepEqual(fetches, [{
+        url: 'http://127.0.0.1:8000/api/live/alerts?cursor=4',
+        options: {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+        },
+    }]);
+    assert.equal(controller.catchUpCursorValue, 11);
+    assert.deepEqual(received, [{ id: 'pre-open', message: 'Before open' }]);
 });
 
 test('UI alert stream schedules reconnect when the stream closes', () => {
