@@ -25,6 +25,7 @@ export class LivePoller {
         try {
             while (this.active) {
                 let result = null;
+                const previousCursor = nextCursor;
 
                 try {
                     result = await this.fetchPayload(url, nextCursor);
@@ -45,16 +46,19 @@ export class LivePoller {
                 nextCursor = result.cursor;
                 this.onPayload(payload, nextCursor);
 
-                const nextDelay = Number(payload.next_poll_ms ?? this.interval);
+                const hasMore = payload.has_more === true && nextCursor > previousCursor;
+                const nextDelay = hasMore ? 0 : Number(payload.next_poll_ms ?? this.interval);
 
-                if (this.isTerminal(payload) || nextDelay <= 0) {
+                if (this.isTerminal(payload) || (!hasMore && nextDelay <= 0)) {
                     this.active = false;
                     this.onDone(payload);
 
                     return payload;
                 }
 
-                await this.sleep(nextDelay);
+                if (nextDelay > 0) {
+                    await this.sleep(nextDelay);
+                }
             }
         } catch (error) {
             this.active = false;

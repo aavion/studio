@@ -23,11 +23,6 @@ final class CssLinter implements LinterInterface
             || self::isStrictParserUnsupportedLine($contents, $line + 1);
     }
 
-    public static function isTailwindDirectiveLine(string $contents, ?int $line): bool
-    {
-        return self::isStrictParserUnsupportedLine($contents, $line);
-    }
-
     public static function isStrictParserUnsupportedLine(string $contents, ?int $line): bool
     {
         if (null === $line) {
@@ -40,11 +35,6 @@ final class CssLinter implements LinterInterface
         return self::isTailwindDirectiveText($text)
             || self::isUnsupportedGroupAtRuleText($text)
             || self::containsEmptyCustomPropertyFallback($text);
-    }
-
-    public static function withoutTailwindDirectiveLines(string $contents): string
-    {
-        return self::forStrictParser($contents);
     }
 
     public static function forStrictParser(string $contents): string

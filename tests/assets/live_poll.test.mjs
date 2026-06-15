@@ -99,6 +99,35 @@ test('poll retries transient failures when retryOnError is enabled', async () =>
     assert.deepEqual(result, { cursor: 2, status: 'queued', next_poll_ms: 0 });
 });
 
+test('poll drains paginated payloads immediately when more pages are available', async () => {
+    installWindow();
+
+    const requestedCursors = [];
+    const payloads = [];
+    const pages = [
+        { cursor: 3, has_more: true, alerts: [{ id: 'first' }], next_poll_ms: 15000 },
+        { cursor: 5, has_more: false, alerts: [{ id: 'second' }], next_poll_ms: 0 },
+    ];
+    const poller = new LivePoller({
+        interval: 15000,
+        fetcher: async (url) => {
+            requestedCursors.push(new URL(url).searchParams.get('cursor'));
+
+            return jsonResponse(pages.shift());
+        },
+        onPayload: (payload, cursor) => payloads.push({ payload, cursor }),
+    });
+
+    const result = await poller.poll('/api/live/alerts', 1);
+
+    assert.deepEqual(requestedCursors, ['1', '3']);
+    assert.deepEqual(payloads, [
+        { payload: { cursor: 3, has_more: true, alerts: [{ id: 'first' }], next_poll_ms: 15000 }, cursor: 3 },
+        { payload: { cursor: 5, has_more: false, alerts: [{ id: 'second' }], next_poll_ms: 0 }, cursor: 5 },
+    ]);
+    assert.deepEqual(result, { cursor: 5, has_more: false, alerts: [{ id: 'second' }], next_poll_ms: 0 });
+});
+
 test('readJson rejects non-JSON responses with the configured message', async () => {
     installWindow();
 
