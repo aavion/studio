@@ -63,6 +63,46 @@ final class PackageSettingsFormHandlerTest extends KernelTestCase
         self::assertSame('comfortable', $settings->get('form-module', 'display.mode'));
         self::assertTrue($settings->get('form-module', 'feature.enabled'));
     }
+
+    public function testItPreservesSensitivePackageSettingsWhenSubmittedProtectedPlaceholder(): void
+    {
+        self::bootKernel();
+        $settings = self::getContainer()->get(PackageSettings::class);
+        $settings->set('form-module', 'api.secret', 'stored-secret', ConfigValueType::String, 'test');
+        $handler = new PackageSettingsFormHandler(
+            new PackageSettingRegistry(
+                [new FormHandlerPackageSettingProvider([
+                    new PackageSettingDefinition(
+                        'form-module',
+                        'api.secret',
+                        'API secret',
+                        '',
+                        ConfigValueType::String,
+                        inputType: FormInputType::Password,
+                        metadata: ['sensitive' => true],
+                    ),
+                ])],
+                new FormHandlerActivePackageProvider([
+                    new ExtensionPackage(
+                        '10000000-0000-7000-8000-000000000778',
+                        [PackageScope::Module],
+                        'form-module',
+                        'packages/form-module',
+                        ExtensionPackageStatus::Active,
+                    ),
+                ]),
+            ),
+            $settings,
+            new FormSubmissionHandler(),
+        );
+
+        $result = $handler->submit('form-module', [
+            'api.secret' => '[protected]',
+        ], 'test');
+
+        self::assertTrue($result->isValid());
+        self::assertSame('stored-secret', $settings->get('form-module', 'api.secret'));
+    }
 }
 
 final readonly class FormHandlerPackageSettingProvider implements PackageSettingProviderInterface

@@ -41,7 +41,9 @@ final readonly class GeoIpResolver implements GeoIpResolverInterface
 
     public function status(): GeoIpProviderStatus
     {
-        return $this->activeProvider()?->status() ?? $this->fallbackProvider->status();
+        return $this->activeProvider()?->status()
+            ?? $this->diagnosticProvider()?->status()
+            ?? $this->fallbackProvider->status();
     }
 
     private function activeProvider(): ?GeoIpProviderInterface
@@ -54,6 +56,19 @@ final readonly class GeoIpResolver implements GeoIpResolverInterface
             if ($provider->status()->isReady()) {
                 return $provider;
             }
+        }
+
+        return null;
+    }
+
+    private function diagnosticProvider(): ?GeoIpProviderInterface
+    {
+        foreach ($this->providers as $provider) {
+            if ($provider === $this->fallbackProvider) {
+                continue;
+            }
+
+            return $provider;
         }
 
         return null;

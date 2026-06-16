@@ -18,6 +18,8 @@ use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class CoreSettingsFormHandler
 {
+    private const PROTECTED_VALUE = '[protected]';
+
     public function __construct(
         private CoreSettingsRegistry $registry,
         private Config $config,
@@ -53,7 +55,7 @@ final readonly class CoreSettingsFormHandler
             $metadata = $definition->metadata();
             if (
                 true === ($metadata['sensitive'] ?? false)
-                && $this->isEmptySensitiveValue($result->value($definition->key()))
+                && $this->isUnchangedSensitiveValue($result->value($definition->key()))
             ) {
                 continue;
             }
@@ -171,8 +173,9 @@ final readonly class CoreSettingsFormHandler
         return is_string($email) && ('' === trim($email) || EmailAddress::isValid($email));
     }
 
-    private function isEmptySensitiveValue(mixed $value): bool
+    private function isUnchangedSensitiveValue(mixed $value): bool
     {
-        return null === $value || (is_string($value) && '' === trim($value));
+        return null === $value
+            || (is_string($value) && in_array(trim($value), ['', self::PROTECTED_VALUE], true));
     }
 }

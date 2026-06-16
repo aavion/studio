@@ -27,6 +27,14 @@ final class GeoIpResolverTest extends TestCase
             'continent' => 'n/a',
         ], $resolver->resolve('203.0.113.10')->toArray());
 
+        self::assertSame('maxmind', $resolver->status()->providerKey);
+        self::assertSame('unconfigured', $resolver->status()->status);
+    }
+
+    public function testItReportsFallbackStatusWhenNoProviderIsConfigured(): void
+    {
+        $resolver = new GeoIpResolver([], new NullGeoIpProvider());
+
         self::assertSame('none', $resolver->status()->providerKey);
         self::assertSame('disabled', $resolver->status()->status);
     }

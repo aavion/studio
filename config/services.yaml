@@ -109,6 +109,7 @@ services:
             - '../src/**/*Scope.php'
             - '../src/**/*Source.php'
             - '../src/Debug/RouteRenderOptions.php'
+            - '../src/Core/Geo/GeoIp2MaxMindDatabaseReader.php'
             - '../src/Core/Package/PackageSpec.php'
             - '../src/**/*Spec.php'
             - '../src/**/*Status.php'

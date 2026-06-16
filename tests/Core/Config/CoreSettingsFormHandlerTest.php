@@ -33,10 +33,34 @@ final class CoreSettingsFormHandlerTest extends TestCase
 
         $result = $handler->submit('statistics', [
             'statistics.enabled' => '1',
-            'statistics.respect_dnt' => '1',
+            'statistics.respect_do_not_track' => '1',
             MaxMindGeoIpConfig::ENABLED_KEY => '0',
             MaxMindGeoIpConfig::DATABASE_PATH_KEY => MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH,
             MaxMindGeoIpConfig::LICENSE_KEY_KEY => '',
+        ], 'test');
+
+        self::assertTrue($result->isValid());
+        self::assertSame('secret-license-key', $config->get(MaxMindGeoIpConfig::LICENSE_KEY_KEY));
+    }
+
+    public function testItPreservesExistingSensitiveSettingsWhenSubmittedProtectedPlaceholder(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(MaxMindGeoIpConfig::LICENSE_KEY_KEY, 'secret-license-key', ConfigValueType::String, sensitive: true);
+
+        $handler = new CoreSettingsFormHandler(
+            $this->registry(),
+            $config,
+            new FormSubmissionHandler(),
+            $this->createStub(EntityManagerInterface::class),
+        );
+
+        $result = $handler->submit('statistics', [
+            'statistics.enabled' => '1',
+            'statistics.respect_do_not_track' => '1',
+            MaxMindGeoIpConfig::ENABLED_KEY => '1',
+            MaxMindGeoIpConfig::DATABASE_PATH_KEY => MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH,
+            MaxMindGeoIpConfig::LICENSE_KEY_KEY => '[protected]',
         ], 'test');
 
         self::assertTrue($result->isValid());

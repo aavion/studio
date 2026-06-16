@@ -10,6 +10,8 @@ use App\Form\FormSubmissionResult;
 
 final readonly class PackageSettingsFormHandler
 {
+    private const PROTECTED_VALUE = '[protected]';
+
     public function __construct(
         private PackageSettingRegistry $registry,
         private PackageSettings $settings,
@@ -33,6 +35,13 @@ final readonly class PackageSettingsFormHandler
         }
 
         foreach ($definitions as $definition) {
+            if (
+                true === ($definition->metadata()['sensitive'] ?? false)
+                && $this->isUnchangedSensitiveValue($result->value($definition->key()))
+            ) {
+                continue;
+            }
+
             if (!$this->settings->set($packageName, $definition->key(), $result->value($definition->key()), $definition->valueType(), $modifiedBy)) {
                 return new FormSubmissionResult($result->values(), [
                     '__form' => [FormErrorKey::SAVE_FAILED],
@@ -41,5 +50,11 @@ final readonly class PackageSettingsFormHandler
         }
 
         return $result;
+    }
+
+    private function isUnchangedSensitiveValue(mixed $value): bool
+    {
+        return null === $value
+            || (is_string($value) && in_array(trim($value), ['', self::PROTECTED_VALUE], true));
     }
 }

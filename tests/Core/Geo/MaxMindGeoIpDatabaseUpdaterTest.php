@@ -77,6 +77,9 @@ final class MaxMindGeoIpDatabaseUpdaterTest extends TestCase
         self::assertTrue($result->isSuccess());
         self::assertSame(['database_path' => MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH], $result->value());
         self::assertSame('new database', file_get_contents($this->defaultDatabasePath()));
+        if ('\\' !== DIRECTORY_SEPARATOR) {
+            self::assertSame('0644', substr(sprintf('%o', fileperms($this->defaultDatabasePath()) ?: 0), -4));
+        }
         self::assertSame(GeoIpMessageKey::GEOIP_DOWNLOAD_COMPLETED, $result->messages()[0]->translationKey());
     }
 

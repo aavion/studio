@@ -128,7 +128,11 @@ final readonly class MaxMindGeoIpDatabaseUpdater
             return false;
         }
 
+        @chmod($temporaryTarget, 0644);
+
         if (@rename($temporaryTarget, $targetPath)) {
+            @chmod($targetPath, 0644);
+
             return true;
         }
 
@@ -146,6 +150,7 @@ final readonly class MaxMindGeoIpDatabaseUpdater
         }
 
         if (@rename($temporaryTarget, $targetPath)) {
+            @chmod($targetPath, 0644);
             @unlink($backupPath);
 
             return true;
