@@ -4,15 +4,22 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Core\Access\AccessActor;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
+use App\Core\AdminAcl\AdminPermissionState;
 use App\Entity\ExtensionPackage;
+use App\Entity\UserAccount;
 use App\View\SystemPackageMetadataProvider;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 
 final readonly class ThemeAdminOverview
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
         private SystemPackageMetadataProvider $systemPackageMetadata,
+        private Security $security,
+        private AdminFeatureAccessPolicy $adminAcl,
     ) {
     }
 
@@ -29,11 +36,12 @@ final readonly class ThemeAdminOverview
 
     private function section(string $key, PackageScope $scope, string $systemPath): array
     {
+        $state = $this->packageState();
         $packages = $this->packages($scope);
         $activePackage = $this->activePackage($packages);
         $themes = [
-            $this->systemThemeRow($scope, $systemPath, null === $activePackage, $activePackage),
-            ...array_map($this->packageRow(...), $packages),
+            $this->systemThemeRow($scope, $systemPath, null === $activePackage, $activePackage, $state),
+            ...array_map(fn (ExtensionPackage $package): array => $this->packageRow($package, $state), $packages),
         ];
 
         return [
@@ -71,7 +79,7 @@ final readonly class ThemeAdminOverview
         return array_values($packages);
     }
 
-    private function packageRow(ExtensionPackage $package): array
+    private function packageRow(ExtensionPackage $package, AdminPermissionState $state): array
     {
         $metadata = $package->metadata();
         $label = $this->metadataString($metadata, 'display_name') ?? $package->packageName();
@@ -92,11 +100,11 @@ final readonly class ThemeAdminOverview
             'type_label_key' => 'admin.themes.type.package',
             'type_tone' => 'neutral',
             'version' => $package->installedVersion() ?? $package->manifestVersion(),
-            'quick_action' => $this->quickAction($package),
+            'quick_action' => $state->isVisible() ? $this->quickAction($package, $state) : null,
         ];
     }
 
-    private function systemThemeRow(PackageScope $scope, string $path, bool $active, ?ExtensionPackage $activePackage): array
+    private function systemThemeRow(PackageScope $scope, string $path, bool $active, ?ExtensionPackage $activePackage, AdminPermissionState $state): array
     {
         $metadata = $this->systemPackageMetadata->metadata();
         $version = $metadata['version'] ?? null;
@@ -121,7 +129,7 @@ final readonly class ThemeAdminOverview
             'scope' => $scope->value,
             'quick_action' => $active
                 ? $this->disabledQuickAction('admin.themes.quick.active', 'secondary')
-                : (null === $activePackage ? null : $this->linkedQuickAction('admin.themes.quick.use', $this->detailPath($activePackage->packageName()).'/deactivate', 'primary')),
+                : (null === $activePackage || !$state->isVisible() ? null : $this->linkedQuickAction('admin.themes.quick.use', $this->detailPath($activePackage->packageName()).'/deactivate', 'primary', !$state->isMutable())),
         ];
     }
 
@@ -144,23 +152,23 @@ final readonly class ThemeAdminOverview
         return null;
     }
 
-    private function quickAction(ExtensionPackage $package): ?array
+    private function quickAction(ExtensionPackage $package, AdminPermissionState $state): ?array
     {
         return match ($package->status()) {
             ExtensionPackageStatus::Active => $this->disabledQuickAction('admin.themes.quick.active', 'secondary'),
-            ExtensionPackageStatus::Inactive => $this->linkedQuickAction('admin.themes.quick.use', $this->detailPath($package->packageName()).'/activate', 'primary'),
-            ExtensionPackageStatus::Faulty => $this->linkedQuickAction('admin.themes.quick.repair', $this->detailPath($package->packageName()).'/reset-fault', 'secondary'),
+            ExtensionPackageStatus::Inactive => $this->linkedQuickAction('admin.themes.quick.use', $this->detailPath($package->packageName()).'/activate', 'primary', !$state->isMutable()),
+            ExtensionPackageStatus::Faulty => $this->linkedQuickAction('admin.themes.quick.repair', $this->detailPath($package->packageName()).'/reset-fault', 'secondary', !$state->isMutable()),
             ExtensionPackageStatus::Removed => null,
         };
     }
 
-    private function linkedQuickAction(string $labelKey, string $path, string $variant): array
+    private function linkedQuickAction(string $labelKey, string $path, string $variant, bool $disabled = false): array
     {
         return [
             'label_key' => $labelKey,
             'path' => $path,
             'variant' => $variant,
-            'disabled' => false,
+            'disabled' => $disabled,
         ];
     }
 
@@ -202,5 +210,17 @@ final readonly class ThemeAdminOverview
             ExtensionPackageStatus::Faulty => 2,
             ExtensionPackageStatus::Removed => 3,
         };
+    }
+
+    private function packageState(): AdminPermissionState
+    {
+        return $this->adminAcl->state('admin.packages', $this->actor());
+    }
+
+    private function actor(): AccessActor
+    {
+        $user = $this->security->getUser();
+
+        return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
     }
 }

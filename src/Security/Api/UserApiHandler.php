@@ -8,6 +8,7 @@ use App\Api\ApiMessageCode;
 use App\Api\ApiMessageKey;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointHandlerInterface;
+use App\Api\Admin\AdminFeatureApiGuard;
 use App\Api\Http\ApiJsonRequestParser;
 use App\Api\Http\ApiRequestContext;
 use App\Api\Http\ApiResponder;
@@ -34,6 +35,7 @@ final readonly class UserApiHandler implements ApiEndpointHandlerInterface
         private ApiJsonRequestParser $jsonRequests,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
+        private AdminFeatureApiGuard $featureGuard,
     ) {
     }
 
@@ -46,6 +48,10 @@ final readonly class UserApiHandler implements ApiEndpointHandlerInterface
     {
         $denied = $this->accessGuard->denyUnlessAccessLevel($request, AccessLevel::ADMIN);
         if (null !== $denied) {
+            return $denied;
+        }
+
+        if ($denied = $this->featureGuard->denyUnlessVisible($request, 'admin.users', 'listAdminUsers')) {
             return $denied;
         }
 
@@ -70,6 +76,10 @@ final readonly class UserApiHandler implements ApiEndpointHandlerInterface
 
     private function updateUser(Request $request, UserAccount $user): Response
     {
+        if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.users', 'updateAdminUser')) {
+            return $denied;
+        }
+
         try {
             $payload = $this->jsonRequests->object($request);
         } catch (JsonException $error) {

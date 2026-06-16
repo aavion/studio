@@ -6,6 +6,8 @@ namespace App\Setup;
 
 use App\Api\ApiFeaturePolicy;
 use App\Core\Access\AccessLevel;
+use App\Core\AdminAcl\AdminFeatureDefaults;
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
 use App\Core\Config\ConfigDefaultProviderInterface;
 use App\Core\Config\ConfigValueType;
 use App\Core\Geo\MaxMindGeoIpConfig;
@@ -64,6 +66,7 @@ final readonly class SetupDefaultSeed
             ['key' => SchedulerSettings::GET_AUTH_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::GET_AUTH_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::WEB_TRIGGER_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::WEB_TRIGGER_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
+            ['key' => AdminFeatureOverrideStore::CONFIG_KEY, 'value' => $this->setting($input, AdminFeatureOverrideStore::CONFIG_KEY, (new AdminFeatureDefaults())->overrides()), 'type' => ConfigValueType::Json],
         ];
     }
 

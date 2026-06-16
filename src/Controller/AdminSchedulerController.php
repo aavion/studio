@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Backend\AdminControllerContext;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Entity\SchedulerTask;
@@ -28,6 +29,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 final class AdminSchedulerController extends AbstractController
 {
+    private const FEATURE = 'admin.scheduler';
+
     public function __construct(
         private readonly AdminControllerContext $adminContext,
         private readonly SchedulerTaskSynchronizer $synchronizer,
@@ -36,6 +39,7 @@ final class AdminSchedulerController extends AbstractController
         private readonly SchedulerRunner $runner,
         private readonly HttpErrorRenderer $httpError,
         private readonly UiAlertDispatcherInterface $alerts,
+        private readonly AdminFeatureAccessPolicy $adminAcl,
     ) {
     }
 
@@ -43,6 +47,9 @@ final class AdminSchedulerController extends AbstractController
     public function runNow(Request $request, string $identifier): Response
     {
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
+            return $response;
+        }
+        if ($response = $this->featureResponse($request, mutable: true)) {
             return $response;
         }
 
@@ -77,6 +84,9 @@ final class AdminSchedulerController extends AbstractController
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
             return $response;
         }
+        if ($response = $this->featureResponse($request, mutable: false)) {
+            return $response;
+        }
 
         $tasks = $this->synchronizer->synchronize();
         usort($tasks, static fn (SchedulerTask $left, SchedulerTask $right): int => $left->identifier() <=> $right->identifier());
@@ -93,6 +103,9 @@ final class AdminSchedulerController extends AbstractController
     public function detail(Request $request, string $identifier): Response
     {
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
+            return $response;
+        }
+        if ($response = $this->featureResponse($request, mutable: $request->isMethod('POST'))) {
             return $response;
         }
 
@@ -115,6 +128,24 @@ final class AdminSchedulerController extends AbstractController
             'task' => $task,
             'runs' => $this->recentRuns($task),
             'cron_run_url' => $this->generateUrl('scheduler_cron_run', ['job' => $task->identifier()], UrlGeneratorInterface::ABSOLUTE_URL),
+            'scheduler_mutable' => $this->adminAcl->isMutable(self::FEATURE, $this->adminContext->actor($this->getUser())),
+        ]);
+    }
+
+    private function featureResponse(Request $request, bool $mutable): ?Response
+    {
+        $actor = $this->adminContext->actor($this->getUser());
+        $allowed = $mutable
+            ? $this->adminAcl->isMutable(self::FEATURE, $actor)
+            : $this->adminAcl->isVisible(self::FEATURE, $actor);
+
+        if ($allowed) {
+            return null;
+        }
+
+        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            'feature' => self::FEATURE,
+            'required_state' => $mutable ? 'mutable' : 'visible',
         ]);
     }
 

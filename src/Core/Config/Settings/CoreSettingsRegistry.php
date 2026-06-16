@@ -74,10 +74,19 @@ final readonly class CoreSettingsRegistry
             new CoreSettingDefinition('mail', 'mail.from_address', 'admin.settings.fields.mail_from_address.label', 'admin@localhost', ConfigValueType::String, validation: ['max_length' => 180], sortOrder: 20),
             new CoreSettingDefinition('mail', 'mail.from_name', 'admin.settings.fields.mail_from_name.label', $this->appName(), ConfigValueType::String, validation: ['max_length' => 120], sortOrder: 30),
 
-            new CoreSettingDefinition('security', 'security.captcha.enabled', 'admin.settings.fields.captcha_enabled.label', false, ConfigValueType::Boolean, sortOrder: 10),
-            new CoreSettingDefinition('security', 'security.captcha.provider', 'admin.settings.fields.captcha_provider.label', 'none', ConfigValueType::String, FormInputType::Select, options: ['none' => 'admin.settings.options.captcha.none'], validation: ['required' => true], sortOrder: 20),
-            new CoreSettingDefinition('security', 'security.captcha.preview', 'admin.settings.fields.captcha_preview.label', null, ConfigValueType::String, FormInputType::Captcha, metadata: ['persist' => false], sortOrder: 30),
-            new CoreSettingDefinition('security', ConfigAuditLogPolicy::ENABLED_KEY, 'admin.settings.fields.audit_enabled.label', true, ConfigValueType::Boolean, sortOrder: 40),
+            new CoreSettingDefinition('security', 'security.captcha.enabled', 'admin.settings.fields.captcha_enabled.label', false, ConfigValueType::Boolean, metadata: [
+                'access_feature' => 'admin.settings.security',
+            ], sortOrder: 10),
+            new CoreSettingDefinition('security', 'security.captcha.provider', 'admin.settings.fields.captcha_provider.label', 'none', ConfigValueType::String, FormInputType::Select, options: ['none' => 'admin.settings.options.captcha.none'], validation: ['required' => true], metadata: [
+                'access_feature' => 'admin.settings.security',
+            ], sortOrder: 20),
+            new CoreSettingDefinition('security', 'security.captcha.preview', 'admin.settings.fields.captcha_preview.label', null, ConfigValueType::String, FormInputType::Captcha, metadata: [
+                'persist' => false,
+                'access_feature' => 'admin.settings.security',
+            ], sortOrder: 30),
+            new CoreSettingDefinition('security', ConfigAuditLogPolicy::ENABLED_KEY, 'admin.settings.fields.audit_enabled.label', true, ConfigValueType::Boolean, metadata: [
+                'access_feature' => 'admin.settings.security',
+            ], sortOrder: 40),
             new CoreSettingDefinition('security', ConfigAuditLogPolicy::EVENTS_KEY, 'admin.settings.fields.audit_events.label', ConfigAuditLogPolicy::DEFAULT_CATEGORIES, ConfigValueType::Json, FormInputType::MultiSelect, options: [
                 ConfigAuditLogPolicy::CATEGORY_AUTHENTICATION => 'admin.settings.options.audit.authentication',
                 ConfigAuditLogPolicy::CATEGORY_BACKEND_ACTIONS => 'admin.settings.options.audit.backend_actions',
@@ -85,51 +94,85 @@ final readonly class CoreSettingsRegistry
                 ConfigAuditLogPolicy::CATEGORY_PACKAGES => 'admin.settings.options.audit.packages',
                 ConfigAuditLogPolicy::CATEGORY_SETTINGS => 'admin.settings.options.audit.settings',
                 ConfigAuditLogPolicy::CATEGORY_OTHER => 'admin.settings.options.audit.other',
+            ], metadata: [
+                'access_feature' => 'admin.settings.security',
             ], sortOrder: 50),
-            new CoreSettingDefinition('security', DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, 'admin.settings.fields.security_signal_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.security_signal_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], sortOrder: 60),
-            new CoreSettingDefinition('security', SuspiciousProbePathMatcher::PATTERNS_KEY, 'admin.settings.fields.security_probe_path_patterns.label', SuspiciousProbePathMatcher::defaultPatternText(), ConfigValueType::String, FormInputType::Textarea, help: 'admin.settings.fields.security_probe_path_patterns.help', validation: ['max_length' => 50000], sortOrder: 70),
+            new CoreSettingDefinition('security', DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, 'admin.settings.fields.security_signal_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.security_signal_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], metadata: [
+                'access_feature' => 'admin.settings.security',
+            ], sortOrder: 60),
+            new CoreSettingDefinition('security', SuspiciousProbePathMatcher::PATTERNS_KEY, 'admin.settings.fields.security_probe_path_patterns.label', SuspiciousProbePathMatcher::defaultPatternText(), ConfigValueType::String, FormInputType::Textarea, help: 'admin.settings.fields.security_probe_path_patterns.help', validation: ['max_length' => 50000], metadata: [
+                'access_feature' => 'admin.settings.security',
+            ], sortOrder: 70),
 
-            new CoreSettingDefinition('logging', DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY, 'admin.settings.fields.message_log_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.message_log_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], sortOrder: 10),
-            new CoreSettingDefinition('logging', DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY, 'admin.settings.fields.audit_log_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.audit_log_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], sortOrder: 20),
-            new CoreSettingDefinition('logging', DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY, 'admin.settings.fields.access_log_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.access_log_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], sortOrder: 30),
-            new CoreSettingDefinition('statistics', AccessStatisticsPolicy::ENABLED_KEY, 'admin.settings.fields.statistics_enabled.label', true, ConfigValueType::Boolean, sortOrder: 10),
-            new CoreSettingDefinition('statistics', AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'admin.settings.fields.statistics_respect_dnt.label', true, ConfigValueType::Boolean, sortOrder: 20),
+            new CoreSettingDefinition('logging', DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY, 'admin.settings.fields.message_log_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.message_log_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], metadata: [
+                'access_feature' => 'admin.settings.logging',
+            ], sortOrder: 10),
+            new CoreSettingDefinition('logging', DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY, 'admin.settings.fields.audit_log_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.audit_log_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], metadata: [
+                'access_feature' => 'admin.settings.logging',
+            ], sortOrder: 20),
+            new CoreSettingDefinition('logging', DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY, 'admin.settings.fields.access_log_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.access_log_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], metadata: [
+                'access_feature' => 'admin.settings.logging',
+            ], sortOrder: 30),
+            new CoreSettingDefinition('statistics', AccessStatisticsPolicy::ENABLED_KEY, 'admin.settings.fields.statistics_enabled.label', true, ConfigValueType::Boolean, metadata: [
+                'access_feature' => 'admin.settings.statistics',
+            ], sortOrder: 10),
+            new CoreSettingDefinition('statistics', AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'admin.settings.fields.statistics_respect_dnt.label', true, ConfigValueType::Boolean, metadata: [
+                'access_feature' => 'admin.settings.statistics',
+            ], sortOrder: 20),
             new CoreSettingDefinition('statistics', MaxMindGeoIpConfig::ENABLED_KEY, 'admin.settings.fields.geoip_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.geoip_enabled.help', metadata: [
-                'access_feature' => 'settings.statistics.geoip',
-                'access_configurable' => false,
+                'access_feature' => 'admin.settings.statistics.geoip',
+                'access_configurable' => true,
                 'minimum_access_level' => AccessLevel::OWNER,
                 'help_link_url' => 'https://www.maxmind.com/en/geolite2/signup',
                 'help_link_label' => 'admin.settings.fields.geoip_license_link.label',
             ], sortOrder: 30),
             new CoreSettingDefinition('statistics', MaxMindGeoIpConfig::DATABASE_PATH_KEY, 'admin.settings.fields.geoip_database_path.label', MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, ConfigValueType::String, help: 'admin.settings.fields.geoip_database_path.help', validation: ['required' => true, 'max_length' => 255], metadata: [
-                'access_feature' => 'settings.statistics.geoip',
-                'access_configurable' => false,
+                'access_feature' => 'admin.settings.statistics.geoip',
+                'access_configurable' => true,
                 'minimum_access_level' => AccessLevel::OWNER,
             ], sortOrder: 40),
             new CoreSettingDefinition('statistics', MaxMindGeoIpConfig::LICENSE_KEY_KEY, 'admin.settings.fields.geoip_license_key.label', '', ConfigValueType::String, FormInputType::Password, help: 'admin.settings.fields.geoip_license_key.help', validation: ['max_length' => 180], metadata: [
-                'access_feature' => 'settings.statistics.geoip',
-                'access_configurable' => false,
+                'access_feature' => 'admin.settings.statistics.geoip',
+                'access_configurable' => true,
                 'minimum_access_level' => AccessLevel::OWNER,
                 'sensitive' => true,
                 'help_link_url' => 'https://www.maxmind.com/en/geolite2/signup',
                 'help_link_label' => 'admin.settings.fields.geoip_license_link.label',
             ], sortOrder: 50),
 
-            new CoreSettingDefinition('api', ApiFeaturePolicy::ENABLED_KEY, 'admin.settings.fields.api_enabled.label', true, ConfigValueType::Boolean, help: 'admin.settings.fields.api_enabled.help', sortOrder: 10),
-            new CoreSettingDefinition('api', ApiFeaturePolicy::CORS_ENABLED_KEY, 'admin.settings.fields.api_cors_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.api_cors_enabled.help', sortOrder: 20),
-            new CoreSettingDefinition('api', ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, 'admin.settings.fields.api_cors_allowed_origins.label', [], ConfigValueType::Json, help: 'admin.settings.fields.api_cors_allowed_origins.help', sortOrder: 30),
+            new CoreSettingDefinition('api', ApiFeaturePolicy::ENABLED_KEY, 'admin.settings.fields.api_enabled.label', true, ConfigValueType::Boolean, help: 'admin.settings.fields.api_enabled.help', metadata: [
+                'access_feature' => 'admin.settings.api',
+            ], sortOrder: 10),
+            new CoreSettingDefinition('api', ApiFeaturePolicy::CORS_ENABLED_KEY, 'admin.settings.fields.api_cors_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.api_cors_enabled.help', metadata: [
+                'access_feature' => 'admin.settings.api',
+            ], sortOrder: 20),
+            new CoreSettingDefinition('api', ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, 'admin.settings.fields.api_cors_allowed_origins.label', [], ConfigValueType::Json, help: 'admin.settings.fields.api_cors_allowed_origins.help', metadata: [
+                'access_feature' => 'admin.settings.api',
+            ], sortOrder: 30),
 
             new CoreSettingDefinition('packages', 'packages.update_check_interval', 'admin.settings.fields.package_update_interval.label', 'daily', ConfigValueType::String, FormInputType::Select, options: [
                 'manual' => 'admin.settings.options.interval.manual',
                 'daily' => 'admin.settings.options.interval.daily',
                 'weekly' => 'admin.settings.options.interval.weekly',
-            ], validation: ['required' => true], sortOrder: 10),
-            new CoreSettingDefinition('packages', 'packages.auto_updates.enabled', 'admin.settings.fields.package_auto_updates.label', false, ConfigValueType::Boolean, sortOrder: 20),
+            ], validation: ['required' => true], metadata: [
+                'access_feature' => 'admin.settings.packages',
+            ], sortOrder: 10),
+            new CoreSettingDefinition('packages', 'packages.auto_updates.enabled', 'admin.settings.fields.package_auto_updates.label', false, ConfigValueType::Boolean, metadata: [
+                'access_feature' => 'admin.settings.packages',
+            ], sortOrder: 20),
 
-            new CoreSettingDefinition('scheduler', 'scheduler.enabled', 'admin.settings.fields.scheduler_enabled.label', true, ConfigValueType::Boolean, sortOrder: 10),
-            new CoreSettingDefinition('scheduler', 'scheduler.get_auth_enabled', 'admin.settings.fields.scheduler_get_auth_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_get_auth_enabled.help', sortOrder: 20),
-            new CoreSettingDefinition('scheduler', 'scheduler.package_action_queues_enabled', 'admin.settings.fields.scheduler_package_action_queues_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_package_action_queues_enabled.help', sortOrder: 30),
-            new CoreSettingDefinition('scheduler', 'scheduler.web_trigger_enabled', 'admin.settings.fields.scheduler_web_trigger_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_web_trigger_enabled.help', sortOrder: 40),
+            new CoreSettingDefinition('scheduler', 'scheduler.enabled', 'admin.settings.fields.scheduler_enabled.label', true, ConfigValueType::Boolean, metadata: [
+                'access_feature' => 'admin.settings.scheduler',
+            ], sortOrder: 10),
+            new CoreSettingDefinition('scheduler', 'scheduler.get_auth_enabled', 'admin.settings.fields.scheduler_get_auth_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_get_auth_enabled.help', metadata: [
+                'access_feature' => 'admin.settings.scheduler',
+            ], sortOrder: 20),
+            new CoreSettingDefinition('scheduler', 'scheduler.package_action_queues_enabled', 'admin.settings.fields.scheduler_package_action_queues_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_package_action_queues_enabled.help', metadata: [
+                'access_feature' => 'admin.settings.scheduler',
+            ], sortOrder: 30),
+            new CoreSettingDefinition('scheduler', 'scheduler.web_trigger_enabled', 'admin.settings.fields.scheduler_web_trigger_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_web_trigger_enabled.help', metadata: [
+                'access_feature' => 'admin.settings.scheduler',
+            ], sortOrder: 40),
         ];
     }
 

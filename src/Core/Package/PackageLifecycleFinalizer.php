@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Core\AdminAcl\AdminFeatureRegistry;
 use App\Core\Message\Message;
 use App\Core\Package\PackageMessageCode;
 use App\Core\Package\PackageMessageKey;
@@ -16,6 +17,7 @@ final readonly class PackageLifecycleFinalizer
         private EntityManagerInterface $entityManager,
         private PackageLifecycleStore $store,
         private PackageLifecycleAssetRebuilderInterface $assetRebuilder,
+        private ?AdminFeatureRegistry $adminFeatureRegistry = null,
     ) {
     }
 
@@ -33,6 +35,7 @@ final readonly class PackageLifecycleFinalizer
         }
 
         $this->entityManager->flush();
+        $this->adminFeatureRegistry?->resetCache();
 
         if (!$rebuildAssets) {
             return $this->success($changes, false, false, $messages);
@@ -55,6 +58,7 @@ final readonly class PackageLifecycleFinalizer
 
         $this->store->restoreStatuses($snapshots);
         $this->entityManager->flush();
+        $this->adminFeatureRegistry?->resetCache();
 
         return WorkflowResult::failed($rebuild->issues(), [
             'changes' => $changes,

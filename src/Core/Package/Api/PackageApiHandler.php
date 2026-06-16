@@ -9,10 +9,13 @@ use App\Api\ApiMessageKey;
 use App\Api\Admin\LiveOperationApiResourceFactory;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointHandlerInterface;
+use App\Api\Http\ApiRequestContext;
 use App\Api\Http\ApiResponder;
 use App\Api\Security\ApiAccessGuard;
 use App\Backend\PackageLifecycleAdmin;
+use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
@@ -22,6 +25,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class PackageApiHandler implements ApiEndpointHandlerInterface
 {
+    private const PACKAGE_LIFECYCLE_FEATURE = 'admin.packages';
+
     public function __construct(
         private PackageApiReadModel $readModel,
         private PackageLifecycleAdmin $lifecycleAdmin,
@@ -29,6 +34,7 @@ final readonly class PackageApiHandler implements ApiEndpointHandlerInterface
         private LiveOperationApiResourceFactory $operationResources,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
+        private AdminFeatureAccessPolicy $adminAcl,
     ) {
     }
 
@@ -42,6 +48,20 @@ final readonly class PackageApiHandler implements ApiEndpointHandlerInterface
         $denied = $this->accessGuard->denyUnlessAccessLevel($request, AccessLevel::ADMIN);
         if (null !== $denied) {
             return $denied;
+        }
+
+        $actor = ApiRequestContext::fromRequest($request)?->actor() ?? AccessActor::anonymous();
+        if (!$this->adminAcl->isVisible(self::PACKAGE_LIFECYCLE_FEATURE, $actor)) {
+            return $this->responder->error(
+                Message::warning(ApiMessageCode::API_OPERATION_UNAVAILABLE, ApiMessageKey::API_OPERATION_UNAVAILABLE, [
+                    '%operation%' => 'packagesRead',
+                ], [
+                    'feature' => self::PACKAGE_LIFECYCLE_FEATURE,
+                    'reason' => 'feature_hidden',
+                ]),
+                Response::HTTP_FORBIDDEN,
+                $request,
+            );
         }
 
         $packageSlug = $this->packageSlugFromPath($request->getPathInfo());
@@ -73,11 +93,29 @@ final readonly class PackageApiHandler implements ApiEndpointHandlerInterface
             return $this->notFound($request, $packageName);
         }
 
-        return $this->responder->data($this->packageResource($package));
+        return $this->responder->data($this->packageResource($request, $package));
     }
 
     private function lifecycle(Request $request, string $packageName, string $action): Response
     {
+        $actor = ApiRequestContext::fromRequest($request)?->actor() ?? AccessActor::anonymous();
+        $state = $this->adminAcl->state(self::PACKAGE_LIFECYCLE_FEATURE, $actor);
+
+        if (!$state->isVisible()) {
+            return $this->responder->error(
+                Message::warning(ApiMessageCode::API_OPERATION_UNAVAILABLE, ApiMessageKey::API_OPERATION_UNAVAILABLE, [
+                    '%operation%' => 'package'.str_replace(' ', '', ucwords(str_replace('-', ' ', $action))),
+                ], [
+                    'package' => $packageName,
+                    'action' => $action,
+                    'feature' => self::PACKAGE_LIFECYCLE_FEATURE,
+                    'reason' => 'feature_hidden',
+                ]),
+                Response::HTTP_FORBIDDEN,
+                $request,
+            );
+        }
+
         $review = $this->lifecycleAdmin->review($packageName, $action);
         if (null === $review['package']) {
             return $this->notFound($request, $packageName);
@@ -93,6 +131,21 @@ final readonly class PackageApiHandler implements ApiEndpointHandlerInterface
                     'confirm_parameter' => 'confirm=true',
                 ],
             ]);
+        }
+
+        if (!$state->isMutable()) {
+            return $this->responder->error(
+                Message::warning(ApiMessageCode::API_OPERATION_UNAVAILABLE, ApiMessageKey::API_OPERATION_UNAVAILABLE, [
+                    '%operation%' => 'package'.str_replace(' ', '', ucwords(str_replace('-', ' ', $action))),
+                ], [
+                    'package' => $packageName,
+                    'action' => $action,
+                    'feature' => self::PACKAGE_LIFECYCLE_FEATURE,
+                    'reason' => 'feature_read_only',
+                ]),
+                Response::HTTP_FORBIDDEN,
+                $request,
+            );
         }
 
         if (!$this->reviewAllowsConfirmation($review)) {
@@ -132,10 +185,11 @@ final readonly class PackageApiHandler implements ApiEndpointHandlerInterface
      *
      * @return array<string, mixed>
      */
-    private function packageResource(array $package): array
+    private function packageResource(Request $request, array $package): array
     {
         $packageName = (string) $package['package_name'];
         $packageSlug = $this->readModel->packageSlug($packageName);
+        $actor = ApiRequestContext::fromRequest($request)?->actor() ?? AccessActor::anonymous();
 
         return [
             'type' => 'package',
@@ -144,33 +198,41 @@ final readonly class PackageApiHandler implements ApiEndpointHandlerInterface
                 ...$package,
                 'package_slug' => $packageSlug,
                 'api_path' => '/api/v1/admin/packages/'.$packageSlug,
-                'api_actions' => $this->apiActions($package['actions'] ?? [], $packageSlug),
+                'api_actions' => $this->apiActionsForPackage($package, $packageSlug, $actor),
             ],
         ];
     }
 
     /**
-     * @param mixed $actions
+     * @param array<string, mixed> $package
      *
      * @return list<array<string, mixed>>
      */
-    private function apiActions(mixed $actions, string $packageSlug): array
+    private function apiActionsForPackage(array $package, string $packageSlug, AccessActor $actor): array
     {
-        if (!is_array($actions)) {
+        $state = $this->adminAcl->state(self::PACKAGE_LIFECYCLE_FEATURE, $actor);
+
+        if (!$state->isVisible() || true === ($package['immutable'] ?? false)) {
             return [];
         }
 
+        $status = (string) ($package['status'] ?? '');
+        $actions = match ($status) {
+            'inactive' => ['activate', 'delete'],
+            'active' => ['deactivate', 'delete'],
+            'faulty' => ['reset-fault', 'delete'],
+            'removed' => ['purge'],
+            default => [],
+        };
+
         $resources = [];
         foreach ($actions as $action) {
-            if (!is_array($action) || !is_string($action['id'] ?? null)) {
-                continue;
-            }
-
             $resources[] = [
-                ...$action,
+                'id' => $action,
                 'method' => Request::METHOD_POST,
-                'api_path' => '/api/v1/admin/packages/'.$packageSlug.'/'.$action['id'],
+                'api_path' => '/api/v1/admin/packages/'.$packageSlug.'/'.$action,
                 'requires_confirmation' => true,
+                'disabled' => !$state->isMutable(),
             ];
         }
 

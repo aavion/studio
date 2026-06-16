@@ -6,6 +6,7 @@ namespace App\Security\Api;
 
 use App\Api\ApiMessageCode;
 use App\Api\ApiMessageKey;
+use App\Api\Admin\AdminFeatureApiGuard;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointHandlerInterface;
 use App\Api\Http\ApiRequestContext;
@@ -34,6 +35,7 @@ final readonly class UserGroupMembershipApiHandler implements ApiEndpointHandler
         private AuditLoggerInterface $auditLogger,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
+        private AdminFeatureApiGuard $featureGuard,
     ) {
     }
 
@@ -46,6 +48,10 @@ final readonly class UserGroupMembershipApiHandler implements ApiEndpointHandler
     {
         $denied = $this->accessGuard->denyUnlessAccessLevel($request, AccessLevel::ADMIN);
         if (null !== $denied) {
+            return $denied;
+        }
+
+        if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.users', 'updateAdminUserGroupMembership')) {
             return $denied;
         }
 

@@ -12,11 +12,15 @@
 
 {% block admin_body %}
     <div data-controller="dialog">
+    {% set package_lifecycle_visible = admin_feature_visible('admin.packages') %}
+    {% set package_lifecycle_mutable = admin_feature_mutable('admin.packages') %}
     {% set backend_actions %}
         <div class="system-backend-button-group">
-            <button class="system-backend-button system-button-primary" type="button" data-action="dialog#open" data-dialog-id-param="package-install-dialog">
-                {{ 'admin.packages.install.label'|trans }}
-            </button>
+            {% if package_lifecycle_visible %}
+                <button class="system-backend-button system-button-primary" type="button" data-action="dialog#open" data-dialog-id-param="package-install-dialog"{% if not package_lifecycle_mutable %} disabled{% endif %}>
+                    {{ 'admin.packages.install.label'|trans }}
+                </button>
+            {% endif %}
             {% include '@backend/admin/partials/_backend-actions.html.twig' with {
                 actions: backend_actions(['package_discovery']),
                 class: 'system-backend-button-group-inline',
@@ -32,6 +36,7 @@
 
     {% include '@backend/partials/feedback/_message.html.twig' with {message: message} only %}
 
+    {% if package_lifecycle_visible and package_lifecycle_mutable %}
     <dialog id="package-install-dialog" class="system-dialog" data-dialog-target="dialog" data-action="click->dialog#closeOnBackdrop">
         <form method="dialog" class="system-dialog-close">
             <button class="system-backend-button system-button-secondary" type="submit">
@@ -60,6 +65,7 @@
             </button>
         </form>
     </dialog>
+    {% endif %}
 
     <section class="system-panel">
         <h2>{{ 'admin.packages.registry_title'|trans }}</h2>

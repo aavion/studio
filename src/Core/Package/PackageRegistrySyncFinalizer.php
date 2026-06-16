@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Core\AdminAcl\AdminFeatureRegistry;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Workflow\WorkflowResult;
@@ -16,6 +17,7 @@ final readonly class PackageRegistrySyncFinalizer
         private ?PackageAssetRebuildDispatcher $assetRebuildDispatcher = null,
         private ?PackageLifecycleAssetRebuilderInterface $assetRebuildFallback = null,
         private string $environment = 'test',
+        private ?AdminFeatureRegistry $adminFeatureRegistry = null,
     ) {
     }
 
@@ -29,6 +31,9 @@ final readonly class PackageRegistrySyncFinalizer
     public function finalize(array $changes, array $messages, array $assetRebuildTriggers): WorkflowResult
     {
         $this->entityManager->flush();
+        if ([] !== $changes) {
+            $this->adminFeatureRegistry?->resetCache();
+        }
 
         $assetRebuild = null;
         if ([] !== $assetRebuildTriggers) {

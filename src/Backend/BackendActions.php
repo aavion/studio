@@ -10,7 +10,7 @@ use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
 use App\Core\Access\AccessMessageCode;
 use App\Core\Access\AccessMessageKey;
-use App\Core\Access\AccessRule;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Message\Message;
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
@@ -38,6 +38,7 @@ final readonly class BackendActions
         private OperationExecutor $operationExecutor,
         private LiveOperationStarter $liveOperationStarter,
         private PhpCliBinaryManager $phpCliBinaryManager,
+        private AdminFeatureAccessPolicy $adminAcl,
     ) {
     }
 
@@ -55,33 +56,35 @@ final readonly class BackendActions
                 'label_key' => 'admin.actions.package_discovery.label',
                 'variant' => 'secondary',
                 'live' => true,
+                'access_feature' => 'admin.packages',
             ],
             self::ASSET_REBUILD => [
                 'id' => self::ASSET_REBUILD,
                 'label_key' => 'admin.actions.asset_rebuild.label',
                 'variant' => 'secondary',
                 'live' => true,
+                'access_feature' => 'admin.actions.maintenance',
             ],
             self::CACHE_CLEAR => [
                 'id' => self::CACHE_CLEAR,
                 'label_key' => 'admin.actions.cache_clear.label',
                 'variant' => 'secondary',
                 'live' => true,
+                'access_feature' => 'admin.actions.maintenance',
             ],
             self::GEOIP_DATABASE_UPDATE => [
                 'id' => self::GEOIP_DATABASE_UPDATE,
                 'label_key' => 'admin.actions.geoip_database_update.label',
                 'variant' => 'secondary',
                 'live' => true,
-                'access_feature' => 'backend.action.geoip_database_update',
-                'access_configurable' => false,
-                'access_rule' => AccessRule::from(AccessLevel::OWNER),
+                'access_feature' => 'admin.settings.statistics.geoip',
+                'access_configurable' => true,
             ],
         ];
 
         if ([] === $ids) {
             return array_values(array_map(
-                $this->publicDefinition(...),
+                fn (array $definition): array => $this->publicDefinition($definition, $actor),
                 array_filter(
                     $definitions,
                     fn (array $definition): bool => $this->definitionAllows($definition, $actor),
@@ -94,7 +97,7 @@ final readonly class BackendActions
             $definition = $definitions[$id] ?? null;
 
             if ($this->definitionAllows($definition, $actor)) {
-                $visible[] = $this->publicDefinition($definition);
+                $visible[] = $this->publicDefinition($definition, $actor);
             }
         }
 
@@ -180,9 +183,9 @@ final readonly class BackendActions
             return false;
         }
 
-        $rule = $definition['access_rule'] ?? null;
+        $feature = $definition['access_feature'] ?? null;
 
-        return !$rule instanceof AccessRule || $rule->allows($actor);
+        return !is_string($feature) || $this->adminAcl->isVisible($feature, $actor);
     }
 
     /**
@@ -190,9 +193,13 @@ final readonly class BackendActions
      *
      * @return array<string, mixed>
      */
-    private function publicDefinition(array $definition): array
+    private function publicDefinition(array $definition, AccessActor $actor): array
     {
-        unset($definition['access_rule']);
+        $feature = $definition['access_feature'] ?? null;
+
+        if (is_string($feature)) {
+            $definition['disabled'] = !$this->adminAcl->isMutable($feature, $actor);
+        }
 
         return $definition;
     }
@@ -208,7 +215,10 @@ final readonly class BackendActions
             return true;
         }
 
-        return [] !== $this->definitions([$action], $actor);
+        $definitions = $this->definitions([$action], $actor);
+        $definition = $definitions[0] ?? null;
+
+        return is_array($definition) && true !== ($definition['disabled'] ?? false);
     }
 
     /**

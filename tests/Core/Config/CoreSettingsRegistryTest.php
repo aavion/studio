@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Core\Config;
 
 use App\Api\ApiFeaturePolicy;
+use App\Core\AdminAcl\AdminFeatureDefaults;
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
 use App\Core\Config\Settings\CoreSettingDefinition;
 use App\Core\Config\Settings\CoreConfigDefaultProvider;
 use App\Core\Config\Settings\CoreSettingsRegistry;
@@ -128,6 +130,7 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertFalse($provider->defaultValue(MaxMindGeoIpConfig::ENABLED_KEY));
         self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $provider->defaultValue(MaxMindGeoIpConfig::DATABASE_PATH_KEY));
         self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $provider->defaultValue(SuspiciousProbePathMatcher::PATTERNS_KEY));
+        self::assertSame((new AdminFeatureDefaults())->overrides(), $provider->defaultValue(AdminFeatureOverrideStore::CONFIG_KEY));
         self::assertFalse($provider->hasDefault('security.captcha.preview'));
         self::assertNull($provider->defaultValue('security.captcha.preview'));
     }

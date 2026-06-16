@@ -113,18 +113,22 @@ final class ApiSettingsControllerTest extends WebTestCase
         self::assertInstanceOf(Config::class, $config);
         $config->set(MaxMindGeoIpConfig::LICENSE_KEY_KEY, 'stored-api-secret', ConfigValueType::String, sensitive: true);
 
-        $client->request('PATCH', '/api/v1/admin/settings/statistics', server: [
-            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
-            'CONTENT_TYPE' => 'application/json',
-        ], content: json_encode([
-            'values' => [
-                MaxMindGeoIpConfig::ENABLED_KEY => true,
-                MaxMindGeoIpConfig::LICENSE_KEY_KEY => '[protected]',
-            ],
-        ], JSON_THROW_ON_ERROR));
+        try {
+            $client->request('PATCH', '/api/v1/admin/settings/statistics', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+                'CONTENT_TYPE' => 'application/json',
+            ], content: json_encode([
+                'values' => [
+                    MaxMindGeoIpConfig::ENABLED_KEY => true,
+                    MaxMindGeoIpConfig::LICENSE_KEY_KEY => '[protected]',
+                ],
+            ], JSON_THROW_ON_ERROR));
 
-        self::assertResponseIsSuccessful();
-        self::assertSame('stored-api-secret', $config->get(MaxMindGeoIpConfig::LICENSE_KEY_KEY));
+            self::assertResponseIsSuccessful();
+            self::assertSame('stored-api-secret', $config->get(MaxMindGeoIpConfig::LICENSE_KEY_KEY));
+        } finally {
+            $this->removeApiKeyUser('apisetsecret');
+        }
     }
 
     public function testGeoIpSettingsAreHiddenAndRejectedForDelegatedAdminApiKeys(): void
@@ -141,7 +145,9 @@ final class ApiSettingsControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertNull($this->optionalResourceById($payload['data'], MaxMindGeoIpConfig::LICENSE_KEY_KEY));
+        $licenseKey = $this->resourceById($payload['data'], MaxMindGeoIpConfig::LICENSE_KEY_KEY);
+        self::assertSame('[protected]', $licenseKey['attributes']['value']);
+        self::assertTrue($licenseKey['attributes']['metadata']['read_only']);
 
         $client->request('PATCH', '/api/v1/admin/settings/statistics', server: [
             'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
@@ -154,6 +160,59 @@ final class ApiSettingsControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(422);
         self::assertSame('stored-api-secret', $config->get(MaxMindGeoIpConfig::LICENSE_KEY_KEY));
+    }
+
+    public function testSecuritySettingsSectionAclHidesAndRejectsSecurityFieldsForDelegatedAdminApiKeys(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadWrite, 'apisetsecadm', AccessLevel::ADMIN);
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+        $config->set('security.captcha.enabled', true, ConfigValueType::Boolean);
+
+        $client->request('GET', '/api/v1/admin/settings/security', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseStatusCodeSame(404);
+
+        $client->request('PATCH', '/api/v1/admin/settings/security', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'values' => [
+                'security.captcha.enabled' => false,
+                'security.captcha.provider' => 'none',
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(404);
+        self::assertTrue($config->get('security.captcha.enabled'));
+    }
+
+    public function testSecuritySettingsCanBeReadAndPatchedByOwnerApiKeys(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadWrite, 'apisetsecown', AccessLevel::OWNER);
+
+        try {
+            $client->request('PATCH', '/api/v1/admin/settings/security', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+                'CONTENT_TYPE' => 'application/json',
+            ], content: json_encode([
+                'values' => [
+                    'security.captcha.enabled' => true,
+                    'security.captcha.provider' => 'none',
+                ],
+            ], JSON_THROW_ON_ERROR));
+
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertContains('security.captcha.enabled', $payload['meta']['updated_keys']);
+            self::assertContains('security.captcha.provider', $payload['meta']['updated_keys']);
+        } finally {
+            $this->removeApiKeyUser('apisetsecown');
+        }
     }
 
     public function testSettingsPatchReturnsValidationErrors(): void
@@ -236,6 +295,13 @@ final class ApiSettingsControllerTest extends WebTestCase
         $entityManager->flush();
 
         return $plainKey;
+    }
+
+    private function removeApiKeyUser(string $prefix): void
+    {
+        $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
+        $connection->executeStatement('DELETE FROM api_key WHERE prefix = ?', [$prefix]);
+        $connection->executeStatement('DELETE FROM user_account WHERE username = ?', [$prefix.'user']);
     }
 
     /**

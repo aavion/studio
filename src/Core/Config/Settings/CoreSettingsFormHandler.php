@@ -7,6 +7,7 @@ namespace App\Core\Config\Settings;
 use App\Api\ApiFeaturePolicy;
 use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Config\Config;
 use App\Core\Validation\EmailAddress;
 use App\Entity\AclGroup;
@@ -28,6 +29,7 @@ final readonly class CoreSettingsFormHandler
         private FormSubmissionHandler $submissionHandler,
         private EntityManagerInterface $entityManager,
         private ?SuspiciousProbePathMatcher $probePathMatcher = null,
+        private ?AdminFeatureAccessPolicy $adminAcl = null,
     ) {
     }
 
@@ -90,8 +92,19 @@ final readonly class CoreSettingsFormHandler
     {
         return array_values(array_filter(
             $this->registry->definitions($section),
-            static fn (CoreSettingDefinition $definition): bool => $definition->allows($actor),
+            fn (CoreSettingDefinition $definition): bool => $this->definitionMutable($definition, $actor),
         ));
+    }
+
+    private function definitionMutable(CoreSettingDefinition $definition, AccessActor $actor): bool
+    {
+        $feature = $definition->metadata()['access_feature'] ?? null;
+
+        if (is_string($feature) && null !== $this->adminAcl) {
+            return $this->adminAcl->isMutable($feature, $actor);
+        }
+
+        return $definition->allows($actor);
     }
 
     private function validateDomainSettings(string $section, FormSubmissionResult $result): ?FormSubmissionResult

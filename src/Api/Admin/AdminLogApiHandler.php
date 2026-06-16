@@ -24,6 +24,7 @@ final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
         private ApiListQueryNormalizer $listQueries,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
+        private AdminFeatureApiGuard $featureGuard,
     ) {
     }
 
@@ -39,18 +40,31 @@ final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
             return $denied;
         }
 
+        if ($denied = $this->featureGuard->denyUnlessVisible($request, 'admin.logs', 'listAdminLogs')) {
+            return $denied;
+        }
+
         $source = $this->sourceFromPath($request->getPathInfo());
         if (null === $source) {
             $view = $this->logs->browse([]);
+            $sources = $this->featureGuard->isMutable($request, 'admin.logs')
+                ? $view['sources']
+                : $this->visibleSources($view['sources']);
 
-            return $this->responder->data($this->sourceResources($view['sources']), meta: [
-                'count' => count($view['sources']),
+            return $this->responder->data($this->sourceResources($sources), meta: [
+                'count' => count($sources),
                 'default_source' => $view['selected_source'],
             ]);
         }
 
         if (!$this->isKnownSource($source)) {
             return $this->notFound($request, $source);
+        }
+        if ($this->isSensitiveSource($source)) {
+            $denied = $this->featureGuard->denyUnlessMutable($request, 'admin.logs', 'readAdminLogSource');
+            if (null !== $denied) {
+                return $denied;
+            }
         }
 
         $view = $this->logs->browse([
@@ -99,6 +113,24 @@ final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
             'security_signal' => ['level', 'q', 'match', 'time_window', 'audit_action', 'limit', 'page'],
             default => ['q', 'match', 'time_window', 'limit', 'page'],
         };
+    }
+
+    /**
+     * @param list<array{key: string, label: string}> $sources
+     *
+     * @return list<array{key: string, label: string}>
+     */
+    private function visibleSources(array $sources): array
+    {
+        return array_values(array_filter(
+            $sources,
+            fn (array $source): bool => !$this->isSensitiveSource((string) ($source['key'] ?? '')),
+        ));
+    }
+
+    private function isSensitiveSource(string $source): bool
+    {
+        return in_array($source, ['audit', 'security_signal'], true);
     }
 
     private function sourceFromPath(string $path): ?string

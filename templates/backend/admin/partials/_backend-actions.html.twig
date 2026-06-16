@@ -13,7 +13,7 @@
                 <input type="hidden" name="_form_id" value="backend-action-{{ action.id }}">
                 <input type="hidden" name="_backend_action" value="{{ action.id }}">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('backend-action-' ~ action.id) }}">
-                <button class="system-backend-button system-button-{{ action.variant }}" type="submit">
+                <button class="system-backend-button system-button-{{ action.variant }}" type="submit"{% if action.disabled|default(false) %} disabled{% endif %}>
                     {{ action.label_key|trans }}
                 </button>
             </form>

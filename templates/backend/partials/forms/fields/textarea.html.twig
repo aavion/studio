@@ -6,6 +6,7 @@
         name="{{ name }}"
         rows="{{ rows|default(6) }}"
         {% if required|default(false) %}required{% endif %}
+        {% if disabled|default(false) %}disabled{% endif %}
         {{ html_attributes(attributes|default({})) }}
     >{{ value|default('') }}</textarea>
 {% endset %}

@@ -6,20 +6,14 @@ namespace App\View\Twig;
 
 use App\Backend\BackendActions;
 use App\Core\Access\AccessActor;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
+use App\Core\AdminAcl\AdminPermissionState;
 use App\Core\Config\Config;
-use App\Core\Config\Settings\CoreSettingDefinition;
-use App\Core\Config\Settings\CoreSettingsRegistry;
 use App\Core\Package\PackageAdminOverview;
-use App\Core\Package\Settings\PackageSettingRegistry;
-use App\Core\Package\Settings\PackageSettings;
 use App\Core\Package\ThemeAdminOverview;
 use App\Entity\UserAccount;
-use App\Form\FormBuilder;
-use App\Form\FormFieldDefinition;
 use App\View\SystemPackageMetadataProvider;
 use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Throwable;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -28,16 +22,13 @@ final class AdminViewTwigExtension extends AbstractExtension
 {
     public function __construct(
         private readonly Config $config,
-        private readonly CoreSettingsRegistry $coreSettingsRegistry,
-        private readonly FormBuilder $formBuilder,
+        private readonly AdminSettingsFormViewFactory $settingsForms,
         private readonly BackendActions $backendActions,
         private readonly PackageAdminOverview $packageAdminOverview,
         private readonly ThemeAdminOverview $themeAdminOverview,
-        private readonly PackageSettings $packageSettings,
-        private readonly PackageSettingRegistry $packageSettingRegistry,
         private readonly SystemPackageMetadataProvider $systemPackageMetadata,
         private readonly Security $security,
-        private readonly RequestStack $requestStack,
+        private readonly ?AdminFeatureAccessPolicy $adminAcl = null,
     ) {
     }
 
@@ -56,6 +47,9 @@ final class AdminViewTwigExtension extends AbstractExtension
             new TwigFunction('package_settings', $this->packageSettings(...)),
             new TwigFunction('package_settings_form', $this->packageSettingsForm(...)),
             new TwigFunction('package_setting_packages', $this->packageSettingPackages(...)),
+            new TwigFunction('admin_feature_state', $this->adminFeatureState(...)),
+            new TwigFunction('admin_feature_visible', $this->adminFeatureVisible(...)),
+            new TwigFunction('admin_feature_mutable', $this->adminFeatureMutable(...)),
         ];
     }
 
@@ -77,6 +71,33 @@ final class AdminViewTwigExtension extends AbstractExtension
         return $this->backendActions->definitions($ids, $this->actor());
     }
 
+    public function adminFeatureState(string $feature): string
+    {
+        if (null === $this->adminAcl) {
+            return AdminPermissionState::Mutable->value;
+        }
+
+        return $this->adminAcl->state($feature, $this->actor())->value;
+    }
+
+    public function adminFeatureVisible(string $feature): bool
+    {
+        if (null === $this->adminAcl) {
+            return true;
+        }
+
+        return $this->adminAcl->isVisible($feature, $this->actor());
+    }
+
+    public function adminFeatureMutable(string $feature): bool
+    {
+        if (null === $this->adminAcl) {
+            return true;
+        }
+
+        return $this->adminAcl->isMutable($feature, $this->actor());
+    }
+
     /**
      * @return list<array<string, mixed>>
      */
@@ -90,12 +111,12 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     public function packageSettings(string $packageName): array
     {
-        return $this->packageSettings->viewRows($packageName, $this->packageSettingRegistry);
+        return $this->settingsForms->packageSettings($packageName);
     }
 
     public function packageSetting(string $packageName, string $key, mixed $default = null): mixed
     {
-        return $this->packageSettings->get($packageName, $key, $default);
+        return $this->settingsForms->packageSetting($packageName, $key, $default);
     }
 
     public function footerCopyright(string $area = 'frontend'): string
@@ -120,43 +141,7 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     public function coreSettingsForm(string $section): array
     {
-        $definitions = $this->coreSettingDefinitions($section);
-        $values = [];
-        $request = $this->requestStack->getCurrentRequest();
-
-        foreach ($definitions as $definition) {
-            $value = $this->config->get($definition->key()) ?? $definition->defaultValue();
-            if (true === ($definition->metadata()['sensitive'] ?? false)) {
-                $value = '';
-            }
-
-            $values[$definition->key()] = $value;
-        }
-
-        $values = array_replace($values, $this->requestFormValues($request, $this->sensitiveDefinitionKeys($definitions)));
-        $errors = $this->requestFormErrors($request);
-
-        return $this->formBuilder->build(
-            'admin-settings-'.$section,
-            'admin.settings.'.$section.'.title',
-            array_map(static fn ($definition) => $definition->formField(), $definitions),
-            $values,
-            $errors,
-            $errors['__form'] ?? [],
-        )->toArray();
-    }
-
-    /**
-     * @return list<CoreSettingDefinition>
-     */
-    private function coreSettingDefinitions(string $section): array
-    {
-        $actor = $this->actor();
-
-        return array_values(array_filter(
-            $this->coreSettingsRegistry->definitions($section),
-            static fn (CoreSettingDefinition $definition): bool => $definition->allows($actor),
-        ));
+        return $this->settingsForms->coreSettingsForm($section);
     }
 
     /**
@@ -164,23 +149,7 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     public function packageSettingsForm(string $packageName): array
     {
-        $request = $this->requestStack->getCurrentRequest();
-        $errors = $this->requestFormErrors($request);
-        $fields = $this->packageSettings->formFields($packageName, $this->packageSettingRegistry);
-        $sensitiveKeys = $this->sensitiveFieldKeys($fields);
-        $values = array_replace(
-            array_fill_keys($sensitiveKeys, ''),
-            $this->requestFormValues($request, $sensitiveKeys),
-        );
-
-        return $this->formBuilder->build(
-            'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($packageName)),
-            $packageName,
-            $fields,
-            $values,
-            $errors,
-            $errors['__form'] ?? [],
-        )->toArray();
+        return $this->settingsForms->packageSettingsForm($packageName);
     }
 
     /**
@@ -188,18 +157,7 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     public function packageSettingPackages(): array
     {
-        $packages = [];
-
-        foreach ($this->packageSettingRegistry->packagesWithDefinitions() as $packageName => $metadata) {
-            $packages[] = [
-                'package_name' => $packageName,
-                'label' => $metadata['label'],
-                'description' => $metadata['description'],
-                'path' => $metadata['path'],
-            ];
-        }
-
-        return $packages;
+        return $this->settingsForms->packageSettingPackages();
     }
 
     private function defaultFooterCopyright(): string
@@ -221,69 +179,4 @@ final class AdminViewTwigExtension extends AbstractExtension
         return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
     }
 
-    /**
-     * @param list<string> $excludedKeys
-     *
-     * @return array<string, mixed>
-     */
-    private function requestFormValues(?Request $request, array $excludedKeys = []): array
-    {
-        $values = $request?->attributes->get('_system_form_values');
-
-        if (!is_array($values)) {
-            return [];
-        }
-
-        foreach ($excludedKeys as $key) {
-            unset($values[$key]);
-        }
-
-        return $values;
-    }
-
-    /**
-     * @return array<string, list<string>>
-     */
-    private function requestFormErrors(?Request $request): array
-    {
-        $errors = $request?->attributes->get('_system_form_errors');
-
-        return is_array($errors) ? $errors : [];
-    }
-
-    /**
-     * @param iterable<CoreSettingDefinition> $definitions
-     *
-     * @return list<string>
-     */
-    private function sensitiveDefinitionKeys(iterable $definitions): array
-    {
-        $keys = [];
-
-        foreach ($definitions as $definition) {
-            if (true === ($definition->metadata()['sensitive'] ?? false)) {
-                $keys[] = $definition->key();
-            }
-        }
-
-        return $keys;
-    }
-
-    /**
-     * @param iterable<FormFieldDefinition> $fields
-     *
-     * @return list<string>
-     */
-    private function sensitiveFieldKeys(iterable $fields): array
-    {
-        $keys = [];
-
-        foreach ($fields as $field) {
-            if (true === ($field->metadata()['sensitive'] ?? false)) {
-                $keys[] = $field->name();
-            }
-        }
-
-        return $keys;
-    }
 }

@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Backend\AdminControllerContext;
 use App\Core\Access\AccessLevel;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Id\UuidFactory;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
@@ -30,6 +31,8 @@ use Throwable;
 
 final class AdminAclGroupController extends AbstractController
 {
+    private const FEATURE = 'admin.users.acl';
+
     public function __construct(
         private readonly AdminControllerContext $adminContext,
         private readonly HttpErrorRenderer $httpError,
@@ -42,6 +45,7 @@ final class AdminAclGroupController extends AbstractController
         private readonly LiveOperationHttpResponder $liveOperationResponder,
         private readonly UuidFactory $uuidFactory,
         private readonly UiAlertDispatcherInterface $alerts,
+        private readonly AdminFeatureAccessPolicy $adminFeatureAccessPolicy,
     ) {
     }
 
@@ -51,8 +55,15 @@ final class AdminAclGroupController extends AbstractController
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
             return $response;
         }
+        if ($response = $this->featureResponse($request, mutable: false)) {
+            return $response;
+        }
 
         if ($request->isMethod('POST')) {
+            if ($response = $this->featureResponse($request, mutable: true)) {
+                return $response;
+            }
+
             $this->createGroup($request);
 
             return $this->redirectToRoute('backend_admin_user_groups');
@@ -62,6 +73,7 @@ final class AdminAclGroupController extends AbstractController
 
         return $this->render('@backend/admin/users/groups.html.twig', [
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
+            'acl_mutable' => $this->adminFeatureAccessPolicy->isMutable(self::FEATURE, $this->adminContext->actor($this->getUser())),
             'groups' => $groupsView['items'],
             'groups_view' => $groupsView,
         ]);
@@ -73,6 +85,9 @@ final class AdminAclGroupController extends AbstractController
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
             return $response;
         }
+        if ($response = $this->featureResponse($request, mutable: false)) {
+            return $response;
+        }
 
         $group = $this->groupByIdentifier($identifier);
 
@@ -81,6 +96,10 @@ final class AdminAclGroupController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
+            if ($response = $this->featureResponse($request, mutable: true)) {
+                return $response;
+            }
+
             if ($response = $this->updateGroup($request, $group)) {
                 return $response;
             }
@@ -90,6 +109,7 @@ final class AdminAclGroupController extends AbstractController
 
         return $this->render('@backend/admin/users/group-detail.html.twig', [
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
+            'acl_mutable' => $this->adminFeatureAccessPolicy->isMutable(self::FEATURE, $this->adminContext->actor($this->getUser())),
             'group' => $group,
             'member_count' => $this->memberProvider->count($group),
             'members' => $this->memberProvider->members($group),
@@ -100,6 +120,9 @@ final class AdminAclGroupController extends AbstractController
     public function delete(Request $request, string $identifier): Response
     {
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
+            return $response;
+        }
+        if ($response = $this->featureResponse($request, mutable: true)) {
             return $response;
         }
 
@@ -134,12 +157,13 @@ final class AdminAclGroupController extends AbstractController
         }
 
         if ('1' === $this->field($request, '_operation_live')) {
-            return $this->startAclGroupLiveOperation($group, 'delete');
+            return $this->startAclGroupLiveOperation($request, $group, 'delete');
         }
 
         $cleanupImpact = $this->aclGroupImpact->removeReferences($group);
         $this->entityManager->remove($group);
         $this->entityManager->flush();
+        $this->adminFeatureAccessPolicy->resetCache();
         $this->adminContext->audit($this->getUser(), 'acl.group_deleted', [
             'group' => $group->identifier(),
             'impact' => $cleanupImpact['summary'],
@@ -174,6 +198,7 @@ final class AdminAclGroupController extends AbstractController
             );
             $this->entityManager->persist($group);
             $this->entityManager->flush();
+            $this->adminFeatureAccessPolicy->resetCache();
             $this->adminContext->audit($this->getUser(), 'acl.group_created', ['group' => $group->identifier()]);
             $this->alertKey('success', 'admin.groups.created');
         } catch (Throwable) {
@@ -227,7 +252,7 @@ final class AdminAclGroupController extends AbstractController
         }
 
         if ('1' === $this->field($request, '_operation_live')) {
-            return $this->startAclGroupLiveOperation($group, 'update', $pending);
+            return $this->startAclGroupLiveOperation($request, $group, 'update', $pending);
         }
 
         try {
@@ -237,6 +262,7 @@ final class AdminAclGroupController extends AbstractController
             $floorCleanup = $this->aclGroupImpact->removeBelowMinRoleReferences($group, $pending['min_role']);
             $group->changeMinRole($pending['min_role']);
             $this->entityManager->flush();
+            $this->adminFeatureAccessPolicy->resetCache();
             $this->adminContext->audit($this->getUser(), 'acl.group_updated', [
                 'group' => $group->identifier(),
                 'old_name' => $oldName,
@@ -257,8 +283,15 @@ final class AdminAclGroupController extends AbstractController
     /**
      * @param array<string, mixed> $payload
      */
-    private function startAclGroupLiveOperation(AclGroup $group, string $action, array $payload = []): Response
+    private function startAclGroupLiveOperation(Request $request, AclGroup $group, string $action, array $payload = []): Response
     {
+        if (!$this->adminFeatureAccessPolicy->isMutable(self::FEATURE, $this->adminContext->actor($this->getUser()))) {
+            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+                'feature' => self::FEATURE,
+                'required_state' => 'mutable',
+            ]);
+        }
+
         $result = $this->liveOperationStarter->start(
             LiveOperationQueueFactory::ACL_GROUP_APPLY,
             [
@@ -278,6 +311,23 @@ final class AdminAclGroupController extends AbstractController
         ]);
 
         return $this->liveOperationResponder->render($result);
+    }
+
+    private function featureResponse(Request $request, bool $mutable): ?Response
+    {
+        $actor = $this->adminContext->actor($this->getUser());
+        $allowed = $mutable
+            ? $this->adminFeatureAccessPolicy->isMutable(self::FEATURE, $actor)
+            : $this->adminFeatureAccessPolicy->isVisible(self::FEATURE, $actor);
+
+        if ($allowed) {
+            return null;
+        }
+
+        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            'feature' => self::FEATURE,
+            'required_state' => $mutable ? 'mutable' : 'visible',
+        ]);
     }
 
     private function field(Request $request, string $name): string

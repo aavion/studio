@@ -7,6 +7,9 @@ namespace App\Tests\Controller;
 use App\Core\Access\AccessLevel;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
+use App\Core\AdminAcl\AdminPermissionState;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Geo\MaxMindGeoIpConfig;
@@ -383,7 +386,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminRouteAllowsAccessLevelEight(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $client->request('GET', '/admin');
 
         self::assertResponseIsSuccessful();
@@ -394,7 +397,7 @@ final class BackendControllerTest extends WebTestCase
     {
         $manifest = $this->rootManifest();
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $client->request('GET', '/admin/packages');
 
         self::assertResponseIsSuccessful();
@@ -472,7 +475,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminOperationsViewListsTransientLiveOperationState(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
         $store = self::getContainer()->get(LiveOperationRunStore::class);
         self::assertInstanceOf(LiveOperationRunStore::class, $store);
         $run = $store->create('backend.cache_clear', [], 'Cache clear');
@@ -498,7 +501,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminOperationsCleanupWritesAuditEntry(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
         foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
@@ -518,10 +521,67 @@ final class BackendControllerTest extends WebTestCase
         self::assertStringContainsString('"result_status":"success"', $auditLog);
     }
 
+    public function testAdminOperationsFeatureReadOnlyKeepsActionsVisibleButDisabled(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.operations' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('GET', '/admin/operations');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('form input[name="_operations_action"][value="cleanup"]');
+            self::assertSelectorExists('form input[name="_operations_action"][value="cleanup"] + button[disabled]');
+
+            $client->request('POST', '/admin/operations', [
+                '_operations_action' => 'cleanup',
+            ]);
+
+            self::assertResponseStatusCodeSame(401);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
+    public function testAdminLogsFeatureReadOnlyHidesSensitiveSources(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.logs' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('GET', '/admin/logs?source=audit');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('input[name="source"][value="message"]');
+            self::assertSelectorNotExists('a[href*="source=audit"]');
+            self::assertSelectorNotExists('a[href*="source=security_signal"]');
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
     public function testAdminOperationDetailShowsRetainedActionLogEntries(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $store = self::getContainer()->get(LiveOperationRunStore::class);
         self::assertInstanceOf(LiveOperationRunStore::class, $store);
         $run = $store->create('backend.cache_clear', [], 'Cache clear');
@@ -551,7 +611,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminLogsViewReadsSelectedLogSource(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
         $connection->delete('access_log_entry', ['request_id' => 'request-admin-logs']);
         $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);
@@ -718,6 +778,60 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
+    public function testAdminOperationContinuationRequiresTargetFeatureMutation(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, 8);
+        $store = self::getContainer()->get(LiveOperationRunStore::class);
+        self::assertInstanceOf(LiveOperationRunStore::class, $store);
+        $overrides = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $overrides);
+        $run = $store->create('package.install.verify', [], 'Install package');
+        $result = WorkflowResult::requiresReview(null, [
+            Message::info(
+                OperationMessageCode::OPERATION_ACTION_REQUIRED,
+                OperationMessageKey::OPERATION_ACTION_REQUIRED,
+                ['%operation%' => 'Install package'],
+            ),
+        ], [
+            'live_operation_continuation' => [
+                'operation' => 'package.install.apply',
+                'payload' => ['install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa', 'package' => 'demo-module'],
+                'label' => 'Install package',
+            ],
+        ]);
+        $store->finish($run['operation_id'], false, $result->toArray());
+
+        $overrides->save([
+            'admin.operations' => [
+                'state' => AdminPermissionState::Mutable->value,
+                'groups' => [],
+            ],
+            'admin.packages' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $crawler = $client->request('GET', '/admin/operations/'.$run['operation_id']);
+
+            self::assertResponseIsSuccessful();
+            $form = $crawler->filter(sprintf('form[action="/admin/operations/%s/continue"]', $run['operation_id']));
+            self::assertCount(1, $form);
+            self::assertNotNull($form->filter('button[type="submit"]')->attr('disabled'));
+
+            $client->submit($form->form());
+
+            self::assertResponseStatusCodeSame(401);
+        } finally {
+            $overrides->save($overrides->defaultOverrides(), 'test');
+            @unlink(dirname($store->outputPath($run['operation_id'])).'/'.$run['operation_id'].'.json');
+            @unlink($store->outputPath($run['operation_id']));
+            @unlink($store->pidPath($run['operation_id']));
+        }
+    }
+
     public function testAdminBackendActionFormsRunPackageDiscoveryImmediately(): void
     {
         $client = self::createClient();
@@ -732,7 +846,7 @@ final class BackendControllerTest extends WebTestCase
         }
 
         try {
-            $this->loginUserWithLevel($client, 8);
+            $this->loginUserWithLevel($client, AccessLevel::OWNER);
             $crawler = $client->request('GET', '/admin/packages');
 
             self::assertSelectorNotExists('.system-table tr[data-package-name="demo-module"]');
@@ -764,6 +878,58 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
+    public function testDelegatedAdminsSeeDisabledPackageLifecycleActionsByDefault(): void
+    {
+        $client = self::createClient();
+        $this->removePackageByName('test-admin-hidden-lifecycle');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $package = new ExtensionPackage(
+            '00000000-0000-7000-8000-000000000496',
+            [PackageScope::Module],
+            'test-admin-hidden-lifecycle',
+            'packages/test-admin-hidden-lifecycle',
+            ExtensionPackageStatus::Inactive,
+            [
+                'display_name' => 'Test Admin Hidden Lifecycle',
+                'description' => 'Lifecycle ACL fixture',
+                'manifest' => [
+                    'PACKAGE_NAME' => 'Test Admin Hidden Lifecycle',
+                    'PACKAGE_VERSION' => '1.0.0',
+                ],
+            ],
+            manifestVersion: '1.0.0',
+        );
+        $entityManager->persist($package);
+        $entityManager->flush();
+
+        try {
+            $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+            $client->request('GET', '/admin/packages');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('a[href="/admin/packages/test-admin-hidden-lifecycle"]');
+            self::assertSelectorNotExists('a[href="/admin/packages/test-admin-hidden-lifecycle/activate"]');
+
+            $client->request('GET', '/admin/packages/test-admin-hidden-lifecycle');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Test Admin Hidden Lifecycle');
+            self::assertSelectorNotExists('a[href="/admin/packages/test-admin-hidden-lifecycle/activate"]');
+            self::assertSelectorNotExists('a[href="/admin/packages/test-admin-hidden-lifecycle/delete"]');
+            self::assertSelectorExists('button[disabled]');
+            self::assertStringContainsString('Activate', (string) $client->getResponse()->getContent());
+            self::assertStringContainsString('Delete', (string) $client->getResponse()->getContent());
+
+            $client->request('GET', '/admin/packages/test-admin-hidden-lifecycle/activate');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.system-alert-warning', 'You may review this action, but mutation is not allowed by the current ACL policy.');
+            self::assertStringNotContainsString('Activate package', (string) $client->getResponse()->getContent());
+        } finally {
+            $this->removePackageByName('test-admin-hidden-lifecycle');
+        }
+    }
+
     public function testAdminPackageDetailAndLifecycleReviewRoutesRender(): void
     {
         $client = self::createClient();
@@ -790,7 +956,7 @@ final class BackendControllerTest extends WebTestCase
         file_put_contents($packageDir.'/README.md', "# Lifecycle README\n\nThis package has **markdown** docs.");
         file_put_contents($assetsDir.'/preview.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9"><rect width="16" height="9" fill="#315bdc"/></svg>');
 
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $package = new ExtensionPackage(
             '00000000-0000-7000-8000-000000000498',
@@ -875,7 +1041,7 @@ final class BackendControllerTest extends WebTestCase
         $this->removePackageByName('test-dependent-theme');
         $this->removePackageByName('test-dependent-captcha');
 
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $theme = new ExtensionPackage(
             '00000000-0000-7000-8000-000000000596',
@@ -988,6 +1154,7 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('form#admin-settings-users');
         self::assertSelectorExists(sprintf('input[name="%s"][min="1"][max="3650"]', UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY));
 
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $client->request('GET', '/admin/settings/security');
 
         self::assertResponseIsSuccessful();
@@ -1036,10 +1203,11 @@ final class BackendControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('form#admin-settings-statistics');
         self::assertSelectorExists('input[name="statistics.enabled"]');
-        self::assertSelectorNotExists('input[name="statistics.geoip.enabled"]');
-        self::assertSelectorNotExists('input[name="statistics.geoip.maxmind.license_key"]');
-        self::assertSelectorNotExists('input[name="_backend_action"][value="geoip_database_update"]');
+        self::assertSelectorExists('input[name="statistics.geoip.enabled"][disabled]');
+        self::assertSelectorExists('input[name="statistics.geoip.maxmind.license_key"][disabled]');
+        self::assertSelectorExists('input[name="_backend_action"][value="geoip_database_update"] + input + button[disabled]');
 
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $client->request('GET', '/admin/settings/scheduler');
 
         self::assertResponseIsSuccessful();
@@ -1057,6 +1225,134 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('.system-panel', PHP_VERSION);
         self::assertStringContainsString('GD', (string) $client->getResponse()->getContent());
         self::assertStringNotContainsString('$_SERVER', (string) $client->getResponse()->getContent());
+    }
+
+    public function testSecuritySettingsSectionIsHiddenAndRejectsPostsForDelegatedAdmins(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+
+        $client->request('GET', '/admin/settings/security');
+
+        self::assertResponseStatusCodeSame(401);
+
+        $client->request('POST', '/admin/settings/security', [
+            '_form_id' => 'admin-settings-security',
+            '_csrf_token' => 'direct-post',
+            'security.captcha.enabled' => '0',
+            'security.captcha.provider' => 'none',
+        ]);
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testSchedulerSettingsReadOnlyDisablesFieldsAndRejectsPosts(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+        $store->save([
+            'admin.settings.scheduler' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('GET', '/admin/settings/scheduler');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('form#admin-settings-scheduler');
+            self::assertSelectorExists('input[name="scheduler.enabled"][disabled]');
+            self::assertSelectorExists('input[name="scheduler.get_auth_enabled"][disabled]');
+            self::assertSelectorExists('input[name="scheduler.package_action_queues_enabled"][disabled]');
+            self::assertSelectorExists('input[name="scheduler.web_trigger_enabled"][disabled]');
+            self::assertSelectorNotExists('form#admin-settings-scheduler button[type="submit"]');
+
+            $client->request('POST', '/admin/settings/scheduler', [
+                '_form_id' => 'admin-settings-scheduler',
+                '_csrf_token' => 'direct-post',
+                'scheduler.enabled' => '0',
+            ]);
+
+            self::assertResponseStatusCodeSame(401);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
+    public function testAclSettingsMatrixIsOwnerGatedAndRendersFeatureRegistry(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
+        $adminAcl = self::getContainer()->get(AdminFeatureAccessPolicy::class);
+        self::assertInstanceOf(AdminFeatureAccessPolicy::class, $adminAcl);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+        foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
+        $existingGroup = $entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => 'acl_matrix_test']);
+        if ($existingGroup instanceof AclGroup) {
+            $entityManager->remove($existingGroup);
+            $entityManager->flush();
+            $adminAcl->resetCache();
+        }
+        $group = new AclGroup(
+            '72000000-0000-7000-8000-000000000715',
+            'acl_matrix_test',
+            'ACL Matrix Test',
+            AccessLevel::ADMIN,
+        );
+        $entityManager->persist($group);
+        $entityManager->flush();
+        $adminAcl->resetCache();
+
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
+        $crawler = $client->request('GET', '/admin/settings/acl');
+
+        try {
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'ACL');
+            self::assertSelectorExists('form#admin-settings-acl');
+            self::assertSelectorTextContains('#acl-surface-admin', 'Packages and themes');
+            self::assertSelectorExists('select[name="acl[admin.packages][state]"]');
+            self::assertSelectorExists('select[name="acl[admin.settings.statistics.geoip][state]"]');
+            self::assertGreaterThan(0, $crawler->filter('option[value=""]')->count());
+            self::assertSelectorTextContains('#acl-surface-admin', 'Read-only');
+            self::assertGreaterThan(0, $crawler->filter('select[disabled]')->count());
+
+            $form = $crawler->filter('form#admin-settings-acl')->form([
+                'acl[admin.packages][state]' => AdminPermissionState::Denied->value,
+            ]);
+            $client->submit($form);
+
+            self::assertResponseRedirects('/admin/settings/acl');
+            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
+            self::assertStringContainsString('settings.acl.save', $auditLog);
+            self::assertStringContainsString('"section":"acl"', $auditLog);
+            self::assertStringContainsString('"feature":"admin.packages"', $auditLog);
+            self::assertStringContainsString('"previous_state":"visible"', $auditLog);
+            self::assertStringContainsString('"next_state":"denied"', $auditLog);
+            self::assertStringContainsString('"setting_keys":["acl"]', $auditLog);
+            self::assertStringNotContainsString('"_audit"', $auditLog);
+
+            $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+            $client->request('GET', '/admin/settings/acl');
+
+            self::assertResponseStatusCodeSame(401);
+        } finally {
+            $cleanupGroup = $entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => $group->identifier()]);
+            if ($cleanupGroup instanceof AclGroup) {
+                $entityManager->remove($cleanupGroup);
+                $entityManager->flush();
+                $adminAcl->resetCache();
+            }
+            $store->save($store->defaultOverrides(), 'test');
+        }
     }
 
     public function testAdminSettingsFormsPersistCoreSettings(): void

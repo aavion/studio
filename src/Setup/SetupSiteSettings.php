@@ -27,9 +27,9 @@ final readonly class SetupSiteSettings
                 ConfigValueType::String,
                 FormInputType::Select,
                 options: [
-                    UserFlowConfig::REGISTRATION_DISABLED => 'admin.settings.options.registration.disabled',
-                    UserFlowConfig::REGISTRATION_ADMIN_APPROVAL => 'admin.settings.options.registration.admin_approval',
-                    UserFlowConfig::REGISTRATION_AUTO_APPROVAL => 'admin.settings.options.registration.auto_approval',
+                    UserFlowConfig::REGISTRATION_DISABLED => 'setup.form.registration_mode.options.disabled',
+                    UserFlowConfig::REGISTRATION_ADMIN_APPROVAL => 'setup.form.registration_mode.options.admin_approval',
+                    UserFlowConfig::REGISTRATION_AUTO_APPROVAL => 'setup.form.registration_mode.options.auto_approval',
                 ],
                 validation: ['required' => true],
                 metadata: ['config_key' => UserFlowConfig::REGISTRATION_MODE_KEY],

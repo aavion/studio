@@ -18,10 +18,10 @@
         <h2>{{ 'admin.groups.create.title'|trans }}</h2>
         <form method="post" class="system-backend-form">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_create') }}">
-            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_identifier', name: 'identifier', label: 'admin.groups.fields.identifier'|trans, required: true} only %}
-            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name', name: 'name', label: 'admin.groups.fields.name'|trans, required: true, attributes: {maxlength: 160}} only %}
-            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_min_role', name: 'min_role', label: 'admin.groups.fields.min_role'|trans, type: 'number', required: true, attributes: {min: 0, max: 9}} only %}
-            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.groups.actions.create'|trans} only %}
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_identifier', name: 'identifier', label: 'admin.groups.fields.identifier'|trans, required: true, disabled: not acl_mutable} only %}
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name', name: 'name', label: 'admin.groups.fields.name'|trans, required: true, attributes: {maxlength: 160}, disabled: not acl_mutable} only %}
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_min_role', name: 'min_role', label: 'admin.groups.fields.min_role'|trans, type: 'number', required: true, attributes: {min: 0, max: 9}, disabled: not acl_mutable} only %}
+            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.groups.actions.create'|trans, disabled: not acl_mutable} only %}
         </form>
     </section>
 

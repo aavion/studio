@@ -64,7 +64,7 @@ final class ApiPackageControllerTest extends WebTestCase
         self::assertArrayNotHasKey('detail_path', $system['attributes']);
     }
 
-    public function testPackageDetailReturnsApiActionsForAdminApiKeys(): void
+    public function testPackageDetailReturnsDisabledLifecycleApiActionsForDelegatedAdminApiKeys(): void
     {
         $client = self::createClient();
         $plainKey = $this->createPlainApiKey('apipkgdetail');
@@ -81,16 +81,33 @@ final class ApiPackageControllerTest extends WebTestCase
         self::assertSame('api-package-detail', $payload['data']['attributes']['package_name']);
         self::assertSame('api-package-detail', $payload['data']['attributes']['package_slug']);
         self::assertSame('/api/v1/admin/packages/api-package-detail', $payload['data']['attributes']['api_path']);
-
-        $actions = array_column($payload['data']['attributes']['api_actions'], 'api_path', 'id');
-        self::assertSame('/api/v1/admin/packages/api-package-detail/activate', $actions['activate']);
-        self::assertSame('/api/v1/admin/packages/api-package-detail/delete', $actions['delete']);
+        $actions = array_column($payload['data']['attributes']['api_actions'], null, 'id');
+        self::assertSame('/api/v1/admin/packages/api-package-detail/activate', $actions['activate']['api_path']);
+        self::assertTrue($actions['activate']['disabled']);
     }
 
-    public function testPackageLifecycleActionReturnsReviewUntilConfirmed(): void
+    public function testPackageDetailReturnsApiActionsForOwnerApiKeys(): void
     {
         $client = self::createClient();
-        $plainKey = $this->createPlainApiKey('apipkgwrite', ApiKeyStatus::ReadWrite);
+        $plainKey = $this->createPlainApiKey('apipkgowner', accessLevel: AccessLevel::OWNER);
+        $this->upsertPackage('api-package-owner', ExtensionPackageStatus::Inactive);
+
+        $client->request('GET', '/api/v1/admin/packages/api-package-owner', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+
+        $actions = array_column($payload['data']['attributes']['api_actions'], 'api_path', 'id');
+        self::assertSame('/api/v1/admin/packages/api-package-owner/activate', $actions['activate']);
+        self::assertSame('/api/v1/admin/packages/api-package-owner/delete', $actions['delete']);
+    }
+
+    public function testPackageLifecycleActionReturnsReviewUntilConfirmedForOwnerApiKeys(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apipkgwrite', ApiKeyStatus::ReadWrite, AccessLevel::OWNER);
         $this->upsertPackage('api-package-action', ExtensionPackageStatus::Inactive);
 
         $client->request('POST', '/api/v1/admin/packages/api-package-action/activate', server: [
@@ -103,6 +120,30 @@ final class ApiPackageControllerTest extends WebTestCase
         self::assertSame('api-package-action:activate', $payload['data']['id']);
         self::assertSame('ok', $payload['data']['attributes']['status']);
         self::assertSame('confirm=true', $payload['data']['attributes']['confirm_parameter']);
+    }
+
+    public function testPackageLifecycleConfirmationRejectsDelegatedAdminApiKeysByDefault(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apipkgdenied', ApiKeyStatus::ReadWrite);
+        $this->upsertPackage('api-package-denied', ExtensionPackageStatus::Inactive);
+
+        $client->request('POST', '/api/v1/admin/packages/api-package-denied/activate', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('package_lifecycle_review', $payload['data']['type']);
+
+        $client->request('POST', '/api/v1/admin/packages/api-package-denied/activate?confirm=true', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame('api.operation_unavailable', $payload['error']['code']);
+        self::assertSame('feature_read_only', $payload['error']['context']['reason']);
     }
 
     public function testPackageLifecycleActionRequiresWriteApiKey(): void
@@ -146,13 +187,17 @@ final class ApiPackageControllerTest extends WebTestCase
         ], $payload['tags']);
     }
 
-    private function createPlainApiKey(string $prefix, ApiKeyStatus $status = ApiKeyStatus::ReadOnly): string
+    private function createPlainApiKey(
+        string $prefix,
+        ApiKeyStatus $status = ApiKeyStatus::ReadOnly,
+        int $accessLevel = AccessLevel::ADMIN,
+    ): string
     {
-        $user = $this->createUserWithLevel(AccessLevel::ADMIN, $prefix.'user', 'current-password');
+        $user = $this->createUserWithLevel($accessLevel, $prefix.'user', 'current-password');
         $vault = self::getContainer()->get(ApiKeyVault::class);
         $plainKey = $vault->generatePlainKey($prefix);
         $apiKey = new ApiKey(
-            '68000000-0000-7000-8000-'.substr(md5($prefix.$status->value), 0, 12),
+            '68000000-0000-7000-8000-'.substr(md5($prefix.$status->value.(string) $accessLevel), 0, 12),
             $prefix,
             $vault->hmac($plainKey),
             $vault->encrypt($plainKey, $prefix),

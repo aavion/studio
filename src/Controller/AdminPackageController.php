@@ -9,6 +9,11 @@ use App\Backend\BackendActionResponder;
 use App\Backend\BackendArea;
 use App\Backend\BackendMessageKey;
 use App\Backend\PackageLifecycleAdmin;
+use App\Core\Access\AccessActor;
+use App\Core\Access\AccessLevel;
+use App\Core\Access\AccessMessageCode;
+use App\Core\Access\AccessMessageKey;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Core\Operation\Live\LiveOperationHttpResponder;
@@ -16,6 +21,7 @@ use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Operation\Live\LiveOperationStarter;
 use App\Core\Package\Install\PackageZipInstaller;
 use App\Core\Workflow\WorkflowResult;
+use App\Entity\UserAccount;
 use App\Form\FormTokenValidator;
 use App\View\Alert\UiAlertDelivery;
 use App\View\Alert\UiAlertDispatcherInterface;
@@ -29,6 +35,8 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class AdminPackageController extends AbstractController
 {
+    private const PACKAGE_LIFECYCLE_FEATURE = 'admin.packages';
+
     public function __construct(
         private readonly AdminControllerContext $adminContext,
         private readonly HttpErrorRenderer $httpError,
@@ -40,6 +48,7 @@ final class AdminPackageController extends AbstractController
         private readonly FormTokenValidator $formTokenValidator,
         private readonly UiAlertDispatcherInterface $alerts,
         private readonly WorkflowResultAlertSelector $alertSelector,
+        private readonly AdminFeatureAccessPolicy $adminAcl,
     ) {
     }
 
@@ -50,6 +59,18 @@ final class AdminPackageController extends AbstractController
 
         if (null !== $access) {
             return $access;
+        }
+
+        if (!$this->adminAcl->isMutable(self::PACKAGE_LIFECYCLE_FEATURE, $this->actor())) {
+            $result = $this->accessDeniedResult('package_install');
+
+            if ('1' === $this->stringField($request, '_operation_live')) {
+                return $this->liveOperationResponder->render($result);
+            }
+
+            $this->flashResult($result);
+
+            return $this->redirect('/admin/packages');
         }
 
         $validToken = $this->formTokenValidator->isValid('package-install', $this->stringField($request, '_form_id'), $this->stringField($request, '_csrf_token'));
@@ -115,6 +136,14 @@ final class AdminPackageController extends AbstractController
             return $access;
         }
 
+        if (!$this->adminAcl->isVisible(self::PACKAGE_LIFECYCLE_FEATURE, $this->actor())) {
+            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+                'area' => BackendArea::Admin->value,
+                'package' => $packageName,
+                'feature' => self::PACKAGE_LIFECYCLE_FEATURE,
+            ]);
+        }
+
         if ($request->isMethod('POST')) {
             if ($this->backendActionResponder->supports($request)) {
                 return $this->backendActionResponder->respond($request, $this->getUser());
@@ -151,6 +180,17 @@ final class AdminPackageController extends AbstractController
             return $access;
         }
 
+        $lifecycleState = $this->adminAcl->state(self::PACKAGE_LIFECYCLE_FEATURE, $this->actor());
+
+        if (!$lifecycleState->isVisible()) {
+            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+                'area' => BackendArea::Admin->value,
+                'package' => $packageName,
+                'action' => $action,
+                'feature' => self::PACKAGE_LIFECYCLE_FEATURE,
+            ]);
+        }
+
         if ($request->isMethod('POST') && $this->backendActionResponder->supports($request)) {
             return $this->backendActionResponder->respond($request, $this->getUser());
         }
@@ -166,6 +206,17 @@ final class AdminPackageController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
+            if (!$lifecycleState->isMutable()) {
+                $result = $this->accessDeniedResult('package_lifecycle_'.$action);
+                $this->flashResult($result);
+
+                if ('1' === $this->stringField($request, '_operation_live')) {
+                    return $this->liveOperationResponder->render($result);
+                }
+
+                return $this->redirect($request->getPathInfo());
+            }
+
             $formId = 'package-lifecycle-'.$action.'-'.$packageName;
 
             if (!$this->formTokenValidator->isValid($formId, $this->stringField($request, '_form_id'), $this->stringField($request, '_csrf_token'))) {
@@ -200,11 +251,16 @@ final class AdminPackageController extends AbstractController
             'area' => BackendArea::Admin,
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
             'review' => $review,
+            'lifecycle_mutable' => $lifecycleState->isMutable(),
         ]);
     }
 
     private function handleLivePackageLifecycle(string $packageName, string $action): Response
     {
+        if (!$this->adminAcl->isMutable(self::PACKAGE_LIFECYCLE_FEATURE, $this->actor())) {
+            return $this->liveOperationResponder->render($this->accessDeniedResult('package_lifecycle_'.$action));
+        }
+
         $label = sprintf('Package %s %s', $packageName, $action);
         $result = $this->liveOperationStarter->start(
             LiveOperationQueueFactory::PACKAGE_LIFECYCLE,
@@ -238,6 +294,39 @@ final class AdminPackageController extends AbstractController
     private function flashResult(WorkflowResult $result): void
     {
         $this->alerts->addAlert($this->alertSelector->fromResult($result), UiAlertDelivery::Direct);
+    }
+
+    /**
+     * @return WorkflowResult<mixed>
+     */
+    private function accessDeniedResult(string $capability): WorkflowResult
+    {
+        $actor = $this->actor();
+
+        return WorkflowResult::invalid([
+            Message::warning(
+                AccessMessageCode::ACCESS_DENIED,
+                AccessMessageKey::ACCESS_DENIED,
+                [
+                    '%capability%' => $capability,
+                    '%required_level%' => AccessLevel::OWNER,
+                    '%actor_level%' => $actor->accessLevel(),
+                ],
+                [
+                    ...$actor->toContext(),
+                    'capability' => $capability,
+                    'required_access_level' => AccessLevel::OWNER,
+                    'feature' => self::PACKAGE_LIFECYCLE_FEATURE,
+                ],
+            ),
+        ]);
+    }
+
+    private function actor(): AccessActor
+    {
+        $user = $this->getUser();
+
+        return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
     }
 
     private function stringField(Request $request, string $name): string
