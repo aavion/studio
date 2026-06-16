@@ -134,8 +134,9 @@ The codebase and other feature drafts expose several security-relevant surfaces 
 - Upload and archive handling, including media, package ZIPs, import bundles, backups, and restore artifacts, should not be treated as suspicious probe traffic by path alone. Failed extension, MIME, size, path traversal, nested archive, and manifest-validation checks should feed passive signals with redacted context.
 - Log views, diagnostic downloads, exports, backups, and support bundles must be permission-aware, `no-store`, redacted, and retention-aware. They must not expose raw IP data beyond the 30-day ceiling or raw tokens/secrets through downloadable output.
 - Security-signal visibility, IP-bearing access-log visibility, signal cleanup/mutation, and future review actions need explicit Owner/ACL policy in `feat-security-admin-acl-enforcement` instead of relying indefinitely on broad Admin-area access.
-- Trusted proxy handling is a deployment/webserver boundary, not an app-level Security settings feature. Client identity, GeoIP, IP-bucket policy, access logs, API diagnostics, and auto-ban decisions must use Symfony's resolved request client IP and must not parse raw forwarding headers directly. Operators configure trusted reverse proxies through webserver/Symfony deployment config, for example `mod_remoteip` or equivalent server-level handling.
-- Visitor ID remains the preferred browser continuity key. Different browsers behind the same untrusted proxy should still receive separate visitor subjects, while later auto-ban policy may treat IP-only evidence from shared/untrusted-network situations more cautiously to reduce false positives.
+- Trusted proxy handling is a deployment/webserver boundary, not an app-level Security settings feature. Security identity, GeoIP, IP-bucket policy, access logs, API diagnostics, and auto-ban decisions must use Symfony's resolved request client IP and must not trust raw forwarding headers directly. Operators configure trusted reverse proxies through webserver/Symfony deployment config, for example `mod_remoteip` or equivalent server-level handling.
+- Visitor ID generation may use raw forwarding-header values only as untrusted differentiation entropy, for example to avoid merging unrelated browsers behind the same resolved IP when their `X-Forwarded-For` chains differ. Raw forwarding-header values must not become Security subject keys, GeoIP inputs, ban keys, or signal evidence.
+- Visitor ID remains the preferred browser continuity key. Different browsers behind the same untrusted proxy should still receive separate visitor subjects. IP bans/blocks remain allowed as a secondary cookie-reset bypass defense, but their thresholds should be laxer than Visitor-ID thresholds so shared or untrusted-network IPs have a lower false-positive risk.
 - HTTP security headers are an adjacent production-hardening follow-up. Before production readiness, define and test the response policy for CSP, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sensitive-route `no-store`, and any route-specific exceptions needed by the editor, package assets, or external integrations.
 
 ## Auto-Ban Defaults
@@ -151,6 +152,7 @@ The codebase and other feature drafts expose several security-relevant surfaces 
   - repeated IP ban within 24 hours: 6 hours;
   - severe repeated IP abuse: up to 24 hours;
   - maximum: 7 days.
+- IP-ban/block thresholds should stay laxer than Visitor-ID thresholds because one resolved IP may represent multiple users behind shared hosting, NAT, or an untrusted proxy. Use Visitor-ID evidence first where available, and treat IP-only evidence as a secondary escalation signal unless the signal is severe.
 - API-key bans use key fingerprint/prefix only:
   - invalid-key probe ban: 15 minutes;
   - repeated invalid-key probe ban: 1 hour;
