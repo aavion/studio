@@ -133,6 +133,7 @@ The codebase and other feature drafts expose several security-relevant surfaces 
 - High-impact authenticated/admin workflows need explicit intents and authority decisions even when Owner requests are exempt from ordinary rate-limit rejection: settings mutations, user/ACL changes, package install/activate/purge, backup restore, import apply, export/download, cache or asset rebuild, self-update, scheduler run-now, and diagnostic/support-bundle generation.
 - Upload and archive handling, including media, package ZIPs, import bundles, backups, and restore artifacts, should not be treated as suspicious probe traffic by path alone. Failed extension, MIME, size, path traversal, nested archive, and manifest-validation checks should feed passive signals with redacted context.
 - Log views, diagnostic downloads, exports, backups, and support bundles must be permission-aware, `no-store`, redacted, and retention-aware. They must not expose raw IP data beyond the 30-day ceiling or raw tokens/secrets through downloadable output.
+- Security-signal visibility, IP-bearing access-log visibility, signal cleanup/mutation, and future review actions need explicit Owner/ACL policy in `feat-security-admin-acl-enforcement` instead of relying indefinitely on broad Admin-area access.
 - Trusted-proxy configuration is part of the security boundary. Client identity, GeoIP, IP-bucket policy, access logs, API diagnostics, and auto-ban decisions must use one trusted client-identity resolver and must not parse raw forwarding headers directly.
 - HTTP security headers are an adjacent production-hardening follow-up. Before production readiness, define and test the response policy for CSP, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sensitive-route `no-store`, and any route-specific exceptions needed by the editor, package assets, or external integrations.
 
@@ -177,8 +178,10 @@ The codebase and other feature drafts expose several security-relevant surfaces 
 ## Logging And Projection Policy
 
 - Rotating file logs remain the durable raw operational source.
-- A database-backed security event projection is an open read-model decision for query-heavy review and abuse correlation.
-- If introduced, the projection must duplicate only minimized/redacted fields, keep IP-derived data within the 30-day limit, and degrade without weakening enforcement or hiding diagnostics.
+- Database-backed message, audit, and access lookup projections are the Admin/API read model for query-heavy review and abuse correlation.
+- Passive security signals are stored separately as `security_signal_event` rows with explicit expiry and remain observational until later enforcement branches consume them.
+- The projection must duplicate only minimized/redacted structured fields, never full raw log lines, keep IP-derived data within the 30-day limit, purge expired rows after successful writes, and degrade without weakening enforcement or hiding file-log diagnostics.
+- Level/severity fields are stored only where they support meaningful filtering: message projections keep level, security signals keep severity, and current access/audit projections omit level fields.
 - Backups, exports, diagnostics, and support bundles must not silently extend IP retention.
 
 ## Configuration Posture
@@ -199,7 +202,7 @@ These are first soft decisions for which values should stay fixed, become protec
 | Enforcement order, Owner recovery, Admin/Owner lockout protection | Code-level policy and tests | No ordinary Admin setting | Requires a policy update and explicit recovery tests to change |
 | IP privacy ceiling and raw-secret redaction | Code-level policy and tests | No increase allowed | IP-derived data max 30 days; raw credentials, API keys, visitor tokens, session IDs, captcha answers, and full user agents are never policy records |
 | Raw file-log retention | Existing log configuration or code default | Yes, bounded | Default 30 days; IP-bearing logs must not become queryable beyond 30 days through archives, projections, exports, or support bundles |
-| Database security event projection | Feature branch decision | Yes, bounded | Stores minimized/redacted read-model data only; must degrade without hiding diagnostics or weakening enforcement |
+| Database log projections and security signals | Config-backed defaults in Abuse Foundation | Yes, bounded | Message/audit/access projections default to 30 days; visitor/user/API security signals default to 7 days; IP-derived signals default to 1 day; all IP-derived/queryable projection data remains capped at 30 days |
 | GeoIP enablement, database path, license key, and update task | Protected config/Admin setting with null fallback | Yes, protected and audited | License key never public; disabled/unconfigured state uses `NullGeoIpResolver`; no geo-blocking |
 | GeoIP license key | Secret/protected setting | Yes, protected only | Never rendered, exported, logged, or included in diagnostics |
 | Probe-path defaults | Code defaults plus config descriptor | Yes, audited | Defaults remain broad; patterns are anchored/normalized and tested against false positives |

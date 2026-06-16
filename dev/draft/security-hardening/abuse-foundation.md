@@ -31,19 +31,32 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 2. Add subject resolution for IP bucket, visitor ID, authenticated user UID, API key UID/prefix, and safe combined subject keys through one reviewed client-identity resolver.
 3. Add request-intent classification for browser navigation, Turbo/browser prefetch, form submit, API read, API write, CORS preflight, scheduler trigger, captcha refresh, captcha failure, login, registration, password reset, contact, setup apply, package/admin operation, upload/archive validation, export/download, import, and suspicious probe.
 4. Add a central action-cost catalogue with website and API families. Costs are symbolic defaults, not limiter calls yet.
-5. Add database-backed passive suspicious-signal recording with TTL-ready metadata, cleanup support, and redacted message/audit reporting.
-6. Add explicit `/api/live/**` classification: no ordinary enforcement, but passive signal recording can happen for clear abuse patterns.
+5. Add database-backed message, audit, and access log projections in parallel to the existing 30-day rotating file logs.
+6. Move Admin/API log browsing from file scanning to the database projection, with one tab/source for message, audit, access, and security-signal events.
+7. Add database-backed passive suspicious-signal recording with TTL-ready metadata, cleanup support, and redacted message/audit reporting.
+8. Add explicit `/api/live/**` classification: no ordinary enforcement, but passive signal recording can happen for clear abuse patterns.
 
 ## Public interfaces and data decisions
 
 - Controllers and future packages call a Studio-owned abuse facade instead of Symfony RateLimiter directly.
+- Existing Monolog file channels remain the raw operational fallback with 30-day retention; database log projection tables are lookup/read-model copies for Admin UI, Admin API, and later abuse correlation.
+- The first projection uses one table per log family: `message_log_entry`, `audit_log_entry`, and `access_log_entry`; passive security signals use the domain event table `security_signal_event`.
+- Projection writes must happen after the normal file-log payload has been normalized/redacted and must never store raw secrets, credentials, API keys, visitor-cookie material, captcha answers, unredacted tokenized URLs, or duplicated full raw log lines.
+- Message projections keep a level because message logs carry meaningful severities. Security signals keep severity. Current access and audit projections omit level fields because their existing writers only emit one operational level and the value would not support useful filtering.
+- Database projection retention is configurable but bounded to 1-30 days. Purge happens directly after successful writes so expired lookup rows do not persist indefinitely when the scheduler is unavailable.
+- Setup requests may already write file logs before the database exists. Database log projections and passive-signal storage must check the existing database-ready boundary before any DBAL read/write, including retention-setting lookups; when `APP_SETUP_COMPLETED` is not truthy and no explicit unready override is active, they must no-op instead of touching Doctrine/DBAL.
+- Admin Logs and `/api/v1/admin/logs/**` read from database projections, not from rotated files. File logs stay inspectable for operators and useful during database degradation, but they are not the primary UI read path.
+- This branch preserves the existing Admin Logs access boundary. Fine-grained visibility/mutation restrictions for security-signal rows, IP-bearing access projections, exports, cleanup actions, and future signal review decisions are deferred to `feat-security-admin-acl-enforcement`, where Owner-only or configurable ACL gates can be applied consistently across Admin UI, Admin API, live operations, and service boundaries.
+- Log browsing is split by source tabs. Each tab exposes only meaningful filters and compact columns for that log family.
+- The free-text search must remain broad enough to match values not shown in the compact table, including request IDs, visitor IDs, user/API identifiers, subject identifiers, route names, paths, IP-derived fields within retention, and raw redacted context JSON.
+- The log-level/severity filter is multi-select and appears only for sources where multiple levels are meaningful, such as message and security-signal events. By default, `DEBUG` and `INFO` are hidden for those sources to keep Admin review usable; callers may explicitly include them. Access and audit logs do not expose or apply a level filter.
 - Client identity must respect Symfony trusted-proxy configuration and must not trust raw forwarding headers outside that configuration.
 - Prefetch detection uses `X-Sec-Purpose: prefetch` and `Sec-Purpose: prefetch`; spoofable hints only lower confidence for classification, never bypass checks.
 - Signals store only normalized subject keys, intent, reason code, count/weight, timestamps, and safe request metadata.
 - Probe-path detection is configurable and ships with extensive high-signal defaults for `.env`, VCS metadata, backup/database dumps, common foreign admin panels, upload shells, and known scanner paths.
-- First implementation uses a portable database table for short-lived passive signals. Suggested fields are normalized subject type/key, request family, intent, reason code, confidence, weight/count, first-seen timestamp, last-seen timestamp, expiry timestamp, safe context hash, and optional audit reference.
+- First implementation uses the portable `security_signal_event` table for short-lived passive signals. Suggested fields are normalized subject type/key, request family, intent, reason code, confidence, weight/count, timestamps, expiry timestamp, safe context, and optional audit reference.
 - Passive-signal rows are observational only in this branch. The rate and auto-ban branches decide how to consume them for enforcement.
-- Keep passive signals separate from raw file logs. If a broader database-backed security event projection is introduced later, this branch's signal store should either feed it through a documented boundary or remain the focused enforcement-oriented read model.
+- Keep passive signals separate from raw file logs and from the message/audit/access projections. Later branches may consume `security_signal_event`, but this branch does not enforce from it.
 - IP subjects and stable IP-derived hashes must expire within 30 days. Longer-lived passive signals must use visitor ID, authenticated user ID, API key fingerprint, or aggregate keys without retaining the IP-derived subject.
 - TTL and expiry use an injectable clock/time boundary for deterministic tests.
 - Classification must expose enough request-family, intent, subject, Admin/Owner context, `/api/live/**`, and recovery-login metadata for later branches to follow the Security policy enforcement order without re-reading controllers.
@@ -60,9 +73,11 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - High-signal probe paths are suspicious even when the route does not exist or is only a honeypot; later enforcement should return a generic `400` without revealing route existence.
 - Prefetch for state-changing methods is suspicious; normal GET prefetch remains low-confidence.
 - Setup/install requests happen before an Owner session exists, so classification must not depend on authenticated recovery context for pre-setup protection.
+- During setup and pre-database states, file logging remains available but database projections and signal persistence must be skipped before any DBAL call.
 - Upload, package, import, backup, and restore paths must not be classified as high-signal probes solely because their filenames resemble archive/database defaults; failed validation results should emit separate upload/archive signals.
 - Expired passive signals must not affect later enforcement once rate/ban branches start consuming the store.
 - Passive-signal storage failure records a safe diagnostic and must not change request outcome in this foundation branch.
+- Database log projection storage failure must not break the request or the raw file log write. The UI may show fewer projected rows while file logs remain the operational fallback.
 - Cleanup must remove or anonymize expired IP-derived signal keys before any Admin export, support bundle, or statistics projection can expose them.
 
 ## Tests and validation
@@ -73,6 +88,10 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test suspicious probe rules do not collide with legitimate upload, package, import, backup, restore, media, and editor routes.
 - Test probe-pattern normalization and false-positive avoidance for ordinary application routes.
 - Test redaction in passive signal messages.
+- Test database log projection writes for message, audit, and access logs without bypassing the existing file-log path.
+- Test database projection and signal recorder no-op before touching DBAL while setup/database readiness is false.
+- Test projection retention purge-after-write behavior and the 30-day maximum for configurable lookup retention.
+- Test Admin/API log browsing reads database projections, uses UUID detail links, exposes source tabs, keeps broad free-text matching for hidden identifiers/context, shows only meaningful filters per tab, omits raw-line storage, omits access/audit level filters, and hides `DEBUG`/`INFO` by default for level-aware sources unless selected.
 - Test passive-signal persistence, aggregation by normalized subject/intent/reason, expiry filtering, and cleanup command/task behavior.
 - Test IP-derived signal retention stays below 30 days and that longer-lived visitor-based signals do not keep recoverable IP material.
 - Test trusted-proxy/client-identity behavior and storage-failure degradation.
@@ -82,10 +101,11 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 - Update Security draft with facade and classification names if they become stable public extension points.
 - Update class map for the facade and value objects only if they are contributor-facing services.
-- Update class map for the passive-signal entity/repository/cleanup command if they are added.
+- Update class map for the database log browser/projector, retention policy, and passive-signal recorder if they are added.
 - Record default cost catalogue decisions in the worklog.
 - Update Security policy defaults if implementation evidence changes signal retention, subject composition, or suspicious-intent weighting.
 - Record whether the branch keeps only the passive-signal store or also introduces/reuses a broader security event projection.
+- Carry a follow-up into `feat-security-admin-acl-enforcement` for Owner/ACL-controlled visibility and mutation of security signals, IP-bearing access projections, exports, cleanup operations, and future signal review actions.
 - Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 
 ## Non-goals

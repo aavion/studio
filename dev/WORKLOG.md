@@ -78,6 +78,10 @@
 
 ### 2026-06-16 feat-security-abuse-foundation
 - Started the Abuse Foundation branch by compacting the completed GeoIP observability notes into `dev/WORKLOG_HISTORY.md` and refreshing the Security hardening drafts/project rules for the next implementation slice.
+- Expanded the slice to include parallel database log projections for message, audit, and access logs while retaining the 30-day rotating file logs as the raw fallback. Added policy-bounded retention settings/defaults, `security_signal_event` passive signal storage, DB-backed Admin/API log browsing with UUID detail links, source tabs, broad hidden-field search, and source-specific filters where `DEBUG`/`INFO` are hidden by default only for level-aware sources.
+- Updated the Security hardening master plan, Abuse Foundation detail plan, Logging draft, policy defaults, class map, translations, migration baseline, and setup/default settings coverage for the new logging projection and passive-signal scope.
+- Follow-up for `feat-security-admin-acl-enforcement`: add explicit Owner/ACL gates for security-signal visibility/mutation, IP-bearing access-log projection visibility, related exports, cleanup operations, and future signal review actions instead of relying only on broad Admin Logs access.
+- Verification so far: focused PHPUnit for database log browser/projector, security signal recorder, affected log/settings/setup tests passed; `php bin/console lint:container` passed; focused `bin/lint` for changed Twig/translations/drafts passed.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
