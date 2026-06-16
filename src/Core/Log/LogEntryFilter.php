@@ -13,7 +13,7 @@ final readonly class LogEntryFilter
     /**
      * @param array<string, mixed> $query
      *
-     * @return array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int|string, page: int}
+     * @return array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int}
      */
     public function filters(array $query): array
     {
@@ -33,7 +33,7 @@ final readonly class LogEntryFilter
 
     /**
      * @param array<string, mixed> $entry
-     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int|string, page: int} $filters
+     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int} $filters
      */
     public function matches(array $entry, array $filters): bool
     {
@@ -115,15 +115,15 @@ final readonly class LogEntryFilter
         return in_array($window, ['1h', '24h', '7d', '30d'], true) ? $window : '24h';
     }
 
-    private function perPage(mixed $perPage): int|string
+    private function perPage(mixed $perPage): int
     {
         if ('all' === $perPage) {
-            return 'all';
+            return 500;
         }
 
         $perPage = is_numeric($perPage) ? (int) $perPage : self::DEFAULT_PER_PAGE;
 
-        return in_array($perPage, [25, 50, 100, 150], true) ? $perPage : self::DEFAULT_PER_PAGE;
+        return in_array($perPage, [25, 50, 100, 150, 500], true) ? $perPage : self::DEFAULT_PER_PAGE;
     }
 
     private function page(mixed $page): int

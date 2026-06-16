@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Log;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\Clock\NativeClock;
 
 final readonly class DatabaseLogBrowser
 {
@@ -19,6 +22,7 @@ final readonly class DatabaseLogBrowser
         private Connection $connection,
         private LogEntryFilter $entryFilter = new LogEntryFilter(),
         private LogPagination $pagination = new LogPagination(),
+        private ClockInterface $clock = new NativeClock(),
     ) {
     }
 
@@ -59,10 +63,19 @@ final readonly class DatabaseLogBrowser
     public function entry(string $source, string $id): ?array
     {
         $source = $this->source($source);
+        $where = ['uid = ?'];
+        $params = [$id];
+
+        if ('security_signal' === $source) {
+            $where[] = 'expires_at > ?';
+            $params[] = $this->now();
+        }
+
         $row = $this->connection->fetchAssociative(sprintf(
-            'SELECT * FROM %s WHERE uid = ?',
+            'SELECT * FROM %s WHERE %s',
             self::SOURCES[$source]['table'],
-        ), [$id]);
+            implode(' AND ', $where),
+        ), $params);
 
         return is_array($row) ? $this->present($source, $row) : null;
     }
@@ -104,7 +117,7 @@ final readonly class DatabaseLogBrowser
     }
 
     /**
-     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int|string, page: int} $filters
+     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int} $filters
      *
      * @return array{where: list<string>, params: list<mixed>}
      */
@@ -129,6 +142,11 @@ final readonly class DatabaseLogBrowser
             $params[] = $filters['audit_action'];
         }
 
+        if ('security_signal' === $source) {
+            $where[] = 'expires_at > ?';
+            $params[] = $this->now();
+        }
+
         if ('' !== $filters['search']) {
             $columns = match ($source) {
                 'access' => ['context', 'request_id', 'correlation_id', 'path', 'requested_path', 'route', 'resolved_route', 'client_ip', 'proxy_client_ip', 'visitor_id', 'host', 'user_agent', 'referrer_host'],
@@ -138,7 +156,7 @@ final readonly class DatabaseLogBrowser
             };
             $operator = 'equals' === $filters['match'] ? '= ?' : 'LIKE ?';
             $needle = 'equals' === $filters['match'] ? $filters['search'] : '%'.$filters['search'].'%';
-            $where[] = '('.implode(' OR ', array_map(static fn (string $column): string => $column.' '.$operator, $columns)).')';
+            $where[] = '('.implode(' OR ', array_map(fn (string $column): string => $this->searchExpression($column).' '.$operator, $columns)).')';
 
             foreach ($columns as $_) {
                 $params[] = $needle;
@@ -164,14 +182,14 @@ final readonly class DatabaseLogBrowser
 
     /**
      * @param array{where: list<string>, params: list<mixed>} $criteria
-     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int|string, page: int} $filters
+     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int} $filters
      *
      * @return list<array<string, mixed>>
      */
     private function entries(string $source, array $criteria, array $filters): array
     {
-        $limit = 'all' === $filters['per_page'] ? 500 : (int) $filters['per_page'];
-        $offset = 'all' === $filters['per_page'] ? 0 : ($filters['page'] - 1) * (int) $filters['per_page'];
+        $limit = $filters['per_page'];
+        $offset = ($filters['page'] - 1) * $filters['per_page'];
         $sql = sprintf(
             'SELECT * FROM %s WHERE %s ORDER BY occurred_at DESC, uid DESC LIMIT %d OFFSET %d',
             self::SOURCES[$source]['table'],
@@ -305,6 +323,26 @@ final readonly class DatabaseLogBrowser
             default => '-24 hours',
         };
 
-        return (new \DateTimeImmutable($modifier))->format('Y-m-d H:i:s');
+        return $this->clock->now()->modify($modifier)->format('Y-m-d H:i:s');
+    }
+
+    private function now(): string
+    {
+        return $this->clock->now()->format('Y-m-d H:i:s');
+    }
+
+    private function searchExpression(string $column): string
+    {
+        if ('context' !== $column) {
+            return $column;
+        }
+
+        $platform = $this->connection->getDatabasePlatform();
+
+        if ($platform instanceof AbstractMySQLPlatform) {
+            return 'CAST(context AS CHAR)';
+        }
+
+        return 'CAST(context AS TEXT)';
     }
 }

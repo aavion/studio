@@ -34,8 +34,8 @@ final readonly class LogFileBrowser
         $files = $this->sourceRegistry->files($this->logDir, $this->environment, $source);
         $entries = [];
         $matched = 0;
-        $offset = 'all' === $filters['per_page'] ? 0 : ($filters['page'] - 1) * (int) $filters['per_page'];
-        $limit = 'all' === $filters['per_page'] ? PHP_INT_MAX : (int) $filters['per_page'];
+        $offset = ($filters['page'] - 1) * $filters['per_page'];
+        $limit = $filters['per_page'];
 
         foreach ($files as $file) {
             foreach ($this->lineReader->readLines($file) as $line) {
