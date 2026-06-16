@@ -114,6 +114,25 @@ final class MaxMindGeoIpProviderTest extends TestCase
         self::assertStringNotContainsString($this->projectDir, json_encode($status->toSafeArray(), JSON_THROW_ON_ERROR));
     }
 
+    public function testItRejectsReadableNonCityDatabasesBeforeReportingReady(): void
+    {
+        $this->writeTestFile($this->projectDir, MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, 'fake mmdb');
+        $reader = $this->reader('GeoLite2-Country');
+        $provider = new MaxMindGeoIpProvider($this->enabledConfig(), new RecordingMaxMindReaderFactory($reader), $this->projectDir);
+
+        $status = $provider->status();
+
+        self::assertSame('unavailable', $status->status);
+        self::assertSame('database_unsupported', $status->failureCode);
+        self::assertSame([
+            'city' => 'n/a',
+            'state' => 'n/a',
+            'country' => 'n/a',
+            'continent' => 'n/a',
+        ], $provider->resolve('8.8.8.8')->toArray());
+        self::assertSame(0, $reader->cityLookupCount);
+    }
+
     private function enabledConfig(): MaxMindGeoIpConfig
     {
         $store = new Config($this->connection());
@@ -130,7 +149,7 @@ final class MaxMindGeoIpProviderTest extends TestCase
         return $connection;
     }
 
-    private function reader(): RecordingMaxMindReader
+    private function reader(string $databaseType = 'GeoLite2-City'): RecordingMaxMindReader
     {
         return new RecordingMaxMindReader(new City([
             'city' => ['names' => ['en' => 'Berlin']],
@@ -139,7 +158,7 @@ final class MaxMindGeoIpProviderTest extends TestCase
             ],
             'country' => ['names' => ['en' => 'Germany'], 'iso_code' => 'DE'],
             'continent' => ['names' => ['en' => 'Europe'], 'code' => 'EU'],
-        ]));
+        ]), $databaseType);
     }
 
     private function defaultDatabasePath(): string
@@ -181,7 +200,7 @@ final class RecordingMaxMindReader implements MaxMindGeoIpDatabaseReaderInterfac
 {
     public int $cityLookupCount = 0;
 
-    public function __construct(private readonly City $city)
+    public function __construct(private readonly City $city, private readonly string $databaseType = 'GeoLite2-City')
     {
     }
 
@@ -198,7 +217,7 @@ final class RecordingMaxMindReader implements MaxMindGeoIpDatabaseReaderInterfac
             'binary_format_major_version' => 2,
             'binary_format_minor_version' => 0,
             'build_epoch' => 1781481600,
-            'database_type' => 'GeoLite2-City',
+            'database_type' => $this->databaseType,
             'languages' => ['en'],
             'description' => ['en' => 'Test database'],
             'ip_version' => 6,

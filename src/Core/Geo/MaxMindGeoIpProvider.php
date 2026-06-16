@@ -51,6 +51,10 @@ final class MaxMindGeoIpProvider implements GeoIpProviderInterface
             return $this->status = GeoIpProviderStatus::unavailable($this->key(), 'database_unreadable');
         }
 
+        if (!$this->databaseSupportsCityLookups($metadata->databaseType ?? null)) {
+            return $this->status = GeoIpProviderStatus::unavailable($this->key(), 'database_unsupported');
+        }
+
         return $this->status = GeoIpProviderStatus::ready(
             $this->key(),
             databaseEdition: is_string($metadata->databaseType) ? $metadata->databaseType : null,
@@ -109,6 +113,11 @@ final class MaxMindGeoIpProvider implements GeoIpProviderInterface
     private function locationValue(?string $value): string
     {
         return is_string($value) && '' !== trim($value) ? trim($value) : GeoIpResult::PLACEHOLDER;
+    }
+
+    private function databaseSupportsCityLookups(mixed $databaseType): bool
+    {
+        return is_string($databaseType) && str_contains($databaseType, 'City');
     }
 
     private function formatBuildDate(int $buildEpoch): string

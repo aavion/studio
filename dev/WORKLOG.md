@@ -93,6 +93,7 @@
 - Completed an explicit #57-style PR-readiness pass for the GeoIP slice and hardened downloaded TAR validation by inspecting the compressed archive stream before `PharData` normalization and rejecting symlink, hardlink, and other non-file/non-directory entry types.
 - Addressed Cloud Review findings and adjacent paths: excluded the manually constructed GeoIP2 reader wrapper from service autowiring, kept sensitive Core and package setting values out of invalid form re-renders and `[protected]` round-trips, preserved configured provider diagnostics when GeoIP is not ready, and set readable permissions on replaced GeoIP databases.
 - Addressed the next GeoIP review round and adjacent paths: streamed MaxMind archives instead of materializing response bodies, bounded GeoIP labels before statistics inserts for strict SQL platforms, gated GeoIP settings/download controls through shared `AccessRule`/`AccessActor` metadata, added future ACL-matrix metadata and draft notes, and covered Owner/Admin API/UI behavior with focused tests.
+- Addressed the non-City MaxMind database readiness review by rejecting readable non-City databases before reporting provider readiness, with coverage that prevents `city()` lookups for unsupported databases. Deferred one-off Scheduler task ACL gates to the planned Admin ACL enforcement matrix instead of adding GeoIP-specific Scheduler policy in this branch.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

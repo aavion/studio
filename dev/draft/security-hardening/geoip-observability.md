@@ -43,6 +43,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Lookup input uses the shared client-identity resolver and Symfony trusted-proxy configuration; raw forwarding headers are never parsed directly by the provider.
 - Provider secrets are protected config values and never rendered outside authorized Admin settings.
 - Scheduler task identifiers use stable system-owned names and do not expose provider credentials. The MaxMind database update task is a trusted callable scheduled daily by default and remains inactive until an operator activates it in Scheduler.
+- Task-level Scheduler ACL enforcement is intentionally deferred to the Admin ACL enforcement branch and its shared feature/action matrix. This GeoIP slice keeps the direct Statistics download action Owner-only but does not introduce one-off Scheduler task gates.
 - Update success/failure reporting stays with the existing Operation, Scheduler, and Message layers. A separate persistent GeoIP update-history table or settings blob is intentionally not planned for this branch because it would duplicate Scheduler run history and live Operation feedback.
 - No public API response adds GeoIP data in this branch.
 - GeoIP enablement, database path/status, and the MaxMind license key are protected/audited Statistics configuration surfaces; license material remains secret-only. Disabled, unconfigured, expired, or failed providers must fall back to `NullGeoIpResolver`.
