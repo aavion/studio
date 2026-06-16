@@ -9,6 +9,12 @@
 Move completed branch or PR logs from `dev/WORKLOG.md` into this file when switching branches or after a PR is merged. Keep the active worklog focused on the current branch so reviewers can see the full PR context while older project history stays available.
 
 ## Archived Branches
+### 2026-06-15 to 2026-06-16 feat-security-geoip-observability
+- Implemented the GeoIP observability slice: provider-neutral resolver boundary, MaxMind/GeoIP2 local database provider, protected Statistics settings, safe provider diagnostics, Statistics/Admin status rendering, explicit setup defaults, manual Operations-backed database downloads, scheduler callable, and access log/statistics enrichment while preserving `n/a` fallbacks.
+- Hardened GeoIP secrets, file handling, and portability through review rounds: no real MaxMind credentials in tests, no logged license-key URLs, project-relative `var/geoip2/GeoLite2-City.mmdb` path, Windows/path traversal rejection, compressed TAR validation, unsafe archive-member rejection, symlink/hardlink rejection, atomic replacement with readable permissions, streamed downloads, unsupported non-City database rejection, and bounded location labels for strict SQL platforms.
+- Kept the slice narrow after product review: no latitude/longitude, no persistent GeoIP update-history store, no geo-blocking, no provider dropdown/account ID/locale settings, and no one-off Scheduler task ACL gates; task-level Scheduler policy is deferred to the Admin ACL enforcement matrix while direct GeoIP settings/download controls are Owner-only.
+- Closed the branch with full verification and review context: full PHPUnit, JavaScript, lint, container, focused GeoIP/API/UI tests, class-map/worklog/draft updates, and Codex Cloud Review follow-ups.
+
 ### 2026-06-15 feat-security-policy-docs
 - Added `dev/draft/security-hardening/policy-defaults.md` as the central first-implementation policy source for Security hardening TTLs, rate-limit thresholds, auto-ban defaults, captcha defaults, privacy ceilings, logging projection posture, and configuration rules.
 - Linked policy defaults from the master Security hardening plan, the Security/API/Contact-Mail-Logging drafts, and the affected branch plans; then refined captcha TTLs, website burst/sustained budgets, scheduler trigger limits, high-signal probe limits, recovery login bypass behavior, captcha auto-success policy, and Admin/Owner protections.

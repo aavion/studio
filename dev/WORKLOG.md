@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-06-15  
+> **Updated**: 2026-06-16  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -76,24 +76,8 @@
 ## Branch Logs
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place new entries chronologically under the matching branch/date heading so reviewers can follow the PR context without reading full verification transcripts. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
-### 2026-06-15 feat-security-geoip-observability
-- Started the GeoIP observability branch by compacting the completed `feat-security-policy-docs` notes into `dev/WORKLOG_HISTORY.md`.
-- Added a narrow provider-neutral GeoIP resolver foundation so access logs and access statistics keep using normalized `n/a` fallback fields until a real provider returns data.
-- Verified the foundation with focused GeoIP/access-log/statistics PHPUnit coverage, PHP syntax checks, container linting, focused linting for changed files, and Git whitespace checks.
-- Added the MaxMind GeoIP2 provider slice on top of the foundation: local `.mmdb` lookups via the installed `geoip2/geoip2` dependency, safe provider status, project-relative database path config, sensitive credential preservation/redaction, password-form support for secret fields, and hermetic fake-reader tests without real MaxMind credentials or network access.
-- Added the narrow GeoIP2 update foundation: moved the intentionally small GeoIP settings surface to Statistics, changed the default database path to `var/geoip2/GeoLite2-City.mmdb`, derived MaxMind lookup locales from the site default language with `en` fallback, exposed a MaxMind signup help link, added an Admin Operations-backed database download action with non-JS POST fallback, added a daily scheduler callable, and added hermetic updater/scheduler tests that do not use real MaxMind credentials or network access.
-- Hardened GeoIP2 download logging: the MaxMind download client now bypasses the autowired Symfony HTTP client service so the license-key query string cannot be captured by HttpClient logging/profiling, and shared log redaction treats `license_key` as sensitive context.
-- Aligned first-run setup seeding with the GeoIP2 defaults by explicitly persisting GeoIP disabled, the default `var/geoip2/GeoLite2-City.mmdb` path, and an intentionally empty sensitive MaxMind license-key setting.
-- Re-audited the GeoIP observability plan against the implementation, added safe Statistics settings status rendering, and clarified that persistent update-state history and coordinate fields are not planned for this branch.
-- Simplified GeoIP status and the branch plan after product review: latitude/longitude and separate persistent GeoIP update-history storage are intentionally not planned because Scheduler run history and live Operation feedback cover update success/failure.
-- During PR-readiness review, hardened GeoIP archive extraction by rejecting unsafe TAR member paths before extraction and added direct extractor coverage for safe and unsafe archives.
-
-### 2026-06-16 feat-security-geoip-observability
-- Rechecked GeoIP portability and project-rule compliance, tightened Windows drive-letter rejection for configured database paths and TAR member paths, made GeoIP path tests separator-neutral, and reran full PHPUnit, JavaScript, lint, and Git whitespace verification.
-- Completed an explicit #57-style PR-readiness pass for the GeoIP slice and hardened downloaded TAR validation by inspecting the compressed archive stream before `PharData` normalization and rejecting symlink, hardlink, and other non-file/non-directory entry types.
-- Addressed Cloud Review findings and adjacent paths: excluded the manually constructed GeoIP2 reader wrapper from service autowiring, kept sensitive Core and package setting values out of invalid form re-renders and `[protected]` round-trips, preserved configured provider diagnostics when GeoIP is not ready, and set readable permissions on replaced GeoIP databases.
-- Addressed the next GeoIP review round and adjacent paths: streamed MaxMind archives instead of materializing response bodies, bounded GeoIP labels before statistics inserts for strict SQL platforms, gated GeoIP settings/download controls through shared `AccessRule`/`AccessActor` metadata, added future ACL-matrix metadata and draft notes, and covered Owner/Admin API/UI behavior with focused tests.
-- Addressed the non-City MaxMind database readiness review by rejecting readable non-City databases before reporting provider readiness, with coverage that prevents `city()` lookups for unsupported databases. Deferred one-off Scheduler task ACL gates to the planned Admin ACL enforcement matrix instead of adding GeoIP-specific Scheduler policy in this branch.
+### 2026-06-16 feat-security-abuse-foundation
+- Started the Abuse Foundation branch by compacting the completed GeoIP observability notes into `dev/WORKLOG_HISTORY.md` and refreshing the Security hardening drafts/project rules for the next implementation slice.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
