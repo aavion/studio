@@ -54,6 +54,31 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Browser,
             RequestIntent::FormSubmit,
         ];
+        yield 'future content download path is ordinary navigation' => [
+            self::contentRequest('/download'),
+            RequestFamily::Browser,
+            RequestIntent::BrowserNavigation,
+        ];
+        yield 'future localized content export path is ordinary form submit' => [
+            self::contentRequest('/de/export', 'POST', 'de'),
+            RequestFamily::Browser,
+            RequestIntent::FormSubmit,
+        ];
+        yield 'future public package form post gets website form intent' => [
+            self::contentRequest('/forum/thread/welcome', 'POST'),
+            RequestFamily::Browser,
+            RequestIntent::FormSubmit,
+        ];
+        yield 'contact-like content slug is ordinary navigation' => [
+            self::contentRequest('/contact-us'),
+            RequestFamily::Browser,
+            RequestIntent::BrowserNavigation,
+        ];
+        yield 'admin path containing settings only as part of a segment is generic admin' => [
+            Request::create('/admin/content/site-settings', 'POST'),
+            RequestFamily::Admin,
+            RequestIntent::AdminOperation,
+        ];
         yield 'cors preflight' => [
             Request::create('/api/v1/content/items', 'OPTIONS'),
             RequestFamily::Api,
@@ -140,5 +165,16 @@ final class RequestIntentClassifierTest extends TestCase
     private function languageCatalog(): TranslationLanguageCatalog
     {
         return new TranslationLanguageCatalog(dirname(__DIR__, 3));
+    }
+
+    private static function contentRequest(string $path, string $method = 'GET', ?string $locale = null): Request
+    {
+        $request = Request::create($path, $method);
+        $request->attributes->set('_route', 'content_show');
+        if (null !== $locale) {
+            $request->attributes->set('_locale', $locale);
+        }
+
+        return $request;
     }
 }

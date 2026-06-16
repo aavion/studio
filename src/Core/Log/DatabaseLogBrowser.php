@@ -75,6 +75,8 @@ final readonly class DatabaseLogBrowser
         if ('security_signal' === $source) {
             $where[] = 'expires_at > ?';
             $params[] = $this->now();
+            $where[] = 'occurred_at >= ?';
+            $params[] = $this->retentionCutoff($source);
         } elseif (in_array($source, ['message', 'audit', 'access'], true)) {
             $where[] = 'occurred_at >= ?';
             $params[] = $this->retentionCutoff($source);
@@ -356,7 +358,7 @@ final readonly class DatabaseLogBrowser
         };
         $cutoff = $this->clock->now()->modify($modifier);
 
-        if (in_array($source, ['message', 'audit', 'access'], true)) {
+        if (in_array($source, ['message', 'audit', 'access', 'security_signal'], true)) {
             $retentionCutoff = $this->clock->now()->modify($this->retentionModifier($source));
             if ($retentionCutoff > $cutoff) {
                 $cutoff = $retentionCutoff;
@@ -373,6 +375,10 @@ final readonly class DatabaseLogBrowser
 
     private function retentionModifier(string $source): string
     {
+        if ('security_signal' === $source) {
+            return sprintf('-%d days', $this->retentionPolicy->retentionDaysForSignal());
+        }
+
         return sprintf('-%d days', $this->retentionPolicy->retentionDaysForSource($source));
     }
 

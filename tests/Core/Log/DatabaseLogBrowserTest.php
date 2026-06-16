@@ -221,15 +221,46 @@ final class DatabaseLogBrowserTest extends TestCase
         self::assertNull((new DatabaseLogBrowser($connection, clock: new MockClock('2026-06-16 12:00:00')))->entry('message', '99999999-0000-7000-8000-000000000002'));
     }
 
+    public function testItHonorsConfiguredSecuritySignalRetentionWhenBrowsing(): void
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE security_signal_event (uid VARCHAR(36) PRIMARY KEY NOT NULL, occurred_at DATETIME NOT NULL, expires_at DATETIME NOT NULL, signal_type VARCHAR(80) NOT NULL, reason_code VARCHAR(120) NOT NULL, severity VARCHAR(16) NOT NULL, confidence INTEGER NOT NULL, subject_type VARCHAR(40) NOT NULL, subject_identifier VARCHAR(190) NOT NULL, ip_derived BOOLEAN NOT NULL, request_family VARCHAR(40) NOT NULL, request_intent VARCHAR(80) NOT NULL, request_id VARCHAR(64) NOT NULL, visitor_id VARCHAR(64) NOT NULL, path VARCHAR(1024) NOT NULL, route VARCHAR(190) NOT NULL, http_status INTEGER DEFAULT NULL, context CLOB NOT NULL)');
+        $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(190) PRIMARY KEY NOT NULL, value CLOB NOT NULL)');
+        $connection->insert('config_entry', [
+            'config_key' => 'security.signals.retention_days',
+            'value' => '1',
+        ]);
+        $this->insertSignal($connection, '99999999-0000-7000-8000-000000000001', '2026-06-16 12:00:00', '2026-06-23 12:00:00', 'current');
+        $this->insertSignal($connection, '99999999-0000-7000-8000-000000000002', '2026-06-14 12:00:00', '2026-06-23 12:00:00', 'expired_by_setting');
+
+        $browser = new DatabaseLogBrowser($connection, clock: new MockClock('2026-06-16 12:00:00'));
+        $view = $browser->browse([
+            'source' => 'security_signal',
+            'time_window' => '30d',
+        ]);
+
+        self::assertSame(1, $view['pagination']['total']);
+        self::assertSame('security.probe.current', $view['entries'][0]['message']);
+        self::assertNotNull($browser->entry('security_signal', '99999999-0000-7000-8000-000000000001'));
+        self::assertNull($browser->entry('security_signal', '99999999-0000-7000-8000-000000000002'));
+    }
+
     public function testItCastsJsonContextAndSearchesCaseInsensitivelyOnPostgreSql(): void
     {
         $connection = $this->createMock(Connection::class);
         $connection->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
         $connection
-            ->expects(self::once())
+            ->expects(self::exactly(2))
             ->method('fetchOne')
-            ->with(self::stringContains('LOWER(CAST(context AS TEXT)) LIKE ?'), self::anything())
-            ->willReturn(0);
+            ->willReturnCallback(static function (string $sql): mixed {
+                if (str_contains($sql, 'config_entry')) {
+                    return false;
+                }
+
+                self::assertStringContainsString('LOWER(CAST(context AS TEXT)) LIKE ?', $sql);
+
+                return 0;
+            });
         $connection
             ->expects(self::once())
             ->method('fetchAllAssociative')
@@ -248,5 +279,29 @@ final class DatabaseLogBrowserTest extends TestCase
         $connection->executeStatement('CREATE TABLE audit_log_entry (uid VARCHAR(36) PRIMARY KEY NOT NULL, occurred_at DATETIME NOT NULL, user_name VARCHAR(180) NOT NULL, user_uid VARCHAR(36) DEFAULT NULL, user_access_level INTEGER NOT NULL, action VARCHAR(160) NOT NULL, request_id VARCHAR(64) NOT NULL, visitor_id VARCHAR(64) NOT NULL, requested_path VARCHAR(1024) NOT NULL, resolved_route VARCHAR(190) NOT NULL, context CLOB NOT NULL)');
         $connection->executeStatement('CREATE TABLE access_log_entry (uid VARCHAR(36) PRIMARY KEY NOT NULL, occurred_at DATETIME NOT NULL, request_id VARCHAR(64) NOT NULL, correlation_id VARCHAR(64) NOT NULL, method VARCHAR(16) NOT NULL, path VARCHAR(1024) NOT NULL, requested_path VARCHAR(1024) NOT NULL, route VARCHAR(190) NOT NULL, resolved_route VARCHAR(190) NOT NULL, surface VARCHAR(40) NOT NULL, query_string VARCHAR(1024) NOT NULL, http_status INTEGER NOT NULL, duration_ms INTEGER DEFAULT NULL, visitor_id VARCHAR(64) NOT NULL, scheme VARCHAR(10) NOT NULL, host VARCHAR(255) NOT NULL, client_ip VARCHAR(45) NOT NULL, proxy_client_ip VARCHAR(45) NOT NULL, user_agent VARCHAR(500) NOT NULL, referrer VARCHAR(1024) NOT NULL, referrer_host VARCHAR(255) NOT NULL, accept_language VARCHAR(255) NOT NULL, preferred_language VARCHAR(20) NOT NULL, request_content_type VARCHAR(120) NOT NULL, response_content_type VARCHAR(120) NOT NULL, response_size INTEGER DEFAULT NULL, city VARCHAR(80) NOT NULL, state VARCHAR(80) NOT NULL, country VARCHAR(80) NOT NULL, continent VARCHAR(80) NOT NULL, context CLOB NOT NULL)');
         $connection->executeStatement('CREATE TABLE security_signal_event (uid VARCHAR(36) PRIMARY KEY NOT NULL, occurred_at DATETIME NOT NULL, expires_at DATETIME NOT NULL, signal_type VARCHAR(80) NOT NULL, reason_code VARCHAR(120) NOT NULL, severity VARCHAR(16) NOT NULL, confidence INTEGER NOT NULL, subject_type VARCHAR(40) NOT NULL, subject_identifier VARCHAR(190) NOT NULL, ip_derived BOOLEAN NOT NULL, request_family VARCHAR(40) NOT NULL, request_intent VARCHAR(80) NOT NULL, request_id VARCHAR(64) NOT NULL, visitor_id VARCHAR(64) NOT NULL, path VARCHAR(1024) NOT NULL, route VARCHAR(190) NOT NULL, http_status INTEGER DEFAULT NULL, context CLOB NOT NULL)');
+    }
+
+    private function insertSignal(Connection $connection, string $uid, string $occurredAt, string $expiresAt, string $reason): void
+    {
+        $connection->insert('security_signal_event', [
+            'uid' => $uid,
+            'occurred_at' => $occurredAt,
+            'expires_at' => $expiresAt,
+            'signal_type' => 'probe',
+            'reason_code' => 'security.probe.'.$reason,
+            'severity' => 'WARNING',
+            'confidence' => 90,
+            'subject_type' => 'visitor',
+            'subject_identifier' => 'visitor-'.$reason,
+            'ip_derived' => 0,
+            'request_family' => 'browser',
+            'request_intent' => 'suspicious_probe',
+            'request_id' => 'request-'.$reason,
+            'visitor_id' => 'visitor-'.$reason,
+            'path' => '/.env',
+            'route' => 'n/a',
+            'http_status' => 400,
+            'context' => '{}',
+        ]);
     }
 }

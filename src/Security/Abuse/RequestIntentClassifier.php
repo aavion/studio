@@ -27,7 +27,7 @@ final readonly class RequestIntentClassifier
 
         return new AbuseRequestProfile(
             $family,
-            $this->intent($request, $method, $path, $segments, $route, $family, $prefetch, $suspiciousProbe),
+            $this->intent($method, $segments, $route, $family, $prefetch, $suspiciousProbe),
             $method,
             substr($path, 0, 1024),
             $route,
@@ -53,9 +53,7 @@ final readonly class RequestIntentClassifier
     }
 
     private function intent(
-        Request $request,
         string $method,
-        string $path,
         array $segments,
         string $route,
         RequestFamily $family,
@@ -91,37 +89,32 @@ final readonly class RequestIntentClassifier
         }
 
         if (RequestFamily::Admin === $family && !$this->safeMethod($method)) {
-            return $this->adminMutationIntent($path, $route);
+            return $this->adminMutationIntent($segments, $route);
         }
 
         return match (true) {
             $this->routeIs($route, 'user_login') || $this->matchesSegments($segments, 'user', 'login') => RequestIntent::Login,
             $this->routeIs($route, 'user_register', 'user_invitation_accept') || $this->matchesSegments($segments, 'user', 'register') || $this->matchesSegments($segments, 'user', 'invitation') => RequestIntent::Registration,
             $this->routeIs($route, 'user_reset_password', 'user_password_reset_token', 'user_security_review') || $this->matchesSegments($segments, 'user', 'password-reset') || $this->matchesSegments($segments, 'user', 'reset-password') || $this->matchesSegments($segments, 'user', 'security-review') => RequestIntent::PasswordReset,
-            $this->routeContains($route, 'contact') || $this->matchesSegments($segments, 'contact') => RequestIntent::Contact,
-            $this->routeContains($route, 'captcha_refresh') || ($this->matchesSegments($segments, 'captcha') && $this->matches($path, $route, 'refresh')) => RequestIntent::CaptchaRefresh,
-            $this->routeContains($route, 'captcha_failure') || ($this->matchesSegments($segments, 'captcha') && $this->matches($path, $route, 'failure')) => RequestIntent::CaptchaFailure,
-            $this->matches($path, $route, 'upload', 'archive', 'media') && !$this->safeMethod($method) => RequestIntent::UploadArchiveValidation,
-            $this->matches($path, $route, 'export', 'download') => RequestIntent::ExportDownload,
-            $this->matches($path, $route, 'import') => RequestIntent::ImportOperation,
-            $this->matches($path, $route, 'backup', 'restore') => RequestIntent::BackupRestore,
-            $this->matches($path, $route, 'diagnostic', 'support') => RequestIntent::DiagnosticsSupport,
+            $this->routeHasToken($route, 'contact') || $this->matchesSegments($segments, 'contact') => RequestIntent::Contact,
+            $this->routeHasTokens($route, 'captcha', 'refresh') || $this->matchesSegments($segments, 'captcha', 'refresh') => RequestIntent::CaptchaRefresh,
+            $this->routeHasTokens($route, 'captcha', 'failure') || $this->matchesSegments($segments, 'captcha', 'failure') => RequestIntent::CaptchaFailure,
             !$this->safeMethod($method) => RequestIntent::FormSubmit,
             default => RequestIntent::BrowserNavigation,
         };
     }
 
-    private function adminMutationIntent(string $path, string $route): RequestIntent
+    private function adminMutationIntent(array $segments, string $route): RequestIntent
     {
         return match (true) {
-            $this->matches($path, $route, 'settings') => RequestIntent::SettingsMutation,
-            $this->matches($path, $route, 'users', 'acl') => RequestIntent::UserAclMutation,
-            $this->matches($path, $route, 'packages') => RequestIntent::PackageAdminOperation,
-            $this->matches($path, $route, 'upload', 'archive', 'media') => RequestIntent::UploadArchiveValidation,
-            $this->matches($path, $route, 'export', 'download') => RequestIntent::ExportDownload,
-            $this->matches($path, $route, 'import') => RequestIntent::ImportOperation,
-            $this->matches($path, $route, 'backup', 'restore') => RequestIntent::BackupRestore,
-            $this->matches($path, $route, 'diagnostic', 'support') => RequestIntent::DiagnosticsSupport,
+            $this->matchesSegments($segments, 'admin', 'settings') || $this->routeHasToken($route, 'settings') => RequestIntent::SettingsMutation,
+            $this->matchesSegments($segments, 'admin', 'users') || $this->routeHasToken($route, 'users') || $this->routeHasToken($route, 'acl') => RequestIntent::UserAclMutation,
+            $this->matchesSegments($segments, 'admin', 'packages') || $this->routeHasToken($route, 'package') || $this->routeHasToken($route, 'packages') => RequestIntent::PackageAdminOperation,
+            $this->hasSegment($segments, 'upload', 'archive', 'media') || $this->routeHasAnyToken($route, 'upload', 'archive', 'media') => RequestIntent::UploadArchiveValidation,
+            $this->hasSegment($segments, 'export', 'download') || $this->routeHasAnyToken($route, 'export', 'download') => RequestIntent::ExportDownload,
+            $this->hasSegment($segments, 'import') || $this->routeHasToken($route, 'import') => RequestIntent::ImportOperation,
+            $this->hasSegment($segments, 'backup', 'restore') || $this->routeHasAnyToken($route, 'backup', 'restore') => RequestIntent::BackupRestore,
+            $this->hasSegment($segments, 'diagnostic', 'diagnostics', 'support') || $this->routeHasAnyToken($route, 'diagnostic', 'diagnostics', 'support') => RequestIntent::DiagnosticsSupport,
             default => RequestIntent::AdminOperation,
         };
     }
@@ -150,27 +143,43 @@ final readonly class RequestIntentClassifier
         return is_string($route) && '' !== $route ? substr($route, 0, 190) : 'n/a';
     }
 
-    private function matches(string $path, string $route, string ...$needles): bool
-    {
-        $haystack = strtolower($path.' '.$route);
-
-        foreach ($needles as $needle) {
-            if (str_contains($haystack, $needle)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private function routeIs(string $route, string ...$routes): bool
     {
         return in_array($route, $routes, true);
     }
 
-    private function routeContains(string $route, string $needle): bool
+    private function routeHasToken(string $route, string $token): bool
     {
-        return str_contains(strtolower($route), strtolower($needle));
+        return in_array($token, $this->routeTokens($route), true);
+    }
+
+    private function routeHasAnyToken(string $route, string ...$tokens): bool
+    {
+        return [] !== array_intersect($tokens, $this->routeTokens($route));
+    }
+
+    private function routeHasTokens(string $route, string ...$tokens): bool
+    {
+        $routeTokens = $this->routeTokens($route);
+
+        foreach ($tokens as $token) {
+            if (!in_array($token, $routeTokens, true)) {
+                return false;
+            }
+        }
+
+        return [] !== $tokens;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function routeTokens(string $route): array
+    {
+        return array_values(array_filter(
+            preg_split('/[^a-z0-9]+/', strtolower($route)) ?: [],
+            static fn (string $token): bool => '' !== $token,
+        ));
     }
 
     /**
@@ -221,6 +230,20 @@ final readonly class RequestIntentClassifier
         }
 
         return [] !== $segments;
+    }
+
+    /**
+     * @param list<string> $pathSegments
+     */
+    private function hasSegment(array $pathSegments, string ...$segments): bool
+    {
+        foreach ($segments as $segment) {
+            if (in_array($segment, $pathSegments, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
