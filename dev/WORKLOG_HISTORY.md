@@ -9,6 +9,11 @@
 Move completed branch or PR logs from `dev/WORKLOG.md` into this file when switching branches or after a PR is merged. Keep the active worklog focused on the current branch so reviewers can see the full PR context while older project history stays available.
 
 ## Archived Branches
+### 2026-06-16 feat-security-abuse-foundation
+- Implemented the Abuse Foundation slice: passive security-signal model and recording, request intent/action-cost classification, suspicious probe matching, visitor/IP-bucket evidence handling, configurable probe patterns, session/visitor mismatch signals, and database/file-backed Admin log browsing refinements.
+- Hardened the slice through review passes: retention-aware signal/log reads, portable database search, source-aware Admin Log filters and pagination, safe path/token sanitization, locale-aware route classification, cache invalidation for probe patterns, and clearer rate-enforcement handoff policy for future limiter/ban branches.
+- Closed the branch with full verification: `bin/phpunit`, `bin/jstest`, and `bin/lint` passed, with only intentional Markdown metadata hardbreaks reported by raw Git whitespace checks.
+
 ### 2026-06-15 to 2026-06-16 feat-security-geoip-observability
 - Implemented the GeoIP observability slice: provider-neutral resolver boundary, MaxMind/GeoIP2 local database provider, protected Statistics settings, safe provider diagnostics, Statistics/Admin status rendering, explicit setup defaults, manual Operations-backed database downloads, scheduler callable, and access log/statistics enrichment while preserving `n/a` fallbacks.
 - Hardened GeoIP secrets, file handling, and portability through review rounds: no real MaxMind credentials in tests, no logged license-key URLs, project-relative `var/geoip2/GeoLite2-City.mmdb` path, Windows/path traversal rejection, compressed TAR validation, unsafe archive-member rejection, symlink/hardlink rejection, atomic replacement with readable permissions, streamed downloads, unsupported non-City database rejection, and bounded location labels for strict SQL platforms.
