@@ -40,6 +40,32 @@ final class AbuseSubjectResolverTest extends TestCase
         self::assertStringNotContainsString('198.51.100.10', $encoded);
     }
 
+    public function testItKeepsIpBucketStableWhenCookieLessForwardingEntropyChanges(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $baseServer = [
+            'REMOTE_ADDR' => '203.0.113.10',
+            'HTTP_USER_AGENT' => 'Shared Browser/1.0',
+        ];
+        $first = $resolver->resolve(Request::create('/docs', server: [
+            ...$baseServer,
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.10, 203.0.113.10',
+        ]));
+        $second = $resolver->resolve(Request::create('/docs', server: [
+            ...$baseServer,
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.11, 203.0.113.10',
+        ]));
+
+        self::assertNotSame(
+            $first->first(AbuseSubjectType::Visitor)?->identifier(),
+            $second->first(AbuseSubjectType::Visitor)?->identifier(),
+        );
+        self::assertSame(
+            $first->first(AbuseSubjectType::IpBucket)?->identifier(),
+            $second->first(AbuseSubjectType::IpBucket)?->identifier(),
+        );
+    }
+
     public function testItAddsAuthenticatedApiKeyAndUserSubjectsFromApiContext(): void
     {
         $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');

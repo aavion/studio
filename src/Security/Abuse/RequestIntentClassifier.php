@@ -78,25 +78,43 @@ final readonly class RequestIntentClassifier
             return RequestIntent::TurboPrefetch;
         }
 
+        if (RequestFamily::Setup === $family && !$this->safeMethod($method)) {
+            return RequestIntent::SetupApply;
+        }
+
+        if (RequestFamily::Admin === $family && !$this->safeMethod($method)) {
+            return $this->adminMutationIntent($path, $route);
+        }
+
         return match (true) {
             $this->matches($path, $route, 'login') => RequestIntent::Login,
             $this->matches($path, $route, 'registration', 'register') => RequestIntent::Registration,
             $this->matches($path, $route, 'password', 'recovery', 'reset') => RequestIntent::PasswordReset,
             $this->matches($path, $route, 'contact') => RequestIntent::Contact,
-            RequestFamily::Setup === $family && !$this->safeMethod($method) => RequestIntent::SetupApply,
             $this->matches($path, $route, 'captcha', 'refresh') => RequestIntent::CaptchaRefresh,
             $this->matches($path, $route, 'captcha', 'failure') => RequestIntent::CaptchaFailure,
-            $this->matches($path, $route, 'settings') && !$this->safeMethod($method) => RequestIntent::SettingsMutation,
-            $this->matches($path, $route, 'users', 'acl') && !$this->safeMethod($method) => RequestIntent::UserAclMutation,
-            $this->matches($path, $route, 'packages') && !$this->safeMethod($method) => RequestIntent::PackageAdminOperation,
             $this->matches($path, $route, 'upload', 'archive', 'media') && !$this->safeMethod($method) => RequestIntent::UploadArchiveValidation,
             $this->matches($path, $route, 'export', 'download') => RequestIntent::ExportDownload,
             $this->matches($path, $route, 'import') => RequestIntent::ImportOperation,
             $this->matches($path, $route, 'backup', 'restore') => RequestIntent::BackupRestore,
             $this->matches($path, $route, 'diagnostic', 'support') => RequestIntent::DiagnosticsSupport,
-            RequestFamily::Admin === $family && !$this->safeMethod($method) => RequestIntent::AdminOperation,
             !$this->safeMethod($method) => RequestIntent::FormSubmit,
             default => RequestIntent::BrowserNavigation,
+        };
+    }
+
+    private function adminMutationIntent(string $path, string $route): RequestIntent
+    {
+        return match (true) {
+            $this->matches($path, $route, 'settings') => RequestIntent::SettingsMutation,
+            $this->matches($path, $route, 'users', 'acl') => RequestIntent::UserAclMutation,
+            $this->matches($path, $route, 'packages') => RequestIntent::PackageAdminOperation,
+            $this->matches($path, $route, 'upload', 'archive', 'media') => RequestIntent::UploadArchiveValidation,
+            $this->matches($path, $route, 'export', 'download') => RequestIntent::ExportDownload,
+            $this->matches($path, $route, 'import') => RequestIntent::ImportOperation,
+            $this->matches($path, $route, 'backup', 'restore') => RequestIntent::BackupRestore,
+            $this->matches($path, $route, 'diagnostic', 'support') => RequestIntent::DiagnosticsSupport,
+            default => RequestIntent::AdminOperation,
         };
     }
 

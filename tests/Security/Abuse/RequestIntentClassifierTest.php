@@ -53,6 +53,26 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Admin,
             RequestIntent::SettingsMutation,
         ];
+        yield 'admin user password reset is acl mutation' => [
+            Request::create('/admin/users/details/example-user/password-reset', 'POST'),
+            RequestFamily::Admin,
+            RequestIntent::UserAclMutation,
+        ];
+        yield 'admin package reset fault is package mutation' => [
+            Request::create('/admin/packages/demo/reset-fault', 'POST'),
+            RequestFamily::Admin,
+            RequestIntent::PackageAdminOperation,
+        ];
+        yield 'admin operation post is generic admin mutation' => [
+            Request::create('/admin/operations', 'POST'),
+            RequestFamily::Admin,
+            RequestIntent::AdminOperation,
+        ];
+        yield 'public password reset stays public reset intent' => [
+            Request::create('/user/password-reset', 'POST'),
+            RequestFamily::Browser,
+            RequestIntent::PasswordReset,
+        ];
         yield 'suspicious env probe' => [
             Request::create('/.env'),
             RequestFamily::Browser,
