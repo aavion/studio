@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Backend\AdminControllerContext;
 use App\Core\Access\AccessLevel;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Id\UuidFactory;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
@@ -42,6 +43,7 @@ final class AdminAclGroupController extends AbstractController
         private readonly LiveOperationHttpResponder $liveOperationResponder,
         private readonly UuidFactory $uuidFactory,
         private readonly UiAlertDispatcherInterface $alerts,
+        private readonly AdminFeatureAccessPolicy $adminFeatureAccessPolicy,
     ) {
     }
 
@@ -140,6 +142,7 @@ final class AdminAclGroupController extends AbstractController
         $cleanupImpact = $this->aclGroupImpact->removeReferences($group);
         $this->entityManager->remove($group);
         $this->entityManager->flush();
+        $this->adminFeatureAccessPolicy->resetCache();
         $this->adminContext->audit($this->getUser(), 'acl.group_deleted', [
             'group' => $group->identifier(),
             'impact' => $cleanupImpact['summary'],
@@ -174,6 +177,7 @@ final class AdminAclGroupController extends AbstractController
             );
             $this->entityManager->persist($group);
             $this->entityManager->flush();
+            $this->adminFeatureAccessPolicy->resetCache();
             $this->adminContext->audit($this->getUser(), 'acl.group_created', ['group' => $group->identifier()]);
             $this->alertKey('success', 'admin.groups.created');
         } catch (Throwable) {
@@ -237,6 +241,7 @@ final class AdminAclGroupController extends AbstractController
             $floorCleanup = $this->aclGroupImpact->removeBelowMinRoleReferences($group, $pending['min_role']);
             $group->changeMinRole($pending['min_role']);
             $this->entityManager->flush();
+            $this->adminFeatureAccessPolicy->resetCache();
             $this->adminContext->audit($this->getUser(), 'acl.group_updated', [
                 'group' => $group->identifier(),
                 'old_name' => $oldName,

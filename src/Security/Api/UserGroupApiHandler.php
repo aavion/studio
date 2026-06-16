@@ -14,6 +14,7 @@ use App\Api\Http\ApiRequestContext;
 use App\Api\Http\ApiResponder;
 use App\Api\Security\ApiAccessGuard;
 use App\Core\Access\AccessLevel;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Id\UuidFactory;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Message\CommonMessageCode;
@@ -45,6 +46,7 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
         private AuditLoggerInterface $auditLogger,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
+        private AdminFeatureAccessPolicy $adminFeatureAccessPolicy,
     ) {
     }
 
@@ -130,6 +132,7 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
             $group = new AclGroup($this->uuidFactory->generate(), $identifier, $name, (int) $minRole);
             $this->entityManager->persist($group);
             $this->entityManager->flush();
+            $this->adminFeatureAccessPolicy->resetCache();
             $this->audit($request, 'acl.group_created', ['group' => $group->identifier()]);
 
             return $this->responder->data($this->readModel->resource($group, includeDetail: true), Response::HTTP_CREATED);
@@ -172,6 +175,7 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
         $floorCleanup = $this->impact->removeBelowMinRoleReferences($group, $pending['min_role']);
         $group->changeMinRole($pending['min_role']);
         $this->entityManager->flush();
+        $this->adminFeatureAccessPolicy->resetCache();
         $this->audit($request, 'acl.group_updated', [
             'group' => $group->identifier(),
             'old_name' => $oldName,
@@ -215,6 +219,7 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
         $identifier = $group->identifier();
         $this->entityManager->remove($group);
         $this->entityManager->flush();
+        $this->adminFeatureAccessPolicy->resetCache();
         $this->audit($request, 'acl.group_deleted', [
             'group' => $identifier,
             'impact' => $cleanupImpact['summary'],

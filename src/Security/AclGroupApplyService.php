@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Core\Access\AccessActor;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
@@ -26,6 +27,7 @@ final readonly class AclGroupApplyService
         private EntityManagerInterface $entityManager,
         private AclGroupImpactService $impactService,
         private AdminUserAccessPolicy $policy,
+        private AdminFeatureAccessPolicy $adminFeatureAccessPolicy,
     ) {
     }
 
@@ -88,6 +90,7 @@ final readonly class AclGroupApplyService
         $floorCleanup = $this->impactService->removeBelowMinRoleReferences($group, $minRole);
         $group->changeMinRole($minRole);
         $this->entityManager->flush();
+        $this->adminFeatureAccessPolicy->resetCache();
 
         return WorkflowResult::success([
             'group' => $group->identifier(),
@@ -124,6 +127,7 @@ final readonly class AclGroupApplyService
         $groupUid = $group->uid();
         $this->entityManager->remove($group);
         $this->entityManager->flush();
+        $this->adminFeatureAccessPolicy->resetCache();
 
         return WorkflowResult::success([
             'group' => $identifier,
