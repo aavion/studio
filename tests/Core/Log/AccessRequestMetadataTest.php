@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Log;
 
 use App\Core\Log\AccessRequestMetadata;
+use App\Localization\TranslationLanguageCatalog;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,6 +29,9 @@ final class AccessRequestMetadataTest extends TestCase
         self::assertIsInt($metadata->durationMs($request));
         self::assertSame('admin', $metadata->surface($request));
         self::assertSame('api', $metadata->surface(Request::create('/api/v1/status')));
+        self::assertSame('public', $metadata->surface(Request::create('/apiary')));
+        self::assertSame('public', $metadata->surface(Request::create('/docs/api/reference')));
+        self::assertSame('admin', (new AccessRequestMetadata(new TranslationLanguageCatalog(dirname(__DIR__, 3))))->surface(Request::create('/de/admin/logs')));
         self::assertSame('backend_admin_route', $metadata->resolvedRoute($request));
         self::assertSame('https://example.org/source', $metadata->referrer($request));
         self::assertSame('example.org', $metadata->referrerHost($request));

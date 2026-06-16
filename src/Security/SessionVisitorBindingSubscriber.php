@@ -172,7 +172,7 @@ final readonly class SessionVisitorBindingSubscriber implements EventSubscriberI
                 requestIntent: $profile->intent()->value,
                 requestId: $this->accessRequestMetadata?->requestId($request) ?? 'n/a',
                 visitorId: $visitor?->identifier() ?? $currentVisitorId,
-                path: $profile->path(),
+                path: $this->accessRequestMetadata?->sanitizedPath($request) ?? $profile->path(),
                 route: $profile->route(),
                 context: [
                     'previous_visitor_id' => $previousVisitorId,

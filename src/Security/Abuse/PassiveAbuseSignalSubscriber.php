@@ -62,7 +62,7 @@ final readonly class PassiveAbuseSignalSubscriber implements EventSubscriberInte
                 requestIntent: $profile->intent()->value,
                 requestId: $this->accessRequestMetadata->requestId($event->getRequest()),
                 visitorId: $visitor?->identifier() ?? 'n/a',
-                path: $profile->path(),
+                path: $this->accessRequestMetadata->sanitizedPath($event->getRequest()),
                 route: $profile->route(),
                 httpStatus: $event->getResponse()->getStatusCode(),
                 context: [
