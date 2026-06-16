@@ -20,6 +20,11 @@ final class AdminFeatureRegistry
     private ?array $allDefinitions = null;
 
     /**
+     * @var array<string, AdminFeatureDefinition>|null
+     */
+    private ?array $definitionsByIdentifier = null;
+
+    /**
      * @param iterable<AdminFeatureProviderInterface> $providers
      */
     public function __construct(private readonly iterable $providers, private readonly ?CacheInterface $cache = null)
@@ -54,13 +59,7 @@ final class AdminFeatureRegistry
 
     public function find(string $identifier): ?AdminFeatureDefinition
     {
-        foreach ($this->allDefinitions() as $definition) {
-            if ($definition->identifier() === $identifier) {
-                return $definition;
-            }
-        }
-
-        return null;
+        return $this->definitionMap()[$identifier] ?? null;
     }
 
     /**
@@ -93,11 +92,29 @@ final class AdminFeatureRegistry
     public function resetCache(): void
     {
         $this->allDefinitions = null;
+        $this->definitionsByIdentifier = null;
 
         try {
             $this->cache?->delete(self::CACHE_KEY);
         } catch (Throwable) {
         }
+    }
+
+    /**
+     * @return array<string, AdminFeatureDefinition>
+     */
+    private function definitionMap(): array
+    {
+        if (null !== $this->definitionsByIdentifier) {
+            return $this->definitionsByIdentifier;
+        }
+
+        $map = [];
+        foreach ($this->allDefinitions() as $definition) {
+            $map[$definition->identifier()] = $definition;
+        }
+
+        return $this->definitionsByIdentifier = $map;
     }
 
     /**
