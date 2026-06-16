@@ -38,7 +38,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 ## Public interfaces and data decisions
 
-- Controllers and future packages call a Studio-owned abuse facade instead of Symfony RateLimiter directly.
+- Controllers and future packages call the Studio-owned `AbuseRequestInspector` facade instead of Symfony RateLimiter directly. The facade combines `AbuseSubjectResolver`, `RequestIntentClassifier`, and `ActionCostCatalogue`; later branches may add enforcement around this boundary without moving classification logic into controllers.
 - Existing Monolog file channels remain the raw operational fallback with 30-day retention; database log projection tables are lookup/read-model copies for Admin UI, Admin API, and later abuse correlation.
 - The first projection uses one table per log family: `message_log_entry`, `audit_log_entry`, and `access_log_entry`; passive security signals use the domain event table `security_signal_event`.
 - Projection writes must happen after the normal file-log payload has been normalized/redacted and must never store raw secrets, credentials, API keys, visitor-cookie material, captcha answers, unredacted tokenized URLs, or duplicated full raw log lines.
@@ -55,7 +55,9 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Visitor ID remains the primary continuity key for browser traffic so different browsers behind the same untrusted proxy can still receive separate visitor subjects. Rate limiting should stay stable across direct and proxied requests. Later auto-ban policy should keep IP-ban/block thresholds laxer than Visitor-ID thresholds to reduce false positives on shared or untrusted-network IPs while still allowing IP blocking as a secondary cookie-reset bypass defense.
 - Prefetch detection uses `X-Sec-Purpose: prefetch` and `Sec-Purpose: prefetch`; spoofable hints only lower confidence for classification, never bypass checks.
 - Signals store only normalized subject keys, intent, reason code, count/weight, timestamps, and safe request metadata.
+- Subject resolution emits visitor, IP-bucket, authenticated-user, API-key, safe API-key-prefix, and combined subjects. IP buckets and combined IP subjects are HMAC-derived and never expose raw IP addresses; invalid Bearer tokens may contribute only a validated public prefix, never submitted secret material.
 - Probe-path detection is configurable and ships with extensive high-signal defaults for `.env`, VCS metadata, backup/database dumps, common foreign admin panels, upload shells, and known scanner paths.
+- Request classification is passive and deterministic. `/api/live/**`, safe browser prefetch, and CORS preflight receive no ordinary enforcement cost in this branch; suspicious probes and mutating admin/API workflows receive higher symbolic costs for later limiter branches.
 - First implementation uses the portable `security_signal_event` table for short-lived passive signals. Suggested fields are normalized subject type/key, request family, intent, reason code, confidence, weight/count, timestamps, expiry timestamp, safe context, and optional audit reference.
 - Passive-signal rows are observational only in this branch. The rate and auto-ban branches decide how to consume them for enforcement.
 - Keep passive signals separate from raw file logs and from the message/audit/access projections. Later branches may consume `security_signal_event`, but this branch does not enforce from it.
@@ -103,7 +105,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Documentation and tracking
 
 - Update Security draft with facade and classification names if they become stable public extension points.
-- Update class map for the facade and value objects only if they are contributor-facing services.
+- Update class map for the facade, resolver, classifier, catalogue, and value objects when they are added.
 - Update class map for the database log browser/projector, retention policy, and passive-signal recorder if they are added.
 - Record default cost catalogue decisions in the worklog.
 - Update Security policy defaults if implementation evidence changes signal retention, subject composition, or suspicious-intent weighting.
