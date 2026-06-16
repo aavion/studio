@@ -8,8 +8,9 @@ use App\Core\Id\UuidFactory;
 use App\Core\Log\DatabaseLogRetentionPolicy;
 use App\Database\DatabaseReadyState;
 use DateInterval;
-use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\Clock\NativeClock;
 use Throwable;
 
 final readonly class SecuritySignalRecorder
@@ -22,6 +23,7 @@ final readonly class SecuritySignalRecorder
         private DatabaseLogRetentionPolicy $retentionPolicy,
         private ?DatabaseReadyState $databaseReadyState = null,
         private UuidFactory $uuidFactory = new UuidFactory(),
+        private ClockInterface $clock = new NativeClock(),
     ) {
     }
 
@@ -49,7 +51,7 @@ final readonly class SecuritySignalRecorder
             return;
         }
 
-        $now = new DateTimeImmutable();
+        $now = $this->clock->now();
         $expiresAt = $now->add(new DateInterval('P'.$this->retentionPolicy->retentionDaysForSignal($ipDerived).'D'));
         $context = [
             ...$context,
@@ -93,7 +95,7 @@ final readonly class SecuritySignalRecorder
     {
         try {
             return $this->connection->executeStatement('DELETE FROM '.self::TABLE.' WHERE expires_at <= ?', [
-                (new DateTimeImmutable())->format('Y-m-d H:i:s'),
+                $this->clock->now()->format('Y-m-d H:i:s'),
             ]);
         } catch (Throwable) {
             return 0;

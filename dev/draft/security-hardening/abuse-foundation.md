@@ -64,7 +64,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Passive-signal rows are observational only in this branch. The rate and auto-ban branches decide how to consume them for enforcement.
 - Keep passive signals separate from raw file logs and from the message/audit/access projections. Later branches may consume `security_signal_event`, but this branch does not enforce from it.
 - IP subjects and stable IP-derived hashes must expire within 30 days. Longer-lived passive signals must use visitor ID, authenticated user ID, API key fingerprint, or aggregate keys without retaining the IP-derived subject.
-- TTL and expiry use an injectable clock/time boundary for deterministic tests.
+- TTL and expiry use Symfony's injectable clock/time boundary for deterministic tests.
 - Classification must expose enough request-family, intent, subject, Admin/Owner context, `/api/live/**`, and recovery-login metadata for later branches to follow the Security policy enforcement order without re-reading controllers.
 - Probe-path configuration uses anchored, normalized patterns and must be tested against normal app/package/media/editor routes to avoid false positives.
 - High-impact operation intents must exist even when their first implementation only records passive signals: setup apply, settings mutation, user/ACL mutation, package lifecycle, backup/restore, import apply, export/download, self-update, scheduler run-now, diagnostics/support bundles, and upload/archive validation.

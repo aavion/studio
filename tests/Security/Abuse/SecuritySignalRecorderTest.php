@@ -11,6 +11,7 @@ use App\Setup\SetupCompletionMarker;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Clock\MockClock;
 
 final class SecuritySignalRecorderTest extends TestCase
 {
@@ -71,7 +72,11 @@ final class SecuritySignalRecorderTest extends TestCase
             'context' => '{}',
         ]);
 
-        $recorder = new SecuritySignalRecorder($connection, new DatabaseLogRetentionPolicy($connection));
+        $recorder = new SecuritySignalRecorder(
+            $connection,
+            new DatabaseLogRetentionPolicy($connection),
+            clock: new MockClock('2026-06-16 12:00:00'),
+        );
         $recorder->record(
             'probe',
             'security.probe.env',
@@ -90,7 +95,8 @@ final class SecuritySignalRecorderTest extends TestCase
         self::assertSame('security.probe.env', $connection->fetchOne('SELECT reason_code FROM security_signal_event'));
         self::assertSame(100, (int) $connection->fetchOne('SELECT confidence FROM security_signal_event'));
         self::assertSame(1, (int) $connection->fetchOne('SELECT ip_derived FROM security_signal_event'));
-        self::assertGreaterThan(new \DateTimeImmutable(), new \DateTimeImmutable((string) $connection->fetchOne('SELECT expires_at FROM security_signal_event')));
+        self::assertSame('2026-06-16 12:00:00', $connection->fetchOne('SELECT occurred_at FROM security_signal_event'));
+        self::assertSame('2026-06-17 12:00:00', $connection->fetchOne('SELECT expires_at FROM security_signal_event'));
     }
 
     /**
