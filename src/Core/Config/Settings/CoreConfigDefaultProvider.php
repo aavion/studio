@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Config\Settings;
 
+use App\Core\AdminAcl\AdminFeatureDefaults;
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
 use App\Core\Config\ConfigDefaultProviderInterface;
 
 final class CoreConfigDefaultProvider implements ConfigDefaultProviderInterface
@@ -13,8 +15,10 @@ final class CoreConfigDefaultProvider implements ConfigDefaultProviderInterface
      */
     private ?array $defaults = null;
 
-    public function __construct(private readonly CoreSettingsRegistry $registry)
-    {
+    public function __construct(
+        private readonly CoreSettingsRegistry $registry,
+        private readonly ?AdminFeatureDefaults $adminFeatureDefaults = null,
+    ) {
     }
 
     public function hasDefault(string $key): bool
@@ -45,6 +49,8 @@ final class CoreConfigDefaultProvider implements ConfigDefaultProviderInterface
 
             $defaults[$definition->key()] = $definition->defaultValue();
         }
+
+        $defaults[AdminFeatureOverrideStore::CONFIG_KEY] = ($this->adminFeatureDefaults ?? new AdminFeatureDefaults())->overrides();
 
         return $this->defaults = $defaults;
     }

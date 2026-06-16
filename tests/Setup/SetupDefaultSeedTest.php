@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Setup;
 
 use App\Api\ApiFeaturePolicy;
+use App\Core\AdminAcl\AdminFeatureDefaults;
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
 use App\Core\Config\ConfigDefaultProviderInterface;
 use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\DatabaseLogRetentionPolicy;
@@ -38,6 +40,7 @@ final class SetupDefaultSeedTest extends TestCase
         self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $settings[DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY]);
         self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, $settings[DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY]);
         self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $settings[SuspiciousProbePathMatcher::PATTERNS_KEY]);
+        self::assertSame((new AdminFeatureDefaults())->overrides(), $settings[AdminFeatureOverrideStore::CONFIG_KEY]);
     }
 
     public function testItUsesCentralConfigDefaultsForSetupSeededSettings(): void
@@ -90,6 +93,7 @@ final class SetupDefaultSeedTest extends TestCase
             SchedulerSettings::GET_AUTH_ENABLED_KEY,
             SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY,
             SchedulerSettings::WEB_TRIGGER_ENABLED_KEY,
+            AdminFeatureOverrideStore::CONFIG_KEY,
         ];
         $inputOnlyKeys = [
             'site.title',

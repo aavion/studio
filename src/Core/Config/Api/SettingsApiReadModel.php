@@ -6,7 +6,9 @@ namespace App\Core\Config\Api;
 
 use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Config\Config;
+use App\Core\Config\Settings\CoreSettingDefinition;
 use App\Core\Config\Settings\CoreSettingsRegistry;
 
 final readonly class SettingsApiReadModel
@@ -14,6 +16,7 @@ final readonly class SettingsApiReadModel
     public function __construct(
         private CoreSettingsRegistry $settings,
         private Config $config,
+        private ?AdminFeatureAccessPolicy $adminAcl = null,
     ) {
     }
 
@@ -26,7 +29,7 @@ final readonly class SettingsApiReadModel
         $actor ??= AccessActor::fromAccess(AccessLevel::ADMIN);
 
         foreach ($this->settings->allDefinitions() as $definition) {
-            if (!$definition->allows($actor)) {
+            if (!$this->definitionVisible($definition, $actor)) {
                 continue;
             }
 
@@ -65,11 +68,11 @@ final readonly class SettingsApiReadModel
                 continue;
             }
 
-            if (!$definition->allows($actor)) {
+            if (!$this->definitionVisible($definition, $actor)) {
                 continue;
             }
 
-            $field = $definition->formField();
+            $field = $this->decorateDefinition($definition, $actor)->formField();
 
             if (false === ($field->metadata()['persist'] ?? true)) {
                 continue;
@@ -111,7 +114,7 @@ final readonly class SettingsApiReadModel
                 continue;
             }
 
-            if (!$definition->allows($actor)) {
+            if (!$this->definitionMutable($definition, $actor)) {
                 continue;
             }
 
@@ -138,5 +141,43 @@ final readonly class SettingsApiReadModel
         }
 
         return is_string($value) && '' !== trim($value) ? '[protected]' : '';
+    }
+
+    private function decorateDefinition(CoreSettingDefinition $definition, AccessActor $actor): CoreSettingDefinition
+    {
+        $feature = $definition->metadata()['access_feature'] ?? null;
+
+        if (!is_string($feature) || null === $this->adminAcl) {
+            return $definition;
+        }
+
+        $state = $this->adminAcl->state($feature, $actor);
+
+        return $definition->withMetadata([
+            'access_state' => $state->value,
+            'read_only' => !$state->isMutable(),
+        ]);
+    }
+
+    private function definitionVisible(CoreSettingDefinition $definition, AccessActor $actor): bool
+    {
+        $feature = $definition->metadata()['access_feature'] ?? null;
+
+        if (is_string($feature) && null !== $this->adminAcl) {
+            return $this->adminAcl->isVisible($feature, $actor);
+        }
+
+        return $definition->allows($actor);
+    }
+
+    private function definitionMutable(CoreSettingDefinition $definition, AccessActor $actor): bool
+    {
+        $feature = $definition->metadata()['access_feature'] ?? null;
+
+        if (is_string($feature) && null !== $this->adminAcl) {
+            return $this->adminAcl->isMutable($feature, $actor);
+        }
+
+        return $definition->allows($actor);
     }
 }

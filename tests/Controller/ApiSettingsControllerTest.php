@@ -141,7 +141,9 @@ final class ApiSettingsControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertNull($this->optionalResourceById($payload['data'], MaxMindGeoIpConfig::LICENSE_KEY_KEY));
+        $licenseKey = $this->resourceById($payload['data'], MaxMindGeoIpConfig::LICENSE_KEY_KEY);
+        self::assertSame('[protected]', $licenseKey['attributes']['value']);
+        self::assertTrue($licenseKey['attributes']['metadata']['read_only']);
 
         $client->request('PATCH', '/api/v1/admin/settings/statistics', server: [
             'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,

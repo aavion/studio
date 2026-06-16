@@ -12,6 +12,7 @@
                 name="{{ name }}[]"
                 value="{{ option_value }}"
                 {% if option_value in selected_values %}checked{% endif %}
+                {% if disabled|default(false) %}disabled{% endif %}
             >
             <span>{{ option_label }}</span>
         </label>

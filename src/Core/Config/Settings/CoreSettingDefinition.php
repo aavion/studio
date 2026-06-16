@@ -61,6 +61,26 @@ final readonly class CoreSettingDefinition
         return $this->metadata;
     }
 
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    public function withMetadata(array $metadata): self
+    {
+        return new self(
+            $this->section,
+            $this->key,
+            $this->label,
+            $this->defaultValue,
+            $this->valueType,
+            $this->inputType,
+            $this->help,
+            $this->options,
+            $this->validation,
+            [...$this->metadata, ...$metadata],
+            $this->sortOrder,
+        );
+    }
+
     public function minimumAccessLevel(): int
     {
         $level = $this->metadata['minimum_access_level'] ?? AccessLevel::ADMIN;
