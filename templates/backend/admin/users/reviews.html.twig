@@ -102,36 +102,36 @@
                                 <form method="post" action="{{ path('backend_admin_user_invitation_approve', {uid: token.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
                                     <input type="hidden" name="return_to" value="reviews">
-                                    <button class="system-button" type="submit">{{ 'admin.user_reviews.actions.accept'|trans }}</button>
+                                    <button class="system-button" type="submit"{% if not reviews_mutable %} disabled{% endif %}>{{ 'admin.user_reviews.actions.accept'|trans }}</button>
                                 </form>
                                 <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
                                     <input type="hidden" name="return_to" value="reviews">
-                                    <button class="system-button system-button-secondary" type="submit">{{ 'admin.user_reviews.actions.reject'|trans }}</button>
+                                    <button class="system-button system-button-secondary" type="submit"{% if not reviews_mutable %} disabled{% endif %}>{{ 'admin.user_reviews.actions.reject'|trans }}</button>
                                 </form>
                             {% elseif item.kind in ['invitation', 'registration'] %}
                                 <form method="post" action="{{ path('backend_admin_user_invitation_reissue', {uid: token.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
                                     <input type="hidden" name="return_to" value="reviews">
-                                    <button class="system-button" type="submit">{{ 'admin.user_reviews.actions.reissue'|trans }}</button>
+                                    <button class="system-button" type="submit"{% if not reviews_mutable %} disabled{% endif %}>{{ 'admin.user_reviews.actions.reissue'|trans }}</button>
                                 </form>
                                 <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
                                     <input type="hidden" name="return_to" value="reviews">
-                                    <button class="system-button system-button-secondary" type="submit">{{ 'admin.user_reviews.actions.delete'|trans }}</button>
+                                    <button class="system-button system-button-secondary" type="submit"{% if not reviews_mutable %} disabled{% endif %}>{{ 'admin.user_reviews.actions.delete'|trans }}</button>
                                 </form>
                             {% elseif item.kind == 'password_dispute' and user %}
                                 <form method="post" action="{{ path('backend_admin_user_review_reactivate', {username: user.username}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_review_' ~ user.username) }}">
-                                    <button class="system-button" type="submit">{{ 'admin.user_reviews.actions.reactivate'|trans }}</button>
+                                    <button class="system-button" type="submit"{% if not reviews_mutable %} disabled{% endif %}>{{ 'admin.user_reviews.actions.reactivate'|trans }}</button>
                                 </form>
                                 <form method="post" action="{{ path('backend_admin_user_review_delete', {username: user.username}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_review_' ~ user.username) }}">
                                     <label class="system-muted">
-                                        <input type="checkbox" name="confirm_delete" value="1">
+                                        <input type="checkbox" name="confirm_delete" value="1"{% if not reviews_mutable %} disabled{% endif %}>
                                         {{ 'admin.user_reviews.actions.confirm_delete'|trans }}
                                     </label>
-                                    <button class="system-button system-button-secondary" type="submit">{{ 'admin.user_reviews.actions.delete'|trans }}</button>
+                                    <button class="system-button system-button-secondary" type="submit"{% if not reviews_mutable %} disabled{% endif %}>{{ 'admin.user_reviews.actions.delete'|trans }}</button>
                                 </form>
                             {% endif %}
                         </div>

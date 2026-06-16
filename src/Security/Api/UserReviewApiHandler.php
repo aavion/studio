@@ -6,6 +6,7 @@ namespace App\Security\Api;
 
 use App\Api\ApiMessageCode;
 use App\Api\ApiMessageKey;
+use App\Api\Admin\AdminFeatureApiGuard;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointHandlerInterface;
 use App\Api\Http\ApiListQueryNormalizer;
@@ -53,6 +54,7 @@ final readonly class UserReviewApiHandler implements ApiEndpointHandlerInterface
         private AuditLoggerInterface $auditLogger,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
+        private AdminFeatureApiGuard $featureGuard,
     ) {
     }
 
@@ -65,6 +67,10 @@ final readonly class UserReviewApiHandler implements ApiEndpointHandlerInterface
     {
         $denied = $this->accessGuard->denyUnlessAccessLevel($request, AccessLevel::ADMIN);
         if (null !== $denied) {
+            return $denied;
+        }
+
+        if ($denied = $this->featureGuard->denyUnlessVisible($request, 'admin.users.review', 'listAdminUserReviews')) {
             return $denied;
         }
 
@@ -87,6 +93,12 @@ final readonly class UserReviewApiHandler implements ApiEndpointHandlerInterface
 
     private function reviewAction(Request $request, string $username, string $action): Response
     {
+        if ($request->query->getBoolean('confirm')) {
+            if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.users.review', 'reviewAdminUser')) {
+                return $denied;
+            }
+        }
+
         $user = $this->entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
         if (!$user instanceof UserAccount) {
             return $this->notFound($request, $username);
@@ -117,6 +129,12 @@ final readonly class UserReviewApiHandler implements ApiEndpointHandlerInterface
 
     private function reviewTokenAction(Request $request, string $tokenUid, string $action): Response
     {
+        if ($request->query->getBoolean('confirm')) {
+            if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.users.review', 'reviewAdminUserToken')) {
+                return $denied;
+            }
+        }
+
         $token = $this->entityManager->find(AccountToken::class, $tokenUid);
         if (!$token instanceof AccountToken) {
             return $this->notFound($request, $tokenUid);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Backend\AdminControllerContext;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Core\State\StateMarkerRecorder;
@@ -31,6 +32,8 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class AdminUserController extends AbstractController
 {
+    private const FEATURE = 'admin.users';
+
     public function __construct(
         private readonly AdminControllerContext $adminContext,
         private readonly HttpErrorRenderer $httpError,
@@ -42,6 +45,7 @@ final class AdminUserController extends AbstractController
         private readonly StateMarkerRecorder $stateMarkers,
         private readonly DeletedUserCleanup $deletedUserCleanup,
         private readonly UiAlertDispatcherInterface $alerts,
+        private readonly AdminFeatureAccessPolicy $adminAcl,
     ) {
     }
 
@@ -51,11 +55,17 @@ final class AdminUserController extends AbstractController
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
             return $response;
         }
+        if ($response = $this->featureResponse($request, mutable: false)) {
+            return $response;
+        }
 
         $usersView = $this->adminUserLists->usersView($request);
+        $mutable = $this->adminAcl->isMutable(self::FEATURE, $this->adminContext->actor($this->getUser()));
 
         return $this->render('@backend/admin/users/index.html.twig', [
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
+            'users_mutable' => $mutable,
+            'reviews_mutable' => $this->adminAcl->isMutable('admin.users.review', $this->adminContext->actor($this->getUser())),
             'users' => $usersView['items'],
             'users_view' => $usersView,
             'groups' => $this->assignmentOptions->groups($this->adminContext->actor($this->getUser()), UserRole::User),
@@ -74,9 +84,13 @@ final class AdminUserController extends AbstractController
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
             return $response;
         }
+        if ($response = $this->featureResponse($request, mutable: false)) {
+            return $response;
+        }
 
         return $this->render('@backend/admin/users/deleted.html.twig', [
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
+            'users_mutable' => $this->adminAcl->isMutable(self::FEATURE, $this->adminContext->actor($this->getUser())),
             'deleted_users' => $this->deletedUserCleanup->deletedUsers(),
             'retention_days' => $this->deletedUserCleanup->retentionDays(),
             'cleanup_cutoff' => $this->deletedUserCleanup->cutoff(),
@@ -87,6 +101,9 @@ final class AdminUserController extends AbstractController
     public function cleanupDeletedUsers(Request $request): Response
     {
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
+            return $response;
+        }
+        if ($response = $this->featureResponse($request, mutable: true)) {
             return $response;
         }
 
@@ -126,6 +143,9 @@ final class AdminUserController extends AbstractController
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
             return $response;
         }
+        if ($response = $this->featureResponse($request, mutable: false)) {
+            return $response;
+        }
 
         $user = $this->userByUsername($username);
 
@@ -138,13 +158,20 @@ final class AdminUserController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
+            if ($response = $this->featureResponse($request, mutable: true)) {
+                return $response;
+            }
+
             $this->updateUser($request, $user);
 
             return $this->redirectToRoute('backend_admin_user_detail', ['username' => $user->username()]);
         }
 
+        $mutable = $this->adminAcl->isMutable(self::FEATURE, $this->adminContext->actor($this->getUser()));
+
         return $this->render('@backend/admin/users/detail.html.twig', [
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
+            'users_mutable' => $mutable,
             'user_account' => $user,
             'groups' => $this->assignmentOptions->groups($this->adminContext->actor($this->getUser()), $user->role()),
             'role_options' => $this->assignmentOptions->roles($this->adminContext->actor($this->getUser())),
@@ -164,6 +191,9 @@ final class AdminUserController extends AbstractController
     public function passwordReset(Request $request, string $username): Response
     {
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
+            return $response;
+        }
+        if ($response = $this->featureResponse($request, mutable: true)) {
             return $response;
         }
 
@@ -231,6 +261,9 @@ final class AdminUserController extends AbstractController
         if ($response = $this->adminContext->accessResponse($request, $this->getUser())) {
             return $response;
         }
+        if ($response = $this->featureResponse($request, mutable: true)) {
+            return $response;
+        }
 
         $user = $this->userByUsername($username);
 
@@ -260,6 +293,23 @@ final class AdminUserController extends AbstractController
         $this->alertKey($result->flashLevel(), $result->flashKey());
 
         return $this->redirectToRoute('backend_admin_deleted_users');
+    }
+
+    private function featureResponse(Request $request, bool $mutable): ?Response
+    {
+        $actor = $this->adminContext->actor($this->getUser());
+        $allowed = $mutable
+            ? $this->adminAcl->isMutable(self::FEATURE, $actor)
+            : $this->adminAcl->isVisible(self::FEATURE, $actor);
+
+        if ($allowed) {
+            return null;
+        }
+
+        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            'feature' => self::FEATURE,
+            'required_state' => $mutable ? 'mutable' : 'visible',
+        ]);
     }
 
     private function userByUsername(string $username): ?UserAccount

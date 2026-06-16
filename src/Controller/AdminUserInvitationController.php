@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Backend\BackendAccessGuard;
 use App\Backend\BackendArea;
 use App\Core\Access\AccessActor;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Entity\UserAccount;
@@ -28,6 +29,7 @@ final class AdminUserInvitationController extends AbstractController
         private readonly HttpErrorRenderer $httpError,
         private readonly AdminUserInvitationWorkflow $invitationWorkflow,
         private readonly UiAlertDispatcherInterface $alerts,
+        private readonly AdminFeatureAccessPolicy $adminAcl,
     ) {
     }
 
@@ -35,6 +37,9 @@ final class AdminUserInvitationController extends AbstractController
     public function invite(Request $request): Response
     {
         if ($response = $this->adminAccessResponse($request)) {
+            return $response;
+        }
+        if ($response = $this->featureResponse($request, 'admin.users')) {
             return $response;
         }
 
@@ -58,6 +63,9 @@ final class AdminUserInvitationController extends AbstractController
         if ($response = $this->adminAccessResponse($request)) {
             return $response;
         }
+        if ($response = $this->featureResponse($request, 'admin.users.review')) {
+            return $response;
+        }
 
         if (!$this->isCsrfTokenValid('admin_user_token_'.$uid, $this->field($request, '_csrf_token'))) {
             $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
@@ -77,6 +85,9 @@ final class AdminUserInvitationController extends AbstractController
         if ($response = $this->adminAccessResponse($request)) {
             return $response;
         }
+        if ($response = $this->featureResponse($request, $this->tokenActionFeature($request))) {
+            return $response;
+        }
 
         if (!$this->isCsrfTokenValid('admin_user_token_'.$uid, $this->field($request, '_csrf_token'))) {
             $this->alertKey('error', 'admin.users.form.errors.invalid_csrf');
@@ -94,6 +105,9 @@ final class AdminUserInvitationController extends AbstractController
     public function revoke(Request $request, string $uid): Response
     {
         if ($response = $this->adminAccessResponse($request)) {
+            return $response;
+        }
+        if ($response = $this->featureResponse($request, $this->tokenActionFeature($request))) {
             return $response;
         }
 
@@ -145,6 +159,23 @@ final class AdminUserInvitationController extends AbstractController
             'area' => BackendArea::Admin->value,
             'access_decision' => $decision->toArray(),
         ]);
+    }
+
+    private function featureResponse(Request $request, string $feature): ?Response
+    {
+        if ($this->adminAcl->isMutable($feature, $this->actor())) {
+            return null;
+        }
+
+        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            'feature' => $feature,
+            'required_state' => 'mutable',
+        ]);
+    }
+
+    private function tokenActionFeature(Request $request): string
+    {
+        return 'reviews' === $this->field($request, 'return_to') ? 'admin.users.review' : 'admin.users';
     }
 
     private function actor(): AccessActor

@@ -6,6 +6,8 @@ namespace App\Tests\Controller;
 
 use App\Content\Schema\ContentSchemaSource;
 use App\Core\Access\AccessLevel;
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
+use App\Core\AdminAcl\AdminPermissionState;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\State\StateMarkerKey;
@@ -2004,6 +2006,79 @@ final class AdminUserControllerTest extends WebTestCase
         self::assertSame('Review team', $group->name());
         $entityManager->remove($group);
         $entityManager->flush();
+    }
+
+    public function testAdminUsersFeatureReadOnlyKeepsControlsVisibleButDisabled(): void
+    {
+        $client = self::createClient();
+        $admin = $this->createUser('readonlyusersadmin', UserAccountStatus::Active);
+        $admin->changeRole(UserRole::Admin);
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.users' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $this->loginTestUser($client, $admin);
+            $client->request('GET', '/admin/users');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('form[action="/admin/users/invitations"] input[name="email"][disabled]');
+            self::assertSelectorExists('form[action="/admin/users/invitations"] select[name="role"][disabled]');
+            self::assertSelectorExists('form[action="/admin/users/invitations"] button[type="submit"][disabled]');
+
+            $client->request('POST', '/admin/users/invitations', [
+                'email' => 'readonly-invite@example.test',
+                'role' => UserRole::User->value,
+            ]);
+
+            self::assertResponseStatusCodeSame(401);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
+    public function testAdminUserAclFeatureReadOnlyKeepsGroupControlsVisibleButDisabled(): void
+    {
+        $client = self::createClient();
+        $admin = $this->createUser('readonlyacladm', UserAccountStatus::Active);
+        $admin->changeRole(UserRole::Admin);
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.users.acl' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $this->loginTestUser($client, $admin);
+            $client->request('GET', '/admin/users/groups');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('section form.system-backend-form input[name="identifier"][disabled]');
+            self::assertSelectorExists('section form.system-backend-form input[name="min_role"][disabled]');
+            self::assertSelectorExists('section form.system-backend-form button[type="submit"][disabled]');
+
+            $client->request('POST', '/admin/users/groups', [
+                'identifier' => 'readonly_acl_group',
+                'name' => 'Read-only ACL Group',
+                'min_role' => (string) AccessLevel::MANAGER,
+            ]);
+
+            self::assertResponseStatusCodeSame(401);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
     }
 
 }

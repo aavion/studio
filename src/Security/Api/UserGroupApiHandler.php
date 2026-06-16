@@ -6,6 +6,7 @@ namespace App\Security\Api;
 
 use App\Api\ApiMessageCode;
 use App\Api\ApiMessageKey;
+use App\Api\Admin\AdminFeatureApiGuard;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointHandlerInterface;
 use App\Api\Http\ApiJsonRequestParser;
@@ -47,6 +48,7 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
         private AdminFeatureAccessPolicy $adminFeatureAccessPolicy,
+        private AdminFeatureApiGuard $featureGuard,
     ) {
     }
 
@@ -59,6 +61,10 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
     {
         $denied = $this->accessGuard->denyUnlessAccessLevel($request, AccessLevel::ADMIN);
         if (null !== $denied) {
+            return $denied;
+        }
+
+        if ($denied = $this->featureGuard->denyUnlessVisible($request, 'admin.users.acl', 'listAdminAclGroups')) {
             return $denied;
         }
 
@@ -90,6 +96,10 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
 
     private function createGroup(Request $request): Response
     {
+        if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.users.acl', 'createAdminAclGroup')) {
+            return $denied;
+        }
+
         try {
             $payload = $this->jsonRequests->object($request);
         } catch (JsonException $error) {
@@ -145,6 +155,12 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
 
     private function updateGroup(Request $request, AclGroup $group): Response
     {
+        if ($request->query->getBoolean('confirm')) {
+            if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.users.acl', 'updateAdminAclGroup')) {
+                return $denied;
+            }
+        }
+
         try {
             $payload = $this->jsonRequests->object($request);
         } catch (JsonException $error) {
@@ -194,6 +210,12 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
 
     private function deleteGroup(Request $request, AclGroup $group): Response
     {
+        if ($request->query->getBoolean('confirm')) {
+            if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.users.acl', 'deleteAdminAclGroup')) {
+                return $denied;
+            }
+        }
+
         try {
             $payload = $this->jsonRequests->object($request);
         } catch (JsonException $error) {

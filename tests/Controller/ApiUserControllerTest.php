@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Core\Access\AccessLevel;
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
+use App\Core\AdminAcl\AdminPermissionState;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\ApiKey;
@@ -321,6 +323,84 @@ final class ApiUserControllerTest extends WebTestCase
             $payload = $this->jsonPayload($client->getResponse()->getContent());
             self::assertArrayHasKey('data', $payload, $path);
             self::assertArrayHasKey('pagination', $payload['meta'], $path);
+        }
+    }
+
+    public function testAdminUserFeatureReadOnlyStillListsButRejectsMutations(): void
+    {
+        $client = self::createClient();
+        $target = $this->createUserWithLevel(AccessLevel::AUTHOR, 'apiuserfeature', 'current-password');
+        $plainKey = $this->createPlainApiKey('apiusrfeat', ApiKeyStatus::ReadWrite);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.users' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('GET', '/api/v1/admin/users', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+
+            $client->request('PATCH', '/api/v1/admin/users/items/'.$target->username(), server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+                'CONTENT_TYPE' => 'application/json',
+            ], content: json_encode([
+                'status' => 'inactive',
+            ], JSON_THROW_ON_ERROR));
+
+            self::assertResponseStatusCodeSame(403);
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('api.operation_unavailable', $payload['error']['code']);
+            self::assertSame('admin.users', $payload['error']['context']['feature']);
+            self::assertSame('feature_read_only', $payload['error']['context']['reason']);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
+    public function testAdminUserAclFeatureReadOnlyStillListsButRejectsGroupMutations(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apiusraclfeat', ApiKeyStatus::ReadWrite);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.users.acl' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('GET', '/api/v1/admin/users/groups', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+
+            $client->request('POST', '/api/v1/admin/users/groups', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+                'CONTENT_TYPE' => 'application/json',
+            ], content: json_encode([
+                'identifier' => 'api_group_readonly',
+                'name' => 'API Group Read-only',
+                'min_role' => AccessLevel::USER,
+            ], JSON_THROW_ON_ERROR));
+
+            self::assertResponseStatusCodeSame(403);
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('admin.users.acl', $payload['error']['context']['feature']);
+            self::assertSame('feature_read_only', $payload['error']['context']['reason']);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
         }
     }
 

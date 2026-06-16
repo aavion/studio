@@ -33,9 +33,9 @@
         <p class="system-muted">{{ 'admin.groups.member_count'|trans({'%count%': member_count}) }}</p>
         <form method="post" class="system-backend-form">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_' ~ group.identifier) }}">
-            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name', name: 'name', label: 'admin.groups.fields.name'|trans, value: group.name, required: true, attributes: {maxlength: 160}} only %}
-            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_min_role', name: 'min_role', label: 'admin.groups.fields.min_role'|trans, type: 'number', value: group.minRole, required: true, attributes: {min: 0, max: 9}} only %}
-            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.actions.save'|trans} only %}
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_name', name: 'name', label: 'admin.groups.fields.name'|trans, value: group.name, required: true, attributes: {maxlength: 160}, disabled: not acl_mutable} only %}
+            {% include '@backend/partials/forms/fields/input.html.twig' with {id: 'group_min_role', name: 'min_role', label: 'admin.groups.fields.min_role'|trans, type: 'number', value: group.minRole, required: true, attributes: {min: 0, max: 9}, disabled: not acl_mutable} only %}
+            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.actions.save'|trans, disabled: not acl_mutable} only %}
         </form>
     </section>
 
@@ -43,7 +43,7 @@
         <h2>{{ 'admin.groups.delete.title'|trans }}</h2>
         <form method="post" action="{{ path('backend_admin_user_group_delete', {identifier: group.identifier}) }}">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_group_delete_' ~ group.identifier) }}">
-            <button class="system-button system-button-danger" type="submit">{{ 'admin.groups.actions.delete'|trans }}</button>
+            <button class="system-button system-button-danger" type="submit"{% if not acl_mutable %} disabled{% endif %}>{{ 'admin.groups.actions.delete'|trans }}</button>
         </form>
     </section>
 
