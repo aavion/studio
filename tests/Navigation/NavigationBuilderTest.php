@@ -394,14 +394,34 @@ final class NavigationBuilderTest extends KernelTestCase
             'admin.navigation.dashboard_settings',
             'admin.navigation.user_settings',
             'admin.navigation.mail_settings',
-            'admin.navigation.security_settings',
             'admin.navigation.statistics_settings',
             'admin.navigation.logging_settings',
-            'admin.navigation.api_settings',
             'admin.navigation.package_settings',
             'admin.navigation.scheduler_settings',
             'admin.navigation.system_info',
         ], array_column($navigation[9]['children'], 'label'));
+
+        $ownerNavigation = self::getContainer()->get(NavigationBuilder::class)->build(
+            'backend.admin',
+            actor: AccessActor::fromAccess(9),
+            activeUrl: '/admin/settings',
+            activeRoute: 'backend_admin_route',
+        );
+
+        self::assertSame([
+            'admin.navigation.general_settings',
+            'admin.navigation.dashboard_settings',
+            'admin.navigation.user_settings',
+            'admin.navigation.mail_settings',
+            'admin.navigation.security_settings',
+            'admin.navigation.statistics_settings',
+            'admin.navigation.logging_settings',
+            'admin.navigation.api_settings',
+            'admin.navigation.acl_settings',
+            'admin.navigation.package_settings',
+            'admin.navigation.scheduler_settings',
+            'admin.navigation.system_info',
+        ], array_column($ownerNavigation[9]['children'], 'label'));
     }
 
     public function testItFiltersNavigationItemsByAccessLevel(): void
