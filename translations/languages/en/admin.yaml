@@ -29,6 +29,7 @@ admin:
     user_settings: 'Users'
     mail_settings: 'Mail'
     security_settings: 'Security'
+    logging_settings: 'Logs'
     package_settings: 'Packages'
     statistics_settings: 'Statistics'
     api_settings: 'API'
@@ -598,19 +599,21 @@ admin:
     foundation_text: 'Operational logs, audit views, package diagnostics, and security-relevant events will attach here.'
     empty_value: 'n/a'
     sources:
+      label: 'Log sources'
       application: 'Application'
       message: 'Messages'
       audit: 'Audit'
       access: 'Access'
+      security_signal: 'Security signals'
     filters:
       title: 'Filters'
       source: 'Log'
       level: 'Level'
-      any_level: 'Any level'
       search: 'Search'
       window: 'Time window'
       match: 'Match'
       audit_action: 'Audit action'
+      signal_reason: 'Signal reason'
       per_page: 'Rows'
       limit: 'Limit'
       contains: 'Contains'
@@ -625,8 +628,6 @@ admin:
     entries:
       title: 'Entries'
       empty: 'No log entries match the current filters.'
-      no_files: 'No log file exists for this selection yet.'
-      files: 'Reading: %files%'
       open: 'Details'
       page_summary: 'Page %page% of %pages% · %total% entries'
       previous: 'Previous'
@@ -642,6 +643,8 @@ admin:
       location: 'Location'
       user: 'User'
       action: 'Action'
+      security_signal: 'Signal'
+      subject: 'Subject'
       channel: 'Channel'
       context: 'Context'
       details: 'Details'
@@ -701,7 +704,11 @@ admin:
     security:
       title: 'Security settings'
       foundation_title: 'Security configuration foundation'
-      foundation_text: 'Security, captcha, logging, and abuse-control settings will attach here.'
+      foundation_text: 'Security, captcha, passive-signal retention, and abuse-control settings will attach here.'
+    logging:
+      title: 'Log settings'
+      foundation_title: 'Database log projections'
+      foundation_text: 'Message, audit, and access logs keep their fixed rotating file logs separately. These settings control how long the searchable database copies stay available.'
     statistics:
       title: 'Statistics settings'
       foundation_title: 'Statistics configuration'
@@ -809,6 +816,21 @@ admin:
         label: 'Enable audit logging'
       audit_events:
         label: 'Audit event categories'
+      message_log_retention_days:
+        label: 'Message log database retention'
+        help: 'Database lookup copy retention in days. File logs keep their fixed 30-day rotation separately.'
+      audit_log_retention_days:
+        label: 'Audit log database retention'
+        help: 'Database lookup copy retention in days. Values above 30 days are not allowed because audit data can contain request-derived identifiers.'
+      access_log_retention_days:
+        label: 'Access log database retention'
+        help: 'Database lookup copy retention in days. Values above 30 days are not allowed because access logs can contain IP-derived data.'
+      security_signal_retention_days:
+        label: 'Security signal retention'
+        help: 'Retention for passive security signals in days. Values above 30 days are not allowed because signals can contain request-derived identifiers.'
+      security_probe_path_patterns:
+        label: 'Suspicious probe path patterns'
+        help: 'One regular expression per line. Quoted CSV imports are accepted. Invalid or empty lists fall back to the protected defaults.'
       geoip_enabled:
         label: 'Enable GeoIP lookups'
         help: 'When disabled or unavailable, logs and statistics keep normalized n/a location values.'

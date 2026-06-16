@@ -236,6 +236,22 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 ],
             ),
             new BackendViewDefinition(
+                'backend-admin-settings-logging',
+                BackendArea::Admin,
+                'settings/logging',
+                'admin.navigation.logging_settings',
+                '@backend/admin/settings/section.html.twig',
+                57,
+                parentUid: 'backend-admin-settings',
+                minimumAccessLevel: AccessLevel::ADMIN,
+                context: [
+                    'title_key' => 'admin.settings.logging.title',
+                    'foundation_title_key' => 'admin.settings.logging.foundation_title',
+                    'foundation_text_key' => 'admin.settings.logging.foundation_text',
+                    'settings_section' => 'logging',
+                ],
+            ),
+            new BackendViewDefinition(
                 'backend-admin-settings-packages',
                 BackendArea::Admin,
                 'settings/packages',

@@ -12,10 +12,12 @@ final readonly class TablePrefix
      * @var list<string>
      */
     public const TABLES = [
+        'access_log_entry',
         'access_statistic_event',
         'account_token',
         'acl_group',
         'api_key',
+        'audit_log_entry',
         'config_entry',
         'content_field_value',
         'content_item',
@@ -24,9 +26,11 @@ final readonly class TablePrefix
         'content_schema_version',
         'extension_package',
         'messenger_messages',
+        'message_log_entry',
         'package_setting_entry',
         'scheduler_task',
         'scheduler_task_run',
+        'security_signal_event',
         'site_menu',
         'site_menu_item',
         'state_marker',

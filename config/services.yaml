@@ -437,6 +437,10 @@ services:
             $cacheDir: '%kernel.project_dir%/var/cache'
             $environment: '%kernel.environment%'
 
+    App\Security\Abuse\AbuseSubjectResolver:
+        arguments:
+            $secret: '%kernel.secret%'
+
     App\Core\Security\SecretPayloadProtector:
         arguments:
             $secret: '%kernel.secret%'

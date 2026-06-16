@@ -13,8 +13,8 @@ use App\Backend\BackendViewDefinition;
 use App\Core\Access\AccessActor;
 use App\Core\Message\Message;
 use App\Core\Config\Settings\CoreSettingsFormHandler;
+use App\Core\Log\AdminLogBrowser;
 use App\Core\Log\AuditLoggerInterface;
-use App\Core\Log\LogFileBrowser;
 use App\Core\Package\Settings\PackageSettingsFormHandler;
 use App\Entity\UserAccount;
 use App\Form\FormErrorKey;
@@ -42,7 +42,7 @@ final class BackendController extends AbstractController
         private readonly PackageSettingsFormHandler $packageSettingsFormHandler,
         private readonly AdminViewContextProvider $adminViewContextProvider,
         private readonly BackendActionResponder $backendActionResponder,
-        private readonly LogFileBrowser $logFileBrowser,
+        private readonly AdminLogBrowser $logBrowser,
         private readonly AuditLoggerInterface $auditLogger,
         private readonly FormTokenValidator $formTokenValidator,
         private readonly UiAlertDispatcherInterface $alerts,
@@ -55,7 +55,7 @@ final class BackendController extends AbstractController
         return $this->handle($request, BackendArea::Admin);
     }
 
-    #[Route('/admin/logs/{entryId}', name: 'backend_admin_log_detail', requirements: ['entryId' => '[a-f0-9]{24}'], methods: ['GET'])]
+    #[Route('/admin/logs/{entryId}', name: 'backend_admin_log_detail', requirements: ['entryId' => '(?:[0-9a-fA-F]{24}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})'], methods: ['GET'])]
     public function logDetail(Request $request, string $entryId): Response
     {
         $access = $this->adminAccessResponse($request);
@@ -65,7 +65,7 @@ final class BackendController extends AbstractController
         }
 
         $source = $request->query->get('source', 'message');
-        $entry = $this->logFileBrowser->entry(is_string($source) ? $source : 'message', $entryId);
+        $entry = $this->logBrowser->entry(is_string($source) ? $source : 'message', $entryId);
 
         if (null === $entry) {
             return $this->httpError->notFound($request);

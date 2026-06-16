@@ -7,26 +7,13 @@ namespace App\Core\Log;
 final readonly class LogPagination
 {
     /**
-     * @param array{level: string, search: string, match: string, time_window: string, audit_action: string, per_page: int|string, page: int} $filters
+     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int} $filters
      *
-     * @return array{page: int, per_page: int|string, total: int, total_pages: int, has_previous: bool, has_next: bool, previous_page: int, next_page: int}
+     * @return array{page: int, per_page: int, total: int, total_pages: int, has_previous: bool, has_next: bool, previous_page: int, next_page: int}
      */
     public function pagination(array $filters, int $matched): array
     {
-        if ('all' === $filters['per_page']) {
-            return [
-                'page' => 1,
-                'per_page' => 'all',
-                'total' => $matched,
-                'total_pages' => 1,
-                'has_previous' => false,
-                'has_next' => false,
-                'previous_page' => 1,
-                'next_page' => 1,
-            ];
-        }
-
-        $perPage = (int) $filters['per_page'];
+        $perPage = $filters['per_page'];
         $totalPages = max(1, (int) ceil($matched / $perPage));
         $page = min($filters['page'], $totalPages);
 
@@ -43,7 +30,7 @@ final readonly class LogPagination
     }
 
     /**
-     * @return list<array{key: int|string, label: string}>
+     * @return list<array{key: int, label: string}>
      */
     public function perPageOptions(): array
     {
@@ -52,7 +39,7 @@ final readonly class LogPagination
             ['key' => 50, 'label' => '50'],
             ['key' => 100, 'label' => '100'],
             ['key' => 150, 'label' => '150'],
-            ['key' => 'all', 'label' => 'admin.logs.filters.all_entries'],
+            ['key' => 500, 'label' => '500'],
         ];
     }
 

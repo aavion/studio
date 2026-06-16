@@ -108,12 +108,13 @@ Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner 
 
 ## Probe Path Policy
 
-- Probe paths are configurable and ship with extensive defaults for high-signal requests such as `.env`, `.git`, backup archives, database dumps, common admin panels from other software, shell upload probes, and known scanner paths.
+- Probe paths are configurable as an editable pattern list, not as raw JSON. The default UI should use one regular expression per line and may accept quoted CSV imports; unquoted newline entries must be preserved as-is so commas inside regex syntax remain valid. The shipped defaults cover high-signal requests such as `.env`, `.git`, backup archives, database dumps, common admin panels from other software, shell upload probes, and known scanner paths.
 - High-signal probes are never treated as normal website navigation. The default response is a generic `400 Bad Request` without revealing whether the path exists, and the event records a suspicious probe signal.
 - One high-signal probe per subject per 10 minutes is the first threshold. Further probes may drain suspicious buckets and feed auto-ban decisions when auto-ban is enabled.
 - Honeypot probe paths should remain restrictive. They may share the same generic `400` response and signal path even when they do not map to real routes.
 - Probe-path configuration should use anchored, normalized path patterns with tests that prove common application routes, package routes, media routes, and editor routes are not accidentally captured.
 - Probe-path configuration changes should be auditable once Security settings exist.
+- Editor/Content route editing should warn, without blocking the save, when a proposed route or slug would match a configured suspicious probe path. This keeps legitimate content possible while making accidental collisions visible before publication.
 
 ## Response Semantics
 
@@ -132,9 +133,14 @@ The codebase and other feature drafts expose several security-relevant surfaces 
 - CORS preflight and API metadata requests are API-family traffic, not write attempts. Successful allowed `OPTIONS` preflights should be cheap and must not spend mutating API budget; invalid origin/method/header combinations may record passive signals. Invalid Bearer credentials remain authentication failures and must never fall back to anonymous public reads.
 - High-impact authenticated/admin workflows need explicit intents and authority decisions even when Owner requests are exempt from ordinary rate-limit rejection: settings mutations, user/ACL changes, package install/activate/purge, backup restore, import apply, export/download, cache or asset rebuild, self-update, scheduler run-now, and diagnostic/support-bundle generation.
 - Upload and archive handling, including media, package ZIPs, import bundles, backups, and restore artifacts, should not be treated as suspicious probe traffic by path alone. Failed extension, MIME, size, path traversal, nested archive, and manifest-validation checks should feed passive signals with redacted context.
+- Public-facing unsafe form submissions that are not covered by a more specific workflow remain their own `website_form` bucket. This includes future package-owned public forms such as comments, forum posts, ratings, or similar user-generated content actions.
 - Log views, diagnostic downloads, exports, backups, and support bundles must be permission-aware, `no-store`, redacted, and retention-aware. They must not expose raw IP data beyond the 30-day ceiling or raw tokens/secrets through downloadable output.
-- Trusted-proxy configuration is part of the security boundary. Client identity, GeoIP, IP-bucket policy, access logs, API diagnostics, and auto-ban decisions must use one trusted client-identity resolver and must not parse raw forwarding headers directly.
+- Security-signal visibility, IP-bearing access-log visibility, signal cleanup/mutation, and future review actions need explicit Owner/ACL policy in `feat-security-admin-acl-enforcement` instead of relying indefinitely on broad Admin-area access.
+- Trusted proxy handling is a deployment/webserver boundary, not an app-level Security settings feature. Security identity, GeoIP, IP-bucket policy, access logs, API diagnostics, and auto-ban decisions must use Symfony's resolved request client IP and must not trust raw forwarding headers directly. Operators configure trusted reverse proxies through webserver/Symfony deployment config, for example `mod_remoteip` or equivalent server-level handling.
+- Visitor ID generation may use raw forwarding-header values only as untrusted differentiation entropy, for example to avoid merging unrelated browsers behind the same resolved IP when their `X-Forwarded-For` chains differ. Raw forwarding-header values must not become Security subject keys, GeoIP inputs, ban keys, or signal evidence. Because clients can spoof those headers, enforcement must not rely on the fallback Visitor-ID alone for anonymous cookie-less abuse; it must evaluate the stable IP-bucket HMAC alongside Visitor-ID evidence.
+- Visitor ID remains the preferred browser continuity key. Different browsers behind the same untrusted proxy should still receive separate visitor subjects. IP bans/blocks remain allowed as a secondary cookie-reset bypass defense, but their thresholds should be laxer than Visitor-ID thresholds so shared or untrusted-network IPs have a lower false-positive risk.
 - HTTP security headers are an adjacent production-hardening follow-up. Before production readiness, define and test the response policy for CSP, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sensitive-route `no-store`, and any route-specific exceptions needed by the editor, package assets, or external integrations.
+- Configurable enforcement windows, thresholds, escalation windows, and review horizons must respect the retention of the underlying evidence. A limiter, auto-ban, or review policy may not evaluate signals, projected logs, IP-derived buckets, or other evidence beyond the configured retention window for that data. If an operator configures an enforcement window longer than the available retained evidence, the implementation must reject, clamp, or clearly diagnose the mismatch instead of pretending older evidence can still be considered.
 
 ## Auto-Ban Defaults
 
@@ -149,6 +155,7 @@ The codebase and other feature drafts expose several security-relevant surfaces 
   - repeated IP ban within 24 hours: 6 hours;
   - severe repeated IP abuse: up to 24 hours;
   - maximum: 7 days.
+- IP-ban/block thresholds should stay laxer than Visitor-ID thresholds because one resolved IP may represent multiple users behind shared hosting, NAT, or an untrusted proxy. Use Visitor-ID evidence first where available, and treat IP-only evidence as a secondary escalation signal unless the signal is severe.
 - API-key bans use key fingerprint/prefix only:
   - invalid-key probe ban: 15 minutes;
   - repeated invalid-key probe ban: 1 hour;
@@ -177,15 +184,18 @@ The codebase and other feature drafts expose several security-relevant surfaces 
 ## Logging And Projection Policy
 
 - Rotating file logs remain the durable raw operational source.
-- A database-backed security event projection is an open read-model decision for query-heavy review and abuse correlation.
-- If introduced, the projection must duplicate only minimized/redacted fields, keep IP-derived data within the 30-day limit, and degrade without weakening enforcement or hiding diagnostics.
+- Database-backed message, audit, and access lookup projections are the Admin/API read model for query-heavy review and abuse correlation.
+- Passive security signals are stored separately as `security_signal_event` rows with explicit expiry and remain observational until later enforcement branches consume them.
+- Session/visitor mismatches that already terminate an authenticated session are high-risk passive signals. They may feed later rate-limit, auto-ban, account-review, or recovery diagnostics, but copied session plus copied visitor-cookie risk scoring still needs additional policy in the later Security/remember-me work.
+- The projection must duplicate only minimized/redacted structured fields, never full raw log lines, keep IP-derived data within the 30-day limit, purge expired rows after successful writes, and degrade without weakening enforcement or hiding file-log diagnostics.
+- Level/severity fields are stored only where they support meaningful filtering: message projections keep level, security signals keep severity, and current access/audit projections omit level fields.
 - Backups, exports, diagnostics, and support bundles must not silently extend IP retention.
 
 ## Configuration Posture
 
 - First implementations may ship policy defaults as code-level constants or configuration values with tests.
 - Admin-configurable settings require bounded validation, safe defaults, documentation, and tests for disabled/missing settings.
-- Security policy bounds must prevent accidental lockout and privacy drift. Configuration must not allow IP-derived retention above 30 days, IP-ban TTLs above the documented maximum, disabling Owner recovery, disabling the recovery-login bypass without an equivalent path, or treating captcha `none` auto-success as verified human success.
+- Security policy bounds must prevent accidental lockout and privacy drift. Configuration must not allow log projection or shared security-signal retention above 30 days, IP-ban TTLs above the documented maximum, disabling Owner recovery, disabling the recovery-login bypass without an equivalent path, or treating captcha `none` auto-success as verified human success.
 - More permissive settings for public entry points should require an explicit policy update, not only a local configuration change.
 - More restrictive settings that affect login, account recovery, scheduler operation, captcha, mail delivery, or Owner/Admin access need tests for recovery behavior and false-positive handling.
 - User-facing copy is required whenever a configurable policy affects public behavior, recovery, captcha, mail delivery, remember-me, account access, or data retention.
@@ -199,7 +209,7 @@ These are first soft decisions for which values should stay fixed, become protec
 | Enforcement order, Owner recovery, Admin/Owner lockout protection | Code-level policy and tests | No ordinary Admin setting | Requires a policy update and explicit recovery tests to change |
 | IP privacy ceiling and raw-secret redaction | Code-level policy and tests | No increase allowed | IP-derived data max 30 days; raw credentials, API keys, visitor tokens, session IDs, captcha answers, and full user agents are never policy records |
 | Raw file-log retention | Existing log configuration or code default | Yes, bounded | Default 30 days; IP-bearing logs must not become queryable beyond 30 days through archives, projections, exports, or support bundles |
-| Database security event projection | Feature branch decision | Yes, bounded | Stores minimized/redacted read-model data only; must degrade without hiding diagnostics or weakening enforcement |
+| Database log projections and security signals | Config-backed defaults in Abuse Foundation | Yes, bounded | Message/audit/access projections default to 30 days; all passive security signals default to 7 days through one shared signal-retention setting; all IP-derived/queryable projection data remains capped at 30 days |
 | GeoIP enablement, database path, license key, and update task | Protected config/Admin setting with null fallback | Yes, protected and audited | License key never public; disabled/unconfigured state uses `NullGeoIpResolver`; no geo-blocking |
 | GeoIP license key | Secret/protected setting | Yes, protected only | Never rendered, exported, logged, or included in diagnostics |
 | Probe-path defaults | Code defaults plus config descriptor | Yes, audited | Defaults remain broad; patterns are anchored/normalized and tested against false positives |

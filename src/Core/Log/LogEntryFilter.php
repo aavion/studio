@@ -7,16 +7,21 @@ namespace App\Core\Log;
 final readonly class LogEntryFilter
 {
     private const DEFAULT_PER_PAGE = 50;
+    private const DEFAULT_LEVELS = ['NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'];
+    private const LEVELS = ['DEBUG', 'INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'];
 
     /**
      * @param array<string, mixed> $query
      *
-     * @return array{level: string, search: string, match: string, time_window: string, audit_action: string, per_page: int|string, page: int}
+     * @return array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int}
      */
     public function filters(array $query): array
     {
+        $levels = $this->levels($query['level'] ?? $query['levels'] ?? null);
+
         return [
-            'level' => $this->level($query['level'] ?? null),
+            'level' => 1 === count($levels) ? $levels[0] : '',
+            'levels' => $levels,
             'search' => $this->search($query['q'] ?? null),
             'match' => $this->match($query['match'] ?? null),
             'time_window' => $this->timeWindow($query['time_window'] ?? null),
@@ -27,12 +32,31 @@ final readonly class LogEntryFilter
     }
 
     /**
+     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int} $filters
+     *
+     * @return array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int}
+     */
+    public function filtersForSource(array $filters, bool $supportsLevelFilter, bool $supportsAuditActionFilter): array
+    {
+        if (!$supportsLevelFilter) {
+            $filters['level'] = '';
+            $filters['levels'] = [];
+        }
+
+        if (!$supportsAuditActionFilter) {
+            $filters['audit_action'] = '';
+        }
+
+        return $filters;
+    }
+
+    /**
      * @param array<string, mixed> $entry
-     * @param array{level: string, search: string, match: string, time_window: string, audit_action: string, per_page: int|string, page: int} $filters
+     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int} $filters
      */
     public function matches(array $entry, array $filters): bool
     {
-        if ('' !== $filters['level'] && $entry['level'] !== $filters['level']) {
+        if ([] !== $filters['levels'] && !in_array($entry['level'], $filters['levels'], true)) {
             return false;
         }
 
@@ -75,17 +99,24 @@ final readonly class LogEntryFilter
         return $timestamp >= $cutoff;
     }
 
-    private function level(mixed $level): string
+    /**
+     * @return list<string>
+     */
+    private function levels(mixed $level): array
     {
-        if (!is_string($level)) {
-            return '';
+        if (null === $level || '' === $level || [] === $level) {
+            return self::DEFAULT_LEVELS;
         }
 
-        $level = strtoupper(trim($level));
+        $levels = is_array($level) ? $level : [$level];
+        $levels = array_values(array_unique(array_filter(array_map(
+            static fn (mixed $candidate): string => is_string($candidate) ? strtoupper(trim($candidate)) : '',
+            $levels,
+        ))));
 
-        return in_array($level, ['DEBUG', 'INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'], true)
-            ? $level
-            : '';
+        $levels = array_values(array_filter($levels, static fn (string $candidate): bool => in_array($candidate, self::LEVELS, true)));
+
+        return [] === $levels ? self::DEFAULT_LEVELS : $levels;
     }
 
     private function search(mixed $search): string
@@ -103,15 +134,15 @@ final readonly class LogEntryFilter
         return in_array($window, ['1h', '24h', '7d', '30d'], true) ? $window : '24h';
     }
 
-    private function perPage(mixed $perPage): int|string
+    private function perPage(mixed $perPage): int
     {
         if ('all' === $perPage) {
-            return 'all';
+            return 500;
         }
 
         $perPage = is_numeric($perPage) ? (int) $perPage : self::DEFAULT_PER_PAGE;
 
-        return in_array($perPage, [25, 50, 100, 150], true) ? $perPage : self::DEFAULT_PER_PAGE;
+        return in_array($perPage, [25, 50, 100, 150, 500], true) ? $perPage : self::DEFAULT_PER_PAGE;
     }
 
     private function page(mixed $page): int

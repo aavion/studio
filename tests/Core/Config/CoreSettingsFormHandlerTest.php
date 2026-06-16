@@ -11,13 +11,17 @@ use App\Core\Config\ConfigValueType;
 use App\Core\Config\Settings\CoreSettingsFormHandler;
 use App\Core\Config\Settings\CoreSettingsRegistry;
 use App\Core\Geo\MaxMindGeoIpConfig;
+use App\Core\Log\ConfigAuditLogPolicy;
+use App\Core\Log\DatabaseLogRetentionPolicy;
 use App\Form\FormSubmissionHandler;
 use App\Localization\TranslationLanguageCatalog;
+use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\View\SystemPackageMetadataProvider;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 final class CoreSettingsFormHandlerTest extends TestCase
 {
@@ -67,6 +71,37 @@ final class CoreSettingsFormHandlerTest extends TestCase
 
         self::assertTrue($result->isValid());
         self::assertSame('secret-license-key', $config->get(MaxMindGeoIpConfig::LICENSE_KEY_KEY));
+    }
+
+    public function testItInvalidatesSuspiciousProbePatternCacheWhenSecuritySettingsChange(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(SuspiciousProbePathMatcher::PATTERNS_KEY, '#/old-probe$#', ConfigValueType::String);
+        $cache = new ArrayAdapter();
+        $matcher = new SuspiciousProbePathMatcher($config, cache: $cache);
+
+        self::assertTrue($matcher->isProbe('/old-probe'));
+
+        $handler = new CoreSettingsFormHandler(
+            $this->registry(),
+            $config,
+            new FormSubmissionHandler(),
+            $this->createStub(EntityManagerInterface::class),
+            $matcher,
+        );
+
+        $result = $handler->submit('security', [
+            'security.captcha.enabled' => '0',
+            'security.captcha.provider' => 'none',
+            ConfigAuditLogPolicy::ENABLED_KEY => '1',
+            ConfigAuditLogPolicy::EVENTS_KEY => ConfigAuditLogPolicy::DEFAULT_CATEGORIES,
+            DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY => '7',
+            SuspiciousProbePathMatcher::PATTERNS_KEY => '#/new-probe$#',
+        ], 'test');
+
+        self::assertTrue($result->isValid());
+        self::assertTrue((new SuspiciousProbePathMatcher($config, cache: $cache))->isProbe('/new-probe'));
+        self::assertFalse((new SuspiciousProbePathMatcher($config, cache: $cache))->isProbe('/old-probe'));
     }
 
     private function registry(): CoreSettingsRegistry

@@ -20,6 +20,7 @@ final readonly class AccessLogger implements AccessLoggerInterface
         private VisitorIdGenerator $visitorIdGenerator,
         private AccessRequestMetadata $accessRequestMetadata,
         private GeoIpResolverInterface $geoIpResolver,
+        private ?DatabaseLogProjector $databaseLogProjector = null,
     ) {
     }
 
@@ -29,7 +30,7 @@ final readonly class AccessLogger implements AccessLoggerInterface
         $geoIp = $this->geoIpResolver->resolve($this->visitorIdGenerator->sourceIp($request));
         $path = $this->accessRequestMetadata->sanitizedPath($request);
 
-        $this->logger->info('access.request', [
+        $context = [
             'request_id' => $this->accessRequestMetadata->requestId($request),
             'correlation_id' => $this->accessRequestMetadata->correlationId($request),
             'method' => $request->getMethod(),
@@ -60,7 +61,10 @@ final readonly class AccessLogger implements AccessLoggerInterface
             'state' => $geoIp->state,
             'country' => $geoIp->country,
             'continent' => $geoIp->continent,
-        ]);
+        ];
+
+        $this->logger->info('access.request', $context);
+        $this->databaseLogProjector?->recordAccess($context);
     }
 
     private function userAgent(Request $request): string

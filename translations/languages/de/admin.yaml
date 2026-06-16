@@ -29,6 +29,7 @@ admin:
     user_settings: 'Benutzer'
     mail_settings: 'Mail'
     security_settings: 'Sicherheit'
+    logging_settings: 'Logs'
     package_settings: 'Pakete'
     statistics_settings: 'Statistiken'
     api_settings: 'API'
@@ -598,19 +599,21 @@ admin:
     foundation_text: 'Operations-Logs, Audit-Ansichten, Paketdiagnostik und sicherheitsrelevante Ereignisse docken hier an.'
     empty_value: 'n/a'
     sources:
+      label: 'Logquellen'
       application: 'Anwendung'
       message: 'Meldungen'
       audit: 'Audit'
       access: 'Zugriffe'
+      security_signal: 'Security-Signale'
     filters:
       title: 'Filter'
       source: 'Log'
       level: 'Level'
-      any_level: 'Alle Level'
       search: 'Suche'
       window: 'Zeitraum'
       match: 'Treffer'
       audit_action: 'Audit-Aktion'
+      signal_reason: 'Signal-Grund'
       per_page: 'Zeilen'
       limit: 'Limit'
       contains: 'Enthält'
@@ -625,8 +628,6 @@ admin:
     entries:
       title: 'Einträge'
       empty: 'Keine Log-Einträge entsprechen den aktuellen Filtern.'
-      no_files: 'Für diese Auswahl existiert noch keine Log-Datei.'
-      files: 'Gelesen wird: %files%'
       open: 'Details'
       page_summary: 'Seite %page% von %pages% · %total% Einträge'
       previous: 'Zurück'
@@ -642,6 +643,8 @@ admin:
       location: 'Ort'
       user: 'Nutzer'
       action: 'Aktion'
+      security_signal: 'Signal'
+      subject: 'Subjekt'
       channel: 'Channel'
       context: 'Kontext'
       details: 'Details'
@@ -701,7 +704,11 @@ admin:
     security:
       title: 'Sicherheits-Einstellungen'
       foundation_title: 'Sicherheits-Konfigurationsfundament'
-      foundation_text: 'Sicherheits-, Captcha-, Logging- und Missbrauchsschutz-Einstellungen docken hier an.'
+      foundation_text: 'Sicherheits-, Captcha-, passive Signal-Retention- und Missbrauchsschutz-Einstellungen docken hier an.'
+    logging:
+      title: 'Log-Einstellungen'
+      foundation_title: 'Datenbank-Log-Projektionen'
+      foundation_text: 'Message-, Audit- und Access-Logs behalten separat ihre festen rotierenden File-Logs. Diese Einstellungen steuern, wie lange die durchsuchbaren Datenbank-Kopien verfügbar bleiben.'
     statistics:
       title: 'Statistik-Einstellungen'
       foundation_title: 'Statistik-Konfiguration'
@@ -809,6 +816,21 @@ admin:
         label: 'Audit-Logging aktivieren'
       audit_events:
         label: 'Audit-Ereigniskategorien'
+      message_log_retention_days:
+        label: 'Datenbank-Retention für Meldungslogs'
+        help: 'Retention der Datenbank-Lookup-Kopie in Tagen. File-Logs behalten separat ihre feste 30-Tage-Rotation.'
+      audit_log_retention_days:
+        label: 'Datenbank-Retention für Audit-Logs'
+        help: 'Retention der Datenbank-Lookup-Kopie in Tagen. Werte über 30 Tagen sind nicht erlaubt, weil Audit-Daten Request-bezogene Identifier enthalten können.'
+      access_log_retention_days:
+        label: 'Datenbank-Retention für Access-Logs'
+        help: 'Retention der Datenbank-Lookup-Kopie in Tagen. Werte über 30 Tagen sind nicht erlaubt, weil Access-Logs IP-abgeleitete Daten enthalten können.'
+      security_signal_retention_days:
+        label: 'Retention für Security-Signale'
+        help: 'Retention für passive Security-Signale in Tagen. Werte über 30 Tagen sind nicht erlaubt, weil Signale Request-bezogene Identifier enthalten können.'
+      security_probe_path_patterns:
+        label: 'Pfadmuster für verdächtige Probes'
+        help: 'Ein regulärer Ausdruck pro Zeile. Quoted-CSV-Imports werden akzeptiert. Ungültige oder leere Listen fallen auf die geschützten Defaults zurück.'
       geoip_enabled:
         label: 'GeoIP-Lookups aktivieren'
         help: 'Wenn deaktiviert oder nicht verfügbar, behalten Logs und Statistiken normalisierte n/a-Ortswerte.'

@@ -12,7 +12,7 @@ use App\Api\Http\ApiListQueryNormalizer;
 use App\Api\Http\ApiResponder;
 use App\Api\Security\ApiAccessGuard;
 use App\Core\Access\AccessLevel;
-use App\Core\Log\LogFileBrowser;
+use App\Core\Log\AdminLogBrowser;
 use App\Core\Message\Message;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
 final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
 {
     public function __construct(
-        private LogFileBrowser $logs,
+        private AdminLogBrowser $logs,
         private ApiListQueryNormalizer $listQueries,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
@@ -75,16 +75,30 @@ final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
      */
     private function sourceResources(array $sources): array
     {
-        return array_map(static fn (array $source): array => [
+        return array_map(fn (array $source): array => [
             'type' => 'log_source',
             'id' => $source['key'],
             'attributes' => [
                 'source' => $source['key'],
                 'label_key' => $source['label'],
                 'path' => '/api/v1/admin/logs/'.$source['key'],
-                'filters' => ['level', 'q', 'match', 'time_window', 'audit_action', 'limit', 'page'],
+                'filters' => $this->filtersForSource((string) $source['key']),
             ],
         ], $sources);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function filtersForSource(string $source): array
+    {
+        return match ($source) {
+            'application' => ['level', 'q', 'match', 'time_window', 'limit', 'page'],
+            'message' => ['level', 'q', 'match', 'time_window', 'limit', 'page'],
+            'audit' => ['q', 'match', 'time_window', 'audit_action', 'limit', 'page'],
+            'security_signal' => ['level', 'q', 'match', 'time_window', 'audit_action', 'limit', 'page'],
+            default => ['q', 'match', 'time_window', 'limit', 'page'],
+        };
     }
 
     private function sourceFromPath(string $path): ?string

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Log;
 
+use App\Content\Routing\ContentRouteLocalization;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -17,6 +18,10 @@ final readonly class AccessRequestMetadata
     private const MIN_REQUEST_ID_LENGTH = 8;
     private const REQUEST_ID_PATTERN = '/\A[A-Za-z0-9][A-Za-z0-9._:-]*\z/';
     private const REDACTED_SEGMENT = '[redacted]';
+
+    public function __construct(private ?ContentRouteLocalization $routeLocalization = null)
+    {
+    }
 
     public function markStarted(Request $request): void
     {
@@ -71,13 +76,13 @@ final readonly class AccessRequestMetadata
 
     public function surface(Request $request): string
     {
-        $path = $request->getPathInfo();
+        $segments = $this->segments($request);
 
         return match (true) {
-            str_starts_with($path, '/admin') => 'admin',
-            str_starts_with($path, '/editor') => 'editor',
-            str_starts_with($path, '/api') => 'api',
-            str_starts_with($path, '/setup') => 'setup',
+            $this->matchesSegments($segments, 'admin') => 'admin',
+            $this->matchesSegments($segments, 'editor') => 'editor',
+            $this->matchesSegments($segments, 'api') => 'api',
+            $this->matchesSegments($segments, 'setup') => 'setup',
             default => 'public',
         };
     }
@@ -177,6 +182,64 @@ final readonly class AccessRequestMetadata
             'requested_path' => $this->sanitizedPath($request),
             'resolved_route' => $this->resolvedRoute($request),
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function segments(Request $request): array
+    {
+        $segments = array_values(array_filter(explode('/', trim($request->getPathInfo(), '/')), static fn (string $segment): bool => '' !== $segment));
+        $locale = $this->localePrefix($request);
+
+        if (is_string($locale) && '' !== $locale && ($segments[0] ?? null) === $locale) {
+            array_shift($segments);
+        }
+
+        return $segments;
+    }
+
+    private function localePrefix(Request $request): ?string
+    {
+        $segments = explode('/', trim($request->getPathInfo(), '/'));
+        $firstSegment = $segments[0] ?? '';
+
+        if ('' === $firstSegment || !$this->hasLocalizedReservedPath($segments)) {
+            return null;
+        }
+
+        $locale = $request->attributes->get('_locale');
+        if (is_string($locale) && $firstSegment === $locale) {
+            return $firstSegment;
+        }
+
+        if (null !== $this->routeLocalization && $this->routeLocalization->isEnabled() && in_array($firstSegment, $this->routeLocalization->availableLanguages(), true)) {
+            return $firstSegment;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<string> $pathSegments
+     */
+    private function matchesSegments(array $pathSegments, string ...$segments): bool
+    {
+        foreach ($segments as $index => $segment) {
+            if (($pathSegments[$index] ?? null) !== $segment) {
+                return false;
+            }
+        }
+
+        return [] !== $segments;
+    }
+
+    /**
+     * @param list<string> $segments
+     */
+    private function hasLocalizedReservedPath(array $segments): bool
+    {
+        return in_array($segments[1] ?? '', ['admin', 'api', 'editor', 'setup'], true);
     }
 
     /**

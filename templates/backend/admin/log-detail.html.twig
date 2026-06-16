@@ -19,7 +19,9 @@
         <table class="system-field-table">
             <tbody>
                 <tr><th>{{ 'admin.logs.columns.timestamp'|trans }}</th><td>{{ log_entry.timestamp|default('admin.logs.empty_value'|trans) }}</td></tr>
-                <tr><th>{{ 'admin.logs.columns.level'|trans }}</th><td>{{ log_entry.level|default('admin.logs.empty_value'|trans) }}</td></tr>
+                {% if log_entry.level|default('') is not empty %}
+                    <tr><th>{{ 'admin.logs.columns.level'|trans }}</th><td>{{ log_entry.level }}</td></tr>
+                {% endif %}
                 <tr><th>{{ 'admin.logs.columns.source'|trans }}</th><td>{{ log_entry.source|default('admin.logs.empty_value'|trans) }}</td></tr>
                 <tr><th>{{ 'admin.logs.columns.file'|trans }}</th><td>{{ log_entry.file|default('admin.logs.empty_value'|trans) }}</td></tr>
                 <tr><th>{{ 'admin.logs.columns.message'|trans }}</th><td>{{ log_entry.message|default('admin.logs.empty_value'|trans) }}</td></tr>
@@ -45,8 +47,10 @@
         {% endif %}
     </section>
 
-    <section class="system-panel">
-        <h2>{{ 'admin.logs.detail.raw'|trans }}</h2>
-        <pre class="system-code-block">{{ log_entry.raw|default('') }}</pre>
-    </section>
+    {% if log_entry.raw|default('') is not empty %}
+        <section class="system-panel">
+            <h2>{{ 'admin.logs.detail.raw'|trans }}</h2>
+            <pre class="system-code-block">{{ log_entry.raw }}</pre>
+        </section>
+    {% endif %}
 {% endblock %}

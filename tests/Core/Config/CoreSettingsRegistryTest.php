@@ -8,11 +8,13 @@ use App\Api\ApiFeaturePolicy;
 use App\Core\Config\Settings\CoreSettingDefinition;
 use App\Core\Config\Settings\CoreConfigDefaultProvider;
 use App\Core\Config\Settings\CoreSettingsRegistry;
+use App\Core\Log\DatabaseLogRetentionPolicy;
 use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
+use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\Security\UserFlowConfig;
 use App\View\SystemPackageMetadataProvider;
 use PHPUnit\Framework\TestCase;
@@ -26,6 +28,7 @@ final class CoreSettingsRegistryTest extends TestCase
         $general = $registry->definitions('general');
         $users = $registry->definitions('users');
         $security = $registry->definitions('security');
+        $logging = $registry->definitions('logging');
         $statistics = $registry->definitions('statistics');
         $api = $registry->definitions('api');
 
@@ -59,10 +62,24 @@ final class CoreSettingsRegistryTest extends TestCase
             'security.captcha.preview',
             ConfigAuditLogPolicy::ENABLED_KEY,
             ConfigAuditLogPolicy::EVENTS_KEY,
+            DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY,
+            SuspiciousProbePathMatcher::PATTERNS_KEY,
         ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $security));
         self::assertSame(FormInputType::Captcha, $security[2]->formField()->inputType());
         self::assertSame(FormInputType::MultiSelect, $security[4]->formField()->inputType());
         self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $security[4]->defaultValue());
+        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, $security[5]->defaultValue());
+        self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $security[6]->defaultValue());
+        self::assertSame(FormInputType::Textarea, $security[6]->formField()->inputType());
+
+        self::assertSame([
+            DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY,
+            DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY,
+            DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY,
+        ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $logging));
+        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $logging[0]->defaultValue());
+        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $logging[1]->defaultValue());
+        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $logging[2]->defaultValue());
 
         self::assertSame([
             AccessStatisticsPolicy::ENABLED_KEY,
@@ -110,6 +127,7 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertSame([], $provider->defaultValue(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY));
         self::assertFalse($provider->defaultValue(MaxMindGeoIpConfig::ENABLED_KEY));
         self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $provider->defaultValue(MaxMindGeoIpConfig::DATABASE_PATH_KEY));
+        self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $provider->defaultValue(SuspiciousProbePathMatcher::PATTERNS_KEY));
         self::assertFalse($provider->hasDefault('security.captcha.preview'));
         self::assertNull($provider->defaultValue('security.captcha.preview'));
     }

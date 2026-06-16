@@ -207,6 +207,7 @@ final readonly class VisitorIdGenerator
                 'visitor-fallback-id',
                 $this->sourceIp($request),
                 $this->normalizedUserAgent($request),
+                $this->untrustedForwardingEntropy($request),
             ]),
             $this->secret,
             true,
@@ -231,10 +232,18 @@ final readonly class VisitorIdGenerator
                 'visitor-fallback',
                 $this->sourceIp($request),
                 $this->normalizedUserAgent($request),
+                $this->untrustedForwardingEntropy($request),
             ]),
             $this->secret,
             true,
         ));
+    }
+
+    private function untrustedForwardingEntropy(Request $request): string
+    {
+        $chain = $this->proxyIpChain($request);
+
+        return [] === $chain ? self::PLACEHOLDER : implode(',', $chain);
     }
 
     private function packCookieValue(string $token): string

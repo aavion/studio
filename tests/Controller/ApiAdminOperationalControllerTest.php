@@ -65,6 +65,15 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         $payload = $this->jsonPayload($client->getResponse()->getContent());
         self::assertGreaterThan(0, $payload['meta']['count']);
         self::assertSame('log_source', $payload['data'][0]['type']);
+        $sources = [];
+        foreach ($payload['data'] as $resource) {
+            $sources[$resource['id']] = $resource['attributes']['filters'];
+        }
+        self::assertSame(['level', 'q', 'match', 'time_window', 'limit', 'page'], $sources['application']);
+        self::assertSame(['level', 'q', 'match', 'time_window', 'limit', 'page'], $sources['message']);
+        self::assertSame(['q', 'match', 'time_window', 'audit_action', 'limit', 'page'], $sources['audit']);
+        self::assertSame(['q', 'match', 'time_window', 'limit', 'page'], $sources['access']);
+        self::assertSame(['level', 'q', 'match', 'time_window', 'audit_action', 'limit', 'page'], $sources['security_signal']);
 
         $client->request('GET', '/api/v1/admin/logs/message?level=INFO&limit=25', server: [
             'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
@@ -222,6 +231,10 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         self::assertSame(['backend-admin', 'backend-admin-scheduler'], $payload['paths']['/admin/scheduler']['get']['tags']);
         self::assertSame(['backend-admin', 'backend-admin-statistics'], $payload['paths']['/admin/statistics']['get']['tags']);
         self::assertSame(['backend-admin', 'backend-admin-themes'], $payload['paths']['/admin/themes']['get']['tags']);
+        self::assertSame(
+            ['application', 'message', 'audit', 'access', 'security_signal'],
+            $payload['paths']['/admin/logs/{log}']['get']['parameters'][0]['schema']['enum'],
+        );
         self::assertContains([
             'name' => 'backend-admin-operations',
             'summary' => 'Backend Admin Operations',
