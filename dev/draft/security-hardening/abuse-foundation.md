@@ -59,6 +59,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Probe-path detection is configurable through a simple editable pattern-list setting, not a raw JSON field. The UI should present one regular expression per line and may accept CSV-style imports for convenience. Empty or invalid lists fall back to protected defaults for `.env`, VCS metadata, backup/database dumps, common foreign admin panels, upload shells, and known scanner paths.
 - Request classification is passive and deterministic. `/api/live/**`, safe browser prefetch, and CORS preflight receive no ordinary enforcement cost in this branch; suspicious probes and mutating admin/API workflows receive higher symbolic costs for later limiter branches.
 - `PassiveAbuseSignalSubscriber` records only clear passive signals in this branch, starting with high-signal probe paths and unsafe prefetch attempts. It writes Visitor-ID and IP-bucket HMAC context where available, never raw IP or forwarding-header values, and does not alter the response.
+- `SessionVisitorBindingSubscriber` also records the already-enforced session/visitor mismatch as a high-risk passive signal before terminating the session. This does not solve copied session plus copied visitor-cookie risk scoring by itself; that deeper scoring remains a later Security/remember-me concern.
 - First implementation uses the portable `security_signal_event` table for short-lived passive signals. Suggested fields are normalized subject type/key, request family, intent, reason code, confidence, weight/count, timestamps, expiry timestamp, safe context, and optional audit reference.
 - Passive-signal rows are observational only in this branch. The rate and auto-ban branches decide how to consume them for enforcement.
 - Keep passive signals separate from raw file logs and from the message/audit/access projections. Later branches may consume `security_signal_event`, but this branch does not enforce from it.
@@ -94,6 +95,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test suspicious probe rules do not collide with legitimate upload, package, import, backup, restore, media, and editor routes.
 - Test probe-pattern normalization and false-positive avoidance for ordinary application routes.
 - Test redaction in passive signal messages.
+- Test session/visitor mismatch signal recording without changing the existing forced logout and audit behavior.
 - Test database log projection writes for message, audit, and access logs without bypassing the existing file-log path.
 - Test database projection and signal recorder no-op before touching DBAL while setup/database readiness is false.
 - Test projection retention purge-after-write behavior and the 30-day maximum for configurable lookup retention.

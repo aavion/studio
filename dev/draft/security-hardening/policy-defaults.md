@@ -184,6 +184,7 @@ The codebase and other feature drafts expose several security-relevant surfaces 
 - Rotating file logs remain the durable raw operational source.
 - Database-backed message, audit, and access lookup projections are the Admin/API read model for query-heavy review and abuse correlation.
 - Passive security signals are stored separately as `security_signal_event` rows with explicit expiry and remain observational until later enforcement branches consume them.
+- Session/visitor mismatches that already terminate an authenticated session are high-risk passive signals. They may feed later rate-limit, auto-ban, account-review, or recovery diagnostics, but copied session plus copied visitor-cookie risk scoring still needs additional policy in the later Security/remember-me work.
 - The projection must duplicate only minimized/redacted structured fields, never full raw log lines, keep IP-derived data within the 30-day limit, purge expired rows after successful writes, and degrade without weakening enforcement or hiding file-log diagnostics.
 - Level/severity fields are stored only where they support meaningful filtering: message projections keep level, security signals keep severity, and current access/audit projections omit level fields.
 - Backups, exports, diagnostics, and support bundles must not silently extend IP retention.

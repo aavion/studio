@@ -66,7 +66,7 @@
 - [ ] Editor/API follow-up: when the final content/editor model lands, replace provisional API content list filtering with a domain-owned actor-aware content list/read resolver covering canonical paths, language, variants, optional version selection, pagination, filtering, and sorting.
 - [ ] Before production readiness, review public package/developer-facing class, interface, function, and Twig helper names for clarity and ergonomics; decide whether to rename directly or provide stable aliases so extension APIs read as intentional rather than provisional.
 - [ ] Audit follow-up: add a durable package lifecycle operation journal/coordinator for multi-step activation, deactivation, install, rollback, and cleanup flows.
-- [ ] Audit follow-up: design copied-session plus copied-visitor-cookie risk scoring in the Security branch; current hard session binding intentionally covers visitor changes, not complete cookie-pair duplication.
+- [ ] Audit follow-up: design copied-session plus copied-visitor-cookie risk scoring in the Security branch; current hard session binding now records visitor changes as high-risk signals, but still does not detect complete cookie-pair duplication.
 - [ ] Audit follow-up: implement remember-me with Symfony-style persistent server-side tokens, visitor binding, explicit revocation, token rotation, and audit signals in the Security branch.
 - [ ] Audit follow-up: replace the debug account-link mail/message-log delivery stub with the real Mailer delivery contract and a dedicated Mail Message/API catalogue.
 - [ ] Security follow-up: define and test production HTTP security-header policy, including CSP, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sensitive-route `no-store`, and documented route exceptions.
@@ -88,6 +88,7 @@
 - Added the passive Abuse Foundation facade, subject resolver, request-intent classifier, suspicious-probe matcher, and symbolic action-cost catalogue. These expose visitor/user/API/IP-bucket subjects, `/api/live/**`, prefetch, CORS preflight, scheduler/setup/admin/API intents, and cost metadata for later rate/ban branches without enforcing limits yet.
 - Added best-effort passive signal recording for high-signal probes and unsafe prefetch attempts. Signals carry Visitor-ID plus IP-bucket HMAC context when available and never store raw proxy-header values.
 - Made suspicious probe path patterns configurable as an editable line-based Security setting with CSV-tolerant parsing, protected high-signal defaults, invalid-pattern fallback, setup seed coverage, translations, and focused matcher tests.
+- Added high-risk passive security-signal recording for enforced session/visitor mismatches while preserving the existing forced logout and audit behavior. Complete copied-session plus copied-visitor-cookie risk scoring remains a later Security/remember-me follow-up.
 - Verification so far: focused PHPUnit for database log browser/projector, security signal recorder, affected log/settings/setup tests passed; `php bin/console lint:container` passed; focused `bin/lint` for changed Twig/translations/drafts passed.
 
 ### Archived Compacted Branch History
