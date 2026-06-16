@@ -8,7 +8,7 @@ use App\Core\Access\AccessActor;
 use App\Core\Diagnostics\SystemInfoProvider;
 use App\Core\Geo\GeoIpResolverInterface;
 use App\Core\Geo\MaxMindGeoIpConfig;
-use App\Core\Log\LogFileBrowser;
+use App\Core\Log\DatabaseLogBrowser;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Statistics\AccessStatisticsSnapshotProvider;
 use App\Entity\UserAccount;
@@ -19,7 +19,7 @@ final readonly class AdminViewContextProvider
 {
     public function __construct(
         private LiveOperationRunStore $liveOperationRunStore,
-        private LogFileBrowser $logFileBrowser,
+        private DatabaseLogBrowser $logBrowser,
         private AccessStatisticsSnapshotProvider $accessStatisticsSnapshotProvider,
         private SystemInfoProvider $systemInfoProvider,
         private MaxMindGeoIpConfig $maxMindGeoIpConfig,
@@ -41,7 +41,7 @@ final readonly class AdminViewContextProvider
         return match ($view->uid()) {
             'backend-admin-operations' => $this->operationVariables(),
             'backend-admin-logs' => [
-                'log_view' => $this->logFileBrowser->browse($request->query->all()),
+                'log_view' => $this->logBrowser->browse($request->query->all()),
             ],
             'backend-admin-statistics' => [
                 'access_statistics' => $this->accessStatisticsSnapshotProvider->snapshot($request->query->get('statistics_window')),

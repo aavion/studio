@@ -23,7 +23,7 @@ final readonly class AdminOperationalApiEndpointProvider implements ApiEndpointP
         return [
             $this->endpoint('/api/v1/admin/backups', 'listAdminBackups', 'List backup API capabilities prepared for future backup operations.', self::HANDLER_BACKUPS),
             $this->endpoint('/api/v1/admin/logs', 'listAdminLogSources', 'List administrative log sources visible to administrators.', self::HANDLER_LOGS),
-            $this->endpoint('/api/v1/admin/logs/{log}', 'listAdminLogEntries', 'List administrative log entries for one log source.', self::HANDLER_LOGS, parameters: $this->logParameters(), pathPattern: '#^/api/v1/admin/logs/[a-z]+$#'),
+            $this->endpoint('/api/v1/admin/logs/{log}', 'listAdminLogEntries', 'List administrative log entries for one log source.', self::HANDLER_LOGS, parameters: $this->logParameters(), pathPattern: '#^/api/v1/admin/logs/[a-z_]+$#'),
             $this->endpoint('/api/v1/admin/operations', 'listAdminOperations', 'List live operation runs visible to administrators.', self::HANDLER_OPERATIONS),
             $this->endpoint('/api/v1/admin/operations/{action}', 'runAdminOperationMaintenance', 'Review or run an administrative live-operation maintenance action.', self::HANDLER_OPERATIONS, Request::METHOD_POST, parameters: $this->maintenanceOperationParameters(), responseSchema: ['type' => 'object'], pathPattern: '#^/api/v1/admin/operations/(cleanup|clear-stale-lock|kill-stale-runner)$#'),
             $this->endpoint('/api/v1/admin/operations/{operation_id}', 'getAdminOperation', 'Return one live operation report visible to administrators.', self::HANDLER_OPERATIONS, parameters: $this->operationParameters(), pathPattern: '#^/api/v1/admin/operations/[a-f0-9]{32}$#'),

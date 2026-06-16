@@ -7,7 +7,7 @@ namespace App\Core\Log;
 final readonly class LogPagination
 {
     /**
-     * @param array{level: string, search: string, match: string, time_window: string, audit_action: string, per_page: int|string, page: int} $filters
+     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int|string, page: int} $filters
      *
      * @return array{page: int, per_page: int|string, total: int, total_pages: int, has_previous: bool, has_next: bool, previous_page: int, next_page: int}
      */

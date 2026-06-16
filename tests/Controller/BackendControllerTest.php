@@ -552,18 +552,51 @@ final class BackendControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $this->loginUserWithLevel($client, 8);
-        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
-        $logFile = $logDir.'/test/access-2099-01-01.log';
-
-        if (!is_dir($logDir.'/test')) {
-            mkdir($logDir.'/test', 0775, true);
-        }
-        foreach (glob($logDir.'/test/access-*.log') ?: [] as $existingLogFile) {
-            @unlink($existingLogFile);
-        }
-        file_put_contents($logFile, '[2099-01-01T10:00:00.000000+00:00] access.INFO: access.request {"method":"GET","path":"/admin/logs","route":"backend_admin_route","http_status":200,"ip":"127.0.0.1","city":"n/a","state":"n/a","country":"n/a","continent":"n/a"} []'.PHP_EOL);
         $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
+        $connection->delete('access_log_entry', ['request_id' => 'request-admin-logs']);
         $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);
+        $accessLogContext = [
+            'method' => 'GET',
+            'path' => '/admin/logs',
+            'requested_path' => '/admin/logs',
+            'route' => 'backend_admin_route',
+            'resolved_route' => 'backend_admin_route',
+            'http_status' => 200,
+            'client_ip' => '127.0.0.1',
+        ];
+        $connection->insert('access_log_entry', [
+            'uid' => '99999999-0000-7000-8000-000000000900',
+            'occurred_at' => '2099-01-01 10:00:00',
+            'request_id' => 'request-admin-logs',
+            'correlation_id' => 'n/a',
+            'method' => 'GET',
+            'path' => '/admin/logs',
+            'requested_path' => '/admin/logs',
+            'route' => 'backend_admin_route',
+            'resolved_route' => 'backend_admin_route',
+            'surface' => 'admin',
+            'query_string' => '',
+            'http_status' => 200,
+            'duration_ms' => 12,
+            'visitor_id' => hash('sha256', 'test-visitor'),
+            'scheme' => 'https',
+            'host' => 'example.test',
+            'client_ip' => '127.0.0.1',
+            'proxy_client_ip' => 'n/a',
+            'user_agent' => 'Test Browser',
+            'referrer' => 'n/a',
+            'referrer_host' => 'n/a',
+            'accept_language' => 'en',
+            'preferred_language' => 'en',
+            'request_content_type' => 'n/a',
+            'response_content_type' => 'text/html',
+            'response_size' => 100,
+            'city' => 'n/a',
+            'state' => 'n/a',
+            'country' => 'n/a',
+            'continent' => 'n/a',
+            'context' => json_encode($accessLogContext, JSON_THROW_ON_ERROR),
+        ]);
         $connection->insert('access_statistic_event', [
             'uid' => '99999999-0000-7000-8000-000000000901',
             'occurred_at' => '2099-01-01 10:00:00',
@@ -598,6 +631,7 @@ final class BackendControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Logs');
+            self::assertSelectorTextContains('.system-tabs', 'Security signals');
             self::assertSelectorTextContains('.system-backend-log-table', 'GET /admin/logs');
             self::assertSelectorTextContains('.system-backend-log-table', 'Details');
 
@@ -606,7 +640,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Log event');
             self::assertSelectorTextContains('body', '127.0.0.1');
-            self::assertSelectorTextContains('.system-code-block', 'access.request');
+            self::assertSelectorTextContains('body', 'backend_admin_route');
 
             $client->request('GET', '/admin/statistics?statistics_window=all');
 
@@ -617,7 +651,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('body', 'Unique visitors');
             self::assertSelectorTextContains('body', 'Top browsers');
         } finally {
-            @unlink($logFile);
+            $connection->delete('access_log_entry', ['request_id' => 'request-admin-logs']);
             $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);
         }
     }

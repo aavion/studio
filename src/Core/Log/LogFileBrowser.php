@@ -27,6 +27,10 @@ final readonly class LogFileBrowser
     {
         $source = $this->sourceRegistry->source($query['source'] ?? null);
         $filters = $this->entryFilter->filters($query);
+        if (in_array($source, ['access', 'audit'], true)) {
+            $filters['level'] = '';
+            $filters['levels'] = [];
+        }
         $files = $this->sourceRegistry->files($this->logDir, $this->environment, $source);
         $entries = [];
         $matched = 0;
