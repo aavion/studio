@@ -75,6 +75,9 @@ final readonly class DatabaseLogBrowser
         if ('security_signal' === $source) {
             $where[] = 'expires_at > ?';
             $params[] = $this->now();
+        } elseif (in_array($source, ['message', 'audit', 'access'], true)) {
+            $where[] = 'occurred_at >= ?';
+            $params[] = $this->retentionCutoff($source);
         }
 
         $row = $this->connection->fetchAssociative(sprintf(
@@ -248,6 +251,28 @@ final readonly class DatabaseLogBrowser
     private function displayContext(string $source, array $row, array $context): array
     {
         return match ($source) {
+            'access' => [
+                ...$context,
+                'request_id' => $row['request_id'] ?? 'n/a',
+                'correlation_id' => $row['correlation_id'] ?? 'n/a',
+                'method' => $row['method'] ?? 'n/a',
+                'path' => $row['path'] ?? 'n/a',
+                'requested_path' => $row['requested_path'] ?? $row['path'] ?? 'n/a',
+                'route' => $row['route'] ?? 'n/a',
+                'resolved_route' => $row['resolved_route'] ?? $row['route'] ?? 'n/a',
+                'surface' => $row['surface'] ?? 'n/a',
+                'http_status' => $row['http_status'] ?? null,
+                'visitor_id' => $row['visitor_id'] ?? 'n/a',
+                'client_ip' => $row['client_ip'] ?? 'n/a',
+                'proxy_client_ip' => $row['proxy_client_ip'] ?? 'n/a',
+                'host' => $row['host'] ?? 'n/a',
+                'user_agent' => $row['user_agent'] ?? 'n/a',
+                'referrer_host' => $row['referrer_host'] ?? 'n/a',
+                'city' => $row['city'] ?? 'n/a',
+                'state' => $row['state'] ?? 'n/a',
+                'country' => $row['country'] ?? 'n/a',
+                'continent' => $row['continent'] ?? 'n/a',
+            ],
             'audit' => [
                 ...$context,
                 'user' => $row['user_name'] ?? 'anonymous',
@@ -332,13 +357,23 @@ final readonly class DatabaseLogBrowser
         $cutoff = $this->clock->now()->modify($modifier);
 
         if (in_array($source, ['message', 'audit', 'access'], true)) {
-            $retentionCutoff = $this->clock->now()->modify(sprintf('-%d days', $this->retentionPolicy->retentionDaysForSource($source)));
+            $retentionCutoff = $this->clock->now()->modify($this->retentionModifier($source));
             if ($retentionCutoff > $cutoff) {
                 $cutoff = $retentionCutoff;
             }
         }
 
         return $cutoff->format('Y-m-d H:i:s');
+    }
+
+    private function retentionCutoff(string $source): string
+    {
+        return $this->clock->now()->modify($this->retentionModifier($source))->format('Y-m-d H:i:s');
+    }
+
+    private function retentionModifier(string $source): string
+    {
+        return sprintf('-%d days', $this->retentionPolicy->retentionDaysForSource($source));
     }
 
     private function now(): string

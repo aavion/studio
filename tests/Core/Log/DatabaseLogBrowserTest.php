@@ -125,6 +125,8 @@ final class DatabaseLogBrowserTest extends TestCase
         self::assertSame([], $accessView['filters']['levels']);
         self::assertSame(1, $accessView['pagination']['total']);
         self::assertSame('99999999-0000-7000-8000-000000000003', $accessView['entries'][0]['id']);
+        self::assertSame('/admin/logs', $accessView['entries'][0]['context']['requested_path']);
+        self::assertSame('backend_admin_route', $accessView['entries'][0]['context']['resolved_route']);
 
         $auditView = $browser->browse(['source' => 'audit', 'level' => 'ERROR', 'q' => 'visitor-audit']);
         self::assertFalse($auditView['capabilities']['level_filter']);
@@ -215,6 +217,8 @@ final class DatabaseLogBrowserTest extends TestCase
 
         self::assertSame(1, $view['pagination']['total']);
         self::assertSame('message.current', $view['entries'][0]['message']);
+        self::assertNotNull((new DatabaseLogBrowser($connection, clock: new MockClock('2026-06-16 12:00:00')))->entry('message', '99999999-0000-7000-8000-000000000001'));
+        self::assertNull((new DatabaseLogBrowser($connection, clock: new MockClock('2026-06-16 12:00:00')))->entry('message', '99999999-0000-7000-8000-000000000002'));
     }
 
     public function testItCastsJsonContextAndSearchesCaseInsensitivelyOnPostgreSql(): void

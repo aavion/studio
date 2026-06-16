@@ -32,28 +32,10 @@ final readonly class LogFileBrowser
             $filters['levels'] = [];
         }
         $files = $this->sourceRegistry->files($this->logDir, $this->environment, $source);
-        $matches = [];
-
-        foreach ($files as $file) {
-            foreach ($this->lineReader->readLines($file) as $line) {
-                $entry = $this->entryPresenter->enrich($source, $this->lineParser->parse($line, $file));
-
-                if (!$this->entryFilter->matches($entry, $filters)) {
-                    continue;
-                }
-
-                $matches[] = $entry;
-            }
-        }
-
-        $matched = count($matches);
+        $matched = $this->countMatches($source, $files, $filters);
         $pagination = $this->pagination->pagination($filters, $matched);
         $filters['page'] = $pagination['page'];
-        $entries = array_slice(
-            $matches,
-            ($filters['page'] - 1) * $filters['per_page'],
-            $filters['per_page'],
-        );
+        $entries = $this->readPage($source, $files, $filters);
 
         return [
             'sources' => $this->sourceRegistry->sourceOptions(),
@@ -66,6 +48,63 @@ final readonly class LogFileBrowser
             'time_window_options' => $this->pagination->timeWindowOptions(),
             'match_options' => $this->pagination->matchOptions(),
         ];
+    }
+
+    /**
+     * @param list<string> $files
+     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int} $filters
+     */
+    private function countMatches(string $source, array $files, array $filters): int
+    {
+        $matched = 0;
+
+        foreach ($files as $file) {
+            foreach ($this->lineReader->readLines($file) as $line) {
+                if ($this->entryFilter->matches($this->entryPresenter->enrich($source, $this->lineParser->parse($line, $file)), $filters)) {
+                    ++$matched;
+                }
+            }
+        }
+
+        return $matched;
+    }
+
+    /**
+     * @param list<string> $files
+     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int} $filters
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function readPage(string $source, array $files, array $filters): array
+    {
+        $entries = [];
+        $matched = 0;
+        $offset = ($filters['page'] - 1) * $filters['per_page'];
+        $limit = $filters['per_page'];
+
+        foreach ($files as $file) {
+            foreach ($this->lineReader->readLines($file) as $line) {
+                $entry = $this->entryPresenter->enrich($source, $this->lineParser->parse($line, $file));
+
+                if (!$this->entryFilter->matches($entry, $filters)) {
+                    continue;
+                }
+
+                ++$matched;
+
+                if ($matched <= $offset) {
+                    continue;
+                }
+
+                if (count($entries) >= $limit) {
+                    return $entries;
+                }
+
+                $entries[] = $entry;
+            }
+        }
+
+        return $entries;
     }
 
     /**
