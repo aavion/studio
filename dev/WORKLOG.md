@@ -82,6 +82,7 @@
 - Updated the Security hardening master plan, Abuse Foundation detail plan, Logging draft, policy defaults, class map, translations, migration baseline, and setup/default settings coverage for the new logging projection and passive-signal scope.
 - Follow-up for `feat-security-admin-acl-enforcement`: add explicit Owner/ACL gates for security-signal visibility/mutation, IP-bearing access-log projection visibility, related exports, cleanup operations, and future signal review actions instead of relying only on broad Admin Logs access.
 - Scope guard: trusted proxy handling stays in deployment/webserver configuration; Abuse Foundation uses Symfony's resolved request client IP for Security identity, may use raw forwarding headers only as untrusted Visitor-ID differentiation entropy, and keeps IP-ban thresholds laxer than Visitor-ID thresholds to reduce shared/untrusted-network false positives.
+- Implemented the Visitor-ID entropy half of that policy by mixing normalized forwarding-header candidates into cookie-less fallback visitor hashes only; Security identity, GeoIP, ban keys, and signal evidence still use Symfony's resolved client IP rather than raw proxy headers.
 - Verification so far: focused PHPUnit for database log browser/projector, security signal recorder, affected log/settings/setup tests passed; `php bin/console lint:container` passed; focused `bin/lint` for changed Twig/translations/drafts passed.
 
 ### Archived Compacted Branch History
