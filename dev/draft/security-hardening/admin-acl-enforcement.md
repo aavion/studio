@@ -66,10 +66,10 @@ Codex may create local commits for this branch when each commit has a clear them
 | `admin.settings.statistics.geoip` | Visible | Yes | GeoIP fields and update action, parent-gated by statistics. |
 | `admin.settings.api` | Denied | Yes | API settings area. |
 | `admin.settings.scheduler` | Visible | Yes | Scheduler settings area. |
-| `admin.logs` | Visible | Yes | Admin log review area. |
+| `admin.logs` | Visible | Yes | Admin log review area; Audit and Security Signal sources require Mutable access. |
 | `admin.packages` | Visible | Yes | Package and theme management area, with mutating lifecycle/install/discovery disabled unless mutable. |
 | `admin.backup_restore` | Visible | No | Backup/restore area; restore remains mutating. |
-| `admin.packages.self_update` | Denied | No | System package self-update transparency row. |
+| `admin.packages.self_update` | Denied | No | System package self-update transparency row; no current self-update mutation route exists in this slice. |
 | `admin.support` | Denied | No | Support bundle transparency row. |
 | `admin.operations` | Visible | Yes | Operations view. |
 | `admin.actions.maintenance` | Mutable | Yes | Cache clear and asset rebuild actions. |
@@ -93,7 +93,7 @@ The first matrix should use conservative defaults. "View" means the actor may op
 | Registration/user-flow settings | View and mutate low-risk workflow settings | View and mutate | TTLs and notification addresses are Admin-mutable only if they do not affect Owner recovery, security policy, or protected secrets. |
 | Mail settings | View and mutate non-secret sender settings | View and mutate, including protected transport status/config where implemented | Mail transport secrets remain protected/write-only. Production delivery guards remain enforced. |
 | Security settings | View redacted status only | View and mutate | Captcha provider selection may be Admin-mutable only if it cannot disable required protection or verified recovery policy. Auto-ban disablement, privacy ceilings, recovery protections, and rate/security policy bounds are Owner-only. |
-| Access/audit/security logs | View redacted summaries | View redacted summaries and broader review tools | Raw secrets, raw tokens, full request payloads, and IP-derived data beyond retention are never exposed. Full diagnostic/export actions are Owner-only. |
+| Access/audit/security logs | View redacted summaries | View redacted summaries and broader review tools | Raw secrets, raw tokens, full request payloads, and IP-derived data beyond retention are never exposed. Audit and Security Signal sources require mutable `admin.logs` access. Full diagnostic/export actions are Owner-only. |
 | Statistics and GeoIP status | View summaries | View and mutate GeoIP enablement, database path, license key, and update task | MaxMind license material is protected/write-only. GeoIP cannot become blocking policy in this slice. |
 | API settings | View status and own/user-token surfaces where already allowed | View and mutate global API settings | Enabling public API/CORS expansion, wildcard-like origins, or broad anonymous access is Owner-only. |
 | Package/theme overview | View installed/available status | View and mutate | Installing, activating, deactivating, updating, purging, and running package lifecycle actions are Owner-only by default. |
@@ -127,6 +127,7 @@ The first matrix should use conservative defaults. "View" means the actor may op
 - Admin action identifiers are stable, English, machine-readable strings and are not localized.
 - Feature/action descriptors should expose enough metadata for the `Settings/ACL` matrix UI without making every action database-configurable by default: stable feature key, default access rule, configurability flag, domain, sensitivity, and affected public entry points.
 - The first registry is code-owned and test-backed. Configurable defaults are seeded through `acl.admin.features`, while non-configurable rows remain hardcoded in the registry for transparency. Database-stored Admin ACL overrides are limited to descriptor-approved rows and must fall back safely to seeded or registry defaults.
+- `Settings/ACL` saves record a redacted old/new feature summary in audit context. Internal audit helper keys are not included in the public `setting_keys` list.
 - Registry definitions, configured overrides, and available ACL groups are cache-backed with explicit reset hooks. When the unified cache strategy exists, these keys should move into the shared namespace/diagnostics/invalidation model if that reduces operational ambiguity.
 - `Admin` is a delegated operations role. `Owner` remains the site-control role.
 - Owner-only defaults include protected secrets, Security policy bounds, public API/CORS expansion, scheduler web-trigger/GET-token enablement, package install/activate/purge/update, backup restore, full-data exports/downloads, self-update/release actions, destructive data/package purge, peer Admin changes, Owner changes, and emergency global operational controls.
@@ -145,6 +146,7 @@ The first matrix should use conservative defaults. "View" means the actor may op
 - A denied delegated Admin action should produce a stable forbidden response/message, not fall through to "not found" unless hiding existence is an explicit policy for that resource.
 - Live operations must check authority before queueing and again before continuation descriptors start a follow-up operation.
 - API handlers must enforce the matrix using the API key owner's role and account status, not the key prefix or token label.
+- Browser and API callers must apply the same state meaning: visible-only features may render existing controls disabled or return review/read models, while confirmed mutations and sensitive reads require mutable access.
 - Scheduler run-now and web-trigger controls need separate actions because status viewing, manual run, trigger enablement, and GET-token fallback are different risk levels.
 - Backup/export/download actions must distinguish redacted summaries from full-data artifacts.
 - If an action identifier is unknown, deny by default and record safe diagnostics.
