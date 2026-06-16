@@ -14,6 +14,7 @@ use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
+use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\Security\UserFlowConfig;
 use App\View\SystemPackageMetadataProvider;
 use PHPUnit\Framework\TestCase;
@@ -65,12 +66,15 @@ final class CoreSettingsRegistryTest extends TestCase
             DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY,
             DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY,
             DatabaseLogRetentionPolicy::SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY,
+            SuspiciousProbePathMatcher::PATTERNS_KEY,
         ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $security));
         self::assertSame(FormInputType::Captcha, $security[2]->formField()->inputType());
         self::assertSame(FormInputType::MultiSelect, $security[4]->formField()->inputType());
         self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $security[4]->defaultValue());
         self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $security[5]->defaultValue());
         self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_IP_RETENTION_DAYS, $security[9]->defaultValue());
+        self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $security[10]->defaultValue());
+        self::assertSame(FormInputType::Textarea, $security[10]->formField()->inputType());
 
         self::assertSame([
             AccessStatisticsPolicy::ENABLED_KEY,
@@ -118,6 +122,7 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertSame([], $provider->defaultValue(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY));
         self::assertFalse($provider->defaultValue(MaxMindGeoIpConfig::ENABLED_KEY));
         self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $provider->defaultValue(MaxMindGeoIpConfig::DATABASE_PATH_KEY));
+        self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $provider->defaultValue(SuspiciousProbePathMatcher::PATTERNS_KEY));
         self::assertFalse($provider->hasDefault('security.captcha.preview'));
         self::assertNull($provider->defaultValue('security.captcha.preview'));
     }

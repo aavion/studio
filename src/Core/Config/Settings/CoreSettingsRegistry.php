@@ -13,6 +13,7 @@ use App\Core\Log\DatabaseLogRetentionPolicy;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
+use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\Security\UserFlowConfig;
 use App\View\SystemPackageMetadataProvider;
 
@@ -90,6 +91,7 @@ final readonly class CoreSettingsRegistry
             new CoreSettingDefinition('security', DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY, 'admin.settings.fields.access_log_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.access_log_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_IP_DERIVED_RETENTION_DAYS], sortOrder: 80),
             new CoreSettingDefinition('security', DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, 'admin.settings.fields.security_signal_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.security_signal_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_IP_DERIVED_RETENTION_DAYS], sortOrder: 90),
             new CoreSettingDefinition('security', DatabaseLogRetentionPolicy::SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY, 'admin.settings.fields.security_signal_ip_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_IP_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.security_signal_ip_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_IP_DERIVED_RETENTION_DAYS], sortOrder: 100),
+            new CoreSettingDefinition('security', SuspiciousProbePathMatcher::PATTERNS_KEY, 'admin.settings.fields.security_probe_path_patterns.label', SuspiciousProbePathMatcher::defaultPatternText(), ConfigValueType::String, FormInputType::Textarea, help: 'admin.settings.fields.security_probe_path_patterns.help', validation: ['max_length' => 50000], sortOrder: 110),
             new CoreSettingDefinition('statistics', AccessStatisticsPolicy::ENABLED_KEY, 'admin.settings.fields.statistics_enabled.label', true, ConfigValueType::Boolean, sortOrder: 10),
             new CoreSettingDefinition('statistics', AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'admin.settings.fields.statistics_respect_dnt.label', true, ConfigValueType::Boolean, sortOrder: 20),
             new CoreSettingDefinition('statistics', MaxMindGeoIpConfig::ENABLED_KEY, 'admin.settings.fields.geoip_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.geoip_enabled.help', metadata: [

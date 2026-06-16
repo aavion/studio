@@ -56,7 +56,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Prefetch detection uses `X-Sec-Purpose: prefetch` and `Sec-Purpose: prefetch`; spoofable hints only lower confidence for classification, never bypass checks.
 - Signals store only normalized subject keys, intent, reason code, count/weight, timestamps, and safe request metadata.
 - Subject resolution emits visitor, IP-bucket, authenticated-user, API-key, safe API-key-prefix, and combined subjects. IP buckets and combined IP subjects are HMAC-derived and never expose raw IP addresses; invalid Bearer tokens may contribute only a validated public prefix, never submitted secret material.
-- Probe-path detection is configurable and ships with extensive high-signal defaults for `.env`, VCS metadata, backup/database dumps, common foreign admin panels, upload shells, and known scanner paths.
+- Probe-path detection is configurable through a simple editable pattern-list setting, not a raw JSON field. The UI should present one regular expression per line and may accept CSV-style imports for convenience. Empty or invalid lists fall back to protected defaults for `.env`, VCS metadata, backup/database dumps, common foreign admin panels, upload shells, and known scanner paths.
 - Request classification is passive and deterministic. `/api/live/**`, safe browser prefetch, and CORS preflight receive no ordinary enforcement cost in this branch; suspicious probes and mutating admin/API workflows receive higher symbolic costs for later limiter branches.
 - `PassiveAbuseSignalSubscriber` records only clear passive signals in this branch, starting with high-signal probe paths and unsafe prefetch attempts. It writes Visitor-ID and IP-bucket HMAC context where available, never raw IP or forwarding-header values, and does not alter the response.
 - First implementation uses the portable `security_signal_event` table for short-lived passive signals. Suggested fields are normalized subject type/key, request family, intent, reason code, confidence, weight/count, timestamps, expiry timestamp, safe context, and optional audit reference.
@@ -90,7 +90,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 - Test subject resolution for anonymous, visitor-cookie, authenticated user, valid API key, invalid API key, and scheduler trigger.
 - Test intent classification for browser, prefetch, API read/write/preflight, `/api/live/**`, login, registration, password reset, setup apply, privileged admin operations, upload/archive validation, export/download, and suspicious probes.
-- Test configurable probe-path defaults and high-signal probe classification.
+- Test configurable probe-path defaults, line/CSV pattern parsing, invalid-pattern fallback, and high-signal probe classification.
 - Test suspicious probe rules do not collide with legitimate upload, package, import, backup, restore, media, and editor routes.
 - Test probe-pattern normalization and false-positive avoidance for ordinary application routes.
 - Test redaction in passive signal messages.
@@ -113,6 +113,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Update Security policy defaults if implementation evidence changes signal retention, subject composition, or suspicious-intent weighting.
 - Record whether the branch keeps only the passive-signal store or also introduces/reuses a broader security event projection.
 - Carry a follow-up into `feat-security-admin-acl-enforcement` for Owner/ACL-controlled visibility and mutation of security signals, IP-bearing access projections, exports, cleanup operations, and future signal review actions.
+- Carry a follow-up into the Editor/Content slice: when an editor sets or changes a content route/slug that would match a configured suspicious probe path, show a non-blocking warning before saving so legitimate content is not accidentally placed under a high-signal probe namespace.
 - Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 
 ## Non-goals

@@ -108,12 +108,13 @@ Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner 
 
 ## Probe Path Policy
 
-- Probe paths are configurable and ship with extensive defaults for high-signal requests such as `.env`, `.git`, backup archives, database dumps, common admin panels from other software, shell upload probes, and known scanner paths.
+- Probe paths are configurable as an editable pattern list, not as raw JSON. The default UI should use one regular expression per line and may accept CSV-style imports. The shipped defaults cover high-signal requests such as `.env`, `.git`, backup archives, database dumps, common admin panels from other software, shell upload probes, and known scanner paths.
 - High-signal probes are never treated as normal website navigation. The default response is a generic `400 Bad Request` without revealing whether the path exists, and the event records a suspicious probe signal.
 - One high-signal probe per subject per 10 minutes is the first threshold. Further probes may drain suspicious buckets and feed auto-ban decisions when auto-ban is enabled.
 - Honeypot probe paths should remain restrictive. They may share the same generic `400` response and signal path even when they do not map to real routes.
 - Probe-path configuration should use anchored, normalized path patterns with tests that prove common application routes, package routes, media routes, and editor routes are not accidentally captured.
 - Probe-path configuration changes should be auditable once Security settings exist.
+- Editor/Content route editing should warn, without blocking the save, when a proposed route or slug would match a configured suspicious probe path. This keeps legitimate content possible while making accidental collisions visible before publication.
 
 ## Response Semantics
 

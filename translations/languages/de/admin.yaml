@@ -826,6 +826,9 @@ admin:
       security_signal_ip_retention_days:
         label: 'Retention für IP-abgeleitete Signale'
         help: 'Kurze Retention für Signale, die nur über IP-abgeleitete Identifier geschlüsselt sind. Unterhalb der 30-Tage-Datenschutzgrenze halten.'
+      security_probe_path_patterns:
+        label: 'Pfadmuster für verdächtige Probes'
+        help: 'Ein regulärer Ausdruck pro Zeile. CSV-artig kommaseparierte Imports werden akzeptiert. Ungültige oder leere Listen fallen auf die geschützten Defaults zurück.'
       geoip_enabled:
         label: 'GeoIP-Lookups aktivieren'
         help: 'Wenn deaktiviert oder nicht verfügbar, behalten Logs und Statistiken normalisierte n/a-Ortswerte.'

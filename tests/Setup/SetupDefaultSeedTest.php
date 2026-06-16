@@ -12,6 +12,7 @@ use App\Setup\DatabaseDriver;
 use App\Setup\SetupDefaultSeed;
 use App\Setup\SetupInput;
 use App\Scheduler\SchedulerSettings;
+use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\Security\UserFlowConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -37,6 +38,7 @@ final class SetupDefaultSeedTest extends TestCase
         self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $settings[DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY]);
         self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, $settings[DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY]);
         self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_IP_RETENTION_DAYS, $settings[DatabaseLogRetentionPolicy::SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY]);
+        self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $settings[SuspiciousProbePathMatcher::PATTERNS_KEY]);
     }
 
     public function testItUsesCentralConfigDefaultsForSetupSeededSettings(): void
@@ -77,6 +79,7 @@ final class SetupDefaultSeedTest extends TestCase
             DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY,
             DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY,
             DatabaseLogRetentionPolicy::SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY,
+            SuspiciousProbePathMatcher::PATTERNS_KEY,
             \App\Core\Statistics\AccessStatisticsPolicy::ENABLED_KEY,
             \App\Core\Statistics\AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY,
             MaxMindGeoIpConfig::ENABLED_KEY,

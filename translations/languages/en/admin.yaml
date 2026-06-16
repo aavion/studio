@@ -826,6 +826,9 @@ admin:
       security_signal_ip_retention_days:
         label: 'IP-derived signal retention'
         help: 'Short retention for signals that are keyed only by IP-derived identifiers. Keep this lower than the 30-day privacy ceiling.'
+      security_probe_path_patterns:
+        label: 'Suspicious probe path patterns'
+        help: 'One regular expression per line. CSV-style comma-separated imports are accepted. Invalid or empty lists fall back to the protected defaults.'
       geoip_enabled:
         label: 'Enable GeoIP lookups'
         help: 'When disabled or unavailable, logs and statistics keep normalized n/a location values.'
