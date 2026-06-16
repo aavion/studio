@@ -6,6 +6,7 @@ namespace App\Tests\Setup;
 
 use App\Api\ApiFeaturePolicy;
 use App\Core\Config\ConfigDefaultProviderInterface;
+use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Setup\DatabaseDriver;
 use App\Setup\SetupDefaultSeed;
 use App\Setup\SetupInput;
@@ -29,6 +30,9 @@ final class SetupDefaultSeedTest extends TestCase
         self::assertTrue($settings[ApiFeaturePolicy::ENABLED_KEY]);
         self::assertFalse($settings[ApiFeaturePolicy::CORS_ENABLED_KEY]);
         self::assertSame([], $settings[ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY]);
+        self::assertFalse($settings[MaxMindGeoIpConfig::ENABLED_KEY]);
+        self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $settings[MaxMindGeoIpConfig::DATABASE_PATH_KEY]);
+        self::assertSame('', $settings[MaxMindGeoIpConfig::LICENSE_KEY_KEY]);
     }
 
     public function testItUsesCentralConfigDefaultsForSetupSeededSettings(): void
@@ -66,6 +70,9 @@ final class SetupDefaultSeedTest extends TestCase
             \App\Core\Log\ConfigAuditLogPolicy::EVENTS_KEY,
             \App\Core\Statistics\AccessStatisticsPolicy::ENABLED_KEY,
             \App\Core\Statistics\AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY,
+            MaxMindGeoIpConfig::ENABLED_KEY,
+            MaxMindGeoIpConfig::DATABASE_PATH_KEY,
+            MaxMindGeoIpConfig::LICENSE_KEY_KEY,
             ApiFeaturePolicy::ENABLED_KEY,
             ApiFeaturePolicy::CORS_ENABLED_KEY,
             ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY,

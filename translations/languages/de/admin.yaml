@@ -41,6 +41,8 @@ admin:
       label: 'Assets neu bauen'
     cache_clear:
       label: 'Cache leeren'
+    geoip_database_update:
+      label: 'GeoIP2-Datenbank laden'
   dashboard:
     title: 'Admin-Dashboard'
     foundation_title: 'Backend-Fundament'
@@ -484,6 +486,9 @@ admin:
       mercure_health:
         label: 'Mercure-Health'
         description: 'Prüft den Mercure-Hub und startet den lokalen Hub, sofern unterstützt.'
+      geoip2_database_update:
+        label: 'GeoIP2-Datenbankupdate'
+        description: 'Lädt die lokale MaxMind GeoIP2-City-Datenbank herunter und ersetzt sie atomar, wenn ein License-Key konfiguriert ist.'
     table:
       job: 'Job'
       source: 'Quelle'
@@ -700,7 +705,21 @@ admin:
     statistics:
       title: 'Statistik-Einstellungen'
       foundation_title: 'Statistik-Konfiguration'
-      foundation_text: 'Aufzeichnung und Anzeige von Zugriffsstatistiken können unabhängig vom Raw-Access-Logging deaktiviert werden. Raw-Access-Logs bleiben für operative Sicherheit verfügbar und werden 30 Tage aufbewahrt.'
+      foundation_text: 'Aufzeichnung, Anzeige und GeoIP-Anreicherung von Zugriffsstatistiken können unabhängig vom Raw-Access-Logging deaktiviert werden. Raw-Access-Logs bleiben für operative Sicherheit verfügbar und werden 30 Tage aufbewahrt.'
+    geoip:
+      status:
+        title: 'GeoIP2-Status'
+        provider: 'Provider'
+        state: 'Status'
+        database_edition: 'Datenbank-Edition'
+        database_build_date: 'Datenbank-Build-Datum'
+        failure_code: 'Fehlercode'
+        values:
+          ready: 'Bereit'
+          disabled: 'Deaktiviert'
+          unconfigured: 'Nicht konfiguriert'
+          unavailable: 'Nicht verfügbar'
+          unknown: 'Unbekannt'
     api:
       title: 'API-Einstellungen'
       foundation_title: 'API-Verfügbarkeit'
@@ -790,6 +809,17 @@ admin:
         label: 'Audit-Logging aktivieren'
       audit_events:
         label: 'Audit-Ereigniskategorien'
+      geoip_enabled:
+        label: 'GeoIP-Lookups aktivieren'
+        help: 'Wenn deaktiviert oder nicht verfügbar, behalten Logs und Statistiken normalisierte n/a-Ortswerte.'
+      geoip_license_link:
+        label: 'Kostenlosen GeoLite2-License-Key bei MaxMind erhalten'
+      geoip_database_path:
+        label: 'MaxMind-Datenbankpfad'
+        help: 'Projektrelativer Pfad zur lokalen .mmdb-Datenbank. Downloads werden atomar in diesen Pfad geschrieben.'
+      geoip_license_key:
+        label: 'MaxMind-License-Key'
+        help: 'Wird als sensitive Konfiguration gespeichert. Ein gespeicherter Key aktiviert die GeoIP2-Download-Aktion auf dieser Seite.'
       statistics_enabled:
         label: 'Zugriffsstatistiken aktivieren'
       statistics_respect_dnt:

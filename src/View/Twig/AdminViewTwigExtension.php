@@ -5,14 +5,19 @@ declare(strict_types=1);
 namespace App\View\Twig;
 
 use App\Backend\BackendActions;
+use App\Core\Access\AccessActor;
 use App\Core\Config\Config;
+use App\Core\Config\Settings\CoreSettingDefinition;
 use App\Core\Config\Settings\CoreSettingsRegistry;
 use App\Core\Package\PackageAdminOverview;
 use App\Core\Package\Settings\PackageSettingRegistry;
 use App\Core\Package\Settings\PackageSettings;
 use App\Core\Package\ThemeAdminOverview;
+use App\Entity\UserAccount;
 use App\Form\FormBuilder;
+use App\Form\FormFieldDefinition;
 use App\View\SystemPackageMetadataProvider;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Throwable;
@@ -31,6 +36,7 @@ final class AdminViewTwigExtension extends AbstractExtension
         private readonly PackageSettings $packageSettings,
         private readonly PackageSettingRegistry $packageSettingRegistry,
         private readonly SystemPackageMetadataProvider $systemPackageMetadata,
+        private readonly Security $security,
         private readonly RequestStack $requestStack,
     ) {
     }
@@ -68,7 +74,7 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     public function backendActions(array $ids = []): array
     {
-        return $this->backendActions->definitions($ids);
+        return $this->backendActions->definitions($ids, $this->actor());
     }
 
     /**
@@ -114,15 +120,20 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     public function coreSettingsForm(string $section): array
     {
-        $definitions = $this->coreSettingsRegistry->definitions($section);
+        $definitions = $this->coreSettingDefinitions($section);
         $values = [];
         $request = $this->requestStack->getCurrentRequest();
 
         foreach ($definitions as $definition) {
-            $values[$definition->key()] = $this->config->get($definition->key()) ?? $definition->defaultValue();
+            $value = $this->config->get($definition->key()) ?? $definition->defaultValue();
+            if (true === ($definition->metadata()['sensitive'] ?? false)) {
+                $value = '';
+            }
+
+            $values[$definition->key()] = $value;
         }
 
-        $values = array_replace($values, $this->requestFormValues($request));
+        $values = array_replace($values, $this->requestFormValues($request, $this->sensitiveDefinitionKeys($definitions)));
         $errors = $this->requestFormErrors($request);
 
         return $this->formBuilder->build(
@@ -136,18 +147,37 @@ final class AdminViewTwigExtension extends AbstractExtension
     }
 
     /**
+     * @return list<CoreSettingDefinition>
+     */
+    private function coreSettingDefinitions(string $section): array
+    {
+        $actor = $this->actor();
+
+        return array_values(array_filter(
+            $this->coreSettingsRegistry->definitions($section),
+            static fn (CoreSettingDefinition $definition): bool => $definition->allows($actor),
+        ));
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function packageSettingsForm(string $packageName): array
     {
         $request = $this->requestStack->getCurrentRequest();
         $errors = $this->requestFormErrors($request);
+        $fields = $this->packageSettings->formFields($packageName, $this->packageSettingRegistry);
+        $sensitiveKeys = $this->sensitiveFieldKeys($fields);
+        $values = array_replace(
+            array_fill_keys($sensitiveKeys, ''),
+            $this->requestFormValues($request, $sensitiveKeys),
+        );
 
         return $this->formBuilder->build(
             'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($packageName)),
             $packageName,
-            $this->packageSettings->formFields($packageName, $this->packageSettingRegistry),
-            $this->requestFormValues($request),
+            $fields,
+            $values,
             $errors,
             $errors['__form'] ?? [],
         )->toArray();
@@ -184,14 +214,31 @@ final class AdminViewTwigExtension extends AbstractExtension
         return trim(sprintf('Powered by %s %s', $linkedName, $version));
     }
 
+    private function actor(): AccessActor
+    {
+        $user = $this->security->getUser();
+
+        return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
+    }
+
     /**
+     * @param list<string> $excludedKeys
+     *
      * @return array<string, mixed>
      */
-    private function requestFormValues(?Request $request): array
+    private function requestFormValues(?Request $request, array $excludedKeys = []): array
     {
         $values = $request?->attributes->get('_system_form_values');
 
-        return is_array($values) ? $values : [];
+        if (!is_array($values)) {
+            return [];
+        }
+
+        foreach ($excludedKeys as $key) {
+            unset($values[$key]);
+        }
+
+        return $values;
     }
 
     /**
@@ -202,5 +249,41 @@ final class AdminViewTwigExtension extends AbstractExtension
         $errors = $request?->attributes->get('_system_form_errors');
 
         return is_array($errors) ? $errors : [];
+    }
+
+    /**
+     * @param iterable<CoreSettingDefinition> $definitions
+     *
+     * @return list<string>
+     */
+    private function sensitiveDefinitionKeys(iterable $definitions): array
+    {
+        $keys = [];
+
+        foreach ($definitions as $definition) {
+            if (true === ($definition->metadata()['sensitive'] ?? false)) {
+                $keys[] = $definition->key();
+            }
+        }
+
+        return $keys;
+    }
+
+    /**
+     * @param iterable<FormFieldDefinition> $fields
+     *
+     * @return list<string>
+     */
+    private function sensitiveFieldKeys(iterable $fields): array
+    {
+        $keys = [];
+
+        foreach ($fields as $field) {
+            if (true === ($field->metadata()['sensitive'] ?? false)) {
+                $keys[] = $field->name();
+            }
+        }
+
+        return $keys;
     }
 }

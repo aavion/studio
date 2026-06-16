@@ -122,6 +122,24 @@ final class ConfigTest extends TestCase
         self::assertSame('test', $row['modified_by']);
     }
 
+    public function testItStoresSensitiveConfigurationFlag(): void
+    {
+        $connection = $this->connection();
+        $config = new Config($connection);
+
+        self::assertTrue($config->set('statistics.geoip.maxmind.license_key', 'secret-value', ConfigValueType::String, sensitive: true, modifiedBy: 'test'));
+
+        $row = $connection->fetchAssociative('SELECT value, value_type, sensitive, modified_by FROM config_entry WHERE config_key = ?', [
+            'statistics.geoip.maxmind.license_key',
+        ]);
+
+        self::assertIsArray($row);
+        self::assertSame('"secret-value"', $row['value']);
+        self::assertSame('string', $row['value_type']);
+        self::assertSame(1, (int) $row['sensitive']);
+        self::assertSame('test', $row['modified_by']);
+    }
+
     public function testItReportsInvalidConfigurationKeys(): void
     {
         $reporter = new RecordingConfigMessageReporter();

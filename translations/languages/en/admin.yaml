@@ -41,6 +41,8 @@ admin:
       label: 'Rebuild assets'
     cache_clear:
       label: 'Clear cache'
+    geoip_database_update:
+      label: 'Download GeoIP2 database'
   dashboard:
     title: 'Admin dashboard'
     foundation_title: 'Backend foundation'
@@ -484,6 +486,9 @@ admin:
       mercure_health:
         label: 'Mercure health'
         description: 'Checks the Mercure hub and starts the local hub when supported.'
+      geoip2_database_update:
+        label: 'GeoIP2 database update'
+        description: 'Downloads and atomically replaces the local MaxMind GeoIP2 City database when a license key is configured.'
     table:
       job: 'Job'
       source: 'Source'
@@ -700,7 +705,21 @@ admin:
     statistics:
       title: 'Statistics settings'
       foundation_title: 'Statistics configuration'
-      foundation_text: 'Access statistics recording and display can be disabled independently from raw access logging. Raw access logs remain available for operational security and are retained for 30 days.'
+      foundation_text: 'Access statistics recording, display, and GeoIP enrichment can be disabled independently from raw access logging. Raw access logs remain available for operational security and are retained for 30 days.'
+    geoip:
+      status:
+        title: 'GeoIP2 status'
+        provider: 'Provider'
+        state: 'State'
+        database_edition: 'Database edition'
+        database_build_date: 'Database build date'
+        failure_code: 'Failure code'
+        values:
+          ready: 'Ready'
+          disabled: 'Disabled'
+          unconfigured: 'Unconfigured'
+          unavailable: 'Unavailable'
+          unknown: 'Unknown'
     api:
       title: 'API settings'
       foundation_title: 'API availability'
@@ -790,6 +809,17 @@ admin:
         label: 'Enable audit logging'
       audit_events:
         label: 'Audit event categories'
+      geoip_enabled:
+        label: 'Enable GeoIP lookups'
+        help: 'When disabled or unavailable, logs and statistics keep normalized n/a location values.'
+      geoip_license_link:
+        label: 'Get a free GeoLite2 license key from MaxMind'
+      geoip_database_path:
+        label: 'MaxMind database path'
+        help: 'Project-relative path to the local .mmdb database. Downloads are written atomically to this path.'
+      geoip_license_key:
+        label: 'MaxMind license key'
+        help: 'Stored as sensitive configuration. Saving a key enables the GeoIP2 database download action on this page.'
       statistics_enabled:
         label: 'Enable access statistics'
       statistics_respect_dnt:

@@ -6,6 +6,11 @@ namespace App\Backend;
 
 use App\Backend\BackendMessageCode;
 use App\Backend\BackendMessageKey;
+use App\Core\Access\AccessActor;
+use App\Core\Access\AccessLevel;
+use App\Core\Access\AccessMessageCode;
+use App\Core\Access\AccessMessageKey;
+use App\Core\Access\AccessRule;
 use App\Core\Message\Message;
 use App\Core\Operation\ActionQueue;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
@@ -24,6 +29,7 @@ final readonly class BackendActions
     public const PACKAGE_DISCOVERY = 'package_discovery';
     public const ASSET_REBUILD = 'asset_rebuild';
     public const CACHE_CLEAR = 'cache_clear';
+    public const GEOIP_DATABASE_UPDATE = 'geoip_database_update';
 
     public function __construct(
         private KernelInterface $kernel,
@@ -40,8 +46,9 @@ final readonly class BackendActions
      *
      * @return list<array{id: string, label_key: string, variant: string, live: bool}>
      */
-    public function definitions(array $ids = []): array
+    public function definitions(array $ids = [], ?AccessActor $actor = null): array
     {
+        $actor ??= AccessActor::fromAccess(AccessLevel::ADMIN);
         $definitions = [
             self::PACKAGE_DISCOVERY => [
                 'id' => self::PACKAGE_DISCOVERY,
@@ -61,26 +68,55 @@ final readonly class BackendActions
                 'variant' => 'secondary',
                 'live' => true,
             ],
+            self::GEOIP_DATABASE_UPDATE => [
+                'id' => self::GEOIP_DATABASE_UPDATE,
+                'label_key' => 'admin.actions.geoip_database_update.label',
+                'variant' => 'secondary',
+                'live' => true,
+                'access_feature' => 'backend.action.geoip_database_update',
+                'access_configurable' => false,
+                'access_rule' => AccessRule::from(AccessLevel::OWNER),
+            ],
         ];
 
         if ([] === $ids) {
-            return array_values($definitions);
+            return array_values(array_map(
+                $this->publicDefinition(...),
+                array_filter(
+                    $definitions,
+                    fn (array $definition): bool => $this->definitionAllows($definition, $actor),
+                ),
+            ));
         }
 
-        return array_values(array_filter(
-            array_map(static fn (string $id): ?array => $definitions[$id] ?? null, $ids),
-        ));
+        $visible = [];
+        foreach ($ids as $id) {
+            $definition = $definitions[$id] ?? null;
+
+            if ($this->definitionAllows($definition, $actor)) {
+                $visible[] = $this->publicDefinition($definition);
+            }
+        }
+
+        return $visible;
     }
 
     /**
      * @return WorkflowResult<mixed>
      */
-    public function run(string $action): WorkflowResult
+    public function run(string $action, ?AccessActor $actor = null): WorkflowResult
     {
+        $actor ??= AccessActor::fromAccess(AccessLevel::ADMIN);
+
+        if (!$this->actionAllows($action, $actor)) {
+            return $this->accessDenied($action, $actor);
+        }
+
         return match ($action) {
             self::PACKAGE_DISCOVERY => ($this->packageDiscoveryRunner)('admin_ui'),
             self::ASSET_REBUILD => $this->assetRebuildDispatcher->dispatch($this->kernel->getEnvironment(), 'admin_ui'),
             self::CACHE_CLEAR => $this->clearCache(),
+            self::GEOIP_DATABASE_UPDATE => $this->startLive($action, $actor),
             default => WorkflowResult::invalid([
                 Message::warning(
                     BackendMessageCode::BACKEND_ACTION_UNKNOWN,
@@ -95,8 +131,14 @@ final readonly class BackendActions
     /**
      * @return WorkflowResult<array<string, mixed>>
      */
-    public function startLive(string $action): WorkflowResult
+    public function startLive(string $action, ?AccessActor $actor = null): WorkflowResult
     {
+        $actor ??= AccessActor::fromAccess(AccessLevel::ADMIN);
+
+        if (!$this->actionAllows($action, $actor)) {
+            return $this->accessDenied($action, $actor);
+        }
+
         return match ($action) {
             self::PACKAGE_DISCOVERY => $this->liveOperationStarter->start(
                 LiveOperationQueueFactory::PACKAGE_DISCOVERY,
@@ -113,6 +155,11 @@ final readonly class BackendActions
                 ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
                 'Cache clear',
             ),
+            self::GEOIP_DATABASE_UPDATE => $this->liveOperationStarter->start(
+                LiveOperationQueueFactory::GEOIP_DATABASE_UPDATE,
+                ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
+                'GeoIP2 database update',
+            ),
             default => WorkflowResult::invalid([
                 Message::warning(
                     BackendMessageCode::BACKEND_ACTION_UNKNOWN,
@@ -122,6 +169,73 @@ final readonly class BackendActions
                 ),
             ], ['action' => $action]),
         };
+    }
+
+    /**
+     * @param array<string, mixed>|null $definition
+     */
+    private function definitionAllows(?array $definition, AccessActor $actor): bool
+    {
+        if (null === $definition) {
+            return false;
+        }
+
+        $rule = $definition['access_rule'] ?? null;
+
+        return !$rule instanceof AccessRule || $rule->allows($actor);
+    }
+
+    /**
+     * @param array<string, mixed> $definition
+     *
+     * @return array<string, mixed>
+     */
+    private function publicDefinition(array $definition): array
+    {
+        unset($definition['access_rule']);
+
+        return $definition;
+    }
+
+    private function actionAllows(string $action, AccessActor $actor): bool
+    {
+        if (!in_array($action, [
+            self::PACKAGE_DISCOVERY,
+            self::ASSET_REBUILD,
+            self::CACHE_CLEAR,
+            self::GEOIP_DATABASE_UPDATE,
+        ], true)) {
+            return true;
+        }
+
+        return [] !== $this->definitions([$action], $actor);
+    }
+
+    /**
+     * @return WorkflowResult<mixed>
+     */
+    private function accessDenied(string $action, AccessActor $actor): WorkflowResult
+    {
+        return WorkflowResult::invalid([
+            Message::warning(
+                AccessMessageCode::ACCESS_DENIED,
+                AccessMessageKey::ACCESS_DENIED,
+                [
+                    '%capability%' => 'backend.action.'.$action,
+                    '%required_level%' => AccessLevel::OWNER,
+                    '%actor_level%' => $actor->accessLevel(),
+                ],
+                [
+                    ...$actor->toContext(),
+                    'capability' => 'backend.action.'.$action,
+                    'required_access_level' => AccessLevel::OWNER,
+                ],
+            ),
+        ], [
+            'action' => $action,
+            'required_access_level' => AccessLevel::OWNER,
+            'actor_access_level' => $actor->accessLevel(),
+        ]);
     }
 
     /**

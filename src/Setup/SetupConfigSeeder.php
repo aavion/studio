@@ -29,7 +29,7 @@ final readonly class SetupConfigSeeder
         foreach ($settings as $setting) {
             $key = $setting['key'];
 
-            if (!$config->set($key, $setting['value'], $setting['type'], modifiedBy: 'setup')) {
+            if (!$config->set($key, $setting['value'], $setting['type'], sensitive: true === ($setting['sensitive'] ?? false), modifiedBy: 'setup')) {
                 throw SetupStepFailedException::fromMessage(Message::error(
                     ConfigMessageCode::CONFIG_WRITE_FAILED,
                     ConfigMessageKey::CONFIG_WRITE_FAILED,

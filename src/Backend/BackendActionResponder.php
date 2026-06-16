@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Backend;
 
 use App\Backend\BackendMessageKey;
+use App\Core\Access\AccessActor;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Core\Operation\Live\LiveOperationHttpResponder;
 use App\Core\Workflow\WorkflowResult;
+use App\Entity\UserAccount;
 use App\Form\FormTokenValidator;
 use App\View\Alert\UiAlertDelivery;
 use App\View\Alert\UiAlertDispatcherInterface;
@@ -44,13 +46,13 @@ final readonly class BackendActionResponder
         );
 
         if ('1' === $this->stringField($request, '_operation_live')) {
-            $result = $validToken ? $this->backendActions->startLive($action) : $this->invalidCsrfResult($action);
+            $result = $validToken ? $this->backendActions->startLive($action, $this->actor($user)) : $this->invalidCsrfResult($action);
             $this->audit($user, $action, $result, 'live');
 
             return $this->liveOperationResponder->render($result);
         }
 
-        $result = $validToken ? $this->backendActions->run($action) : $this->invalidCsrfResult($action);
+        $result = $validToken ? $this->backendActions->run($action, $this->actor($user)) : $this->invalidCsrfResult($action);
         $this->flashResult($result);
         $this->audit($user, $action, $result, 'sync');
 
@@ -69,6 +71,11 @@ final readonly class BackendActionResponder
                 context: ['action' => $action],
             ),
         ], ['action' => $action]);
+    }
+
+    private function actor(mixed $user): AccessActor
+    {
+        return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
     }
 
     /**

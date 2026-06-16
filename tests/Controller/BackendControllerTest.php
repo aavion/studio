@@ -9,6 +9,7 @@ use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Message\Message;
 use App\Core\Operation\Live\LiveOperationRunStore;
@@ -382,7 +383,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminRouteAllowsAccessLevelEight(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
         $client->request('GET', '/admin');
 
         self::assertResponseIsSuccessful();
@@ -935,6 +936,39 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists(sprintf('input[name="%s"]', ConfigAuditLogPolicy::ENABLED_KEY));
         self::assertSelectorExists(sprintf('input[name="%s[]"]', ConfigAuditLogPolicy::EVENTS_KEY));
 
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+        $config->set('statistics.geoip.maxmind.license_key', '', ConfigValueType::String, sensitive: true);
+
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
+        $client->request('GET', '/admin/settings/statistics');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Statistics settings');
+        self::assertSelectorExists('form#admin-settings-statistics');
+        self::assertSelectorExists('input[name="statistics.geoip.enabled"]');
+        self::assertSelectorExists('input[name="statistics.geoip.maxmind.license_key"][type="password"]');
+        self::assertSelectorExists('a[href="https://www.maxmind.com/en/geolite2/signup"]');
+        self::assertSelectorTextContains('h3', 'GeoIP2 status');
+        self::assertSelectorTextContains('.system-definition-list', 'Provider');
+        self::assertSelectorNotExists('input[name="_backend_action"][value="geoip_database_update"]');
+
+        $config->set('statistics.geoip.maxmind.license_key', 'saved-test-key', ConfigValueType::String, sensitive: true);
+        $client->request('GET', '/admin/settings/statistics');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('input[name="_backend_action"][value="geoip_database_update"]');
+
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+        $client->request('GET', '/admin/settings/statistics');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('form#admin-settings-statistics');
+        self::assertSelectorExists('input[name="statistics.enabled"]');
+        self::assertSelectorNotExists('input[name="statistics.geoip.enabled"]');
+        self::assertSelectorNotExists('input[name="statistics.geoip.maxmind.license_key"]');
+        self::assertSelectorNotExists('input[name="_backend_action"][value="geoip_database_update"]');
+
         $client->request('GET', '/admin/settings/scheduler');
 
         self::assertResponseIsSuccessful();
@@ -957,7 +991,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminSettingsFormsPersistCoreSettings(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
         $config = self::getContainer()->get(Config::class);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
@@ -1019,6 +1053,28 @@ final class BackendControllerTest extends WebTestCase
         $html = (string) $client->getResponse()->getContent();
         self::assertStringContainsString('This field is required.', $html);
         self::assertStringContainsString('The submitted value does not match the expected format.', $html);
+    }
+
+    public function testAdminSettingsFormsDoNotReRenderSubmittedSensitiveValuesAfterValidationErrors(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
+        $crawler = $client->request('GET', '/admin/settings/statistics');
+        $form = $crawler->selectButton('Save settings')->form([
+            'statistics.enabled' => '1',
+            'statistics.respect_do_not_track' => '1',
+            MaxMindGeoIpConfig::ENABLED_KEY => '1',
+            MaxMindGeoIpConfig::DATABASE_PATH_KEY => '',
+            MaxMindGeoIpConfig::LICENSE_KEY_KEY => 'submitted-geoip-secret',
+        ]);
+
+        $client->submit($form);
+
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('This field is required.', $html);
+        self::assertStringNotContainsString('submitted-geoip-secret', $html);
+        self::assertSelectorExists(sprintf('input[name="%s"][type="password"]', MaxMindGeoIpConfig::LICENSE_KEY_KEY));
     }
 
     public function testAdminTestUserHelperRestoresUsableAccountStatus(): void

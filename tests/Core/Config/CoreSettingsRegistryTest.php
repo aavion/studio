@@ -8,6 +8,7 @@ use App\Api\ApiFeaturePolicy;
 use App\Core\Config\Settings\CoreSettingDefinition;
 use App\Core\Config\Settings\CoreConfigDefaultProvider;
 use App\Core\Config\Settings\CoreSettingsRegistry;
+use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
@@ -66,9 +67,16 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertSame([
             AccessStatisticsPolicy::ENABLED_KEY,
             AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY,
+            MaxMindGeoIpConfig::ENABLED_KEY,
+            MaxMindGeoIpConfig::DATABASE_PATH_KEY,
+            MaxMindGeoIpConfig::LICENSE_KEY_KEY,
         ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $statistics));
         self::assertTrue($statistics[0]->defaultValue());
         self::assertTrue($statistics[1]->defaultValue());
+        self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $statistics[3]->defaultValue());
+        self::assertTrue($statistics[4]->metadata()['sensitive']);
+        self::assertSame('https://www.maxmind.com/en/geolite2/signup', $statistics[4]->metadata()['help_link_url']);
+        self::assertSame(FormInputType::Password, $statistics[4]->formField()->inputType());
 
         self::assertSame([
             ApiFeaturePolicy::ENABLED_KEY,
@@ -100,6 +108,8 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertTrue($provider->defaultValue(ApiFeaturePolicy::ENABLED_KEY));
         self::assertFalse($provider->defaultValue(ApiFeaturePolicy::CORS_ENABLED_KEY));
         self::assertSame([], $provider->defaultValue(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY));
+        self::assertFalse($provider->defaultValue(MaxMindGeoIpConfig::ENABLED_KEY));
+        self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $provider->defaultValue(MaxMindGeoIpConfig::DATABASE_PATH_KEY));
         self::assertFalse($provider->hasDefault('security.captcha.preview'));
         self::assertNull($provider->defaultValue('security.captcha.preview'));
     }

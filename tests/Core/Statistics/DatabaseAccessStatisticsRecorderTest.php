@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Core\Statistics;
 
 use App\Core\Log\AccessRequestMetadata;
+use App\Core\Geo\GeoIpResolverInterface;
+use App\Core\Geo\GeoIpProviderStatus;
+use App\Core\Geo\GeoIpResult;
 use App\Core\Geo\NullGeoIpResolver;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
@@ -130,6 +133,27 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
         self::assertStringNotContainsString('test-token', implode(' ', array_map('strval', $row)));
     }
 
+    public function testItBoundsGeoIpLabelsBeforeRecording(): void
+    {
+        $label = str_repeat('x', 120);
+
+        (new DatabaseAccessStatisticsRecorder(
+            $this->connection,
+            new VisitorIdGenerator('test-secret'),
+            new UserAgentClassifier(),
+            new AccessRequestMetadata(),
+            new StaticGeoIpResolver(new GeoIpResult($label, $label, $label, $label)),
+        ))->record(Request::create('/docs', 'GET'), new Response('', 200));
+
+        $row = $this->connection->fetchAssociative('SELECT city, state, country, continent FROM access_statistic_event');
+
+        self::assertIsArray($row);
+        self::assertSame(80, strlen((string) $row['city']));
+        self::assertSame(80, strlen((string) $row['state']));
+        self::assertSame(80, strlen((string) $row['country']));
+        self::assertSame(80, strlen((string) $row['continent']));
+    }
+
     public function testItDoesNotThrowWhenStatisticsTableIsUnavailable(): void
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
@@ -232,5 +256,22 @@ final class DatabaseAccessStatisticsRecorderTest extends TestCase
 
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM access_statistic_event WHERE request_id = ?', ['old-request']));
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM access_statistic_event WHERE path = ?', ['/docs']));
+    }
+}
+
+final readonly class StaticGeoIpResolver implements GeoIpResolverInterface
+{
+    public function __construct(private GeoIpResult $result)
+    {
+    }
+
+    public function resolve(?string $ipAddress): GeoIpResult
+    {
+        return $this->result;
+    }
+
+    public function status(): GeoIpProviderStatus
+    {
+        return GeoIpProviderStatus::ready('test');
     }
 }

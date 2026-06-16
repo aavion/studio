@@ -219,14 +219,14 @@ final class BackendController extends AbstractController
             $auditAction = 'settings.core.save';
             $auditContext = ['section' => $context['settings_section']];
             $result = $this->formTokenValidator->isValid($expectedFormId, $formId, $token)
-                ? $this->coreSettingsFormHandler->submit($context['settings_section'], $request->request->all(), $this->actor()->userUid())
+                ? $this->coreSettingsFormHandler->submit($context['settings_section'], $request->request->all(), $this->actor()->userUid(), $this->actor())
                 : $this->invalidCsrfResult($request);
         } elseif ('backend-admin-settings-packages' === $view->uid()) {
             $expectedFormId = 'admin-settings-packages';
             $auditAction = 'settings.core.save';
             $auditContext = ['section' => 'packages'];
             $result = $this->formTokenValidator->isValid($expectedFormId, $formId, $token)
-                ? $this->coreSettingsFormHandler->submit('packages', $request->request->all(), $this->actor()->userUid())
+                ? $this->coreSettingsFormHandler->submit('packages', $request->request->all(), $this->actor()->userUid(), $this->actor())
                 : $this->invalidCsrfResult($request);
         } elseif (isset($context['package_name']) && is_string($context['package_name'])) {
             $expectedFormId = 'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($context['package_name']));

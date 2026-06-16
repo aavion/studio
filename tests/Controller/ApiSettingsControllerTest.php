@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Core\Access\AccessLevel;
+use App\Core\Config\Config;
+use App\Core\Config\ConfigValueType;
+use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Entity\ApiKey;
 use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
@@ -100,6 +103,57 @@ final class ApiSettingsControllerTest extends WebTestCase
 
         $footer = $this->resourceById($payload['data'], 'site.footer_copyright');
         self::assertSame('API test footer', $footer['attributes']['value']);
+    }
+
+    public function testSettingsPatchPreservesSensitiveValuesWhenClientEchoesProtectedPlaceholder(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadWrite, 'apisetsecret', AccessLevel::OWNER);
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+        $config->set(MaxMindGeoIpConfig::LICENSE_KEY_KEY, 'stored-api-secret', ConfigValueType::String, sensitive: true);
+
+        $client->request('PATCH', '/api/v1/admin/settings/statistics', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'values' => [
+                MaxMindGeoIpConfig::ENABLED_KEY => true,
+                MaxMindGeoIpConfig::LICENSE_KEY_KEY => '[protected]',
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseIsSuccessful();
+        self::assertSame('stored-api-secret', $config->get(MaxMindGeoIpConfig::LICENSE_KEY_KEY));
+    }
+
+    public function testGeoIpSettingsAreHiddenAndRejectedForDelegatedAdminApiKeys(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadWrite, 'apisetgeoipadmin', AccessLevel::ADMIN);
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+        $config->set(MaxMindGeoIpConfig::LICENSE_KEY_KEY, 'stored-api-secret', ConfigValueType::String, sensitive: true);
+
+        $client->request('GET', '/api/v1/admin/settings/statistics', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertNull($this->optionalResourceById($payload['data'], MaxMindGeoIpConfig::LICENSE_KEY_KEY));
+
+        $client->request('PATCH', '/api/v1/admin/settings/statistics', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode([
+            'values' => [
+                MaxMindGeoIpConfig::LICENSE_KEY_KEY => 'delegated-admin-secret',
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame('stored-api-secret', $config->get(MaxMindGeoIpConfig::LICENSE_KEY_KEY));
     }
 
     public function testSettingsPatchReturnsValidationErrors(): void
@@ -198,6 +252,22 @@ final class ApiSettingsControllerTest extends WebTestCase
         }
 
         self::fail(sprintf('Resource "%s" was not returned.', $id));
+    }
+
+    /**
+     * @param list<array<string, mixed>> $resources
+     *
+     * @return array<string, mixed>|null
+     */
+    private function optionalResourceById(array $resources, string $id): ?array
+    {
+        foreach ($resources as $resource) {
+            if (($resource['id'] ?? null) === $id) {
+                return $resource;
+            }
+        }
+
+        return null;
     }
 
     /**

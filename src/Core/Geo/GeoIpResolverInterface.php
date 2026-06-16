@@ -7,4 +7,6 @@ namespace App\Core\Geo;
 interface GeoIpResolverInterface
 {
     public function resolve(?string $ipAddress): GeoIpResult;
+
+    public function status(): GeoIpProviderStatus;
 }

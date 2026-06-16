@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Config\Settings;
 
 use App\Api\ApiFeaturePolicy;
-use App\Core\Config\Config;
+use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
+use App\Core\Config\Config;
 use App\Core\Validation\EmailAddress;
 use App\Entity\AclGroup;
 use App\Form\FormErrorKey;
@@ -18,6 +19,8 @@ use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class CoreSettingsFormHandler
 {
+    private const PROTECTED_VALUE = '[protected]';
+
     public function __construct(
         private CoreSettingsRegistry $registry,
         private Config $config,
@@ -29,9 +32,9 @@ final readonly class CoreSettingsFormHandler
     /**
      * @param array<string, mixed> $submitted
      */
-    public function submit(string $section, array $submitted, ?string $modifiedBy = null): FormSubmissionResult
+    public function submit(string $section, array $submitted, ?string $modifiedBy = null, ?AccessActor $actor = null): FormSubmissionResult
     {
-        $definitions = $this->registry->definitions($section);
+        $definitions = $this->definitionsForActor($section, $actor ?? AccessActor::fromAccess(AccessLevel::ADMIN));
         $result = $this->submissionHandler->submit(
             array_map(static fn (CoreSettingDefinition $definition): FormFieldDefinition => $definition->formField(), $definitions),
             $submitted,
@@ -50,7 +53,21 @@ final readonly class CoreSettingsFormHandler
                 continue;
             }
 
-            if (!$this->config->set($definition->key(), $result->value($definition->key()), $definition->valueType(), modifiedBy: $modifiedBy)) {
+            $metadata = $definition->metadata();
+            if (
+                true === ($metadata['sensitive'] ?? false)
+                && $this->isUnchangedSensitiveValue($result->value($definition->key()))
+            ) {
+                continue;
+            }
+
+            if (!$this->config->set(
+                $definition->key(),
+                $result->value($definition->key()),
+                $definition->valueType(),
+                sensitive: true === ($metadata['sensitive'] ?? false),
+                modifiedBy: $modifiedBy,
+            )) {
                 return new FormSubmissionResult($result->values(), [
                     '__form' => [FormErrorKey::SAVE_FAILED],
                 ]);
@@ -58,6 +75,17 @@ final readonly class CoreSettingsFormHandler
         }
 
         return $result;
+    }
+
+    /**
+     * @return list<CoreSettingDefinition>
+     */
+    private function definitionsForActor(string $section, AccessActor $actor): array
+    {
+        return array_values(array_filter(
+            $this->registry->definitions($section),
+            static fn (CoreSettingDefinition $definition): bool => $definition->allows($actor),
+        ));
     }
 
     private function validateDomainSettings(string $section, FormSubmissionResult $result): ?FormSubmissionResult
@@ -155,5 +183,11 @@ final readonly class CoreSettingsFormHandler
         }
 
         return is_string($email) && ('' === trim($email) || EmailAddress::isValid($email));
+    }
+
+    private function isUnchangedSensitiveValue(mixed $value): bool
+    {
+        return null === $value
+            || (is_string($value) && in_array(trim($value), ['', self::PROTECTED_VALUE], true));
     }
 }

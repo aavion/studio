@@ -41,6 +41,9 @@ services:
         App\Core\Event\EventHookDescriptorProviderInterface:
             tags:
                 - { name: 'system.event_hook_provider', priority: 0 }
+        App\Core\Geo\GeoIpProviderInterface:
+            tags:
+                - { name: 'system.geoip_provider', priority: 0 }
         App\Backend\BackendViewProviderInterface:
             tags:
                 - { name: 'system.backend_view_provider', priority: 0 }
@@ -106,6 +109,7 @@ services:
             - '../src/**/*Scope.php'
             - '../src/**/*Source.php'
             - '../src/Debug/RouteRenderOptions.php'
+            - '../src/Core/Geo/GeoIp2MaxMindDatabaseReader.php'
             - '../src/Core/Package/PackageSpec.php'
             - '../src/**/*Spec.php'
             - '../src/**/*Status.php'
@@ -372,7 +376,33 @@ services:
         alias: App\Core\Log\AccessLogger
 
     App\Core\Geo\GeoIpResolverInterface:
-        alias: App\Core\Geo\NullGeoIpResolver
+        alias: App\Core\Geo\GeoIpResolver
+
+    App\Core\Geo\GeoIpResolver:
+        arguments:
+            $providers: !tagged_iterator { tag: system.geoip_provider }
+            $fallbackProvider: '@App\Core\Geo\NullGeoIpProvider'
+
+    App\Core\Geo\MaxMindGeoIpDatabaseReaderFactoryInterface:
+        alias: App\Core\Geo\GeoIp2MaxMindDatabaseReaderFactory
+
+    App\Core\Geo\MaxMindGeoIpDownloadClientInterface:
+        alias: App\Core\Geo\HttpMaxMindGeoIpDownloadClient
+
+    App\Core\Geo\MaxMindGeoIpArchiveExtractorInterface:
+        alias: App\Core\Geo\MaxMindGeoIpArchiveExtractor
+
+    App\Core\Geo\HttpMaxMindGeoIpDownloadClient:
+        arguments:
+            $httpClient: null
+
+    App\Core\Geo\MaxMindGeoIpProvider:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Core\Geo\MaxMindGeoIpDatabaseUpdater:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
 
     App\Core\Log\OperationLoggerInterface:
         alias: App\Core\Log\OperationLogger

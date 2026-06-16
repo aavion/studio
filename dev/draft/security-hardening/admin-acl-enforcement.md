@@ -1,9 +1,9 @@
 # Admin ACL enforcement branch plan
 
-> **Status**: Draft  
-> **Updated**: 2026-06-15  
-> **Owner**: Core  
-> **Purpose:** Define the `feat-security-admin-acl-enforcement` implementation plan.  
+> **Status**: Draft
+> **Updated**: 2026-06-16
+> **Owner**: Core
+> **Purpose:** Define the `feat-security-admin-acl-enforcement` implementation plan.
 
 ## Goal
 
@@ -12,6 +12,16 @@ Introduce a shared Admin action authority policy that separates delegated Admin 
 Back to [security hardening implementation plan](../0.2.x-SecurityHardeningPlan.md).
 
 This branch should make it obvious which Admin features are operational delegation and which are site-control powers. The first implementation should ship safe code-owned defaults, then leave room for a later Owner-only configuration UI where that is useful and safe.
+
+Longer term, Owner-facing ACL settings should expose a bounded configuration matrix with one row per protected feature/action:
+
+| Column | Purpose |
+| --- | --- |
+| Feature | Stable machine-readable action or feature identifier, for example `settings.statistics.geoip` or `backend.action.geoip_database_update`. |
+| Required ACL | Default or configured `AccessRule`, expressed as a minimum access level and/or allowed ACL group. |
+| Configurable | Whether Owners may change the required ACL in the ACL settings UI. |
+
+The same matrix must feed Admin UI visibility, Editor UI visibility where applicable, API handlers, live operations, scheduler/admin triggers, and service-layer mutation checks. Navigation remains only a projection of the policy; backend enforcement stays authoritative.
 
 ## Git handling
 
@@ -28,7 +38,7 @@ Codex may create local commits for this branch when each commit has a clear them
 
 1. Inventory current Admin surfaces, including settings, users/groups, package/theme management, scheduler, operations, logs/audit, backups, diagnostics, API management, and future security settings.
 2. Define stable Admin action identifiers grouped by domain, for example `system.admin.settings.security.update`, `system.admin.packages.activate`, or `system.admin.scheduler.web_trigger.update`.
-3. Add an Admin action catalogue with metadata: identifier, domain, title/description translation keys, default minimum role, sensitivity, mutation/read flag, configurable flag, audit category, and optional confirmation requirement.
+3. Add an Admin action catalogue with metadata: identifier, domain, title/description translation keys, default minimum role or ACL group rule, sensitivity, mutation/read flag, configurable flag, audit category, and optional confirmation requirement.
 4. Add a shared Admin action authority policy service that evaluates actor access level, action identifier, target context, target subject, account status, and optional workflow metadata.
 5. Encode the first static default matrix in code: delegated Admin read/mutate actions, Owner-only actions, and denied/unknown actions.
 6. Add a narrow Owner-only configuration descriptor shape for later tuning, but do not build a broad permission UI unless this branch can keep validation, audit, docs, and rollback small enough for review.
@@ -51,7 +61,7 @@ The first matrix should use conservative defaults. "View" means the actor may op
 | Mail settings | View and mutate non-secret sender settings | View and mutate, including protected transport status/config where implemented | Mail transport secrets remain protected/write-only. Production delivery guards remain enforced. |
 | Security settings | View redacted status only | View and mutate | Captcha provider selection may be Admin-mutable only if it cannot disable required protection or verified recovery policy. Auto-ban disablement, privacy ceilings, recovery protections, and rate/security policy bounds are Owner-only. |
 | Access/audit/security logs | View redacted summaries | View redacted summaries and broader review tools | Raw secrets, raw tokens, full request payloads, and IP-derived data beyond retention are never exposed. Full diagnostic/export actions are Owner-only. |
-| Statistics and GeoIP status | View summaries | View and mutate provider/update settings | MaxMind/license material is protected/write-only. GeoIP cannot become blocking policy in this slice. |
+| Statistics and GeoIP status | View summaries | View and mutate GeoIP enablement, database path, license key, and update task | MaxMind license material is protected/write-only. GeoIP cannot become blocking policy in this slice. |
 | API settings | View status and own/user-token surfaces where already allowed | View and mutate global API settings | Enabling public API/CORS expansion, wildcard-like origins, or broad anonymous access is Owner-only. |
 | Package/theme overview | View installed/available status | View and mutate | Installing, activating, deactivating, updating, purging, and running package lifecycle actions are Owner-only by default. |
 | Package settings | View and mutate simple non-sensitive package settings if the package declares them Admin-safe | View and mutate all package settings within package policy | Package settings that alter routes, permissions, external credentials, data access, or runtime code are Owner-only. |
@@ -67,7 +77,8 @@ The first matrix should use conservative defaults. "View" means the actor may op
 ## Configurability policy
 
 - The first implementation should be code-owned and test-backed. This avoids shipping a confusing half-permission UI while the Admin surface is still changing.
-- A later Owner-only settings UI may relax or tighten selected Admin capabilities only through bounded descriptors. Each configurable action must define default minimum role, allowed role range, whether it may be disabled, audit behavior, affected routes/API/live operations, and safe rollback.
+- A later Owner-only settings UI may relax or tighten selected Admin and Editor capabilities only through bounded descriptors. Each configurable feature/action must define default `AccessRule`, allowed role/group range, whether it may be disabled, audit behavior, affected routes/API/live operations, and safe rollback.
+- The Owner UI should display the matrix as `Feature`, `Required ACL`, and `Configurable`. Non-configurable rows may be visible for transparency, but their controls remain disabled with explanatory copy.
 - Some actions are not ordinary configurable settings: last-Owner protection, Owner recovery, protected secret redaction, privacy ceilings, raw-token exposure, `APP_SECRET` emergency handling, and unknown-action deny-by-default.
 - Owner configuration may delegate additional read or mutation actions to Admins, but it must not allow Admins to grant themselves Owner role, change Owner-only recovery/security boundaries, reveal secrets without a dedicated reveal flow, or bypass domain confirmations/audit.
 - Configured changes to Admin action authority must be audited with actor, old/new policy summary, affected action identifiers, and redacted context.
@@ -76,6 +87,7 @@ The first matrix should use conservative defaults. "View" means the actor may op
 ## Public interfaces and data decisions
 
 - Admin action identifiers are stable, English, machine-readable strings and are not localized.
+- Feature/action descriptors should expose enough metadata for a future matrix UI without making the first implementation database-configurable by default: stable feature key, default access rule, configurability flag, domain, sensitivity, and affected public entry points.
 - The first matrix is code-owned and test-backed. Database-configurable Admin ACLs are a later Owner-only feature only if product need appears and the bounded descriptor model is implemented.
 - `Admin` is a delegated operations role. `Owner` remains the site-control role.
 - Owner-only defaults include protected secrets, Security policy bounds, public API/CORS expansion, scheduler web-trigger/GET-token enablement, package install/activate/purge/update, backup restore, full-data exports/downloads, self-update/release actions, destructive data/package purge, peer Admin changes, Owner changes, and emergency global operational controls.

@@ -65,12 +65,20 @@
             id: field.id,
             name: field.name,
             label: field_label,
-            type: field.input_type == 'number' ? 'number' : (field.input_type == 'color' ? 'color' : 'text'),
+            type: field.input_type == 'number' ? 'number' : (field.input_type == 'color' ? 'color' : (field.input_type == 'password' ? 'password' : 'text')),
             value: field.value,
             required: field.required,
             attributes: field.attributes,
             help: field_help,
             errors: field.errors,
         } only %}
+    {% endif %}
+    {% set help_link_url = field.metadata.help_link_url|default(null) %}
+    {% if help_link_url starts with 'https://' and field.metadata.help_link_label|default(null) %}
+        <p class="system-backend-form-help">
+            <a href="{{ help_link_url }}" target="_blank" rel="noopener noreferrer">
+                {{ field.metadata.help_link_label|trans }}
+            </a>
+        </p>
     {% endif %}
 {% endfor %}

@@ -8,6 +8,7 @@ use App\Api\ApiFeaturePolicy;
 use App\Core\Access\AccessLevel;
 use App\Core\Config\ConfigDefaultProviderInterface;
 use App\Core\Config\ConfigValueType;
+use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Content\Routing\ContentRouteLocalization;
 use App\Core\Statistics\AccessStatisticsPolicy;
@@ -22,7 +23,7 @@ final readonly class SetupDefaultSeed
     }
 
     /**
-     * @return list<array{key: string, value: mixed, type: ConfigValueType}>
+     * @return list<array{key: string, value: mixed, type: ConfigValueType, sensitive?: bool}>
      */
     public function configEntries(SetupInput $input): array
     {
@@ -46,6 +47,9 @@ final readonly class SetupDefaultSeed
             ['key' => ConfigAuditLogPolicy::EVENTS_KEY, 'value' => $this->setting($input, ConfigAuditLogPolicy::EVENTS_KEY, ConfigAuditLogPolicy::DEFAULT_CATEGORIES), 'type' => ConfigValueType::Json],
             ['key' => AccessStatisticsPolicy::ENABLED_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, true), 'type' => ConfigValueType::Boolean],
+            ['key' => MaxMindGeoIpConfig::ENABLED_KEY, 'value' => $this->setting($input, MaxMindGeoIpConfig::ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
+            ['key' => MaxMindGeoIpConfig::DATABASE_PATH_KEY, 'value' => $this->setting($input, MaxMindGeoIpConfig::DATABASE_PATH_KEY, MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH), 'type' => ConfigValueType::String],
+            ['key' => MaxMindGeoIpConfig::LICENSE_KEY_KEY, 'value' => $this->setting($input, MaxMindGeoIpConfig::LICENSE_KEY_KEY, ''), 'type' => ConfigValueType::String, 'sensitive' => true],
             ['key' => ApiFeaturePolicy::ENABLED_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => ApiFeaturePolicy::CORS_ENABLED_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::CORS_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, []), 'type' => ConfigValueType::Json],
