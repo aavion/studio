@@ -194,7 +194,7 @@ The codebase and other feature drafts expose several security-relevant surfaces 
 
 - First implementations may ship policy defaults as code-level constants or configuration values with tests.
 - Admin-configurable settings require bounded validation, safe defaults, documentation, and tests for disabled/missing settings.
-- Security policy bounds must prevent accidental lockout and privacy drift. Configuration must not allow IP-derived retention above 30 days, IP-ban TTLs above the documented maximum, disabling Owner recovery, disabling the recovery-login bypass without an equivalent path, or treating captcha `none` auto-success as verified human success.
+- Security policy bounds must prevent accidental lockout and privacy drift. Configuration must not allow log projection or shared security-signal retention above 30 days, IP-ban TTLs above the documented maximum, disabling Owner recovery, disabling the recovery-login bypass without an equivalent path, or treating captcha `none` auto-success as verified human success.
 - More permissive settings for public entry points should require an explicit policy update, not only a local configuration change.
 - More restrictive settings that affect login, account recovery, scheduler operation, captcha, mail delivery, or Owner/Admin access need tests for recovery behavior and false-positive handling.
 - User-facing copy is required whenever a configurable policy affects public behavior, recovery, captcha, mail delivery, remember-me, account access, or data retention.
@@ -208,7 +208,7 @@ These are first soft decisions for which values should stay fixed, become protec
 | Enforcement order, Owner recovery, Admin/Owner lockout protection | Code-level policy and tests | No ordinary Admin setting | Requires a policy update and explicit recovery tests to change |
 | IP privacy ceiling and raw-secret redaction | Code-level policy and tests | No increase allowed | IP-derived data max 30 days; raw credentials, API keys, visitor tokens, session IDs, captcha answers, and full user agents are never policy records |
 | Raw file-log retention | Existing log configuration or code default | Yes, bounded | Default 30 days; IP-bearing logs must not become queryable beyond 30 days through archives, projections, exports, or support bundles |
-| Database log projections and security signals | Config-backed defaults in Abuse Foundation | Yes, bounded | Message/audit/access projections default to 30 days; visitor/user/API security signals default to 7 days; IP-derived signals default to 1 day; all IP-derived/queryable projection data remains capped at 30 days |
+| Database log projections and security signals | Config-backed defaults in Abuse Foundation | Yes, bounded | Message/audit/access projections default to 30 days; all passive security signals default to 7 days through one shared signal-retention setting; all IP-derived/queryable projection data remains capped at 30 days |
 | GeoIP enablement, database path, license key, and update task | Protected config/Admin setting with null fallback | Yes, protected and audited | License key never public; disabled/unconfigured state uses `NullGeoIpResolver`; no geo-blocking |
 | GeoIP license key | Secret/protected setting | Yes, protected only | Never rendered, exported, logged, or included in diagnostics |
 | Probe-path defaults | Code defaults plus config descriptor | Yes, audited | Defaults remain broad; patterns are anchored/normalized and tested against false positives |

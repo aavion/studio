@@ -38,14 +38,14 @@ final class SecuritySignalRecorderTest extends TestCase
         }
     }
 
-    public function testItRecordsSignalsWithShortIpDerivedRetentionAndPurgesExpiredRows(): void
+    public function testItRecordsSignalsWithSharedRetentionAndPurgesExpiredRows(): void
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) PRIMARY KEY NOT NULL, value CLOB NOT NULL, value_type VARCHAR(255) NOT NULL, sensitive BOOLEAN NOT NULL, modified_at DATETIME NOT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
         $connection->executeStatement('CREATE TABLE security_signal_event (uid VARCHAR(36) PRIMARY KEY NOT NULL, occurred_at DATETIME NOT NULL, expires_at DATETIME NOT NULL, signal_type VARCHAR(80) NOT NULL, reason_code VARCHAR(120) NOT NULL, severity VARCHAR(16) NOT NULL, confidence INTEGER NOT NULL, subject_type VARCHAR(40) NOT NULL, subject_identifier VARCHAR(190) NOT NULL, ip_derived BOOLEAN NOT NULL, request_family VARCHAR(40) NOT NULL, request_intent VARCHAR(80) NOT NULL, request_id VARCHAR(64) NOT NULL, visitor_id VARCHAR(64) NOT NULL, path VARCHAR(1024) NOT NULL, route VARCHAR(190) NOT NULL, http_status INTEGER DEFAULT NULL, context CLOB NOT NULL)');
         $connection->insert('config_entry', [
-            'config_key' => DatabaseLogRetentionPolicy::SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY,
-            'value' => '1',
+            'config_key' => DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY,
+            'value' => '7',
             'value_type' => 'integer',
             'sensitive' => 0,
             'modified_at' => '2026-06-16 00:00:00',
@@ -96,7 +96,7 @@ final class SecuritySignalRecorderTest extends TestCase
         self::assertSame(100, (int) $connection->fetchOne('SELECT confidence FROM security_signal_event'));
         self::assertSame(1, (int) $connection->fetchOne('SELECT ip_derived FROM security_signal_event'));
         self::assertSame('2026-06-16 12:00:00', $connection->fetchOne('SELECT occurred_at FROM security_signal_event'));
-        self::assertSame('2026-06-17 12:00:00', $connection->fetchOne('SELECT expires_at FROM security_signal_event'));
+        self::assertSame('2026-06-23 12:00:00', $connection->fetchOne('SELECT expires_at FROM security_signal_event'));
     }
 
     /**

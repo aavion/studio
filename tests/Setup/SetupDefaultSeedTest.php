@@ -37,7 +37,6 @@ final class SetupDefaultSeedTest extends TestCase
         self::assertSame('', $settings[MaxMindGeoIpConfig::LICENSE_KEY_KEY]);
         self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $settings[DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY]);
         self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, $settings[DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY]);
-        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_IP_RETENTION_DAYS, $settings[DatabaseLogRetentionPolicy::SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY]);
         self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $settings[SuspiciousProbePathMatcher::PATTERNS_KEY]);
     }
 
@@ -78,7 +77,6 @@ final class SetupDefaultSeedTest extends TestCase
             DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY,
             DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY,
             DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY,
-            DatabaseLogRetentionPolicy::SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY,
             SuspiciousProbePathMatcher::PATTERNS_KEY,
             \App\Core\Statistics\AccessStatisticsPolicy::ENABLED_KEY,
             \App\Core\Statistics\AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY,

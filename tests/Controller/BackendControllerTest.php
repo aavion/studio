@@ -996,6 +996,16 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('select[name="security.captcha.provider"]');
         self::assertSelectorExists(sprintf('input[name="%s"]', ConfigAuditLogPolicy::ENABLED_KEY));
         self::assertSelectorExists(sprintf('input[name="%s[]"]', ConfigAuditLogPolicy::EVENTS_KEY));
+        self::assertSelectorExists('input[name="security.signals.retention_days"]');
+
+        $client->request('GET', '/admin/settings/logging');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Log settings');
+        self::assertSelectorExists('form#admin-settings-logging');
+        self::assertSelectorExists('input[name="logging.database.message_retention_days"]');
+        self::assertSelectorExists('input[name="logging.database.audit_retention_days"]');
+        self::assertSelectorExists('input[name="logging.database.access_retention_days"]');
 
         $config = self::getContainer()->get(Config::class);
         self::assertInstanceOf(Config::class, $config);

@@ -28,6 +28,7 @@ final class CoreSettingsRegistryTest extends TestCase
         $general = $registry->definitions('general');
         $users = $registry->definitions('users');
         $security = $registry->definitions('security');
+        $logging = $registry->definitions('logging');
         $statistics = $registry->definitions('statistics');
         $api = $registry->definitions('api');
 
@@ -61,20 +62,24 @@ final class CoreSettingsRegistryTest extends TestCase
             'security.captcha.preview',
             ConfigAuditLogPolicy::ENABLED_KEY,
             ConfigAuditLogPolicy::EVENTS_KEY,
-            DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY,
-            DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY,
-            DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY,
             DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY,
-            DatabaseLogRetentionPolicy::SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY,
             SuspiciousProbePathMatcher::PATTERNS_KEY,
         ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $security));
         self::assertSame(FormInputType::Captcha, $security[2]->formField()->inputType());
         self::assertSame(FormInputType::MultiSelect, $security[4]->formField()->inputType());
         self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $security[4]->defaultValue());
-        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $security[5]->defaultValue());
-        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_IP_RETENTION_DAYS, $security[9]->defaultValue());
-        self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $security[10]->defaultValue());
-        self::assertSame(FormInputType::Textarea, $security[10]->formField()->inputType());
+        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, $security[5]->defaultValue());
+        self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $security[6]->defaultValue());
+        self::assertSame(FormInputType::Textarea, $security[6]->formField()->inputType());
+
+        self::assertSame([
+            DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY,
+            DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY,
+            DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY,
+        ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $logging));
+        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $logging[0]->defaultValue());
+        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $logging[1]->defaultValue());
+        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $logging[2]->defaultValue());
 
         self::assertSame([
             AccessStatisticsPolicy::ENABLED_KEY,

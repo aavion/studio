@@ -29,6 +29,7 @@ admin:
     user_settings: 'Users'
     mail_settings: 'Mail'
     security_settings: 'Security'
+    logging_settings: 'Logs'
     package_settings: 'Packages'
     statistics_settings: 'Statistics'
     api_settings: 'API'
@@ -703,7 +704,11 @@ admin:
     security:
       title: 'Security settings'
       foundation_title: 'Security configuration foundation'
-      foundation_text: 'Security, captcha, logging, and abuse-control settings will attach here.'
+      foundation_text: 'Security, captcha, passive-signal retention, and abuse-control settings will attach here.'
+    logging:
+      title: 'Log settings'
+      foundation_title: 'Database log projections'
+      foundation_text: 'Message, audit, and access logs keep their fixed rotating file logs separately. These settings control how long the searchable database copies stay available.'
     statistics:
       title: 'Statistics settings'
       foundation_title: 'Statistics configuration'
@@ -822,10 +827,7 @@ admin:
         help: 'Database lookup copy retention in days. Values above 30 days are not allowed because access logs can contain IP-derived data.'
       security_signal_retention_days:
         label: 'Security signal retention'
-        help: 'Default retention for passive security signals that are keyed by visitor, user, or API identity.'
-      security_signal_ip_retention_days:
-        label: 'IP-derived signal retention'
-        help: 'Short retention for signals that are keyed only by IP-derived identifiers. Keep this lower than the 30-day privacy ceiling.'
+        help: 'Retention for passive security signals in days. Values above 30 days are not allowed because signals can contain request-derived identifiers.'
       security_probe_path_patterns:
         label: 'Suspicious probe path patterns'
         help: 'One regular expression per line. CSV-style comma-separated imports are accepted. Invalid or empty lists fall back to the protected defaults.'

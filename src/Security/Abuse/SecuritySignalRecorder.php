@@ -52,7 +52,7 @@ final readonly class SecuritySignalRecorder
         }
 
         $now = $this->clock->now();
-        $expiresAt = $now->add(new DateInterval('P'.$this->retentionPolicy->retentionDaysForSignal($ipDerived).'D'));
+        $expiresAt = $now->add(new DateInterval('P'.$this->retentionPolicy->retentionDaysForSignal().'D'));
         $context = [
             ...$context,
             'signal_type' => $this->short($signalType, 80),

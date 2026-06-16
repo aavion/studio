@@ -65,7 +65,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - First implementation uses the portable `security_signal_event` table for short-lived passive signals. Suggested fields are normalized subject type/key, request family, intent, reason code, confidence, weight/count, timestamps, expiry timestamp, safe context, and optional audit reference.
 - Passive-signal rows are observational only in this branch. The rate and auto-ban branches decide how to consume them for enforcement.
 - Keep passive signals separate from raw file logs and from the message/audit/access projections. Later branches may consume `security_signal_event`, but this branch does not enforce from it.
-- IP subjects and stable IP-derived hashes must expire within 30 days. Longer-lived passive signals must use visitor ID, authenticated user ID, API key fingerprint, or aggregate keys without retaining the IP-derived subject.
+- Security signals use one shared retention setting, bounded to 1-30 days. Signal rows may include an IP-bucket HMAC for review/correlation, but never raw IP addresses or raw forwarding-header values, and the entire row must stop being visible once the shared expiry is reached.
 - TTL and expiry use Symfony's injectable clock/time boundary for deterministic tests.
 - Security-signal list and detail reads must filter expired rows by `expires_at` as well as the selected time window, so short-retention signals stop being visible even on quiet sites where no later write has triggered purge cleanup.
 - Classification must expose enough request-family, intent, subject, Admin/Owner context, `/api/live/**`, and recovery-login metadata for later branches to follow the Security policy enforcement order without re-reading controllers.
@@ -105,7 +105,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test projection retention purge-after-write behavior and the 30-day maximum for configurable lookup retention.
 - Test Admin/API log browsing reads database projections, uses UUID detail links, exposes source tabs, keeps broad free-text matching for hidden identifiers/context, shows only meaningful filters per tab, omits raw-line storage, omits access/audit level filters, and hides `DEBUG`/`INFO` by default for level-aware sources unless selected.
 - Test passive-signal persistence, aggregation by normalized subject/intent/reason, expiry filtering, and cleanup command/task behavior.
-- Test IP-derived signal retention stays below 30 days and that longer-lived visitor-based signals do not keep recoverable IP material.
+- Test shared security-signal retention stays below 30 days, applies consistently to Visitor-ID and IP-bucket context, and filters expired rows from list and detail reads even when no later write has purged them yet.
 - Test client-identity behavior by asserting the foundation uses Symfony's resolved request IP for security subjects and does not trust raw forwarding headers for signals, bans, GeoIP, or audit decisions; do not introduce app-managed trusted-proxy configuration in this slice.
 - Test storage-failure degradation.
 - Test no limiter or ban enforcement occurs in this branch.

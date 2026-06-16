@@ -13,11 +13,9 @@ final readonly class DatabaseLogRetentionPolicy
     public const AUDIT_LOG_RETENTION_DAYS_KEY = 'logging.database.audit_retention_days';
     public const ACCESS_LOG_RETENTION_DAYS_KEY = 'logging.database.access_retention_days';
     public const SECURITY_SIGNAL_RETENTION_DAYS_KEY = 'security.signals.retention_days';
-    public const SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY = 'security.signals.ip_retention_days';
     public const DEFAULT_LOG_RETENTION_DAYS = 30;
     public const DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS = 7;
-    public const DEFAULT_SECURITY_SIGNAL_IP_RETENTION_DAYS = 1;
-    public const MAX_IP_DERIVED_RETENTION_DAYS = 30;
+    public const MAX_RETENTION_DAYS = 30;
 
     public function __construct(private Connection $connection)
     {
@@ -33,11 +31,9 @@ final readonly class DatabaseLogRetentionPolicy
         };
     }
 
-    public function retentionDaysForSignal(bool $ipDerived): int
+    public function retentionDaysForSignal(): int
     {
-        return $ipDerived
-            ? $this->days(self::SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY, self::DEFAULT_SECURITY_SIGNAL_IP_RETENTION_DAYS)
-            : $this->days(self::SECURITY_SIGNAL_RETENTION_DAYS_KEY, self::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS);
+        return $this->days(self::SECURITY_SIGNAL_RETENTION_DAYS_KEY, self::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS);
     }
 
     private function days(string $key, int $default): int
@@ -60,6 +56,6 @@ final readonly class DatabaseLogRetentionPolicy
 
         $days = is_int($value) ? $value : (is_numeric($value) ? (int) $value : $default);
 
-        return max(1, min(self::MAX_IP_DERIVED_RETENTION_DAYS, $days));
+        return max(1, min(self::MAX_RETENTION_DAYS, $days));
     }
 }
