@@ -51,6 +51,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Limiter storage degradation must be explicit and tested, including safe diagnostics and Owner recovery behavior.
 - Enforcement follows the Security policy order so workflow buckets, global buckets, suspicious buckets, active bans, recovery-login rendering, and Owner/Admin protections interact predictably.
 - Rate-limit responses use the documented response semantics: `429`, `Retry-After` when available, family-specific HTML/JSON bodies, redacted diagnostics, and `no-store`.
+- This branch owns `no-store` behavior for rate-limit, block-adjacent recovery, browser/API/scheduler error, and sensitive retry responses it touches. It should also carry the production HTTP security-header follow-up forward to a dedicated response-hardening/frontend-delivery slice: define and test CSP, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sensitive-route `no-store`, and documented route exceptions without broadening this branch into a full frontend policy rewrite.
 - Threshold/window configuration should be represented through named policy descriptors with units, defaults, min/max bounds, disabled behavior, and diagnostics labels, even if the first implementation keeps those descriptors as code constants.
 - Valid CORS preflights should be cheap and must not spend mutating API budget; invalid preflight probing may spend suspicious/API metadata budget and record passive signals.
 - High-impact authenticated/admin operations should use explicit action costs or workflow buckets where the current codebase exposes them. Owner ordinary-rate-limit exemption does not remove workflow confirmation, Admin/Owner action authorization, audit, or redaction requirements.
@@ -83,6 +84,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test `/api/live/**` never receives ordinary rate-limit `429`.
 - Test browser HTML and API JSON `429` shapes.
 - Test response cache headers and redaction for browser/API/scheduler limit failures.
+- Test that any `no-store` headers added in this branch are route-scoped and do not claim to complete the full production HTTP security-header policy until the dedicated response-hardening/frontend-delivery slice defines CSP and related headers.
 - Test that non-existing optional workflows are not wired as dead routes/services and that later workflow branches have a clear catalogue attachment point.
 - Test limiter storage degradation and concurrent consume/reset behavior for the highest-risk workflows.
 - Test configured limiter service wiring with `lint:container`.
@@ -92,6 +94,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Update Security draft thresholds and reset behavior.
 - Update Security policy defaults if implementation evidence changes any threshold, subject, or reset policy.
 - Update API/Scheduler notes for JSON `429` behavior.
+- Keep the HTTP security-header production-hardening follow-up linked from this branch if the full policy is still deferred after rate enforcement.
 - Update class map for facade/enforcement services.
 - Record focused test commands and any threshold changes in the worklog.
 - Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.

@@ -89,6 +89,7 @@
 - Added best-effort passive signal recording for high-signal probes and unsafe prefetch attempts. Signals carry Visitor-ID plus IP-bucket HMAC context when available and never store raw proxy-header values.
 - Made suspicious probe path patterns configurable as an editable line-based Security setting with CSV-tolerant parsing, protected high-signal defaults, invalid-pattern fallback, setup seed coverage, translations, and focused matcher tests.
 - Added high-risk passive security-signal recording for enforced session/visitor mismatches while preserving the existing forced logout and audit behavior. Complete copied-session plus copied-visitor-cookie risk scoring remains a later Security/remember-me follow-up.
+- Clarified the rate-enforcement handoff for HTTP security headers: rate/recovery/error responses own tested `no-store`, while the full CSP/frame/referrer/permissions/header policy remains a dedicated response-hardening/frontend-delivery follow-up if still deferred.
 - Verification so far: focused PHPUnit for database log browser/projector, security signal recorder, affected log/settings/setup tests passed; `php bin/console lint:container` passed; focused `bin/lint` for changed Twig/translations/drafts passed.
 
 ### Archived Compacted Branch History
