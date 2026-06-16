@@ -7,8 +7,9 @@ namespace App\Core\Log;
 use App\Core\Id\UuidFactory;
 use App\Database\DatabaseReadyState;
 use DateInterval;
-use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\Clock\NativeClock;
 use Throwable;
 
 final readonly class DatabaseLogProjector
@@ -20,6 +21,7 @@ final readonly class DatabaseLogProjector
         private DatabaseLogRetentionPolicy $retentionPolicy,
         private ?DatabaseReadyState $databaseReadyState = null,
         private UuidFactory $uuidFactory = new UuidFactory(),
+        private ClockInterface $clock = new NativeClock(),
     ) {
     }
 
@@ -119,7 +121,7 @@ final readonly class DatabaseLogProjector
 
     private function purge(string $source, string $table): void
     {
-        $cutoff = (new DateTimeImmutable())->sub(new DateInterval('P'.$this->retentionPolicy->retentionDaysForSource($source).'D'));
+        $cutoff = $this->clock->now()->sub(new DateInterval('P'.$this->retentionPolicy->retentionDaysForSource($source).'D'));
         $this->connection->executeStatement('DELETE FROM '.$table.' WHERE occurred_at < ?', [
             $cutoff->format('Y-m-d H:i:s'),
         ]);
@@ -127,7 +129,7 @@ final readonly class DatabaseLogProjector
 
     private function now(): string
     {
-        return (new DateTimeImmutable())->format('Y-m-d H:i:s');
+        return $this->clock->now()->format('Y-m-d H:i:s');
     }
 
     private function short(mixed $value, int $length): string

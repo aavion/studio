@@ -11,6 +11,7 @@ use App\Setup\SetupCompletionMarker;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Clock\MockClock;
 
 final class DatabaseLogProjectorTest extends TestCase
 {
@@ -87,7 +88,11 @@ final class DatabaseLogProjectorTest extends TestCase
             'context' => '{}',
         ]);
 
-        $projector = new DatabaseLogProjector($connection, new DatabaseLogRetentionPolicy($connection));
+        $projector = new DatabaseLogProjector(
+            $connection,
+            new DatabaseLogRetentionPolicy($connection),
+            clock: new MockClock('2026-06-16 12:00:00'),
+        );
         $projector->recordAccess([
             'request_id' => 'current',
             'method' => 'GET',
@@ -102,6 +107,7 @@ final class DatabaseLogProjectorTest extends TestCase
 
         self::assertSame(1, (int) $connection->fetchOne('SELECT COUNT(*) FROM access_log_entry'));
         self::assertSame('current', $connection->fetchOne('SELECT request_id FROM access_log_entry'));
+        self::assertSame('2026-06-16 12:00:00', $connection->fetchOne('SELECT occurred_at FROM access_log_entry'));
         self::assertSame(80, strlen((string) $connection->fetchOne('SELECT city FROM access_log_entry')));
     }
 

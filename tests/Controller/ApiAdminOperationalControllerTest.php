@@ -230,6 +230,10 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         self::assertSame(['backend-admin', 'backend-admin-scheduler'], $payload['paths']['/admin/scheduler']['get']['tags']);
         self::assertSame(['backend-admin', 'backend-admin-statistics'], $payload['paths']['/admin/statistics']['get']['tags']);
         self::assertSame(['backend-admin', 'backend-admin-themes'], $payload['paths']['/admin/themes']['get']['tags']);
+        self::assertSame(
+            ['message', 'audit', 'access', 'security_signal'],
+            $payload['paths']['/admin/logs/{log}']['get']['parameters'][0]['schema']['enum'],
+        );
         self::assertContains([
             'name' => 'backend-admin-operations',
             'summary' => 'Backend Admin Operations',
