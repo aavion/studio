@@ -330,6 +330,8 @@ final class ApiUserControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $target = $this->createUserWithLevel(AccessLevel::AUTHOR, 'apiuserfeature', 'current-password');
+        $group = $this->createGroup('api_user_feature_group', AccessLevel::USER);
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
         $plainKey = $this->createPlainApiKey('apiusrfeat', ApiKeyStatus::ReadWrite);
         $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
         self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
@@ -358,6 +360,15 @@ final class ApiUserControllerTest extends WebTestCase
             self::assertResponseStatusCodeSame(403);
             $payload = $this->jsonPayload($client->getResponse()->getContent());
             self::assertSame('api.operation_unavailable', $payload['error']['code']);
+            self::assertSame('admin.users', $payload['error']['context']['feature']);
+            self::assertSame('feature_read_only', $payload['error']['context']['reason']);
+
+            $client->request('POST', '/api/v1/admin/users/items/'.$target->username().'/groups/'.$group->identifier(), server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseStatusCodeSame(403);
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
             self::assertSame('admin.users', $payload['error']['context']['feature']);
             self::assertSame('feature_read_only', $payload['error']['context']['reason']);
         } finally {
@@ -399,6 +410,40 @@ final class ApiUserControllerTest extends WebTestCase
             $payload = $this->jsonPayload($client->getResponse()->getContent());
             self::assertSame('admin.users.acl', $payload['error']['context']['feature']);
             self::assertSame('feature_read_only', $payload['error']['context']['reason']);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
+    public function testUserGroupMembershipDoesNotRequireGroupAdministrationFeature(): void
+    {
+        $client = self::createClient();
+        $target = $this->createUserWithLevel(AccessLevel::AUTHOR, 'apiusermemuser', 'current-password');
+        $group = $this->createGroup('api_member_user_feature', AccessLevel::USER);
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
+        $plainKey = $this->createPlainApiKey('apiusrmemusr', ApiKeyStatus::ReadWrite);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.users' => [
+                'state' => AdminPermissionState::Mutable->value,
+                'groups' => [],
+            ],
+            'admin.users.acl' => [
+                'state' => AdminPermissionState::Denied->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('POST', '/api/v1/admin/users/items/'.$target->username().'/groups/'.$group->identifier(), server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertContains($group->identifier(), array_column($payload['data']['attributes']['groups'], 'identifier'));
         } finally {
             $store->save($store->defaultOverrides(), 'test');
         }

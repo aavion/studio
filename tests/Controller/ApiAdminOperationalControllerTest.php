@@ -171,6 +171,10 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
                 'state' => AdminPermissionState::Mutable->value,
                 'groups' => [],
             ],
+            'admin.packages' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
         ], 'test');
 
         try {
@@ -204,6 +208,15 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
             self::assertArrayNotHasKey('payload', $payload['data']['attributes']);
             self::assertSame('/api/v1/admin/operations/'.$run['operation_id'], $payload['links']['status']);
             self::assertSame('/api/v1/admin/operations/'.$run['operation_id'].'/continue?confirm=true', $payload['links']['confirm']);
+
+            $client->request('POST', '/api/v1/admin/operations/'.$run['operation_id'].'/continue?confirm=true', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainWriteKey,
+            ]);
+
+            self::assertResponseStatusCodeSame(403);
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('admin.packages', $payload['error']['context']['feature']);
+            self::assertSame('feature_read_only', $payload['error']['context']['reason']);
         } finally {
             $overrides->save($overrides->defaultOverrides(), 'test');
             @unlink(dirname($store->outputPath($run['operation_id'])).'/'.$run['operation_id'].'.json');

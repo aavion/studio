@@ -71,6 +71,8 @@ Default authority policy:
 - Protected values remain write-only or status-only even for Owners unless a workflow explicitly implements a reveal flow with re-authentication, audit, and redaction rules.
 - Permission-aware navigation is not the security boundary. Controllers, API handlers, live-operation starters, scheduler triggers, and service-layer workflows must all call the same action policy before mutating or revealing high-impact data.
 
+ACL rules are assigned by operational responsibility, not necessarily by the current view, menu, or route area that exposes a control. For example, editing ACL group definitions belongs to `admin.users.acl`, while adding or removing groups on a user account mutates that user account and belongs to `admin.users`. Review actions stay under their review permission even when rendered from a broader user-management view, so approving or rejecting pending registrations belongs to `admin.users.review`. Likewise, confirming a reviewed live operation must re-check the target operation's domain feature, such as `admin.packages`, instead of relying only on the Operations view permission.
+
 The first implementation should introduce a route/action authority matrix or policy service for existing Admin surfaces instead of relying on ad hoc controller checks. Existing user-management guardrails remain the model for peer-role and last-Owner protection, but they are not sufficient for package, scheduler, backup, settings, diagnostics, and update workflows.
 
 ## Rate-Limit Defaults

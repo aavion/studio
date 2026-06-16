@@ -778,6 +778,60 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
+    public function testAdminOperationContinuationRequiresTargetFeatureMutation(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, 8);
+        $store = self::getContainer()->get(LiveOperationRunStore::class);
+        self::assertInstanceOf(LiveOperationRunStore::class, $store);
+        $overrides = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $overrides);
+        $run = $store->create('package.install.verify', [], 'Install package');
+        $result = WorkflowResult::requiresReview(null, [
+            Message::info(
+                OperationMessageCode::OPERATION_ACTION_REQUIRED,
+                OperationMessageKey::OPERATION_ACTION_REQUIRED,
+                ['%operation%' => 'Install package'],
+            ),
+        ], [
+            'live_operation_continuation' => [
+                'operation' => 'package.install.apply',
+                'payload' => ['install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa', 'package' => 'demo-module'],
+                'label' => 'Install package',
+            ],
+        ]);
+        $store->finish($run['operation_id'], false, $result->toArray());
+
+        $overrides->save([
+            'admin.operations' => [
+                'state' => AdminPermissionState::Mutable->value,
+                'groups' => [],
+            ],
+            'admin.packages' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $crawler = $client->request('GET', '/admin/operations/'.$run['operation_id']);
+
+            self::assertResponseIsSuccessful();
+            $form = $crawler->filter(sprintf('form[action="/admin/operations/%s/continue"]', $run['operation_id']));
+            self::assertCount(1, $form);
+            self::assertNotNull($form->filter('button[type="submit"]')->attr('disabled'));
+
+            $client->submit($form->form());
+
+            self::assertResponseStatusCodeSame(401);
+        } finally {
+            $overrides->save($overrides->defaultOverrides(), 'test');
+            @unlink(dirname($store->outputPath($run['operation_id'])).'/'.$run['operation_id'].'.json');
+            @unlink($store->outputPath($run['operation_id']));
+            @unlink($store->pidPath($run['operation_id']));
+        }
+    }
+
     public function testAdminBackendActionFormsRunPackageDiscoveryImmediately(): void
     {
         $client = self::createClient();

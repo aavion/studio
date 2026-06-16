@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Backend\AdminControllerContext;
+use App\Backend\AdminOperationFeatureResolver;
 use App\Backend\BackendArea;
 use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Message\Message;
@@ -32,6 +33,7 @@ final class AdminOperationController extends AbstractController
         private readonly FormTokenValidator $formTokenValidator,
         private readonly UiAlertDispatcherInterface $alerts,
         private readonly AdminFeatureAccessPolicy $adminAcl,
+        private readonly AdminOperationFeatureResolver $operationFeatures,
     ) {
     }
 
@@ -125,6 +127,7 @@ final class AdminOperationController extends AbstractController
             'navigation' => $this->adminContext->navigation($request, $this->getUser()),
             'operation_report' => $report,
             'operations_mutable' => $this->adminAcl->isMutable(self::FEATURE, $this->adminContext->actor($this->getUser())),
+            'operation_continuation_mutable' => $this->operationContinuationMutable($operationId),
         ]);
     }
 
@@ -150,6 +153,14 @@ final class AdminOperationController extends AbstractController
 
         if (null === $continuation) {
             return $this->redirectToRoute('backend_admin_operation_detail', ['operationId' => $operationId]);
+        }
+
+        $targetFeature = $this->operationFeatures->mutationFeatureForOperation((string) $continuation['operation']);
+        if (is_string($targetFeature) && !$this->adminAcl->isMutable($targetFeature, $this->adminContext->actor($this->getUser()))) {
+            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+                'feature' => $targetFeature,
+                'required_state' => 'mutable',
+            ]);
         }
 
         $result = $this->liveOperationStarter->start(
@@ -197,6 +208,22 @@ final class AdminOperationController extends AbstractController
             'feature' => self::FEATURE,
             'required_state' => $mutable ? 'mutable' : 'visible',
         ]);
+    }
+
+    private function operationContinuationMutable(string $operationId): bool
+    {
+        if (!$this->adminAcl->isMutable(self::FEATURE, $this->adminContext->actor($this->getUser()))) {
+            return false;
+        }
+
+        $continuation = $this->liveOperationRunStore->continuationForOperator($operationId);
+        if (null === $continuation) {
+            return false;
+        }
+
+        $targetFeature = $this->operationFeatures->mutationFeatureForOperation((string) $continuation['operation']);
+
+        return !is_string($targetFeature) || $this->adminAcl->isMutable($targetFeature, $this->adminContext->actor($this->getUser()));
     }
 
     private function stringField(Request $request, string $name): string

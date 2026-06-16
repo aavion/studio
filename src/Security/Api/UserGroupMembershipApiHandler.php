@@ -51,7 +51,7 @@ final readonly class UserGroupMembershipApiHandler implements ApiEndpointHandler
             return $denied;
         }
 
-        if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.users.acl', 'updateAdminUserGroupMembership')) {
+        if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.users', 'updateAdminUserGroupMembership')) {
             return $denied;
         }
 

@@ -194,6 +194,7 @@
                 <tbody>
                     {% for token in pending_tokens %}
                         <tr>
+                            {% set token_revoke_mutable = token.status.value == 'pending_approval' ? reviews_mutable : users_mutable %}
                             <td>{{ token.email }}</td>
                             <td>{{ ('admin.users.token_type.' ~ token.type.value)|trans }}</td>
                             <td>{{ ('admin.users.roles.' ~ token.role.value)|trans }}</td>
@@ -213,7 +214,7 @@
                                 {% endif %}
                                 <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
-                                    <button class="system-button system-button-secondary" type="submit"{% if not users_mutable %} disabled{% endif %}>{{ 'admin.users.actions.revoke'|trans }}</button>
+                                    <button class="system-button system-button-secondary" type="submit"{% if not token_revoke_mutable %} disabled{% endif %}>{{ 'admin.users.actions.revoke'|trans }}</button>
                                 </form>
                             </td>
                         </tr>
