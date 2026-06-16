@@ -74,6 +74,9 @@ services:
         App\Security\AclGroupReferenceProviderInterface:
             tags:
                 - { name: 'system.acl_group_reference_provider', priority: 0 }
+        App\Core\AdminAcl\AdminFeatureProviderInterface:
+            tags:
+                - { name: 'system.admin_feature_provider', priority: 0 }
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -214,6 +217,10 @@ services:
     App\Backend\BackendViewRegistry:
         arguments:
             $providers: !tagged_iterator { tag: system.backend_view_provider }
+
+    App\Core\AdminAcl\AdminFeatureRegistry:
+        arguments:
+            $providers: !tagged_iterator { tag: system.admin_feature_provider }
 
     App\View\Injection\ViewInjectionRegistry:
         arguments:

@@ -7,6 +7,7 @@ namespace App\Tests\Controller;
 use App\Core\Access\AccessLevel;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Geo\MaxMindGeoIpConfig;
@@ -394,7 +395,7 @@ final class BackendControllerTest extends WebTestCase
     {
         $manifest = $this->rootManifest();
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $client->request('GET', '/admin/packages');
 
         self::assertResponseIsSuccessful();
@@ -732,7 +733,7 @@ final class BackendControllerTest extends WebTestCase
         }
 
         try {
-            $this->loginUserWithLevel($client, 8);
+            $this->loginUserWithLevel($client, AccessLevel::OWNER);
             $crawler = $client->request('GET', '/admin/packages');
 
             self::assertSelectorNotExists('.system-table tr[data-package-name="demo-module"]');
@@ -764,6 +765,58 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
+    public function testDelegatedAdminsSeeDisabledPackageLifecycleActionsByDefault(): void
+    {
+        $client = self::createClient();
+        $this->removePackageByName('test-admin-hidden-lifecycle');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $package = new ExtensionPackage(
+            '00000000-0000-7000-8000-000000000496',
+            [PackageScope::Module],
+            'test-admin-hidden-lifecycle',
+            'packages/test-admin-hidden-lifecycle',
+            ExtensionPackageStatus::Inactive,
+            [
+                'display_name' => 'Test Admin Hidden Lifecycle',
+                'description' => 'Lifecycle ACL fixture',
+                'manifest' => [
+                    'PACKAGE_NAME' => 'Test Admin Hidden Lifecycle',
+                    'PACKAGE_VERSION' => '1.0.0',
+                ],
+            ],
+            manifestVersion: '1.0.0',
+        );
+        $entityManager->persist($package);
+        $entityManager->flush();
+
+        try {
+            $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+            $client->request('GET', '/admin/packages');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('a[href="/admin/packages/test-admin-hidden-lifecycle"]');
+            self::assertSelectorNotExists('a[href="/admin/packages/test-admin-hidden-lifecycle/activate"]');
+
+            $client->request('GET', '/admin/packages/test-admin-hidden-lifecycle');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Test Admin Hidden Lifecycle');
+            self::assertSelectorNotExists('a[href="/admin/packages/test-admin-hidden-lifecycle/activate"]');
+            self::assertSelectorNotExists('a[href="/admin/packages/test-admin-hidden-lifecycle/delete"]');
+            self::assertSelectorExists('button[disabled]');
+            self::assertStringContainsString('Activate', (string) $client->getResponse()->getContent());
+            self::assertStringContainsString('Delete', (string) $client->getResponse()->getContent());
+
+            $client->request('GET', '/admin/packages/test-admin-hidden-lifecycle/activate');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.system-alert-warning', 'You may review this action, but mutation is not allowed by the current ACL policy.');
+            self::assertStringNotContainsString('Activate package', (string) $client->getResponse()->getContent());
+        } finally {
+            $this->removePackageByName('test-admin-hidden-lifecycle');
+        }
+    }
+
     public function testAdminPackageDetailAndLifecycleReviewRoutesRender(): void
     {
         $client = self::createClient();
@@ -790,7 +843,7 @@ final class BackendControllerTest extends WebTestCase
         file_put_contents($packageDir.'/README.md', "# Lifecycle README\n\nThis package has **markdown** docs.");
         file_put_contents($assetsDir.'/preview.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9"><rect width="16" height="9" fill="#315bdc"/></svg>');
 
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $package = new ExtensionPackage(
             '00000000-0000-7000-8000-000000000498',
@@ -875,7 +928,7 @@ final class BackendControllerTest extends WebTestCase
         $this->removePackageByName('test-dependent-theme');
         $this->removePackageByName('test-dependent-captcha');
 
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $theme = new ExtensionPackage(
             '00000000-0000-7000-8000-000000000596',
@@ -988,6 +1041,7 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('form#admin-settings-users');
         self::assertSelectorExists(sprintf('input[name="%s"][min="1"][max="3650"]', UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY));
 
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $client->request('GET', '/admin/settings/security');
 
         self::assertResponseIsSuccessful();
@@ -1036,10 +1090,11 @@ final class BackendControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('form#admin-settings-statistics');
         self::assertSelectorExists('input[name="statistics.enabled"]');
-        self::assertSelectorNotExists('input[name="statistics.geoip.enabled"]');
-        self::assertSelectorNotExists('input[name="statistics.geoip.maxmind.license_key"]');
-        self::assertSelectorNotExists('input[name="_backend_action"][value="geoip_database_update"]');
+        self::assertSelectorExists('input[name="statistics.geoip.enabled"][disabled]');
+        self::assertSelectorExists('input[name="statistics.geoip.maxmind.license_key"][disabled]');
+        self::assertSelectorExists('input[name="_backend_action"][value="geoip_database_update"] + input + button[disabled]');
 
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $client->request('GET', '/admin/settings/scheduler');
 
         self::assertResponseIsSuccessful();
@@ -1057,6 +1112,57 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('.system-panel', PHP_VERSION);
         self::assertStringContainsString('GD', (string) $client->getResponse()->getContent());
         self::assertStringNotContainsString('$_SERVER', (string) $client->getResponse()->getContent());
+    }
+
+    public function testAclSettingsMatrixIsOwnerGatedAndRendersFeatureRegistry(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
+        $adminAcl = self::getContainer()->get(AdminFeatureAccessPolicy::class);
+        self::assertInstanceOf(AdminFeatureAccessPolicy::class, $adminAcl);
+        $existingGroup = $entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => 'acl_matrix_test']);
+        if ($existingGroup instanceof AclGroup) {
+            $entityManager->remove($existingGroup);
+            $entityManager->flush();
+            $adminAcl->resetCache();
+        }
+        $group = new AclGroup(
+            '72000000-0000-7000-8000-000000000715',
+            'acl_matrix_test',
+            'ACL Matrix Test',
+            AccessLevel::ADMIN,
+        );
+        $entityManager->persist($group);
+        $entityManager->flush();
+        $adminAcl->resetCache();
+
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
+        $crawler = $client->request('GET', '/admin/settings/acl');
+
+        try {
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'ACL');
+            self::assertSelectorExists('form#admin-settings-acl');
+            self::assertSelectorTextContains('#acl-surface-admin', 'Packages and themes');
+            self::assertSelectorExists('select[name="acl[admin.packages][state]"]');
+            self::assertSelectorExists('select[name="acl[admin.settings.statistics.geoip][state]"]');
+            self::assertGreaterThan(0, $crawler->filter('option[value=""]')->count());
+            self::assertSelectorTextContains('#acl-surface-admin', 'Read-only');
+            self::assertGreaterThan(0, $crawler->filter('select[disabled]')->count());
+
+            $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+            $client->request('GET', '/admin/settings/acl');
+
+            self::assertResponseStatusCodeSame(401);
+        } finally {
+            $cleanupGroup = $entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => $group->identifier()]);
+            if ($cleanupGroup instanceof AclGroup) {
+                $entityManager->remove($cleanupGroup);
+                $entityManager->flush();
+                $adminAcl->resetCache();
+            }
+        }
     }
 
     public function testAdminSettingsFormsPersistCoreSettings(): void

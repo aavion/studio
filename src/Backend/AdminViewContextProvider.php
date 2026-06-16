@@ -5,6 +5,12 @@ declare(strict_types=1);
 namespace App\Backend;
 
 use App\Core\Access\AccessActor;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
+use App\Core\AdminAcl\AdminFeatureDefinition;
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
+use App\Core\AdminAcl\AdminFeatureRegistry;
+use App\Core\AdminAcl\AdminPermissionState;
+use App\Core\AdminAcl\AdminPermissionSurface;
 use App\Core\Diagnostics\SystemInfoProvider;
 use App\Core\Geo\GeoIpResolverInterface;
 use App\Core\Geo\MaxMindGeoIpConfig;
@@ -26,6 +32,9 @@ final readonly class AdminViewContextProvider
         private GeoIpResolverInterface $geoIpResolver,
         private Security $security,
         private BackendActions $backendActions,
+        private AdminFeatureRegistry $adminFeatureRegistry,
+        private AdminFeatureAccessPolicy $adminFeatureAccessPolicy,
+        private AdminFeatureOverrideStore $adminFeatureOverrideStore,
     ) {
     }
 
@@ -57,6 +66,9 @@ final readonly class AdminViewContextProvider
                     'status' => $this->geoIpResolver->status()->toSafeArray(),
                 ],
             ],
+            'backend-admin-settings-acl' => [
+                'acl_matrix' => $this->aclMatrix(),
+            ],
             default => [],
         };
     }
@@ -77,5 +89,80 @@ final readonly class AdminViewContextProvider
         $user = $this->security->getUser();
 
         return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function aclMatrix(): array
+    {
+        $overrides = $this->adminFeatureOverrideStore->overrides();
+        $defaults = $this->adminFeatureOverrideStore->defaultOverrides();
+        $surfaces = [];
+
+        foreach (AdminPermissionSurface::cases() as $surface) {
+            $groups = $this->adminFeatureAccessPolicy->availableGroups($surface);
+            $surfaces[] = [
+                'key' => $surface->value,
+                'label_key' => $surface->labelKey(),
+                'groups' => $groups,
+                'rows' => array_map(
+                    fn (AdminFeatureDefinition $definition): array => $this->aclMatrixRow($definition, $overrides[$definition->identifier()] ?? [], $defaults[$definition->identifier()] ?? [], $groups),
+                    $this->adminFeatureRegistry->definitions($surface),
+                ),
+            ];
+        }
+
+        return [
+            'states' => array_map(
+                static fn (AdminPermissionState $state): array => [
+                    'value' => $state->value,
+                    'label_key' => 'admin.acl.states.'.$state->value,
+                ],
+                AdminPermissionState::cases(),
+            ),
+            'group_states' => [
+                [
+                    'value' => '',
+                    'label_key' => 'admin.acl.states.inherit',
+                ],
+                ...array_map(
+                    static fn (AdminPermissionState $state): array => [
+                        'value' => $state->value,
+                        'label_key' => 'admin.acl.states.'.$state->value,
+                    ],
+                    AdminPermissionState::cases(),
+                ),
+            ],
+            'surfaces' => $surfaces,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $override
+     * @param list<array{identifier: string, name: string, min_role: int}> $groups
+     *
+     * @return array<string, mixed>
+     */
+    private function aclMatrixRow(AdminFeatureDefinition $definition, array $override, array $defaultOverride, array $groups): array
+    {
+        $groupOverrides = is_array($override['groups'] ?? null) ? $override['groups'] : [];
+
+        return [
+            'identifier' => $definition->identifier(),
+            'label_key' => $definition->labelKey(),
+            'description_key' => $definition->descriptionKey(),
+            'category_key' => $definition->categoryKey(),
+            'configurable' => $definition->configurable(),
+            'default_state' => AdminPermissionState::fromMixed($defaultOverride['state'] ?? null, $definition->defaultState())->value,
+            'state' => AdminPermissionState::fromMixed($override['state'] ?? null, $definition->defaultState())->value,
+            'groups' => array_map(
+                static fn (array $group): array => [
+                    ...$group,
+                    'state' => is_string($groupOverrides[$group['identifier']] ?? null) ? (string) $groupOverrides[$group['identifier']] : '',
+                ],
+                $groups,
+            ),
+        ];
     }
 }

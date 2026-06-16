@@ -33,6 +33,7 @@ admin:
     package_settings: 'Packages'
     statistics_settings: 'Statistics'
     api_settings: 'API'
+    acl_settings: 'ACL'
     scheduler_settings: 'Scheduler'
     system_info: 'System information'
   actions:
@@ -683,6 +684,10 @@ admin:
       all: 'All stored events'
   settings:
     title: 'Settings'
+    acl:
+      title: 'ACL'
+      foundation_title: 'ACL matrix'
+      foundation_text: 'Owner-controlled feature permissions for administrative, editor, and future frontend surfaces.'
     redirect_title: 'Settings sections'
     redirect_text: 'General settings are the first built-in settings section. Active packages with simple setting definitions appear under package settings.'
     general:
@@ -764,6 +769,97 @@ admin:
         required: 'This field is required.'
         save_failed: 'The settings could not be saved.'
         default_acl_group_unavailable: 'Enter an existing ACL group with minimum role User or lower, or leave the field empty.'
+  acl:
+    actions:
+      save: 'Save ACL matrix'
+    categories:
+      diagnostics: 'Diagnostics'
+      operations: 'Operations'
+      packages: 'Packages'
+      package_settings: 'Package settings'
+      settings: 'Settings'
+      system: 'System'
+      users: 'Users'
+    empty: 'No feature flags are registered for this surface yet.'
+    groups:
+      empty: 'No ACL groups can grant this surface.'
+    non_configurable: 'Read-only'
+    read_only_action: 'You may review this action, but mutation is not allowed by the current ACL policy.'
+    states:
+      inherit: 'Inherit'
+      denied: 'Denied'
+      visible: 'Visible'
+      mutable: 'Mutable'
+    surfaces:
+      label: 'ACL surfaces'
+      admin: 'Admin'
+      admin_text: 'Administrative feature flags. ACL groups can grant permissions only to users that already pass the Admin surface gate.'
+      editor: 'Editor'
+      editor_text: 'Prepared for future editor feature flags. Editor providers can register rows here later.'
+      frontend: 'Frontend'
+      frontend_text: 'Reserved for explicitly designed future frontend features such as inline editing.'
+    table:
+      admin_state: 'Admin'
+      default: 'Default'
+      feature: 'Feature'
+      groups: 'ACL group grants'
+    features:
+      admin_settings_security:
+        label: 'Security settings'
+        description: 'Security policy, audit categories, signal retention, and suspicious probe patterns.'
+      admin_settings_logging:
+        label: 'Log retention settings'
+        description: 'Database lookup retention for message, audit, and access log projections.'
+      admin_settings_statistics:
+        label: 'Statistics settings'
+        description: 'Access statistics recording and display settings.'
+      admin_settings_statistics_geoip:
+        label: 'GeoIP settings'
+        description: 'GeoIP enablement, local database path, protected MaxMind license key, and status.'
+      admin_settings_api:
+        label: 'API settings'
+        description: 'Global API availability and CORS expansion settings.'
+      admin_settings_scheduler:
+        label: 'Scheduler settings'
+        description: 'Scheduler enablement, web triggering, GET authentication, and package action queues.'
+      admin_settings_packages:
+        label: 'Package settings'
+        description: 'Core package-update settings and package-owned settings pages.'
+      admin_settings_package:
+        description: 'Package-owned settings page for an active package.'
+      admin_logs:
+        label: 'Logs'
+        description: 'Administrative log review surfaces.'
+      admin_packages:
+        label: 'Packages and themes'
+        description: 'Package and theme management, including install, activation, deactivation, repair, deletion, and purge workflows.'
+      admin_packages_self_update:
+        label: 'System package self-update'
+        description: 'Owner-only system package self-update workflows.'
+      admin_backup_restore:
+        label: 'Backup, export, and restore'
+        description: 'Full-data backup, export, download, and restore workflows.'
+      admin_operations:
+        label: 'Operations'
+        description: 'Live operation inspection and operational status surfaces.'
+      admin_actions_maintenance:
+        label: 'Maintenance actions'
+        description: 'Manual maintenance actions such as cache clear and asset rebuild.'
+      admin_scheduler:
+        label: 'Scheduler'
+        description: 'Scheduler task inspection and run controls.'
+      admin_users:
+        label: 'Users'
+        description: 'User administration and account management.'
+      admin_users_acl:
+        label: 'User ACL groups'
+        description: 'ACL group administration and membership review.'
+      admin_users_review:
+        label: 'User reviews'
+        description: 'User invitation, registration, and review queues.'
+      admin_support:
+        label: 'Support bundles'
+        description: 'Diagnostic or support-bundle generation and download.'
     fields:
       site_title:
         label: 'Site title'

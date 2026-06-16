@@ -33,6 +33,7 @@ admin:
     package_settings: 'Pakete'
     statistics_settings: 'Statistiken'
     api_settings: 'API'
+    acl_settings: 'ACL'
     scheduler_settings: 'Scheduler'
     system_info: 'System-Info'
   actions:
@@ -683,6 +684,10 @@ admin:
       all: 'Alle gespeicherten Events'
   settings:
     title: 'Einstellungen'
+    acl:
+      title: 'ACL'
+      foundation_title: 'ACL-Matrix'
+      foundation_text: 'Owner-gesteuerte Feature-Berechtigungen für Admin-, Editor- und zukünftige Frontend-Surfaces.'
     redirect_title: 'Einstellungsbereiche'
     redirect_text: 'Allgemeine Einstellungen sind der erste eingebaute Einstellungsbereich. Aktive Pakete mit einfachen Setting-Definitionen erscheinen unter den Paket-Einstellungen.'
     general:
@@ -764,6 +769,97 @@ admin:
         required: 'Dieses Feld ist erforderlich.'
         save_failed: 'Die Einstellungen konnten nicht gespeichert werden.'
         default_acl_group_unavailable: 'Trage eine bestehende ACL-Gruppe mit Mindestrolle User oder niedriger ein oder lasse das Feld leer.'
+  acl:
+    actions:
+      save: 'ACL-Matrix speichern'
+    categories:
+      diagnostics: 'Diagnostik'
+      operations: 'Operationen'
+      packages: 'Pakete'
+      package_settings: 'Paket-Einstellungen'
+      settings: 'Einstellungen'
+      system: 'System'
+      users: 'Benutzer'
+    empty: 'Für diese Surface sind noch keine Feature-Flags registriert.'
+    groups:
+      empty: 'Keine ACL-Gruppen können diese Surface gewähren.'
+    non_configurable: 'Read-only'
+    read_only_action: 'Du darfst diese Aktion prüfen, aber die aktuelle ACL-Policy erlaubt keine Mutation.'
+    states:
+      inherit: 'Erben'
+      denied: 'Verweigert'
+      visible: 'Sichtbar'
+      mutable: 'Mutierbar'
+    surfaces:
+      label: 'ACL-Surfaces'
+      admin: 'Admin'
+      admin_text: 'Administrative Feature-Flags. ACL-Gruppen können Berechtigungen nur an Benutzer vergeben, die bereits das Admin-Surface-Gate passieren.'
+      editor: 'Editor'
+      editor_text: 'Für zukünftige Editor-Feature-Flags vorbereitet. Editor-Provider können hier später Zeilen registrieren.'
+      frontend: 'Frontend'
+      frontend_text: 'Reserviert für ausdrücklich entworfene zukünftige Frontend-Features wie Inline-Editing.'
+    table:
+      admin_state: 'Admin'
+      default: 'Default'
+      feature: 'Feature'
+      groups: 'ACL-Gruppen-Grants'
+    features:
+      admin_settings_security:
+        label: 'Sicherheits-Einstellungen'
+        description: 'Security-Policy, Audit-Kategorien, Signal-Retention und verdächtige Probe-Pfade.'
+      admin_settings_logging:
+        label: 'Log-Retention-Einstellungen'
+        description: 'Datenbank-Lookup-Retention für Message-, Audit- und Access-Log-Projektionen.'
+      admin_settings_statistics:
+        label: 'Statistik-Einstellungen'
+        description: 'Aufzeichnung und Anzeige von Zugriffsstatistiken.'
+      admin_settings_statistics_geoip:
+        label: 'GeoIP-Einstellungen'
+        description: 'GeoIP-Aktivierung, lokaler Datenbankpfad, geschützter MaxMind-License-Key und Status.'
+      admin_settings_api:
+        label: 'API-Einstellungen'
+        description: 'Globale API-Verfügbarkeit und CORS-Erweiterungen.'
+      admin_settings_scheduler:
+        label: 'Scheduler-Einstellungen'
+        description: 'Scheduler-Aktivierung, Web-Triggering, GET-Authentifizierung und Package-Action-Queues.'
+      admin_settings_packages:
+        label: 'Paket-Einstellungen'
+        description: 'Core-Einstellungen für Paket-Updates und paket-eigene Einstellungsseiten.'
+      admin_settings_package:
+        description: 'Paket-eigene Einstellungsseite für ein aktives Paket.'
+      admin_logs:
+        label: 'Logs'
+        description: 'Administrative Log-Review-Flächen.'
+      admin_packages:
+        label: 'Pakete und Themes'
+        description: 'Paket- und Themeverwaltung inklusive Installation, Aktivierung, Deaktivierung, Reparatur, Löschung und Purge-Workflows.'
+      admin_packages_self_update:
+        label: 'System-Paket-Self-Update'
+        description: 'Owner-only Self-Update-Workflows für das System-Paket.'
+      admin_backup_restore:
+        label: 'Backup, Export und Restore'
+        description: 'Full-Data-Backup, Export, Download und Restore-Workflows.'
+      admin_operations:
+        label: 'Operationen'
+        description: 'Live-Operation-Inspektion und operative Statusflächen.'
+      admin_actions_maintenance:
+        label: 'Wartungsaktionen'
+        description: 'Manuelle Wartungsaktionen wie Cache-Clear und Asset-Rebuild.'
+      admin_scheduler:
+        label: 'Scheduler'
+        description: 'Scheduler-Task-Inspektion und Run-Controls.'
+      admin_users:
+        label: 'Benutzer'
+        description: 'Benutzeradministration und Account-Verwaltung.'
+      admin_users_acl:
+        label: 'Benutzer-ACL-Gruppen'
+        description: 'ACL-Gruppenadministration und Membership-Review.'
+      admin_users_review:
+        label: 'Benutzer-Reviews'
+        description: 'Queues für Einladungen, Registrierungen und Benutzer-Reviews.'
+      admin_support:
+        label: 'Support-Bundles'
+        description: 'Erzeugung und Download von Diagnose- oder Support-Bundles.'
     fields:
       site_title:
         label: 'Seitentitel'
