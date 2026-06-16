@@ -18,12 +18,16 @@ final readonly class DatabaseLogBrowser
         'security_signal' => ['label' => 'admin.logs.sources.security_signal', 'table' => 'security_signal_event'],
     ];
 
+    private DatabaseLogRetentionPolicy $retentionPolicy;
+
     public function __construct(
         private Connection $connection,
         private LogEntryFilter $entryFilter = new LogEntryFilter(),
         private LogPagination $pagination = new LogPagination(),
         private ClockInterface $clock = new NativeClock(),
+        ?DatabaseLogRetentionPolicy $retentionPolicy = null,
     ) {
+        $this->retentionPolicy = $retentionPolicy ?? new DatabaseLogRetentionPolicy($connection);
     }
 
     /**
@@ -41,6 +45,8 @@ final readonly class DatabaseLogBrowser
         }
         $criteria = $this->criteria($source, $filters);
         $matched = $this->count($source, $criteria);
+        $pagination = $this->pagination->pagination($filters, $matched);
+        $filters['page'] = $pagination['page'];
         $entries = $this->entries($source, $criteria, $filters);
 
         return [
@@ -50,7 +56,7 @@ final readonly class DatabaseLogBrowser
             'filters' => $filters,
             'entries' => $entries,
             'files' => [],
-            'pagination' => $this->pagination->pagination($filters, $matched),
+            'pagination' => $pagination,
             'per_page_options' => $this->pagination->perPageOptions(),
             'time_window_options' => $this->pagination->timeWindowOptions(),
             'match_options' => $this->pagination->matchOptions(),
@@ -124,7 +130,7 @@ final readonly class DatabaseLogBrowser
     private function criteria(string $source, array $filters): array
     {
         $where = ['occurred_at >= ?'];
-        $params = [$this->cutoff($filters['time_window'])];
+        $params = [$this->cutoff($source, $filters['time_window'])];
 
         if ($this->supportsLevelFilter($source) && [] !== $filters['levels']) {
             $levelColumn = 'security_signal' === $source ? 'severity' : 'level';
@@ -155,8 +161,9 @@ final readonly class DatabaseLogBrowser
                 default => ['context', 'message', 'code'],
             };
             $operator = 'equals' === $filters['match'] ? '= ?' : 'LIKE ?';
-            $needle = 'equals' === $filters['match'] ? $filters['search'] : '%'.$filters['search'].'%';
-            $where[] = '('.implode(' OR ', array_map(fn (string $column): string => $this->searchExpression($column).' '.$operator, $columns)).')';
+            $needle = mb_strtolower($filters['search']);
+            $needle = 'equals' === $filters['match'] ? $needle : '%'.$needle.'%';
+            $where[] = '('.implode(' OR ', array_map(fn (string $column): string => $this->caseInsensitiveSearchExpression($column).' '.$operator, $columns)).')';
 
             foreach ($columns as $_) {
                 $params[] = $needle;
@@ -314,7 +321,7 @@ final readonly class DatabaseLogBrowser
         return is_array($decoded) ? $decoded : [];
     }
 
-    private function cutoff(string $window): string
+    private function cutoff(string $source, string $window): string
     {
         $modifier = match ($window) {
             '1h' => '-1 hour',
@@ -322,8 +329,16 @@ final readonly class DatabaseLogBrowser
             '30d' => '-30 days',
             default => '-24 hours',
         };
+        $cutoff = $this->clock->now()->modify($modifier);
 
-        return $this->clock->now()->modify($modifier)->format('Y-m-d H:i:s');
+        if (in_array($source, ['message', 'audit', 'access'], true)) {
+            $retentionCutoff = $this->clock->now()->modify(sprintf('-%d days', $this->retentionPolicy->retentionDaysForSource($source)));
+            if ($retentionCutoff > $cutoff) {
+                $cutoff = $retentionCutoff;
+            }
+        }
+
+        return $cutoff->format('Y-m-d H:i:s');
     }
 
     private function now(): string
@@ -344,5 +359,10 @@ final readonly class DatabaseLogBrowser
         }
 
         return 'CAST(context AS TEXT)';
+    }
+
+    private function caseInsensitiveSearchExpression(string $column): string
+    {
+        return 'LOWER('.$this->searchExpression($column).')';
     }
 }

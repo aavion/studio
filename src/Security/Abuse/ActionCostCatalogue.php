@@ -18,6 +18,7 @@ final readonly class ActionCostCatalogue
             RequestIntent::PasswordReset => new ActionCost('password_reset', 3),
             RequestIntent::Contact => new ActionCost('contact', 3),
             RequestIntent::SchedulerTrigger => new ActionCost('scheduler', 1),
+            RequestIntent::SetupApply => new ActionCost('setup_apply', 8),
             RequestIntent::ApiRead => new ActionCost('api_read', 1),
             RequestIntent::ApiWrite => new ActionCost('api_write', 5),
             RequestIntent::SettingsMutation,

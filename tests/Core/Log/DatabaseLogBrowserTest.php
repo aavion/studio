@@ -171,33 +171,70 @@ final class DatabaseLogBrowserTest extends TestCase
         $view = (new DatabaseLogBrowser($connection, clock: new MockClock($now)))->browse([
             'source' => 'message',
             'per_page' => 'all',
+            'page' => 999,
         ]);
 
         self::assertSame(500, $view['filters']['per_page']);
+        self::assertSame(2, $view['filters']['page']);
         self::assertSame(501, $view['pagination']['total']);
         self::assertSame(2, $view['pagination']['total_pages']);
-        self::assertTrue($view['pagination']['has_next']);
-        self::assertCount(500, $view['entries']);
+        self::assertFalse($view['pagination']['has_next']);
+        self::assertCount(1, $view['entries']);
     }
 
-    public function testItCastsJsonContextBeforeSearchingOnPostgreSql(): void
+    public function testItHonorsConfiguredDatabaseRetentionWhenBrowsing(): void
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE message_log_entry (uid VARCHAR(36) PRIMARY KEY NOT NULL, occurred_at DATETIME NOT NULL, level VARCHAR(16) NOT NULL, message VARCHAR(255) NOT NULL, code VARCHAR(160) DEFAULT NULL, context CLOB NOT NULL)');
+        $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(190) PRIMARY KEY NOT NULL, value CLOB NOT NULL)');
+        $connection->insert('config_entry', [
+            'config_key' => 'logging.database.message_retention_days',
+            'value' => '1',
+        ]);
+        $connection->insert('message_log_entry', [
+            'uid' => '99999999-0000-7000-8000-000000000001',
+            'occurred_at' => '2026-06-16 12:00:00',
+            'level' => 'NOTICE',
+            'message' => 'message.current',
+            'code' => 'test.current',
+            'context' => '{}',
+        ]);
+        $connection->insert('message_log_entry', [
+            'uid' => '99999999-0000-7000-8000-000000000002',
+            'occurred_at' => '2026-06-14 12:00:00',
+            'level' => 'NOTICE',
+            'message' => 'message.expired_by_setting',
+            'code' => 'test.expired',
+            'context' => '{}',
+        ]);
+
+        $view = (new DatabaseLogBrowser($connection, clock: new MockClock('2026-06-16 12:00:00')))->browse([
+            'source' => 'message',
+            'time_window' => '30d',
+        ]);
+
+        self::assertSame(1, $view['pagination']['total']);
+        self::assertSame('message.current', $view['entries'][0]['message']);
+    }
+
+    public function testItCastsJsonContextAndSearchesCaseInsensitivelyOnPostgreSql(): void
     {
         $connection = $this->createMock(Connection::class);
         $connection->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
         $connection
             ->expects(self::once())
             ->method('fetchOne')
-            ->with(self::stringContains('CAST(context AS TEXT) LIKE ?'), self::anything())
+            ->with(self::stringContains('LOWER(CAST(context AS TEXT)) LIKE ?'), self::anything())
             ->willReturn(0);
         $connection
             ->expects(self::once())
             ->method('fetchAllAssociative')
-            ->with(self::stringContains('CAST(context AS TEXT) LIKE ?'), self::anything())
+            ->with(self::stringContains('LOWER(CAST(context AS TEXT)) LIKE ?'), self::callback(static fn (array $params): bool => in_array('%scanner%', $params, true)))
             ->willReturn([]);
 
         (new DatabaseLogBrowser($connection, clock: new MockClock('2026-06-16 12:00:00')))->browse([
-            'source' => 'message',
-            'q' => 'request-id',
+            'source' => 'security_signal',
+            'q' => 'Scanner',
         ]);
     }
 

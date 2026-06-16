@@ -32,10 +32,7 @@ final readonly class LogFileBrowser
             $filters['levels'] = [];
         }
         $files = $this->sourceRegistry->files($this->logDir, $this->environment, $source);
-        $entries = [];
-        $matched = 0;
-        $offset = ($filters['page'] - 1) * $filters['per_page'];
-        $limit = $filters['per_page'];
+        $matches = [];
 
         foreach ($files as $file) {
             foreach ($this->lineReader->readLines($file) as $line) {
@@ -45,17 +42,18 @@ final readonly class LogFileBrowser
                     continue;
                 }
 
-                ++$matched;
-
-                if ($matched <= $offset) {
-                    continue;
-                }
-
-                if (count($entries) < $limit) {
-                    $entries[] = $entry;
-                }
+                $matches[] = $entry;
             }
         }
+
+        $matched = count($matches);
+        $pagination = $this->pagination->pagination($filters, $matched);
+        $filters['page'] = $pagination['page'];
+        $entries = array_slice(
+            $matches,
+            ($filters['page'] - 1) * $filters['per_page'],
+            $filters['per_page'],
+        );
 
         return [
             'sources' => $this->sourceRegistry->sourceOptions(),
@@ -63,7 +61,7 @@ final readonly class LogFileBrowser
             'filters' => $filters,
             'entries' => $entries,
             'files' => array_map('basename', $files),
-            'pagination' => $this->pagination->pagination($filters, $matched),
+            'pagination' => $pagination,
             'per_page_options' => $this->pagination->perPageOptions(),
             'time_window_options' => $this->pagination->timeWindowOptions(),
             'match_options' => $this->pagination->matchOptions(),

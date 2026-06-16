@@ -67,4 +67,25 @@ final class LogFileBrowserTest extends TestCase
         self::assertSame('/admin/logs', $view['entries'][0]['context']['path']);
         self::assertSame('n/a', $view['entries'][0]['context']['country']);
     }
+
+    public function testItUsesClampedPaginationPageWhenReadingEntries(): void
+    {
+        $lines = [];
+        for ($i = 1; $i <= 26; ++$i) {
+            $lines[] = sprintf('[2099-01-01T10:%02d:00.000000+00:00] message.ERROR: message.%02d [] []', $i, $i);
+        }
+        $this->writeTestFile($this->logDir, 'test/message-2099-01-01.log', implode(PHP_EOL, [...$lines, '']));
+
+        $view = (new LogFileBrowser($this->logDir, 'test'))->browse([
+            'source' => 'message',
+            'level' => 'ERROR',
+            'per_page' => 25,
+            'page' => 999,
+        ]);
+
+        self::assertSame(2, $view['filters']['page']);
+        self::assertSame(2, $view['pagination']['page']);
+        self::assertCount(1, $view['entries']);
+        self::assertSame('message.01', $view['entries'][0]['message']);
+    }
 }
