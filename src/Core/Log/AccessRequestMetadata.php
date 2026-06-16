@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Log;
 
-use App\Localization\TranslationLanguageCatalog;
+use App\Content\Routing\ContentRouteLocalization;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -19,7 +19,7 @@ final readonly class AccessRequestMetadata
     private const REQUEST_ID_PATTERN = '/\A[A-Za-z0-9][A-Za-z0-9._:-]*\z/';
     private const REDACTED_SEGMENT = '[redacted]';
 
-    public function __construct(private ?TranslationLanguageCatalog $languageCatalog = null)
+    public function __construct(private ?ContentRouteLocalization $routeLocalization = null)
     {
     }
 
@@ -213,7 +213,7 @@ final readonly class AccessRequestMetadata
             return $firstSegment;
         }
 
-        if (null !== $this->languageCatalog && '' !== $firstSegment && in_array($firstSegment, $this->languageCatalog->availableLanguages(), true)) {
+        if (null !== $this->routeLocalization && $this->routeLocalization->isEnabled() && in_array($firstSegment, $this->routeLocalization->availableLanguages(), true)) {
             return $firstSegment;
         }
 

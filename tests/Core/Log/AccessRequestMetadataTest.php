@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Log;
 
+use App\Content\Routing\ContentRouteLocalization;
+use App\Core\Config\Config;
+use App\Core\Config\ConfigValueType;
 use App\Core\Log\AccessRequestMetadata;
 use App\Localization\TranslationLanguageCatalog;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,7 +36,6 @@ final class AccessRequestMetadataTest extends TestCase
         self::assertSame('api', $metadata->surface(Request::create('/api/v1/status')));
         self::assertSame('public', $metadata->surface(Request::create('/apiary')));
         self::assertSame('public', $metadata->surface(Request::create('/docs/api/reference')));
-        self::assertSame('admin', (new AccessRequestMetadata(new TranslationLanguageCatalog(dirname(__DIR__, 3))))->surface(Request::create('/de/admin/logs')));
         self::assertSame('backend_admin_route', $metadata->resolvedRoute($request));
         self::assertSame('https://example.org/source', $metadata->referrer($request));
         self::assertSame('example.org', $metadata->referrerHost($request));
@@ -92,5 +96,35 @@ final class AccessRequestMetadataTest extends TestCase
         ]);
 
         self::assertSame('https://example.org/user/invitation/[redacted]', $metadata->referrer($request));
+    }
+
+    public function testItGatesLocalizedSurfacePrefixesByRouteLocaleOrEnabledRoutePrefixes(): void
+    {
+        $disabled = new AccessRequestMetadata($this->routeLocalization(false));
+        $enabled = new AccessRequestMetadata($this->routeLocalization(true));
+        $localizedRoute = Request::create('/de/admin/logs');
+        $localizedRoute->attributes->set('_locale', 'de');
+
+        self::assertSame('public', $disabled->surface(Request::create('/de/admin')));
+        self::assertSame('public', $disabled->surface(Request::create('/de/api/v1/status')));
+        self::assertSame('admin', $disabled->surface($localizedRoute));
+        self::assertSame('admin', $enabled->surface(Request::create('/de/admin/logs')));
+        self::assertSame('api', $enabled->surface(Request::create('/de/api/v1/status')));
+    }
+
+    private function routeLocalization(bool $enabled): ContentRouteLocalization
+    {
+        $config = new Config($this->connection());
+        $config->set(ContentRouteLocalization::ENABLED_KEY, $enabled, ConfigValueType::Boolean);
+
+        return new ContentRouteLocalization($config, new TranslationLanguageCatalog(dirname(__DIR__, 3)));
+    }
+
+    private function connection(): Connection
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL DEFAULT 0, modified_at DATETIME DEFAULT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
+
+        return $connection;
     }
 }
