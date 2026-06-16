@@ -58,6 +58,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Subject resolution emits visitor, IP-bucket, authenticated-user, API-key, safe API-key-prefix, and combined subjects. IP buckets and combined IP subjects are HMAC-derived and never expose raw IP addresses; invalid Bearer tokens may contribute only a validated public prefix, never submitted secret material.
 - Probe-path detection is configurable and ships with extensive high-signal defaults for `.env`, VCS metadata, backup/database dumps, common foreign admin panels, upload shells, and known scanner paths.
 - Request classification is passive and deterministic. `/api/live/**`, safe browser prefetch, and CORS preflight receive no ordinary enforcement cost in this branch; suspicious probes and mutating admin/API workflows receive higher symbolic costs for later limiter branches.
+- `PassiveAbuseSignalSubscriber` records only clear passive signals in this branch, starting with high-signal probe paths and unsafe prefetch attempts. It writes Visitor-ID and IP-bucket HMAC context where available, never raw IP or forwarding-header values, and does not alter the response.
 - First implementation uses the portable `security_signal_event` table for short-lived passive signals. Suggested fields are normalized subject type/key, request family, intent, reason code, confidence, weight/count, timestamps, expiry timestamp, safe context, and optional audit reference.
 - Passive-signal rows are observational only in this branch. The rate and auto-ban branches decide how to consume them for enforcement.
 - Keep passive signals separate from raw file logs and from the message/audit/access projections. Later branches may consume `security_signal_event`, but this branch does not enforce from it.
@@ -80,7 +81,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - During setup and pre-database states, file logging remains available but database projections and signal persistence must be skipped before any DBAL call.
 - Upload, package, import, backup, and restore paths must not be classified as high-signal probes solely because their filenames resemble archive/database defaults; failed validation results should emit separate upload/archive signals.
 - Expired passive signals must not affect later enforcement once rate/ban branches start consuming the store.
-- Passive-signal storage failure records a safe diagnostic and must not change request outcome in this foundation branch.
+- Passive-signal storage failure must not change request outcome in this foundation branch. Safe diagnostics may be added later if they do not create logging loops or setup/database readiness problems.
+- Passive signal recording must be best-effort and must not change request outcome.
 - Database log projection storage failure must not break the request or the raw file log write. The UI may show fewer projected rows while file logs remain the operational fallback.
 - Cleanup must remove or anonymize expired IP-derived signal keys before any Admin export, support bundle, or statistics projection can expose them.
 

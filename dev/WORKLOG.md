@@ -84,6 +84,7 @@
 - Scope guard: trusted proxy handling stays in deployment/webserver configuration; Abuse Foundation uses Symfony's resolved request client IP for Security identity, may use raw forwarding headers only as untrusted Visitor-ID differentiation entropy, and keeps IP-ban thresholds laxer than Visitor-ID thresholds to reduce shared/untrusted-network false positives.
 - Implemented the Visitor-ID entropy half of that policy by mixing normalized forwarding-header candidates into cookie-less fallback visitor hashes only; Security identity, GeoIP, ban keys, and signal evidence still use Symfony's resolved client IP rather than raw proxy headers.
 - Added the passive Abuse Foundation facade, subject resolver, request-intent classifier, suspicious-probe matcher, and symbolic action-cost catalogue. These expose visitor/user/API/IP-bucket subjects, `/api/live/**`, prefetch, CORS preflight, scheduler/setup/admin/API intents, and cost metadata for later rate/ban branches without enforcing limits yet.
+- Added best-effort passive signal recording for high-signal probes and unsafe prefetch attempts. Signals carry Visitor-ID plus IP-bucket HMAC context when available and never store raw proxy-header values.
 - Verification so far: focused PHPUnit for database log browser/projector, security signal recorder, affected log/settings/setup tests passed; `php bin/console lint:container` passed; focused `bin/lint` for changed Twig/translations/drafts passed.
 
 ### Archived Compacted Branch History
