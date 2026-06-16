@@ -69,6 +69,7 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         foreach ($payload['data'] as $resource) {
             $sources[$resource['id']] = $resource['attributes']['filters'];
         }
+        self::assertSame(['level', 'q', 'match', 'time_window', 'limit', 'page'], $sources['application']);
         self::assertSame(['level', 'q', 'match', 'time_window', 'limit', 'page'], $sources['message']);
         self::assertSame(['q', 'match', 'time_window', 'audit_action', 'limit', 'page'], $sources['audit']);
         self::assertSame(['q', 'match', 'time_window', 'limit', 'page'], $sources['access']);
@@ -231,7 +232,7 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         self::assertSame(['backend-admin', 'backend-admin-statistics'], $payload['paths']['/admin/statistics']['get']['tags']);
         self::assertSame(['backend-admin', 'backend-admin-themes'], $payload['paths']['/admin/themes']['get']['tags']);
         self::assertSame(
-            ['message', 'audit', 'access', 'security_signal'],
+            ['application', 'message', 'audit', 'access', 'security_signal'],
             $payload['paths']['/admin/logs/{log}']['get']['parameters'][0]['schema']['enum'],
         );
         self::assertContains([

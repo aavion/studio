@@ -76,7 +76,7 @@ final readonly class AdminOperationalApiEndpointProvider implements ApiEndpointP
     private function logParameters(): array
     {
         return [
-            ['name' => 'log', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string', 'enum' => ['message', 'audit', 'access', 'security_signal']]],
+            ['name' => 'log', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string', 'enum' => ['application', 'message', 'audit', 'access', 'security_signal']]],
             ['name' => 'level', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
             ['name' => 'q', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string']],
             ['name' => 'match', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string', 'enum' => ['contains', 'equals']]],

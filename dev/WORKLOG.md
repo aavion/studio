@@ -92,7 +92,8 @@
 - Clarified the rate-enforcement handoff for HTTP security headers: rate/recovery/error responses own tested `no-store`, while the full CSP/frame/referrer/permissions/header policy remains a dedicated response-hardening/frontend-delivery follow-up if still deferred.
 - Switched passive security-signal expiry and cleanup to Symfony Clock so retention behavior is deterministic in tests and matches the Abuse Foundation time-boundary plan.
 - Hardened PR-readiness findings before final checks: database log projection retention now uses Symfony Clock, and the Admin Logs OpenAPI enum documents the database-backed sources including `security_signal`.
-- Final verification: `bin/phpunit` passed with 1339 tests and 8632 assertions; `bin/jstest` passed with 37 tests; `bin/lint` passed all checks including container, Twig, translation keys, Tailwind, Markdown, and Git whitespace. `git diff --check feat-security...HEAD` only reports intentional Markdown metadata hardbreaks that project lint accepts.
+- Reintroduced the Symfony `application` log as an explicit file-backed Admin/API source while keeping message, audit, access, and security-signal browsing database-backed; application detail links use the existing synthetic file-line hash IDs because Symfony Monolog lines do not carry database UUIDs.
+- Final verification: `bin/phpunit` passed with 1339 tests and 8649 assertions; `bin/jstest` passed with 37 tests; `bin/lint` passed all checks including container, Twig, translation keys, Tailwind, Markdown, and Git whitespace. `git diff --check feat-security...HEAD` only reports intentional Markdown metadata hardbreaks that project lint accepts.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

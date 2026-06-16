@@ -5,11 +5,27 @@ declare(strict_types=1);
 namespace App\Tests\Core\Log;
 
 use App\Core\Log\DatabaseLogBrowser;
+use App\Core\Log\LogFileBrowser;
+use App\Tests\Support\FilesystemTestHelper;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 
 final class DatabaseLogBrowserTest extends TestCase
 {
+    use FilesystemTestHelper;
+
+    private string $logDir;
+
+    protected function setUp(): void
+    {
+        $this->logDir = $this->createTemporaryDirectory('system-database-log-browser');
+    }
+
+    protected function tearDown(): void
+    {
+        $this->removeDirectory($this->logDir);
+    }
+
     public function testItBrowsesDatabaseBackedLogSourcesAndEntries(): void
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
@@ -91,8 +107,18 @@ final class DatabaseLogBrowserTest extends TestCase
             'resolved_route' => 'backend_admin_route',
             'context' => '{"hidden":"visitor-audit"}',
         ]);
+        $this->writeTestFile($this->logDir, 'test.log', '[2099-01-01T10:00:00.000000+00:00] app.ERROR: app.failure {"code":"app.failure","request_id":"application-request"} []'.PHP_EOL);
 
-        $browser = new DatabaseLogBrowser($connection);
+        $browser = new DatabaseLogBrowser($connection, new LogFileBrowser($this->logDir, 'test'));
+        $applicationView = $browser->browse(['source' => 'application', 'level' => 'ERROR', 'q' => 'application-request']);
+        self::assertTrue($applicationView['capabilities']['level_filter']);
+        self::assertSame(1, $applicationView['pagination']['total']);
+        self::assertSame('application', $applicationView['entries'][0]['source']);
+        self::assertSame('app.failure', $applicationView['entries'][0]['message']);
+        $applicationEntry = $browser->entry('application', $applicationView['entries'][0]['id']);
+        self::assertNotNull($applicationEntry);
+        self::assertSame('app.failure', $applicationEntry['message']);
+
         $defaultView = $browser->browse(['source' => 'message']);
         self::assertSame(0, $defaultView['pagination']['total']);
 
@@ -116,7 +142,7 @@ final class DatabaseLogBrowserTest extends TestCase
         self::assertTrue($view['capabilities']['level_filter']);
         self::assertTrue($view['capabilities']['signal_reason_filter']);
 
-        self::assertSame(['message', 'audit', 'access', 'security_signal'], array_column($view['sources'], 'key'));
+        self::assertSame(['application', 'message', 'audit', 'access', 'security_signal'], array_column($view['sources'], 'key'));
         self::assertSame('security_signal', $view['selected_source']);
         self::assertSame(1, $view['pagination']['total']);
         self::assertSame('99999999-0000-7000-8000-000000000002', $view['entries'][0]['id']);

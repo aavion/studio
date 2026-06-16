@@ -625,12 +625,23 @@ final class BackendControllerTest extends WebTestCase
             'continent' => 'n/a',
             'metadata' => '{}',
         ]);
+        $logDir = (string) self::getContainer()->getParameter('kernel.logs_dir');
+        $applicationLog = $logDir.'/test.log';
+        $previousApplicationLog = is_file($applicationLog) ? file_get_contents($applicationLog) : null;
+        $applicationLine = '[2099-01-01T10:02:00.000000+00:00] app.ERROR: app.functional_failure {"code":"app.functional_failure","request_id":"functional-application-request"} []';
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0777, true);
+        }
+        $applicationPrefix = is_string($previousApplicationLog) && '' !== $previousApplicationLog ? rtrim($previousApplicationLog).PHP_EOL : '';
+        file_put_contents($applicationLog, $applicationPrefix.$applicationLine.PHP_EOL);
+        $applicationEntryId = substr(hash('sha256', "application\0test.log\0".$applicationLine), 0, 24);
 
         try {
             $client->request('GET', '/admin/logs?source=access&q=/admin/logs');
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Logs');
+            self::assertSelectorTextContains('.system-tabs', 'Application');
             self::assertSelectorTextContains('.system-tabs', 'Security signals');
             self::assertSelectorTextContains('.system-backend-log-table', 'GET /admin/logs');
             self::assertSelectorTextContains('.system-backend-log-table', 'Details');
@@ -641,6 +652,17 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('h1', 'Log event');
             self::assertSelectorTextContains('body', '127.0.0.1');
             self::assertSelectorTextContains('body', 'backend_admin_route');
+
+            $client->request('GET', '/admin/logs?source=application&level%5B0%5D=ERROR&q=functional-application-request');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.system-backend-log-table', 'app.functional_failure');
+
+            $client->request('GET', '/admin/logs/'.$applicationEntryId.'?source=application');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('h1', 'Log event');
+            self::assertSelectorTextContains('body', 'functional-application-request');
 
             $client->request('GET', '/admin/statistics?statistics_window=all');
 
@@ -653,6 +675,11 @@ final class BackendControllerTest extends WebTestCase
         } finally {
             $connection->delete('access_log_entry', ['request_id' => 'request-admin-logs']);
             $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);
+            if (is_string($previousApplicationLog)) {
+                file_put_contents($applicationLog, $previousApplicationLog);
+            } else {
+                @unlink($applicationLog);
+            }
         }
     }
 

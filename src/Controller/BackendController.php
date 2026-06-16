@@ -55,7 +55,7 @@ final class BackendController extends AbstractController
         return $this->handle($request, BackendArea::Admin);
     }
 
-    #[Route('/admin/logs/{entryId}', name: 'backend_admin_log_detail', requirements: ['entryId' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'], methods: ['GET'])]
+    #[Route('/admin/logs/{entryId}', name: 'backend_admin_log_detail', requirements: ['entryId' => '(?:[0-9a-fA-F]{24}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})'], methods: ['GET'])]
     public function logDetail(Request $request, string $entryId): Response
     {
         $access = $this->adminAccessResponse($request);

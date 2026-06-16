@@ -93,6 +93,7 @@ final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
     private function filtersForSource(string $source): array
     {
         return match ($source) {
+            'application' => ['level', 'q', 'match', 'time_window', 'limit', 'page'],
             'message' => ['level', 'q', 'match', 'time_window', 'limit', 'page'],
             'audit' => ['q', 'match', 'time_window', 'audit_action', 'limit', 'page'],
             'security_signal' => ['level', 'q', 'match', 'time_window', 'audit_action', 'limit', 'page'],

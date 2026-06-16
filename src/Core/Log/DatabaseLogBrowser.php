@@ -8,6 +8,7 @@ use Doctrine\DBAL\Connection;
 
 final readonly class DatabaseLogBrowser
 {
+    private const APPLICATION_SOURCE = ['application' => ['label' => 'admin.logs.sources.application']];
     private const SOURCES = [
         'message' => ['label' => 'admin.logs.sources.message', 'table' => 'message_log_entry'],
         'audit' => ['label' => 'admin.logs.sources.audit', 'table' => 'audit_log_entry'],
@@ -17,6 +18,7 @@ final readonly class DatabaseLogBrowser
 
     public function __construct(
         private Connection $connection,
+        private ?LogFileBrowser $fileBrowser = null,
         private LogEntryFilter $entryFilter = new LogEntryFilter(),
         private LogPagination $pagination = new LogPagination(),
     ) {
@@ -30,6 +32,10 @@ final readonly class DatabaseLogBrowser
     public function browse(array $query): array
     {
         $source = $this->source($query['source'] ?? null);
+        if ('application' === $source) {
+            return $this->browseApplication($query);
+        }
+
         $filters = $this->entryFilter->filters($query);
         if (!$this->supportsLevelFilter($source)) {
             $filters['level'] = '';
@@ -59,6 +65,10 @@ final readonly class DatabaseLogBrowser
     public function entry(string $source, string $id): ?array
     {
         $source = $this->source($source);
+        if ('application' === $source) {
+            return $this->fileBrowser?->entry($source, $id);
+        }
+
         $row = $this->connection->fetchAssociative(sprintf(
             'SELECT * FROM %s WHERE uid = ?',
             self::SOURCES[$source]['table'],
@@ -74,7 +84,7 @@ final readonly class DatabaseLogBrowser
     {
         $options = [];
 
-        foreach (self::SOURCES as $key => $source) {
+        foreach ([...self::APPLICATION_SOURCE, ...self::SOURCES] as $key => $source) {
             $options[] = ['key' => $key, 'label' => $source['label']];
         }
 
@@ -83,6 +93,10 @@ final readonly class DatabaseLogBrowser
 
     private function source(mixed $source): string
     {
+        if ('application' === $source) {
+            return 'application';
+        }
+
         return is_string($source) && isset(self::SOURCES[$source]) ? $source : 'message';
     }
 
@@ -100,7 +114,38 @@ final readonly class DatabaseLogBrowser
 
     private function supportsLevelFilter(string $source): bool
     {
-        return in_array($source, ['message', 'security_signal'], true);
+        return in_array($source, ['application', 'message', 'security_signal'], true);
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     *
+     * @return array<string, mixed>
+     */
+    private function browseApplication(array $query): array
+    {
+        if (null === $this->fileBrowser) {
+            $filters = $this->entryFilter->filters($query);
+
+            return [
+                'sources' => $this->sourceOptions(),
+                'selected_source' => 'application',
+                'capabilities' => $this->capabilities('application'),
+                'filters' => $filters,
+                'entries' => [],
+                'files' => [],
+                'pagination' => $this->pagination->pagination($filters, 0),
+                'per_page_options' => $this->pagination->perPageOptions(),
+                'time_window_options' => $this->pagination->timeWindowOptions(),
+                'match_options' => $this->pagination->matchOptions(),
+            ];
+        }
+
+        $view = $this->fileBrowser->browse([...$query, 'source' => 'application']);
+        $view['sources'] = $this->sourceOptions();
+        $view['capabilities'] = $this->capabilities('application');
+
+        return $view;
     }
 
     /**
