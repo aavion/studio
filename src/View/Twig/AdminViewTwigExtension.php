@@ -6,6 +6,8 @@ namespace App\View\Twig;
 
 use App\Backend\BackendActions;
 use App\Core\Access\AccessActor;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
+use App\Core\AdminAcl\AdminPermissionState;
 use App\Core\Config\Config;
 use App\Core\Config\Settings\CoreSettingDefinition;
 use App\Core\Config\Settings\CoreSettingsRegistry;
@@ -38,6 +40,7 @@ final class AdminViewTwigExtension extends AbstractExtension
         private readonly SystemPackageMetadataProvider $systemPackageMetadata,
         private readonly Security $security,
         private readonly RequestStack $requestStack,
+        private readonly ?AdminFeatureAccessPolicy $adminAcl = null,
     ) {
     }
 
@@ -56,6 +59,9 @@ final class AdminViewTwigExtension extends AbstractExtension
             new TwigFunction('package_settings', $this->packageSettings(...)),
             new TwigFunction('package_settings_form', $this->packageSettingsForm(...)),
             new TwigFunction('package_setting_packages', $this->packageSettingPackages(...)),
+            new TwigFunction('admin_feature_state', $this->adminFeatureState(...)),
+            new TwigFunction('admin_feature_visible', $this->adminFeatureVisible(...)),
+            new TwigFunction('admin_feature_mutable', $this->adminFeatureMutable(...)),
         ];
     }
 
@@ -77,6 +83,33 @@ final class AdminViewTwigExtension extends AbstractExtension
         return $this->backendActions->definitions($ids, $this->actor());
     }
 
+    public function adminFeatureState(string $feature): string
+    {
+        if (null === $this->adminAcl) {
+            return AdminPermissionState::Mutable->value;
+        }
+
+        return $this->adminAcl->state($feature, $this->actor())->value;
+    }
+
+    public function adminFeatureVisible(string $feature): bool
+    {
+        if (null === $this->adminAcl) {
+            return true;
+        }
+
+        return $this->adminAcl->isVisible($feature, $this->actor());
+    }
+
+    public function adminFeatureMutable(string $feature): bool
+    {
+        if (null === $this->adminAcl) {
+            return true;
+        }
+
+        return $this->adminAcl->isMutable($feature, $this->actor());
+    }
+
     /**
      * @return list<array<string, mixed>>
      */
@@ -90,6 +123,10 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     public function packageSettings(string $packageName): array
     {
+        if (!$this->packageFeatureVisible($packageName)) {
+            return [];
+        }
+
         return $this->packageSettings->viewRows($packageName, $this->packageSettingRegistry);
     }
 
@@ -121,6 +158,10 @@ final class AdminViewTwigExtension extends AbstractExtension
     public function coreSettingsForm(string $section): array
     {
         $definitions = $this->coreSettingDefinitions($section);
+        $mutableDefinitions = array_values(array_filter(
+            $definitions,
+            fn (CoreSettingDefinition $definition): bool => $this->coreSettingMutable($definition, $this->actor()),
+        ));
         $values = [];
         $request = $this->requestStack->getCurrentRequest();
 
@@ -143,6 +184,9 @@ final class AdminViewTwigExtension extends AbstractExtension
             $values,
             $errors,
             $errors['__form'] ?? [],
+            metadata: [
+                'read_only' => [] === $mutableDefinitions,
+            ],
         )->toArray();
     }
 
@@ -154,9 +198,50 @@ final class AdminViewTwigExtension extends AbstractExtension
         $actor = $this->actor();
 
         return array_values(array_filter(
-            $this->coreSettingsRegistry->definitions($section),
-            static fn (CoreSettingDefinition $definition): bool => $definition->allows($actor),
+            array_map(
+                fn (CoreSettingDefinition $definition): CoreSettingDefinition => $this->decorateCoreSettingDefinition($definition, $actor),
+                $this->coreSettingsRegistry->definitions($section),
+            ),
+            fn (CoreSettingDefinition $definition): bool => $this->coreSettingVisible($definition, $actor),
         ));
+    }
+
+    private function decorateCoreSettingDefinition(CoreSettingDefinition $definition, AccessActor $actor): CoreSettingDefinition
+    {
+        $feature = $definition->metadata()['access_feature'] ?? null;
+
+        if (!is_string($feature) || null === $this->adminAcl) {
+            return $definition;
+        }
+
+        $state = $this->adminAcl->state($feature, $actor);
+
+        return $definition->withMetadata([
+            'access_state' => $state->value,
+            'disabled' => !$state->isMutable(),
+        ]);
+    }
+
+    private function coreSettingVisible(CoreSettingDefinition $definition, AccessActor $actor): bool
+    {
+        $feature = $definition->metadata()['access_feature'] ?? null;
+
+        if (is_string($feature) && null !== $this->adminAcl) {
+            return $this->adminAcl->isVisible($feature, $actor);
+        }
+
+        return $definition->allows($actor);
+    }
+
+    private function coreSettingMutable(CoreSettingDefinition $definition, AccessActor $actor): bool
+    {
+        $feature = $definition->metadata()['access_feature'] ?? null;
+
+        if (is_string($feature) && null !== $this->adminAcl) {
+            return $this->adminAcl->isMutable($feature, $actor);
+        }
+
+        return $definition->allows($actor);
     }
 
     /**
@@ -167,20 +252,35 @@ final class AdminViewTwigExtension extends AbstractExtension
         $request = $this->requestStack->getCurrentRequest();
         $errors = $this->requestFormErrors($request);
         $fields = $this->packageSettings->formFields($packageName, $this->packageSettingRegistry);
+        $mutable = $this->packageFeatureMutable($packageName);
         $sensitiveKeys = $this->sensitiveFieldKeys($fields);
         $values = array_replace(
             array_fill_keys($sensitiveKeys, ''),
             $this->requestFormValues($request, $sensitiveKeys),
         );
 
-        return $this->formBuilder->build(
+        $form = $this->formBuilder->build(
             'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($packageName)),
             $packageName,
             $fields,
             $values,
             $errors,
             $errors['__form'] ?? [],
+            metadata: [
+                'read_only' => !$mutable,
+            ],
         )->toArray();
+
+        if (!$mutable) {
+            foreach ($form['fields'] as $index => $field) {
+                if (is_array($field)) {
+                    $metadata = is_array($field['metadata'] ?? null) ? $field['metadata'] : [];
+                    $form['fields'][$index]['metadata'] = [...$metadata, 'disabled' => true];
+                }
+            }
+        }
+
+        return $form;
     }
 
     /**
@@ -191,6 +291,10 @@ final class AdminViewTwigExtension extends AbstractExtension
         $packages = [];
 
         foreach ($this->packageSettingRegistry->packagesWithDefinitions() as $packageName => $metadata) {
+            if (!$this->packageFeatureVisible($packageName)) {
+                continue;
+            }
+
             $packages[] = [
                 'package_name' => $packageName,
                 'label' => $metadata['label'],
@@ -200,6 +304,16 @@ final class AdminViewTwigExtension extends AbstractExtension
         }
 
         return $packages;
+    }
+
+    private function packageFeatureVisible(string $packageName): bool
+    {
+        return null === $this->adminAcl || $this->adminAcl->isVisible('admin.settings.packages.'.$packageName, $this->actor());
+    }
+
+    private function packageFeatureMutable(string $packageName): bool
+    {
+        return null === $this->adminAcl || $this->adminAcl->isMutable('admin.settings.packages.'.$packageName, $this->actor());
     }
 
     private function defaultFooterCopyright(): string

@@ -36,6 +36,7 @@ final readonly class PackageSettingsBackendViewProvider implements BackendViewPr
                 context: [
                     'package_name' => $packageName,
                     'description' => $metadata['description'],
+                    'access_feature' => 'admin.settings.packages.'.$packageName,
                 ],
             );
             ++$sortOrder;

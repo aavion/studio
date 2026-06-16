@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Core\Access\AccessActor;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
+use App\Core\AdminAcl\AdminPermissionState;
 use App\Core\Package\Settings\PackageSettingRegistry;
 use App\Entity\ExtensionPackage;
+use App\Entity\UserAccount;
 use App\View\SystemPackageMetadataProvider;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 
 final readonly class PackageAdminOverview
 {
@@ -15,6 +20,8 @@ final readonly class PackageAdminOverview
         private EntityManagerInterface $entityManager,
         private PackageSettingRegistry $settingRegistry,
         private SystemPackageMetadataProvider $systemPackageMetadata,
+        private Security $security,
+        private AdminFeatureAccessPolicy $adminAcl,
     ) {
     }
 
@@ -119,31 +126,38 @@ final readonly class PackageAdminOverview
      */
     private function actions(ExtensionPackage $package): array
     {
+        $state = $this->adminAcl->state('admin.packages', $this->actor());
+
+        if (!$state->isVisible()) {
+            return [];
+        }
+
         $stateActions = match ($package->status()) {
-            ExtensionPackageStatus::Inactive => [$this->action($package, 'activate', 'primary')],
-            ExtensionPackageStatus::Active => [$this->action($package, 'deactivate', 'secondary')],
-            ExtensionPackageStatus::Faulty => [$this->action($package, 'reset-fault', 'secondary')],
+            ExtensionPackageStatus::Inactive => [$this->action($package, 'activate', 'primary', $state)],
+            ExtensionPackageStatus::Active => [$this->action($package, 'deactivate', 'secondary', $state)],
+            ExtensionPackageStatus::Faulty => [$this->action($package, 'reset-fault', 'secondary', $state)],
             ExtensionPackageStatus::Removed => [],
         };
 
         $cleanupActions = ExtensionPackageStatus::Removed === $package->status()
-            ? [$this->action($package, 'purge', 'danger')]
+            ? [$this->action($package, 'purge', 'danger', $state)]
             : [];
 
         if (ExtensionPackageStatus::Removed !== $package->status()) {
-            $cleanupActions[] = $this->action($package, 'delete', 'danger');
+            $cleanupActions[] = $this->action($package, 'delete', 'danger', $state);
         }
 
         return [...$stateActions, ...$cleanupActions];
     }
 
-    private function action(ExtensionPackage $package, string $action, string $variant): array
+    private function action(ExtensionPackage $package, string $action, string $variant, AdminPermissionState $state): array
     {
         return [
             'id' => $action,
             'label_key' => 'admin.packages.lifecycle.'.str_replace('-', '_', $action).'.label',
             'path' => $this->detailPath($package->packageName()).'/'.$action,
             'variant' => $variant,
+            'disabled' => !$state->isMutable(),
         ];
     }
 
@@ -165,5 +179,12 @@ final readonly class PackageAdminOverview
             ExtensionPackageStatus::Removed => 'warning',
             ExtensionPackageStatus::Faulty => 'error',
         };
+    }
+
+    private function actor(): AccessActor
+    {
+        $user = $this->security->getUser();
+
+        return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
     }
 }

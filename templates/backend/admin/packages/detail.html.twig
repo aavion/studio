@@ -13,9 +13,15 @@
         {% if package.actions is not empty %}
             <div class="system-backend-button-group">
                 {% for action in package.actions %}
-                    <a class="system-backend-button system-button-{{ action.variant }}" href="{{ action.path }}">
-                        {{ action.label_key|trans }}
-                    </a>
+                    {% if action.disabled|default(false) %}
+                        <button class="system-backend-button system-button-{{ action.variant }}" type="button" disabled>
+                            {{ action.label_key|trans }}
+                        </button>
+                    {% else %}
+                        <a class="system-backend-button system-button-{{ action.variant }}" href="{{ action.path }}">
+                            {{ action.label_key|trans }}
+                        </a>
+                    {% endif %}
                 {% endfor %}
             </div>
         {% endif %}

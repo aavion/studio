@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Package;
 
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
+use App\Core\AdminAcl\AdminFeatureRegistry;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Package\PackageMessageCode;
@@ -13,8 +15,11 @@ use App\Entity\ExtensionPackage;
 
 final readonly class PackageLifecycleCleanupRunner implements PackageLifecycleCleanupRunnerInterface
 {
-    public function __construct(private Settings\PackageSettings $packageSettings)
-    {
+    public function __construct(
+        private Settings\PackageSettings $packageSettings,
+        private AdminFeatureOverrideStore $adminFeatureOverrideStore,
+        private ?AdminFeatureRegistry $adminFeatureRegistry = null,
+    ) {
     }
 
     /**
@@ -32,6 +37,15 @@ final readonly class PackageLifecycleCleanupRunner implements PackageLifecycleCl
             ];
         }
 
+        if ($this->removePackageAclOverride($package->packageName())) {
+            $actions[] = [
+                'action' => 'delete_package_acl_override',
+                'count' => 1,
+            ];
+        }
+
+        $this->adminFeatureRegistry?->resetCache();
+
         return WorkflowResult::success([
             'package' => $package->packageName(),
             'actions' => $actions,
@@ -47,5 +61,19 @@ final readonly class PackageLifecycleCleanupRunner implements PackageLifecycleCl
                 MessageLevel::Success,
             ),
         ]);
+    }
+
+    private function removePackageAclOverride(string $packageName): bool
+    {
+        $feature = 'admin.settings.packages.'.$packageName;
+        $overrides = $this->adminFeatureOverrideStore->overrides();
+
+        if (!isset($overrides[$feature])) {
+            return false;
+        }
+
+        unset($overrides[$feature]);
+
+        return $this->adminFeatureOverrideStore->save($overrides, 'package_lifecycle_cleanup');
     }
 }

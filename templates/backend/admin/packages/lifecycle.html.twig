@@ -52,23 +52,30 @@
                 <p class="system-muted">{{ 'admin.packages.lifecycle.no_changes'|trans }}</p>
             {% endif %}
 
-            <form
-                method="post"
-                action="{{ app.request.pathInfo }}"
-                data-controller="operation-overlay"
-                data-action="submit->operation-overlay#submit"
-                data-operation-overlay-enabled-value="true"
-                data-operation-overlay-redirect-on-success-value="{{ action_key == 'purge' ? '/admin/packages' : '/admin/packages/' ~ (package.package_name|url_encode) }}"
-            >
-                <input type="hidden" name="_form_id" value="package-lifecycle-{{ review.action }}-{{ package.package_name }}">
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token('package-lifecycle-' ~ review.action ~ '-' ~ package.package_name) }}">
-                <button class="system-backend-button system-button-{{ action_key in ['purge', 'delete'] ? 'danger' : 'primary' }}" type="submit">
-                    {{ ('admin.packages.lifecycle.' ~ action_key ~ '.submit')|trans }}
-                </button>
+            {% if lifecycle_mutable|default(false) %}
+                <form
+                    method="post"
+                    action="{{ app.request.pathInfo }}"
+                    data-controller="operation-overlay"
+                    data-action="submit->operation-overlay#submit"
+                    data-operation-overlay-enabled-value="true"
+                    data-operation-overlay-redirect-on-success-value="{{ action_key == 'purge' ? '/admin/packages' : '/admin/packages/' ~ (package.package_name|url_encode) }}"
+                >
+                    <input type="hidden" name="_form_id" value="package-lifecycle-{{ review.action }}-{{ package.package_name }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('package-lifecycle-' ~ review.action ~ '-' ~ package.package_name) }}">
+                    <button class="system-backend-button system-button-{{ action_key in ['purge', 'delete'] ? 'danger' : 'primary' }}" type="submit">
+                        {{ ('admin.packages.lifecycle.' ~ action_key ~ '.submit')|trans }}
+                    </button>
+                    <a class="system-backend-button system-button-secondary" href="/admin/packages/{{ package.package_name }}">
+                        {{ 'admin.packages.lifecycle.cancel'|trans }}
+                    </a>
+                </form>
+            {% else %}
+                <p class="system-alert system-alert-warning">{{ 'admin.acl.read_only_action'|trans }}</p>
                 <a class="system-backend-button system-button-secondary" href="/admin/packages/{{ package.package_name }}">
                     {{ 'admin.packages.lifecycle.cancel'|trans }}
                 </a>
-            </form>
+            {% endif %}
         {% else %}
             {% for issue in plan.issues|default([]) %}
                 <p class="system-alert system-alert-warning">{{ issue.translation_key|trans(issue.parameters) }}</p>
