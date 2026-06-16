@@ -9,6 +9,7 @@ use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 final readonly class HttpMaxMindGeoIpDownloadClient implements MaxMindGeoIpDownloadClientInterface
 {
@@ -28,13 +29,23 @@ final readonly class HttpMaxMindGeoIpDownloadClient implements MaxMindGeoIpDownl
         }
 
         try {
-            $response = $this->httpClient()->request('GET', $url, [
+            $client = $this->httpClient();
+            $response = $client->request('GET', $url, [
                 'timeout' => 60.0,
                 'max_duration' => 180.0,
-                'buffer' => $target,
             ]);
             $status = $response->getStatusCode();
-            $response->getContent(false);
+
+            if ($status >= 200 && $status < 300 && !$this->writeResponse($client, $response, $target)) {
+                fclose($target);
+                @unlink($targetPath);
+
+                return $this->failure(
+                    GeoIpMessageCode::GEOIP_DOWNLOAD_WRITE_FAILED,
+                    GeoIpMessageKey::GEOIP_DOWNLOAD_WRITE_FAILED,
+                    ['stage' => 'download'],
+                );
+            }
         } catch (TransportExceptionInterface) {
             fclose($target);
             @unlink($targetPath);
@@ -77,6 +88,47 @@ final readonly class HttpMaxMindGeoIpDownloadClient implements MaxMindGeoIpDownl
         }
 
         return WorkflowResult::success(null, ['stage' => 'download']);
+    }
+
+    /**
+     * @param resource $target
+     */
+    private function writeResponse(HttpClientInterface $client, ResponseInterface $response, mixed $target): bool
+    {
+        foreach ($client->stream($response) as $chunk) {
+            $content = $chunk->getContent();
+
+            if ('' === $content) {
+                continue;
+            }
+
+            if (!$this->writeAll($target, $content)) {
+                return false;
+            }
+        }
+
+        return fflush($target);
+    }
+
+    /**
+     * @param resource $target
+     */
+    private function writeAll(mixed $target, string $content): bool
+    {
+        $offset = 0;
+        $length = strlen($content);
+
+        while ($offset < $length) {
+            $written = @fwrite($target, substr($content, $offset));
+
+            if (!is_int($written) || $written <= 0) {
+                return false;
+            }
+
+            $offset += $written;
+        }
+
+        return true;
     }
 
     private function httpClient(): HttpClientInterface

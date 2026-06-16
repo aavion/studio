@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Core\Config\Settings;
 
+use App\Core\Access\AccessActor;
+use App\Core\Access\AccessLevel;
+use App\Core\Access\AccessRule;
 use App\Core\Config\ConfigValueType;
 use App\Form\FormFieldDefinition;
 use App\Form\FormInputType;
@@ -56,6 +59,33 @@ final readonly class CoreSettingDefinition
     public function metadata(): array
     {
         return $this->metadata;
+    }
+
+    public function minimumAccessLevel(): int
+    {
+        $level = $this->metadata['minimum_access_level'] ?? AccessLevel::ADMIN;
+
+        return is_int($level) ? AccessLevel::assert($level) : AccessLevel::ADMIN;
+    }
+
+    public function allowsAccessLevel(int $accessLevel): bool
+    {
+        return $this->allows(AccessActor::fromAccess($accessLevel));
+    }
+
+    public function accessRule(): AccessRule
+    {
+        $groups = $this->metadata['access_groups'] ?? [];
+
+        return AccessRule::from(
+            $this->minimumAccessLevel(),
+            is_array($groups) ? $groups : [],
+        );
+    }
+
+    public function allows(AccessActor $actor): bool
+    {
+        return $this->accessRule()->allows($actor);
     }
 
     public function formField(): FormFieldDefinition

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\View\Twig;
 
 use App\Backend\BackendActions;
+use App\Core\Access\AccessActor;
 use App\Core\Config\Config;
 use App\Core\Config\Settings\CoreSettingDefinition;
 use App\Core\Config\Settings\CoreSettingsRegistry;
@@ -12,9 +13,11 @@ use App\Core\Package\PackageAdminOverview;
 use App\Core\Package\Settings\PackageSettingRegistry;
 use App\Core\Package\Settings\PackageSettings;
 use App\Core\Package\ThemeAdminOverview;
+use App\Entity\UserAccount;
 use App\Form\FormBuilder;
 use App\Form\FormFieldDefinition;
 use App\View\SystemPackageMetadataProvider;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Throwable;
@@ -33,6 +36,7 @@ final class AdminViewTwigExtension extends AbstractExtension
         private readonly PackageSettings $packageSettings,
         private readonly PackageSettingRegistry $packageSettingRegistry,
         private readonly SystemPackageMetadataProvider $systemPackageMetadata,
+        private readonly Security $security,
         private readonly RequestStack $requestStack,
     ) {
     }
@@ -70,7 +74,7 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     public function backendActions(array $ids = []): array
     {
-        return $this->backendActions->definitions($ids);
+        return $this->backendActions->definitions($ids, $this->actor());
     }
 
     /**
@@ -116,7 +120,7 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     public function coreSettingsForm(string $section): array
     {
-        $definitions = $this->coreSettingsRegistry->definitions($section);
+        $definitions = $this->coreSettingDefinitions($section);
         $values = [];
         $request = $this->requestStack->getCurrentRequest();
 
@@ -140,6 +144,19 @@ final class AdminViewTwigExtension extends AbstractExtension
             $errors,
             $errors['__form'] ?? [],
         )->toArray();
+    }
+
+    /**
+     * @return list<CoreSettingDefinition>
+     */
+    private function coreSettingDefinitions(string $section): array
+    {
+        $actor = $this->actor();
+
+        return array_values(array_filter(
+            $this->coreSettingsRegistry->definitions($section),
+            static fn (CoreSettingDefinition $definition): bool => $definition->allows($actor),
+        ));
     }
 
     /**
@@ -195,6 +212,13 @@ final class AdminViewTwigExtension extends AbstractExtension
         $linkedName = '' !== $homepage ? sprintf('[%s](%s)', $label, $homepage) : $label;
 
         return trim(sprintf('Powered by %s %s', $linkedName, $version));
+    }
+
+    private function actor(): AccessActor
+    {
+        $user = $this->security->getUser();
+
+        return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
     }
 
     /**

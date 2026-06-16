@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Config\Settings;
 
 use App\Api\ApiFeaturePolicy;
-use App\Core\Config\Config;
+use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
+use App\Core\Config\Config;
 use App\Core\Validation\EmailAddress;
 use App\Entity\AclGroup;
 use App\Form\FormErrorKey;
@@ -31,9 +32,9 @@ final readonly class CoreSettingsFormHandler
     /**
      * @param array<string, mixed> $submitted
      */
-    public function submit(string $section, array $submitted, ?string $modifiedBy = null): FormSubmissionResult
+    public function submit(string $section, array $submitted, ?string $modifiedBy = null, ?AccessActor $actor = null): FormSubmissionResult
     {
-        $definitions = $this->registry->definitions($section);
+        $definitions = $this->definitionsForActor($section, $actor ?? AccessActor::fromAccess(AccessLevel::ADMIN));
         $result = $this->submissionHandler->submit(
             array_map(static fn (CoreSettingDefinition $definition): FormFieldDefinition => $definition->formField(), $definitions),
             $submitted,
@@ -74,6 +75,17 @@ final readonly class CoreSettingsFormHandler
         }
 
         return $result;
+    }
+
+    /**
+     * @return list<CoreSettingDefinition>
+     */
+    private function definitionsForActor(string $section, AccessActor $actor): array
+    {
+        return array_values(array_filter(
+            $this->registry->definitions($section),
+            static fn (CoreSettingDefinition $definition): bool => $definition->allows($actor),
+        ));
     }
 
     private function validateDomainSettings(string $section, FormSubmissionResult $result): ?FormSubmissionResult

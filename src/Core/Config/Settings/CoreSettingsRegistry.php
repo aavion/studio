@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Config\Settings;
 
 use App\Api\ApiFeaturePolicy;
+use App\Core\Access\AccessLevel;
 use App\Core\Config\ConfigValueType;
 use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\ConfigAuditLogPolicy;
@@ -86,11 +87,21 @@ final readonly class CoreSettingsRegistry
             new CoreSettingDefinition('statistics', AccessStatisticsPolicy::ENABLED_KEY, 'admin.settings.fields.statistics_enabled.label', true, ConfigValueType::Boolean, sortOrder: 10),
             new CoreSettingDefinition('statistics', AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'admin.settings.fields.statistics_respect_dnt.label', true, ConfigValueType::Boolean, sortOrder: 20),
             new CoreSettingDefinition('statistics', MaxMindGeoIpConfig::ENABLED_KEY, 'admin.settings.fields.geoip_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.geoip_enabled.help', metadata: [
+                'access_feature' => 'settings.statistics.geoip',
+                'access_configurable' => false,
+                'minimum_access_level' => AccessLevel::OWNER,
                 'help_link_url' => 'https://www.maxmind.com/en/geolite2/signup',
                 'help_link_label' => 'admin.settings.fields.geoip_license_link.label',
             ], sortOrder: 30),
-            new CoreSettingDefinition('statistics', MaxMindGeoIpConfig::DATABASE_PATH_KEY, 'admin.settings.fields.geoip_database_path.label', MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, ConfigValueType::String, help: 'admin.settings.fields.geoip_database_path.help', validation: ['required' => true, 'max_length' => 255], sortOrder: 40),
+            new CoreSettingDefinition('statistics', MaxMindGeoIpConfig::DATABASE_PATH_KEY, 'admin.settings.fields.geoip_database_path.label', MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, ConfigValueType::String, help: 'admin.settings.fields.geoip_database_path.help', validation: ['required' => true, 'max_length' => 255], metadata: [
+                'access_feature' => 'settings.statistics.geoip',
+                'access_configurable' => false,
+                'minimum_access_level' => AccessLevel::OWNER,
+            ], sortOrder: 40),
             new CoreSettingDefinition('statistics', MaxMindGeoIpConfig::LICENSE_KEY_KEY, 'admin.settings.fields.geoip_license_key.label', '', ConfigValueType::String, FormInputType::Password, help: 'admin.settings.fields.geoip_license_key.help', validation: ['max_length' => 180], metadata: [
+                'access_feature' => 'settings.statistics.geoip',
+                'access_configurable' => false,
+                'minimum_access_level' => AccessLevel::OWNER,
                 'sensitive' => true,
                 'help_link_url' => 'https://www.maxmind.com/en/geolite2/signup',
                 'help_link_label' => 'admin.settings.fields.geoip_license_link.label',

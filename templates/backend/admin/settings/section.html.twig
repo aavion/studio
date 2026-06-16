@@ -26,7 +26,7 @@
         {% if settings_form %}
             {% include '@backend/partials/forms/_dynamic.html.twig' with {form: settings_form} only %}
         {% endif %}
-        {% if settings_section == 'statistics' and geoip_settings.status|default(null) %}
+        {% if settings_section == 'statistics' and geoip_settings.can_update|default(false) and geoip_settings.status|default(null) %}
             {% set geoip_status = geoip_settings.status %}
             <h3>{{ 'admin.settings.geoip.status.title'|trans }}</h3>
             <dl class="system-definition-list">
@@ -54,7 +54,7 @@
                 {% endif %}
             </dl>
         {% endif %}
-        {% if settings_section == 'statistics' and geoip_settings.has_license_key|default(false) %}
+        {% if settings_section == 'statistics' and geoip_settings.can_update|default(false) and geoip_settings.has_license_key|default(false) %}
             {% include '@backend/admin/partials/_backend-actions.html.twig' with {
                 actions: backend_actions(['geoip_database_update']),
                 class: 'system-settings-actions',

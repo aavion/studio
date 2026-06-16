@@ -383,7 +383,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminRouteAllowsAccessLevelEight(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
         $client->request('GET', '/admin');
 
         self::assertResponseIsSuccessful();
@@ -940,6 +940,7 @@ final class BackendControllerTest extends WebTestCase
         self::assertInstanceOf(Config::class, $config);
         $config->set('statistics.geoip.maxmind.license_key', '', ConfigValueType::String, sensitive: true);
 
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $client->request('GET', '/admin/settings/statistics');
 
         self::assertResponseIsSuccessful();
@@ -957,6 +958,16 @@ final class BackendControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('input[name="_backend_action"][value="geoip_database_update"]');
+
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+        $client->request('GET', '/admin/settings/statistics');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('form#admin-settings-statistics');
+        self::assertSelectorExists('input[name="statistics.enabled"]');
+        self::assertSelectorNotExists('input[name="statistics.geoip.enabled"]');
+        self::assertSelectorNotExists('input[name="statistics.geoip.maxmind.license_key"]');
+        self::assertSelectorNotExists('input[name="_backend_action"][value="geoip_database_update"]');
 
         $client->request('GET', '/admin/settings/scheduler');
 
@@ -980,7 +991,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminSettingsFormsPersistCoreSettings(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
         $config = self::getContainer()->get(Config::class);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
@@ -1047,7 +1058,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminSettingsFormsDoNotReRenderSubmittedSensitiveValuesAfterValidationErrors(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $crawler = $client->request('GET', '/admin/settings/statistics');
         $form = $crawler->selectButton('Save settings')->form([
             'statistics.enabled' => '1',

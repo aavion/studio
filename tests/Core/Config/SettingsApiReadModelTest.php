@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Core\Config;
 
 use App\Core\Config\Api\SettingsApiReadModel;
+use App\Core\Access\AccessActor;
+use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Config\Settings\CoreSettingsRegistry;
@@ -25,7 +27,7 @@ final class SettingsApiReadModelTest extends TestCase
         $readModel = new SettingsApiReadModel($this->registry(), $config);
 
         $licenseSetting = null;
-        foreach ($readModel->settings('statistics') as $setting) {
+        foreach ($readModel->settings('statistics', AccessActor::fromAccess(AccessLevel::OWNER)) as $setting) {
             if (MaxMindGeoIpConfig::LICENSE_KEY_KEY === $setting['id']) {
                 $licenseSetting = $setting;
             }
@@ -33,7 +35,8 @@ final class SettingsApiReadModelTest extends TestCase
 
         self::assertIsArray($licenseSetting);
         self::assertSame('[protected]', $licenseSetting['attributes']['value']);
-        self::assertSame('', $readModel->values('statistics')[MaxMindGeoIpConfig::LICENSE_KEY_KEY]);
+        self::assertSame('', $readModel->values('statistics', AccessActor::fromAccess(AccessLevel::OWNER))[MaxMindGeoIpConfig::LICENSE_KEY_KEY]);
+        self::assertArrayNotHasKey(MaxMindGeoIpConfig::LICENSE_KEY_KEY, $readModel->values('statistics', AccessActor::fromAccess(AccessLevel::ADMIN)));
     }
 
     private function registry(): CoreSettingsRegistry

@@ -92,6 +92,7 @@
 - Rechecked GeoIP portability and project-rule compliance, tightened Windows drive-letter rejection for configured database paths and TAR member paths, made GeoIP path tests separator-neutral, and reran full PHPUnit, JavaScript, lint, and Git whitespace verification.
 - Completed an explicit #57-style PR-readiness pass for the GeoIP slice and hardened downloaded TAR validation by inspecting the compressed archive stream before `PharData` normalization and rejecting symlink, hardlink, and other non-file/non-directory entry types.
 - Addressed Cloud Review findings and adjacent paths: excluded the manually constructed GeoIP2 reader wrapper from service autowiring, kept sensitive Core and package setting values out of invalid form re-renders and `[protected]` round-trips, preserved configured provider diagnostics when GeoIP is not ready, and set readable permissions on replaced GeoIP databases.
+- Addressed the next GeoIP review round and adjacent paths: streamed MaxMind archives instead of materializing response bodies, bounded GeoIP labels before statistics inserts for strict SQL platforms, gated GeoIP settings/download controls through shared `AccessRule`/`AccessActor` metadata, added future ACL-matrix metadata and draft notes, and covered Owner/Admin API/UI behavior with focused tests.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

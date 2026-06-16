@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Config;
 
+use App\Core\Access\AccessActor;
+use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Config\Settings\CoreSettingsFormHandler;
@@ -37,7 +39,7 @@ final class CoreSettingsFormHandlerTest extends TestCase
             MaxMindGeoIpConfig::ENABLED_KEY => '0',
             MaxMindGeoIpConfig::DATABASE_PATH_KEY => MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH,
             MaxMindGeoIpConfig::LICENSE_KEY_KEY => '',
-        ], 'test');
+        ], 'test', AccessActor::fromAccess(AccessLevel::OWNER));
 
         self::assertTrue($result->isValid());
         self::assertSame('secret-license-key', $config->get(MaxMindGeoIpConfig::LICENSE_KEY_KEY));
@@ -61,7 +63,7 @@ final class CoreSettingsFormHandlerTest extends TestCase
             MaxMindGeoIpConfig::ENABLED_KEY => '1',
             MaxMindGeoIpConfig::DATABASE_PATH_KEY => MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH,
             MaxMindGeoIpConfig::LICENSE_KEY_KEY => '[protected]',
-        ], 'test');
+        ], 'test', AccessActor::fromAccess(AccessLevel::OWNER));
 
         self::assertTrue($result->isValid());
         self::assertSame('secret-license-key', $config->get(MaxMindGeoIpConfig::LICENSE_KEY_KEY));
