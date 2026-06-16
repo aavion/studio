@@ -53,6 +53,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Rate-limit responses use the documented response semantics: `429`, `Retry-After` when available, family-specific HTML/JSON bodies, redacted diagnostics, and `no-store`.
 - This branch owns `no-store` behavior for rate-limit, block-adjacent recovery, browser/API/scheduler error, and sensitive retry responses it touches. It should also carry the production HTTP security-header follow-up forward to a dedicated response-hardening/frontend-delivery slice: define and test CSP, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sensitive-route `no-store`, and documented route exceptions without broadening this branch into a full frontend policy rewrite.
 - Threshold/window configuration should be represented through named policy descriptors with units, defaults, min/max bounds, disabled behavior, and diagnostics labels, even if the first implementation keeps those descriptors as code constants.
+- Configurable threshold windows must not exceed the retention of the evidence they evaluate. If a bucket or mixed-signal policy depends on database projections, security signals, IP buckets, or audit context with shorter retention, validation must reject or clamp longer windows and expose a clear diagnostic rather than evaluating missing historical data.
 - Valid CORS preflights should be cheap and must not spend mutating API budget; invalid preflight probing may spend suspicious/API metadata budget and record passive signals.
 - High-impact authenticated/admin operations should use explicit action costs or workflow buckets where the current codebase exposes them. Owner ordinary-rate-limit exemption does not remove workflow confirmation, Admin/Owner action authorization, audit, or redaction requirements.
 - Setup finalization/apply attempts need a dedicated workflow bucket because this surface exists before normal Owner/Admin session protections are available.
@@ -78,6 +79,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test authenticated-user higher limits and Owner ordinary-rate-limit exemptions for active sessions and Owner-owned API keys.
 - Test recovery-login bypass rendering, dedicated recovery bucket exhaustion, retry-after behavior, and successful-login policy re-evaluation.
 - Test policy descriptor validation for invalid, missing, overly permissive, and overly restrictive threshold/window values where configuration is introduced.
+- Test that configurable limiter and mixed-signal windows are rejected or clamped when they exceed the retained evidence required by that policy.
 - Test successful login resets only the login bucket.
 - Test verified captcha success can reset only the configured scoped bucket, while provider `none`/missing/disabled success resets nothing.
 - Test captcha-on-`429` is unavailable without an active provider and falls back to retry-after behavior.
