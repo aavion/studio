@@ -830,7 +830,7 @@ admin:
         help: 'Retention für passive Security-Signale in Tagen. Werte über 30 Tagen sind nicht erlaubt, weil Signale Request-bezogene Identifier enthalten können.'
       security_probe_path_patterns:
         label: 'Pfadmuster für verdächtige Probes'
-        help: 'Ein regulärer Ausdruck pro Zeile. CSV-artig kommaseparierte Imports werden akzeptiert. Ungültige oder leere Listen fallen auf die geschützten Defaults zurück.'
+        help: 'Ein regulärer Ausdruck pro Zeile. Quoted-CSV-Imports werden akzeptiert. Ungültige oder leere Listen fallen auf die geschützten Defaults zurück.'
       geoip_enabled:
         label: 'GeoIP-Lookups aktivieren'
         help: 'Wenn deaktiviert oder nicht verfügbar, behalten Logs und Statistiken normalisierte n/a-Ortswerte.'

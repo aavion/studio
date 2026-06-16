@@ -35,12 +35,15 @@ final class ActionCostCatalogueTest extends TestCase
 
         $probe = $catalogue->costFor($classifier->classify(Request::create('/.env')));
         $apiWrite = $catalogue->costFor($classifier->classify(Request::create('/api/v1/content/items', 'POST')));
+        $adminApiWrite = $catalogue->costFor($classifier->classify(Request::create('/api/v1/admin/operations/cleanup', 'POST')));
         $setupApply = $catalogue->costFor($classifier->classify(Request::create('/setup', 'POST')));
 
         self::assertSame('suspicious_probe', $probe->bucketFamily());
         self::assertSame(10, $probe->credits());
         self::assertSame('api_write', $apiWrite->bucketFamily());
         self::assertSame(5, $apiWrite->credits());
+        self::assertSame('admin_mutation', $adminApiWrite->bucketFamily());
+        self::assertSame(8, $adminApiWrite->credits());
         self::assertSame('setup_apply', $setupApply->bucketFamily());
         self::assertSame(8, $setupApply->credits());
     }

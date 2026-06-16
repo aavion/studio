@@ -14,6 +14,7 @@ use App\Form\FormErrorKey;
 use App\Form\FormFieldDefinition;
 use App\Form\FormSubmissionHandler;
 use App\Form\FormSubmissionResult;
+use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\Security\UserFlowConfig;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -26,6 +27,7 @@ final readonly class CoreSettingsFormHandler
         private Config $config,
         private FormSubmissionHandler $submissionHandler,
         private EntityManagerInterface $entityManager,
+        private ?SuspiciousProbePathMatcher $probePathMatcher = null,
     ) {
     }
 
@@ -71,6 +73,10 @@ final readonly class CoreSettingsFormHandler
                 return new FormSubmissionResult($result->values(), [
                     '__form' => [FormErrorKey::SAVE_FAILED],
                 ]);
+            }
+
+            if (SuspiciousProbePathMatcher::PATTERNS_KEY === $definition->key()) {
+                $this->probePathMatcher?->resetCache();
             }
         }
 

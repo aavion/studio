@@ -10,6 +10,7 @@ use App\Security\Abuse\SuspiciousProbePathMatcher;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 final class SuspiciousProbePathMatcherTest extends TestCase
 {
@@ -46,13 +47,37 @@ final class SuspiciousProbePathMatcherTest extends TestCase
     public function testItParsesConfiguredPatternTextAsNewlineAndCsvValues(): void
     {
         $config = new Config($this->connection());
-        $config->set(SuspiciousProbePathMatcher::PATTERNS_KEY, "#/custom-one(?:/|$)#i\n#/custom-two(?:/|$)#i,#/custom-three(?:/|$)#i", ConfigValueType::String);
+        $config->set(SuspiciousProbePathMatcher::PATTERNS_KEY, "#/custom-one(?:/|$)#i\n\"#/custom-two(?:/|$)#i\",\"#/custom-three(?:/|$)#i\"", ConfigValueType::String);
         $matcher = new SuspiciousProbePathMatcher($config);
 
         self::assertTrue($matcher->isProbe('/custom-one'));
         self::assertTrue($matcher->isProbe('/custom-two'));
         self::assertTrue($matcher->isProbe('/custom-three'));
         self::assertFalse($matcher->isProbe('/.env'));
+    }
+
+    public function testItPreservesCommasInsideOneLineRegexPatterns(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(SuspiciousProbePathMatcher::PATTERNS_KEY, '#/dump-[0-9]{4,6}\.sql$#', ConfigValueType::String);
+        $matcher = new SuspiciousProbePathMatcher($config);
+
+        self::assertTrue($matcher->isProbe('/dump-2026.sql'));
+        self::assertFalse($matcher->isProbe('/.env'));
+    }
+
+    public function testItCachesConfiguredPatternsForTheServiceLifetime(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $cache = new ArrayAdapter();
+        $connection
+            ->expects(self::once())
+            ->method('fetchOne')
+            ->with('SELECT value FROM config_entry WHERE config_key = ?', [SuspiciousProbePathMatcher::PATTERNS_KEY])
+            ->willReturn(json_encode('#/cached-probe$#', JSON_THROW_ON_ERROR));
+
+        self::assertTrue((new SuspiciousProbePathMatcher(new Config($connection), cache: $cache))->isProbe('/cached-probe'));
+        self::assertTrue((new SuspiciousProbePathMatcher(new Config($connection), cache: $cache))->isProbe('/cached-probe'));
     }
 
     public function testDefaultPatternTextContainsOneEditablePatternPerLine(): void

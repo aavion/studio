@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Security\Abuse;
 
+use App\Content\Routing\ContentRouteLocalization;
+use App\Core\Config\Config;
+use App\Core\Config\ConfigValueType;
+use App\Localization\TranslationLanguageCatalog;
 use App\Security\Abuse\RequestFamily;
 use App\Security\Abuse\RequestIntent;
 use App\Security\Abuse\RequestIntentClassifier;
-use App\Localization\TranslationLanguageCatalog;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,7 +30,7 @@ final class RequestIntentClassifierTest extends TestCase
             RequestIntent::LiveApi,
         ];
         yield 'localized live api cheap json' => [
-            Request::create('/de/api/live/alerts'),
+            self::localizedRequest('/de/api/live/alerts', 'GET', 'de'),
             RequestFamily::LiveApi,
             RequestIntent::LiveApi,
         ];
@@ -33,6 +38,26 @@ final class RequestIntentClassifierTest extends TestCase
             Request::create('/api/v1/content/items', 'POST'),
             RequestFamily::Api,
             RequestIntent::ApiWrite,
+        ];
+        yield 'admin api operation mutation is admin mutation' => [
+            Request::create('/api/v1/admin/operations/cleanup', 'POST'),
+            RequestFamily::Api,
+            RequestIntent::AdminOperation,
+        ];
+        yield 'admin api settings mutation is settings mutation' => [
+            Request::create('/api/v1/admin/settings/security', 'PATCH'),
+            RequestFamily::Api,
+            RequestIntent::SettingsMutation,
+        ];
+        yield 'admin api scheduler mutation is admin mutation' => [
+            Request::create('/api/v1/admin/scheduler/system.live_operation_cleanup', 'PATCH'),
+            RequestFamily::Api,
+            RequestIntent::AdminOperation,
+        ];
+        yield 'localized admin api package mutation is package admin mutation' => [
+            self::localizedRequest('/de/api/v1/admin/packages/demo/reset-fault', 'POST', 'de'),
+            RequestFamily::Api,
+            RequestIntent::PackageAdminOperation,
         ];
         yield 'apiary public content is not api' => [
             Request::create('/apiary'),
@@ -45,7 +70,7 @@ final class RequestIntentClassifierTest extends TestCase
             RequestIntent::FormSubmit,
         ];
         yield 'localized admin is admin' => [
-            Request::create('/de/admin/settings/security', 'POST'),
+            self::localizedRequest('/de/admin/settings/security', 'POST', 'de'),
             RequestFamily::Admin,
             RequestIntent::SettingsMutation,
         ];
@@ -148,7 +173,7 @@ final class RequestIntentClassifierTest extends TestCase
     #[DataProvider('requestCases')]
     public function testItClassifiesRequestIntent(Request $request, RequestFamily $family, RequestIntent $intent): void
     {
-        $profile = (new RequestIntentClassifier(languageCatalog: $this->languageCatalog()))->classify($request);
+        $profile = (new RequestIntentClassifier(routeLocalization: $this->routeLocalization()))->classify($request);
 
         self::assertSame($family, $profile->family());
         self::assertSame($intent, $profile->intent());
@@ -162,9 +187,42 @@ final class RequestIntentClassifierTest extends TestCase
         self::assertFalse($profile->suspiciousProbe());
     }
 
+    public function testItDoesNotStripLanguageSlugsWhenRoutePrefixesAreDisabled(): void
+    {
+        $classifier = new RequestIntentClassifier(routeLocalization: $this->disabledRouteLocalization());
+        $profile = $classifier->classify(self::contentRequest('/de/admin', 'POST'));
+        $apiProfile = $classifier->classify(self::contentRequest('/de/api/v1/content/items', 'POST'));
+
+        self::assertSame(RequestFamily::Browser, $profile->family());
+        self::assertSame(RequestIntent::FormSubmit, $profile->intent());
+        self::assertSame(RequestFamily::Browser, $apiProfile->family());
+        self::assertSame(RequestIntent::FormSubmit, $apiProfile->intent());
+    }
+
+    private function routeLocalization(): ContentRouteLocalization
+    {
+        $config = new Config($this->connection());
+        $config->set(ContentRouteLocalization::ENABLED_KEY, true, ConfigValueType::Boolean);
+
+        return new ContentRouteLocalization($config, $this->languageCatalog());
+    }
+
+    private function disabledRouteLocalization(): ContentRouteLocalization
+    {
+        return new ContentRouteLocalization(new Config($this->connection()), $this->languageCatalog());
+    }
+
     private function languageCatalog(): TranslationLanguageCatalog
     {
         return new TranslationLanguageCatalog(dirname(__DIR__, 3));
+    }
+
+    private function connection(): Connection
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL DEFAULT 0, modified_at DATETIME DEFAULT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
+
+        return $connection;
     }
 
     private static function contentRequest(string $path, string $method = 'GET', ?string $locale = null): Request
@@ -174,6 +232,14 @@ final class RequestIntentClassifierTest extends TestCase
         if (null !== $locale) {
             $request->attributes->set('_locale', $locale);
         }
+
+        return $request;
+    }
+
+    private static function localizedRequest(string $path, string $method, string $locale): Request
+    {
+        $request = Request::create($path, $method);
+        $request->attributes->set('_locale', $locale);
 
         return $request;
     }

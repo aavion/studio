@@ -830,7 +830,7 @@ admin:
         help: 'Retention for passive security signals in days. Values above 30 days are not allowed because signals can contain request-derived identifiers.'
       security_probe_path_patterns:
         label: 'Suspicious probe path patterns'
-        help: 'One regular expression per line. CSV-style comma-separated imports are accepted. Invalid or empty lists fall back to the protected defaults.'
+        help: 'One regular expression per line. Quoted CSV imports are accepted. Invalid or empty lists fall back to the protected defaults.'
       geoip_enabled:
         label: 'Enable GeoIP lookups'
         help: 'When disabled or unavailable, logs and statistics keep normalized n/a location values.'

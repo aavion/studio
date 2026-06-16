@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Security\Abuse;
 
-use App\Localization\TranslationLanguageCatalog;
+use App\Content\Routing\ContentRouteLocalization;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class RequestIntentClassifier
 {
     public function __construct(
         private SuspiciousProbePathMatcher $probePathMatcher = new SuspiciousProbePathMatcher(),
-        private ?TranslationLanguageCatalog $languageCatalog = null,
+        private ?ContentRouteLocalization $routeLocalization = null,
     ) {
     }
 
@@ -77,6 +77,10 @@ final readonly class RequestIntentClassifier
         }
 
         if (RequestFamily::Api === $family) {
+            if ($this->matchesSegments($segments, 'api', 'v1', 'admin') && !$this->safeMethod($method)) {
+                return $this->adminMutationIntent($this->apiAdminSegments($segments), $route);
+            }
+
             return in_array($method, ['GET', 'HEAD'], true) ? RequestIntent::ApiRead : RequestIntent::ApiWrite;
         }
 
@@ -211,7 +215,7 @@ final readonly class RequestIntentClassifier
             return $firstSegment;
         }
 
-        if (null !== $this->languageCatalog && '' !== $firstSegment && in_array($firstSegment, $this->languageCatalog->availableLanguages(), true)) {
+        if (null !== $this->routeLocalization && $this->routeLocalization->isEnabled() && in_array($firstSegment, $this->routeLocalization->availableLanguages(), true)) {
             return $firstSegment;
         }
 
@@ -244,6 +248,18 @@ final readonly class RequestIntentClassifier
         }
 
         return false;
+    }
+
+    /**
+     * @param list<string> $segments
+     *
+     * @return list<string>
+     */
+    private function apiAdminSegments(array $segments): array
+    {
+        return $this->matchesSegments($segments, 'api', 'v1', 'admin')
+            ? ['admin', ...array_slice($segments, 3)]
+            : $segments;
     }
 
     /**
