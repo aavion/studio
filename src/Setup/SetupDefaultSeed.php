@@ -10,6 +10,7 @@ use App\Core\Config\ConfigDefaultProviderInterface;
 use App\Core\Config\ConfigValueType;
 use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\ConfigAuditLogPolicy;
+use App\Core\Log\DatabaseLogRetentionPolicy;
 use App\Content\Routing\ContentRouteLocalization;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Localization\LocaleToken;
@@ -45,6 +46,11 @@ final readonly class SetupDefaultSeed
             ['key' => UserFlowConfig::REGISTRATION_MODE_KEY, 'value' => $this->setting($input, UserFlowConfig::REGISTRATION_MODE_KEY, UserFlowConfig::REGISTRATION_DISABLED), 'type' => ConfigValueType::String],
             ['key' => ConfigAuditLogPolicy::ENABLED_KEY, 'value' => $this->setting($input, ConfigAuditLogPolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => ConfigAuditLogPolicy::EVENTS_KEY, 'value' => $this->setting($input, ConfigAuditLogPolicy::EVENTS_KEY, ConfigAuditLogPolicy::DEFAULT_CATEGORIES), 'type' => ConfigValueType::Json],
+            ['key' => DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS), 'type' => ConfigValueType::Integer],
+            ['key' => DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS), 'type' => ConfigValueType::Integer],
+            ['key' => DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS), 'type' => ConfigValueType::Integer],
+            ['key' => DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS), 'type' => ConfigValueType::Integer],
+            ['key' => DatabaseLogRetentionPolicy::SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_IP_RETENTION_DAYS), 'type' => ConfigValueType::Integer],
             ['key' => AccessStatisticsPolicy::ENABLED_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => MaxMindGeoIpConfig::ENABLED_KEY, 'value' => $this->setting($input, MaxMindGeoIpConfig::ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],

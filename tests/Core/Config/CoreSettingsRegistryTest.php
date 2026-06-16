@@ -8,6 +8,7 @@ use App\Api\ApiFeaturePolicy;
 use App\Core\Config\Settings\CoreSettingDefinition;
 use App\Core\Config\Settings\CoreConfigDefaultProvider;
 use App\Core\Config\Settings\CoreSettingsRegistry;
+use App\Core\Log\DatabaseLogRetentionPolicy;
 use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Statistics\AccessStatisticsPolicy;
@@ -59,10 +60,17 @@ final class CoreSettingsRegistryTest extends TestCase
             'security.captcha.preview',
             ConfigAuditLogPolicy::ENABLED_KEY,
             ConfigAuditLogPolicy::EVENTS_KEY,
+            DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY,
+            DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY,
+            DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY,
+            DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY,
+            DatabaseLogRetentionPolicy::SECURITY_SIGNAL_IP_RETENTION_DAYS_KEY,
         ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $security));
         self::assertSame(FormInputType::Captcha, $security[2]->formField()->inputType());
         self::assertSame(FormInputType::MultiSelect, $security[4]->formField()->inputType());
         self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $security[4]->defaultValue());
+        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $security[5]->defaultValue());
+        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_IP_RETENTION_DAYS, $security[9]->defaultValue());
 
         self::assertSame([
             AccessStatisticsPolicy::ENABLED_KEY,

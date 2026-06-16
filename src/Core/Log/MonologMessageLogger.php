@@ -21,7 +21,10 @@ final class MonologMessageLogger implements MessageLoggerInterface
      */
     private array $seenSignatures = [];
 
-    public function __construct(private readonly LoggerInterface $logger)
+    public function __construct(
+        private readonly LoggerInterface $logger,
+        private readonly ?DatabaseLogProjector $databaseLogProjector = null,
+    )
     {
     }
 
@@ -56,7 +59,9 @@ final class MonologMessageLogger implements MessageLoggerInterface
             }
 
             try {
-                $this->logger->log($this->psrLevel($message->level()), $message->translationKey(), $context);
+                $level = $this->psrLevel($message->level());
+                $this->logger->log($level, $message->translationKey(), $context);
+                $this->databaseLogProjector?->recordMessage(strtoupper($level), $message->translationKey(), $context);
                 $this->seenSignatures[$signature] = true;
             } catch (Throwable) {
                 continue;

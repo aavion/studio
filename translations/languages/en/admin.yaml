@@ -598,19 +598,21 @@ admin:
     foundation_text: 'Operational logs, audit views, package diagnostics, and security-relevant events will attach here.'
     empty_value: 'n/a'
     sources:
+      label: 'Log sources'
       application: 'Application'
       message: 'Messages'
       audit: 'Audit'
       access: 'Access'
+      security_signal: 'Security signals'
     filters:
       title: 'Filters'
       source: 'Log'
       level: 'Level'
-      any_level: 'Any level'
       search: 'Search'
       window: 'Time window'
       match: 'Match'
       audit_action: 'Audit action'
+      signal_reason: 'Signal reason'
       per_page: 'Rows'
       limit: 'Limit'
       contains: 'Contains'
@@ -625,8 +627,6 @@ admin:
     entries:
       title: 'Entries'
       empty: 'No log entries match the current filters.'
-      no_files: 'No log file exists for this selection yet.'
-      files: 'Reading: %files%'
       open: 'Details'
       page_summary: 'Page %page% of %pages% · %total% entries'
       previous: 'Previous'
@@ -642,6 +642,8 @@ admin:
       location: 'Location'
       user: 'User'
       action: 'Action'
+      security_signal: 'Signal'
+      subject: 'Subject'
       channel: 'Channel'
       context: 'Context'
       details: 'Details'
@@ -809,6 +811,21 @@ admin:
         label: 'Enable audit logging'
       audit_events:
         label: 'Audit event categories'
+      message_log_retention_days:
+        label: 'Message log database retention'
+        help: 'Database lookup copy retention in days. File logs keep their fixed 30-day rotation separately.'
+      audit_log_retention_days:
+        label: 'Audit log database retention'
+        help: 'Database lookup copy retention in days. Values above 30 days are not allowed because audit data can contain request-derived identifiers.'
+      access_log_retention_days:
+        label: 'Access log database retention'
+        help: 'Database lookup copy retention in days. Values above 30 days are not allowed because access logs can contain IP-derived data.'
+      security_signal_retention_days:
+        label: 'Security signal retention'
+        help: 'Default retention for passive security signals that are keyed by visitor, user, or API identity.'
+      security_signal_ip_retention_days:
+        label: 'IP-derived signal retention'
+        help: 'Short retention for signals that are keyed only by IP-derived identifiers. Keep this lower than the 30-day privacy ceiling.'
       geoip_enabled:
         label: 'Enable GeoIP lookups'
         help: 'When disabled or unavailable, logs and statistics keep normalized n/a location values.'
