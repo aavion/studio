@@ -50,7 +50,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Log browsing is split by source tabs. Each tab exposes only meaningful filters and compact columns for that log family.
 - The free-text search must remain broad enough to match values not shown in the compact table, including request IDs, visitor IDs, user/API identifiers, subject identifiers, route names, paths, IP-derived fields within retention, and raw redacted context JSON.
 - The log-level/severity filter is multi-select and appears only for sources where multiple levels are meaningful, such as message and security-signal events. By default, `DEBUG` and `INFO` are hidden for those sources to keep Admin review usable; callers may explicitly include them. Access and audit logs do not expose or apply a level filter.
-- Client identity must respect Symfony trusted-proxy configuration and must not trust raw forwarding headers outside that configuration.
+- Client identity uses Symfony's resolved request client IP as provided by deployment/webserver configuration. This branch does not add app-level trusted-proxy settings and does not parse raw forwarding headers. Operators should configure trusted reverse proxies at the webserver/Symfony boundary, for example through `mod_remoteip` or equivalent server config.
+- Visitor ID remains the primary continuity key for browser traffic so different browsers behind the same untrusted proxy can still receive separate visitor subjects. Rate limiting should stay stable across direct and proxied requests; later auto-ban policy may treat IP-only evidence from untrusted/shared-network situations with lower confidence when the resolved request context can distinguish it.
 - Prefetch detection uses `X-Sec-Purpose: prefetch` and `Sec-Purpose: prefetch`; spoofable hints only lower confidence for classification, never bypass checks.
 - Signals store only normalized subject keys, intent, reason code, count/weight, timestamps, and safe request metadata.
 - Probe-path detection is configurable and ships with extensive high-signal defaults for `.env`, VCS metadata, backup/database dumps, common foreign admin panels, upload shells, and known scanner paths.
@@ -94,7 +95,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test Admin/API log browsing reads database projections, uses UUID detail links, exposes source tabs, keeps broad free-text matching for hidden identifiers/context, shows only meaningful filters per tab, omits raw-line storage, omits access/audit level filters, and hides `DEBUG`/`INFO` by default for level-aware sources unless selected.
 - Test passive-signal persistence, aggregation by normalized subject/intent/reason, expiry filtering, and cleanup command/task behavior.
 - Test IP-derived signal retention stays below 30 days and that longer-lived visitor-based signals do not keep recoverable IP material.
-- Test trusted-proxy/client-identity behavior and storage-failure degradation.
+- Test client-identity behavior by asserting the foundation uses Symfony's resolved request IP and does not parse raw forwarding headers; do not introduce app-managed trusted-proxy configuration in this slice.
+- Test storage-failure degradation.
 - Test no limiter or ban enforcement occurs in this branch.
 
 ## Documentation and tracking
