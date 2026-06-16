@@ -249,7 +249,13 @@ final class SchedulerRunnerTest extends KernelTestCase
         $this->entityManager->flush();
 
         $this->runner(new TestDelayedSchedulerTaskExecutor(), new TestMultipleSchedulerTaskProvider())->run();
-        $runs = $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy([], ['startedAt' => 'ASC']);
+        $runs = array_values(array_filter(
+            $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy([], ['startedAt' => 'ASC']),
+            static fn (SchedulerTaskRun $run): bool => in_array($run->task()->identifier(), [
+                'system.first_task',
+                'system.second_task',
+            ], true),
+        ));
 
         self::assertCount(2, $runs);
         self::assertGreaterThan(

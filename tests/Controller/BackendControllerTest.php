@@ -1227,6 +1227,61 @@ final class BackendControllerTest extends WebTestCase
         self::assertStringNotContainsString('$_SERVER', (string) $client->getResponse()->getContent());
     }
 
+    public function testSecuritySettingsSectionIsHiddenAndRejectsPostsForDelegatedAdmins(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+
+        $client->request('GET', '/admin/settings/security');
+
+        self::assertResponseStatusCodeSame(401);
+
+        $client->request('POST', '/admin/settings/security', [
+            '_form_id' => 'admin-settings-security',
+            '_csrf_token' => 'direct-post',
+            'security.captcha.enabled' => '0',
+            'security.captcha.provider' => 'none',
+        ]);
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testSchedulerSettingsReadOnlyDisablesFieldsAndRejectsPosts(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+        $store->save([
+            'admin.settings.scheduler' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('GET', '/admin/settings/scheduler');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('form#admin-settings-scheduler');
+            self::assertSelectorExists('input[name="scheduler.enabled"][disabled]');
+            self::assertSelectorExists('input[name="scheduler.get_auth_enabled"][disabled]');
+            self::assertSelectorExists('input[name="scheduler.package_action_queues_enabled"][disabled]');
+            self::assertSelectorExists('input[name="scheduler.web_trigger_enabled"][disabled]');
+            self::assertSelectorNotExists('form#admin-settings-scheduler button[type="submit"]');
+
+            $client->request('POST', '/admin/settings/scheduler', [
+                '_form_id' => 'admin-settings-scheduler',
+                '_csrf_token' => 'direct-post',
+                'scheduler.enabled' => '0',
+            ]);
+
+            self::assertResponseStatusCodeSame(401);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
     public function testAclSettingsMatrixIsOwnerGatedAndRendersFeatureRegistry(): void
     {
         $client = self::createClient();

@@ -8,19 +8,13 @@ use App\Backend\BackendAccessGuard;
 use App\Backend\BackendArea;
 use App\Core\Access\AccessActor;
 use App\Core\AdminAcl\AdminFeatureAccessPolicy;
-use App\Core\Message\CommonMessageCode;
-use App\Core\Message\Message;
-use App\Entity\AccountToken;
 use App\Entity\UserAccount;
-use App\Security\AccountTokenStatus;
-use App\Security\AccountTokenType;
 use App\Security\AdminUserInvitationWorkflow;
 use App\Security\UserRole;
 use App\View\Alert\UiAlertDelivery;
 use App\View\Alert\UiAlertDispatcherInterface;
 use App\View\Alert\UiAlertTranslation;
 use App\View\Http\HttpErrorRenderer;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -34,7 +28,6 @@ final class AdminUserInvitationController extends AbstractController
         private readonly AdminUserInvitationWorkflow $invitationWorkflow,
         private readonly UiAlertDispatcherInterface $alerts,
         private readonly AdminFeatureAccessPolicy $adminAcl,
-        private readonly EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -90,7 +83,7 @@ final class AdminUserInvitationController extends AbstractController
         if ($response = $this->adminAccessResponse($request)) {
             return $response;
         }
-        if ($response = $this->featureResponse($request, $this->tokenActionFeature($uid))) {
+        if ($response = $this->featureResponse($request, 'admin.users.review')) {
             return $response;
         }
 
@@ -112,7 +105,7 @@ final class AdminUserInvitationController extends AbstractController
         if ($response = $this->adminAccessResponse($request)) {
             return $response;
         }
-        if ($response = $this->featureResponse($request, $this->tokenActionFeature($uid))) {
+        if ($response = $this->featureResponse($request, 'admin.users.review')) {
             return $response;
         }
 
@@ -176,21 +169,6 @@ final class AdminUserInvitationController extends AbstractController
             'feature' => $feature,
             'required_state' => 'mutable',
         ]);
-    }
-
-    private function tokenActionFeature(string $uid): string
-    {
-        $token = $this->entityManager->find(AccountToken::class, $uid);
-
-        if (
-            $token instanceof AccountToken
-            && AccountTokenType::Registration === $token->type()
-            && AccountTokenStatus::PendingApproval === $token->status()
-        ) {
-            return 'admin.users.review';
-        }
-
-        return 'admin.users';
     }
 
     private function actor(): AccessActor

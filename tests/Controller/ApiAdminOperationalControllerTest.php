@@ -101,6 +101,7 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
             self::assertArrayNotHasKey('total_pages', $payload['meta']['pagination']);
         } finally {
             $store->save($store->defaultOverrides(), 'test');
+            $this->removeSchedulerTasks();
         }
     }
 
@@ -139,6 +140,7 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
             self::assertSame('feature_read_only', $payload['error']['context']['reason']);
         } finally {
             $store->save($store->defaultOverrides(), 'test');
+            $this->removeSchedulerTasks();
         }
     }
 
@@ -348,6 +350,48 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         }
     }
 
+    public function testTrustedPackageDiscoverySchedulerRunUsesSchedulerAclRatherThanPackageAcl(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apiopsschedpkg', ApiKeyStatus::ReadWrite);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.scheduler' => [
+                'state' => AdminPermissionState::Mutable->value,
+                'groups' => [],
+            ],
+            'admin.packages' => [
+                'state' => AdminPermissionState::Denied->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('PATCH', '/api/v1/admin/scheduler/system.package_discovery', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+                'CONTENT_TYPE' => 'application/json',
+            ], content: json_encode([
+                'enabled' => true,
+                'cron_expression' => '0 */6 * * *',
+            ], JSON_THROW_ON_ERROR));
+
+            self::assertResponseIsSuccessful();
+
+            $client->request('POST', '/api/v1/admin/scheduler/system.package_discovery/run', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('scheduler_run', $payload['data']['type']);
+            self::assertSame('/api/v1/admin/scheduler/system.package_discovery', $payload['data']['links']['task']);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
     public function testAdminSchedulerFeatureReadOnlyStillShowsTasksButRejectsMutations(): void
     {
         $client = self::createClient();
@@ -436,6 +480,13 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         $entityManager->flush();
 
         return $plainKey;
+    }
+
+    private function removeSchedulerTasks(): void
+    {
+        $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
+        $connection->executeStatement("DELETE FROM scheduler_task_run WHERE task_identifier LIKE 'system.%'");
+        $connection->executeStatement("DELETE FROM scheduler_task WHERE source = 'system'");
     }
 
     /**

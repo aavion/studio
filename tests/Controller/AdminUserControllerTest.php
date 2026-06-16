@@ -1374,6 +1374,74 @@ final class AdminUserControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
+    public function testPendingAccountTokenActionsUseReviewFeatureWhenUsersFeatureIsReadOnly(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $admin = $this->createUser('reviewtokenactor', UserAccountStatus::Active);
+        $admin->changeRole(UserRole::Admin);
+        [$reissueToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'review-reissue-browser@example.test',
+            [],
+            ttl: '-1 hour',
+        );
+        [$revokeToken] = self::getContainer()->get(AccountTokenIssuer::class)->issue(
+            AccountTokenType::Invitation,
+            'review-revoke-browser@example.test',
+            [],
+            ttl: '-1 hour',
+        );
+        $originalHash = $reissueToken->tokenHash();
+        $entityManager->persist($reissueToken);
+        $entityManager->persist($revokeToken);
+        $entityManager->flush();
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.users' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+            'admin.users.review' => [
+                'state' => AdminPermissionState::Mutable->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $this->loginTestUser($client, $admin);
+            $crawler = $client->request('GET', '/admin/users');
+            $reissueForm = $crawler->filter('form[action="/admin/users/invitations/'.$reissueToken->uid().'/reissue"]');
+            $revokeForm = $crawler->filter('form[action="/admin/users/invitations/'.$revokeToken->uid().'/revoke"]');
+
+            self::assertCount(1, $reissueForm);
+            self::assertCount(1, $revokeForm);
+            self::assertNull($reissueForm->filter('button[type="submit"]')->attr('disabled'));
+            self::assertNull($revokeForm->filter('button[type="submit"]')->attr('disabled'));
+
+            $client->submit($reissueForm->form());
+            self::assertResponseRedirects('/admin/users');
+
+            $client->request('POST', '/admin/users/invitations/'.$revokeToken->uid().'/revoke', [
+                '_csrf_token' => (string) $revokeForm->filter('input[name="_csrf_token"]')->attr('value'),
+            ]);
+            self::assertResponseRedirects('/admin/users');
+
+            $entityManager->clear();
+            $reissuedToken = $entityManager->find(AccountToken::class, $reissueToken->uid());
+            $revokedToken = $entityManager->find(AccountToken::class, $revokeToken->uid());
+
+            self::assertInstanceOf(AccountToken::class, $reissuedToken);
+            self::assertInstanceOf(AccountToken::class, $revokedToken);
+            self::assertNotSame($originalHash, $reissuedToken->tokenHash());
+            self::assertSame(AccountTokenStatus::Revoked, $revokedToken->status());
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
     public function testPendingApprovalRevocationRequiresReviewFeatureEvenWithoutReviewReturnTarget(): void
     {
         $client = self::createClient();

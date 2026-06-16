@@ -668,6 +668,94 @@ final class ApiUserControllerTest extends WebTestCase
         self::assertSame(AccountTokenStatus::Revoked, $revokedToken->status());
     }
 
+    public function testOrdinaryAccountTokenReviewActionsUseReviewFeatureWhenUserFeatureIsReadOnly(): void
+    {
+        $client = self::createClient();
+        $reissueToken = $this->createPendingAccountToken('api-review-reissue@example.test');
+        $revokeToken = $this->createPendingAccountToken('api-review-revoke@example.test');
+        $plainKey = $this->createPlainApiKey('apiusrrevtok', ApiKeyStatus::ReadWrite);
+        $originalHash = $reissueToken->tokenHash();
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.users' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+            'admin.users.review' => [
+                'state' => AdminPermissionState::Mutable->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('POST', '/api/v1/admin/users/reviews/tokens/'.$reissueToken->uid().'/reissue?confirm=true', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+
+            $client->request('DELETE', '/api/v1/admin/users/reviews/tokens/'.$revokeToken->uid().'?confirm=true', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+            $entityManager->clear();
+            $reissuedToken = $entityManager->find(AccountToken::class, $reissueToken->uid());
+            $revokedToken = $entityManager->find(AccountToken::class, $revokeToken->uid());
+            self::assertInstanceOf(AccountToken::class, $reissuedToken);
+            self::assertInstanceOf(AccountToken::class, $revokedToken);
+            self::assertNotSame($originalHash, $reissuedToken->tokenHash());
+            self::assertSame(AccountTokenStatus::Revoked, $revokedToken->status());
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+            $this->removeAccountTokens($reissueToken->uid(), $revokeToken->uid());
+        }
+    }
+
+    public function testOrdinaryAccountTokenReviewActionsRejectWhenReviewFeatureIsDenied(): void
+    {
+        $client = self::createClient();
+        $token = $this->createPendingAccountToken('api-review-denied@example.test');
+        $plainKey = $this->createPlainApiKey('apiusrrevdeny', ApiKeyStatus::ReadWrite);
+        $originalHash = $token->tokenHash();
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.users' => [
+                'state' => AdminPermissionState::Mutable->value,
+                'groups' => [],
+            ],
+            'admin.users.review' => [
+                'state' => AdminPermissionState::Denied->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('POST', '/api/v1/admin/users/reviews/tokens/'.$token->uid().'/reissue?confirm=true', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseStatusCodeSame(403);
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('admin.users.review', $payload['error']['context']['feature']);
+
+            $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+            $entityManager->clear();
+            $unchangedToken = $entityManager->find(AccountToken::class, $token->uid());
+            self::assertInstanceOf(AccountToken::class, $unchangedToken);
+            self::assertSame($originalHash, $unchangedToken->tokenHash());
+            self::assertSame(AccountTokenStatus::Pending, $unchangedToken->status());
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+            $this->removeAccountTokens($token->uid());
+        }
+    }
+
     public function testOpenApiIncludesUsersEndpoint(): void
     {
         $client = self::createClient();
@@ -804,6 +892,36 @@ final class ApiUserControllerTest extends WebTestCase
         $entityManager->flush();
 
         return $token;
+    }
+
+    private function createPendingAccountToken(string $email, AccountTokenType $type = AccountTokenType::Invitation): AccountToken
+    {
+        $token = new AccountToken(
+            '69000000-0000-7000-8004-'.substr(md5($email), 0, 12),
+            hash('sha256', $email),
+            $type,
+            $email,
+            status: AccountTokenStatus::Pending,
+        );
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($token);
+        $entityManager->flush();
+
+        return $token;
+    }
+
+    private function removeAccountTokens(string ...$uids): void
+    {
+        if ([] === $uids) {
+            return;
+        }
+
+        self::getContainer()->get(EntityManagerInterface::class)->getConnection()->executeStatement(
+            'DELETE FROM account_token WHERE uid IN (?)',
+            [$uids],
+            [\Doctrine\DBAL\ArrayParameterType::STRING],
+        );
     }
 
     /**
