@@ -8,7 +8,7 @@ use App\Core\Access\AccessActor;
 use App\Core\Diagnostics\SystemInfoProvider;
 use App\Core\Geo\GeoIpResolverInterface;
 use App\Core\Geo\MaxMindGeoIpConfig;
-use App\Core\Log\DatabaseLogBrowser;
+use App\Core\Log\AdminLogBrowser;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Statistics\AccessStatisticsSnapshotProvider;
 use App\Entity\UserAccount;
@@ -19,7 +19,7 @@ final readonly class AdminViewContextProvider
 {
     public function __construct(
         private LiveOperationRunStore $liveOperationRunStore,
-        private DatabaseLogBrowser $logBrowser,
+        private AdminLogBrowser $logBrowser,
         private AccessStatisticsSnapshotProvider $accessStatisticsSnapshotProvider,
         private SystemInfoProvider $systemInfoProvider,
         private MaxMindGeoIpConfig $maxMindGeoIpConfig,

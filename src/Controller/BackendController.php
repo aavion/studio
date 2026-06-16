@@ -13,7 +13,7 @@ use App\Backend\BackendViewDefinition;
 use App\Core\Access\AccessActor;
 use App\Core\Message\Message;
 use App\Core\Config\Settings\CoreSettingsFormHandler;
-use App\Core\Log\DatabaseLogBrowser;
+use App\Core\Log\AdminLogBrowser;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Package\Settings\PackageSettingsFormHandler;
 use App\Entity\UserAccount;
@@ -42,7 +42,7 @@ final class BackendController extends AbstractController
         private readonly PackageSettingsFormHandler $packageSettingsFormHandler,
         private readonly AdminViewContextProvider $adminViewContextProvider,
         private readonly BackendActionResponder $backendActionResponder,
-        private readonly DatabaseLogBrowser $logBrowser,
+        private readonly AdminLogBrowser $logBrowser,
         private readonly AuditLoggerInterface $auditLogger,
         private readonly FormTokenValidator $formTokenValidator,
         private readonly UiAlertDispatcherInterface $alerts,

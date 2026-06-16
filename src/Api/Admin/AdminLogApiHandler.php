@@ -12,7 +12,7 @@ use App\Api\Http\ApiListQueryNormalizer;
 use App\Api\Http\ApiResponder;
 use App\Api\Security\ApiAccessGuard;
 use App\Core\Access\AccessLevel;
-use App\Core\Log\DatabaseLogBrowser;
+use App\Core\Log\AdminLogBrowser;
 use App\Core\Message\Message;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
 final readonly class AdminLogApiHandler implements ApiEndpointHandlerInterface
 {
     public function __construct(
-        private DatabaseLogBrowser $logs,
+        private AdminLogBrowser $logs,
         private ApiListQueryNormalizer $listQueries,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,

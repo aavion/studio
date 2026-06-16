@@ -70,6 +70,7 @@
 - [ ] Audit follow-up: implement remember-me with Symfony-style persistent server-side tokens, visitor binding, explicit revocation, token rotation, and audit signals in the Security branch.
 - [ ] Audit follow-up: replace the debug account-link mail/message-log delivery stub with the real Mailer delivery contract and a dedicated Mail Message/API catalogue.
 - [ ] Security follow-up: define and test production HTTP security-header policy, including CSP, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sensitive-route `no-store`, and documented route exceptions.
+- [ ] Security/Admin ACL follow-up: add explicit Owner/configurable ACL gates for security-signal visibility/mutation, IP-bearing access-log projection visibility, related exports, cleanup operations, and future signal review actions across Admin UI, Admin API, Operations, and service boundaries.
 - [ ] Editor/Content/Config follow-up: warn non-blockingly when a proposed route or slug would match a configured suspicious probe path, so legitimate content remains possible but accidental high-signal probe namespace collisions are visible before publication.
 - [ ] Audit follow-up: decide whether optional branding packages need capabilities beyond `system-template`; package CSS class namespace validation is now enforced for package-owned selectors.
 - [ ] Evaluate whether the documented minimum memory requirement should become 256M after PHPUnit 13.2/full-suite runs needed a higher CLI memory limit; do not fix this requirement until setup/init/lint/runtime memory behavior has been reviewed across target hosting platforms.
@@ -93,7 +94,8 @@
 - Switched passive security-signal expiry and cleanup to Symfony Clock so retention behavior is deterministic in tests and matches the Abuse Foundation time-boundary plan.
 - Hardened PR-readiness findings before final checks: database log projection retention now uses Symfony Clock, and the Admin Logs OpenAPI enum documents the database-backed sources including `security_signal`.
 - Reintroduced the Symfony `application` log as an explicit file-backed Admin/API source while keeping message, audit, access, and security-signal browsing database-backed; application detail links use the existing synthetic file-line hash IDs because Symfony Monolog lines do not carry database UUIDs.
-- Final verification: `bin/phpunit` passed with 1339 tests and 8649 assertions; `bin/jstest` passed with 37 tests; `bin/lint` passed all checks including container, Twig, translation keys, Tailwind, Markdown, and Git whitespace. `git diff --check feat-security...HEAD` only reports intentional Markdown metadata hardbreaks that project lint accepts.
+- #57 audit follow-up applied before final review: split hybrid log browsing into an `AdminLogBrowser` facade so `DatabaseLogBrowser` remains responsible only for database-backed projections and the file-backed `application` source keeps its own parser boundary.
+- Final verification: `bin/phpunit` passed with 1340 tests and 8650 assertions; `bin/jstest` passed with 37 tests; `bin/lint` passed all checks including container, Twig, translation keys, Tailwind, Markdown, and Git whitespace. `git diff --check feat-security...HEAD` only reports intentional Markdown metadata hardbreaks that project lint accepts.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

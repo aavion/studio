@@ -459,10 +459,6 @@ services:
             $logDir: '%kernel.logs_dir%'
             $environment: '%kernel.environment%'
 
-    App\Core\Log\DatabaseLogBrowser:
-        arguments:
-            $fileBrowser: '@App\Core\Log\LogFileBrowser'
-
     App\Core\Statistics\AccessStatisticsRecorderInterface:
         alias: App\Core\Statistics\DatabaseAccessStatisticsRecorder
 
