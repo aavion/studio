@@ -68,6 +68,21 @@ final class LogFileBrowserTest extends TestCase
         self::assertSame('n/a', $view['entries'][0]['context']['country']);
     }
 
+    public function testItIgnoresAuditActionFiltersForApplicationLogs(): void
+    {
+        $this->writeTestFile($this->logDir, 'test.log', '[2099-01-01T10:00:00.000000+00:00] app.ERROR: app.failure {"code":"app.failure"} []'.PHP_EOL);
+
+        $view = (new LogFileBrowser($this->logDir, 'test'))->browse([
+            'source' => 'application',
+            'level' => 'ERROR',
+            'audit_action' => 'audit.unrelated',
+        ]);
+
+        self::assertSame('', $view['filters']['audit_action']);
+        self::assertSame(1, $view['pagination']['total']);
+        self::assertSame('app.failure', $view['entries'][0]['message']);
+    }
+
     public function testItUsesClampedPaginationPageWhenReadingEntries(): void
     {
         $lines = [];

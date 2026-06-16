@@ -100,9 +100,6 @@ final readonly class RequestIntentClassifier
             $this->routeIs($route, 'user_login') || $this->matchesSegments($segments, 'user', 'login') => RequestIntent::Login,
             $this->routeIs($route, 'user_register', 'user_invitation_accept') || $this->matchesSegments($segments, 'user', 'register') || $this->matchesSegments($segments, 'user', 'invitation') => RequestIntent::Registration,
             $this->routeIs($route, 'user_reset_password', 'user_password_reset_token', 'user_security_review') || $this->matchesSegments($segments, 'user', 'password-reset') || $this->matchesSegments($segments, 'user', 'reset-password') || $this->matchesSegments($segments, 'user', 'security-review') => RequestIntent::PasswordReset,
-            $this->routeHasToken($route, 'contact') || $this->matchesSegments($segments, 'contact') => RequestIntent::Contact,
-            $this->routeHasTokens($route, 'captcha', 'refresh') || $this->matchesSegments($segments, 'captcha', 'refresh') => RequestIntent::CaptchaRefresh,
-            $this->routeHasTokens($route, 'captcha', 'failure') || $this->matchesSegments($segments, 'captcha', 'failure') => RequestIntent::CaptchaFailure,
             !$this->safeMethod($method) => RequestIntent::FormSubmit,
             default => RequestIntent::BrowserNavigation,
         };
@@ -160,19 +157,6 @@ final readonly class RequestIntentClassifier
     private function routeHasAnyToken(string $route, string ...$tokens): bool
     {
         return [] !== array_intersect($tokens, $this->routeTokens($route));
-    }
-
-    private function routeHasTokens(string $route, string ...$tokens): bool
-    {
-        $routeTokens = $this->routeTokens($route);
-
-        foreach ($tokens as $token) {
-            if (!in_array($token, $routeTokens, true)) {
-                return false;
-            }
-        }
-
-        return [] !== $tokens;
     }
 
     /**
@@ -267,6 +251,6 @@ final readonly class RequestIntentClassifier
      */
     private function hasLocalizedReservedPath(array $segments): bool
     {
-        return in_array($segments[1] ?? '', ['admin', 'api', 'captcha', 'contact', 'cron', 'editor', 'setup', 'user'], true);
+        return in_array($segments[1] ?? '', ['admin', 'api', 'cron', 'editor', 'setup', 'user'], true);
     }
 }

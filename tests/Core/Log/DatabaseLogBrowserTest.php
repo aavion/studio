@@ -245,6 +245,45 @@ final class DatabaseLogBrowserTest extends TestCase
         self::assertNull($browser->entry('security_signal', '99999999-0000-7000-8000-000000000002'));
     }
 
+    public function testItTreatsSqlLikeWildcardsAsLiteralSearchText(): void
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE message_log_entry (uid VARCHAR(36) PRIMARY KEY NOT NULL, occurred_at DATETIME NOT NULL, level VARCHAR(16) NOT NULL, message VARCHAR(255) NOT NULL, code VARCHAR(160) DEFAULT NULL, context CLOB NOT NULL)');
+        $now = '2026-06-16 12:00:00';
+        $connection->insert('message_log_entry', [
+            'uid' => '99999999-0000-7000-8000-000000000001',
+            'occurred_at' => $now,
+            'level' => 'NOTICE',
+            'message' => 'message.literal_percent_%',
+            'code' => 'literal.percent',
+            'context' => '{}',
+        ]);
+        $connection->insert('message_log_entry', [
+            'uid' => '99999999-0000-7000-8000-000000000002',
+            'occurred_at' => $now,
+            'level' => 'NOTICE',
+            'message' => 'message.unrelated',
+            'code' => 'unrelated',
+            'context' => '{}',
+        ]);
+
+        $view = (new DatabaseLogBrowser($connection, clock: new MockClock($now)))->browse([
+            'source' => 'message',
+            'q' => '%',
+        ]);
+
+        self::assertSame(1, $view['pagination']['total']);
+        self::assertSame('message.literal_percent_%', $view['entries'][0]['message']);
+
+        $underscoreView = (new DatabaseLogBrowser($connection, clock: new MockClock($now)))->browse([
+            'source' => 'message',
+            'q' => '_',
+        ]);
+
+        self::assertSame(1, $underscoreView['pagination']['total']);
+        self::assertSame('message.literal_percent_%', $underscoreView['entries'][0]['message']);
+    }
+
     public function testItCastsJsonContextAndSearchesCaseInsensitivelyOnPostgreSql(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -257,14 +296,14 @@ final class DatabaseLogBrowserTest extends TestCase
                     return false;
                 }
 
-                self::assertStringContainsString('LOWER(CAST(context AS TEXT)) LIKE ?', $sql);
+                self::assertStringContainsString("LOWER(CAST(context AS TEXT)) LIKE ? ESCAPE '!'", $sql);
 
                 return 0;
             });
         $connection
             ->expects(self::once())
             ->method('fetchAllAssociative')
-            ->with(self::stringContains('LOWER(CAST(context AS TEXT)) LIKE ?'), self::callback(static fn (array $params): bool => in_array('%scanner%', $params, true)))
+            ->with(self::stringContains("LOWER(CAST(context AS TEXT)) LIKE ? ESCAPE '!'"), self::callback(static fn (array $params): bool => in_array('%scanner%', $params, true)))
             ->willReturn([]);
 
         (new DatabaseLogBrowser($connection, clock: new MockClock('2026-06-16 12:00:00')))->browse([

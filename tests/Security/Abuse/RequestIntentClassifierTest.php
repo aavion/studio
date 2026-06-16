@@ -99,6 +99,26 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Browser,
             RequestIntent::BrowserNavigation,
         ];
+        yield 'contact content slug is ordinary navigation' => [
+            self::contentRequest('/contact'),
+            RequestFamily::Browser,
+            RequestIntent::BrowserNavigation,
+        ];
+        yield 'contact content post is ordinary form submit' => [
+            self::contentRequest('/contact', 'POST'),
+            RequestFamily::Browser,
+            RequestIntent::FormSubmit,
+        ];
+        yield 'captcha refresh content slug is ordinary navigation' => [
+            self::contentRequest('/captcha/refresh'),
+            RequestFamily::Browser,
+            RequestIntent::BrowserNavigation,
+        ];
+        yield 'localized captcha refresh content slug is ordinary navigation' => [
+            self::contentRequest('/de/captcha/refresh', 'GET', 'de'),
+            RequestFamily::Browser,
+            RequestIntent::BrowserNavigation,
+        ];
         yield 'admin path containing settings only as part of a segment is generic admin' => [
             Request::create('/admin/content/site-settings', 'POST'),
             RequestFamily::Admin,

@@ -27,10 +27,11 @@ final readonly class LogFileBrowser
     {
         $source = $this->sourceRegistry->source($query['source'] ?? null);
         $filters = $this->entryFilter->filters($query);
-        if (in_array($source, ['access', 'audit'], true)) {
-            $filters['level'] = '';
-            $filters['levels'] = [];
-        }
+        $filters = $this->entryFilter->filtersForSource(
+            $filters,
+            !in_array($source, ['access', 'audit'], true),
+            'audit' === $source,
+        );
         $files = $this->sourceRegistry->files($this->logDir, $this->environment, $source);
         $matched = $this->countMatches($source, $files, $filters);
         $pagination = $this->pagination->pagination($filters, $matched);

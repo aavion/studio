@@ -39,10 +39,11 @@ final readonly class DatabaseLogBrowser
     {
         $source = $this->source($query['source'] ?? null);
         $filters = $this->entryFilter->filters($query);
-        if (!$this->supportsLevelFilter($source)) {
-            $filters['level'] = '';
-            $filters['levels'] = [];
-        }
+        $filters = $this->entryFilter->filtersForSource(
+            $filters,
+            $this->supportsLevelFilter($source),
+            in_array($source, ['audit', 'security_signal'], true),
+        );
         $criteria = $this->criteria($source, $filters);
         $matched = $this->count($source, $criteria);
         $pagination = $this->pagination->pagination($filters, $matched);
@@ -165,9 +166,9 @@ final readonly class DatabaseLogBrowser
                 'security_signal' => ['context', 'signal_type', 'reason_code', 'subject_type', 'subject_identifier', 'request_id', 'visitor_id', 'path', 'route'],
                 default => ['context', 'message', 'code'],
             };
-            $operator = 'equals' === $filters['match'] ? '= ?' : 'LIKE ?';
+            $operator = 'equals' === $filters['match'] ? '= ?' : "LIKE ? ESCAPE '!'";
             $needle = mb_strtolower($filters['search']);
-            $needle = 'equals' === $filters['match'] ? $needle : '%'.$needle.'%';
+            $needle = 'equals' === $filters['match'] ? $needle : '%'.$this->escapeLikeNeedle($needle).'%';
             $where[] = '('.implode(' OR ', array_map(fn (string $column): string => $this->caseInsensitiveSearchExpression($column).' '.$operator, $columns)).')';
 
             foreach ($columns as $_) {
@@ -366,6 +367,15 @@ final readonly class DatabaseLogBrowser
         }
 
         return $cutoff->format('Y-m-d H:i:s');
+    }
+
+    private function escapeLikeNeedle(string $needle): string
+    {
+        return strtr($needle, [
+            '!' => '!!',
+            '%' => '!%',
+            '_' => '!_',
+        ]);
     }
 
     private function retentionCutoff(string $source): string

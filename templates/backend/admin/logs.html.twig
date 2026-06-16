@@ -15,12 +15,33 @@
     } only %}
 
     <nav class="system-tabs" aria-label="{{ 'admin.logs.sources.label'|trans }}">
+        {% set source_tab_query = {
+            q: log_view.filters.search,
+            match: log_view.filters.match,
+            time_window: log_view.filters.time_window,
+            per_page: log_view.filters.per_page,
+            page: 1,
+        } %}
         {% for source in log_view.sources %}
-            <a class="system-tab{% if source.key == log_view.selected_source %} system-tab-active{% endif %}" href="?{{ app.request.query.all|merge({source: source.key, page: 1})|url_encode }}">
+            <a class="system-tab{% if source.key == log_view.selected_source %} system-tab-active{% endif %}" href="?{{ source_tab_query|merge({source: source.key})|url_encode }}">
                 {{ source.label|trans }}
             </a>
         {% endfor %}
     </nav>
+
+    {% set log_page_query = {
+        source: log_view.selected_source,
+        q: log_view.filters.search,
+        match: log_view.filters.match,
+        time_window: log_view.filters.time_window,
+        per_page: log_view.filters.per_page,
+    } %}
+    {% if log_view.capabilities.level_filter %}
+        {% set log_page_query = log_page_query|merge({level: log_view.filters.levels}) %}
+    {% endif %}
+    {% if log_view.capabilities.audit_action_filter or log_view.capabilities.signal_reason_filter %}
+        {% set log_page_query = log_page_query|merge({audit_action: log_view.filters.audit_action}) %}
+    {% endif %}
 
     <section class="system-panel">
         <h2>{{ 'admin.logs.filters.title'|trans }}</h2>
@@ -138,10 +159,10 @@
             <div class="system-toolbar">
                 <span class="system-muted">{{ 'admin.logs.entries.page_summary'|trans({'%page%': log_view.pagination.page, '%pages%': log_view.pagination.total_pages, '%total%': log_view.pagination.total}) }}</span>
                 {% if log_view.pagination.has_previous %}
-                    <a class="system-button" href="?{{ app.request.query.all|merge({page: log_view.pagination.previous_page})|url_encode }}">{{ 'admin.logs.entries.previous'|trans }}</a>
+                    <a class="system-button" href="?{{ log_page_query|merge({page: log_view.pagination.previous_page})|url_encode }}">{{ 'admin.logs.entries.previous'|trans }}</a>
                 {% endif %}
                 {% if log_view.pagination.has_next %}
-                    <a class="system-button" href="?{{ app.request.query.all|merge({page: log_view.pagination.next_page})|url_encode }}">{{ 'admin.logs.entries.next'|trans }}</a>
+                    <a class="system-button" href="?{{ log_page_query|merge({page: log_view.pagination.next_page})|url_encode }}">{{ 'admin.logs.entries.next'|trans }}</a>
                 {% endif %}
             </div>
         {% endif %}

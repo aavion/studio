@@ -48,5 +48,13 @@ final class AdminLogBrowserTest extends TestCase
         $applicationEntry = $browser->entry('application', $applicationView['entries'][0]['id']);
         self::assertNotNull($applicationEntry);
         self::assertSame('app.failure', $applicationEntry['message']);
+
+        $staleFilterView = $browser->browse([
+            'source' => 'application',
+            'level' => 'ERROR',
+            'audit_action' => 'audit.unrelated',
+        ]);
+        self::assertSame('', $staleFilterView['filters']['audit_action']);
+        self::assertSame(1, $staleFilterView['pagination']['total']);
     }
 }

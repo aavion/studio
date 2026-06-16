@@ -32,6 +32,25 @@ final readonly class LogEntryFilter
     }
 
     /**
+     * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int} $filters
+     *
+     * @return array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int}
+     */
+    public function filtersForSource(array $filters, bool $supportsLevelFilter, bool $supportsAuditActionFilter): array
+    {
+        if (!$supportsLevelFilter) {
+            $filters['level'] = '';
+            $filters['levels'] = [];
+        }
+
+        if (!$supportsAuditActionFilter) {
+            $filters['audit_action'] = '';
+        }
+
+        return $filters;
+    }
+
+    /**
      * @param array<string, mixed> $entry
      * @param array{level: string, levels: list<string>, search: string, match: string, time_window: string, audit_action: string, per_page: int, page: int} $filters
      */
