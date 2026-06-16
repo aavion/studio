@@ -29,6 +29,7 @@ final readonly class AdminOperationApiHandler implements ApiEndpointHandlerInter
         private AuditLoggerInterface $auditLogger,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
+        private AdminFeatureApiGuard $featureGuard,
     ) {
     }
 
@@ -41,6 +42,10 @@ final readonly class AdminOperationApiHandler implements ApiEndpointHandlerInter
     {
         $denied = $this->accessGuard->denyUnlessAccessLevel($request, AccessLevel::ADMIN);
         if (null !== $denied) {
+            return $denied;
+        }
+
+        if ($denied = $this->featureGuard->denyUnlessVisible($request, 'admin.operations', 'listAdminOperations')) {
             return $denied;
         }
 
@@ -72,6 +77,12 @@ final readonly class AdminOperationApiHandler implements ApiEndpointHandlerInter
 
     private function maintenance(Request $request, string $action): Response
     {
+        if ($request->query->getBoolean('confirm')) {
+            if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.operations', 'runAdminOperationMaintenance')) {
+                return $denied;
+            }
+        }
+
         if (!$request->query->getBoolean('confirm')) {
             return $this->responder->data([
                 'type' => 'operation_maintenance_review',
@@ -144,6 +155,12 @@ final readonly class AdminOperationApiHandler implements ApiEndpointHandlerInter
 
     private function continueOperation(Request $request, string $operationId): Response
     {
+        if ($request->query->getBoolean('confirm')) {
+            if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.operations', 'continueAdminOperation')) {
+                return $denied;
+            }
+        }
+
         if (null === $this->operations->report($operationId)) {
             return $this->notFound($request, $operationId);
         }

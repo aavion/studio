@@ -211,6 +211,10 @@ setup:
       label: 'Site URL'
     registration_mode:
       label: 'User registration'
+      options:
+        disabled: 'Disabled'
+        admin_approval: 'Admin approval'
+        auto_approval: 'Auto approval'
     username_change_enabled:
       label: 'Allow username changes'
     route_prefixes_enabled:

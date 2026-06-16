@@ -32,9 +32,10 @@ final readonly class AdminAclSettingsFormHandler
             static fn (AdminFeatureDefinition $definition): string => $definition->identifier(),
             $currentDefinitions,
         ), true);
+        $previousOverrides = $this->store->overrides();
         $overrides = [];
 
-        foreach ($this->store->overrides() as $feature => $override) {
+        foreach ($previousOverrides as $feature => $override) {
             if (!isset($currentIdentifiers[$feature])) {
                 $overrides[$feature] = $override;
             }
@@ -65,7 +66,12 @@ final readonly class AdminAclSettingsFormHandler
 
         $this->registry->resetCache();
 
-        return new FormSubmissionResult(['acl' => $overrides], []);
+        return new FormSubmissionResult([
+            'acl' => $overrides,
+            '_audit' => [
+                'changed_features' => $this->changedFeatures($previousOverrides, $overrides, $currentIdentifiers),
+            ],
+        ], []);
     }
 
     /**
@@ -101,5 +107,76 @@ final readonly class AdminAclSettingsFormHandler
         ksort($groups);
 
         return $groups;
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $previous
+     * @param array<string, array<string, mixed>> $next
+     * @param array<string, true>                $currentIdentifiers
+     *
+     * @return list<array{feature: string, previous_state: string|null, next_state: string|null, previous_groups: array<string, string>, next_groups: array<string, string>}>
+     */
+    private function changedFeatures(array $previous, array $next, array $currentIdentifiers): array
+    {
+        $features = array_values(array_unique([...array_keys($previous), ...array_keys($next)]));
+        sort($features);
+        $changed = [];
+
+        foreach ($features as $feature) {
+            if (!is_string($feature) || !isset($currentIdentifiers[$feature])) {
+                continue;
+            }
+
+            $previousRow = $previous[$feature] ?? [];
+            $nextRow = $next[$feature] ?? [];
+            $previousGroups = $this->auditGroups($previousRow['groups'] ?? []);
+            $nextGroups = $this->auditGroups($nextRow['groups'] ?? []);
+            $previousState = is_string($previousRow['state'] ?? null) ? $previousRow['state'] : null;
+            $nextState = is_string($nextRow['state'] ?? null) ? $nextRow['state'] : null;
+
+            if ($previousState === $nextState && $previousGroups === $nextGroups) {
+                continue;
+            }
+
+            $changed[] = [
+                'feature' => $feature,
+                'previous_state' => $previousState,
+                'next_state' => $nextState,
+                'previous_groups' => $previousGroups,
+                'next_groups' => $nextGroups,
+            ];
+        }
+
+        return $changed;
+    }
+
+    /**
+     * @param mixed $groups
+     *
+     * @return array<string, string>
+     */
+    private function auditGroups(mixed $groups): array
+    {
+        return is_array($groups) ? $this->normalizeGroups($groups) : [];
+    }
+
+    /**
+     * @param array<mixed> $groups
+     *
+     * @return array<string, string>
+     */
+    private function normalizeGroups(array $groups): array
+    {
+        $normalized = [];
+
+        foreach ($groups as $identifier => $state) {
+            if (is_string($identifier) && is_string($state)) {
+                $normalized[$identifier] = $state;
+            }
+        }
+
+        ksort($normalized);
+
+        return $normalized;
     }
 }

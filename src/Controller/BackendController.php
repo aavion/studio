@@ -67,9 +67,24 @@ final class BackendController extends AbstractController
         if (null !== $access) {
             return $access;
         }
+        if (!$this->adminAcl->isVisible('admin.logs', $this->actor())) {
+            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+                'feature' => 'admin.logs',
+                'required_state' => 'visible',
+            ]);
+        }
 
         $source = $request->query->get('source', 'message');
-        $entry = $this->logBrowser->entry(is_string($source) ? $source : 'message', $entryId);
+        $source = is_string($source) ? $source : 'message';
+        if (in_array($source, ['audit', 'security_signal'], true) && !$this->adminAcl->isMutable('admin.logs', $this->actor())) {
+            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+                'feature' => 'admin.logs',
+                'required_state' => 'mutable',
+                'source' => $source,
+            ]);
+        }
+
+        $entry = $this->logBrowser->entry($source, $entryId);
 
         if (null === $entry) {
             return $this->httpError->notFound($request);
@@ -309,12 +324,17 @@ final class BackendController extends AbstractController
      */
     private function auditFormSubmission(string $action, FormSubmissionResult $result, array $context = []): void
     {
-        $settingKeys = array_keys($result->values());
+        $settingKeys = array_filter(
+            array_keys($result->values()),
+            static fn (string $key): bool => !str_starts_with($key, '_'),
+        );
         sort($settingKeys);
+        $auditContext = $result->value('_audit');
 
         try {
             $this->auditLogger->log($this->actor(), $action, [
                 ...$context,
+                ...(is_array($auditContext) ? $auditContext : []),
                 'result_status' => 'success',
                 'setting_keys' => $settingKeys,
             ]);

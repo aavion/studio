@@ -17,6 +17,7 @@ final readonly class AdminDeferredApiHandler implements ApiEndpointHandlerInterf
     public function __construct(
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
+        private AdminFeatureApiGuard $featureGuard,
     ) {
     }
 
@@ -29,6 +30,10 @@ final readonly class AdminDeferredApiHandler implements ApiEndpointHandlerInterf
     {
         $denied = $this->accessGuard->denyUnlessAccessLevel($request, AccessLevel::ADMIN);
         if (null !== $denied) {
+            return $denied;
+        }
+
+        if ($denied = $this->featureGuard->denyUnlessVisible($request, 'admin.backup_restore', 'listAdminBackups')) {
             return $denied;
         }
 

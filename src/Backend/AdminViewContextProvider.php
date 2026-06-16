@@ -49,9 +49,7 @@ final readonly class AdminViewContextProvider
 
         return match ($view->uid()) {
             'backend-admin-operations' => $this->operationVariables(),
-            'backend-admin-logs' => [
-                'log_view' => $this->logBrowser->browse($request->query->all()),
-            ],
+            'backend-admin-logs' => $this->logVariables($request),
             'backend-admin-statistics' => [
                 'access_statistics' => $this->accessStatisticsSnapshotProvider->snapshot($request->query->get('statistics_window')),
                 'access_statistics_windows' => $this->accessStatisticsSnapshotProvider->windows(),
@@ -79,9 +77,40 @@ final readonly class AdminViewContextProvider
     private function operationVariables(): array
     {
         return [
+            'operations_mutable' => $this->adminFeatureAccessPolicy->isMutable('admin.operations', $this->actor()),
             'operation_runs' => $this->liveOperationRunStore->summaries(),
             'operation_lock' => $this->liveOperationRunStore->runnerLockStatus(3600),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function logVariables(Request $request): array
+    {
+        $actor = $this->actor();
+        $mutable = $this->adminFeatureAccessPolicy->isMutable('admin.logs', $actor);
+        $query = $request->query->all();
+
+        if (!$mutable && $this->isSensitiveLogSource($query['source'] ?? null)) {
+            $query['source'] = 'message';
+        }
+
+        $view = $this->logBrowser->browse($query);
+
+        if (!$mutable) {
+            $view['sources'] = array_values(array_filter(
+                $view['sources'] ?? [],
+                fn (array $source): bool => !$this->isSensitiveLogSource($source['key'] ?? null),
+            ));
+        }
+
+        return ['log_view' => $view];
+    }
+
+    private function isSensitiveLogSource(mixed $source): bool
+    {
+        return is_string($source) && in_array($source, ['audit', 'security_signal'], true);
     }
 
     private function actor(): AccessActor

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Core\Access\AccessLevel;
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
+use App\Core\AdminAcl\AdminPermissionState;
 use App\Core\Message\Message;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Operation\OperationMessageCode;
@@ -56,37 +58,88 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $plainKey = $this->createPlainApiKey('apiopslog');
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
 
-        $client->request('GET', '/api/v1/admin/logs', server: [
-            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
-        ]);
+        $store->save([
+            'admin.logs' => [
+                'state' => AdminPermissionState::Mutable->value,
+                'groups' => [],
+            ],
+        ], 'test');
 
-        self::assertResponseIsSuccessful();
-        $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertGreaterThan(0, $payload['meta']['count']);
-        self::assertSame('log_source', $payload['data'][0]['type']);
-        $sources = [];
-        foreach ($payload['data'] as $resource) {
-            $sources[$resource['id']] = $resource['attributes']['filters'];
+        try {
+            $client->request('GET', '/api/v1/admin/logs', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertGreaterThan(0, $payload['meta']['count']);
+            self::assertSame('log_source', $payload['data'][0]['type']);
+            $sources = [];
+            foreach ($payload['data'] as $resource) {
+                $sources[$resource['id']] = $resource['attributes']['filters'];
+            }
+            self::assertSame(['level', 'q', 'match', 'time_window', 'limit', 'page'], $sources['application']);
+            self::assertSame(['level', 'q', 'match', 'time_window', 'limit', 'page'], $sources['message']);
+            self::assertSame(['q', 'match', 'time_window', 'audit_action', 'limit', 'page'], $sources['audit']);
+            self::assertSame(['q', 'match', 'time_window', 'limit', 'page'], $sources['access']);
+            self::assertSame(['level', 'q', 'match', 'time_window', 'audit_action', 'limit', 'page'], $sources['security_signal']);
+
+            $client->request('GET', '/api/v1/admin/logs/message?level=INFO&limit=25', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('message', $payload['meta']['selected_source']);
+            self::assertSame('INFO', $payload['meta']['filters']['level']);
+            self::assertSame(25, $payload['meta']['filters']['limit']);
+            self::assertArrayNotHasKey('per_page', $payload['meta']['filters']);
+            self::assertArrayNotHasKey('per_page', $payload['meta']['pagination']);
+            self::assertArrayNotHasKey('total_pages', $payload['meta']['pagination']);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
         }
-        self::assertSame(['level', 'q', 'match', 'time_window', 'limit', 'page'], $sources['application']);
-        self::assertSame(['level', 'q', 'match', 'time_window', 'limit', 'page'], $sources['message']);
-        self::assertSame(['q', 'match', 'time_window', 'audit_action', 'limit', 'page'], $sources['audit']);
-        self::assertSame(['q', 'match', 'time_window', 'limit', 'page'], $sources['access']);
-        self::assertSame(['level', 'q', 'match', 'time_window', 'audit_action', 'limit', 'page'], $sources['security_signal']);
+    }
 
-        $client->request('GET', '/api/v1/admin/logs/message?level=INFO&limit=25', server: [
-            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
-        ]);
+    public function testAdminLogsFeatureReadOnlyHidesSensitiveSources(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apiopslogro', ApiKeyStatus::ReadWrite);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
 
-        self::assertResponseIsSuccessful();
-        $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertSame('message', $payload['meta']['selected_source']);
-        self::assertSame('INFO', $payload['meta']['filters']['level']);
-        self::assertSame(25, $payload['meta']['filters']['limit']);
-        self::assertArrayNotHasKey('per_page', $payload['meta']['filters']);
-        self::assertArrayNotHasKey('per_page', $payload['meta']['pagination']);
-        self::assertArrayNotHasKey('total_pages', $payload['meta']['pagination']);
+        $store->save([
+            'admin.logs' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('GET', '/api/v1/admin/logs', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            $sources = array_column($payload['data'], 'id');
+            self::assertNotContains('audit', $sources);
+            self::assertNotContains('security_signal', $sources);
+
+            $client->request('GET', '/api/v1/admin/logs/audit', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseStatusCodeSame(403);
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('admin.logs', $payload['error']['context']['feature']);
+            self::assertSame('feature_read_only', $payload['error']['context']['reason']);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
     }
 
     public function testAdminOperationDetailAndContinuationReviewAreAvailable(): void
@@ -95,6 +148,8 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         $plainKey = $this->createPlainApiKey('apiopsrun');
         $store = self::getContainer()->get(LiveOperationRunStore::class);
         self::assertInstanceOf(LiveOperationRunStore::class, $store);
+        $overrides = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $overrides);
         $run = $store->create('package.install.verify', [], 'Install package');
         $result = WorkflowResult::requiresReview(null, [
             Message::info(
@@ -110,6 +165,13 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
             ],
         ]);
         $store->finish($run['operation_id'], false, $result->toArray());
+
+        $overrides->save([
+            'admin.operations' => [
+                'state' => AdminPermissionState::Mutable->value,
+                'groups' => [],
+            ],
+        ], 'test');
 
         try {
             $client->request('GET', '/api/v1/admin/operations/'.$run['operation_id'], server: [
@@ -143,6 +205,7 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
             self::assertSame('/api/v1/admin/operations/'.$run['operation_id'], $payload['links']['status']);
             self::assertSame('/api/v1/admin/operations/'.$run['operation_id'].'/continue?confirm=true', $payload['links']['confirm']);
         } finally {
+            $overrides->save($overrides->defaultOverrides(), 'test');
             @unlink(dirname($store->outputPath($run['operation_id'])).'/'.$run['operation_id'].'.json');
             @unlink($store->outputPath($run['operation_id']));
             @unlink($store->pidPath($run['operation_id']));
@@ -153,63 +216,160 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $plainKey = $this->createPlainApiKey('apiopsmaint', ApiKeyStatus::ReadWrite);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
 
-        $client->request('POST', '/api/v1/admin/operations/cleanup', server: [
-            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
-        ]);
+        $store->save([
+            'admin.operations' => [
+                'state' => AdminPermissionState::Mutable->value,
+                'groups' => [],
+            ],
+        ], 'test');
 
-        self::assertResponseIsSuccessful();
-        $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertSame('operation_maintenance_review', $payload['data']['type']);
-        self::assertSame('requires_confirmation', $payload['data']['attributes']['status']);
-        self::assertSame('/api/v1/admin/operations/cleanup?confirm=true', $payload['links']['confirm']);
+        try {
+            $client->request('POST', '/api/v1/admin/operations/cleanup', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
 
-        $client->request('POST', '/api/v1/admin/operations/cleanup?confirm=true', server: [
-            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
-        ]);
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('operation_maintenance_review', $payload['data']['type']);
+            self::assertSame('requires_confirmation', $payload['data']['attributes']['status']);
+            self::assertSame('/api/v1/admin/operations/cleanup?confirm=true', $payload['links']['confirm']);
 
-        self::assertResponseIsSuccessful();
-        $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertSame('operation_maintenance_result', $payload['data']['type']);
-        self::assertSame('completed', $payload['data']['attributes']['status']);
+            $client->request('POST', '/api/v1/admin/operations/cleanup?confirm=true', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('operation_maintenance_result', $payload['data']['type']);
+            self::assertSame('completed', $payload['data']['attributes']['status']);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
+    public function testAdminOperationsFeatureReadOnlyStillListsButRejectsConfirmedMaintenance(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apiopsro', ApiKeyStatus::ReadWrite);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.operations' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('GET', '/api/v1/admin/operations', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+
+            $client->request('POST', '/api/v1/admin/operations/cleanup?confirm=true', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseStatusCodeSame(403);
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('admin.operations', $payload['error']['context']['feature']);
+            self::assertSame('feature_read_only', $payload['error']['context']['reason']);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
     }
 
     public function testAdminSchedulerTaskDetailAndPatchAreAvailable(): void
     {
         $client = self::createClient();
         $plainKey = $this->createPlainApiKey('apiopssched', ApiKeyStatus::ReadWrite);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
 
-        $client->request('GET', '/api/v1/admin/scheduler/system.live_operation_cleanup', server: [
-            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
-        ]);
+        $store->save([
+            'admin.scheduler' => [
+                'state' => AdminPermissionState::Mutable->value,
+                'groups' => [],
+            ],
+        ], 'test');
 
-        self::assertResponseIsSuccessful();
-        $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertSame('scheduler_task', $payload['data']['type']);
-        self::assertSame('system.live_operation_cleanup', $payload['data']['id']);
-        self::assertArrayHasKey('recent_runs', $payload['data']['relationships']);
+        try {
+            $client->request('GET', '/api/v1/admin/scheduler/system.live_operation_cleanup', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
 
-        $client->request('PATCH', '/api/v1/admin/scheduler/system.live_operation_cleanup', server: [
-            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
-            'CONTENT_TYPE' => 'application/json',
-        ], content: json_encode([
-            'enabled' => true,
-            'cron_expression' => '*/10 * * * *',
-        ], JSON_THROW_ON_ERROR));
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('scheduler_task', $payload['data']['type']);
+            self::assertSame('system.live_operation_cleanup', $payload['data']['id']);
+            self::assertArrayHasKey('recent_runs', $payload['data']['relationships']);
 
-        self::assertResponseIsSuccessful();
-        $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertSame('active', $payload['data']['attributes']['status']);
-        self::assertSame('*/10 * * * *', $payload['data']['attributes']['cron_expression']);
+            $client->request('PATCH', '/api/v1/admin/scheduler/system.live_operation_cleanup', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+                'CONTENT_TYPE' => 'application/json',
+            ], content: json_encode([
+                'enabled' => true,
+                'cron_expression' => '*/10 * * * *',
+            ], JSON_THROW_ON_ERROR));
 
-        $client->request('POST', '/api/v1/admin/scheduler/system.live_operation_cleanup/run', server: [
-            'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
-        ]);
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('active', $payload['data']['attributes']['status']);
+            self::assertSame('*/10 * * * *', $payload['data']['attributes']['cron_expression']);
 
-        self::assertResponseIsSuccessful();
-        $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertSame('scheduler_run', $payload['data']['type']);
-        self::assertSame('/api/v1/admin/scheduler/system.live_operation_cleanup', $payload['data']['links']['task']);
+            $client->request('POST', '/api/v1/admin/scheduler/system.live_operation_cleanup/run', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('scheduler_run', $payload['data']['type']);
+            self::assertSame('/api/v1/admin/scheduler/system.live_operation_cleanup', $payload['data']['links']['task']);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
+    public function testAdminSchedulerFeatureReadOnlyStillShowsTasksButRejectsMutations(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apiopsschedro', ApiKeyStatus::ReadWrite);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.scheduler' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('GET', '/api/v1/admin/scheduler', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+
+            $client->request('PATCH', '/api/v1/admin/scheduler/system.live_operation_cleanup', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+                'CONTENT_TYPE' => 'application/json',
+            ], content: json_encode([
+                'enabled' => false,
+            ], JSON_THROW_ON_ERROR));
+
+            self::assertResponseStatusCodeSame(403);
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame('admin.scheduler', $payload['error']['context']['feature']);
+            self::assertSame('feature_read_only', $payload['error']['context']['reason']);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
     }
 
     public function testOpenApiIncludesAdminOperationalEndpoints(): void

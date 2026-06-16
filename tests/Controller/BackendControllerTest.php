@@ -8,6 +8,8 @@ use App\Core\Access\AccessLevel;
 use App\Core\ActionLog\ActionLogEntry;
 use App\Core\ActionLog\ActionLogStatus;
 use App\Core\AdminAcl\AdminFeatureAccessPolicy;
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
+use App\Core\AdminAcl\AdminPermissionState;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Geo\MaxMindGeoIpConfig;
@@ -384,7 +386,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminRouteAllowsAccessLevelEight(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $client->request('GET', '/admin');
 
         self::assertResponseIsSuccessful();
@@ -473,7 +475,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminOperationsViewListsTransientLiveOperationState(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
         $store = self::getContainer()->get(LiveOperationRunStore::class);
         self::assertInstanceOf(LiveOperationRunStore::class, $store);
         $run = $store->create('backend.cache_clear', [], 'Cache clear');
@@ -499,7 +501,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminOperationsCleanupWritesAuditEntry(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
         foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
@@ -519,10 +521,67 @@ final class BackendControllerTest extends WebTestCase
         self::assertStringContainsString('"result_status":"success"', $auditLog);
     }
 
+    public function testAdminOperationsFeatureReadOnlyKeepsActionsVisibleButDisabled(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.operations' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('GET', '/admin/operations');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('form input[name="_operations_action"][value="cleanup"]');
+            self::assertSelectorExists('form input[name="_operations_action"][value="cleanup"] + button[disabled]');
+
+            $client->request('POST', '/admin/operations', [
+                '_operations_action' => 'cleanup',
+            ]);
+
+            self::assertResponseStatusCodeSame(401);
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
+    public function testAdminLogsFeatureReadOnlyHidesSensitiveSources(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, AccessLevel::ADMIN);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+
+        $store->save([
+            'admin.logs' => [
+                'state' => AdminPermissionState::Visible->value,
+                'groups' => [],
+            ],
+        ], 'test');
+
+        try {
+            $client->request('GET', '/admin/logs?source=audit');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('input[name="source"][value="message"]');
+            self::assertSelectorNotExists('a[href*="source=audit"]');
+            self::assertSelectorNotExists('a[href*="source=security_signal"]');
+        } finally {
+            $store->save($store->defaultOverrides(), 'test');
+        }
+    }
+
     public function testAdminOperationDetailShowsRetainedActionLogEntries(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $store = self::getContainer()->get(LiveOperationRunStore::class);
         self::assertInstanceOf(LiveOperationRunStore::class, $store);
         $run = $store->create('backend.cache_clear', [], 'Cache clear');
@@ -552,7 +611,7 @@ final class BackendControllerTest extends WebTestCase
     public function testAdminLogsViewReadsSelectedLogSource(): void
     {
         $client = self::createClient();
-        $this->loginUserWithLevel($client, 8);
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
         $connection->delete('access_log_entry', ['request_id' => 'request-admin-logs']);
         $connection->delete('access_statistic_event', ['route' => 'backend_admin_route']);
@@ -1121,6 +1180,12 @@ final class BackendControllerTest extends WebTestCase
         self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
         $adminAcl = self::getContainer()->get(AdminFeatureAccessPolicy::class);
         self::assertInstanceOf(AdminFeatureAccessPolicy::class, $adminAcl);
+        $store = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        self::assertInstanceOf(AdminFeatureOverrideStore::class, $store);
+        $logDir = self::getContainer()->getParameter('kernel.logs_dir');
+        foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
+            @unlink($logFile);
+        }
         $existingGroup = $entityManager->getRepository(AclGroup::class)->findOneBy(['identifier' => 'acl_matrix_test']);
         if ($existingGroup instanceof AclGroup) {
             $entityManager->remove($existingGroup);
@@ -1151,6 +1216,21 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('#acl-surface-admin', 'Read-only');
             self::assertGreaterThan(0, $crawler->filter('select[disabled]')->count());
 
+            $form = $crawler->filter('form#admin-settings-acl')->form([
+                'acl[admin.packages][state]' => AdminPermissionState::Denied->value,
+            ]);
+            $client->submit($form);
+
+            self::assertResponseRedirects('/admin/settings/acl');
+            $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
+            self::assertStringContainsString('settings.acl.save', $auditLog);
+            self::assertStringContainsString('"section":"acl"', $auditLog);
+            self::assertStringContainsString('"feature":"admin.packages"', $auditLog);
+            self::assertStringContainsString('"previous_state":"visible"', $auditLog);
+            self::assertStringContainsString('"next_state":"denied"', $auditLog);
+            self::assertStringContainsString('"setting_keys":["acl"]', $auditLog);
+            self::assertStringNotContainsString('"_audit"', $auditLog);
+
             $this->loginUserWithLevel($client, AccessLevel::ADMIN);
             $client->request('GET', '/admin/settings/acl');
 
@@ -1162,6 +1242,7 @@ final class BackendControllerTest extends WebTestCase
                 $entityManager->flush();
                 $adminAcl->resetCache();
             }
+            $store->save($store->defaultOverrides(), 'test');
         }
     }
 

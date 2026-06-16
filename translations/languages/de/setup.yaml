@@ -211,6 +211,10 @@ setup:
       label: 'Website-URL'
     registration_mode:
       label: 'Benutzerregistrierung'
+      options:
+        disabled: 'Deaktiviert'
+        admin_approval: 'Admin-Freigabe'
+        auto_approval: 'Automatische Freigabe'
     username_change_enabled:
       label: 'Benutzernamenänderungen erlauben'
     route_prefixes_enabled:
