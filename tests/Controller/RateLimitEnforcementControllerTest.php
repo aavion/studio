@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Api\ApiFeaturePolicy;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Entity\ApiKey;
@@ -25,7 +26,7 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         $client = self::createClient(server: $this->server('198.51.100.10'));
         $this->setMode(RateLimitProfile::Panic);
 
-        for ($i = 0; $i < 7; ++$i) {
+        for ($i = 0; $i < 16; ++$i) {
             $client->request('GET', '/home');
             self::assertNotSame(429, $client->getResponse()->getStatusCode());
         }
@@ -86,6 +87,25 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(400);
         self::assertStringContainsString('no-store', (string) $client->getResponse()->headers->get('Cache-Control'));
+    }
+
+    public function testApiSuspiciousProbeIsBlockedBeforeApiDisabledGate(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.27'));
+        $this->setMode(RateLimitProfile::Off);
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+
+        try {
+            $config->set(ApiFeaturePolicy::ENABLED_KEY, false, ConfigValueType::Boolean);
+
+            $client->request('GET', '/api/v1/.env');
+
+            self::assertResponseStatusCodeSame(400);
+            self::assertStringContainsString('no-store', (string) $client->getResponse()->headers->get('Cache-Control'));
+        } finally {
+            $config->set(ApiFeaturePolicy::ENABLED_KEY, true, ConfigValueType::Boolean);
+        }
     }
 
     public function testPrefetchAndLiveApiPathsAreNotChargedToOrdinaryLimiter(): void

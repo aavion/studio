@@ -159,6 +159,16 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Browser,
             RequestIntent::TurboPrefetch,
         ];
+        yield 'recovery login bypass ignores spoofed prefetch' => [
+            Request::create('/user/login?bypass=1', server: ['HTTP_SEC_PURPOSE' => 'prefetch']),
+            RequestFamily::Browser,
+            RequestIntent::RecoveryLogin,
+        ];
+        yield 'admin download ignores spoofed prefetch' => [
+            Request::create('/admin/logs/download', server: ['HTTP_PURPOSE' => 'prefetch']),
+            RequestFamily::Admin,
+            RequestIntent::ExportDownload,
+        ];
         yield 'scheduler trigger' => [
             Request::create('/cron/run'),
             RequestFamily::Scheduler,

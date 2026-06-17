@@ -48,9 +48,9 @@ final class RateLimitPolicyCatalogueTest extends TestCase
         self::assertNotNull($panic);
         self::assertSame(30, $standard->limit());
         self::assertSame(60, $standard->windowSeconds());
-        self::assertSame(15, $strict->limit());
+        self::assertSame(16, $strict->limit());
         self::assertSame(90, $strict->windowSeconds());
-        self::assertSame(7, $panic->limit());
+        self::assertSame(16, $panic->limit());
         self::assertSame(120, $panic->windowSeconds());
     }
 
@@ -91,19 +91,65 @@ final class RateLimitPolicyCatalogueTest extends TestCase
 
         self::assertNotNull($registration);
         self::assertSame(15, $registration->limit());
-        self::assertSame(5, $registration->minimumLimit());
+        self::assertSame(10, $registration->minimumLimit());
         self::assertNotNull($apiWrite);
         self::assertSame(300, $apiWrite->limit());
-        self::assertSame(5, $apiWrite->minimumLimit());
+        self::assertSame(10, $apiWrite->minimumLimit());
     }
 
-    public function testProfileScalingKeepsAtLeastOneCostedActionAvailable(): void
+    public function testProfileScalingKeepsMinimumCostedActionsAvailable(): void
     {
         $catalogue = new RateLimitPolicyCatalogue();
 
         foreach ($catalogue->descriptors(RateLimitProfile::Panic) as $descriptor) {
             self::assertGreaterThanOrEqual($descriptor->minimumLimit(), $descriptor->limit(), $descriptor->name());
         }
+    }
+
+    public function testDescriptorFloorsCoverTwoActionsExceptExplicitIntervalPolicies(): void
+    {
+        $catalogue = new RateLimitPolicyCatalogue();
+        $expectedMinimums = [
+            'login.failure' => 2,
+            'recovery.login.minute' => 2,
+            'recovery.login.hour' => 2,
+            'registration.hour' => 10,
+            'registration.day' => 10,
+            'password_reset.hour' => 6,
+            'password_reset.day' => 6,
+            'captcha.failure' => 2,
+            'website.deliberate.burst' => 16,
+            'website.deliberate.sustained' => 16,
+            'website.form' => 4,
+            'website.prefetch.minute' => 2,
+            'website.prefetch.sustained' => 2,
+            'api.read' => 2,
+            'api.public_read' => 2,
+            'api.write' => 10,
+            'scheduler.interval' => 1,
+            'setup.apply' => 16,
+            'admin.mutation' => 16,
+            'upload_archive.validation' => 16,
+            'download_diagnostics' => 8,
+            'suspicious.probe' => 10,
+        ];
+
+        foreach ($expectedMinimums as $name => $minimum) {
+            $descriptor = $catalogue->descriptor($name);
+            self::assertNotNull($descriptor, $name);
+            self::assertSame($minimum, $descriptor->minimumLimit(), $name);
+        }
+    }
+
+    public function testWebsiteBurstFloorCoversTwoHighCostCompanionActions(): void
+    {
+        $catalogue = new RateLimitPolicyCatalogue();
+
+        $panic = $catalogue->descriptor('website.deliberate.burst', RateLimitProfile::Panic);
+
+        self::assertNotNull($panic);
+        self::assertSame(16, $panic->minimumLimit());
+        self::assertSame(16, $panic->limit());
     }
 
     public function testSchedulerProfileIntervalsUseExplicitCronPolicy(): void

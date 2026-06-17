@@ -8,6 +8,7 @@ use App\Security\RateLimit\RateLimitRequestSubscriber;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Symfony\Component\HttpKernel\KernelEvents;
 
 final class RateLimitRequestSubscriberTest extends TestCase
 {
@@ -37,5 +38,15 @@ final class RateLimitRequestSubscriberTest extends TestCase
         $method = new \ReflectionMethod(RateLimitRequestSubscriber::class, 'excludedPath');
 
         self::assertSame($excluded, $method->invoke($subscriber, $path));
+    }
+
+    public function testProbePriorityRunsBeforeResponseProducingGates(): void
+    {
+        $events = RateLimitRequestSubscriber::getSubscribedEvents()[KernelEvents::REQUEST];
+
+        self::assertSame(['onKernelRequestProbe', 900], $events[0]);
+        self::assertGreaterThan(768, $events[0][1]);
+        self::assertGreaterThan(512, $events[0][1]);
+        self::assertGreaterThan(256, $events[0][1]);
     }
 }

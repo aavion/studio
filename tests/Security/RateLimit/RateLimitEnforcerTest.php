@@ -306,6 +306,24 @@ final class RateLimitEnforcerTest extends TestCase
         }
     }
 
+    public function testPanicAdminMutationConsumesWebsiteBucketWithoutStorageDegradation(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Panic->value, ConfigValueType::String);
+        $messages = new RecordingRateLimitMessageReporter();
+        $enforcer = $this->enforcer(config: $config, messages: $messages);
+
+        self::assertTrue($enforcer->check($this->request('/admin/settings/security', 'POST'))->isAllowed());
+        self::assertTrue($enforcer->check($this->request('/admin/settings/security', 'POST'))->isAllowed());
+
+        $result = $enforcer->check($this->request('/admin/settings/security', 'POST'));
+
+        self::assertFalse($result->isAllowed());
+        self::assertFalse($result->storageDegraded());
+        self::assertSame('security.rate.website_burst', $result->diagnosticsLabel());
+        self::assertSame([], $messages->records);
+    }
+
     public function testRepresentativeRequestPathsReachExpectedBuckets(): void
     {
         $cases = [
@@ -315,7 +333,7 @@ final class RateLimitEnforcerTest extends TestCase
             ['/api/v1/content/items', 'GET', [], 'security.rate.api_public_read', 31],
             ['/api/v1/content/items', 'POST', [], 'security.rate.api_write', 16],
             ['/cron/run', 'POST', [], 'security.rate.scheduler', 2],
-            ['/setup/apply', 'POST', [], 'security.rate.setup_apply', 2],
+            ['/setup/apply', 'POST', [], 'security.rate.setup_apply', 3],
             ['/admin/settings/security', 'POST', [], 'security.rate.admin_mutation', 8],
             ['/admin/packages/upload', 'POST', [], 'security.rate.upload_archive', 6],
             ['/admin/logs/download', 'GET', [], 'security.rate.download_diagnostics', 8],

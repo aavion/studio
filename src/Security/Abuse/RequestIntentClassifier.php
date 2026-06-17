@@ -90,10 +90,6 @@ final readonly class RequestIntentClassifier
             return RequestIntent::CorsPreflight;
         }
 
-        if ($prefetch && 'GET' === $method) {
-            return RequestIntent::TurboPrefetch;
-        }
-
         if (RequestFamily::Setup === $family && !$this->safeMethod($method)) {
             return RequestIntent::SetupApply;
         }
@@ -109,6 +105,10 @@ final readonly class RequestIntentClassifier
 
         if ($this->recoveryLogin($request, $method, $segments, $route)) {
             return RequestIntent::RecoveryLogin;
+        }
+
+        if ($prefetch && 'GET' === $method) {
+            return RequestIntent::TurboPrefetch;
         }
 
         return match (true) {

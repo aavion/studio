@@ -119,6 +119,7 @@ final class RateLimitResetServiceTest extends TestCase
         self::assertNotSame([], $subjectKeys);
 
         self::assertTrue($factory->consume($descriptor, $subjectKeys[0], 1));
+        self::assertTrue($factory->consume($descriptor, $subjectKeys[0], 1));
         self::assertInstanceOf(\DateTimeImmutable::class, $factory->consume($descriptor, $subjectKeys[0], 1));
         self::assertTrue($resets->resetVerifiedCaptchaFailure($request, 'turnstile', true));
         self::assertTrue($factory->consume($descriptor, $subjectKeys[0], 1));

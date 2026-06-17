@@ -10,6 +10,19 @@ final readonly class RateLimitPolicyCatalogue
 {
     public const MODE_KEY = 'security.rate_limit.mode';
     public const AUTHENTICATED_MULTIPLIER = 2;
+    private const MIN_ACTIONS_PER_DERIVED_PROFILE = 2;
+    private const SINGLE_ACTION_FLOOR_FAMILIES = [
+        'scheduler' => true,
+        'suspicious_probe' => true,
+    ];
+    private const WEBSITE_COMPANION_FAMILIES = [
+        'website_form',
+        'registration',
+        'password_reset',
+        'admin_mutation',
+        'upload_archive',
+        'download_diagnostics',
+    ];
 
     /**
      * @var array<string, int>
@@ -109,6 +122,7 @@ final readonly class RateLimitPolicyCatalogue
         bool $resettable = false,
     ): RateLimitBucketDescriptor {
         $cost = $this->creditCostForFamily($family);
+        $minimumLimit = $this->minimumLimitForFamily($family, $cost);
 
         return new RateLimitBucketDescriptor(
             $name,
@@ -119,7 +133,7 @@ final readonly class RateLimitPolicyCatalogue
             $profileScalable,
             $retryAfterFloorSeconds,
             $resettable,
-            $cost,
+            $minimumLimit,
         );
     }
 
@@ -130,5 +144,19 @@ final readonly class RateLimitPolicyCatalogue
         }
 
         return max(1, $this->creditCosts[$family] ?? 1);
+    }
+
+    private function minimumLimitForFamily(string $family, int $cost): int
+    {
+        $minimumCost = $cost;
+        if ('website' === $family) {
+            foreach (self::WEBSITE_COMPANION_FAMILIES as $companion) {
+                $minimumCost = max($minimumCost, $this->creditCostForFamily($companion));
+            }
+        }
+
+        $actions = isset(self::SINGLE_ACTION_FLOOR_FAMILIES[$family]) ? 1 : self::MIN_ACTIONS_PER_DERIVED_PROFILE;
+
+        return $actions * $minimumCost;
     }
 }

@@ -21,7 +21,7 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
     {
         return [
             KernelEvents::REQUEST => [
-                ['onKernelRequestProbe', 12],
+                ['onKernelRequestProbe', 900],
                 ['onKernelRequestOrdinary', 3],
             ],
         ];
