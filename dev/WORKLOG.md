@@ -82,6 +82,7 @@
 ### 2026-06-17 feat-security-rate-enforcement
 - Started the rate-enforcement slice after `feat-security-admin-acl-enforcement` merged, archived the completed Admin ACL branch notes into `dev/WORKLOG_HISTORY.md`, and refreshed the active worklog for the new branch.
 - Updated `composer.lock` after dependency resolution refreshed `guzzlehttp/psr7` to 2.12.0 and `justinrainbow/json-schema` to 6.10.0.
+- Recorded rate-enforcement product decisions: exact `/user/login?bypass=1` recovery path, fail-open limiter-storage degradation, one Owner-gated rate-limit mode setting with `off`/`standard`/`strict`/`panic`, and a dedicated rate-limit policy catalogue that keeps bucket budgets/profile scaling separate from semantic action costs.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

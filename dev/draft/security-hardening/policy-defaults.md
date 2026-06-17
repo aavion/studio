@@ -1,7 +1,7 @@
 # Security policy defaults
 
 > **Status**: Draft  
-> **Updated**: 2026-06-15  
+> **Updated**: 2026-06-17  
 > **Owner**: Core  
 > **Purpose:** Define first implementation defaults for Security hardening branches before runtime work begins.  
 
@@ -79,6 +79,17 @@ The first implementation should introduce a route/action authority matrix or pol
 
 These are first implementation defaults. Branches may adjust them only with tests and a worklog note explaining the review reason.
 
+Rate-limit implementation must keep action costs separate from bucket budgets. The action-cost catalogue assigns stable semantic costs to request intents, while a dedicated rate-limit policy catalogue owns bucket descriptors, capacities, windows, TTL/retry metadata, reset eligibility, diagnostics labels, and profile scaling. This keeps later tuning centralized and allows future config-backed thresholds to attach at the policy-catalogue boundary without changing classifiers, subscribers, or controllers.
+
+The first Admin-facing rate setting is one Owner-gated Security setting with four modes:
+
+- `off`: central facade gate allows requests without calling limiter storage. Authentication, authorization, CSRF, suspicious-probe `400` handling, passive abuse signals, audit, and diagnostics remain active.
+- `standard`: default policy values from the bucket catalogue.
+- `strict`: derived from `standard` by fixed multipliers that reduce capacity and/or extend windows/retry floors for elevated pressure.
+- `panic`: derived from `standard` by stronger fixed multipliers for temporary emergency pressure.
+
+`strict` and `panic` must be calculated from the standard bucket descriptors instead of duplicating every bucket threshold. The derived values must be covered by tests so the code shows exactly how much capacity and retry behavior changes in each mode. `Retry-After` should use Symfony limiter metadata where available; descriptor-provided retry values act only as documented floors or special-case overrides such as recovery login.
+
 | Policy | Default | Subject | Success reset |
 | --- | --- | --- | --- |
 | Login failures | 5 failed attempts per 15 minutes | Visitor ID plus username/email hash where safe; IP bucket as secondary signal | Successful credential login resets only the login-attempt bucket |
@@ -107,6 +118,8 @@ Scheduler trigger limits must support a normal once-per-minute external cron. Th
 Registered authenticated users receive higher limits than anonymous visitors where the workflow is not already account-specific. The first default is a 2x multiplier for deliberate website navigation and public-read style API usage after the request resolves to an active authenticated user. Login, registration, password-reset, captcha, scheduler, and suspicious-probe policies keep their explicit workflow limits.
 
 Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner session are exempt from ordinary rate-limit rejection. They may still record diagnostics and passive signals, but the request path must preserve Owner recovery and administrative operation access.
+
+Limiter storage degradation is fail-open by policy. If limiter storage, locking, or consume/reset operations fail, the facade should allow the request, emit safe diagnostics where possible, and avoid creating an invisible Owner, login, setup, API, or scheduler lockout.
 
 ## Probe Path Policy
 
@@ -217,7 +230,8 @@ These are first soft decisions for which values should stay fixed, become protec
 | Probe-path defaults | Code defaults plus config descriptor | Yes, audited | Defaults remain broad; patterns are anchored/normalized and tested against false positives |
 | Auto-ban enabled flag | Code default `on` | Yes, bounded | Disabling requires diagnostics; cannot disable Owner recovery, audit, or passive signal recording by accident |
 | Auto-ban TTLs and escalation windows | Code/config defaults | Yes, bounded | No permanent bans; IP-ban TTL stays below the documented max and IP retention ceiling |
-| Rate-limit thresholds and windows | Named code/config defaults | Yes, bounded | Lower values that affect login, scheduler, captcha, or recovery require false-positive/recovery tests; higher public-entry values require policy review |
+| Rate-limit mode | Owner-gated Security setting with `off`, `standard`, `strict`, and `panic` | Yes, bounded to those modes first | `off` bypasses limiter consume calls only; suspicious probes, passive signals, auth, ACL, CSRF, audit, and diagnostics stay active |
+| Rate-limit thresholds and windows | Dedicated code-level policy catalogue plus derived profile scaling | Yes, later at the catalogue boundary | Lower values that affect login, scheduler, captcha, or recovery require false-positive/recovery tests; higher public-entry values require policy review; future config-backed tuning should attach at the catalogue boundary |
 | Setup apply/finalization bucket | Named code/config default | Yes, bounded | Must avoid installer lockout; stricter values need documented CLI/manual recovery |
 | High-impact admin action costs | Action-cost catalogue constants | Possibly later | Authorization, confirmation, audit, and redaction stay mandatory; Owner ordinary-rate exemption does not bypass workflow safety |
 | Admin/Owner action authority matrix | Code-owned registry plus seeded `acl.admin.features` defaults | Owner-only bounded `Settings/ACL` overrides for descriptor-approved rows | Navigation is not enforcement; Owner-only actions require service/API/live-operation checks; unsafe delegation remains invalid; ACL groups may explicitly grant or restrict specific permissions only after the relevant surface gate is satisfied |
