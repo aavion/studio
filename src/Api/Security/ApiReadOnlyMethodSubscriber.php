@@ -59,7 +59,22 @@ final readonly class ApiReadOnlyMethodSubscriber implements EventSubscriberInter
 
     private function isAllowedReadOnlyMethod(Request $request): bool
     {
-        return in_array($request->getMethod(), [
+        if (!$this->isSafeMethod($request->getMethod())) {
+            return false;
+        }
+
+        if (!$request->isMethod(Request::METHOD_OPTIONS)) {
+            return true;
+        }
+
+        $requestedMethod = $request->headers->get('Access-Control-Request-Method');
+
+        return !is_string($requestedMethod) || $this->isSafeMethod($requestedMethod);
+    }
+
+    private function isSafeMethod(string $method): bool
+    {
+        return in_array(strtoupper($method), [
             Request::METHOD_GET,
             Request::METHOD_HEAD,
             Request::METHOD_OPTIONS,

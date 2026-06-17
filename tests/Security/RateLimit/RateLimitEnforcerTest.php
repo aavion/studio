@@ -293,6 +293,43 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertSame('security.rate.api_write', $result->diagnosticsLabel());
     }
 
+    public function testReadOnlyOwnerApiKeyUnsafePreflightsAreNotOwnerExempt(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Panic->value, ConfigValueType::String);
+        $enforcer = $this->enforcer(config: $config);
+        $result = null;
+
+        for ($i = 0; $i < 8; ++$i) {
+            $request = $this->request('/api/v1/admin/settings/general', 'OPTIONS', server: [
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+                'HTTP_AUTHORIZATION' => 'Bearer read-only-owner',
+            ]);
+            $this->apiContext(ApiKeyStatus::ReadOnly, UserRole::Owner)->attachTo($request);
+            $result = $enforcer->check($request, RateLimitEnforcementStage::Ordinary);
+        }
+
+        self::assertNotNull($result);
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.admin_mutation', $result->diagnosticsLabel());
+    }
+
+    public function testReadOnlyOwnerApiKeySafePreflightsRemainOwnerExempt(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Panic->value, ConfigValueType::String);
+        $enforcer = $this->enforcer(config: $config);
+
+        for ($i = 0; $i < 20; ++$i) {
+            $request = $this->request('/api/v1/status', 'OPTIONS', server: [
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'GET',
+                'HTTP_AUTHORIZATION' => 'Bearer read-only-owner',
+            ]);
+            $this->apiContext(ApiKeyStatus::ReadOnly, UserRole::Owner)->attachTo($request);
+            self::assertTrue($enforcer->check($request, RateLimitEnforcementStage::Ordinary)->isAllowed());
+        }
+    }
+
     public function testReadWriteOwnerApiKeyMutationsRemainOwnerExempt(): void
     {
         $config = new Config($this->connection());

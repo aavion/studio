@@ -320,6 +320,42 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         }
     }
 
+    public function testReadOnlyOwnerApiKeyUnsafePreflightsSpendAdminBudgetBeforeDenial(): void
+    {
+        $prefix = 'rlownpf';
+        $client = self::createClient(server: $this->server('198.51.100.29'));
+        $plainKey = $this->createOwnerApiKey($prefix, ApiKeyStatus::ReadOnly);
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+
+        try {
+            $this->setMode(RateLimitProfile::Panic);
+            $config->set(ApiFeaturePolicy::CORS_ENABLED_KEY, true, ConfigValueType::Boolean);
+            $config->set(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, ['https://client.example'], ConfigValueType::Json);
+
+            for ($i = 0; $i < 7; ++$i) {
+                $client->request('OPTIONS', '/api/v1/admin/settings/general', server: [
+                    'HTTP_ORIGIN' => 'https://client.example',
+                    'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+                ]);
+                self::assertResponseStatusCodeSame(403);
+            }
+
+            $client->request('OPTIONS', '/api/v1/admin/settings/general', server: [
+                'HTTP_ORIGIN' => 'https://client.example',
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseStatusCodeSame(429);
+        } finally {
+            $config->set(ApiFeaturePolicy::CORS_ENABLED_KEY, false, ConfigValueType::Boolean);
+            $config->set(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, [], ConfigValueType::Json);
+            $this->removeApiKey($prefix);
+        }
+    }
+
     public function testSchedulerIntervalUsesStableBearerCredentialAcrossVisitorChanges(): void
     {
         $first = self::createClient(server: [

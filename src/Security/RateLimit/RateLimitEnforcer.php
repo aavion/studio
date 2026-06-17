@@ -143,11 +143,26 @@ final readonly class RateLimitEnforcer
             return false;
         }
 
-        if (RequestFamily::Api === $profile->family() && !$this->safeMethod($profile->method()) && $this->readOnlyApiKey($request)) {
+        if (RequestFamily::Api === $profile->family() && $this->apiWriteAttempt($request, $profile) && $this->readOnlyApiKey($request)) {
             return false;
         }
 
         return $this->subjects->hasOwner($subjects);
+    }
+
+    private function apiWriteAttempt(Request $request, AbuseRequestProfile $profile): bool
+    {
+        if (!$this->safeMethod($profile->method())) {
+            return true;
+        }
+
+        if ('OPTIONS' !== strtoupper($profile->method())) {
+            return false;
+        }
+
+        $requestedMethod = $request->headers->get('Access-Control-Request-Method');
+
+        return is_string($requestedMethod) && !$this->safeMethod($requestedMethod);
     }
 
     private function readOnlyApiKey(Request $request): bool
