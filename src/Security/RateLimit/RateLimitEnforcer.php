@@ -48,7 +48,7 @@ final readonly class RateLimitEnforcer
             return $this->checkSuspiciousProbe($profile, $subjectResolution, $cost, $mode);
         }
 
-        if (!$stage->handlesCost($cost) || !$mode->consumesLimiterStorage() || !$cost->ordinaryEnforcement() || $this->isOwnerExempt($request, $profile, $subjectResolution, $cost)) {
+        if (!$stage->handlesCost($cost) || !$mode->consumesLimiterStorage() || !$cost->ordinaryEnforcement() || $this->isOwnerExempt($request, $profile, $subjectResolution, $cost, $stage)) {
             return RateLimitCheckResult::allow();
         }
 
@@ -137,8 +137,12 @@ final readonly class RateLimitEnforcer
         return null === $floor ? $seconds : max($seconds, $floor);
     }
 
-    private function isOwnerExempt(Request $request, AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost): bool
+    private function isOwnerExempt(Request $request, AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost, RateLimitEnforcementStage $stage): bool
     {
+        if (RateLimitEnforcementStage::AuthenticationFailure === $stage) {
+            return false;
+        }
+
         if (RequestFamily::Scheduler === $profile->family() || 'scheduler' === $cost->bucketFamily()) {
             return false;
         }

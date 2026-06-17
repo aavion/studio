@@ -91,7 +91,9 @@ final readonly class RequestIntentClassifier
         }
 
         if (RequestFamily::Setup === $family && !$this->safeMethod($method)) {
-            return RequestIntent::SetupApply;
+            return $this->setupApply($request, $segments)
+                ? RequestIntent::SetupApply
+                : RequestIntent::BrowserNavigation;
         }
 
         $adminReadIntent = RequestFamily::Admin === $family ? $this->adminReadIntent($segments, $route) : null;
@@ -126,6 +128,12 @@ final readonly class RequestIntentClassifier
             && $this->matchesSegments($segments, 'user', 'login')
             && $this->routeIs($route, 'user_login', 'n/a')
             && '1' === (string) $request->query->get('bypass', '');
+    }
+
+    private function setupApply(Request $request, array $segments): bool
+    {
+        return $this->matchesSegments($segments, 'setup', 'review')
+            && 'apply' === (string) $request->request->get('_setup_action', '');
     }
 
     private function adminMutationIntent(array $segments, string $route): RequestIntent

@@ -272,6 +272,7 @@ services:
     App\Security\RateLimit\RateLimitRequestSubscriber:
         arguments:
             $environment: '%kernel.environment%'
+            $projectDir: '%kernel.project_dir%'
 
     App\Security\RateLimit\RateLimitAuthenticationSubscriber:
         arguments:

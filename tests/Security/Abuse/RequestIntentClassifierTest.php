@@ -190,8 +190,17 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Scheduler,
             RequestIntent::SchedulerTrigger,
         ];
+        yield 'setup wizard post is setup navigation' => [
+            Request::create('/setup/database', 'POST', [
+                '_setup_action' => 'test_database',
+            ]),
+            RequestFamily::Setup,
+            RequestIntent::BrowserNavigation,
+        ];
         yield 'setup apply' => [
-            Request::create('/setup', 'POST'),
+            Request::create('/setup/review', 'POST', [
+                '_setup_action' => 'apply',
+            ]),
             RequestFamily::Setup,
             RequestIntent::SetupApply,
         ];

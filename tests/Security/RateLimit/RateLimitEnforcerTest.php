@@ -182,6 +182,24 @@ final class RateLimitEnforcerTest extends TestCase
         }
     }
 
+    public function testOwnerApiContextDoesNotBypassAuthenticationFailureBudgets(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Panic->value, ConfigValueType::String);
+        $enforcer = $this->enforcer(config: $config);
+        $result = null;
+
+        for ($i = 0; $i < 8; ++$i) {
+            $request = $this->request('/api/v1/admin/settings/general', 'PATCH');
+            $this->apiContext(ApiKeyStatus::ReadWrite, UserRole::Owner)->attachTo($request);
+            $result = $enforcer->check($request, RateLimitEnforcementStage::AuthenticationFailure);
+        }
+
+        self::assertNotNull($result);
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.admin_mutation', $result->diagnosticsLabel());
+    }
+
     public function testAuthenticatedUsersReceiveWebsiteMultiplier(): void
     {
         $tokenStorage = $this->tokenStorage(UserRole::User);
@@ -380,6 +398,33 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertSame([], $messages->records);
     }
 
+    public function testSetupWizardPostsDoNotSpendSetupApplyBudget(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Panic->value, ConfigValueType::String);
+        $enforcer = $this->enforcer(config: $config);
+
+        for ($i = 0; $i < 12; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/setup/database', 'POST', [
+                '_setup_action' => 'test_database',
+            ]))->isAllowed());
+        }
+
+        self::assertTrue($enforcer->check($this->request('/setup/review', 'POST', [
+            '_setup_action' => 'apply',
+        ]))->isAllowed());
+        self::assertTrue($enforcer->check($this->request('/setup/review', 'POST', [
+            '_setup_action' => 'apply',
+        ]))->isAllowed());
+
+        $result = $enforcer->check($this->request('/setup/review', 'POST', [
+            '_setup_action' => 'apply',
+        ]));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.setup_apply', $result->diagnosticsLabel());
+    }
+
     public function testRepresentativeRequestPathsReachExpectedBuckets(): void
     {
         $cases = [
@@ -389,7 +434,7 @@ final class RateLimitEnforcerTest extends TestCase
             ['/api/v1/content/items', 'GET', [], 'security.rate.api_public_read', 31],
             ['/api/v1/content/items', 'POST', [], 'security.rate.api_write', 16],
             ['/cron/run', 'POST', [], 'security.rate.scheduler', 2],
-            ['/setup/apply', 'POST', [], 'security.rate.setup_apply', 3],
+            ['/setup/review', 'POST', ['_setup_action' => 'apply'], 'security.rate.setup_apply', 3],
             ['/admin/settings/security', 'POST', [], 'security.rate.admin_mutation', 8],
             ['/admin/packages/upload', 'POST', [], 'security.rate.upload_archive', 6],
             ['/admin/logs/download', 'GET', [], 'security.rate.download_diagnostics', 8],

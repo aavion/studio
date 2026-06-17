@@ -4,17 +4,26 @@ declare(strict_types=1);
 
 namespace App\Security\RateLimit;
 
+use App\Security\Abuse\SuspiciousProbePathMatcher;
+use App\Setup\SetupCompletionMarker;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 final readonly class RateLimitRequestSubscriber implements EventSubscriberInterface
 {
+    private SuspiciousProbePathMatcher $probePathMatcher;
+
     public function __construct(
         private RateLimitEnforcer $enforcer,
         private RateLimitResponseRenderer $responses,
         private string $environment,
+        private SetupCompletionMarker $setupCompletionMarker,
+        private string $projectDir,
+        ?SuspiciousProbePathMatcher $probePathMatcher = null,
     ) {
+        $this->probePathMatcher = $probePathMatcher ?? new SuspiciousProbePathMatcher(patterns: SuspiciousProbePathMatcher::DEFAULT_PATTERNS);
     }
 
     public static function getSubscribedEvents(): array
@@ -38,6 +47,16 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
             return;
         }
 
+        if (!$this->probePathMatcher->isProbe($request->getPathInfo())) {
+            return;
+        }
+
+        if (!$this->setupCompleted()) {
+            $event->setResponse($this->bareSuspiciousProbeResponse());
+
+            return;
+        }
+
         $this->apply($event, RateLimitEnforcementStage::SuspiciousProbe);
     }
 
@@ -52,7 +71,16 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
             return;
         }
 
+        if (!$this->setupCompleted()) {
+            return;
+        }
+
         $this->apply($event, RateLimitEnforcementStage::Ordinary);
+    }
+
+    private function bareSuspiciousProbeResponse(): Response
+    {
+        return new Response('', Response::HTTP_BAD_REQUEST, ['Cache-Control' => 'no-store']);
     }
 
     private function apply(RequestEvent $event, RateLimitEnforcementStage $stage): void
@@ -86,5 +114,10 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
     private function enabledForRequest(?string $testOptIn): bool
     {
         return 'test' !== $this->environment || '1' === $testOptIn;
+    }
+
+    private function setupCompleted(): bool
+    {
+        return $this->setupCompletionMarker->isComplete($this->projectDir, $this->environment);
     }
 }

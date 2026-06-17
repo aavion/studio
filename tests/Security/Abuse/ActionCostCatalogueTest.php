@@ -36,7 +36,12 @@ final class ActionCostCatalogueTest extends TestCase
         $probe = $catalogue->costFor($classifier->classify(Request::create('/.env')));
         $apiWrite = $catalogue->costFor($classifier->classify(Request::create('/api/v1/content/items', 'POST')));
         $adminApiWrite = $catalogue->costFor($classifier->classify(Request::create('/api/v1/admin/operations/cleanup', 'POST')));
-        $setupApply = $catalogue->costFor($classifier->classify(Request::create('/setup', 'POST')));
+        $setupWizard = $catalogue->costFor($classifier->classify(Request::create('/setup/database', 'POST', [
+            '_setup_action' => 'test_database',
+        ])));
+        $setupApply = $catalogue->costFor($classifier->classify(Request::create('/setup/review', 'POST', [
+            '_setup_action' => 'apply',
+        ])));
 
         self::assertSame('suspicious_probe', $probe->bucketFamily());
         self::assertSame(10, $probe->credits());
@@ -44,6 +49,8 @@ final class ActionCostCatalogueTest extends TestCase
         self::assertSame(5, $apiWrite->credits());
         self::assertSame('admin_mutation', $adminApiWrite->bucketFamily());
         self::assertSame(8, $adminApiWrite->credits());
+        self::assertSame('setup', $setupWizard->bucketFamily());
+        self::assertSame(1, $setupWizard->credits());
         self::assertSame('setup_apply', $setupApply->bucketFamily());
         self::assertSame(8, $setupApply->credits());
     }
