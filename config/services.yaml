@@ -179,6 +179,10 @@ services:
         arguments:
             $sessionFactory: '@session.factory'
 
+    App\Command\RenderRouteCommand:
+        arguments:
+            $environment: '%kernel.environment%'
+
     App\Setup\SetupRedirectSubscriber:
         arguments:
             $projectDir: '%kernel.project_dir%'

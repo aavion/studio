@@ -89,6 +89,9 @@
 - Hardened review-sensitive rate enforcement details: `/cron/run` is no longer Owner-exempt and now uses explicit scheduler intervals (`standard` 1/minute, `strict` 1/15 minutes, `panic` 1/hour), rate-policy descriptors are generated from user-visible action counts plus unique action-cost multipliers with a single-action profile floor, limiter degradation diagnostics report through the Message layer, and shared rendered HTTP error pages set `no-store` centrally.
 - Verification: focused PHPUnit for action-cost catalogue, rate-limit catalogue/enforcer/reset, public error pages, rate-limit response controllers, and message catalogues; full `php bin/phpunit` passed with 1431 tests and 9422 assertions.
 - Adjusted suspicious-probe profile scaling so strict/panic extend the probe window while the single-action credit floor prevents Symfony limiter consume failures below the probe action cost.
+- Extended `render:route` with request-header input and response-header output, then added CLI route-render coverage proving repeated `/cron/run` renders with Owner context and mutable Owner API key receive scheduler `429` with `Retry-After` and `no-store` instead of bypassing through the Owner exemption.
+- Added a production-environment guard to `render:route` so the debug renderer fails closed in `APP_ENV=prod` and remains available only for development/test diagnostics.
+- Verification: focused `render:route`, scheduler controller, and rate-limit enforcer PHPUnit coverage; `php bin/console lint:container --env=test --no-debug`; `bin/lint --diff`; full `php bin/phpunit` passed with 1435 tests and 9446 assertions.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

@@ -23,7 +23,7 @@ Project-wide developer commands that are useful for agent workflows live outside
 | `bin/lint` | Runs the full project lint suite or focused lint checks. |
 | `bin/lint --diff` | Lints supported files from the current staged and unstaged Git diff when Git and a work tree are available. |
 | `bin/lint --staged` | Lints supported files staged for commit when Git and a work tree are available. |
-| `php bin/console render:route /path` | Renders a route through the Symfony kernel with optional debug `--role`, `--user`, `--method`, `--host`, `--https`, and `--setup-completed=0` context. |
+| `php bin/console render:route /path` | Renders a route through the Symfony kernel in development/test environments with optional debug `--role`, `--user`, `--method`, `--host`, `--https`, `--header`, `--include-headers`, and `--setup-completed=0` context. |
 
 ## Cleanup notes
 

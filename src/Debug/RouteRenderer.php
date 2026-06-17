@@ -116,7 +116,7 @@ final readonly class RouteRenderer
 
     private function createRequest(RouteRenderOptions $options): Request
     {
-        return Request::create(
+        $request = Request::create(
             $this->normalizePath($options->path),
             strtoupper($options->method),
             [],
@@ -127,6 +127,12 @@ final readonly class RouteRenderer
                 'HTTPS' => $options->secure ? 'on' : 'off',
             ],
         );
+
+        foreach ($options->headers as $name => $values) {
+            $request->headers->set($name, $values);
+        }
+
+        return $request;
     }
 
     private function resolveUser(RouteRenderOptions $options): ?UserAccount

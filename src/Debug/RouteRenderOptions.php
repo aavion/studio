@@ -16,6 +16,8 @@ final readonly class RouteRenderOptions
         public bool $setupCompleted = true,
         public string $host = 'localhost',
         public bool $secure = false,
+        /** @var array<string, list<string>> */
+        public array $headers = [],
     ) {
     }
 }
