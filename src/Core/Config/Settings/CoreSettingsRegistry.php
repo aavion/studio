@@ -14,6 +14,8 @@ use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
+use App\Security\RateLimit\RateLimitPolicyCatalogue;
+use App\Security\RateLimit\RateLimitProfile;
 use App\Security\UserFlowConfig;
 use App\View\SystemPackageMetadataProvider;
 
@@ -84,6 +86,14 @@ final readonly class CoreSettingsRegistry
                 'persist' => false,
                 'access_feature' => 'admin.settings.security',
             ], sortOrder: 30),
+            new CoreSettingDefinition('security', RateLimitPolicyCatalogue::MODE_KEY, 'admin.settings.fields.rate_limit_mode.label', RateLimitProfile::Standard->value, ConfigValueType::String, FormInputType::Select, options: [
+                RateLimitProfile::Off->value => 'admin.settings.options.rate_limit_mode.off',
+                RateLimitProfile::Standard->value => 'admin.settings.options.rate_limit_mode.standard',
+                RateLimitProfile::Strict->value => 'admin.settings.options.rate_limit_mode.strict',
+                RateLimitProfile::Panic->value => 'admin.settings.options.rate_limit_mode.panic',
+            ], validation: ['required' => true], metadata: [
+                'access_feature' => 'admin.settings.security',
+            ], sortOrder: 35),
             new CoreSettingDefinition('security', ConfigAuditLogPolicy::ENABLED_KEY, 'admin.settings.fields.audit_enabled.label', true, ConfigValueType::Boolean, metadata: [
                 'access_feature' => 'admin.settings.security',
             ], sortOrder: 40),

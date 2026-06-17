@@ -908,6 +908,8 @@ admin:
         label: 'Captcha-Provider'
       captcha_preview:
         label: 'Captcha-Vorschau'
+      rate_limit_mode:
+        label: 'Ratenbegrenzung'
       audit_enabled:
         label: 'Audit-Logging aktivieren'
       audit_events:
@@ -974,6 +976,11 @@ admin:
         setup_warnings: 'Setup-Warnungen'
       captcha:
         none: 'Kein Captcha-Provider'
+      rate_limit_mode:
+        off: 'Aus'
+        standard: 'Standard'
+        strict: 'Strikt'
+        panic: 'Panic'
       audit:
         authentication: 'Authentifizierungsereignisse'
         backend_actions: 'Backend-Wartungsaktionen'

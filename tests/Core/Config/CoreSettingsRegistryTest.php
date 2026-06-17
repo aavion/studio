@@ -17,6 +17,8 @@ use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
+use App\Security\RateLimit\RateLimitPolicyCatalogue;
+use App\Security\RateLimit\RateLimitProfile;
 use App\Security\UserFlowConfig;
 use App\View\SystemPackageMetadataProvider;
 use PHPUnit\Framework\TestCase;
@@ -62,17 +64,27 @@ final class CoreSettingsRegistryTest extends TestCase
             'security.captcha.enabled',
             'security.captcha.provider',
             'security.captcha.preview',
+            RateLimitPolicyCatalogue::MODE_KEY,
             ConfigAuditLogPolicy::ENABLED_KEY,
             ConfigAuditLogPolicy::EVENTS_KEY,
             DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY,
             SuspiciousProbePathMatcher::PATTERNS_KEY,
         ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $security));
         self::assertSame(FormInputType::Captcha, $security[2]->formField()->inputType());
-        self::assertSame(FormInputType::MultiSelect, $security[4]->formField()->inputType());
-        self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $security[4]->defaultValue());
-        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, $security[5]->defaultValue());
-        self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $security[6]->defaultValue());
-        self::assertSame(FormInputType::Textarea, $security[6]->formField()->inputType());
+        self::assertSame(FormInputType::Select, $security[3]->formField()->inputType());
+        self::assertSame(RateLimitProfile::Standard->value, $security[3]->defaultValue());
+        self::assertSame([
+            RateLimitProfile::Off->value => 'admin.settings.options.rate_limit_mode.off',
+            RateLimitProfile::Standard->value => 'admin.settings.options.rate_limit_mode.standard',
+            RateLimitProfile::Strict->value => 'admin.settings.options.rate_limit_mode.strict',
+            RateLimitProfile::Panic->value => 'admin.settings.options.rate_limit_mode.panic',
+        ], $security[3]->formField()->options());
+        self::assertSame('admin.settings.security', $security[3]->metadata()['access_feature']);
+        self::assertSame(FormInputType::MultiSelect, $security[5]->formField()->inputType());
+        self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $security[5]->defaultValue());
+        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, $security[6]->defaultValue());
+        self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $security[7]->defaultValue());
+        self::assertSame(FormInputType::Textarea, $security[7]->formField()->inputType());
 
         self::assertSame([
             DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY,
@@ -130,6 +142,7 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertFalse($provider->defaultValue(MaxMindGeoIpConfig::ENABLED_KEY));
         self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $provider->defaultValue(MaxMindGeoIpConfig::DATABASE_PATH_KEY));
         self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $provider->defaultValue(SuspiciousProbePathMatcher::PATTERNS_KEY));
+        self::assertSame(RateLimitProfile::Standard->value, $provider->defaultValue(RateLimitPolicyCatalogue::MODE_KEY));
         self::assertSame((new AdminFeatureDefaults())->overrides(), $provider->defaultValue(AdminFeatureOverrideStore::CONFIG_KEY));
         self::assertFalse($provider->hasDefault('security.captcha.preview'));
         self::assertNull($provider->defaultValue('security.captcha.preview'));
