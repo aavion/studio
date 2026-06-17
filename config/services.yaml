@@ -260,6 +260,10 @@ services:
         arguments:
             $providers: !tagged_iterator { tag: system.acl_group_reference_provider }
 
+    App\Security\RateLimit\RateLimitLimiterFactory:
+        arguments:
+            $cachePool: '@cache.rate_limiter'
+
     App\Localization\TranslationLanguageCatalog:
         arguments:
             $projectDir: '%kernel.project_dir%'

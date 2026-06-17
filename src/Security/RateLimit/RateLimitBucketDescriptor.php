@@ -72,4 +72,22 @@ final readonly class RateLimitBucketDescriptor
             $this->resettable,
         );
     }
+
+    public function withCapacityMultiplier(int $multiplier): self
+    {
+        if ($multiplier <= 1) {
+            return $this;
+        }
+
+        return new self(
+            $this->name,
+            $this->bucketFamily,
+            $this->limit * $multiplier,
+            $this->windowSeconds,
+            $this->diagnosticsLabel,
+            $this->profileScalable,
+            $this->retryAfterFloorSeconds,
+            $this->resettable,
+        );
+    }
 }

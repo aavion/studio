@@ -16,6 +16,7 @@ final readonly class ActionCostCatalogue
             RequestIntent::Login => new ActionCost('login', 1),
             RequestIntent::Registration => new ActionCost('registration', 5),
             RequestIntent::PasswordReset => new ActionCost('password_reset', 3),
+            RequestIntent::CaptchaFailure => new ActionCost('captcha_failure', 1),
             RequestIntent::Contact => new ActionCost('contact', 3),
             RequestIntent::SchedulerTrigger => new ActionCost('scheduler', 1),
             RequestIntent::SetupApply => new ActionCost('setup_apply', 8),
