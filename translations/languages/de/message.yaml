@@ -119,6 +119,9 @@ message:
       completed: 'GeoIP2-Datenbank wurde unter "%path%" aktualisiert.'
   account_app_secret_rotation:
     manual_owner_reset_required: 'APP_SECRET-Rotation-Recovery konnte nicht alle Owner-Reset-Links zustellen. Nutze die Emergency-Recovery-Datei, sofern vorhanden, oder führe "%command%" für die gelisteten Owner manuell aus.'
+  rate_limit:
+    exceeded: 'Zu viele Anfragen. Bitte warte einen Moment, bevor du es erneut versuchst.'
+    request_rejected: 'Die Anfrage konnte nicht akzeptiert werden.'
   event:
     hook:
       invalid: 'Event-Hook "%event%" ist keine gültige öffentliche Hook-Definition.'

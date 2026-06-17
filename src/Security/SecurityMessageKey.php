@@ -39,4 +39,6 @@ final class SecurityMessageKey
     public const API_KEY_PERMISSION_DENIED = 'message.api_key.permission.denied';
     public const API_KEY_PERMISSION_WRITE_REQUIRED = 'message.api_key.permission.write_required';
     public const API_KEY_PERMISSION_REVOKED = 'message.api_key.permission.revoked';
+    public const RATE_LIMIT_EXCEEDED = 'message.rate_limit.exceeded';
+    public const RATE_LIMIT_REQUEST_REJECTED = 'message.rate_limit.request_rejected';
 }

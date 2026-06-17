@@ -21,4 +21,6 @@ final class SecurityMessageCode
     public const API_KEY_PERMISSION_DENIED = 'api_key.permission_denied';
     public const API_KEY_PERMISSION_WRITE_REQUIRED = 'api_key.permission_write_required';
     public const API_KEY_PERMISSION_REVOKED = 'api_key.permission_revoked';
+    public const RATE_LIMIT_EXCEEDED = 'rate_limit.exceeded';
+    public const RATE_LIMIT_REQUEST_REJECTED = 'rate_limit.request_rejected';
 }

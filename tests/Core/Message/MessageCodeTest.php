@@ -105,7 +105,7 @@ final class MessageCodeTest extends TestCase
             SystemSecurityMessageCode::class => ['SYSTEM_'],
             TranslationMessageCode::class => ['TRANSLATION_'],
             SchedulerMessageCode::class => ['SCHEDULER_'],
-            SecurityMessageCode::class => ['ACL_', 'USER_', 'ACCOUNT_', 'API_KEY_'],
+            SecurityMessageCode::class => ['ACL_', 'USER_', 'ACCOUNT_', 'API_KEY_', 'RATE_LIMIT_'],
             SetupMessageCode::class => ['SETUP_'],
             ViewMessageCode::class => ['VIEW_'],
         ];
@@ -136,7 +136,7 @@ final class MessageCodeTest extends TestCase
             SystemSecurityMessageCode::class => ['system.'],
             TranslationMessageCode::class => ['translation.'],
             SchedulerMessageCode::class => ['scheduler.'],
-            SecurityMessageCode::class => ['acl.', 'user.', 'account.', 'api_key.'],
+            SecurityMessageCode::class => ['acl.', 'user.', 'account.', 'api_key.', 'rate_limit.'],
             SetupMessageCode::class => ['setup.'],
             ViewMessageCode::class => ['view.'],
         ];
