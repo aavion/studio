@@ -21,11 +21,11 @@ final readonly class RateLimitSubjectSelector
             return [];
         }
 
-        $keys = [$this->key($descriptor, $primary)];
+        $keys = [$this->subjectKey($descriptor, $primary)];
         $ipBucket = $subjects->first(AbuseSubjectType::IpBucket);
 
         if ($ipBucket instanceof AbuseSubject && $this->includeIpSecondary($descriptor, $subjects)) {
-            $keys[] = $this->key($descriptor, $ipBucket);
+            $keys[] = $this->subjectKey($descriptor, $ipBucket);
         }
 
         return array_values(array_unique($keys));
@@ -105,7 +105,7 @@ final readonly class RateLimitSubjectSelector
         ], true);
     }
 
-    private function key(RateLimitBucketDescriptor $descriptor, AbuseSubject $subject): string
+    public function subjectKey(RateLimitBucketDescriptor $descriptor, AbuseSubject $subject): string
     {
         return $descriptor->name().':'.$subject->type()->value.':'.$subject->identifier();
     }
