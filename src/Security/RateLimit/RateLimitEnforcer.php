@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Security\RateLimit;
 
 use App\Core\Config\Config;
+use App\Core\Message\Message;
+use App\Core\Message\MessageReporterInterface;
 use App\Security\Abuse\AbuseRequestInspector;
 use App\Security\Abuse\AbuseRequestProfile;
 use App\Security\Abuse\AbuseSubjectResolution;
@@ -12,7 +14,8 @@ use App\Security\Abuse\AbuseSubjectType;
 use App\Security\Abuse\ActionCost;
 use App\Security\Abuse\RequestFamily;
 use App\Security\Abuse\RequestIntent;
-use Psr\Log\LoggerInterface;
+use App\Security\SecurityMessageCode;
+use App\Security\SecurityMessageKey;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class RateLimitEnforcer
@@ -23,7 +26,7 @@ final readonly class RateLimitEnforcer
         private RateLimitPolicyCatalogue $catalogue,
         private RateLimitSubjectSelector $subjects,
         private RateLimitLimiterFactory $limiters,
-        private LoggerInterface $logger,
+        private MessageReporterInterface $messages,
     ) {
     }
 
@@ -36,23 +39,23 @@ final readonly class RateLimitEnforcer
         $mode = RateLimitProfile::fromMixed($this->config->get(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Standard->value));
 
         if ($profile->suspiciousProbe()) {
-            return $this->checkSuspiciousProbe($profile, $subjectResolution, $mode);
+            return $this->checkSuspiciousProbe($profile, $subjectResolution, $cost, $mode);
         }
 
-        if (!$mode->consumesLimiterStorage() || !$cost->ordinaryEnforcement() || $this->subjects->hasOwner($subjectResolution)) {
+        if (!$mode->consumesLimiterStorage() || !$cost->ordinaryEnforcement() || $this->isOwnerExempt($profile, $subjectResolution, $cost)) {
             return RateLimitCheckResult::allow();
         }
 
         return $this->consume($profile, $subjectResolution, $cost, $mode);
     }
 
-    private function checkSuspiciousProbe(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, RateLimitProfile $mode): RateLimitCheckResult
+    private function checkSuspiciousProbe(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost, RateLimitProfile $mode): RateLimitCheckResult
     {
         if (!$mode->consumesLimiterStorage()) {
             return RateLimitCheckResult::blockSuspiciousProbe();
         }
 
-        $result = $this->consume($profile, $subjects, new ActionCost('suspicious_probe', 1), $mode);
+        $result = $this->consume($profile, $subjects, $cost, $mode);
 
         return RateLimitCheckResult::blockSuspiciousProbe($result->storageDegraded());
     }
@@ -71,12 +74,7 @@ final readonly class RateLimitEnforcer
                 }
             }
         } catch (\Throwable $exception) {
-            $this->logger->warning('security.rate_limiter.degraded', [
-                'profile' => $mode->value,
-                'intent' => $profile->intent()->value,
-                'family' => $profile->family()->value,
-                'exception_class' => $exception::class,
-            ]);
+            $this->reportDegradedConsume($profile, $mode, $exception);
 
             return RateLimitCheckResult::allow(storageDegraded: true);
         }
@@ -131,5 +129,29 @@ final readonly class RateLimitEnforcer
         $floor = $descriptor->retryAfterFloorSeconds();
 
         return null === $floor ? $seconds : max($seconds, $floor);
+    }
+
+    private function isOwnerExempt(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost): bool
+    {
+        if (RequestFamily::Scheduler === $profile->family() || 'scheduler' === $cost->bucketFamily()) {
+            return false;
+        }
+
+        return $this->subjects->hasOwner($subjects);
+    }
+
+    private function reportDegradedConsume(AbuseRequestProfile $profile, RateLimitProfile $mode, \Throwable $exception): void
+    {
+        $context = [
+            'profile' => $mode->value,
+            'intent' => $profile->intent()->value,
+            'family' => $profile->family()->value,
+            'exception_class' => $exception::class,
+        ];
+
+        $this->messages->report(
+            Message::warning(SecurityMessageCode::RATE_LIMIT_STORAGE_DEGRADED, SecurityMessageKey::RATE_LIMIT_STORAGE_DEGRADED, context: $context),
+            ['operation' => 'security.rate_limit.consume'],
+        );
     }
 }

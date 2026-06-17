@@ -47,4 +47,17 @@ final class ActionCostCatalogueTest extends TestCase
         self::assertSame('setup_apply', $setupApply->bucketFamily());
         self::assertSame(8, $setupApply->credits());
     }
+
+    public function testItExposesUniqueBucketFamilyCostsForPolicyBudgets(): void
+    {
+        $catalogue = new ActionCostCatalogue();
+        $costs = $catalogue->uniqueCreditsByBucketFamily();
+
+        self::assertSame(5, $costs['registration']);
+        self::assertSame(3, $costs['password_reset']);
+        self::assertSame(5, $costs['api_write']);
+        self::assertSame(10, $costs['suspicious_probe']);
+        self::assertArrayNotHasKey('live_api', $costs);
+        self::assertArrayNotHasKey('api_preflight', $costs);
+    }
 }

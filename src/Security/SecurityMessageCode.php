@@ -23,4 +23,6 @@ final class SecurityMessageCode
     public const API_KEY_PERMISSION_REVOKED = 'api_key.permission_revoked';
     public const RATE_LIMIT_EXCEEDED = 'rate_limit.exceeded';
     public const RATE_LIMIT_REQUEST_REJECTED = 'rate_limit.request_rejected';
+    public const RATE_LIMIT_STORAGE_DEGRADED = 'rate_limit.storage_degraded';
+    public const RATE_LIMIT_RESET_DEGRADED = 'rate_limit.reset_degraded';
 }

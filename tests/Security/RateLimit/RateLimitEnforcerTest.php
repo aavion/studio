@@ -17,13 +17,13 @@ use App\Security\RateLimit\RateLimitLimiterFactory;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\RateLimit\RateLimitProfile;
 use App\Security\RateLimit\RateLimitSubjectSelector;
+use App\Security\SecurityMessageCode;
 use App\Security\UserRole;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
-use Psr\Log\NullLogger;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
@@ -44,10 +44,12 @@ final class RateLimitEnforcerTest extends TestCase
 
     public function testStorageFailureFailsOpenWithDiagnosticsFlag(): void
     {
-        $result = $this->enforcer(cachePool: new FailingCachePool())->check($this->request('/home'));
+        $messages = new RecordingRateLimitMessageReporter();
+        $result = $this->enforcer(cachePool: new FailingCachePool(), messages: $messages)->check($this->request('/home'));
 
         self::assertTrue($result->isAllowed());
         self::assertTrue($result->storageDegraded());
+        self::assertSame(SecurityMessageCode::RATE_LIMIT_STORAGE_DEGRADED, $messages->records[0]['message']->code());
     }
 
     public function testLoginWorkflowRejectsBeforeWebsiteBudget(): void
@@ -89,6 +91,33 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertSame('security.rate.website_burst', $result->diagnosticsLabel());
     }
 
+    public function testSchedulerRequestsAreNotOwnerExempt(): void
+    {
+        $tokenStorage = $this->tokenStorage(UserRole::Owner);
+        $enforcer = $this->enforcer(tokenStorage: $tokenStorage);
+
+        self::assertTrue($enforcer->check($this->request('/cron/run', 'POST'))->isAllowed());
+
+        $result = $enforcer->check($this->request('/cron/run', 'POST'));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.scheduler', $result->diagnosticsLabel());
+    }
+
+    public function testStrictSchedulerIntervalRejectsSecondRunWithinFifteenMinutes(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Strict->value, ConfigValueType::String);
+        $enforcer = $this->enforcer(config: $config);
+
+        self::assertTrue($enforcer->check($this->request('/cron/run', 'POST'))->isAllowed());
+
+        $result = $enforcer->check($this->request('/cron/run', 'POST'));
+
+        self::assertFalse($result->isAllowed());
+        self::assertGreaterThanOrEqual(1, $result->retryAfterSeconds() ?? 0);
+    }
+
     public function testSuspiciousProbeStillBlocksInOffModeWithoutStorage(): void
     {
         $config = new Config($this->connection());
@@ -102,7 +131,7 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertFalse($result->storageDegraded());
     }
 
-    private function enforcer(?Config $config = null, ?TokenStorage $tokenStorage = null, ?CacheItemPoolInterface $cachePool = null): RateLimitEnforcer
+    private function enforcer(?Config $config = null, ?TokenStorage $tokenStorage = null, ?CacheItemPoolInterface $cachePool = null, ?RecordingRateLimitMessageReporter $messages = null): RateLimitEnforcer
     {
         $tokenStorage ??= new TokenStorage();
         $inspector = new AbuseRequestInspector(
@@ -117,7 +146,7 @@ final class RateLimitEnforcerTest extends TestCase
             new RateLimitPolicyCatalogue(),
             new RateLimitSubjectSelector(),
             new RateLimitLimiterFactory($cachePool ?? new ArrayAdapter()),
-            new NullLogger(),
+            $messages ?? new RecordingRateLimitMessageReporter(),
         );
     }
 

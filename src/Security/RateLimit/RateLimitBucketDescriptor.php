@@ -15,6 +15,7 @@ final readonly class RateLimitBucketDescriptor
         private bool $profileScalable = true,
         private ?int $retryAfterFloorSeconds = null,
         private bool $resettable = false,
+        private int $minimumLimit = 1,
     ) {
     }
 
@@ -53,6 +54,11 @@ final readonly class RateLimitBucketDescriptor
         return $this->resettable;
     }
 
+    public function minimumLimit(): int
+    {
+        return $this->minimumLimit;
+    }
+
     public function scaled(RateLimitProfile $profile): self
     {
         if (!$this->profileScalable || RateLimitProfile::Standard === $profile || RateLimitProfile::Off === $profile) {
@@ -62,7 +68,7 @@ final readonly class RateLimitBucketDescriptor
         return new self(
             $this->name,
             $this->bucketFamily,
-            max(1, (int) floor($this->limit * $profile->capacityMultiplier())),
+            max($this->minimumLimit, (int) floor($this->limit * $profile->capacityMultiplier())),
             max(1, (int) ceil($this->windowSeconds * $profile->windowMultiplier())),
             $this->diagnosticsLabel,
             $this->profileScalable,
@@ -70,6 +76,22 @@ final readonly class RateLimitBucketDescriptor
                 ? null
                 : max(1, (int) ceil($this->retryAfterFloorSeconds * $profile->retryAfterMultiplier())),
             $this->resettable,
+            $this->minimumLimit,
+        );
+    }
+
+    public function withWindowSeconds(int $windowSeconds): self
+    {
+        return new self(
+            $this->name,
+            $this->bucketFamily,
+            $this->limit,
+            max(1, $windowSeconds),
+            $this->diagnosticsLabel,
+            $this->profileScalable,
+            $this->retryAfterFloorSeconds,
+            $this->resettable,
+            $this->minimumLimit,
         );
     }
 
@@ -88,6 +110,7 @@ final readonly class RateLimitBucketDescriptor
             $this->profileScalable,
             $this->retryAfterFloorSeconds,
             $this->resettable,
+            $this->minimumLimit * $multiplier,
         );
     }
 }

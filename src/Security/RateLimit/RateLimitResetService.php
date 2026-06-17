@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Security\RateLimit;
 
 use App\Core\Config\Config;
+use App\Core\Message\Message;
+use App\Core\Message\MessageReporterInterface;
 use App\Security\Abuse\AbuseRequestInspector;
 use App\Security\Abuse\AbuseSubject;
 use App\Security\Abuse\AbuseSubjectType;
-use Psr\Log\LoggerInterface;
+use App\Security\SecurityMessageCode;
+use App\Security\SecurityMessageKey;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class RateLimitResetService
@@ -19,7 +22,7 @@ final readonly class RateLimitResetService
         private RateLimitPolicyCatalogue $catalogue,
         private RateLimitSubjectSelector $subjects,
         private RateLimitLimiterFactory $limiters,
-        private LoggerInterface $logger,
+        private MessageReporterInterface $messages,
     ) {
     }
 
@@ -80,12 +83,22 @@ final readonly class RateLimitResetService
 
             return true;
         } catch (\Throwable $exception) {
-            $this->logger->warning('security.rate_limiter.reset_degraded', [
-                'bucket' => $descriptor->diagnosticsLabel(),
-                'exception_class' => $exception::class,
-            ]);
+            $this->reportDegradedReset($descriptor, $exception);
 
             return false;
         }
+    }
+
+    private function reportDegradedReset(RateLimitBucketDescriptor $descriptor, \Throwable $exception): void
+    {
+        $context = [
+            'bucket' => $descriptor->diagnosticsLabel(),
+            'exception_class' => $exception::class,
+        ];
+
+        $this->messages->report(
+            Message::warning(SecurityMessageCode::RATE_LIMIT_RESET_DEGRADED, SecurityMessageKey::RATE_LIMIT_RESET_DEGRADED, context: $context),
+            ['operation' => 'security.rate_limit.reset'],
+        );
     }
 }

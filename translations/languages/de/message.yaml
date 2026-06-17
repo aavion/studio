@@ -122,6 +122,8 @@ message:
   rate_limit:
     exceeded: 'Zu viele Anfragen. Bitte warte einen Moment, bevor du es erneut versuchst.'
     request_rejected: 'Die Anfrage konnte nicht akzeptiert werden.'
+    storage_degraded: 'Rate-Limit-Speicher war nicht verfügbar; die Anfrage wurde zugelassen.'
+    reset_degraded: 'Rate-Limit-Reset-Speicher war nicht verfügbar.'
   event:
     hook:
       invalid: 'Event-Hook "%event%" ist keine gültige öffentliche Hook-Definition.'

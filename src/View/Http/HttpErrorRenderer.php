@@ -118,7 +118,10 @@ final readonly class HttpErrorRenderer
      */
     private function renderTemplate(string $template, array $variables, int $statusCode): Response
     {
-        return new Response($this->twig->render($template, $variables), $statusCode);
+        $response = new Response($this->twig->render($template, $variables), $statusCode);
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
     }
 
     /**

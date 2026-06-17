@@ -17,12 +17,12 @@ use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\RateLimit\RateLimitProfile;
 use App\Security\RateLimit\RateLimitResetService;
 use App\Security\RateLimit\RateLimitSubjectSelector;
+use App\Security\SecurityMessageCode;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
-use Psr\Log\NullLogger;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
@@ -63,10 +63,20 @@ final class RateLimitResetServiceTest extends TestCase
         self::assertFalse($resets->resetVerifiedCaptchaFailure($this->request('/captcha/submit', 'POST'), 'turnstile', true));
     }
 
+    public function testResetFailureReportsThroughMessageLayer(): void
+    {
+        $messages = new RecordingRateLimitMessageReporter();
+        [, $resets] = $this->services(factory: new RateLimitLimiterFactory(new ResetFailingCachePool()), messages: $messages);
+
+        self::assertFalse($resets->resetVerifiedCaptchaFailure($this->request('/captcha/submit', 'POST'), 'turnstile', true));
+        self::assertSame(SecurityMessageCode::RATE_LIMIT_RESET_DEGRADED, $messages->records[0]['message']->code());
+        self::assertSame('security.rate_limit.reset', $messages->records[0]['context']['operation']);
+    }
+
     /**
      * @return array{0: RateLimitEnforcer, 1: RateLimitResetService}
      */
-    private function services(?Config $config = null, ?RateLimitLimiterFactory $factory = null): array
+    private function services(?Config $config = null, ?RateLimitLimiterFactory $factory = null, ?RecordingRateLimitMessageReporter $messages = null): array
     {
         $inspector = new AbuseRequestInspector(
             new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret'),
@@ -77,11 +87,11 @@ final class RateLimitResetServiceTest extends TestCase
         $selector = new RateLimitSubjectSelector();
         $factory ??= new RateLimitLimiterFactory(new ArrayAdapter());
         $config ??= new Config($this->connection());
-        $logger = new NullLogger();
+        $messages ??= new RecordingRateLimitMessageReporter();
 
         return [
-            new RateLimitEnforcer($inspector, $config, $catalogue, $selector, $factory, $logger),
-            new RateLimitResetService($inspector, $config, $catalogue, $selector, $factory, $logger),
+            new RateLimitEnforcer($inspector, $config, $catalogue, $selector, $factory, $messages),
+            new RateLimitResetService($inspector, $config, $catalogue, $selector, $factory, $messages),
         ];
     }
 

@@ -81,7 +81,7 @@ These are first implementation defaults. Branches may adjust them only with test
 
 Rate-limit implementation must keep action costs separate from bucket budgets. The action-cost catalogue assigns stable semantic costs to request intents, while a dedicated rate-limit policy catalogue owns bucket descriptors, capacities, windows, TTL/retry metadata, reset eligibility, diagnostics labels, and profile scaling. This keeps later tuning centralized and allows future config-backed thresholds to attach at the policy-catalogue boundary without changing classifiers, subscribers, or controllers.
 
-Descriptor capacities are implementation credit budgets, not necessarily the raw action count shown in the policy table. When an intent costs more than one credit, the descriptor capacity must be high enough for the documented number of attempts so Symfony `consume(n)` never asks a limiter to consume more tokens than the bucket can hold and accidentally turns a valid policy into fail-open degradation.
+Descriptor capacities are implementation credit budgets generated from the action counts shown in the policy table. When a bucket family has one unique action-cost value, the rate-policy catalogue multiplies the documented action count by that cost so Symfony `consume(n)` never asks a limiter to consume more tokens than the bucket can hold. Strict and panic profile scaling keeps a per-bucket minimum at that single-action cost, so even the strongest profile still allows one legitimate request per configured window instead of degrading open.
 
 The first Admin-facing rate setting is one Owner-gated Security setting with four modes:
 
@@ -106,7 +106,7 @@ The first Admin-facing rate setting is one Owner-gated Security setting with fou
 | Versioned API read | 600 safe requests per minute | API key fingerprint or visitor/anonymous subject | No success reset |
 | Versioned API write | 60 mutating requests per minute | API key fingerprint | No success reset |
 | Public anonymous API read | 120 safe requests per minute | Visitor ID; IP bucket as secondary signal | No success reset |
-| Scheduler trigger | 5 trigger attempts per minute and 60 per hour | API key fingerprint plus scheduler endpoint subject | No success reset |
+| Scheduler trigger | Standard: 1 trigger per minute; Strict: 1 trigger per 15 minutes; Panic: 1 trigger per hour | API key fingerprint plus scheduler endpoint subject | No success reset |
 | Suspicious probes | 1 high-signal probe per 10 minutes | Visitor ID plus IP bucket | No success reset; return generic `400`; may drain suspicious buckets |
 
 Website global buckets count application/browser route handling, not static assets, generated assets, or `/api/live/**` polling. The first implementation should enforce both deliberate website buckets: the burst bucket catches very fast click/submit loops, while the sustained bucket catches automated crawling that stays just below the per-minute limit.
@@ -115,13 +115,13 @@ Website global buckets count application/browser route handling, not static asse
 
 Turbo/browser prefetch for safe `GET` requests should not spend the same budget as deliberate navigation. Use a dedicated prefetch observation bucket or lower-confidence passive signal weighting; do not let spoofable prefetch headers bypass authentication, authorization, CSRF, or domain validation. Expensive or side-effect-adjacent links should disable prefetch rather than relying on rate-limit forgiveness.
 
-Scheduler trigger limits must support a normal once-per-minute external cron. The scheduled tasks still use internal due-state logic, run locks, and task policies, so frequent legitimate scheduler calls are expected and should not be treated as abuse by themselves.
+Scheduler trigger limits must support a normal once-per-minute external cron in `standard`. `strict` and `panic` intentionally control the allowed external trigger interval instead of using the ordinary profile multiplier logic: `strict` allows one trigger per 15 minutes, and `panic` allows one trigger per hour. The scheduled tasks still use internal due-state logic, run locks, and task policies, so legitimate scheduler calls are expected and should not be treated as abuse by themselves.
 
 Registered authenticated users receive higher limits than anonymous visitors where the workflow is not already account-specific. The first default is a 2x multiplier for deliberate website navigation and public-read style API usage after the request resolves to an active authenticated user. Login, registration, password-reset, captcha, scheduler, and suspicious-probe policies keep their explicit workflow limits.
 
-Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner session are exempt from ordinary rate-limit rejection. They may still record diagnostics and passive signals, but the request path must preserve Owner recovery and administrative operation access.
+Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner session are exempt from ordinary rate-limit rejection, except for the scheduler trigger surface where a mutable Owner API key is the expected credential and the configured scheduler interval must still be enforced. Owner traffic may still record diagnostics and passive signals, but the request path must preserve Owner recovery and administrative operation access outside that explicit scheduler exception.
 
-Limiter storage degradation is fail-open by policy. If limiter storage, locking, or consume/reset operations fail, the facade should allow the request, emit safe diagnostics where possible, and avoid creating an invisible Owner, login, setup, API, or scheduler lockout.
+Limiter storage degradation is fail-open by policy. If limiter storage, locking, or consume/reset operations fail, the facade should allow the request, emit safe Message-layer diagnostics where possible, and avoid creating an invisible Owner, login, setup, API, or scheduler lockout.
 
 ## Probe Path Policy
 
@@ -139,7 +139,7 @@ Limiter storage degradation is fail-open by policy. If limiter storage, locking,
 - Active temporary bans return a generic `403 Forbidden` by default, also with `Retry-After` when the ban expiry is known. The response must not expose raw reason internals, subject keys, IP data, or bucket names.
 - High-signal probes return generic `400 Bad Request` and must not reveal whether a probed path, file, or package exists.
 - Browser responses use the shared HTML error/recovery renderer. Versioned API, scheduler, and JSON-request responses use the stable JSON error shape for their request family.
-- Security block, recovery, captcha, login, and bypass responses are `no-store` by default.
+- Security block, recovery, captcha, login, and bypass responses are `no-store` by default. Shared rendered HTTP error pages also set `no-store` centrally so customized system error content cannot be cached accidentally.
 - `/api/live/**` should return cheap JSON, token/access checks where needed, `no-store`, and passive signals; it should not enter ordinary website/API `429` rendering.
 
 ## Additional Security Surface Coverage

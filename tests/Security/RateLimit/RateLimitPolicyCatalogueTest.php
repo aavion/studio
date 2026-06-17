@@ -28,7 +28,8 @@ final class RateLimitPolicyCatalogueTest extends TestCase
         self::assertSame(30, $burst->limit());
         self::assertSame(60, $burst->windowSeconds());
         self::assertNotNull($probe);
-        self::assertSame(1, $probe->limit());
+        self::assertSame(10, $probe->limit());
+        self::assertSame(10, $probe->minimumLimit());
         self::assertSame(600, $probe->windowSeconds());
         self::assertNotNull($captcha);
         self::assertTrue($captcha->resettable());
@@ -64,6 +65,49 @@ final class RateLimitPolicyCatalogueTest extends TestCase
         self::assertNotNull($panic);
         self::assertSame($standard->limit(), $panic->limit());
         self::assertSame($standard->windowSeconds(), $panic->windowSeconds());
+    }
+
+    public function testPolicyUsesActionCostsAsCreditMultipliers(): void
+    {
+        $catalogue = new RateLimitPolicyCatalogue();
+
+        $registration = $catalogue->descriptor('registration.hour');
+        $apiWrite = $catalogue->descriptor('api.write');
+
+        self::assertNotNull($registration);
+        self::assertSame(15, $registration->limit());
+        self::assertSame(5, $registration->minimumLimit());
+        self::assertNotNull($apiWrite);
+        self::assertSame(300, $apiWrite->limit());
+        self::assertSame(5, $apiWrite->minimumLimit());
+    }
+
+    public function testProfileScalingKeepsAtLeastOneCostedActionAvailable(): void
+    {
+        $catalogue = new RateLimitPolicyCatalogue();
+
+        foreach ($catalogue->descriptors(RateLimitProfile::Panic) as $descriptor) {
+            self::assertGreaterThanOrEqual($descriptor->minimumLimit(), $descriptor->limit(), $descriptor->name());
+        }
+    }
+
+    public function testSchedulerProfileIntervalsUseExplicitCronPolicy(): void
+    {
+        $catalogue = new RateLimitPolicyCatalogue();
+
+        $standard = $catalogue->descriptor('scheduler.interval', RateLimitProfile::Standard);
+        $strict = $catalogue->descriptor('scheduler.interval', RateLimitProfile::Strict);
+        $panic = $catalogue->descriptor('scheduler.interval', RateLimitProfile::Panic);
+
+        self::assertNotNull($standard);
+        self::assertNotNull($strict);
+        self::assertNotNull($panic);
+        self::assertSame(1, $standard->limit());
+        self::assertSame(60, $standard->windowSeconds());
+        self::assertSame(1, $strict->limit());
+        self::assertSame(900, $strict->windowSeconds());
+        self::assertSame(1, $panic->limit());
+        self::assertSame(3600, $panic->windowSeconds());
     }
 
     public function testOffProfileDoesNotConsumeLimiterStorage(): void
