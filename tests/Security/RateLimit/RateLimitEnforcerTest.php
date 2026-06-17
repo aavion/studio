@@ -4,19 +4,23 @@ declare(strict_types=1);
 
 namespace App\Tests\Security\RateLimit;
 
+use App\Api\Http\ApiRequestContext;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Core\Statistics\VisitorIdGenerator;
+use App\Entity\ApiKey;
 use App\Entity\UserAccount;
 use App\Security\Abuse\AbuseRequestInspector;
 use App\Security\Abuse\AbuseSubjectResolver;
 use App\Security\Abuse\ActionCostCatalogue;
 use App\Security\Abuse\RequestIntentClassifier;
 use App\Security\RateLimit\RateLimitEnforcer;
+use App\Security\RateLimit\RateLimitEnforcementStage;
 use App\Security\RateLimit\RateLimitLimiterFactory;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\RateLimit\RateLimitProfile;
 use App\Security\RateLimit\RateLimitSubjectSelector;
+use App\Security\ApiKeyStatus;
 use App\Security\SecurityMessageCode;
 use App\Security\UserRole;
 use Doctrine\DBAL\Connection;
@@ -88,10 +92,10 @@ final class RateLimitEnforcerTest extends TestCase
     {
         $enforcer = $this->enforcer();
 
-        self::assertTrue($enforcer->check($this->request('/user/login?bypass=1'))->isAllowed());
-        self::assertTrue($enforcer->check($this->request('/user/login?bypass=1'))->isAllowed());
+        self::assertTrue($enforcer->check($this->request('/user/login?bypass=1'), RateLimitEnforcementStage::Ordinary)->isAllowed());
+        self::assertTrue($enforcer->check($this->request('/user/login?bypass=1'), RateLimitEnforcementStage::Ordinary)->isAllowed());
 
-        $result = $enforcer->check($this->request('/user/login?bypass=1'));
+        $result = $enforcer->check($this->request('/user/login?bypass=1'), RateLimitEnforcementStage::Ordinary);
 
         self::assertFalse($result->isAllowed());
         self::assertSame('security.rate.recovery_login', $result->diagnosticsLabel());
@@ -187,6 +191,24 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertGreaterThanOrEqual(1, $result->retryAfterSeconds() ?? 0);
     }
 
+    public function testSchedulerIntervalUsesStableSubmittedCredentialAcrossVisitorChanges(): void
+    {
+        $enforcer = $this->enforcer();
+
+        self::assertTrue($enforcer->check($this->request('/cron/run?auth=scheduler-token', 'GET', [], [
+            'REMOTE_ADDR' => '203.0.113.77',
+            'HTTP_USER_AGENT' => 'SchedulerProbe/1',
+        ]))->isAllowed());
+
+        $result = $enforcer->check($this->request('/cron/run?auth=scheduler-token', 'GET', [], [
+            'REMOTE_ADDR' => '203.0.113.77',
+            'HTTP_USER_AGENT' => 'SchedulerProbe/2',
+        ]));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.scheduler', $result->diagnosticsLabel());
+    }
+
     public function testSuspiciousProbeStillBlocksInOffModeWithoutStorage(): void
     {
         $config = new Config($this->connection());
@@ -198,6 +220,57 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertFalse($result->isAllowed());
         self::assertTrue($result->suspiciousProbe());
         self::assertFalse($result->storageDegraded());
+    }
+
+    public function testAdminAuthFailureBudgetUsesIpSecondaryAcrossVisitorChanges(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Panic->value, ConfigValueType::String);
+        $enforcer = $this->enforcer(config: $config);
+        $result = null;
+
+        for ($i = 0; $i < 8; ++$i) {
+            $result = $enforcer->check($this->request('/api/v1/admin/settings/general', 'PATCH', [], [
+                'REMOTE_ADDR' => '203.0.113.88',
+                'HTTP_USER_AGENT' => 'AdminProbe/'.$i,
+                'HTTP_AUTHORIZATION' => sprintf('Bearer admin%02d.invalid-secret', $i),
+            ]), RateLimitEnforcementStage::AuthenticationFailure);
+        }
+
+        self::assertNotNull($result);
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.admin_mutation', $result->diagnosticsLabel());
+    }
+
+    public function testReadOnlyOwnerApiKeyMutationsAreNotOwnerExempt(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Panic->value, ConfigValueType::String);
+        $enforcer = $this->enforcer(config: $config);
+        $result = null;
+
+        for ($i = 0; $i < 16; ++$i) {
+            $request = $this->request('/api/v1/content/items', 'POST');
+            $this->apiContext(ApiKeyStatus::ReadOnly, UserRole::Owner)->attachTo($request);
+            $result = $enforcer->check($request, RateLimitEnforcementStage::Ordinary);
+        }
+
+        self::assertNotNull($result);
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.api_write', $result->diagnosticsLabel());
+    }
+
+    public function testReadWriteOwnerApiKeyMutationsRemainOwnerExempt(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Panic->value, ConfigValueType::String);
+        $enforcer = $this->enforcer(config: $config);
+
+        for ($i = 0; $i < 20; ++$i) {
+            $request = $this->request('/api/v1/content/items', 'POST');
+            $this->apiContext(ApiKeyStatus::ReadWrite, UserRole::Owner)->attachTo($request);
+            self::assertTrue($enforcer->check($request, RateLimitEnforcementStage::Ordinary)->isAllowed());
+        }
     }
 
     public function testRepresentativeRequestPathsReachExpectedBuckets(): void
@@ -286,6 +359,26 @@ final class RateLimitEnforcerTest extends TestCase
         $tokenStorage->setToken(new UsernamePasswordToken($user, 'main', $user->getRoles()));
 
         return $tokenStorage;
+    }
+
+    private function apiContext(ApiKeyStatus $status, UserRole $role): ApiRequestContext
+    {
+        $user = new UserAccount(
+            '99999999-0000-7000-8000-000000000101',
+            'rate_limit_api_'.$role->value,
+            'rate-limit-api-'.$role->value.'@example.test',
+            'hash',
+            role: $role,
+        );
+
+        return ApiRequestContext::fromApiKey(new ApiKey(
+            '99999999-0000-7000-8000-000000000201',
+            'rlapi',
+            str_repeat('a', 64),
+            'encrypted',
+            $user,
+            $status,
+        ));
     }
 
     private function connection(): Connection

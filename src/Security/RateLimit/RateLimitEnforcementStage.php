@@ -30,7 +30,6 @@ enum RateLimitEnforcementStage
             ], true),
             self::Ordinary => !in_array($cost->bucketFamily(), [
                 'login',
-                'recovery_login',
             ], true),
         };
     }

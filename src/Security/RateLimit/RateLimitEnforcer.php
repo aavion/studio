@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security\RateLimit;
 
+use App\Api\Http\ApiRequestContext;
 use App\Core\Config\Config;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
@@ -14,6 +15,7 @@ use App\Security\Abuse\AbuseSubjectType;
 use App\Security\Abuse\ActionCost;
 use App\Security\Abuse\RequestFamily;
 use App\Security\Abuse\RequestIntent;
+use App\Security\ApiKeyStatus;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
 use Symfony\Component\HttpFoundation\Request;
@@ -46,7 +48,7 @@ final readonly class RateLimitEnforcer
             return $this->checkSuspiciousProbe($profile, $subjectResolution, $cost, $mode);
         }
 
-        if (!$stage->handlesCost($cost) || !$mode->consumesLimiterStorage() || !$cost->ordinaryEnforcement() || $this->isOwnerExempt($profile, $subjectResolution, $cost)) {
+        if (!$stage->handlesCost($cost) || !$mode->consumesLimiterStorage() || !$cost->ordinaryEnforcement() || $this->isOwnerExempt($request, $profile, $subjectResolution, $cost)) {
             return RateLimitCheckResult::allow();
         }
 
@@ -135,13 +137,27 @@ final readonly class RateLimitEnforcer
         return null === $floor ? $seconds : max($seconds, $floor);
     }
 
-    private function isOwnerExempt(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost): bool
+    private function isOwnerExempt(Request $request, AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost): bool
     {
         if (RequestFamily::Scheduler === $profile->family() || 'scheduler' === $cost->bucketFamily()) {
             return false;
         }
 
+        if (RequestFamily::Api === $profile->family() && !$this->safeMethod($profile->method()) && $this->readOnlyApiKey($request)) {
+            return false;
+        }
+
         return $this->subjects->hasOwner($subjects);
+    }
+
+    private function readOnlyApiKey(Request $request): bool
+    {
+        return ApiKeyStatus::ReadOnly === ApiRequestContext::fromRequest($request)?->apiKeyStatus();
+    }
+
+    private function safeMethod(string $method): bool
+    {
+        return in_array(strtoupper($method), ['GET', 'HEAD', 'OPTIONS'], true);
     }
 
     private function reportDegradedConsume(AbuseRequestProfile $profile, RateLimitProfile $mode, \Throwable $exception): void

@@ -139,6 +139,21 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Api,
             RequestIntent::CorsPreflight,
         ];
+        yield 'bearer options request is charged as api read' => [
+            Request::create('/api/v1/content/items', 'OPTIONS', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer invalid.token',
+            ]),
+            RequestFamily::Api,
+            RequestIntent::ApiRead,
+        ];
+        yield 'bearer options request honors requested unsafe admin method' => [
+            Request::create('/api/v1/admin/settings/security', 'OPTIONS', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer invalid.token',
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+            ]),
+            RequestFamily::Api,
+            RequestIntent::SettingsMutation,
+        ];
         yield 'turbo prefetch' => [
             Request::create('/docs', server: ['HTTP_SEC_PURPOSE' => 'prefetch']),
             RequestFamily::Browser,

@@ -63,6 +63,11 @@ final readonly class AbuseSubjectResolver
             }
         }
 
+        $schedulerCredential = $this->submittedSchedulerCredential($request);
+        if ($schedulerCredential instanceof AbuseSubject) {
+            $subjects[] = $schedulerCredential;
+        }
+
         $submittedAccount = $this->submittedAccount($request);
         if ($submittedAccount instanceof AbuseSubject) {
             $subjects[] = $submittedAccount;
@@ -95,6 +100,32 @@ final readonly class AbuseSubjectResolver
         $prefix = false === $dotPosition ? $token : substr($token, 0, $dotPosition);
 
         return 1 === preg_match('/^[A-Za-z0-9_-]{4,16}$/', $prefix) ? $prefix : null;
+    }
+
+    private function submittedSchedulerCredential(Request $request): ?AbuseSubject
+    {
+        $path = rtrim($request->getPathInfo(), '/') ?: '/';
+        if ('/cron/run' !== $path) {
+            return null;
+        }
+
+        $authorization = $request->headers->get('Authorization');
+        if (is_string($authorization) && 1 === preg_match('/^Bearer\s+(.+)$/i', $authorization, $matches)) {
+            return $this->schedulerCredentialSubject(trim($matches[1]));
+        }
+
+        $auth = $request->query->get('auth');
+
+        return is_string($auth) ? $this->schedulerCredentialSubject(trim($auth)) : null;
+    }
+
+    private function schedulerCredentialSubject(string $token): ?AbuseSubject
+    {
+        if ('' === $token) {
+            return null;
+        }
+
+        return new AbuseSubject(AbuseSubjectType::SchedulerCredential, $this->bucket('scheduler_credential', substr($token, 0, 128)));
     }
 
     private function submittedAccount(Request $request): ?AbuseSubject

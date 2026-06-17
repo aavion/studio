@@ -152,6 +152,40 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(429);
     }
 
+    public function testInvalidBearerOptionsRequestsSpendApiBudgetBeforeAuthenticationResponse(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.22'));
+        $this->setMode(RateLimitProfile::Panic);
+
+        for ($i = 0; $i < 30; ++$i) {
+            $client->request('OPTIONS', '/api/v1/status', server: [
+                'HTTP_AUTHORIZATION' => sprintf('Bearer option%02d.invalid-secret', $i),
+            ]);
+            self::assertNotSame(429, $client->getResponse()->getStatusCode());
+        }
+
+        $client->request('OPTIONS', '/api/v1/status', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer option31.invalid-secret',
+        ]);
+
+        self::assertResponseStatusCodeSame(429);
+    }
+
+    public function testRecoveryLoginRendersSpendRecoveryBucket(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.23'));
+        $this->setMode(RateLimitProfile::Standard);
+
+        $client->request('GET', '/user/login?bypass=1');
+        self::assertNotSame(429, $client->getResponse()->getStatusCode());
+        $client->request('GET', '/user/login?bypass=1');
+        self::assertNotSame(429, $client->getResponse()->getStatusCode());
+
+        $client->request('GET', '/user/login?bypass=1');
+
+        self::assertResponseStatusCodeSame(429);
+    }
+
     public function testRotatingInvalidBearerPrefixesDoNotBypassApiWriteBudget(): void
     {
         $client = self::createClient(server: $this->server('198.51.100.18'));
@@ -185,6 +219,58 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
 
         $client->request('PATCH', '/api/v1/admin/settings/general', server: [
             'HTTP_AUTHORIZATION' => 'Bearer admin08.invalid-secret',
+        ]);
+
+        self::assertResponseStatusCodeSame(429);
+    }
+
+    public function testReadOnlyOwnerApiKeyMutationsSpendApiWriteBudgetBeforeDenial(): void
+    {
+        $prefix = 'rlownro';
+        $client = self::createClient(server: $this->server('198.51.100.24'));
+        $plainKey = $this->createOwnerApiKey($prefix, ApiKeyStatus::ReadOnly);
+
+        try {
+            $this->setMode(RateLimitProfile::Panic);
+
+            for ($i = 0; $i < 15; ++$i) {
+                $client->request('POST', '/api/v1/status', server: [
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+                ]);
+                self::assertNotSame(429, $client->getResponse()->getStatusCode());
+            }
+
+            $client->request('POST', '/api/v1/status', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseStatusCodeSame(429);
+        } finally {
+            $this->removeApiKey($prefix);
+        }
+    }
+
+    public function testSchedulerIntervalUsesStableBearerCredentialAcrossVisitorChanges(): void
+    {
+        $first = self::createClient(server: [
+            ...$this->server('198.51.100.25'),
+            'HTTP_USER_AGENT' => 'SchedulerProbe/1',
+        ]);
+        $this->setMode(RateLimitProfile::Standard);
+
+        $first->request('GET', '/cron/run', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
+        ]);
+        self::assertNotSame(429, $first->getResponse()->getStatusCode());
+
+        self::ensureKernelShutdown();
+
+        $second = self::createClient(server: [
+            ...$this->server('198.51.100.25'),
+            'HTTP_USER_AGENT' => 'SchedulerProbe/2',
+        ]);
+        $second->request('GET', '/cron/run', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
         ]);
 
         self::assertResponseStatusCodeSame(429);
@@ -256,7 +342,7 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         return $user;
     }
 
-    private function createOwnerApiKey(string $prefix): string
+    private function createOwnerApiKey(string $prefix, ApiKeyStatus $status = ApiKeyStatus::ReadWrite): string
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
@@ -273,7 +359,7 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
             $vault->hmac($plainKey),
             $vault->encrypt($plainKey, $prefix),
             $this->adminUser(),
-            ApiKeyStatus::ReadWrite,
+            $status,
         );
 
         $entityManager->persist($apiKey);

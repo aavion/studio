@@ -102,6 +102,23 @@ final class AbuseSubjectResolverTest extends TestCase
         self::assertStringNotContainsString('secret-token-material', json_encode($subject->toArray(), JSON_THROW_ON_ERROR));
     }
 
+    public function testItAddsRedactedSchedulerCredentialSubjects(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $bearer = Request::create('/cron/run', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer scheduler.secret-token-material',
+        ]);
+        $query = Request::create('/cron/run?auth=scheduler.secret-token-material');
+
+        $bearerSubject = $resolver->resolve($bearer)->first(AbuseSubjectType::SchedulerCredential);
+        $querySubject = $resolver->resolve($query)->first(AbuseSubjectType::SchedulerCredential);
+
+        self::assertNotNull($bearerSubject);
+        self::assertNotNull($querySubject);
+        self::assertSame($bearerSubject->identifier(), $querySubject->identifier());
+        self::assertStringNotContainsString('scheduler.secret-token-material', json_encode($bearerSubject->toArray(), JSON_THROW_ON_ERROR));
+    }
+
     public function testItAddsRedactedSubmittedAccountSubjectsForAuthWorkflows(): void
     {
         $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');

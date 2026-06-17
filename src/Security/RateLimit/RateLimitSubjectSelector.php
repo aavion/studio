@@ -78,6 +78,14 @@ final readonly class RateLimitSubjectSelector
      */
     private function preferredTypes(RateLimitBucketDescriptor $descriptor): array
     {
+        if ('scheduler' === $descriptor->bucketFamily()) {
+            return [
+                AbuseSubjectType::SchedulerCredential,
+                AbuseSubjectType::IpBucket,
+                AbuseSubjectType::Visitor,
+            ];
+        }
+
         if (str_starts_with($descriptor->bucketFamily(), 'api_')) {
             return [
                 AbuseSubjectType::ApiKey,
@@ -115,6 +123,10 @@ final readonly class RateLimitSubjectSelector
             'api_read',
             'api_write',
             'api_public_read',
+            'admin_mutation',
+            'upload_archive',
+            'download_diagnostics',
+            'scheduler',
         ], true);
     }
 

@@ -36,9 +36,6 @@ final readonly class RequestIntentClassifier
         );
     }
 
-    /**
-     * @param list<string> $segments
-     */
     private function family(array $segments): RequestFamily
     {
         return match (true) {
@@ -65,10 +62,6 @@ final readonly class RequestIntentClassifier
             return RequestIntent::SuspiciousProbe;
         }
 
-        if ('OPTIONS' === $method) {
-            return RequestIntent::CorsPreflight;
-        }
-
         if (RequestFamily::Scheduler === $family) {
             return RequestIntent::SchedulerTrigger;
         }
@@ -78,11 +71,23 @@ final readonly class RequestIntentClassifier
         }
 
         if (RequestFamily::Api === $family) {
+            if ('OPTIONS' === $method) {
+                if ($this->hasBearerAuthorization($request)) {
+                    return $this->apiIntentForMethod($this->requestedPreflightMethod($request) ?? 'GET', $segments, $route);
+                }
+
+                return RequestIntent::CorsPreflight;
+            }
+
             if ($this->matchesSegments($segments, 'api', 'v1', 'admin') && !$this->safeMethod($method)) {
                 return $this->adminMutationIntent($this->apiAdminSegments($segments), $route);
             }
 
-            return in_array($method, ['GET', 'HEAD'], true) ? RequestIntent::ApiRead : RequestIntent::ApiWrite;
+            return $this->apiIntentForMethod($method, $segments, $route);
+        }
+
+        if ('OPTIONS' === $method) {
+            return RequestIntent::CorsPreflight;
         }
 
         if ($prefetch && 'GET' === $method) {
@@ -115,9 +120,6 @@ final readonly class RequestIntentClassifier
         };
     }
 
-    /**
-     * @param list<string> $segments
-     */
     private function recoveryLogin(Request $request, array $segments, string $route): bool
     {
         return $this->matchesSegments($segments, 'user', 'login')
@@ -147,6 +149,28 @@ final readonly class RequestIntentClassifier
             $this->hasSegment($segments, 'diagnostic', 'diagnostics', 'support') || $this->routeHasAnyToken($route, 'diagnostic', 'diagnostics', 'support') => RequestIntent::DiagnosticsSupport,
             default => null,
         };
+    }
+
+    private function apiIntentForMethod(string $method, array $segments, string $route): RequestIntent
+    {
+        $method = strtoupper($method);
+        if ($this->matchesSegments($segments, 'api', 'v1', 'admin') && !$this->safeMethod($method)) {
+            return $this->adminMutationIntent($this->apiAdminSegments($segments), $route);
+        }
+
+        return in_array($method, ['GET', 'HEAD', 'OPTIONS'], true) ? RequestIntent::ApiRead : RequestIntent::ApiWrite;
+    }
+
+    private function hasBearerAuthorization(Request $request): bool
+    {
+        return 1 === preg_match('/^Bearer\s+.+$/i', (string) $request->headers->get('Authorization', ''));
+    }
+
+    private function requestedPreflightMethod(Request $request): ?string
+    {
+        $method = $request->headers->get('Access-Control-Request-Method');
+
+        return is_string($method) && '' !== trim($method) ? strtoupper(trim($method)) : null;
     }
 
     private function isPrefetch(Request $request): bool
@@ -188,9 +212,6 @@ final readonly class RequestIntentClassifier
         return [] !== array_intersect($tokens, $this->routeTokens($route));
     }
 
-    /**
-     * @return list<string>
-     */
     private function routeTokens(string $route): array
     {
         return array_values(array_filter(
@@ -199,9 +220,6 @@ final readonly class RequestIntentClassifier
         ));
     }
 
-    /**
-     * @return list<string>
-     */
     private function segments(Request $request): array
     {
         $segments = array_values(array_filter(explode('/', trim($request->getPathInfo(), '/')), static fn (string $segment): bool => '' !== $segment));
@@ -235,9 +253,6 @@ final readonly class RequestIntentClassifier
         return null;
     }
 
-    /**
-     * @param list<string> $pathSegments
-     */
     private function matchesSegments(array $pathSegments, string ...$segments): bool
     {
         foreach ($segments as $index => $segment) {
@@ -249,9 +264,6 @@ final readonly class RequestIntentClassifier
         return [] !== $segments;
     }
 
-    /**
-     * @param list<string> $pathSegments
-     */
     private function hasSegment(array $pathSegments, string ...$segments): bool
     {
         foreach ($segments as $segment) {
@@ -263,11 +275,6 @@ final readonly class RequestIntentClassifier
         return false;
     }
 
-    /**
-     * @param list<string> $segments
-     *
-     * @return list<string>
-     */
     private function apiAdminSegments(array $segments): array
     {
         return $this->matchesSegments($segments, 'api', 'v1', 'admin')
@@ -275,9 +282,6 @@ final readonly class RequestIntentClassifier
             : $segments;
     }
 
-    /**
-     * @param list<string> $segments
-     */
     private function hasLocalizedReservedPath(array $segments): bool
     {
         return in_array($segments[1] ?? '', ['admin', 'api', 'cron', 'editor', 'setup', 'user'], true);
