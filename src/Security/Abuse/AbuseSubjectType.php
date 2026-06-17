@@ -11,5 +11,6 @@ enum AbuseSubjectType: string
     case User = 'user';
     case ApiKey = 'api_key';
     case ApiKeyPrefix = 'api_key_prefix';
+    case SubmittedAccount = 'submitted_account';
     case Combined = 'combined';
 }

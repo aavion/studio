@@ -30,7 +30,7 @@ final readonly class RateLimitEnforcer
     ) {
     }
 
-    public function check(Request $request): RateLimitCheckResult
+    public function check(Request $request, RateLimitEnforcementStage $stage = RateLimitEnforcementStage::All): RateLimitCheckResult
     {
         $inspection = $this->inspector->inspect($request);
         $profile = $inspection['profile'];
@@ -39,14 +39,18 @@ final readonly class RateLimitEnforcer
         $mode = RateLimitProfile::fromMixed($this->config->get(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Standard->value));
 
         if ($profile->suspiciousProbe()) {
+            if (!in_array($stage, [RateLimitEnforcementStage::All, RateLimitEnforcementStage::SuspiciousProbe], true)) {
+                return RateLimitCheckResult::allow();
+            }
+
             return $this->checkSuspiciousProbe($profile, $subjectResolution, $cost, $mode);
         }
 
-        if (!$mode->consumesLimiterStorage() || !$cost->ordinaryEnforcement() || $this->isOwnerExempt($profile, $subjectResolution, $cost)) {
+        if (!$stage->handlesCost($cost) || !$mode->consumesLimiterStorage() || !$cost->ordinaryEnforcement() || $this->isOwnerExempt($profile, $subjectResolution, $cost)) {
             return RateLimitCheckResult::allow();
         }
 
-        return $this->consume($profile, $subjectResolution, $cost, $mode);
+        return $this->consume($profile, $subjectResolution, $cost, $mode, $stage);
     }
 
     private function checkSuspiciousProbe(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost, RateLimitProfile $mode): RateLimitCheckResult
@@ -55,15 +59,15 @@ final readonly class RateLimitEnforcer
             return RateLimitCheckResult::blockSuspiciousProbe();
         }
 
-        $result = $this->consume($profile, $subjects, $cost, $mode);
+        $result = $this->consume($profile, $subjects, $cost, $mode, RateLimitEnforcementStage::SuspiciousProbe);
 
         return RateLimitCheckResult::blockSuspiciousProbe($result->storageDegraded());
     }
 
-    private function consume(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost, RateLimitProfile $mode): RateLimitCheckResult
+    private function consume(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost, RateLimitProfile $mode, RateLimitEnforcementStage $stage): RateLimitCheckResult
     {
         try {
-            foreach ($this->descriptors($profile, $subjects, $cost, $mode) as $descriptor) {
+            foreach ($this->descriptors($profile, $subjects, $cost, $mode, $stage) as $descriptor) {
                 $descriptor = $descriptor->withCapacityMultiplier($this->subjects->authenticatedMultiplier($descriptor, $subjects));
 
                 foreach ($this->subjects->subjectKeys($descriptor, $subjects) as $subjectKey) {
@@ -85,11 +89,11 @@ final readonly class RateLimitEnforcer
     /**
      * @return list<RateLimitBucketDescriptor>
      */
-    private function descriptors(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost, RateLimitProfile $mode): array
+    private function descriptors(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost, RateLimitProfile $mode, RateLimitEnforcementStage $stage): array
     {
         $families = [$this->bucketFamily($cost, $subjects)];
 
-        if ($this->shouldConsumeWebsiteFamily($profile, $families[0])) {
+        if ($stage->consumesWebsiteFamily() && $this->shouldConsumeWebsiteFamily($profile, $families[0])) {
             $families[] = 'website';
         }
 

@@ -93,6 +93,11 @@ final readonly class RequestIntentClassifier
             return RequestIntent::SetupApply;
         }
 
+        $adminReadIntent = RequestFamily::Admin === $family ? $this->adminReadIntent($segments, $route) : null;
+        if ($adminReadIntent instanceof RequestIntent) {
+            return $adminReadIntent;
+        }
+
         if (RequestFamily::Admin === $family && !$this->safeMethod($method)) {
             return $this->adminMutationIntent($segments, $route);
         }
@@ -125,13 +130,22 @@ final readonly class RequestIntentClassifier
         return match (true) {
             $this->matchesSegments($segments, 'admin', 'settings') || $this->routeHasToken($route, 'settings') => RequestIntent::SettingsMutation,
             $this->matchesSegments($segments, 'admin', 'users') || $this->routeHasToken($route, 'users') || $this->routeHasToken($route, 'acl') => RequestIntent::UserAclMutation,
-            $this->matchesSegments($segments, 'admin', 'packages') || $this->routeHasToken($route, 'package') || $this->routeHasToken($route, 'packages') => RequestIntent::PackageAdminOperation,
             $this->hasSegment($segments, 'upload', 'archive', 'media') || $this->routeHasAnyToken($route, 'upload', 'archive', 'media') => RequestIntent::UploadArchiveValidation,
             $this->hasSegment($segments, 'export', 'download') || $this->routeHasAnyToken($route, 'export', 'download') => RequestIntent::ExportDownload,
+            $this->matchesSegments($segments, 'admin', 'packages') || $this->routeHasToken($route, 'package') || $this->routeHasToken($route, 'packages') => RequestIntent::PackageAdminOperation,
             $this->hasSegment($segments, 'import') || $this->routeHasToken($route, 'import') => RequestIntent::ImportOperation,
             $this->hasSegment($segments, 'backup', 'restore') || $this->routeHasAnyToken($route, 'backup', 'restore') => RequestIntent::BackupRestore,
             $this->hasSegment($segments, 'diagnostic', 'diagnostics', 'support') || $this->routeHasAnyToken($route, 'diagnostic', 'diagnostics', 'support') => RequestIntent::DiagnosticsSupport,
             default => RequestIntent::AdminOperation,
+        };
+    }
+
+    private function adminReadIntent(array $segments, string $route): ?RequestIntent
+    {
+        return match (true) {
+            $this->hasSegment($segments, 'export', 'download') || $this->routeHasAnyToken($route, 'export', 'download') => RequestIntent::ExportDownload,
+            $this->hasSegment($segments, 'diagnostic', 'diagnostics', 'support') || $this->routeHasAnyToken($route, 'diagnostic', 'diagnostics', 'support') => RequestIntent::DiagnosticsSupport,
+            default => null,
         };
     }
 

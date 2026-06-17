@@ -6,13 +6,20 @@ namespace App\Tests\Controller;
 
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
+use App\Entity\ApiKey;
+use App\Entity\UserAccount;
+use App\Security\ApiKeyStatus;
+use App\Security\ApiKeyVault;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\RateLimit\RateLimitProfile;
+use Doctrine\ORM\EntityManagerInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class RateLimitEnforcementControllerTest extends WebTestCase
 {
+    use AuthenticatedClientTrait;
+
     public function testBrowserRateLimitRendersHtmlErrorWithSafeHeaders(): void
     {
         $client = self::createClient(server: $this->server('198.51.100.10'));
@@ -70,6 +77,17 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         self::assertStringNotContainsString('suspicious.probe', $client->getResponse()->getContent());
     }
 
+    public function testLiveSuspiciousProbeIsBlockedBeforeLiveApiExclusion(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.17'));
+        $this->setMode(RateLimitProfile::Off);
+
+        $client->request('GET', '/api/live/.env');
+
+        self::assertResponseStatusCodeSame(400);
+        self::assertStringContainsString('no-store', (string) $client->getResponse()->headers->get('Cache-Control'));
+    }
+
     public function testPrefetchAndLiveApiPathsAreNotChargedToOrdinaryLimiter(): void
     {
         $client = self::createClient(server: $this->server('198.51.100.13'));
@@ -117,20 +135,72 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
 
     public function testInvalidBearerRequestsSpendApiBudgetBeforeAuthenticationResponse(): void
     {
-        $client = self::createClient(server: [
-            ...$this->server('198.51.100.16'),
-            'HTTP_AUTHORIZATION' => 'Bearer invalidprefix.invalid-secret',
-        ]);
+        $client = self::createClient(server: $this->server('198.51.100.16'));
         $this->setMode(RateLimitProfile::Panic);
 
         for ($i = 0; $i < 30; ++$i) {
-            $client->request('GET', '/api/v1');
+            $client->request('GET', '/api/v1', server: [
+                'HTTP_AUTHORIZATION' => sprintf('Bearer invalid%02d.invalid-secret', $i),
+            ]);
             self::assertNotSame(429, $client->getResponse()->getStatusCode());
         }
 
-        $client->request('GET', '/api/v1');
+        $client->request('GET', '/api/v1', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer invalid31.invalid-secret',
+        ]);
 
         self::assertResponseStatusCodeSame(429);
+    }
+
+    public function testRotatingInvalidBearerPrefixesDoNotBypassApiWriteBudget(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.18'));
+        $this->setMode(RateLimitProfile::Panic);
+
+        for ($i = 0; $i < 15; ++$i) {
+            $client->request('POST', '/api/v1/status', server: [
+                'HTTP_AUTHORIZATION' => sprintf('Bearer write%02d.invalid-secret', $i),
+            ]);
+            self::assertNotSame(429, $client->getResponse()->getStatusCode());
+        }
+
+        $client->request('POST', '/api/v1/status', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer write16.invalid-secret',
+        ]);
+
+        self::assertResponseStatusCodeSame(429);
+    }
+
+    public function testValidOwnerApiKeyUsesPostAuthOwnerExemption(): void
+    {
+        $prefix = 'rlowner';
+        $client = self::createClient(server: $this->server('198.51.100.19'));
+        $plainKey = $this->createOwnerApiKey($prefix);
+
+        try {
+            $this->setMode(RateLimitProfile::Panic);
+
+            for ($i = 0; $i < 35; ++$i) {
+                $client->request('GET', '/api/v1', server: [
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+                ]);
+                self::assertNotSame(429, $client->getResponse()->getStatusCode());
+            }
+        } finally {
+            $this->removeApiKey($prefix);
+        }
+    }
+
+    public function testSignedInOwnerUsesPostAuthOwnerExemption(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.20'));
+        $this->loginTestUser($client, $this->adminUser());
+        $this->setMode(RateLimitProfile::Panic);
+
+        for ($i = 0; $i < 12; ++$i) {
+            $client->request('GET', '/home');
+            self::assertNotSame(429, $client->getResponse()->getStatusCode());
+        }
     }
 
     /**
@@ -154,5 +224,54 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         $config = self::getContainer()->get(Config::class);
         self::assertInstanceOf(Config::class, $config);
         $config->set(RateLimitPolicyCatalogue::MODE_KEY, $profile->value, ConfigValueType::String, modifiedBy: 'test');
+    }
+
+    private function adminUser(): UserAccount
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
+
+        $user = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => 'admin']);
+        self::assertInstanceOf(UserAccount::class, $user);
+
+        return $user;
+    }
+
+    private function createOwnerApiKey(string $prefix): string
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
+
+        $this->removeApiKey($prefix);
+
+        $vault = self::getContainer()->get(ApiKeyVault::class);
+        self::assertInstanceOf(ApiKeyVault::class, $vault);
+
+        $plainKey = $vault->generatePlainKey($prefix);
+        $apiKey = new ApiKey(
+            '63000000-0000-7000-8000-'.substr(md5($prefix), 0, 12),
+            $prefix,
+            $vault->hmac($plainKey),
+            $vault->encrypt($plainKey, $prefix),
+            $this->adminUser(),
+            ApiKeyStatus::ReadWrite,
+        );
+
+        $entityManager->persist($apiKey);
+        $entityManager->flush();
+
+        return $plainKey;
+    }
+
+    private function removeApiKey(string $prefix): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
+
+        $existing = $entityManager->getRepository(ApiKey::class)->findOneBy(['prefix' => $prefix]);
+        if ($existing instanceof ApiKey) {
+            $entityManager->remove($existing);
+            $entityManager->flush();
+        }
     }
 }

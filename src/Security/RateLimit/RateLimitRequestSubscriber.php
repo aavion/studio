@@ -17,17 +17,31 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
     ) {
     }
 
-    /**
-     * @return array<string, array{0: string, 1: int}>
-     */
     public static function getSubscribedEvents(): array
     {
         return [
-            KernelEvents::REQUEST => ['onKernelRequest', 12],
+            KernelEvents::REQUEST => [
+                ['onKernelRequestProbe', 12],
+                ['onKernelRequestOrdinary', 3],
+            ],
         ];
     }
 
-    public function onKernelRequest(RequestEvent $event): void
+    public function onKernelRequestProbe(RequestEvent $event): void
+    {
+        if (!$event->isMainRequest()) {
+            return;
+        }
+
+        $request = $event->getRequest();
+        if (!$this->enabledForRequest($request->headers->get('X-Rate-Limit-Testing'))) {
+            return;
+        }
+
+        $this->apply($event, RateLimitEnforcementStage::SuspiciousProbe);
+    }
+
+    public function onKernelRequestOrdinary(RequestEvent $event): void
     {
         if (!$event->isMainRequest() || $event->hasResponse()) {
             return;
@@ -38,7 +52,13 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
             return;
         }
 
-        $result = $this->enforcer->check($request);
+        $this->apply($event, RateLimitEnforcementStage::Ordinary);
+    }
+
+    private function apply(RequestEvent $event, RateLimitEnforcementStage $stage): void
+    {
+        $request = $event->getRequest();
+        $result = $this->enforcer->check($request, $stage);
         if ($result->isAllowed()) {
             return;
         }

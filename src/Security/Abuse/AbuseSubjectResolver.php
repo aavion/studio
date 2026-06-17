@@ -6,6 +6,7 @@ namespace App\Security\Abuse;
 
 use App\Api\Http\ApiRequestContext;
 use App\Core\Statistics\VisitorIdGenerator;
+use App\Core\Validation\EmailAddress;
 use App\Entity\UserAccount;
 use App\Security\AccessLevelAwareUserInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -62,6 +63,11 @@ final readonly class AbuseSubjectResolver
             }
         }
 
+        $submittedAccount = $this->submittedAccount($request);
+        if ($submittedAccount instanceof AbuseSubject) {
+            $subjects[] = $submittedAccount;
+        }
+
         return new AbuseSubjectResolution($subjects);
     }
 
@@ -89,6 +95,43 @@ final readonly class AbuseSubjectResolver
         $prefix = false === $dotPosition ? $token : substr($token, 0, $dotPosition);
 
         return 1 === preg_match('/^[A-Za-z0-9_-]{4,16}$/', $prefix) ? $prefix : null;
+    }
+
+    private function submittedAccount(Request $request): ?AbuseSubject
+    {
+        $path = rtrim($request->getPathInfo(), '/') ?: '/';
+
+        if ('/user/login' === $path) {
+            return $this->submittedAccountSubject('login', $request->request->get('username'));
+        }
+
+        if ('/user/register' === $path) {
+            return $this->submittedAccountSubject('registration_email', $request->request->get('email'), email: true);
+        }
+
+        if ('/user/reset-password' === $path) {
+            return $this->submittedAccountSubject('password_reset_email', $request->request->get('email'), email: true);
+        }
+
+        return null;
+    }
+
+    private function submittedAccountSubject(string $scope, mixed $value, bool $email = false): ?AbuseSubject
+    {
+        if (!is_scalar($value)) {
+            return null;
+        }
+
+        $normalized = trim((string) $value);
+        $normalized = $email ? EmailAddress::normalize($normalized) : strtolower($normalized);
+        $normalized = substr($normalized, 0, 190);
+        if ('' === $normalized) {
+            return null;
+        }
+
+        return new AbuseSubject(AbuseSubjectType::SubmittedAccount, $this->bucket($scope, $normalized), false, [
+            'scope' => $scope,
+        ]);
     }
 
     private function bucket(string $scope, string $value): string

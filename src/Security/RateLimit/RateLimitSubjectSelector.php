@@ -16,6 +16,17 @@ final readonly class RateLimitSubjectSelector
      */
     public function subjectKeys(RateLimitBucketDescriptor $descriptor, AbuseSubjectResolution $subjects): array
     {
+        if ($this->usesSubmittedAccountScope($descriptor)) {
+            $submittedAccount = $subjects->first(AbuseSubjectType::SubmittedAccount);
+            if ($submittedAccount instanceof AbuseSubject) {
+                return $this->subjectKeysFor($descriptor, array_filter([
+                    $submittedAccount,
+                    $subjects->first(AbuseSubjectType::Visitor),
+                    $subjects->first(AbuseSubjectType::IpBucket),
+                ]));
+            }
+        }
+
         $primary = $this->primarySubject($descriptor, $subjects);
         if (!$primary instanceof AbuseSubject) {
             return [];
@@ -70,9 +81,9 @@ final readonly class RateLimitSubjectSelector
         if (str_starts_with($descriptor->bucketFamily(), 'api_')) {
             return [
                 AbuseSubjectType::ApiKey,
-                AbuseSubjectType::ApiKeyPrefix,
                 AbuseSubjectType::User,
                 AbuseSubjectType::Visitor,
+                AbuseSubjectType::IpBucket,
             ];
         }
 
@@ -101,12 +112,39 @@ final readonly class RateLimitSubjectSelector
             'captcha_failure',
             'setup_apply',
             'suspicious_probe',
+            'api_read',
+            'api_write',
             'api_public_read',
+        ], true);
+    }
+
+    private function usesSubmittedAccountScope(RateLimitBucketDescriptor $descriptor): bool
+    {
+        return in_array($descriptor->bucketFamily(), [
+            'login',
+            'recovery_login',
+            'registration',
+            'password_reset',
         ], true);
     }
 
     public function subjectKey(RateLimitBucketDescriptor $descriptor, AbuseSubject $subject): string
     {
         return $descriptor->name().':'.$subject->type()->value.':'.$subject->identifier();
+    }
+
+    /**
+     * @param iterable<AbuseSubject> $subjects
+     *
+     * @return list<string>
+     */
+    private function subjectKeysFor(RateLimitBucketDescriptor $descriptor, iterable $subjects): array
+    {
+        $keys = [];
+        foreach ($subjects as $subject) {
+            $keys[] = $this->subjectKey($descriptor, $subject);
+        }
+
+        return array_values(array_unique($keys));
     }
 }

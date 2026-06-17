@@ -97,6 +97,44 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertSame('security.rate.recovery_login', $result->diagnosticsLabel());
     }
 
+    public function testLoginAttemptsShareSubmittedAccountAcrossVisitors(): void
+    {
+        $enforcer = $this->enforcer();
+
+        for ($i = 0; $i < 5; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/user/login', 'POST', [
+                'username' => 'shared-admin',
+                'password' => 'wrong',
+            ], $this->server('203.0.113.'.(20 + $i))))->isAllowed());
+        }
+
+        $result = $enforcer->check($this->request('/user/login', 'POST', [
+            'username' => 'shared-admin',
+            'password' => 'wrong',
+        ], $this->server('203.0.113.99')));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.login', $result->diagnosticsLabel());
+    }
+
+    public function testPasswordResetAttemptsShareSubmittedEmailAcrossVisitors(): void
+    {
+        $enforcer = $this->enforcer();
+
+        for ($i = 0; $i < 3; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/user/reset-password', 'POST', [
+                'email' => 'target@example.test',
+            ], $this->server('203.0.113.'.(40 + $i))))->isAllowed());
+        }
+
+        $result = $enforcer->check($this->request('/user/reset-password', 'POST', [
+            'email' => 'TARGET@EXAMPLE.TEST',
+        ], $this->server('203.0.113.100')));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.password_reset', $result->diagnosticsLabel());
+    }
+
     public function testOwnerIsExemptFromOrdinaryRateLimitRejection(): void
     {
         $tokenStorage = $this->tokenStorage(UserRole::Owner);
@@ -162,6 +200,37 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertFalse($result->storageDegraded());
     }
 
+    public function testRepresentativeRequestPathsReachExpectedBuckets(): void
+    {
+        $cases = [
+            ['/user/register', 'POST', ['email' => 'registration@example.test'], 'security.rate.registration', 4],
+            ['/user/reset-password', 'POST', ['email' => 'reset@example.test'], 'security.rate.password_reset', 4],
+            ['/contact', 'POST', [], 'security.rate.website_form', 3],
+            ['/api/v1/content/items', 'GET', [], 'security.rate.api_public_read', 31],
+            ['/api/v1/content/items', 'POST', [], 'security.rate.api_write', 16],
+            ['/cron/run', 'POST', [], 'security.rate.scheduler', 2],
+            ['/setup/apply', 'POST', [], 'security.rate.setup_apply', 2],
+            ['/admin/settings/security', 'POST', [], 'security.rate.admin_mutation', 8],
+            ['/admin/packages/upload', 'POST', [], 'security.rate.upload_archive', 6],
+            ['/admin/logs/download', 'GET', [], 'security.rate.download_diagnostics', 8],
+        ];
+
+        foreach ($cases as [$path, $method, $parameters, $label, $attempts]) {
+            $config = new Config($this->connection());
+            $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Panic->value, ConfigValueType::String);
+            $enforcer = $this->enforcer(config: $config);
+            $result = null;
+
+            for ($i = 0; $i < $attempts; ++$i) {
+                $result = $enforcer->check($this->request($path, $method, $parameters));
+            }
+
+            self::assertNotNull($result);
+            self::assertFalse($result->isAllowed(), $path);
+            self::assertSame($label, $result->diagnosticsLabel(), $path);
+        }
+    }
+
     private function enforcer(?Config $config = null, ?TokenStorage $tokenStorage = null, ?CacheItemPoolInterface $cachePool = null, ?RecordingRateLimitMessageReporter $messages = null): RateLimitEnforcer
     {
         $tokenStorage ??= new TokenStorage();
@@ -181,12 +250,27 @@ final class RateLimitEnforcerTest extends TestCase
         );
     }
 
-    private function request(string $path, string $method = 'GET'): Request
+    /**
+     * @param array<string, string> $parameters
+     * @param array<string, string> $server
+     */
+    private function request(string $path, string $method = 'GET', array $parameters = [], array $server = []): Request
     {
-        return Request::create($path, $method, server: [
-            'REMOTE_ADDR' => '203.0.113.9',
-            'HTTP_USER_AGENT' => 'RateLimitEnforcerTest',
+        return Request::create($path, $method, $parameters, server: [
+            ...$this->server('203.0.113.9'),
+            ...$server,
         ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function server(string $ip): array
+    {
+        return [
+            'REMOTE_ADDR' => $ip,
+            'HTTP_USER_AGENT' => 'RateLimitEnforcerTest-'.$ip,
+        ];
     }
 
     private function tokenStorage(UserRole $role): TokenStorage

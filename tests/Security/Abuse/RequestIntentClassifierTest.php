@@ -74,6 +74,16 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Admin,
             RequestIntent::SettingsMutation,
         ];
+        yield 'admin package upload uses upload archive bucket before broad package bucket' => [
+            Request::create('/admin/packages/upload', 'POST'),
+            RequestFamily::Admin,
+            RequestIntent::UploadArchiveValidation,
+        ];
+        yield 'admin download uses download diagnostics bucket even for safe method' => [
+            Request::create('/admin/logs/download'),
+            RequestFamily::Admin,
+            RequestIntent::ExportDownload,
+        ];
         yield 'public path containing reserved segment is public' => [
             Request::create('/docs/api/reference', 'POST'),
             RequestFamily::Browser,
@@ -224,11 +234,11 @@ final class RequestIntentClassifierTest extends TestCase
         self::assertSame($intent, $profile->intent());
     }
 
-    public function testItDoesNotTreatOrdinaryUploadRoutesAsProbePaths(): void
+    public function testItClassifiesOrdinaryUploadRoutesAsUploadArchiveValidation(): void
     {
         $profile = (new RequestIntentClassifier())->classify(Request::create('/admin/packages/upload', 'POST'));
 
-        self::assertSame(RequestIntent::PackageAdminOperation, $profile->intent());
+        self::assertSame(RequestIntent::UploadArchiveValidation, $profile->intent());
         self::assertFalse($profile->suspiciousProbe());
     }
 

@@ -101,4 +101,29 @@ final class AbuseSubjectResolverTest extends TestCase
         self::assertSame('publicPrefix', $subject->identifier());
         self::assertStringNotContainsString('secret-token-material', json_encode($subject->toArray(), JSON_THROW_ON_ERROR));
     }
+
+    public function testItAddsRedactedSubmittedAccountSubjectsForAuthWorkflows(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $login = Request::create('/user/login', 'POST', ['username' => 'Admin']);
+        $reset = Request::create('/user/reset-password', 'POST', ['email' => 'ADMIN@Example.TEST']);
+
+        $loginSubject = $resolver->resolve($login)->first(AbuseSubjectType::SubmittedAccount);
+        $resetSubject = $resolver->resolve($reset)->first(AbuseSubjectType::SubmittedAccount);
+
+        self::assertNotNull($loginSubject);
+        self::assertNotNull($resetSubject);
+        self::assertSame('login', $loginSubject->context()['scope']);
+        self::assertSame('password_reset_email', $resetSubject->context()['scope']);
+        self::assertStringNotContainsString('Admin', json_encode($loginSubject->toArray(), JSON_THROW_ON_ERROR));
+        self::assertStringNotContainsString('ADMIN@Example.TEST', json_encode($resetSubject->toArray(), JSON_THROW_ON_ERROR));
+    }
+
+    public function testItDoesNotAddSubmittedAccountSubjectsForLookalikePaths(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $request = Request::create('/user/login-extra', 'POST', ['username' => 'Admin']);
+
+        self::assertNull($resolver->resolve($request)->first(AbuseSubjectType::SubmittedAccount));
+    }
 }

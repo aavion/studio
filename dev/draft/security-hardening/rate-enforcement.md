@@ -56,7 +56,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Scheduler `429` responses are expected operational feedback when the external caller runs more frequently than the selected profile allows. They should not create passive security signals or extra abuse diagnostics by themselves; the scheduler caller already observes the response and can adjust its interval.
 - Recovery login bypass is the exact `/user/login?bypass=1` browser path. It uses its own narrow bucket, bypasses ordinary website buckets needed to render the normal login form, and must not bypass CSRF, credential checks, login-failure accounting, audit logging, or post-login policy re-evaluation.
 - Workflows that do not exist in the current codebase receive catalogue entries only when doing so does not create dead services, routes, or unreachable tests.
-- Limiter keys come only from the shared subject/client-identity resolver and never from raw request headers or user-submitted identifiers.
+- Limiter keys come only from the shared subject/client-identity resolver. Raw request headers, API-key material, usernames, email addresses, and other user-submitted identifiers must never become keys directly; workflow account subjects are normalized and HMAC-redacted before they can be used for login, registration, or password-reset buckets.
 - Limiter storage degradation is fail-open by policy: the facade allows the request, records safe Message-layer diagnostics where possible, and preserves Owner recovery instead of returning an invisible hard block.
 - Enforcement follows the Security policy order so workflow buckets, global buckets, suspicious buckets, active bans, recovery-login rendering, and Owner/Admin protections interact predictably.
 - Rate-limit responses use the documented response semantics: `429`, `Retry-After` when available, family-specific HTML/JSON bodies, redacted diagnostics, and `no-store`.
@@ -65,17 +65,17 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Threshold/window configuration should be represented through named policy descriptors with units, defaults, min/max bounds, disabled behavior, and diagnostics labels, even if the first implementation keeps those descriptors as code constants.
 - Configurable threshold windows must not exceed the retention of the evidence they evaluate. If a bucket or mixed-signal policy depends on database projections, security signals, IP buckets, or audit context with shorter retention, validation must reject or clamp longer windows and expose a clear diagnostic rather than evaluating missing historical data.
 - Valid CORS preflights should be cheap and must not spend mutating API budget; invalid preflight probing may spend suspicious/API metadata budget and record passive signals.
-- The API integration should choose the smallest reviewable ordering that preserves the policy: valid CORS preflights stay cheap, ordinary API reads/writes are charged before authorization failures where practical, and existing API availability/error boundaries remain stable.
+- The API integration should choose the smallest reviewable ordering that preserves the policy: valid CORS preflights stay cheap, ordinary API reads/writes are charged after authentication has resolved valid API-key subjects and before authorization failures where practical, invalid API credentials charge stable Visitor/IP fallback buckets through authentication-failure handling, and existing API availability/error boundaries remain stable.
 - High-impact authenticated/admin operations should use explicit action costs or workflow buckets where the current codebase exposes them. Owner ordinary-rate-limit exemption does not remove workflow confirmation, Admin/Owner action authorization, audit, or redaction requirements.
 - Setup finalization/apply attempts need a dedicated workflow bucket because this surface exists before normal Owner/Admin session protections are available.
 
 ## Edge cases
 
 - Multiple buckets may be consumed for one request; rejection should report the most user-relevant failed policy without leaking all internal counters.
-- Unsafe login submissions consume login and global website budget before authentication failure responses can return; safe login, registration, and password-reset form renders do not spend workflow-specific buckets. Successful login resets only the login-attempt bucket for that subject and active rate profile.
+- Unsafe login submissions consume the login workflow bucket through the authentication-failure event when credentials fail; safe login, registration, and password-reset form renders do not spend workflow-specific buckets. Successful login resets only the login-attempt bucket for that subject and active rate profile.
 - Read-only API keys hitting write routes should still follow API write policy before or alongside authorization failure as decided by the handler order.
 - CORS preflight storms should not block legitimate configured browser clients through the write limiter, but invalid origin/header/method scans should remain visible to abuse diagnostics.
-- `/api/live/**` operation polling must continue to function during long admin operations.
+- `/api/live/**` operation polling must continue to function during long admin operations, but high-signal suspicious probe paths below `/api/live/**` must still reach the early probe blocker and return the generic `400`.
 - Export/download/log/support-bundle endpoints must use `no-store`, redaction, and permission checks even when the rate limiter allows them.
 - Concurrent failures and immediate success/reset sequences must not accidentally reset unrelated global buckets or hide suspicious mixed-action behavior.
 - HTML `429` pages may render a captcha recovery step only when an active provider can render and validate a real challenge. Without that provider, use ordinary retry-after behavior.
@@ -88,6 +88,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test scheduler triggers allow normal minutely cron calls while still limiting obvious trigger storms.
 - Test setup apply, CORS preflight, high-impact admin operation, Admin-vs-Owner authority outcomes, export/download, and upload/archive validation classification attach to the expected buckets when those workflows exist.
 - Test authenticated-user higher limits and Owner ordinary-rate-limit exemptions for active sessions and Owner-owned API keys.
+- Test that valid authenticated browser/API requests are evaluated after Symfony authentication, while failed login/API credentials still spend stable workflow buckets through authentication-failure events.
 - Test recovery-login bypass rendering, dedicated recovery bucket exhaustion, retry-after behavior, and successful-login policy re-evaluation.
 - Test policy descriptor validation for invalid, missing, overly permissive, and overly restrictive threshold/window values where configuration is introduced.
 - Test profile resolution for `off`, `standard`, `strict`, and `panic`, including the central `off` facade gate that performs no limiter consume.
