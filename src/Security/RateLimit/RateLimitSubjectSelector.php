@@ -20,9 +20,9 @@ final readonly class RateLimitSubjectSelector
             $submittedAccount = $subjects->first(AbuseSubjectType::SubmittedAccount);
             if ($submittedAccount instanceof AbuseSubject) {
                 return $this->subjectKeysFor($descriptor, array_filter([
-                    $submittedAccount,
                     $subjects->first(AbuseSubjectType::Visitor),
                     $subjects->first(AbuseSubjectType::IpBucket),
+                    $submittedAccount,
                 ]));
             }
         }

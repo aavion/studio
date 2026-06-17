@@ -139,16 +139,24 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Api,
             RequestIntent::CorsPreflight,
         ];
-        yield 'bearer options request is charged as api read' => [
+        yield 'authorization options request is charged as api read' => [
             Request::create('/api/v1/content/items', 'OPTIONS', server: [
-                'HTTP_AUTHORIZATION' => 'Bearer invalid.token',
+                'HTTP_AUTHORIZATION' => 'Basic unrelated',
             ]),
             RequestFamily::Api,
             RequestIntent::ApiRead,
         ];
-        yield 'bearer options request honors requested unsafe admin method' => [
+        yield 'authorization options request honors requested unsafe api method' => [
+            Request::create('/api/v1/content/items', 'OPTIONS', server: [
+                'HTTP_AUTHORIZATION' => 'Basic unrelated',
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST',
+            ]),
+            RequestFamily::Api,
+            RequestIntent::ApiWrite,
+        ];
+        yield 'authorization options request honors requested unsafe admin method' => [
             Request::create('/api/v1/admin/settings/security', 'OPTIONS', server: [
-                'HTTP_AUTHORIZATION' => 'Bearer invalid.token',
+                'HTTP_AUTHORIZATION' => 'Basic unrelated',
                 'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
             ]),
             RequestFamily::Api,

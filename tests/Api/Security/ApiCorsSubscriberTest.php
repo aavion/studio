@@ -52,7 +52,7 @@ final class ApiCorsSubscriberTest extends TestCase
         $event = $this->requestEvent(Request::create('/api/v1/admin/settings/general', 'OPTIONS', server: [
             'HTTP_ORIGIN' => 'https://client.example',
             'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
-            'HTTP_AUTHORIZATION' => 'Bearer invalid.token',
+            'HTTP_AUTHORIZATION' => 'Basic unrelated',
         ]));
 
         $this->subscriber(['https://client.example'])->onKernelRequest($event);

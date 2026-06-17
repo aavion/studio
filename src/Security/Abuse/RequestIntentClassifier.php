@@ -74,7 +74,7 @@ final readonly class RequestIntentClassifier
 
         if (RequestFamily::Api === $family) {
             if ('OPTIONS' === $method) {
-                if ($this->hasBearerAuthorization($request)) {
+                if ($this->hasAuthorizationHeader($request)) {
                     return $this->apiIntentForMethod($this->requestedPreflightMethod($request) ?? 'GET', $segments, $route);
                 }
 
@@ -177,11 +177,11 @@ final readonly class RequestIntentClassifier
         return in_array($method, ['GET', 'HEAD', 'OPTIONS'], true) ? RequestIntent::ApiRead : RequestIntent::ApiWrite;
     }
 
-    private function hasBearerAuthorization(Request $request): bool
+    private function hasAuthorizationHeader(Request $request): bool
     {
         $authorization = $request->headers->get('Authorization');
 
-        return is_string($authorization) && 1 === preg_match('/^Bearer(?:\s+|$)/i', $authorization);
+        return is_string($authorization) && '' !== trim($authorization);
     }
 
     private function requestedPreflightMethod(Request $request): ?string
