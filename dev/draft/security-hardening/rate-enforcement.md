@@ -28,7 +28,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Implementation sequence
 
 1. Add a small rate-limit policy catalogue that owns bucket descriptors, profile scaling, retry metadata, reset eligibility, and diagnostics labels separately from request intent classification.
-2. Configure named Symfony limiters for implemented workflows: login, registration, password reset, website global, API read, API write, scheduler trigger, suspicious probes, setup apply, captcha failure, and any already-present import/high-impact admin flows.
+2. Configure named Symfony limiters or build descriptor-derived Symfony limiter factories for implemented workflows: login, registration, password reset, website global, API read, API write, scheduler trigger, suspicious probes, setup apply, captcha failure, and any already-present import/high-impact admin flows.
 3. Add a rate decision service that maps classified intents and subjects to one or more limiter consumes.
 4. Use costed `consume(n)` calls based on the action-cost catalogue.
 5. Add scoped `reset()` calls after successful password login and verified provider-backed captcha validation where the workflow explicitly allows it.
@@ -42,6 +42,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Config names use stable system/security namespaces; thresholds are defaults that can become Admin settings later.
 - Action costs remain semantic and profile-independent. The action-cost catalogue maps request intent to bucket family and credit cost; the rate-limit policy catalogue maps bucket families to capacity, window, TTL/retry metadata, reset eligibility, and diagnostics.
 - Bucket descriptors live in a small dedicated PHP catalogue class so later config-backed threshold tuning can attach at one boundary without changing classifiers, subscribers, or controllers.
+- Descriptor limits are stored as credit budgets while the table below describes user-visible action counts. For example, a three-submission registration policy with a five-credit registration cost is represented as a 15-credit bucket so Symfony `consume(n)` never exceeds the bucket capacity and accidentally degrades open.
 - The first Admin setting for rate limiting is a single Owner-gated Security setting with four modes: `off`, `standard`, `strict`, and `panic`. `standard` is the default. `strict` and `panic` derive from the standard bucket descriptors with fixed multipliers instead of duplicating every threshold by hand.
 - `off` is handled by one central facade gate that returns an allowed decision without calling Symfony limiter storage. It does not disable authentication, authorization, CSRF, passive abuse signals, suspicious-probe `400` handling, audit, or diagnostics.
 - Registration and password-reset success do not reset global buckets by default.
@@ -123,3 +124,4 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 - Known workflows are rate-limited through one facade.
 - Successful human outcomes can clear scoped local buckets without weakening global abuse detection.
+- Browser/API/scheduler rate-limit responses are redacted, include only safe request references, and use `no-store` plus `Retry-After` where available.

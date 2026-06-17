@@ -91,6 +91,7 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         return [
             'REMOTE_ADDR' => $ip,
             'HTTP_USER_AGENT' => 'RateLimitEnforcementControllerTest',
+            'HTTP_X_RATE_LIMIT_TESTING' => '1',
         ];
     }
 

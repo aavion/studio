@@ -264,6 +264,10 @@ services:
         arguments:
             $cachePool: '@cache.rate_limiter'
 
+    App\Security\RateLimit\RateLimitRequestSubscriber:
+        arguments:
+            $environment: '%kernel.environment%'
+
     App\Localization\TranslationLanguageCatalog:
         arguments:
             $projectDir: '%kernel.project_dir%'

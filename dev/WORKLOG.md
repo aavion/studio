@@ -83,6 +83,9 @@
 - Started the rate-enforcement slice after `feat-security-admin-acl-enforcement` merged, archived the completed Admin ACL branch notes into `dev/WORKLOG_HISTORY.md`, and refreshed the active worklog for the new branch.
 - Updated `composer.lock` after dependency resolution refreshed `guzzlehttp/psr7` to 2.12.0 and `justinrainbow/json-schema` to 6.10.0.
 - Recorded rate-enforcement product decisions: exact `/user/login?bypass=1` recovery path, fail-open limiter-storage degradation, one Owner-gated rate-limit mode setting with `off`/`standard`/`strict`/`panic`, and a dedicated rate-limit policy catalogue that keeps bucket budgets/profile scaling separate from semantic action costs.
+- Added the rate-limit policy catalogue, profile scaling, Owner-gated Security setting, descriptor-backed Symfony limiter facade, request subscriber, redacted HTML/JSON `429`/probe `400` responses, fail-open diagnostics, Owner ordinary exemption, authenticated-user multiplier, `/api/live/**`/prefetch exclusions, login-success reset, and the dormant verified-provider captcha reset interface.
+- Added a test-environment opt-in header for the request subscriber so legacy functional tests that mutate Security settings or share synthetic visitors are not affected by global limiter state; production and development enforcement are unchanged.
+- Verification: focused syntax/lint checks for rate-limit, settings, message, translation, response, docs, and worklog files; focused PHPUnit for rate-limit catalogue/enforcer/reset, Security settings registry/form/API/UI, message catalogues, and HTTP enforcement responses; `php bin/console lint:container --env=test --no-debug`; `php bin/console render:route /admin/settings/security --role=owner --env=test --no-debug --include-status`; `bin/lint --diff`; full `php bin/phpunit` passed with 1424 tests and 9326 assertions.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

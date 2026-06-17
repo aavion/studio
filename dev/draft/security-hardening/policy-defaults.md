@@ -81,6 +81,8 @@ These are first implementation defaults. Branches may adjust them only with test
 
 Rate-limit implementation must keep action costs separate from bucket budgets. The action-cost catalogue assigns stable semantic costs to request intents, while a dedicated rate-limit policy catalogue owns bucket descriptors, capacities, windows, TTL/retry metadata, reset eligibility, diagnostics labels, and profile scaling. This keeps later tuning centralized and allows future config-backed thresholds to attach at the policy-catalogue boundary without changing classifiers, subscribers, or controllers.
 
+Descriptor capacities are implementation credit budgets, not necessarily the raw action count shown in the policy table. When an intent costs more than one credit, the descriptor capacity must be high enough for the documented number of attempts so Symfony `consume(n)` never asks a limiter to consume more tokens than the bucket can hold and accidentally turns a valid policy into fail-open degradation.
+
 The first Admin-facing rate setting is one Owner-gated Security setting with four modes:
 
 - `off`: central facade gate allows requests without calling limiter storage. Authentication, authorization, CSRF, suspicious-probe `400` handling, passive abuse signals, audit, and diagnostics remain active.

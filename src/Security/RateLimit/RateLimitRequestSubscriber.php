@@ -13,6 +13,7 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
     public function __construct(
         private RateLimitEnforcer $enforcer,
         private RateLimitResponseRenderer $responses,
+        private string $environment,
     ) {
     }
 
@@ -33,7 +34,7 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
         }
 
         $request = $event->getRequest();
-        if ($this->excludedPath($request->getPathInfo())) {
+        if (!$this->enabledForRequest($request->headers->get('X-Rate-Limit-Testing')) || $this->excludedPath($request->getPathInfo())) {
             return;
         }
 
@@ -54,5 +55,10 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
             || str_starts_with($path, '/_profiler')
             || str_starts_with($path, '/_wdt')
             || in_array($path, ['/favicon.ico', '/robots.txt'], true);
+    }
+
+    private function enabledForRequest(?string $testOptIn): bool
+    {
+        return 'test' !== $this->environment || '1' === $testOptIn;
     }
 }
