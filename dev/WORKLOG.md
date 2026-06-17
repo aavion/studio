@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-06-17  
+> **Updated**: 2026-06-18  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -80,6 +80,10 @@
 
 ## Branch Logs
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place new entries chronologically under the matching branch/date heading so reviewers can follow the PR context without reading full verification transcripts. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
+
+### 2026-06-18 feat-security-rate-enforcement
+- Added binding review-fix rules to `AGENTS.md`: review findings must be traced across adjacent and analogous boundaries before changes, fixed at the narrowest central boundary where practical, kept simple/modular/minimally invasive, checked for unreported neighboring edge cases, and covered with regression tests or documented reasoning for inspected-but-unchanged analogous paths.
+- Added binding PR-readiness audit rules to `AGENTS.md`: readiness checklist items must be reviewed as evidence-backed audit passes over the branch diff and affected runtime surfaces, including security/privacy, entry points, sessions/secrets/storage, module boundaries, route/API/live scopes, setup/init/CI, cross-platform and disabled-feature behavior, process/env handling, default seeds, translations/copy, drift, documentation, and captured follow-ups.
 
 ### 2026-06-17 feat-security-rate-enforcement
 - Started the rate-enforcement slice after `feat-security-admin-acl-enforcement` merged, archived the completed Admin ACL branch notes into `dev/WORKLOG_HISTORY.md`, and refreshed the active worklog for the new branch.
