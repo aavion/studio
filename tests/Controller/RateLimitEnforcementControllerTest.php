@@ -191,6 +191,40 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(429);
     }
 
+    public function testCorsBearerPreflightsSpendAuthFailureBudgetBeforeCorsShortCircuit(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.28'));
+        $this->setMode(RateLimitProfile::Panic);
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+
+        try {
+            $config->set(ApiFeaturePolicy::CORS_ENABLED_KEY, true, ConfigValueType::Boolean);
+            $config->set(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, ['https://client.example'], ConfigValueType::Json);
+
+            for ($i = 0; $i < 7; ++$i) {
+                $client->request('OPTIONS', '/api/v1/admin/settings/general', server: [
+                    'HTTP_ORIGIN' => 'https://client.example',
+                    'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+                    'HTTP_AUTHORIZATION' => sprintf('Bearer corsadm%02d.invalid-secret', $i),
+                ]);
+                self::assertNotSame(204, $client->getResponse()->getStatusCode());
+                self::assertNotSame(429, $client->getResponse()->getStatusCode());
+            }
+
+            $client->request('OPTIONS', '/api/v1/admin/settings/general', server: [
+                'HTTP_ORIGIN' => 'https://client.example',
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+                'HTTP_AUTHORIZATION' => 'Bearer corsadm08.invalid-secret',
+            ]);
+
+            self::assertResponseStatusCodeSame(429);
+        } finally {
+            $config->set(ApiFeaturePolicy::CORS_ENABLED_KEY, false, ConfigValueType::Boolean);
+            $config->set(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, [], ConfigValueType::Json);
+        }
+    }
+
     public function testRecoveryLoginRendersSpendRecoveryBucket(): void
     {
         $client = self::createClient(server: $this->server('198.51.100.23'));

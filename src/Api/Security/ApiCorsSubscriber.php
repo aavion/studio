@@ -44,6 +44,10 @@ final readonly class ApiCorsSubscriber implements EventSubscriberInterface
             return;
         }
 
+        if ($this->hasActualAuthorizationHeader($request)) {
+            return;
+        }
+
         $origin = $this->allowedOrigin($request);
         if (null === $origin) {
             return;
@@ -83,6 +87,11 @@ final readonly class ApiCorsSubscriber implements EventSubscriberInterface
         return $request->isMethod(Request::METHOD_OPTIONS)
             && is_string($request->headers->get('Origin'))
             && is_string($request->headers->get('Access-Control-Request-Method'));
+    }
+
+    private function hasActualAuthorizationHeader(Request $request): bool
+    {
+        return '' !== trim((string) $request->headers->get('Authorization', ''));
     }
 
     private function allowedOrigin(Request $request): ?string
