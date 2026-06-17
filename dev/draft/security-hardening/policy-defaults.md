@@ -106,7 +106,7 @@ The first Admin-facing rate setting is one Owner-gated Security setting with fou
 | Versioned API read | 600 safe requests per minute | API key fingerprint or visitor/anonymous subject | No success reset |
 | Versioned API write | 60 mutating requests per minute | API key fingerprint | No success reset |
 | Public anonymous API read | 120 safe requests per minute | Visitor ID; IP bucket as secondary signal | No success reset |
-| Scheduler trigger | Standard: 1 trigger per minute; Strict: 1 trigger per 15 minutes; Panic: 1 trigger per hour | API key fingerprint plus scheduler endpoint subject | No success reset |
+| Scheduler trigger | Standard: 1 trigger per minute; Strict: 1 trigger per 15 minutes; Panic: 1 trigger per hour | Pre-auth scheduler endpoint interval subject | No success reset |
 | Suspicious probes | Standard: 1 high-signal probe per 10 minutes; Strict: 1 per 15 minutes; Panic: 1 per 20 minutes | Visitor ID plus IP bucket | No success reset; return generic `400`; may drain suspicious buckets |
 
 Website global buckets count application/browser route handling, not static assets, generated assets, or `/api/live/**` polling. The first implementation should enforce both deliberate website buckets: the burst bucket catches very fast click/submit loops, while the sustained bucket catches automated crawling that stays just below the per-minute limit.
@@ -115,7 +115,7 @@ Website global buckets count application/browser route handling, not static asse
 
 Turbo/browser prefetch for safe `GET` requests should not spend the same budget as deliberate navigation. Use a dedicated prefetch observation bucket or lower-confidence passive signal weighting; do not let spoofable prefetch headers bypass authentication, authorization, CSRF, or domain validation. Expensive or side-effect-adjacent links should disable prefetch rather than relying on rate-limit forgiveness.
 
-Scheduler trigger limits must support a normal once-per-minute external cron in `standard`. `strict` and `panic` intentionally control the allowed external trigger interval instead of using the ordinary profile multiplier logic: `strict` allows one trigger per 15 minutes, and `panic` allows one trigger per hour. The scheduled tasks still use internal due-state logic, run locks, and task policies, so legitimate scheduler calls are expected and should not be treated as abuse by themselves.
+Scheduler trigger limits must support a normal once-per-minute external cron in `standard`. `strict` and `panic` intentionally control the allowed external trigger interval instead of using the ordinary profile multiplier logic: `strict` allows one trigger per 15 minutes, and `panic` allows one trigger per hour. The scheduled tasks still use internal due-state logic, run locks, and task policies, so legitimate scheduler calls are expected and should not be treated as abuse by themselves. Scheduler interval `429` responses are operational feedback for the caller and must not create passive security signals or extra abuse diagnostics by themselves; the configured caller already logs the response and can adjust its interval.
 
 Registered authenticated users receive higher limits than anonymous visitors where the workflow is not already account-specific. The first default is a 2x multiplier for deliberate website navigation and public-read style API usage after the request resolves to an active authenticated user. Login, registration, password-reset, captcha, scheduler, and suspicious-probe policies keep their explicit workflow limits.
 

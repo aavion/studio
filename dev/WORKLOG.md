@@ -91,6 +91,7 @@
 - Adjusted suspicious-probe profile scaling so strict/panic extend the probe window while the single-action credit floor prevents Symfony limiter consume failures below the probe action cost.
 - Extended `render:route` with request-header input and response-header output, then added CLI route-render coverage proving repeated `/cron/run` renders with Owner context and mutable Owner API key receive scheduler `429` with `Retry-After` and `no-store` instead of bypassing through the Owner exemption.
 - Added a production-environment guard to `render:route` so the debug renderer fails closed in `APP_ENV=prod` and remains available only for development/test diagnostics.
+- Clarified the scheduler rate-limit policy documentation: `/cron/run` uses an operational pre-auth interval guard, and legitimate scheduler `429` responses in strict/panic modes are not treated as abuse or security signals.
 - Verification: focused `render:route`, scheduler controller, and rate-limit enforcer PHPUnit coverage; `php bin/console lint:container --env=test --no-debug`; `bin/lint --diff`; full `php bin/phpunit` passed with 1435 tests and 9446 assertions.
 
 ### Archived Compacted Branch History
