@@ -94,7 +94,7 @@ The first Admin-facing rate setting is one Owner-gated Security setting with fou
 
 | Policy | Default | Subject | Success reset |
 | --- | --- | --- | --- |
-| Login failures | 5 failed attempts per 15 minutes | HMAC-redacted submitted username/email plus Visitor ID and IP bucket | Successful credential login resets only the login-attempt bucket |
+| Login failures | 5 failed attempts per 15 minutes | HMAC-redacted submitted username/email plus Visitor ID and IP bucket | Successful credential login resets only the login-attempt bucket for the same submitted-account/visitor/IP subjects |
 | Recovery login bypass | 2 recovery-login requests per minute, 10 per hour, retry after 30 minutes once exhausted | HMAC-redacted submitted username/email plus Visitor ID and IP bucket | Successful credential login re-evaluates active bans/limits under authenticated policy |
 | Registration submissions | 3 submissions per hour and 10 per day | HMAC-redacted submitted email plus Visitor ID and IP bucket | No automatic global reset |
 | Password-reset requests | 3 requests per hour and 10 per day | HMAC-redacted submitted email plus Visitor ID and IP bucket | No automatic global reset |
@@ -122,6 +122,8 @@ Registered authenticated users receive higher limits than anonymous visitors whe
 Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner session are exempt from ordinary rate-limit rejection, except for the scheduler trigger surface where a mutable Owner API key is the expected credential and the configured scheduler interval must still be enforced. Owner traffic may still record diagnostics and passive signals, but the request path must preserve Owner recovery and administrative operation access outside that explicit scheduler exception.
 
 Limiter storage degradation is fail-open by policy. If limiter storage, locking, or consume/reset operations fail, the facade should allow the request, emit safe Message-layer diagnostics where possible, and avoid creating an invisible Owner, login, setup, API, or scheduler lockout.
+
+Symfony limiter storage keys must be isolated by the active descriptor shape, including profile-derived capacity/window values, so changing between `standard`, `strict`, and `panic` does not reuse stale fixed-window state. Cache-backed limiter consumption should use the configured Symfony lock factory so concurrent failed credentials or API requests cannot race through the same remaining budget.
 
 ## Probe Path Policy
 

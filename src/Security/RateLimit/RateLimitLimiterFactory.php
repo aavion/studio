@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security\RateLimit;
 
 use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\RateLimiter\Storage\CacheStorage;
 
@@ -13,8 +14,10 @@ final class RateLimitLimiterFactory
     /** @var array<string, RateLimiterFactory> */
     private array $factories = [];
 
-    public function __construct(private readonly CacheItemPoolInterface $cachePool)
-    {
+    public function __construct(
+        private readonly CacheItemPoolInterface $cachePool,
+        private readonly ?LockFactory $lockFactory = null,
+    ) {
     }
 
     public function consume(RateLimitBucketDescriptor $descriptor, string $subjectKey, int $credits): \DateTimeImmutable|true
@@ -38,10 +41,15 @@ final class RateLimitLimiterFactory
         ]);
 
         return $this->factories[$key] ??= new RateLimiterFactory([
-            'id' => 'system.rate.'.$descriptor->name(),
+            'id' => implode('.', [
+                'system.rate',
+                $descriptor->name(),
+                (string) $descriptor->limit(),
+                (string) $descriptor->windowSeconds(),
+            ]),
             'policy' => 'fixed_window',
             'limit' => $descriptor->limit(),
             'interval' => $descriptor->windowSeconds().' seconds',
-        ], new CacheStorage($this->cachePool));
+        ], new CacheStorage($this->cachePool), $this->lockFactory);
     }
 }

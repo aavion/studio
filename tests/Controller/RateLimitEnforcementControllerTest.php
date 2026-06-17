@@ -171,6 +171,25 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(429);
     }
 
+    public function testInvalidBearerAdminMutationsSpendAuthFailureBudget(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.21'));
+        $this->setMode(RateLimitProfile::Panic);
+
+        for ($i = 0; $i < 7; ++$i) {
+            $client->request('PATCH', '/api/v1/admin/settings/general', server: [
+                'HTTP_AUTHORIZATION' => sprintf('Bearer admin%02d.invalid-secret', $i),
+            ]);
+            self::assertNotSame(429, $client->getResponse()->getStatusCode());
+        }
+
+        $client->request('PATCH', '/api/v1/admin/settings/general', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer admin08.invalid-secret',
+        ]);
+
+        self::assertResponseStatusCodeSame(429);
+    }
+
     public function testValidOwnerApiKeyUsesPostAuthOwnerExemption(): void
     {
         $prefix = 'rlowner';

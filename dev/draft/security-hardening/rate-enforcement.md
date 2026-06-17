@@ -57,7 +57,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Recovery login bypass is the exact `/user/login?bypass=1` browser path. It uses its own narrow bucket, bypasses ordinary website buckets needed to render the normal login form, and must not bypass CSRF, credential checks, login-failure accounting, audit logging, or post-login policy re-evaluation.
 - Workflows that do not exist in the current codebase receive catalogue entries only when doing so does not create dead services, routes, or unreachable tests.
 - Limiter keys come only from the shared subject/client-identity resolver. Raw request headers, API-key material, usernames, email addresses, and other user-submitted identifiers must never become keys directly; workflow account subjects are normalized and HMAC-redacted before they can be used for login, registration, or password-reset buckets.
-- Limiter storage degradation is fail-open by policy: the facade allows the request, records safe Message-layer diagnostics where possible, and preserves Owner recovery instead of returning an invisible hard block.
+- Limiter storage degradation is fail-open by policy: the facade allows the request, records safe Message-layer diagnostics where possible, and preserves Owner recovery instead of returning an invisible hard block. Symfony limiter state is isolated by descriptor capacity/window shape so profile changes do not reuse stale fixed-window state, and cache-backed consume operations use the configured Symfony lock factory.
 - Enforcement follows the Security policy order so workflow buckets, global buckets, suspicious buckets, active bans, recovery-login rendering, and Owner/Admin protections interact predictably.
 - Rate-limit responses use the documented response semantics: `429`, `Retry-After` when available, family-specific HTML/JSON bodies, redacted diagnostics, and `no-store`.
 - Suspicious-probe profile scaling extends the rejection window while preserving the one-probe action floor: `standard` 10 minutes, `strict` 15 minutes, and `panic` 20 minutes.
@@ -72,7 +72,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Edge cases
 
 - Multiple buckets may be consumed for one request; rejection should report the most user-relevant failed policy without leaking all internal counters.
-- Unsafe login submissions consume the login workflow bucket through the authentication-failure event when credentials fail; safe login, registration, and password-reset form renders do not spend workflow-specific buckets. Successful login resets only the login-attempt bucket for that subject and active rate profile.
+- Unsafe login submissions consume the login workflow bucket through the authentication-failure event when credentials fail; unsafe invalid API credentials consume stable Visitor/IP fallback buckets through the same authentication-failure path, including high-impact Admin API mutation families. Safe login, registration, and password-reset form renders do not spend workflow-specific buckets. Successful login resets only the login-attempt bucket for the same subject keys, including HMAC-redacted submitted-account keys, and the active rate profile.
 - Read-only API keys hitting write routes should still follow API write policy before or alongside authorization failure as decided by the handler order.
 - CORS preflight storms should not block legitimate configured browser clients through the write limiter, but invalid origin/header/method scans should remain visible to abuse diagnostics.
 - `/api/live/**` operation polling must continue to function during long admin operations, but high-signal suspicious probe paths below `/api/live/**` must still reach the early probe blocker and return the generic `400`.
@@ -94,7 +94,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test profile resolution for `off`, `standard`, `strict`, and `panic`, including the central `off` facade gate that performs no limiter consume.
 - Test that strict and panic profile values derive from the standard catalogue descriptors through documented multipliers.
 - Test that configurable limiter and mixed-signal windows are rejected or clamped when they exceed the retained evidence required by that policy.
-- Test successful login resets only the login bucket.
+- Test successful login resets only the login bucket, including the submitted-account key used by failed login enforcement.
 - Test verified captcha success can reset only the configured scoped bucket, while provider `none`/missing/disabled success resets nothing.
 - Test the captcha failure bucket descriptor and the dormant scoped reset interface without wiring a non-existing captcha provider.
 - Test captcha-on-`429` is unavailable without an active provider and falls back to retry-after behavior.
@@ -103,7 +103,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test response cache headers and redaction for browser/API/scheduler limit failures.
 - Test that any `no-store` headers added in this branch are route-scoped and do not claim to complete the full production HTTP security-header policy until the dedicated response-hardening/frontend-delivery slice defines CSP and related headers.
 - Test that non-existing optional workflows are not wired as dead routes/services and that later workflow branches have a clear catalogue attachment point.
-- Test limiter storage degradation and concurrent consume/reset behavior for the highest-risk workflows.
+- Test limiter storage degradation, profile-isolated limiter state, and locked consume behavior for the highest-risk workflows.
 - Test configured limiter service wiring with `lint:container`.
 
 ## Documentation and tracking

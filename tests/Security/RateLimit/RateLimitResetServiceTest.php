@@ -43,6 +43,41 @@ final class RateLimitResetServiceTest extends TestCase
         self::assertTrue($enforcer->check($request)->isAllowed());
     }
 
+    public function testLoginSuccessResetClearsSubmittedAccountLoginAttempts(): void
+    {
+        [$enforcer, $resets] = $this->services();
+
+        for ($i = 0; $i < 5; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/user/login', 'POST', [
+                'username' => 'shared-admin',
+                'password' => 'wrong',
+            ], [
+                'REMOTE_ADDR' => '203.0.113.'.(20 + $i),
+            ]))->isAllowed());
+        }
+
+        self::assertFalse($enforcer->check($this->request('/user/login', 'POST', [
+            'username' => 'shared-admin',
+            'password' => 'wrong',
+        ], [
+            'REMOTE_ADDR' => '203.0.113.90',
+        ]))->isAllowed());
+
+        self::assertTrue($resets->resetLoginAttempts($this->request('/user/login', 'POST', [
+            'username' => 'shared-admin',
+            'password' => 'correct',
+        ], [
+            'REMOTE_ADDR' => '203.0.113.91',
+        ])));
+
+        self::assertTrue($enforcer->check($this->request('/user/login', 'POST', [
+            'username' => 'shared-admin',
+            'password' => 'wrong',
+        ], [
+            'REMOTE_ADDR' => '203.0.113.92',
+        ]))->isAllowed());
+    }
+
     public function testLoginSuccessResetUsesActiveProfileDescriptor(): void
     {
         $config = new Config($this->connection());
@@ -136,11 +171,16 @@ final class RateLimitResetServiceTest extends TestCase
         );
     }
 
-    private function request(string $path, string $method): Request
+    /**
+     * @param array<string, string> $parameters
+     * @param array<string, string> $server
+     */
+    private function request(string $path, string $method, array $parameters = [], array $server = []): Request
     {
-        return Request::create($path, $method, server: [
+        return Request::create($path, $method, $parameters, server: [
             'REMOTE_ADDR' => '203.0.113.50',
             'HTTP_USER_AGENT' => 'RateLimitResetServiceTest',
+            ...$server,
         ]);
     }
 

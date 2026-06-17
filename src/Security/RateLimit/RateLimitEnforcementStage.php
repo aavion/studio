@@ -24,6 +24,9 @@ enum RateLimitEnforcementStage
                 'api_read',
                 'api_public_read',
                 'api_write',
+                'admin_mutation',
+                'upload_archive',
+                'download_diagnostics',
             ], true),
             self::Ordinary => !in_array($cost->bucketFamily(), [
                 'login',

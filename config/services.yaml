@@ -267,6 +267,7 @@ services:
     App\Security\RateLimit\RateLimitLimiterFactory:
         arguments:
             $cachePool: '@cache.rate_limiter'
+            $lockFactory: '@lock.factory'
 
     App\Security\RateLimit\RateLimitRequestSubscriber:
         arguments:

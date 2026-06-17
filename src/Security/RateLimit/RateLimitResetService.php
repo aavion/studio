@@ -8,8 +8,6 @@ use App\Core\Config\Config;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
 use App\Security\Abuse\AbuseRequestInspector;
-use App\Security\Abuse\AbuseSubject;
-use App\Security\Abuse\AbuseSubjectType;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
 use Symfony\Component\HttpFoundation\Request;
@@ -37,13 +35,8 @@ final readonly class RateLimitResetService
         $subjectResolution = $this->inspector->inspect($request)['subjects'];
         $reset = false;
 
-        foreach ([AbuseSubjectType::Visitor, AbuseSubjectType::IpBucket] as $type) {
-            $subject = $subjectResolution->first($type);
-            if (!$subject instanceof AbuseSubject) {
-                continue;
-            }
-
-            $reset = $this->reset($descriptor, $this->subjects->subjectKey($descriptor, $subject)) || $reset;
+        foreach ($this->subjects->subjectKeys($descriptor, $subjectResolution) as $subjectKey) {
+            $reset = $this->reset($descriptor, $subjectKey) || $reset;
         }
 
         return $reset;
