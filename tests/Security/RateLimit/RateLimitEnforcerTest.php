@@ -101,6 +101,39 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertSame('security.rate.recovery_login', $result->diagnosticsLabel());
     }
 
+    public function testPanicRecoveryLoginRenderAndSubmitFitBudgets(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Panic->value, ConfigValueType::String);
+        $enforcer = $this->enforcer(config: $config);
+
+        self::assertTrue($enforcer->check($this->request('/user/login?bypass=1'), RateLimitEnforcementStage::Ordinary)->isAllowed());
+        self::assertTrue($enforcer->check($this->request('/user/login', 'POST', [
+            'username' => 'recovery-owner',
+            'password' => 'wrong',
+        ]), RateLimitEnforcementStage::AuthenticationFailure)->isAllowed());
+    }
+
+    public function testBypassLoginPostUsesLoginFailureBudget(): void
+    {
+        $enforcer = $this->enforcer();
+
+        for ($i = 0; $i < 5; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/user/login?bypass=1', 'POST', [
+                'username' => 'manual-bypass',
+                'password' => 'wrong',
+            ]), RateLimitEnforcementStage::AuthenticationFailure)->isAllowed());
+        }
+
+        $result = $enforcer->check($this->request('/user/login?bypass=1', 'POST', [
+            'username' => 'manual-bypass',
+            'password' => 'wrong',
+        ]), RateLimitEnforcementStage::AuthenticationFailure);
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.login', $result->diagnosticsLabel());
+    }
+
     public function testLoginAttemptsShareSubmittedAccountAcrossVisitors(): void
     {
         $enforcer = $this->enforcer();

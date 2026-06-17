@@ -183,7 +183,7 @@ The codebase and other feature drafts expose several security-relevant surfaces 
 - Visitor IDs and IP buckets that resolve to an active Admin or Owner session must not be banned.
 - API keys owned by an active Owner and Visitor-ID/IP subjects that resolve to an active Owner session must not be rate-limited by ordinary application buckets.
 - Owner accounts must retain at least one documented recovery path. A policy that could deny all Owners is invalid.
-- Provide a recovery login path such as `/user/login?bypass=1` that renders the normal login form even when the current Visitor ID or IP bucket is banned or ordinary website buckets are exhausted. The bypass flag only bypasses ban/rate checks that would prevent rendering the login form; it does not bypass CSRF, credential validation, login-failure accounting, the dedicated recovery-login bucket, audit logging, or post-login policy re-evaluation.
+- Provide a recovery login path such as `GET /user/login?bypass=1` that renders the normal login form even when the current Visitor ID or IP bucket is banned or ordinary website buckets are exhausted. The bypass flag only bypasses ban/rate checks that would prevent rendering the login form; it does not bypass CSRF, credential validation, login-failure accounting, the dedicated recovery-login bucket, audit logging, or post-login policy re-evaluation. Unsafe login submissions with `bypass=1` remain normal login attempts.
 - The dedicated recovery-login bucket is intentionally small but not lockout-like: 2 recovery-login requests per minute, 10 per hour, and a 30-minute retry window after exhaustion.
 - Manual unban takes effect immediately and must be audited.
 

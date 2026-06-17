@@ -70,12 +70,17 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
 
     private function excludedPath(string $path): bool
     {
-        return str_starts_with($path, '/api/live/')
-            || str_starts_with($path, '/assets/')
-            || str_starts_with($path, '/build/')
-            || str_starts_with($path, '/_profiler')
-            || str_starts_with($path, '/_wdt')
+        return $this->pathMatchesPrefix($path, '/api/live')
+            || $this->pathMatchesPrefix($path, '/assets')
+            || $this->pathMatchesPrefix($path, '/build')
+            || $this->pathMatchesPrefix($path, '/_profiler')
+            || $this->pathMatchesPrefix($path, '/_wdt')
             || in_array($path, ['/favicon.ico', '/robots.txt'], true);
+    }
+
+    private function pathMatchesPrefix(string $path, string $prefix): bool
+    {
+        return $path === $prefix || str_starts_with($path, $prefix.'/');
     }
 
     private function enabledForRequest(?string $testOptIn): bool

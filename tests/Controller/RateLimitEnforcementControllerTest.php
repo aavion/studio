@@ -186,6 +186,22 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(429);
     }
 
+    public function testPanicRecoveryLoginRenderAndSubmitAreNotRateLimited(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.26'));
+        $this->setMode(RateLimitProfile::Panic);
+
+        $client->request('GET', '/user/login?bypass=1');
+        self::assertNotSame(429, $client->getResponse()->getStatusCode());
+
+        $client->request('POST', '/user/login', parameters: [
+            'username' => 'missing-recovery-user',
+            'password' => 'wrong-password',
+        ]);
+
+        self::assertNotSame(429, $client->getResponse()->getStatusCode());
+    }
+
     public function testRotatingInvalidBearerPrefixesDoNotBypassApiWriteBudget(): void
     {
         $client = self::createClient(server: $this->server('198.51.100.18'));

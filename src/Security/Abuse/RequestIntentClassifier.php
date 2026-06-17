@@ -107,7 +107,7 @@ final readonly class RequestIntentClassifier
             return $this->adminMutationIntent($segments, $route);
         }
 
-        if ($this->recoveryLogin($request, $segments, $route)) {
+        if ($this->recoveryLogin($request, $method, $segments, $route)) {
             return RequestIntent::RecoveryLogin;
         }
 
@@ -120,9 +120,10 @@ final readonly class RequestIntentClassifier
         };
     }
 
-    private function recoveryLogin(Request $request, array $segments, string $route): bool
+    private function recoveryLogin(Request $request, string $method, array $segments, string $route): bool
     {
-        return $this->matchesSegments($segments, 'user', 'login')
+        return 'GET' === $method
+            && $this->matchesSegments($segments, 'user', 'login')
             && $this->routeIs($route, 'user_login', 'n/a')
             && '1' === (string) $request->query->get('bypass', '');
     }

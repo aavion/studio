@@ -769,6 +769,40 @@ admin:
         required: 'This field is required.'
         save_failed: 'The settings could not be saved.'
         default_acl_group_unavailable: 'Enter an existing ACL group with minimum role User or lower, or leave the field empty.'
+    fields:
+      captcha_enabled:
+        label: 'Enable captcha'
+      captcha_provider:
+        label: 'Captcha provider'
+      captcha_preview:
+        label: 'Captcha preview'
+      rate_limit_mode:
+        label: 'Rate limiting'
+      audit_enabled:
+        label: 'Enable audit logging'
+      audit_events:
+        label: 'Audit event categories'
+      security_signal_retention_days:
+        label: 'Security signal retention'
+        help: 'Retention for passive security signals in days. Values above 30 days are not allowed because signals can contain request-derived identifiers.'
+      security_probe_path_patterns:
+        label: 'Suspicious probe path patterns'
+        help: 'One regular expression per line. Quoted CSV imports are accepted. Invalid or empty lists fall back to the protected defaults.'
+    options:
+      captcha:
+        none: 'No captcha provider'
+      rate_limit_mode:
+        off: 'Off'
+        standard: 'Standard'
+        strict: 'Strict'
+        panic: 'Panic'
+      audit:
+        authentication: 'Authentication events'
+        backend_actions: 'Backend maintenance actions'
+        operations: 'Operations maintenance actions'
+        packages: 'Package lifecycle actions'
+        settings: 'Settings changes'
+        other: 'Other future audit events'
   acl:
     actions:
       save: 'Save ACL matrix'

@@ -199,6 +199,11 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Browser,
             RequestIntent::RecoveryLogin,
         ];
+        yield 'recovery login bypass post stays login intent' => [
+            Request::create('/user/login?bypass=1', 'POST'),
+            RequestFamily::Browser,
+            RequestIntent::Login,
+        ];
         yield 'registration form render is ordinary navigation' => [
             Request::create('/user/register'),
             RequestFamily::Browser,
