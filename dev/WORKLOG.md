@@ -88,6 +88,7 @@
 - Verification: focused syntax/lint checks for rate-limit, settings, message, translation, response, docs, and worklog files; focused PHPUnit for rate-limit catalogue/enforcer/reset, Security settings registry/form/API/UI, message catalogues, and HTTP enforcement responses; `php bin/console lint:container --env=test --no-debug`; `php bin/console render:route /admin/settings/security --role=owner --env=test --no-debug --include-status`; `bin/lint --diff`; full `php bin/phpunit` passed with 1424 tests and 9326 assertions.
 - Hardened review-sensitive rate enforcement details: `/cron/run` is no longer Owner-exempt and now uses explicit scheduler intervals (`standard` 1/minute, `strict` 1/15 minutes, `panic` 1/hour), rate-policy descriptors are generated from user-visible action counts plus unique action-cost multipliers with a single-action profile floor, limiter degradation diagnostics report through the Message layer, and shared rendered HTTP error pages set `no-store` centrally.
 - Verification: focused PHPUnit for action-cost catalogue, rate-limit catalogue/enforcer/reset, public error pages, rate-limit response controllers, and message catalogues; full `php bin/phpunit` passed with 1431 tests and 9422 assertions.
+- Adjusted suspicious-probe profile scaling so strict/panic extend the probe window while the single-action credit floor prevents Symfony limiter consume failures below the probe action cost.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

@@ -81,7 +81,7 @@ final readonly class RateLimitPolicyCatalogue
             $this->bucket('admin.mutation', 'admin_mutation', 30, 300, 'security.rate.admin_mutation'),
             $this->bucket('upload_archive.validation', 'upload_archive', 20, 600, 'security.rate.upload_archive'),
             $this->bucket('download_diagnostics', 'download_diagnostics', 30, 600, 'security.rate.download_diagnostics'),
-            $this->bucket('suspicious.probe', 'suspicious_probe', 1, 600, 'security.rate.suspicious_probe', false),
+            $this->bucket('suspicious.probe', 'suspicious_probe', 1, 600, 'security.rate.suspicious_probe'),
         ];
     }
 

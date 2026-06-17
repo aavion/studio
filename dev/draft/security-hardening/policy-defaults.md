@@ -107,7 +107,7 @@ The first Admin-facing rate setting is one Owner-gated Security setting with fou
 | Versioned API write | 60 mutating requests per minute | API key fingerprint | No success reset |
 | Public anonymous API read | 120 safe requests per minute | Visitor ID; IP bucket as secondary signal | No success reset |
 | Scheduler trigger | Standard: 1 trigger per minute; Strict: 1 trigger per 15 minutes; Panic: 1 trigger per hour | API key fingerprint plus scheduler endpoint subject | No success reset |
-| Suspicious probes | 1 high-signal probe per 10 minutes | Visitor ID plus IP bucket | No success reset; return generic `400`; may drain suspicious buckets |
+| Suspicious probes | Standard: 1 high-signal probe per 10 minutes; Strict: 1 per 15 minutes; Panic: 1 per 20 minutes | Visitor ID plus IP bucket | No success reset; return generic `400`; may drain suspicious buckets |
 
 Website global buckets count application/browser route handling, not static assets, generated assets, or `/api/live/**` polling. The first implementation should enforce both deliberate website buckets: the burst bucket catches very fast click/submit loops, while the sustained bucket catches automated crawling that stays just below the per-minute limit.
 
@@ -127,7 +127,7 @@ Limiter storage degradation is fail-open by policy. If limiter storage, locking,
 
 - Probe paths are configurable as an editable pattern list, not as raw JSON. The default UI should use one regular expression per line and may accept quoted CSV imports; unquoted newline entries must be preserved as-is so commas inside regex syntax remain valid. The shipped defaults cover high-signal requests such as `.env`, `.git`, backup archives, database dumps, common admin panels from other software, shell upload probes, and known scanner paths.
 - High-signal probes are never treated as normal website navigation. The default response is a generic `400 Bad Request` without revealing whether the path exists, and the event records a suspicious probe signal.
-- One high-signal probe per subject per 10 minutes is the first threshold. Further probes may drain suspicious buckets and feed auto-ban decisions when auto-ban is enabled.
+- One high-signal probe per subject per 10 minutes is the first threshold. Strict and panic extend that window while keeping a single-probe credit floor so profile scaling cannot produce an unusable capacity below the suspicious-probe action cost. Further probes may drain suspicious buckets and feed auto-ban decisions when auto-ban is enabled.
 - Honeypot probe paths should remain restrictive. They may share the same generic `400` response and signal path even when they do not map to real routes.
 - Probe-path configuration should use anchored, normalized path patterns with tests that prove common application routes, package routes, media routes, and editor routes are not accidentally captured.
 - Probe-path configuration changes should be auditable once Security settings exist.

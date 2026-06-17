@@ -54,17 +54,32 @@ final class RateLimitPolicyCatalogueTest extends TestCase
         self::assertSame(120, $panic->windowSeconds());
     }
 
-    public function testNonScalableBucketsStayStableAcrossProfiles(): void
+    public function testRecoveryBucketsStayStableAcrossProfiles(): void
     {
         $catalogue = new RateLimitPolicyCatalogue();
 
-        $standard = $catalogue->descriptor('suspicious.probe', RateLimitProfile::Standard);
-        $panic = $catalogue->descriptor('suspicious.probe', RateLimitProfile::Panic);
+        $standard = $catalogue->descriptor('recovery.login.minute', RateLimitProfile::Standard);
+        $panic = $catalogue->descriptor('recovery.login.minute', RateLimitProfile::Panic);
 
         self::assertNotNull($standard);
         self::assertNotNull($panic);
         self::assertSame($standard->limit(), $panic->limit());
         self::assertSame($standard->windowSeconds(), $panic->windowSeconds());
+    }
+
+    public function testProbeScalingKeepsOneActionFloorWhileExtendingWindow(): void
+    {
+        $catalogue = new RateLimitPolicyCatalogue();
+
+        $strict = $catalogue->descriptor('suspicious.probe', RateLimitProfile::Strict);
+        $panic = $catalogue->descriptor('suspicious.probe', RateLimitProfile::Panic);
+
+        self::assertNotNull($strict);
+        self::assertNotNull($panic);
+        self::assertSame(10, $strict->limit());
+        self::assertSame(900, $strict->windowSeconds());
+        self::assertSame(10, $panic->limit());
+        self::assertSame(1200, $panic->windowSeconds());
     }
 
     public function testPolicyUsesActionCostsAsCreditMultipliers(): void
