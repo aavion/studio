@@ -63,7 +63,9 @@ final readonly class RequestIntentClassifier
         }
 
         if (RequestFamily::Scheduler === $family) {
-            return RequestIntent::SchedulerTrigger;
+            return $this->schedulerTrigger($segments)
+                ? RequestIntent::SchedulerTrigger
+                : RequestIntent::BrowserNavigation;
         }
 
         if (RequestFamily::LiveApi === $family) {
@@ -132,8 +134,13 @@ final readonly class RequestIntentClassifier
 
     private function setupApply(Request $request, array $segments): bool
     {
-        return $this->matchesSegments($segments, 'setup', 'review')
+        return $this->matchesExactSegments($segments, 'setup', 'review')
             && 'apply' === (string) $request->request->get('_setup_action', '');
+    }
+
+    private function schedulerTrigger(array $segments): bool
+    {
+        return $this->matchesExactSegments($segments, 'cron', 'run');
     }
 
     private function adminMutationIntent(array $segments, string $route): RequestIntent
@@ -273,6 +280,11 @@ final readonly class RequestIntentClassifier
         }
 
         return [] !== $segments;
+    }
+
+    private function matchesExactSegments(array $pathSegments, string ...$segments): bool
+    {
+        return count($pathSegments) === count($segments) && $this->matchesSegments($pathSegments, ...$segments);
     }
 
     private function hasSegment(array $pathSegments, string ...$segments): bool

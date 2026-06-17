@@ -31,7 +31,7 @@ final readonly class AdminControllerContext
             return null;
         }
 
-        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
             'area' => BackendArea::Admin->value,
             'access_decision' => $decision->toArray(),
         ]);

@@ -570,6 +570,8 @@ services:
 
     App\View\Http\HttpErrorRenderer:
         arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
             $debug: '%kernel.debug%'
 
     App\View\Http\HttpErrorSubscriber:

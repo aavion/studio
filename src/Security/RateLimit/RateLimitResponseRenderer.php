@@ -26,7 +26,7 @@ final readonly class RateLimitResponseRenderer
     {
         $response = $this->jsonSurface($request)
             ? $this->apiResponse($request, Response::HTTP_TOO_MANY_REQUESTS)
-            : $this->httpError->render(Response::HTTP_TOO_MANY_REQUESTS, $request, context: $this->context($request));
+            : $this->httpError->resolve(Response::HTTP_TOO_MANY_REQUESTS, $request, context: $this->context($request));
 
         if (null !== $result->retryAfterSeconds()) {
             $response->headers->set('Retry-After', (string) $result->retryAfterSeconds());
@@ -39,9 +39,21 @@ final readonly class RateLimitResponseRenderer
     {
         $response = $this->jsonSurface($request)
             ? $this->apiResponse($request, Response::HTTP_BAD_REQUEST)
-            : $this->httpError->render(Response::HTTP_BAD_REQUEST, $request, context: $this->context($request));
+            : $this->httpError->resolve(Response::HTTP_BAD_REQUEST, $request, context: $this->context($request));
 
         return $this->noStore($response);
+    }
+
+    public function bare(Request $request, int $status, ?int $retryAfterSeconds = null): Response
+    {
+        $headers = [];
+        $context = $this->context($request);
+        if (null !== $retryAfterSeconds) {
+            $headers['Retry-After'] = (string) $retryAfterSeconds;
+            $context['bare_context'] = 'retry-after: '.$retryAfterSeconds;
+        }
+
+        return $this->httpError->bare($status, $request, $context, $headers);
     }
 
     private function apiResponse(Request $request, int $status): Response

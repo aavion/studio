@@ -36,6 +36,8 @@ final class ActionCostCatalogueTest extends TestCase
         $probe = $catalogue->costFor($classifier->classify(Request::create('/.env')));
         $apiWrite = $catalogue->costFor($classifier->classify(Request::create('/api/v1/content/items', 'POST')));
         $adminApiWrite = $catalogue->costFor($classifier->classify(Request::create('/api/v1/admin/operations/cleanup', 'POST')));
+        $schedulerTrigger = $catalogue->costFor($classifier->classify(Request::create('/cron/run')));
+        $schedulerNotFound = $catalogue->costFor($classifier->classify(Request::create('/cron/not-found')));
         $setupWizard = $catalogue->costFor($classifier->classify(Request::create('/setup/database', 'POST', [
             '_setup_action' => 'test_database',
         ])));
@@ -49,6 +51,8 @@ final class ActionCostCatalogueTest extends TestCase
         self::assertSame(5, $apiWrite->credits());
         self::assertSame('admin_mutation', $adminApiWrite->bucketFamily());
         self::assertSame(8, $adminApiWrite->credits());
+        self::assertSame('scheduler', $schedulerTrigger->bucketFamily());
+        self::assertSame('website', $schedulerNotFound->bucketFamily());
         self::assertSame('setup', $setupWizard->bucketFamily());
         self::assertSame(1, $setupWizard->credits());
         self::assertSame('setup_apply', $setupApply->bucketFamily());

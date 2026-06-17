@@ -62,7 +62,7 @@ final class AdminSchedulerController extends AbstractController
 
         $task = $this->registeredTask($identifier);
         if (!$task instanceof SchedulerTask) {
-            return $this->httpError->render(Response::HTTP_NOT_FOUND, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_NOT_FOUND, $request, context: [
                 'task' => $identifier,
             ]);
         }
@@ -112,7 +112,7 @@ final class AdminSchedulerController extends AbstractController
         $task = $this->registeredTask($identifier);
 
         if (!$task instanceof SchedulerTask) {
-            return $this->httpError->render(Response::HTTP_NOT_FOUND, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_NOT_FOUND, $request, context: [
                 'task' => $identifier,
             ]);
         }
@@ -143,7 +143,7 @@ final class AdminSchedulerController extends AbstractController
             return null;
         }
 
-        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
             'feature' => self::FEATURE,
             'required_state' => $mutable ? 'mutable' : 'visible',
         ]);

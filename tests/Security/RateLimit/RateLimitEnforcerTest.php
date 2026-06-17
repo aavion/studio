@@ -228,6 +228,19 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertSame('security.rate.scheduler', $result->diagnosticsLabel());
     }
 
+    public function testSchedulerIntervalOnlyAppliesToCronRun(): void
+    {
+        $enforcer = $this->enforcer();
+
+        self::assertTrue($enforcer->check($this->request('/cron/not-found', 'GET'))->isAllowed());
+        self::assertTrue($enforcer->check($this->request('/cron/run', 'GET'))->isAllowed());
+
+        $result = $enforcer->check($this->request('/cron/run', 'GET'));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.scheduler', $result->diagnosticsLabel());
+    }
+
     public function testStrictSchedulerIntervalRejectsSecondRunWithinFifteenMinutes(): void
     {
         $config = new Config($this->connection());

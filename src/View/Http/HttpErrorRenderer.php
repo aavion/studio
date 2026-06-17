@@ -7,6 +7,8 @@ namespace App\View\Http;
 use App\Content\Read\PublishedContentResolver;
 use App\Content\Render\ContentFieldsetRenderer;
 use App\Core\Access\AccessActor;
+use App\Core\Log\AccessRequestMetadata;
+use App\Setup\SetupCompletionMarker;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,35 +23,52 @@ final readonly class HttpErrorRenderer
         private PublishedContentResolver $contentResolver,
         private ContentFieldsetRenderer $fieldsetRenderer,
         private Security $security,
+        private SetupCompletionMarker $setupCompletionMarker,
+        private AccessRequestMetadata $requestMetadata,
+        private string $projectDir,
+        private string $environment,
         private bool $debug = false,
     ) {
     }
 
     public function notFound(Request $request, ?Throwable $exception = null): Response
     {
-        return $this->render(Response::HTTP_NOT_FOUND, $request, $exception);
+        return $this->resolve(Response::HTTP_NOT_FOUND, $request, exception: $exception);
     }
 
     public function unauthorized(Request $request, ?Throwable $exception = null): Response
     {
-        return $this->render(Response::HTTP_UNAUTHORIZED, $request, $exception);
+        return $this->resolve(Response::HTTP_UNAUTHORIZED, $request, exception: $exception);
     }
 
     public function forbidden(Request $request, ?Throwable $exception = null): Response
     {
-        return $this->render(Response::HTTP_FORBIDDEN, $request, $exception);
+        return $this->resolve(Response::HTTP_FORBIDDEN, $request, exception: $exception);
     }
 
     public function maintenance(Request $request, ?Throwable $exception = null): Response
     {
-        return $this->render(Response::HTTP_SERVICE_UNAVAILABLE, $request, $exception);
+        return $this->resolve(Response::HTTP_SERVICE_UNAVAILABLE, $request, exception: $exception);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     * @param array<string, string> $headers
+     */
+    public function bare(int $statusCode, ?Request $request = null, array $context = [], array $headers = []): Response
+    {
+        return $this->bareResponse($statusCode, $request, $context, $headers);
     }
 
     /**
      * @param array<string, mixed> $context
      */
-    public function render(int $statusCode, Request $request, ?Throwable $exception = null, array $context = []): Response
+    public function resolve(int $statusCode, Request $request, array $context = [], ?Throwable $exception = null, bool $forceBare = false): Response
     {
+        if ($forceBare || $this->preSetupBareStatus($statusCode)) {
+            return $this->bareResponse($statusCode, $request, $context);
+        }
+
         $variables = $this->variables($statusCode, $request, $exception, $context);
 
         if (Response::HTTP_UNAUTHORIZED === $statusCode && !$this->isAuthenticated()) {
@@ -122,6 +141,83 @@ final readonly class HttpErrorRenderer
         $response->headers->set('Cache-Control', 'no-store');
 
         return $response;
+    }
+
+    private function preSetupBareStatus(int $statusCode): bool
+    {
+        return $this->knownErrorStatus($statusCode)
+            && !$this->setupCompletionMarker->isComplete($this->projectDir, $this->environment);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     * @param array<string, string> $headers
+     */
+    private function bareResponse(int $statusCode, ?Request $request = null, array $context = [], array $headers = []): Response
+    {
+        return new Response($this->bareHtml($statusCode, $request, $context), $statusCode, [
+            ...$headers,
+            'Cache-Control' => 'no-store',
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function bareHtml(int $statusCode, ?Request $request, array $context): string
+    {
+        $statusText = Response::$statusTexts[$statusCode] ?? 'HTTP Error';
+        $contextText = $this->bareContextText($context);
+        $contextHtml = null === $contextText ? '' : "\n<p>".$this->escape($contextText).'</p>';
+
+        return '<!doctype html>'
+            ."\n".'<meta charset="utf-8">'
+            ."\n".'<h1 style="color:darkblue;">'.$statusCode.' - '.$this->escape($statusText).'</h1>'
+            .$contextHtml
+            ."\n".'<pre><strong>Request-ID:</strong> '.$this->escape($this->bareRequestId($request, $context)).'</pre>';
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function bareContextText(array $context): ?string
+    {
+        $value = $context['bare_context'] ?? null;
+        if (!is_scalar($value)) {
+            return null;
+        }
+
+        $text = trim((string) $value);
+
+        return '' === $text ? null : substr($text, 0, 500);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function bareRequestId(?Request $request, array $context): string
+    {
+        if ($request instanceof Request) {
+            return $this->requestMetadata->requestId($request);
+        }
+
+        $contextRequestId = $context['request_id'] ?? null;
+        if (is_scalar($contextRequestId) && '' !== trim((string) $contextRequestId)) {
+            return substr((string) $contextRequestId, 0, 64);
+        }
+
+        return 'n/a';
+    }
+
+    private function escape(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    private function knownErrorStatus(int $statusCode): bool
+    {
+        return $statusCode >= 400 && $statusCode < 600 && isset(Response::$statusTexts[$statusCode]);
     }
 
     /**

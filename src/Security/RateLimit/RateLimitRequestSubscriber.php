@@ -7,6 +7,7 @@ namespace App\Security\RateLimit;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\Setup\SetupCompletionMarker;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -52,7 +53,7 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
         }
 
         if (!$this->setupCompleted()) {
-            $event->setResponse($this->bareSuspiciousProbeResponse());
+            $event->setResponse($this->responses->bare($request, Response::HTTP_BAD_REQUEST));
 
             return;
         }
@@ -71,23 +72,25 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
             return;
         }
 
-        if (!$this->setupCompleted()) {
+        $setupCompleted = $this->setupCompleted();
+        if (!$setupCompleted && !$this->setupApplyRequest($request)) {
             return;
         }
 
-        $this->apply($event, RateLimitEnforcementStage::Ordinary);
+        $this->apply($event, RateLimitEnforcementStage::Ordinary, bareResponse: !$setupCompleted);
     }
 
-    private function bareSuspiciousProbeResponse(): Response
-    {
-        return new Response('', Response::HTTP_BAD_REQUEST, ['Cache-Control' => 'no-store']);
-    }
-
-    private function apply(RequestEvent $event, RateLimitEnforcementStage $stage): void
+    private function apply(RequestEvent $event, RateLimitEnforcementStage $stage, bool $bareResponse = false): void
     {
         $request = $event->getRequest();
         $result = $this->enforcer->check($request, $stage);
         if ($result->isAllowed()) {
+            return;
+        }
+
+        if ($bareResponse) {
+            $event->setResponse($this->responses->bare($request, Response::HTTP_TOO_MANY_REQUESTS, $result->retryAfterSeconds()));
+
             return;
         }
 
@@ -109,6 +112,13 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
     private function pathMatchesPrefix(string $path, string $prefix): bool
     {
         return $path === $prefix || str_starts_with($path, $prefix.'/');
+    }
+
+    private function setupApplyRequest(Request $request): bool
+    {
+        return 'POST' === strtoupper($request->getMethod())
+            && '/setup/review' === $request->getPathInfo()
+            && 'apply' === (string) $request->request->get('_setup_action', '');
     }
 
     private function enabledForRequest(?string $testOptIn): bool

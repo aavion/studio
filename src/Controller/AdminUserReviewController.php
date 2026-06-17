@@ -193,7 +193,7 @@ final class AdminUserReviewController extends AbstractController
             return null;
         }
 
-        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
             'area' => BackendArea::Admin->value,
             'access_decision' => $decision->toArray(),
         ]);
@@ -209,7 +209,7 @@ final class AdminUserReviewController extends AbstractController
             return null;
         }
 
-        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
             'feature' => 'admin.users.review',
             'required_state' => $mutable ? 'mutable' : 'visible',
         ]);

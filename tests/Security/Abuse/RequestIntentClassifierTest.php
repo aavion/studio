@@ -190,6 +190,16 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Scheduler,
             RequestIntent::SchedulerTrigger,
         ];
+        yield 'scheduler reserved non-run path is ordinary navigation' => [
+            Request::create('/cron/not-found'),
+            RequestFamily::Scheduler,
+            RequestIntent::BrowserNavigation,
+        ];
+        yield 'scheduler trigger requires exact path' => [
+            Request::create('/cron/run/extra'),
+            RequestFamily::Scheduler,
+            RequestIntent::BrowserNavigation,
+        ];
         yield 'setup wizard post is setup navigation' => [
             Request::create('/setup/database', 'POST', [
                 '_setup_action' => 'test_database',
@@ -203,6 +213,13 @@ final class RequestIntentClassifierTest extends TestCase
             ]),
             RequestFamily::Setup,
             RequestIntent::SetupApply,
+        ];
+        yield 'setup apply requires exact review path' => [
+            Request::create('/setup/review/extra', 'POST', [
+                '_setup_action' => 'apply',
+            ]),
+            RequestFamily::Setup,
+            RequestIntent::BrowserNavigation,
         ];
         yield 'settings mutation' => [
             Request::create('/admin/settings/security', 'POST'),

@@ -116,7 +116,7 @@ final class AdminOperationController extends AbstractController
         $report = $this->liveOperationRunStore->report($operationId);
 
         if (null === $report) {
-            return $this->httpError->render(Response::HTTP_NOT_FOUND, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_NOT_FOUND, $request, context: [
                 'area' => BackendArea::Admin->value,
                 'operation_id' => $operationId,
             ]);
@@ -157,7 +157,7 @@ final class AdminOperationController extends AbstractController
 
         $targetFeature = $this->operationFeatures->mutationFeatureForOperation((string) $continuation['operation']);
         if (is_string($targetFeature) && !$this->adminAcl->isMutable($targetFeature, $this->adminContext->actor($this->getUser()))) {
-            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
                 'feature' => $targetFeature,
                 'required_state' => 'mutable',
             ]);
@@ -204,7 +204,7 @@ final class AdminOperationController extends AbstractController
             return null;
         }
 
-        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
             'feature' => self::FEATURE,
             'required_state' => $mutable ? 'mutable' : 'visible',
         ]);
