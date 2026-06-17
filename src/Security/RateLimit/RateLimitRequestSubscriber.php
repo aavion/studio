@@ -23,7 +23,7 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
     public static function getSubscribedEvents(): array
     {
         return [
-            KernelEvents::REQUEST => ['onKernelRequest', -2],
+            KernelEvents::REQUEST => ['onKernelRequest', 12],
         ];
     }
 
@@ -52,6 +52,7 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
     {
         return str_starts_with($path, '/api/live/')
             || str_starts_with($path, '/assets/')
+            || str_starts_with($path, '/build/')
             || str_starts_with($path, '/_profiler')
             || str_starts_with($path, '/_wdt')
             || in_array($path, ['/favicon.ico', '/robots.txt'], true);

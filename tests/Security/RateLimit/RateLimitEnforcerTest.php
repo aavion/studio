@@ -66,6 +66,37 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertSame('security.rate.login', $result->diagnosticsLabel());
     }
 
+    public function testLoginFormRendersDoNotSpendLoginWorkflowBudget(): void
+    {
+        $enforcer = $this->enforcer();
+
+        for ($i = 0; $i < 6; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/user/login'))->isAllowed());
+        }
+
+        for ($i = 0; $i < 5; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/user/login', 'POST'))->isAllowed());
+        }
+
+        $result = $enforcer->check($this->request('/user/login', 'POST'));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.login', $result->diagnosticsLabel());
+    }
+
+    public function testRecoveryLoginBypassUsesDedicatedBucketWithoutWebsiteBudget(): void
+    {
+        $enforcer = $this->enforcer();
+
+        self::assertTrue($enforcer->check($this->request('/user/login?bypass=1'))->isAllowed());
+        self::assertTrue($enforcer->check($this->request('/user/login?bypass=1'))->isAllowed());
+
+        $result = $enforcer->check($this->request('/user/login?bypass=1'));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.recovery_login', $result->diagnosticsLabel());
+    }
+
     public function testOwnerIsExemptFromOrdinaryRateLimitRejection(): void
     {
         $tokenStorage = $this->tokenStorage(UserRole::Owner);

@@ -28,8 +28,9 @@ final readonly class RateLimitResetService
 
     public function resetLoginAttempts(Request $request): bool
     {
-        $descriptor = $this->catalogue->descriptor('login.failure');
-        if (!$descriptor instanceof RateLimitBucketDescriptor || !$descriptor->resettable() || !$this->resetStorageEnabled()) {
+        $profile = $this->profile();
+        $descriptor = $this->catalogue->descriptor('login.failure', $profile);
+        if (!$descriptor instanceof RateLimitBucketDescriptor || !$descriptor->resettable() || !$profile->consumesLimiterStorage()) {
             return false;
         }
 
@@ -51,11 +52,12 @@ final readonly class RateLimitResetService
     public function resetVerifiedCaptchaFailure(Request $request, ?string $provider, bool $verified): bool
     {
         $provider = is_string($provider) ? trim($provider) : '';
-        if (!$verified || '' === $provider || 'none' === strtolower($provider) || !$this->resetStorageEnabled()) {
+        $profile = $this->profile();
+        if (!$verified || '' === $provider || 'none' === strtolower($provider) || !$profile->consumesLimiterStorage()) {
             return false;
         }
 
-        $descriptor = $this->catalogue->descriptor('captcha.failure');
+        $descriptor = $this->catalogue->descriptor('captcha.failure', $profile);
         if (!$descriptor instanceof RateLimitBucketDescriptor || !$descriptor->resettable()) {
             return false;
         }
@@ -70,10 +72,9 @@ final readonly class RateLimitResetService
         return $reset;
     }
 
-    private function resetStorageEnabled(): bool
+    private function profile(): RateLimitProfile
     {
-        return RateLimitProfile::fromMixed($this->config->get(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Standard->value))
-            ->consumesLimiterStorage();
+        return RateLimitProfile::fromMixed($this->config->get(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Standard->value));
     }
 
     private function reset(RateLimitBucketDescriptor $descriptor, string $subjectKey): bool

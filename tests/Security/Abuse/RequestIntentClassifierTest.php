@@ -164,6 +164,31 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Admin,
             RequestIntent::AdminOperation,
         ];
+        yield 'login form render is ordinary navigation' => [
+            Request::create('/user/login'),
+            RequestFamily::Browser,
+            RequestIntent::BrowserNavigation,
+        ];
+        yield 'recovery login bypass uses recovery intent' => [
+            Request::create('/user/login?bypass=1'),
+            RequestFamily::Browser,
+            RequestIntent::RecoveryLogin,
+        ];
+        yield 'registration form render is ordinary navigation' => [
+            Request::create('/user/register'),
+            RequestFamily::Browser,
+            RequestIntent::BrowserNavigation,
+        ];
+        yield 'password reset form render is ordinary navigation' => [
+            Request::create('/user/reset-password'),
+            RequestFamily::Browser,
+            RequestIntent::BrowserNavigation,
+        ];
+        yield 'public login post is login intent' => [
+            Request::create('/user/login', 'POST'),
+            RequestFamily::Browser,
+            RequestIntent::Login,
+        ];
         yield 'public password reset stays public reset intent' => [
             Request::create('/user/password-reset', 'POST'),
             RequestFamily::Browser,

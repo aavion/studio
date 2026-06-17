@@ -27,7 +27,7 @@ final readonly class RequestIntentClassifier
 
         return new AbuseRequestProfile(
             $family,
-            $this->intent($method, $segments, $route, $family, $prefetch, $suspiciousProbe),
+            $this->intent($request, $method, $segments, $route, $family, $prefetch, $suspiciousProbe),
             $method,
             substr($path, 0, 1024),
             $route,
@@ -53,6 +53,7 @@ final readonly class RequestIntentClassifier
     }
 
     private function intent(
+        Request $request,
         string $method,
         array $segments,
         string $route,
@@ -96,13 +97,27 @@ final readonly class RequestIntentClassifier
             return $this->adminMutationIntent($segments, $route);
         }
 
+        if ($this->recoveryLogin($request, $segments, $route)) {
+            return RequestIntent::RecoveryLogin;
+        }
+
         return match (true) {
-            $this->routeIs($route, 'user_login') || $this->matchesSegments($segments, 'user', 'login') => RequestIntent::Login,
-            $this->routeIs($route, 'user_register', 'user_invitation_accept') || $this->matchesSegments($segments, 'user', 'register') || $this->matchesSegments($segments, 'user', 'invitation') => RequestIntent::Registration,
-            $this->routeIs($route, 'user_reset_password', 'user_password_reset_token', 'user_security_review') || $this->matchesSegments($segments, 'user', 'password-reset') || $this->matchesSegments($segments, 'user', 'reset-password') || $this->matchesSegments($segments, 'user', 'security-review') => RequestIntent::PasswordReset,
+            !$this->safeMethod($method) && ($this->routeIs($route, 'user_login') || $this->matchesSegments($segments, 'user', 'login')) => RequestIntent::Login,
+            !$this->safeMethod($method) && ($this->routeIs($route, 'user_register', 'user_invitation_accept') || $this->matchesSegments($segments, 'user', 'register') || $this->matchesSegments($segments, 'user', 'invitation')) => RequestIntent::Registration,
+            !$this->safeMethod($method) && ($this->routeIs($route, 'user_reset_password', 'user_password_reset_token', 'user_security_review') || $this->matchesSegments($segments, 'user', 'password-reset') || $this->matchesSegments($segments, 'user', 'reset-password') || $this->matchesSegments($segments, 'user', 'security-review')) => RequestIntent::PasswordReset,
             !$this->safeMethod($method) => RequestIntent::FormSubmit,
             default => RequestIntent::BrowserNavigation,
         };
+    }
+
+    /**
+     * @param list<string> $segments
+     */
+    private function recoveryLogin(Request $request, array $segments, string $route): bool
+    {
+        return $this->matchesSegments($segments, 'user', 'login')
+            && $this->routeIs($route, 'user_login', 'n/a')
+            && '1' === (string) $request->query->get('bypass', '');
     }
 
     private function adminMutationIntent(array $segments, string $route): RequestIntent

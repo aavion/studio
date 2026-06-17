@@ -22,6 +22,7 @@ final readonly class ContentRouteGuard
         'api',
         'assets',
         '_profiler',
+        'profiler',
         '_wdt',
         'build',
         'packages',

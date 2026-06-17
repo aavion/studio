@@ -8,16 +8,12 @@ use App\Command\RenderRouteCommand;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Debug\RouteRenderer;
-use App\Entity\UserAccount;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\RateLimit\RateLimitProfile;
-use App\Security\UserRole;
-use Doctrine\ORM\EntityManagerInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
-use Symfony\Component\Uid\Uuid;
 
 final class RenderRouteCommandTest extends KernelTestCase
 {
@@ -81,34 +77,28 @@ final class RenderRouteCommandTest extends KernelTestCase
         self::assertStringContainsString('unsupported control characters', $tester->getDisplay());
     }
 
-    public function testCronRunRenderEnforcesSchedulerRateLimitForOwnerContext(): void
+    public function testCronRunRenderEnforcesSchedulerRateLimitForApiKeyContext(): void
     {
         self::bootKernel();
         $this->setRateLimitMode(RateLimitProfile::Standard);
-        $this->removeTemporaryOwners();
-        $username = $this->createTemporaryOwner();
         $command = self::getContainer()->get(RenderRouteCommand::class);
 
-        try {
-            $first = new CommandTester($command);
-            $firstExit = $first->execute($this->cronRenderInput($username));
+        $first = new CommandTester($command);
+        $firstExit = $first->execute($this->cronRenderInput());
 
-            self::assertSame(Command::SUCCESS, $firstExit);
-            self::assertStringContainsString('HTTP 200', $first->getDisplay());
+        self::assertSame(Command::SUCCESS, $firstExit);
+        self::assertStringContainsString('HTTP 200', $first->getDisplay());
 
-            $second = new CommandTester($command);
-            $secondExit = $second->execute($this->cronRenderInput($username));
-            $display = $second->getDisplay();
+        $second = new CommandTester($command);
+        $secondExit = $second->execute($this->cronRenderInput());
+        $display = $second->getDisplay();
 
-            self::assertSame(Command::SUCCESS, $secondExit);
-            self::assertStringContainsString('HTTP 429', $display);
-            self::assertStringContainsString('Retry-After:', $display);
-            self::assertStringContainsString('Cache-Control:', $display);
-            self::assertStringContainsString('no-store', $display);
-            self::assertStringContainsString('"code":"rate_limit.exceeded"', $display);
-        } finally {
-            $this->removeTemporaryOwner($username);
-        }
+        self::assertSame(Command::SUCCESS, $secondExit);
+        self::assertStringContainsString('HTTP 429', $display);
+        self::assertStringContainsString('Retry-After:', $display);
+        self::assertStringContainsString('Cache-Control:', $display);
+        self::assertStringContainsString('no-store', $display);
+        self::assertStringContainsString('"code":"rate_limit.exceeded"', $display);
     }
 
     public function testItDoesNotOverrideExistingUserRoles(): void
@@ -125,11 +115,11 @@ final class RenderRouteCommandTest extends KernelTestCase
     /**
      * @return array<string, mixed>
      */
-    private function cronRenderInput(string $username): array
+    private function cronRenderInput(): array
     {
         return [
             'path' => '/cron/run',
-            '--user' => $username,
+            '--role' => 'public',
             '--include-status' => true,
             '--include-headers' => true,
             '--header' => [
@@ -137,47 +127,6 @@ final class RenderRouteCommandTest extends KernelTestCase
                 'X-Rate-Limit-Testing: 1',
             ],
         ];
-    }
-
-    private function createTemporaryOwner(): string
-    {
-        $username = 'render-cron-owner-'.substr(str_replace('.', '', uniqid('', true)), 0, 12);
-        $user = new UserAccount(
-            Uuid::v7()->toRfc4122(),
-            $username,
-            $username.'@example.test',
-            'debug-render',
-            role: UserRole::Owner,
-        );
-
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
-        $entityManager->persist($user);
-        $entityManager->flush();
-
-        return $username;
-    }
-
-    private function removeTemporaryOwner(string $username): void
-    {
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
-
-        $user = $entityManager->getRepository(UserAccount::class)->findOneBy(['username' => $username]);
-        if ($user instanceof UserAccount) {
-            $entityManager->remove($user);
-            $entityManager->flush();
-        }
-    }
-
-    private function removeTemporaryOwners(): void
-    {
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
-        $entityManager->getConnection()->executeStatement(
-            "DELETE FROM user_account WHERE username LIKE 'render-cron-owner-%'",
-        );
-        $entityManager->clear();
     }
 
     private function setRateLimitMode(RateLimitProfile $profile): void

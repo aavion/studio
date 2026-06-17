@@ -54,7 +54,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Scheduler trigger policy must allow normal once-per-minute external cron calls in `standard`, then enforce one trigger per 15 minutes in `strict` and one trigger per hour in `panic`; task due-state logic, locks, and task policies decide whether work actually runs. This is an operational pre-auth interval guard for `/cron/run`, not an abuse/security signal source for legitimate configured cron callers.
 - Authenticated users receive higher ordinary navigation/API limits than anonymous visitors where a workflow does not define its own explicit bucket. Owner-owned API keys and subjects tied to an active Owner session are exempt from ordinary rate-limit rejection, except `/cron/run`, where the mutable Owner API key must still spend the scheduler bucket.
 - Scheduler `429` responses are expected operational feedback when the external caller runs more frequently than the selected profile allows. They should not create passive security signals or extra abuse diagnostics by themselves; the scheduler caller already observes the response and can adjust its interval.
-- Recovery login bypass is the exact `/user/login?bypass=1` browser path. It uses its own narrow bucket and only bypasses pre-login ban/rate checks needed to render the normal login form. It must not bypass CSRF, credential checks, login-failure accounting, audit logging, or post-login policy re-evaluation.
+- Recovery login bypass is the exact `/user/login?bypass=1` browser path. It uses its own narrow bucket, bypasses ordinary website buckets needed to render the normal login form, and must not bypass CSRF, credential checks, login-failure accounting, audit logging, or post-login policy re-evaluation.
 - Workflows that do not exist in the current codebase receive catalogue entries only when doing so does not create dead services, routes, or unreachable tests.
 - Limiter keys come only from the shared subject/client-identity resolver and never from raw request headers or user-submitted identifiers.
 - Limiter storage degradation is fail-open by policy: the facade allows the request, records safe Message-layer diagnostics where possible, and preserves Owner recovery instead of returning an invisible hard block.
@@ -72,7 +72,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 ## Edge cases
 
 - Multiple buckets may be consumed for one request; rejection should report the most user-relevant failed policy without leaking all internal counters.
-- Failed login consumes login and global website budget; successful login resets only the login-attempt bucket for that subject.
+- Unsafe login submissions consume login and global website budget before authentication failure responses can return; safe login, registration, and password-reset form renders do not spend workflow-specific buckets. Successful login resets only the login-attempt bucket for that subject and active rate profile.
 - Read-only API keys hitting write routes should still follow API write policy before or alongside authorization failure as decided by the handler order.
 - CORS preflight storms should not block legitimate configured browser clients through the write limiter, but invalid origin/header/method scans should remain visible to abuse diagnostics.
 - `/api/live/**` operation polling must continue to function during long admin operations.

@@ -120,7 +120,7 @@ final readonly class RateLimitEnforcer
             return false;
         }
 
-        return !in_array($bucketFamily, ['website', 'website_prefetch'], true);
+        return !in_array($bucketFamily, ['website', 'website_prefetch', 'recovery_login'], true);
     }
 
     private function retryAfterSeconds(RateLimitBucketDescriptor $descriptor, \DateTimeImmutable $retryAfter): int

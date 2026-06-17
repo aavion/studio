@@ -93,7 +93,9 @@
 - Extended `render:route` with request-header input and response-header output, then added CLI route-render coverage proving repeated `/cron/run` renders with Owner context and mutable Owner API key receive scheduler `429` with `Retry-After` and `no-store` instead of bypassing through the Owner exemption.
 - Added a production-environment guard to `render:route` so the debug renderer fails closed in `APP_ENV=prod` and remains available only for development/test diagnostics.
 - Clarified the scheduler rate-limit policy documentation: `/cron/run` uses an operational pre-auth interval guard, and legitimate scheduler `429` responses in strict/panic modes are not treated as abuse or security signals.
-- Verification: focused `render:route`, scheduler controller, and rate-limit enforcer PHPUnit coverage; `php bin/console lint:container --env=test --no-debug`; `bin/lint --diff`; full `php bin/phpunit` passed with 1435 tests and 9446 assertions.
+- Addressed first Cloud Review rate-limit findings: auth workflow buckets now charge only unsafe submissions, the limiter runs after routing but before Symfony authentication failures, `/build/**` is excluded with generated assets, active-profile descriptors are used for login/captcha resets, and `/user/login?bypass=1` is wired to the dedicated recovery-login buckets.
+- Hardened adjacent route-guard coverage so content routes cannot claim technical/static namespaces such as `/assets/**`, `/build/**`, `/_profiler/**`, `/profiler/**`, and `/_wdt/**` while relying on limiter exclusions.
+- Verification: focused syntax checks, focused PHPUnit coverage for request classification, rate-limit enforcer/reset/controller behavior, render-route cron handling, and content route guards; `php bin/console lint:container --env=test --no-debug`; `bin/lint --diff`; full `php bin/phpunit` passed with 1447 tests and 9544 assertions.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

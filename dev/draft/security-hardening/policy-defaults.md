@@ -95,7 +95,7 @@ The first Admin-facing rate setting is one Owner-gated Security setting with fou
 | Policy | Default | Subject | Success reset |
 | --- | --- | --- | --- |
 | Login failures | 5 failed attempts per 15 minutes | Visitor ID plus username/email hash where safe; IP bucket as secondary signal | Successful credential login resets only the login-attempt bucket |
-| Recovery login bypass | 2 credential attempts per minute, 10 per hour, retry after 30 minutes once exhausted | Visitor ID plus username/email hash where safe; IP bucket as secondary signal | Successful credential login re-evaluates active bans/limits under authenticated policy |
+| Recovery login bypass | 2 recovery-login requests per minute, 10 per hour, retry after 30 minutes once exhausted | Visitor ID plus username/email hash where safe; IP bucket as secondary signal | Successful credential login re-evaluates active bans/limits under authenticated policy |
 | Registration submissions | 3 submissions per hour and 10 per day | Visitor ID; IP bucket as secondary signal | No automatic global reset |
 | Password-reset requests | 3 requests per hour and 10 per day | Visitor ID plus normalized email hash where safe; IP bucket as secondary signal | No automatic global reset |
 | Contact form submissions | 3 submissions per 10 minutes and 20 per day | Visitor ID; IP bucket as secondary signal | No automatic global reset |
@@ -182,7 +182,7 @@ The codebase and other feature drafts expose several security-relevant surfaces 
 - API keys owned by an active Owner and Visitor-ID/IP subjects that resolve to an active Owner session must not be rate-limited by ordinary application buckets.
 - Owner accounts must retain at least one documented recovery path. A policy that could deny all Owners is invalid.
 - Provide a recovery login path such as `/user/login?bypass=1` that renders the normal login form even when the current Visitor ID or IP bucket is banned or ordinary website buckets are exhausted. The bypass flag only bypasses ban/rate checks that would prevent rendering the login form; it does not bypass CSRF, credential validation, login-failure accounting, the dedicated recovery-login bucket, audit logging, or post-login policy re-evaluation.
-- The dedicated recovery-login bucket is intentionally small but not lockout-like: 2 credential attempts per minute, 10 per hour, and a 30-minute retry window after exhaustion.
+- The dedicated recovery-login bucket is intentionally small but not lockout-like: 2 recovery-login requests per minute, 10 per hour, and a 30-minute retry window after exhaustion.
 - Manual unban takes effect immediately and must be audited.
 
 ## Captcha Defaults

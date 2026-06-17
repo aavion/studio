@@ -14,6 +14,7 @@ final readonly class ActionCostCatalogue
             RequestIntent::CorsPreflight => new ActionCost('api_preflight', 0, false),
             RequestIntent::SuspiciousProbe => new ActionCost('suspicious_probe', 10),
             RequestIntent::Login => new ActionCost('login', 1),
+            RequestIntent::RecoveryLogin => new ActionCost('recovery_login', 1),
             RequestIntent::Registration => new ActionCost('registration', 5),
             RequestIntent::PasswordReset => new ActionCost('password_reset', 3),
             RequestIntent::CaptchaFailure => new ActionCost('captcha_failure', 1),

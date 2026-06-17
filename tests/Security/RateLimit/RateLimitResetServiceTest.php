@@ -43,6 +43,20 @@ final class RateLimitResetServiceTest extends TestCase
         self::assertTrue($enforcer->check($request)->isAllowed());
     }
 
+    public function testLoginSuccessResetUsesActiveProfileDescriptor(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Strict->value, ConfigValueType::String);
+        [$enforcer, $resets] = $this->services(config: $config);
+        $request = $this->request('/user/login', 'POST');
+
+        self::assertTrue($enforcer->check($request)->isAllowed());
+        self::assertTrue($enforcer->check($request)->isAllowed());
+        self::assertFalse($enforcer->check($request)->isAllowed());
+        self::assertTrue($resets->resetLoginAttempts($request));
+        self::assertTrue($enforcer->check($request)->isAllowed());
+    }
+
     public function testCaptchaResetRequiresVerifiedProviderBackedSuccess(): void
     {
         [, $resets] = $this->services();
@@ -51,6 +65,28 @@ final class RateLimitResetServiceTest extends TestCase
         self::assertFalse($resets->resetVerifiedCaptchaFailure($request, 'none', true));
         self::assertFalse($resets->resetVerifiedCaptchaFailure($request, 'turnstile', false));
         self::assertTrue($resets->resetVerifiedCaptchaFailure($request, 'turnstile', true));
+    }
+
+    public function testCaptchaResetUsesActiveProfileDescriptor(): void
+    {
+        $config = new Config($this->connection());
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Panic->value, ConfigValueType::String);
+        $cache = new ArrayAdapter();
+        $factory = new RateLimitLimiterFactory($cache);
+        [, $resets] = $this->services(config: $config, factory: $factory);
+        $request = $this->request('/captcha/submit', 'POST');
+        $catalogue = new RateLimitPolicyCatalogue();
+        $descriptor = $catalogue->descriptor('captcha.failure', RateLimitProfile::Panic);
+        self::assertNotNull($descriptor);
+        $inspector = $this->inspector();
+        $selector = new RateLimitSubjectSelector();
+        $subjectKeys = $selector->subjectKeys($descriptor, $inspector->inspect($request)['subjects']);
+        self::assertNotSame([], $subjectKeys);
+
+        self::assertTrue($factory->consume($descriptor, $subjectKeys[0], 1));
+        self::assertInstanceOf(\DateTimeImmutable::class, $factory->consume($descriptor, $subjectKeys[0], 1));
+        self::assertTrue($resets->resetVerifiedCaptchaFailure($request, 'turnstile', true));
+        self::assertTrue($factory->consume($descriptor, $subjectKeys[0], 1));
     }
 
     public function testOffModeDoesNotTouchResetStorage(): void
@@ -78,11 +114,7 @@ final class RateLimitResetServiceTest extends TestCase
      */
     private function services(?Config $config = null, ?RateLimitLimiterFactory $factory = null, ?RecordingRateLimitMessageReporter $messages = null): array
     {
-        $inspector = new AbuseRequestInspector(
-            new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret'),
-            new RequestIntentClassifier(),
-            new ActionCostCatalogue(),
-        );
+        $inspector = $this->inspector();
         $catalogue = new RateLimitPolicyCatalogue();
         $selector = new RateLimitSubjectSelector();
         $factory ??= new RateLimitLimiterFactory(new ArrayAdapter());
@@ -93,6 +125,15 @@ final class RateLimitResetServiceTest extends TestCase
             new RateLimitEnforcer($inspector, $config, $catalogue, $selector, $factory, $messages),
             new RateLimitResetService($inspector, $config, $catalogue, $selector, $factory, $messages),
         ];
+    }
+
+    private function inspector(): AbuseRequestInspector
+    {
+        return new AbuseRequestInspector(
+            new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret'),
+            new RequestIntentClassifier(),
+            new ActionCostCatalogue(),
+        );
     }
 
     private function request(string $path, string $method): Request

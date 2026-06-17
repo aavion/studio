@@ -83,6 +83,56 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         }
     }
 
+    public function testBuildAssetsAreNotChargedToOrdinaryLimiter(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.14'));
+        $this->setMode(RateLimitProfile::Panic);
+
+        for ($i = 0; $i < 12; ++$i) {
+            $client->request('GET', '/build/app.js');
+            self::assertNotSame(429, $client->getResponse()->getStatusCode());
+        }
+    }
+
+    public function testInvalidLoginSubmissionsSpendLoginBudgetBeforeAuthenticationResponse(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.15'));
+        $this->setMode(RateLimitProfile::Standard);
+
+        for ($i = 0; $i < 5; ++$i) {
+            $client->request('POST', '/user/login', parameters: [
+                'username' => 'missing-user',
+                'password' => 'wrong-password',
+            ]);
+            self::assertNotSame(429, $client->getResponse()->getStatusCode());
+        }
+
+        $client->request('POST', '/user/login', parameters: [
+            'username' => 'missing-user',
+            'password' => 'wrong-password',
+        ]);
+
+        self::assertResponseStatusCodeSame(429);
+    }
+
+    public function testInvalidBearerRequestsSpendApiBudgetBeforeAuthenticationResponse(): void
+    {
+        $client = self::createClient(server: [
+            ...$this->server('198.51.100.16'),
+            'HTTP_AUTHORIZATION' => 'Bearer invalidprefix.invalid-secret',
+        ]);
+        $this->setMode(RateLimitProfile::Panic);
+
+        for ($i = 0; $i < 30; ++$i) {
+            $client->request('GET', '/api/v1');
+            self::assertNotSame(429, $client->getResponse()->getStatusCode());
+        }
+
+        $client->request('GET', '/api/v1');
+
+        self::assertResponseStatusCodeSame(429);
+    }
+
     /**
      * @return array<string, string>
      */
