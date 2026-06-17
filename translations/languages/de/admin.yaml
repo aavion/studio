@@ -979,8 +979,8 @@ admin:
       rate_limit_mode:
         off: 'Aus'
         standard: 'Standard'
-        strict: 'Strikt'
-        panic: 'Panic'
+        strict: 'Streng'
+        panic: 'Panik'
       audit:
         authentication: 'Authentifizierungsereignisse'
         backend_actions: 'Backend-Wartungsaktionen'
