@@ -164,7 +164,9 @@ final readonly class RequestIntentClassifier
 
     private function hasBearerAuthorization(Request $request): bool
     {
-        return 1 === preg_match('/^Bearer\s+.+$/i', (string) $request->headers->get('Authorization', ''));
+        $authorization = $request->headers->get('Authorization');
+
+        return is_string($authorization) && 1 === preg_match('/^Bearer(?:\s+|$)/i', $authorization);
     }
 
     private function requestedPreflightMethod(Request $request): ?string

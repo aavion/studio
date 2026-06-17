@@ -242,6 +242,25 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertSame('security.rate.scheduler', $result->diagnosticsLabel());
     }
 
+    public function testSchedulerIntervalKeepsIpAnchorForAuthenticatedUsersWithRotatingCredentials(): void
+    {
+        $tokenStorage = $this->tokenStorage(UserRole::User);
+        $enforcer = $this->enforcer(tokenStorage: $tokenStorage);
+
+        self::assertTrue($enforcer->check($this->request('/cron/run?auth=scheduler-token-a', 'GET', [], [
+            'REMOTE_ADDR' => '203.0.113.78',
+            'HTTP_USER_AGENT' => 'SchedulerProbe/1',
+        ]))->isAllowed());
+
+        $result = $enforcer->check($this->request('/cron/run?auth=scheduler-token-b', 'GET', [], [
+            'REMOTE_ADDR' => '203.0.113.78',
+            'HTTP_USER_AGENT' => 'SchedulerProbe/2',
+        ]));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.scheduler', $result->diagnosticsLabel());
+    }
+
     public function testSuspiciousProbeStillBlocksInOffModeWithoutStorage(): void
     {
         $config = new Config($this->connection());

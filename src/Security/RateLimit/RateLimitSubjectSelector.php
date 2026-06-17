@@ -106,6 +106,10 @@ final readonly class RateLimitSubjectSelector
 
     private function includeIpSecondary(RateLimitBucketDescriptor $descriptor, AbuseSubjectResolution $subjects): bool
     {
+        if ('scheduler' === $descriptor->bucketFamily()) {
+            return true;
+        }
+
         if ($subjects->first(AbuseSubjectType::User) instanceof AbuseSubject || $subjects->first(AbuseSubjectType::ApiKey) instanceof AbuseSubject) {
             return false;
         }

@@ -225,6 +225,40 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         }
     }
 
+    public function testMalformedBearerPreflightsSpendAuthFailureBudgetBeforeCorsShortCircuit(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.30'));
+        $this->setMode(RateLimitProfile::Panic);
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+
+        try {
+            $config->set(ApiFeaturePolicy::CORS_ENABLED_KEY, true, ConfigValueType::Boolean);
+            $config->set(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, ['https://client.example'], ConfigValueType::Json);
+
+            for ($i = 0; $i < 7; ++$i) {
+                $client->request('OPTIONS', '/api/v1/admin/settings/general', server: [
+                    'HTTP_ORIGIN' => 'https://client.example',
+                    'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+                    'HTTP_AUTHORIZATION' => 'Bearer   ',
+                ]);
+                self::assertNotSame(204, $client->getResponse()->getStatusCode());
+                self::assertNotSame(429, $client->getResponse()->getStatusCode());
+            }
+
+            $client->request('OPTIONS', '/api/v1/admin/settings/general', server: [
+                'HTTP_ORIGIN' => 'https://client.example',
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+                'HTTP_AUTHORIZATION' => 'Bearer   ',
+            ]);
+
+            self::assertResponseStatusCodeSame(429);
+        } finally {
+            $config->set(ApiFeaturePolicy::CORS_ENABLED_KEY, false, ConfigValueType::Boolean);
+            $config->set(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, [], ConfigValueType::Json);
+        }
+    }
+
     public function testRecoveryLoginRendersSpendRecoveryBucket(): void
     {
         $client = self::createClient(server: $this->server('198.51.100.23'));
@@ -378,6 +412,20 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         $second->request('GET', '/cron/run', server: [
             'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
         ]);
+
+        self::assertResponseStatusCodeSame(429);
+    }
+
+    public function testSignedInSchedulerIntervalKeepsIpAnchorAcrossRotatingQueryCredentials(): void
+    {
+        $client = self::createClient(server: $this->server('198.51.100.31'));
+        $this->loginTestUser($client, $this->adminUser());
+        $this->setMode(RateLimitProfile::Standard);
+
+        $client->request('GET', '/cron/run?auth=scheduler-token-a');
+        self::assertNotSame(429, $client->getResponse()->getStatusCode());
+
+        $client->request('GET', '/cron/run?auth=scheduler-token-b');
 
         self::assertResponseStatusCodeSame(429);
     }

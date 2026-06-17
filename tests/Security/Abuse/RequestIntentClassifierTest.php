@@ -154,6 +154,22 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Api,
             RequestIntent::SettingsMutation,
         ];
+        yield 'malformed bearer options request honors requested unsafe admin method' => [
+            Request::create('/api/v1/admin/settings/security', 'OPTIONS', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer   ',
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+            ]),
+            RequestFamily::Api,
+            RequestIntent::SettingsMutation,
+        ];
+        yield 'empty bearer options request honors requested unsafe admin method' => [
+            Request::create('/api/v1/admin/settings/security', 'OPTIONS', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer',
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+            ]),
+            RequestFamily::Api,
+            RequestIntent::SettingsMutation,
+        ];
         yield 'turbo prefetch' => [
             Request::create('/docs', server: ['HTTP_SEC_PURPOSE' => 'prefetch']),
             RequestFamily::Browser,
