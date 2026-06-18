@@ -10,6 +10,7 @@ final readonly class SuspiciousRequestPayloadMatcher
 {
     private const MAX_PARAMETERS = 80;
     private const MAX_STRING_LENGTH = 2048;
+    private const MAX_BODY_LENGTH = 8192;
 
     /**
      * @var list<string>
@@ -52,7 +53,7 @@ final readonly class SuspiciousRequestPayloadMatcher
         $signatures = [];
         $parameters = [];
 
-        foreach (['query' => $request->query->all(), 'request' => $request->request->all()] as $source => $payload) {
+        foreach (['query' => $request->query->all(), 'request' => $request->request->all(), ...$this->bodyPayload($request)] as $source => $payload) {
             $this->scanPayload($source, $payload, $signatures, $parameters);
         }
 
@@ -64,6 +65,45 @@ final readonly class SuspiciousRequestPayloadMatcher
             'signatures' => array_values(array_unique($signatures)),
             'parameters' => array_slice($parameters, 0, self::MAX_PARAMETERS),
         ];
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function bodyPayload(Request $request): array
+    {
+        if (!$this->jsonLikeRequest($request)) {
+            return [];
+        }
+
+        $content = mb_substr($request->getContent(), 0, self::MAX_BODY_LENGTH);
+        if ('' === trim($content)) {
+            return [];
+        }
+
+        try {
+            $decoded = json_decode($content, true, 32, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return ['raw_body' => ['body' => $content]];
+        }
+
+        if (is_array($decoded)) {
+            return ['json' => $decoded];
+        }
+
+        return ['json' => ['body' => $decoded]];
+    }
+
+    private function jsonLikeRequest(Request $request): bool
+    {
+        $contentType = strtolower((string) $request->headers->get('Content-Type'));
+        if (str_contains($contentType, '/json') || str_contains($contentType, '+json')) {
+            return true;
+        }
+
+        $content = ltrim(mb_substr($request->getContent(), 0, 32));
+
+        return str_starts_with($content, '{') || str_starts_with($content, '[');
     }
 
     /**

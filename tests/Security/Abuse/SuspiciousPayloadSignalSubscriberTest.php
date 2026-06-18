@@ -81,6 +81,40 @@ final class SuspiciousPayloadSignalSubscriberTest extends TestCase
         self::assertSame('username', $context['payload_parameters'][0]['name']);
     }
 
+    public function testItRecordsJsonApiPayloadSignals(): void
+    {
+        $connection = $this->connection();
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $request = Request::create(
+            '/api/v1/search',
+            'POST',
+            server: [
+                'CONTENT_TYPE' => 'application/json',
+                'REMOTE_ADDR' => '203.0.113.10',
+            ],
+            content: json_encode([
+                'filter' => [
+                    'query' => "x' UNION SELECT password FROM users --",
+                ],
+            ], JSON_THROW_ON_ERROR),
+        );
+
+        $this->subscriber($connection, $visitorIds, new AccessRequestMetadata())->onKernelRequest(new RequestEvent(
+            new SuspiciousPayloadSignalTestKernel(),
+            $request,
+            HttpKernelInterface::MAIN_REQUEST,
+        ));
+
+        self::assertSame(2, (int) $connection->fetchOne('SELECT COUNT(*) FROM security_signal_event'));
+        $row = $connection->fetchAssociative("SELECT * FROM security_signal_event WHERE subject_type = 'visitor'");
+        self::assertIsArray($row);
+        $context = json_decode((string) $row['context'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertContains('sql_union_select', $context['payload_signatures']);
+        self::assertSame('json', $context['payload_parameters'][0]['source']);
+        self::assertSame('filter.query', $context['payload_parameters'][0]['name']);
+        self::assertStringNotContainsString('UNION SELECT', json_encode([$row, $context], JSON_THROW_ON_ERROR));
+    }
+
     public function testItSkipsAutoBanEnforcementRequests(): void
     {
         $connection = $this->connection();
@@ -110,6 +144,31 @@ final class SuspiciousPayloadSignalSubscriberTest extends TestCase
         ], server: [
             'REMOTE_ADDR' => '203.0.113.10',
         ]);
+
+        $this->subscriber($connection, $visitorIds, new AccessRequestMetadata())->onKernelRequest(new RequestEvent(
+            new SuspiciousPayloadSignalTestKernel(),
+            $request,
+            HttpKernelInterface::MAIN_REQUEST,
+        ));
+
+        self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM security_signal_event'));
+    }
+
+    public function testItSkipsAdminJsonPayloadsThatMayContainCustomCode(): void
+    {
+        $connection = $this->connection();
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $request = Request::create(
+            '/admin/content/schemas',
+            'POST',
+            server: [
+                'CONTENT_TYPE' => 'application/json',
+                'REMOTE_ADDR' => '203.0.113.10',
+            ],
+            content: json_encode([
+                'custom_twig' => '<script type="application/json">{{ schema|json_encode }}</script>',
+            ], JSON_THROW_ON_ERROR),
+        );
 
         $this->subscriber($connection, $visitorIds, new AccessRequestMetadata())->onKernelRequest(new RequestEvent(
             new SuspiciousPayloadSignalTestKernel(),
