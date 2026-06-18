@@ -25,6 +25,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
@@ -68,9 +69,11 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
                 ['onKernelRequestPreAuthSourceBan', 4098],
                 ['onKernelRequestProbeCandidate', 4097],
                 ['onKernelRequestLogin', 16],
+                ['onKernelRequestPreAuthBrowserSourceBan', 9],
                 ['onKernelRequest', 4],
                 ['onKernelRequestAfterSignalWrites', 1],
             ],
+            KernelEvents::RESPONSE => ['onKernelResponseErrorStatus', -299],
             LoginFailureEvent::class => ['onLoginFailure', 64],
         ];
     }
@@ -169,6 +172,38 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         }
     }
 
+    public function onKernelRequestPreAuthBrowserSourceBan(RequestEvent $event): void
+    {
+        $request = $event->getRequest();
+        if (
+            !$event->isMainRequest()
+            || $event->hasResponse()
+            || !$this->enabledForRequest($request)
+            || !$this->policy->enabled()
+            || !$this->preAuthProtectedBrowserSurface($request)
+            || $request->hasPreviousSession()
+        ) {
+            return;
+        }
+
+        try {
+            $ban = $this->activeBanFor($this->inspector->inspect($request)['subjects']);
+            if (!$ban instanceof ActiveAutoBan) {
+                return;
+            }
+
+            $event->setResponse($this->banResponse($request, $ban));
+            $request->attributes->set(self::PASSIVE_SIGNAL_SKIP_ATTRIBUTE, true);
+        } catch (Throwable $error) {
+            $this->reportEvaluation($error, [
+                'operation' => 'browser_source_ban',
+                'path' => $request->getPathInfo(),
+            ]);
+
+            return;
+        }
+    }
+
     public function onKernelRequest(RequestEvent $event): void
     {
         $this->enforceActiveBan($event, 'request_enforcement');
@@ -177,6 +212,30 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
     public function onKernelRequestAfterSignalWrites(RequestEvent $event): void
     {
         $this->enforceActiveBan($event, 'post_signal_request_enforcement');
+    }
+
+    public function onKernelResponseErrorStatus(ResponseEvent $event): void
+    {
+        $request = $event->getRequest();
+        $response = $event->getResponse();
+        if (
+            !$event->isMainRequest()
+            || !in_array($response->getStatusCode(), [
+                Response::HTTP_BAD_REQUEST,
+                Response::HTTP_UNAUTHORIZED,
+                Response::HTTP_FORBIDDEN,
+                Response::HTTP_NOT_FOUND,
+                Response::HTTP_TOO_MANY_REQUESTS,
+            ], true)
+            || $request->attributes->getBoolean(self::PASSIVE_SIGNAL_SKIP_ATTRIBUTE)
+        ) {
+            return;
+        }
+
+        $banResponse = $this->activeBanResponseForRequest($request, 'error_response_enforcement');
+        if ($banResponse instanceof Response) {
+            $event->setResponse($banResponse);
+        }
     }
 
     public function onLoginFailure(LoginFailureEvent $event): void
@@ -200,6 +259,11 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         $request->attributes->set(self::PASSIVE_SIGNAL_SKIP_ATTRIBUTE, true);
     }
 
+    public function responseForSecurityHandler(Request $request): ?Response
+    {
+        return $this->activeBanResponseForRequest($request, 'security_handler_enforcement');
+    }
+
     private function enforceActiveBan(RequestEvent $event, string $operation): void
     {
         if (!$event->isMainRequest() || !$this->enabledForRequest($event->getRequest()) || !$this->policy->enabled()) {
@@ -207,20 +271,33 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         }
 
         $request = $event->getRequest();
+        $response = $this->activeBanResponseForRequest($request, $operation);
+        if ($response instanceof Response) {
+            $event->setResponse($response);
+        }
+    }
+
+    private function activeBanResponseForRequest(Request $request, string $operation): ?Response
+    {
+        if (!$this->enabledForRequest($request) || !$this->policy->enabled()) {
+            return null;
+        }
+
         if ($request->attributes->getBoolean(self::TRUSTED_PRE_AUTH_BYPASS_ATTRIBUTE)) {
-            return;
+            return null;
         }
 
         try {
             $inspection = $this->inspector->inspect($request);
             if ($this->recoveryRenderRequest($inspection['profile']) || $this->trustedContext($inspection['subjects']->subjects())) {
-                return;
+                return null;
             }
 
             $ban = $this->activeBanFor($inspection['subjects']);
             if ($ban instanceof ActiveAutoBan) {
-                $event->setResponse($this->banResponse($request, $ban));
                 $request->attributes->set(self::PASSIVE_SIGNAL_SKIP_ATTRIBUTE, true);
+
+                return $this->banResponse($request, $ban);
             }
         } catch (Throwable $error) {
             $this->reportEvaluation($error, [
@@ -228,8 +305,10 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
                 'path' => $request->getPathInfo(),
             ]);
 
-            return;
+            return null;
         }
+
+        return null;
     }
 
     /**
@@ -322,6 +401,35 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         }
 
         return ['cron', 'run'] === $segments ? 'scheduler' : null;
+    }
+
+    private function preAuthProtectedBrowserSurface(Request $request): bool
+    {
+        $segments = $this->paths->segments($request);
+        $first = $segments[0] ?? null;
+        if (in_array($first, ['admin', 'editor'], true)) {
+            return true;
+        }
+
+        return ['user'] === $segments
+            || $this->matchesSegments($segments, 'user', 'api-keys')
+            || $this->matchesSegments($segments, 'user', 'profile')
+            || $this->matchesSegments($segments, 'user', 'password')
+            || $this->matchesSegments($segments, 'user', 'logout');
+    }
+
+    /**
+     * @param list<string> $segments
+     */
+    private function matchesSegments(array $segments, string ...$expected): bool
+    {
+        foreach ($expected as $index => $segment) {
+            if (($segments[$index] ?? null) !== $segment) {
+                return false;
+            }
+        }
+
+        return [] !== $expected;
     }
 
     private function banResponse(Request $request, ActiveAutoBan $ban): Response

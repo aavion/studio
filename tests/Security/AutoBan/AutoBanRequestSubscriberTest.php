@@ -14,12 +14,14 @@ use App\Entity\UserAccount;
 use App\Security\Abuse\AbuseRequestInspector;
 use App\Security\Abuse\AbuseSubjectResolver;
 use App\Security\Abuse\ActionCostCatalogue;
+use App\Security\Abuse\PassiveAbuseSignalSubscriber;
 use App\Security\Abuse\RequestIntentClassifier;
 use App\Security\Abuse\SuspiciousPayloadSignalSubscriber;
 use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\AutoBan\AutoBanRequestSubscriber;
 use App\Security\AutoBan\AutoBanStore;
 use App\Security\AutoBan\AutoBanSubject;
+use App\Security\HttpErrorSecurityHandler;
 use App\Security\RateLimit\RateLimitRequestSubscriber;
 use App\Security\UserRole;
 use App\Setup\SetupCompletionMarker;
@@ -31,7 +33,10 @@ use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Lock\LockFactory;
@@ -40,6 +45,7 @@ use Symfony\Component\Security\Csrf\CsrfTokenManager;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Http\Authenticator\AuthenticatorInterface;
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
@@ -181,6 +187,109 @@ final class AutoBanRequestSubscriberTest extends TestCase
 
         self::assertSame(403, $event->getResponse()?->getStatusCode());
         self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+    }
+
+    public function testProtectedBrowserSurfacesWithoutPreviousSessionAreBlockedBeforeFirewallAccessControl(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+
+        foreach (['/admin', '/editor/content', '/user/profile'] as $path) {
+            $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+            $request = Request::create($path, server: ['REMOTE_ADDR' => '203.0.113.10']);
+            $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+            $store->ban($subject, 3600);
+            $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+            $this->subscriber($visitorIds, $store, $clock)->onKernelRequestPreAuthBrowserSourceBan($event);
+
+            self::assertSame(403, $event->getResponse()?->getStatusCode(), $path);
+            self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE), $path);
+        }
+    }
+
+    public function testProtectedBrowserSurfacesWithPreviousSessionWaitForTrustedAwareGuard(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/admin', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $session = new Session(new MockArraySessionStorage());
+        $request->setSession($session);
+        $request->cookies->set($session->getName(), 'previous-session-id');
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock)->onKernelRequestPreAuthBrowserSourceBan($event);
+
+        self::assertFalse($event->hasResponse());
+        self::assertFalse($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+    }
+
+    public function testSecurityHandlerBlocksPreviousSessionNonTrustedBrowserAccess(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/admin', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $session = new Session(new MockArraySessionStorage());
+        $request->setSession($session);
+        $request->cookies->set($session->getName(), 'previous-session-id');
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $tokenStorage = new TokenStorage();
+        $user = new UserAccount('99999999-0000-7000-8000-000000000103', 'member', 'member@example.test', 'hash', role: UserRole::User);
+        $tokenStorage->setToken(new UsernamePasswordToken($user, 'main', $user->getRoles()));
+        $subscriber = $this->subscriber($visitorIds, $store, $clock, $tokenStorage);
+        $handler = new HttpErrorSecurityHandler($this->renderer(), $subscriber);
+
+        $response = $handler->handle($request, new AccessDeniedException('Access denied.'));
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertSame('3600', $response->headers->get('Retry-After'));
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+    }
+
+    public function testSecurityHandlerKeepsTrustedBrowserAccessOutsideAutoBanEnforcement(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/admin', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $tokenStorage = new TokenStorage();
+        $user = new UserAccount('99999999-0000-7000-8000-000000000104', 'manager', 'manager@example.test', 'hash', role: UserRole::Manager);
+        $tokenStorage->setToken(new UsernamePasswordToken($user, 'main', $user->getRoles()));
+        $subscriber = $this->subscriber($visitorIds, $store, $clock, $tokenStorage);
+
+        self::assertNull($subscriber->responseForSecurityHandler($request));
+    }
+
+    public function testErrorResponsesAreOverriddenBeforePassiveSignalScoring(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+
+        foreach ([400, 401, 403, 404, 429] as $statusCode) {
+            $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+            $request = Request::create('/member-only-page', server: ['REMOTE_ADDR' => '203.0.113.10']);
+            $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+            $store->ban($subject, 3600);
+            $event = new ResponseEvent(
+                new AutoBanRequestTestKernel(),
+                $request,
+                HttpKernelInterface::MAIN_REQUEST,
+                new Response('error response', $statusCode),
+            );
+
+            $this->subscriber($visitorIds, $store, $clock)->onKernelResponseErrorStatus($event);
+
+            self::assertSame(403, $event->getResponse()->getStatusCode(), (string) $statusCode);
+            self::assertSame('3600', $event->getResponse()->headers->get('Retry-After'), (string) $statusCode);
+            self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE), (string) $statusCode);
+        }
     }
 
     public function testRecoveryLoginBypassIsReachableDespiteActiveBan(): void
@@ -431,20 +540,26 @@ final class AutoBanRequestSubscriberTest extends TestCase
     public function testSubscriberRunsAfterSecurityContextButBeforeOrdinaryRateLimit(): void
     {
         $autoBan = AutoBanRequestSubscriber::getSubscribedEvents()[KernelEvents::REQUEST];
+        $autoBanResponse = AutoBanRequestSubscriber::getSubscribedEvents()[KernelEvents::RESPONSE];
         $rateLimit = RateLimitRequestSubscriber::getSubscribedEvents()[KernelEvents::REQUEST];
         $payloadSignals = SuspiciousPayloadSignalSubscriber::getSubscribedEvents()[KernelEvents::REQUEST];
+        $passiveSignals = PassiveAbuseSignalSubscriber::getSubscribedEvents()[KernelEvents::RESPONSE];
 
         self::assertSame(['onKernelRequestPreAuthSourceBan', 4098], $autoBan[0]);
         self::assertSame(['onKernelRequestProbeCandidate', 4097], $autoBan[1]);
         self::assertSame(['onKernelRequestLogin', 16], $autoBan[2]);
-        self::assertSame(['onKernelRequest', 4], $autoBan[3]);
-        self::assertSame(['onKernelRequestAfterSignalWrites', 1], $autoBan[4]);
+        self::assertSame(['onKernelRequestPreAuthBrowserSourceBan', 9], $autoBan[3]);
+        self::assertSame(['onKernelRequest', 4], $autoBan[4]);
+        self::assertSame(['onKernelRequestAfterSignalWrites', 1], $autoBan[5]);
         self::assertGreaterThan($rateLimit[0][1], $autoBan[0][1]);
         self::assertGreaterThan($rateLimit[0][1], $autoBan[1][1]);
+        self::assertGreaterThan(8, $autoBan[3][1]);
         self::assertSame(['onKernelRequestOrdinary', 3], $rateLimit[1]);
         self::assertGreaterThan($rateLimit[1][1], $autoBan[3][1]);
-        self::assertGreaterThan($autoBan[4][1], $payloadSignals[1]);
-        self::assertLessThan($autoBan[3][1], $payloadSignals[1]);
+        self::assertGreaterThan($autoBan[5][1], $payloadSignals[1]);
+        self::assertLessThan($autoBan[4][1], $payloadSignals[1]);
+        self::assertSame(['onKernelResponseErrorStatus', -299], $autoBanResponse);
+        self::assertGreaterThan($passiveSignals[1], $autoBanResponse[1]);
     }
 
     private function subscriber(
