@@ -37,6 +37,21 @@ final class AutoBanStoreTest extends TestCase
         self::assertNull($store->reset($ban->key()));
         self::assertNotNull($store->active($subject));
     }
+
+    public function testCreateOrReturnActiveMarksExistingBanAsNotCreated(): void
+    {
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: new MockClock('2026-06-18 12:00:00'));
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, 'visitor-existing');
+
+        $first = $store->createOrReturnActive($subject, 3600);
+        self::assertNotNull($first);
+        self::assertTrue($first->created());
+
+        $second = $store->createOrReturnActive($subject, 3600);
+        self::assertNotNull($second);
+        self::assertFalse($second->created());
+        self::assertSame($first->ban()->key(), $second->ban()->key());
+    }
 }
 
 final class IndexFailingAutoBanCache extends ArrayAdapter

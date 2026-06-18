@@ -33,15 +33,25 @@ final readonly class AutoBanStore
      */
     public function ban(AutoBanSubject $subject, int $ttlSeconds, array $context = []): ?ActiveAutoBan
     {
+        return $this->createOrReturnActive($subject, $ttlSeconds, $context)?->ban();
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    public function createOrReturnActive(AutoBanSubject $subject, int $ttlSeconds, array $context = []): ?AutoBanStoreResult
+    {
         $lock = $this->lockFactory->createLock(self::KEY_PREFIX.$subject->key(), 5.0);
 
         try {
             if (!$lock->acquire()) {
-                return $this->active($subject);
+                $active = $this->active($subject);
+
+                return $active instanceof ActiveAutoBan ? new AutoBanStoreResult($active, false) : null;
             }
 
             if (null !== ($active = $this->active($subject))) {
-                return $active;
+                return new AutoBanStoreResult($active, false);
             }
 
             $now = $this->clock->now();
@@ -68,7 +78,7 @@ final readonly class AutoBanStore
                 return null;
             }
 
-            return $ban;
+            return new AutoBanStoreResult($ban, true);
         } catch (Throwable $error) {
             $this->reportStorage('ban', $error, ['active_ban_key' => $subject->key()]);
 

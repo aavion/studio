@@ -83,7 +83,7 @@ final readonly class AutoBanSignalEvaluator
 
             $priorBanSignals = $this->priorBanSignalCount($subject);
             $ttlSeconds = $this->policy->ttlForEscalationCount($priorBanSignals);
-            $ban = $this->store->ban($subject, $ttlSeconds, [
+            $banResult = $this->store->createOrReturnActive($subject, $ttlSeconds, [
                 'score' => $summary['score'],
                 'signal_count' => $summary['signal_count'],
                 'threshold' => $this->policy->thresholdFor($subjectType),
@@ -91,10 +91,11 @@ final readonly class AutoBanSignalEvaluator
                 'escalation_index' => $priorBanSignals,
             ]);
 
-            if (null === $ban) {
+            if (null === $banResult || !$banResult->created()) {
                 return;
             }
 
+            $ban = $banResult->ban();
             if (!$this->recordBanTriggeredSignal($subject, $ban, $summary, $signal, $priorBanSignals)) {
                 $this->store->reset($ban->key());
 
