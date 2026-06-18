@@ -40,6 +40,21 @@ final class AutoBanSignalEvaluatorTest extends TestCase
         self::assertNotNull($store->active($visitor));
     }
 
+    public function testQualifyingFloorCountsDistinctRequestsInsteadOfSignalRows(): void
+    {
+        [$recorder, $store] = $this->stack();
+        $visitor = new AutoBanSubject(AutoBanSubject::VISITOR, 'visitor-same-request');
+
+        $this->recordPayloadProbe($recorder, $visitor, 'request-1');
+        $this->recordError($recorder, $visitor, 'request-1');
+
+        self::assertNull($store->active($visitor));
+
+        $this->recordError($recorder, $visitor, 'request-2');
+
+        self::assertNotNull($store->active($visitor));
+    }
+
     public function testIpSubjectUsesLaxerThresholdMultiplier(): void
     {
         [$recorder, $store] = $this->stack();
@@ -151,6 +166,21 @@ final class AutoBanSignalEvaluatorTest extends TestCase
             requestId: $requestId,
             visitorId: 'visitor-context',
             httpStatus: 404,
+        );
+    }
+
+    private function recordPayloadProbe(SecuritySignalRecorder $recorder, AutoBanSubject $subject, string $requestId): void
+    {
+        $recorder->record(
+            'payload_probe',
+            AutoBanScoreCatalogue::SIGNAL_SUSPICIOUS_PAYLOAD,
+            $subject->type(),
+            $subject->identifier(),
+            ipDerived: $subject->ipDerived(),
+            severity: 'WARNING',
+            confidence: 90,
+            requestId: $requestId,
+            visitorId: 'visitor-context',
         );
     }
 

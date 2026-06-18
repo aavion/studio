@@ -131,7 +131,7 @@ final readonly class AutoBanSignalEvaluator
         }
 
         $rows = $this->connection->fetchAllAssociative(
-            'SELECT signal_type, reason_code, http_status FROM '.self::TABLE.' WHERE subject_type = ? AND subject_identifier = ? AND occurred_at > ? AND occurred_at <= ? AND expires_at > ? ORDER BY occurred_at ASC',
+            'SELECT uid, signal_type, reason_code, request_id, http_status FROM '.self::TABLE.' WHERE subject_type = ? AND subject_identifier = ? AND occurred_at > ? AND occurred_at <= ? AND expires_at > ? ORDER BY occurred_at ASC',
             [
                 $subject->type(),
                 $subject->identifier(),
@@ -142,7 +142,7 @@ final readonly class AutoBanSignalEvaluator
         );
 
         $score = 0;
-        $count = 0;
+        $qualifyingRequests = [];
         foreach ($rows as $row) {
             $weight = $this->scores->scoreFor(
                 (string) ($row['signal_type'] ?? ''),
@@ -154,10 +154,28 @@ final readonly class AutoBanSignalEvaluator
             }
 
             $score += $weight;
-            ++$count;
+            $qualifyingRequests[$this->requestFloorKey($row)] = true;
         }
 
-        return ['score' => $score, 'signal_count' => $count];
+        return ['score' => $score, 'signal_count' => count($qualifyingRequests)];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function requestFloorKey(array $row): string
+    {
+        $requestId = trim((string) ($row['request_id'] ?? ''));
+        if ('' !== $requestId && 'n/a' !== $requestId) {
+            return 'request:'.$requestId;
+        }
+
+        $uid = trim((string) ($row['uid'] ?? ''));
+        if ('' !== $uid) {
+            return 'signal:'.$uid;
+        }
+
+        return 'signal:'.hash('sha256', json_encode($row, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '');
     }
 
     private function priorBanSignalCount(AutoBanSubject $subject): int
