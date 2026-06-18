@@ -66,6 +66,24 @@ final class AutoBanRequestSubscriberTest extends TestCase
         self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
     }
 
+    public function testActiveVisitorBanOverridesEarlierProbeResponseAndSkipsPassiveSignals(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/.env', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+        $event->setResponse(new Response('', 400));
+
+        $this->subscriber($visitorIds, $store, $clock)->onKernelRequest($event);
+
+        self::assertSame(403, $event->getResponse()?->getStatusCode());
+        self::assertSame('3600', $event->getResponse()?->headers->get('Retry-After'));
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+    }
+
     public function testRecoveryLoginBypassIsReachableDespiteActiveBan(): void
     {
         $clock = new MockClock('2026-06-18 12:00:00');

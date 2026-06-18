@@ -60,7 +60,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest() || $event->hasResponse() || !$this->enabledForRequest($event->getRequest()) || !$this->policy->enabled()) {
+        if (!$event->isMainRequest() || !$this->enabledForRequest($event->getRequest()) || !$this->policy->enabled()) {
             return;
         }
 
