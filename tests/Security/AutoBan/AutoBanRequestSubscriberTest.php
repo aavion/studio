@@ -80,6 +80,22 @@ final class AutoBanRequestSubscriberTest extends TestCase
         self::assertNull($event->getResponse());
     }
 
+    public function testLoginSubmissionsCanEstablishTrustedRecoveryContextDespiteActiveBan(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/user/login', 'POST', ['username' => 'owner'], server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $request->attributes->set('_route', 'user_login');
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock)->onKernelRequest($event);
+
+        self::assertNull($event->getResponse());
+    }
+
     public function testLiveEndpointsDoNotBypassActiveBans(): void
     {
         $clock = new MockClock('2026-06-18 12:00:00');

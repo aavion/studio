@@ -12,6 +12,7 @@ use App\Core\Routing\PathScopeMatcher;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
 use App\Security\Abuse\AbuseRequestInspector;
+use App\Security\Abuse\AbuseRequestProfile;
 use App\Security\Abuse\AbuseSubject;
 use App\Security\Abuse\AbuseSubjectType;
 use App\Security\Abuse\RequestIntent;
@@ -65,7 +66,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
 
         try {
             $inspection = $this->inspector->inspect($request);
-            if (RequestIntent::RecoveryLogin === $inspection['profile']->intent() || $this->trustedContext($inspection['subjects']->subjects())) {
+            if ($this->recoveryRequest($inspection['profile']) || $this->trustedContext($inspection['subjects']->subjects())) {
                 return;
             }
 
@@ -116,6 +117,17 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         }
 
         return false;
+    }
+
+    private function recoveryRequest(AbuseRequestProfile $profile): bool
+    {
+        if (RequestIntent::RecoveryLogin === $profile->intent()) {
+            return true;
+        }
+
+        return RequestIntent::Login === $profile->intent()
+            && 'POST' === $profile->method()
+            && in_array($profile->route(), ['user_login', 'n/a'], true);
     }
 
     private function banResponse(Request $request, ActiveAutoBan $ban): Response
