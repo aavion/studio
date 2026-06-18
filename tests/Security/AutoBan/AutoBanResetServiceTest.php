@@ -24,7 +24,7 @@ final class AutoBanResetServiceTest extends TestCase
         $ban = $store->ban($subject, 3600);
         self::assertNotNull($ban);
 
-        $released = (new AutoBanResetService($store, $clock))->releaseAndRecord($ban->key(), function (ActiveAutoBan $released) use ($store, $subject): bool {
+        $released = (new AutoBanResetService($store))->releaseAndRecord($ban->key(), function (ActiveAutoBan $released) use ($store, $subject): bool {
             self::assertNull($store->active($subject));
 
             return $released->key() !== '';
@@ -42,12 +42,31 @@ final class AutoBanResetServiceTest extends TestCase
         $ban = $store->ban($subject, 3600, ['score' => 100]);
         self::assertNotNull($ban);
 
-        $released = (new AutoBanResetService($store, $clock))->releaseAndRecord($ban->key(), static fn (): bool => false);
+        $released = (new AutoBanResetService($store))->releaseAndRecord($ban->key(), static fn (): bool => false);
 
         self::assertNull($released);
         $restored = $store->active($subject);
         self::assertInstanceOf(ActiveAutoBan::class, $restored);
         self::assertSame($ban->key(), $restored->key());
         self::assertTrue($restored->context()['restored_after_failed_reset_signal'] ?? false);
+    }
+
+    public function testItSerializesReleaseAndCutoffAgainstBanCreation(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, 'visitor-reset-race');
+        $ban = $store->ban($subject, 3600, ['score' => 100]);
+        self::assertNotNull($ban);
+
+        $released = (new AutoBanResetService($store))->releaseAndRecord($ban->key(), function () use ($store, $subject): bool {
+            self::assertNull($store->active($subject));
+            self::assertNull($store->createOrReturnActive($subject, 7200, ['score' => 200]));
+
+            return true;
+        });
+
+        self::assertInstanceOf(ActiveAutoBan::class, $released);
+        self::assertNull($store->active($subject));
     }
 }

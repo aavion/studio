@@ -126,6 +126,39 @@ final readonly class AutoBanStore
 
     public function reset(string $key): ?ActiveAutoBan
     {
+        return $this->withSubjectLock($key, fn (): ?ActiveAutoBan => $this->resetUnlocked($key), 'reset');
+    }
+
+    /**
+     * @param callable(ActiveAutoBan): bool $recordResetSignal
+     */
+    public function resetAndRecord(string $key, callable $recordResetSignal): ?ActiveAutoBan
+    {
+        return $this->withSubjectLock($key, function () use ($key, $recordResetSignal): ?ActiveAutoBan {
+            $ban = $this->resetUnlocked($key);
+            if (!$ban instanceof ActiveAutoBan) {
+                return null;
+            }
+
+            try {
+                if ($recordResetSignal($ban)) {
+                    return $ban;
+                }
+            } catch (Throwable $error) {
+                $this->reportStorage('reset_signal', $error, ['active_ban_key' => $key]);
+            }
+
+            $this->restoreActiveState($ban, [
+                ...$ban->context(),
+                'restored_after_failed_reset_signal' => true,
+            ]);
+
+            return null;
+        }, 'reset_cutoff');
+    }
+
+    private function resetUnlocked(string $key): ?ActiveAutoBan
+    {
         try {
             $ban = $this->activeByKey($key);
             if (!$ban instanceof ActiveAutoBan) {
@@ -211,6 +244,67 @@ final readonly class AutoBanStore
         $item->expiresAfter($ban->ttlSeconds());
         if (!$this->cache->save($item) || null !== $this->activeByKey($ban->key())) {
             $this->reportStorage('ban_rollback_verify', new \RuntimeException('Active auto-ban cache entry remained after rollback.'), ['active_ban_key' => $ban->key()]);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function restoreActiveState(ActiveAutoBan $ban, array $context): void
+    {
+        $restored = new ActiveAutoBan(
+            $ban->key(),
+            $ban->subjectType(),
+            $ban->subjectIdentifier(),
+            $ban->createdAt(),
+            $ban->expiresAt(),
+            $ban->ttlSeconds(),
+            $context,
+        );
+
+        try {
+            $item = $this->cache->getItem($this->cacheKey($restored->key()));
+            $item->set($restored->toArray());
+            $item->expiresAfter($restored->retryAfterSeconds($this->clock->now()));
+            if (!$this->cache->save($item)) {
+                $this->reportStorage('reset_restore_save', new \RuntimeException('Active auto-ban restore cache save failed.'), ['active_ban_key' => $restored->key()]);
+
+                return;
+            }
+
+            if (!$this->upsertIndex($restored)) {
+                $this->rollbackActiveState($restored);
+            }
+        } catch (Throwable $error) {
+            $this->reportStorage('reset_restore', $error, ['active_ban_key' => $restored->key()]);
+        }
+    }
+
+    /**
+     * @param callable(): ?ActiveAutoBan $operation
+     */
+    private function withSubjectLock(string $key, callable $operation, string $operationName): ?ActiveAutoBan
+    {
+        $lock = $this->lockFactory->createLock(self::KEY_PREFIX.$key, 5.0);
+
+        try {
+            if (!$lock->acquire(true)) {
+                $this->reportStorage($operationName, new \RuntimeException('Auto-ban subject lock unavailable.'), ['active_ban_key' => $key]);
+
+                return null;
+            }
+
+            return $operation();
+        } catch (Throwable $error) {
+            $this->reportStorage($operationName, $error, ['active_ban_key' => $key]);
+
+            return null;
+        } finally {
+            try {
+                $lock->release();
+            } catch (Throwable $error) {
+                $this->reportStorage($operationName.'_lock_release', $error, ['active_ban_key' => $key]);
+            }
         }
     }
 
