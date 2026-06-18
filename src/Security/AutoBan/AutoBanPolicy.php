@@ -19,6 +19,8 @@ final readonly class AutoBanPolicy
     public const SETUP_ENABLED = true;
     public const DEFAULT_NEW_BAN_OWNER_ALERTS = true;
     public const DEFAULT_TRUSTED_ACCESS_LEVEL = AccessLevel::MANAGER;
+    public const MIN_TRUSTED_ACCESS_LEVEL = AccessLevel::USER;
+    public const MAX_TRUSTED_ACCESS_LEVEL = AccessLevel::OWNER;
     public const DEFAULT_SCORE_THRESHOLD = 100;
     public const MIN_SCORE_THRESHOLD = 2;
     public const MAX_SCORE_THRESHOLD = 10000;
@@ -51,9 +53,12 @@ final readonly class AutoBanPolicy
 
     public function trustedAccessLevel(): int
     {
-        $level = $this->config->get(self::TRUSTED_ACCESS_LEVEL_KEY, self::DEFAULT_TRUSTED_ACCESS_LEVEL);
-
-        return AccessLevel::assert(is_numeric($level) ? (int) $level : self::DEFAULT_TRUSTED_ACCESS_LEVEL) ?? self::DEFAULT_TRUSTED_ACCESS_LEVEL;
+        return $this->configValidation->boundedInteger(
+            $this->config->get(self::TRUSTED_ACCESS_LEVEL_KEY, self::DEFAULT_TRUSTED_ACCESS_LEVEL),
+            self::DEFAULT_TRUSTED_ACCESS_LEVEL,
+            self::MIN_TRUSTED_ACCESS_LEVEL,
+            self::MAX_TRUSTED_ACCESS_LEVEL,
+        );
     }
 
     public function visitorThreshold(): int

@@ -56,4 +56,22 @@ final class AutoBanPolicyTest extends TestCase
 
         self::assertSame(AutoBanPolicy::MAX_SCORE_THRESHOLD, (new AutoBanPolicy($config))->visitorThreshold());
     }
+
+    public function testItBoundsPersistedTrustedAccessLevelToRegisteredUsers(): void
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL DEFAULT 0, modified_at DATETIME DEFAULT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
+        $config = new Config($connection);
+        $config->set(AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY, 0, ConfigValueType::Integer);
+
+        self::assertSame(AutoBanPolicy::MIN_TRUSTED_ACCESS_LEVEL, (new AutoBanPolicy($config))->trustedAccessLevel());
+
+        $config->set(AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY, 10, ConfigValueType::Integer);
+
+        self::assertSame(AutoBanPolicy::MAX_TRUSTED_ACCESS_LEVEL, (new AutoBanPolicy($config))->trustedAccessLevel());
+
+        $config->set(AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY, 'invalid', ConfigValueType::String);
+
+        self::assertSame(AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL, (new AutoBanPolicy($config))->trustedAccessLevel());
+    }
 }

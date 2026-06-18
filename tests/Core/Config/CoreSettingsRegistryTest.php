@@ -100,6 +100,11 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertFalse($security[4]->defaultValue());
         self::assertSame(AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL, $security[5]->defaultValue());
         self::assertSame(FormInputType::Select, $security[5]->formField()->inputType());
+        self::assertSame([
+            'required' => true,
+            'min' => AutoBanPolicy::MIN_TRUSTED_ACCESS_LEVEL,
+            'max' => AutoBanPolicy::MAX_TRUSTED_ACCESS_LEVEL,
+        ], $security[5]->formField()->validation());
         self::assertSame(AutoBanPolicy::DEFAULT_SCORE_THRESHOLD, $security[6]->defaultValue());
         self::assertSame([
             'required' => true,

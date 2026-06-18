@@ -100,11 +100,16 @@ final readonly class CoreSettingsRegistry
                 'minimum_access_level' => AccessLevel::OWNER,
             ], sortOrder: 36),
             new CoreSettingDefinition('security', AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY, 'admin.settings.fields.auto_ban_trusted_access_level.label', AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL, ConfigValueType::Integer, FormInputType::Select, help: 'admin.settings.fields.auto_ban_trusted_access_level.help', options: [
+                (string) AccessLevel::USER => 'admin.settings.options.access_level.user',
+                (string) AccessLevel::MODERATOR => 'admin.settings.options.access_level.moderator',
+                (string) AccessLevel::AUTHOR => 'admin.settings.options.access_level.author',
+                (string) AccessLevel::PUBLISHER => 'admin.settings.options.access_level.publisher',
+                (string) AccessLevel::CURATOR => 'admin.settings.options.access_level.curator',
                 (string) AccessLevel::MANAGER => 'admin.settings.options.access_level.manager',
                 (string) AccessLevel::DIRECTOR => 'admin.settings.options.access_level.director',
                 (string) AccessLevel::ADMIN => 'admin.settings.options.access_level.admin',
                 (string) AccessLevel::OWNER => 'admin.settings.options.access_level.owner',
-            ], validation: ['required' => true, 'min' => AccessLevel::MANAGER, 'max' => AccessLevel::OWNER], metadata: [
+            ], validation: ['required' => true, 'min' => AutoBanPolicy::MIN_TRUSTED_ACCESS_LEVEL, 'max' => AutoBanPolicy::MAX_TRUSTED_ACCESS_LEVEL], metadata: [
                 'access_feature' => 'admin.settings.security',
                 'minimum_access_level' => AccessLevel::OWNER,
             ], sortOrder: 37),

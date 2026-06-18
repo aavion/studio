@@ -834,6 +834,11 @@ admin:
         strict: 'Streng'
         panic: 'Panik'
       access_level:
+        user: 'Benutzer'
+        moderator: 'Moderator'
+        author: 'Autor'
+        publisher: 'Publisher'
+        curator: 'Kurator'
         manager: 'Manager'
         director: 'Director'
         admin: 'Admin'
