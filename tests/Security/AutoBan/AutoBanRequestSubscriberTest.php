@@ -84,6 +84,38 @@ final class AutoBanRequestSubscriberTest extends TestCase
         self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
     }
 
+    public function testActiveVisitorBanMarksProbeRequestsBeforeRateLimitConsumption(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/.env', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock)->onKernelRequestProbeCandidate($event);
+
+        self::assertFalse($event->hasResponse());
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PROBE_RATE_LIMIT_SKIP_ATTRIBUTE));
+    }
+
+    public function testIgnorablePathsDoNotBypassActiveBansWhenTheyReachSymfony(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/favicon.ico', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock)->onKernelRequest($event);
+
+        self::assertSame(403, $event->getResponse()?->getStatusCode());
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+    }
+
     public function testRecoveryLoginBypassIsReachableDespiteActiveBan(): void
     {
         $clock = new MockClock('2026-06-18 12:00:00');
@@ -98,6 +130,43 @@ final class AutoBanRequestSubscriberTest extends TestCase
         $this->subscriber($visitorIds, $store, $clock)->onKernelRequest($event);
 
         self::assertNull($event->getResponse());
+    }
+
+    public function testEarlyLoginGuardBlocksOrdinaryLoginSubmissionsBeforeAuthentication(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/user/login', 'POST', ['username' => 'owner'], server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $request->attributes->set('_route', 'user_login');
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock)->onKernelRequestLogin($event);
+
+        self::assertSame(403, $event->getResponse()?->getStatusCode());
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+    }
+
+    public function testEarlyLoginGuardKeepsMarkedRecoverySubmissionsReachable(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $csrfTokens = new CsrfTokenManager();
+        $request = Request::create('/user/login', 'POST', [
+            'username' => 'owner',
+            AutoBanRequestSubscriber::RECOVERY_LOGIN_TOKEN_FIELD => (string) $csrfTokens->getToken(AutoBanRequestSubscriber::RECOVERY_LOGIN_TOKEN_ID),
+        ], server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $request->attributes->set('_route', 'user_login');
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock, csrfTokens: $csrfTokens)->onKernelRequestLogin($event);
+
+        self::assertFalse($event->hasResponse());
     }
 
     public function testRecoveryLoginSubmissionsCanEstablishTrustedContextDespiteActiveBan(): void
@@ -211,9 +280,12 @@ final class AutoBanRequestSubscriberTest extends TestCase
         $autoBan = AutoBanRequestSubscriber::getSubscribedEvents()[KernelEvents::REQUEST];
         $rateLimit = RateLimitRequestSubscriber::getSubscribedEvents()[KernelEvents::REQUEST];
 
-        self::assertSame(['onKernelRequest', 4], $autoBan);
+        self::assertSame(['onKernelRequestProbeCandidate', 4097], $autoBan[0]);
+        self::assertSame(['onKernelRequestLogin', 16], $autoBan[1]);
+        self::assertSame(['onKernelRequest', 4], $autoBan[2]);
+        self::assertGreaterThan($rateLimit[0][1], $autoBan[0][1]);
         self::assertSame(['onKernelRequestOrdinary', 3], $rateLimit[1]);
-        self::assertGreaterThan($rateLimit[1][1], $autoBan[1]);
+        self::assertGreaterThan($rateLimit[1][1], $autoBan[2][1]);
     }
 
     private function subscriber(

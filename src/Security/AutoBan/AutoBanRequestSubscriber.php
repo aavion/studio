@@ -8,14 +8,16 @@ use App\Core\Access\AccessLevel;
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
-use App\Core\Routing\IgnorableRequestPathMatcher;
+use App\Core\Routing\RequestPathResolver;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
 use App\Security\Abuse\AbuseRequestInspector;
 use App\Security\Abuse\AbuseRequestProfile;
 use App\Security\Abuse\AbuseSubject;
+use App\Security\Abuse\AbuseSubjectResolution;
 use App\Security\Abuse\AbuseSubjectType;
 use App\Security\Abuse\RequestIntent;
+use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\View\Http\HttpErrorRenderer;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Clock\NativeClock;
@@ -31,10 +33,12 @@ use Throwable;
 final readonly class AutoBanRequestSubscriber implements EventSubscriberInterface
 {
     public const PASSIVE_SIGNAL_SKIP_ATTRIBUTE = '_system_auto_ban_response';
+    public const PROBE_RATE_LIMIT_SKIP_ATTRIBUTE = '_system_auto_ban_skip_probe_rate_limit';
     public const RECOVERY_LOGIN_TOKEN_FIELD = '_auto_ban_recovery_token';
     public const RECOVERY_LOGIN_TOKEN_ID = 'auto_ban_recovery_login';
 
-    private IgnorableRequestPathMatcher $ignorablePaths;
+    private SuspiciousProbePathMatcher $probePaths;
+    private RequestPathResolver $paths;
 
     public function __construct(
         private AbuseRequestInspector $inspector,
@@ -45,17 +49,75 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         private string $environment = 'prod',
         private ?MessageReporterInterface $messageReporter = null,
         private ClockInterface $clock = new NativeClock(),
-        ?IgnorableRequestPathMatcher $ignorablePaths = null,
+        ?SuspiciousProbePathMatcher $probePaths = null,
+        ?RequestPathResolver $paths = null,
         private ?CsrfTokenManagerInterface $csrfTokens = null,
     ) {
-        $this->ignorablePaths = $ignorablePaths ?? new IgnorableRequestPathMatcher();
+        $this->probePaths = $probePaths ?? new SuspiciousProbePathMatcher();
+        $this->paths = $paths ?? new RequestPathResolver();
     }
 
     public static function getSubscribedEvents(): array
     {
         return [
-            KernelEvents::REQUEST => ['onKernelRequest', 4],
+            KernelEvents::REQUEST => [
+                ['onKernelRequestProbeCandidate', 4097],
+                ['onKernelRequestLogin', 16],
+                ['onKernelRequest', 4],
+            ],
         ];
+    }
+
+    public function onKernelRequestProbeCandidate(RequestEvent $event): void
+    {
+        $request = $event->getRequest();
+        if (!$event->isMainRequest() || !$this->enabledForRequest($request) || !$this->policy->enabled() || !$this->probePaths->isProbe($request->getPathInfo())) {
+            return;
+        }
+
+        try {
+            $inspection = $this->inspector->inspect($request);
+            if ($this->activeBanFor($inspection['subjects']) instanceof ActiveAutoBan) {
+                $request->attributes->set(self::PROBE_RATE_LIMIT_SKIP_ATTRIBUTE, true);
+            }
+        } catch (Throwable $error) {
+            $this->reportEvaluation($error, [
+                'operation' => 'probe_candidate',
+                'path' => $request->getPathInfo(),
+            ]);
+
+            return;
+        }
+    }
+
+    public function onKernelRequestLogin(RequestEvent $event): void
+    {
+        $request = $event->getRequest();
+        if (!$event->isMainRequest() || $event->hasResponse() || !$this->enabledForRequest($request) || !$this->policy->enabled() || !$this->loginSubmissionCandidate($request)) {
+            return;
+        }
+
+        try {
+            $inspection = $this->inspector->inspect($request);
+            if ($this->recoveryRequest($request, $inspection['profile'])) {
+                return;
+            }
+
+            $ban = $this->activeBanFor($inspection['subjects']);
+            if (!$ban instanceof ActiveAutoBan) {
+                return;
+            }
+
+            $event->setResponse($this->banResponse($request, $ban));
+            $request->attributes->set(self::PASSIVE_SIGNAL_SKIP_ATTRIBUTE, true);
+        } catch (Throwable $error) {
+            $this->reportEvaluation($error, [
+                'operation' => 'login_enforcement',
+                'path' => $request->getPathInfo(),
+            ]);
+
+            return;
+        }
     }
 
     public function onKernelRequest(RequestEvent $event): void
@@ -65,36 +127,16 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         }
 
         $request = $event->getRequest();
-        if ($this->excludedRequest($request)) {
-            return;
-        }
-
         try {
             $inspection = $this->inspector->inspect($request);
             if ($this->recoveryRequest($request, $inspection['profile']) || $this->trustedContext($inspection['subjects']->subjects())) {
                 return;
             }
 
-            foreach ([AbuseSubjectType::Visitor, AbuseSubjectType::IpBucket] as $type) {
-                $subject = $inspection['subjects']->first($type);
-                if (!$subject instanceof AbuseSubject) {
-                    continue;
-                }
-
-                $autoBanSubject = AutoBanSubject::fromAbuseSubject($subject);
-                if (!$autoBanSubject instanceof AutoBanSubject) {
-                    continue;
-                }
-
-                $ban = $this->store->active($autoBanSubject);
-                if (!$ban instanceof ActiveAutoBan) {
-                    continue;
-                }
-
+            $ban = $this->activeBanFor($inspection['subjects']);
+            if ($ban instanceof ActiveAutoBan) {
                 $event->setResponse($this->banResponse($request, $ban));
                 $request->attributes->set(self::PASSIVE_SIGNAL_SKIP_ATTRIBUTE, true);
-
-                return;
             }
         } catch (Throwable $error) {
             $this->reportEvaluation($error, [
@@ -124,6 +166,28 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         return false;
     }
 
+    private function activeBanFor(AbuseSubjectResolution $subjects): ?ActiveAutoBan
+    {
+        foreach ([AbuseSubjectType::Visitor, AbuseSubjectType::IpBucket] as $type) {
+            $subject = $subjects->first($type);
+            if (!$subject instanceof AbuseSubject) {
+                continue;
+            }
+
+            $autoBanSubject = AutoBanSubject::fromAbuseSubject($subject);
+            if (!$autoBanSubject instanceof AutoBanSubject) {
+                continue;
+            }
+
+            $ban = $this->store->active($autoBanSubject);
+            if ($ban instanceof ActiveAutoBan) {
+                return $ban;
+            }
+        }
+
+        return null;
+    }
+
     private function recoveryRequest(Request $request, AbuseRequestProfile $profile): bool
     {
         if (RequestIntent::RecoveryLogin === $profile->intent()) {
@@ -146,6 +210,20 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
             && $this->csrfTokens->isTokenValid(new CsrfToken(self::RECOVERY_LOGIN_TOKEN_ID, $token));
     }
 
+    private function loginSubmissionCandidate(Request $request): bool
+    {
+        if ('POST' !== strtoupper($request->getMethod())) {
+            return false;
+        }
+
+        $route = $request->attributes->get('_route');
+        if ('user_login' === $route) {
+            return true;
+        }
+
+        return $this->paths->matchesExact($request, 'user', 'login');
+    }
+
     private function banResponse(Request $request, ActiveAutoBan $ban): Response
     {
         $retryAfter = $ban->retryAfterSeconds($this->clock->now());
@@ -156,11 +234,6 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         ], [
             'Retry-After' => (string) $retryAfter,
         ]);
-    }
-
-    private function excludedRequest(Request $request): bool
-    {
-        return $this->ignorablePaths->matches($request->getPathInfo());
     }
 
     private function enabledForRequest(Request $request): bool

@@ -19,6 +19,7 @@ use App\Security\Abuse\AbuseSubjectResolver;
 use App\Security\Abuse\ActionCostCatalogue;
 use App\Security\Abuse\RequestIntentClassifier;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
+use App\Security\AutoBan\AutoBanRequestSubscriber;
 use App\Security\RateLimit\RateLimitRequestSubscriber;
 use App\Security\RateLimit\RateLimitEnforcer;
 use App\Security\RateLimit\RateLimitLimiterFactory;
@@ -149,6 +150,31 @@ final class RateLimitRequestSubscriberTest extends TestCase
         $event = new RequestEvent(
             new RateLimitRequestSubscriberTestKernel(),
             Request::create('/home'),
+            HttpKernelInterface::MAIN_REQUEST,
+        );
+
+        $subscriber->onKernelRequestProbe($event);
+
+        self::assertFalse($event->hasResponse());
+    }
+
+    public function testProbeHookSkipsConsumptionWhenActiveAutoBanAlreadyMatched(): void
+    {
+        $enforcer = (new ReflectionClass(RateLimitEnforcer::class))->newInstanceWithoutConstructor();
+        $responses = (new ReflectionClass(RateLimitResponseRenderer::class))->newInstanceWithoutConstructor();
+        $subscriber = new RateLimitRequestSubscriber(
+            $enforcer,
+            $responses,
+            'prod',
+            new SetupCompletionMarker(),
+            dirname(__DIR__, 3),
+            new SuspiciousProbePathMatcher(patterns: SuspiciousProbePathMatcher::DEFAULT_PATTERNS),
+        );
+        $request = Request::create('/.env');
+        $request->attributes->set(AutoBanRequestSubscriber::PROBE_RATE_LIMIT_SKIP_ATTRIBUTE, true);
+        $event = new RequestEvent(
+            new RateLimitRequestSubscriberTestKernel(),
+            $request,
             HttpKernelInterface::MAIN_REQUEST,
         );
 

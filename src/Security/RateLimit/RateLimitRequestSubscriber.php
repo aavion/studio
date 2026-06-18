@@ -7,6 +7,7 @@ namespace App\Security\RateLimit;
 use App\Core\Routing\PathScopeMatcher;
 use App\Core\Routing\IgnorableRequestPathMatcher;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
+use App\Security\AutoBan\AutoBanRequestSubscriber;
 use App\Setup\SetupCompletionMarker;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -57,6 +58,10 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
         }
 
         if (!$this->probePathMatcher->isProbe($request->getPathInfo())) {
+            return;
+        }
+
+        if ($request->attributes->getBoolean(AutoBanRequestSubscriber::PROBE_RATE_LIMIT_SKIP_ATTRIBUTE)) {
             return;
         }
 
