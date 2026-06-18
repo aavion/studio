@@ -281,6 +281,7 @@ services:
     App\Security\AutoBan\AutoBanRequestSubscriber:
         arguments:
             $environment: '%kernel.environment%'
+            $trustedApiKeys: '@App\Security\AutoBan\TrustedApiKeyAutoBanBypass'
 
     App\Security\RateLimit\RateLimitRequestSubscriber:
         arguments:

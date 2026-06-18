@@ -34,6 +34,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
 {
     public const PASSIVE_SIGNAL_SKIP_ATTRIBUTE = '_system_auto_ban_response';
     public const PROBE_RATE_LIMIT_SKIP_ATTRIBUTE = '_system_auto_ban_skip_probe_rate_limit';
+    public const TRUSTED_PRE_AUTH_BYPASS_ATTRIBUTE = '_system_auto_ban_trusted_pre_auth_bypass';
     public const RECOVERY_LOGIN_TOKEN_FIELD = '_auto_ban_recovery_token';
     public const RECOVERY_LOGIN_TOKEN_ID = 'auto_ban_recovery_login';
 
@@ -52,6 +53,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         ?SuspiciousProbePathMatcher $probePaths = null,
         ?RequestPathResolver $paths = null,
         private ?CsrfTokenManagerInterface $csrfTokens = null,
+        private ?TrustedApiKeyAutoBanBypass $trustedApiKeys = null,
     ) {
         $this->probePaths = $probePaths ?? new SuspiciousProbePathMatcher();
         $this->paths = $paths ?? new RequestPathResolver();
@@ -61,11 +63,48 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
     {
         return [
             KernelEvents::REQUEST => [
+                ['onKernelRequestPreAuthSourceBan', 4098],
                 ['onKernelRequestProbeCandidate', 4097],
                 ['onKernelRequestLogin', 16],
                 ['onKernelRequest', 4],
             ],
         ];
+    }
+
+    public function onKernelRequestPreAuthSourceBan(RequestEvent $event): void
+    {
+        $request = $event->getRequest();
+        $protectedSurface = $this->preAuthProtectedSurface($request);
+        if (!$event->isMainRequest() || $event->hasResponse() || !$this->enabledForRequest($request) || !$this->policy->enabled() || null === $protectedSurface) {
+            return;
+        }
+
+        try {
+            $ban = $this->activeBanFor($this->inspector->inspect($request)['subjects']);
+            if (!$ban instanceof ActiveAutoBan) {
+                return;
+            }
+
+            if ($this->trustedApiKeys?->allows(
+                $request,
+                allowPrefixlessBearer: 'scheduler' === $protectedSurface,
+                allowSchedulerQuery: 'scheduler' === $protectedSurface,
+            )) {
+                $request->attributes->set(self::TRUSTED_PRE_AUTH_BYPASS_ATTRIBUTE, true);
+
+                return;
+            }
+
+            $event->setResponse($this->banResponse($request, $ban));
+            $request->attributes->set(self::PASSIVE_SIGNAL_SKIP_ATTRIBUTE, true);
+        } catch (Throwable $error) {
+            $this->reportEvaluation($error, [
+                'operation' => 'api_source_ban',
+                'path' => $request->getPathInfo(),
+            ]);
+
+            return;
+        }
     }
 
     public function onKernelRequestProbeCandidate(RequestEvent $event): void
@@ -127,6 +166,10 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         }
 
         $request = $event->getRequest();
+        if ($request->attributes->getBoolean(self::TRUSTED_PRE_AUTH_BYPASS_ATTRIBUTE)) {
+            return;
+        }
+
         try {
             $inspection = $this->inspector->inspect($request);
             if ($this->recoveryRequest($request, $inspection['profile']) || $this->trustedContext($inspection['subjects']->subjects())) {
@@ -222,6 +265,17 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         }
 
         return $this->paths->matchesExact($request, 'user', 'login');
+    }
+
+    private function preAuthProtectedSurface(Request $request): ?string
+    {
+        $segments = array_values(array_filter(explode('/', trim($request->getPathInfo(), '/')), static fn (string $segment): bool => '' !== $segment));
+
+        if ('api' === ($segments[0] ?? null) && 'v1' === ($segments[1] ?? null)) {
+            return 'api';
+        }
+
+        return ['cron', 'run'] === $segments ? 'scheduler' : null;
     }
 
     private function banResponse(Request $request, ActiveAutoBan $ban): Response

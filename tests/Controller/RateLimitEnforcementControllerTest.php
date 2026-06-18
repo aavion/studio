@@ -9,6 +9,12 @@ use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
+use App\Security\Abuse\AbuseRequestInspector;
+use App\Security\Abuse\AbuseSubject;
+use App\Security\Abuse\AbuseSubjectType;
+use App\Security\AutoBan\AutoBanPolicy;
+use App\Security\AutoBan\AutoBanStore;
+use App\Security\AutoBan\AutoBanSubject;
 use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
@@ -16,6 +22,7 @@ use App\Security\RateLimit\RateLimitProfile;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\Request;
 
 final class RateLimitEnforcementControllerTest extends WebTestCase
 {
@@ -190,6 +197,54 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         ]);
 
         self::assertResponseStatusCodeSame(429);
+    }
+
+    public function testActiveAutoBanPreemptsApiAuthenticationAndPreflights(): void
+    {
+        $client = self::createClient();
+        $cache = self::getContainer()->get('cache.app');
+        self::assertInstanceOf(CacheItemPoolInterface::class, $cache);
+        $cache->clear();
+
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+        $config->set(AutoBanPolicy::ENABLED_KEY, AutoBanPolicy::SETUP_ENABLED, ConfigValueType::Boolean);
+        $config->set(ApiFeaturePolicy::CORS_ENABLED_KEY, true, ConfigValueType::Boolean);
+        $config->set(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, ['https://client.example'], ConfigValueType::Json);
+        $plainKey = $this->createOwnerApiKey('banapi');
+
+        try {
+            $this->banIpBucketFor('/api/v1/status', '198.51.100.31');
+            $client->request('GET', '/api/v1/status', server: $this->server('198.51.100.31') + [
+                'HTTP_AUTHORIZATION' => 'Bearer invalid.invalid-secret',
+                'HTTP_X_AUTO_BAN_TESTING' => '1',
+            ]);
+            self::assertResponseStatusCodeSame(403);
+            self::assertSame('3600', $client->getResponse()->headers->get('Retry-After'));
+            self::assertStringNotContainsString('api_key.authentication_failed', $client->getResponse()->getContent());
+
+            $this->banIpBucketFor('/api/v1/status', '198.51.100.32');
+            $client->request('GET', '/api/v1/status', server: $this->server('198.51.100.32') + [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+                'HTTP_X_AUTO_BAN_TESTING' => '1',
+            ]);
+            self::assertResponseIsSuccessful();
+            self::assertStringContainsString('api_status', $client->getResponse()->getContent());
+
+            $this->banIpBucketFor('/api/v1/admin/settings/general', '198.51.100.33');
+            $client->request('OPTIONS', '/api/v1/admin/settings/general', server: $this->server('198.51.100.33') + [
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+                'HTTP_ORIGIN' => 'https://client.example',
+                'HTTP_X_AUTO_BAN_TESTING' => '1',
+            ]);
+            self::assertNotSame(403, $client->getResponse()->getStatusCode());
+            self::assertSame('https://client.example', $client->getResponse()->headers->get('Access-Control-Allow-Origin'));
+        } finally {
+            $this->removeApiKey('banapi');
+            $config->set(ApiFeaturePolicy::CORS_ENABLED_KEY, false, ConfigValueType::Boolean);
+            $config->set(ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, [], ConfigValueType::Json);
+        }
     }
 
     public function testCorsBearerPreflightsSpendAuthFailureBudgetBeforeCorsShortCircuit(): void
@@ -484,6 +539,23 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
         $config = self::getContainer()->get(Config::class);
         self::assertInstanceOf(Config::class, $config);
         $config->set(RateLimitPolicyCatalogue::MODE_KEY, $profile->value, ConfigValueType::String, modifiedBy: 'test');
+    }
+
+    private function banIpBucketFor(string $path, string $ip): void
+    {
+        $request = Request::create($path, server: $this->server($ip));
+        $inspector = self::getContainer()->get(AbuseRequestInspector::class);
+        self::assertInstanceOf(AbuseRequestInspector::class, $inspector);
+
+        $subject = $inspector->inspect($request)['subjects']->first(AbuseSubjectType::IpBucket);
+        self::assertInstanceOf(AbuseSubject::class, $subject);
+
+        $autoBanSubject = AutoBanSubject::fromAbuseSubject($subject);
+        self::assertInstanceOf(AutoBanSubject::class, $autoBanSubject);
+
+        $store = self::getContainer()->get(AutoBanStore::class);
+        self::assertInstanceOf(AutoBanStore::class, $store);
+        $store->ban($autoBanSubject, 3600);
     }
 
     private function adminUser(): UserAccount

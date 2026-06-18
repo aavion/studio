@@ -116,6 +116,66 @@ final class AutoBanRequestSubscriberTest extends TestCase
         self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
     }
 
+    public function testApiRequestsWithoutTrustedBearerDoNotAuthenticateThroughActiveBans(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/api/v1/status', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer invalid.invalid-secret',
+            'REMOTE_ADDR' => '203.0.113.10',
+        ]);
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock)->onKernelRequestPreAuthSourceBan($event);
+
+        self::assertSame(403, $event->getResponse()?->getStatusCode());
+        self::assertSame('3600', $event->getResponse()?->headers->get('Retry-After'));
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+    }
+
+    public function testApiPreflightsDoNotBypassActiveBans(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/api/v1/admin/settings/general', 'OPTIONS', server: [
+            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+            'HTTP_AUTHORIZATION' => 'Bearer valid-owner-key',
+            'HTTP_ORIGIN' => 'https://client.example',
+            'REMOTE_ADDR' => '203.0.113.10',
+        ]);
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock)->onKernelRequestPreAuthSourceBan($event);
+
+        self::assertSame(403, $event->getResponse()?->getStatusCode());
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+    }
+
+    public function testSchedulerTriggersWithoutTrustedKeyDoNotBypassActiveBans(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/cron/run', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer invalid-scheduler-key',
+            'REMOTE_ADDR' => '203.0.113.10',
+        ]);
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock)->onKernelRequestPreAuthSourceBan($event);
+
+        self::assertSame(403, $event->getResponse()?->getStatusCode());
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+    }
+
     public function testRecoveryLoginBypassIsReachableDespiteActiveBan(): void
     {
         $clock = new MockClock('2026-06-18 12:00:00');
@@ -280,12 +340,14 @@ final class AutoBanRequestSubscriberTest extends TestCase
         $autoBan = AutoBanRequestSubscriber::getSubscribedEvents()[KernelEvents::REQUEST];
         $rateLimit = RateLimitRequestSubscriber::getSubscribedEvents()[KernelEvents::REQUEST];
 
-        self::assertSame(['onKernelRequestProbeCandidate', 4097], $autoBan[0]);
-        self::assertSame(['onKernelRequestLogin', 16], $autoBan[1]);
-        self::assertSame(['onKernelRequest', 4], $autoBan[2]);
+        self::assertSame(['onKernelRequestPreAuthSourceBan', 4098], $autoBan[0]);
+        self::assertSame(['onKernelRequestProbeCandidate', 4097], $autoBan[1]);
+        self::assertSame(['onKernelRequestLogin', 16], $autoBan[2]);
+        self::assertSame(['onKernelRequest', 4], $autoBan[3]);
         self::assertGreaterThan($rateLimit[0][1], $autoBan[0][1]);
+        self::assertGreaterThan($rateLimit[0][1], $autoBan[1][1]);
         self::assertSame(['onKernelRequestOrdinary', 3], $rateLimit[1]);
-        self::assertGreaterThan($rateLimit[1][1], $autoBan[2][1]);
+        self::assertGreaterThan($rateLimit[1][1], $autoBan[3][1]);
     }
 
     private function subscriber(

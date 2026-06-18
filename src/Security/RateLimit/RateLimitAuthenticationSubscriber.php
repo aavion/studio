@@ -8,6 +8,7 @@ use App\Core\Log\AccessRequestMetadata;
 use App\Security\Abuse\AbuseRequestInspector;
 use App\Security\Abuse\AbuseSubject;
 use App\Security\Abuse\AbuseSubjectType;
+use App\Security\AutoBan\AutoBanRequestSubscriber;
 use App\Security\Abuse\SecuritySignalRecorder;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Security\Http\Event\LoginFailureEvent;
@@ -46,6 +47,10 @@ final readonly class RateLimitAuthenticationSubscriber implements EventSubscribe
     public function onLoginFailure(LoginFailureEvent $event): void
     {
         $request = $event->getRequest();
+        if ($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE)) {
+            return;
+        }
+
         $this->recordAuthFailure($event);
 
         if (!$this->enabledForRequest($request->headers->get('X-Rate-Limit-Testing'))) {
