@@ -21,13 +21,13 @@ final class RequestPathResolverTest extends TestCase
         $resolver = new RequestPathResolver();
         $admin = Request::create('/de/admin/settings/security');
         $admin->attributes->set('_locale', 'de');
-        $users = Request::create('/de/users/login');
-        $users->attributes->set('_locale', 'de');
+        $login = Request::create('/de/user/login');
+        $login->attributes->set('_locale', 'de');
         $content = Request::create('/de/about');
         $content->attributes->set('_locale', 'de');
 
         self::assertSame(['admin', 'settings', 'security'], $resolver->segments($admin));
-        self::assertSame(['users', 'login'], $resolver->segments($users));
+        self::assertSame(['user', 'login'], $resolver->segments($login));
         self::assertSame(['de', 'about'], $resolver->segments($content));
     }
 

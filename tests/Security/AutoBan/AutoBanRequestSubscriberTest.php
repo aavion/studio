@@ -69,7 +69,7 @@ final class AutoBanRequestSubscriberTest extends TestCase
         $clock = new MockClock('2026-06-18 12:00:00');
         $visitorIds = new VisitorIdGenerator('test-secret');
         $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
-        $request = Request::create('/de/users/login?bypass=1', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $request = Request::create('/de/user/login?bypass=1', server: ['REMOTE_ADDR' => '203.0.113.10']);
         $request->attributes->set('_locale', 'de');
         $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
         $store->ban($subject, 3600);

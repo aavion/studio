@@ -141,7 +141,7 @@ final readonly class RequestIntentClassifier
     {
         return 'GET' === $method
             && $this->loginSegments($segments)
-            && $this->routeIs($route, 'user_login', 'user_login_recovery_alias', 'user_login_recovery_locale_alias', 'n/a')
+            && $this->routeIs($route, 'user_login', 'n/a')
             && '1' === (string) $request->query->get('bypass', '');
     }
 
@@ -150,7 +150,7 @@ final readonly class RequestIntentClassifier
      */
     private function loginSegments(array $segments): bool
     {
-        return $this->matchesSegments($segments, 'user', 'login') || $this->matchesSegments($segments, 'users', 'login');
+        return $this->matchesSegments($segments, 'user', 'login');
     }
 
     private function setupApply(Request $request, array $segments): bool
