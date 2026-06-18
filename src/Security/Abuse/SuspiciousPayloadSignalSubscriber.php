@@ -9,7 +9,9 @@ use App\Core\Log\AccessRequestMetadata;
 use App\Core\Routing\IgnorableRequestPathMatcher;
 use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\AutoBan\AutoBanRequestSubscriber;
+use App\Security\AutoBan\TrustedApiKeyAutoBanBypass;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Throwable;
@@ -25,6 +27,7 @@ final readonly class SuspiciousPayloadSignalSubscriber implements EventSubscribe
         private AccessRequestMetadata $accessRequestMetadata,
         private ?AutoBanPolicy $autoBanPolicy = null,
         ?IgnorableRequestPathMatcher $ignorablePaths = null,
+        private ?TrustedApiKeyAutoBanBypass $trustedApiKeys = null,
     ) {
         $this->ignorablePaths = $ignorablePaths ?? new IgnorableRequestPathMatcher();
     }
@@ -47,7 +50,7 @@ final readonly class SuspiciousPayloadSignalSubscriber implements EventSubscribe
             $inspection = $this->inspector->inspect($request);
             $subjects = $inspection['subjects'];
             $profile = $inspection['profile'];
-            if ($this->safeApplicationInput($profile) || $this->trustedContext($subjects)) {
+            if ($this->safeApplicationInput($profile) || $this->trustedContext($subjects) || $this->trustedSchedulerCredential($request, $profile)) {
                 return;
             }
 
@@ -121,5 +124,11 @@ final readonly class SuspiciousPayloadSignalSubscriber implements EventSubscribe
         $level = $user->context()['access_level'] ?? AccessLevel::PUBLIC;
 
         return is_numeric($level) && (int) $level >= ($this->autoBanPolicy?->trustedAccessLevel() ?? AccessLevel::MANAGER);
+    }
+
+    private function trustedSchedulerCredential(Request $request, AbuseRequestProfile $profile): bool
+    {
+        return RequestIntent::SchedulerTrigger === $profile->intent()
+            && true === $this->trustedApiKeys?->allows($request, allowPrefixlessBearer: true, allowSchedulerQuery: true);
     }
 }
