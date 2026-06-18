@@ -88,6 +88,11 @@ final readonly class RateLimitResponseRenderer
     private function jsonSurface(Request $request): bool
     {
         return str_starts_with($request->getPathInfo(), '/api/v1')
-            || str_starts_with($request->getPathInfo(), '/cron');
+            || $this->pathMatchesPrefix($request->getPathInfo(), '/cron');
+    }
+
+    private function pathMatchesPrefix(string $path, string $prefix): bool
+    {
+        return $path === $prefix || str_starts_with($path, $prefix.'/');
     }
 }

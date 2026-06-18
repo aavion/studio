@@ -69,14 +69,28 @@ final readonly class RateLimitEnforcer
     private function consume(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost, RateLimitProfile $mode, RateLimitEnforcementStage $stage): RateLimitCheckResult
     {
         try {
+            $plannedConsumes = [];
+            $credits = max(1, $cost->credits());
+
             foreach ($this->descriptors($profile, $subjects, $cost, $mode, $stage) as $descriptor) {
                 $descriptor = $descriptor->withCapacityMultiplier($this->subjects->authenticatedMultiplier($descriptor, $subjects));
 
                 foreach ($this->subjects->subjectKeys($descriptor, $subjects) as $subjectKey) {
-                    $retryAfter = $this->limiters->consume($descriptor, $subjectKey, max(1, $cost->credits()));
-                    if ($retryAfter instanceof \DateTimeImmutable) {
-                        return RateLimitCheckResult::reject($this->retryAfterSeconds($descriptor, $retryAfter), $descriptor->diagnosticsLabel());
-                    }
+                    $plannedConsumes[] = [$descriptor, $subjectKey, $credits];
+                }
+            }
+
+            foreach ($plannedConsumes as [$descriptor, $subjectKey, $credits]) {
+                $retryAfter = $this->limiters->accepts($descriptor, $subjectKey, $credits);
+                if ($retryAfter instanceof \DateTimeImmutable) {
+                    return RateLimitCheckResult::reject($this->retryAfterSeconds($descriptor, $retryAfter), $descriptor->diagnosticsLabel());
+                }
+            }
+
+            foreach ($plannedConsumes as [$descriptor, $subjectKey, $credits]) {
+                $retryAfter = $this->limiters->consume($descriptor, $subjectKey, $credits);
+                if ($retryAfter instanceof \DateTimeImmutable) {
+                    return RateLimitCheckResult::reject($this->retryAfterSeconds($descriptor, $retryAfter), $descriptor->diagnosticsLabel());
                 }
             }
         } catch (\Throwable $exception) {

@@ -27,6 +27,13 @@ final class RateLimitLimiterFactory
         return $limit->isAccepted() ? true : $limit->getRetryAfter();
     }
 
+    public function accepts(RateLimitBucketDescriptor $descriptor, string $subjectKey, int $credits): \DateTimeImmutable|true
+    {
+        $limit = $this->factory($descriptor)->create($subjectKey)->consume(0);
+
+        return $limit->getRemainingTokens() >= $credits ? true : $limit->getRetryAfter();
+    }
+
     public function reset(RateLimitBucketDescriptor $descriptor, string $subjectKey): void
     {
         $this->factory($descriptor)->create($subjectKey)->reset();

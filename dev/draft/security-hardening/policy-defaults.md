@@ -96,8 +96,8 @@ The first Admin-facing rate setting is one Owner-gated Security setting with fou
 | --- | --- | --- | --- |
 | Login failures | 5 failed attempts per 15 minutes | HMAC-redacted submitted username/email plus Visitor ID and IP bucket | Successful credential login resets only the login-attempt bucket for the same submitted-account/visitor/IP subjects |
 | Recovery login bypass | 2 recovery-login requests per minute, 10 per hour, retry after 30 minutes once exhausted | HMAC-redacted submitted username/email plus Visitor ID and IP bucket | Successful credential login re-evaluates active bans/limits under authenticated policy |
-| Registration submissions | 3 submissions per hour and 10 per day | HMAC-redacted submitted email plus Visitor ID and IP bucket | No automatic global reset |
-| Password-reset requests | 3 requests per hour and 10 per day | HMAC-redacted submitted email plus Visitor ID and IP bucket | No automatic global reset |
+| Registration submissions | 3 submissions per hour and 10 per day | HMAC-redacted submitted email or invitation token plus Visitor ID and IP bucket | No automatic global reset |
+| Password-reset requests | 3 requests per hour and 10 per day | HMAC-redacted submitted email or reset token plus Visitor ID and IP bucket | No automatic global reset |
 | Contact form submissions | 3 submissions per 10 minutes and 20 per day | Visitor ID; IP bucket as secondary signal | No automatic global reset |
 | Captcha failures | 5 failures per 10 minutes | Challenge subject plus visitor ID | Verified provider-backed captcha may reset the scoped challenge/form bucket only |
 | Website deliberate burst | 30 deliberate browser route requests per minute | Visitor ID; IP bucket as secondary signal | No success reset |
@@ -124,6 +124,8 @@ Owner-owned API keys and Visitor-ID/IP subjects that resolve to an active Owner 
 Limiter storage degradation is fail-open by policy. If limiter storage, locking, or consume/reset operations fail, the facade should allow the request, emit safe Message-layer diagnostics where possible, and avoid creating an invisible Owner, login, setup, API, or scheduler lockout.
 
 Symfony limiter storage keys must be isolated by the active descriptor shape, including profile-derived capacity/window values, so changing between `standard`, `strict`, and `panic` does not reuse stale fixed-window state. Cache-backed limiter consumption should use the configured Symfony lock factory so concurrent failed credentials or API requests cannot race through the same remaining budget.
+
+Multi-bucket requests must not partially spend earlier buckets when a later bucket rejects the request. The facade should pre-check all planned descriptor/subject candidates, then commit only when every candidate still has capacity. This preserves account-scoped workflow protection without letting a visitor that is already blocked by local or global website budgets poison other users' shared submitted-account buckets.
 
 ## Probe Path Policy
 

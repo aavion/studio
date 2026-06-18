@@ -206,6 +206,21 @@ final class RateLimitEnforcerTest extends TestCase
         self::assertSame('security.rate.password_reset', $result->diagnosticsLabel());
     }
 
+    public function testPasswordResetTokenAttemptsShareSubmittedTokenAcrossVisitors(): void
+    {
+        $enforcer = $this->enforcer();
+        $token = str_repeat('a', 64);
+
+        for ($i = 0; $i < 3; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/user/reset-password/'.$token, 'POST', [], $this->server('203.0.113.'.(100 + $i))))->isAllowed());
+        }
+
+        $result = $enforcer->check($this->request('/user/reset-password/'.$token, 'POST', [], $this->server('203.0.113.110')));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.password_reset', $result->diagnosticsLabel());
+    }
+
     public function testLocalPasswordResetExhaustionDoesNotSpendSubmittedEmailBuckets(): void
     {
         $enforcer = $this->enforcer();
@@ -264,6 +279,79 @@ final class RateLimitEnforcerTest extends TestCase
 
         self::assertFalse($result->isAllowed());
         self::assertSame('security.rate.registration', $result->diagnosticsLabel());
+    }
+
+    public function testInvitationTokenAttemptsShareSubmittedTokenAcrossVisitors(): void
+    {
+        $enforcer = $this->enforcer();
+        $token = str_repeat('b', 64);
+
+        for ($i = 0; $i < 3; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/user/invitation/'.$token, 'POST', [], $this->server('203.0.113.'.(120 + $i))))->isAllowed());
+        }
+
+        $result = $enforcer->check($this->request('/user/invitation/'.$token, 'POST', [], $this->server('203.0.113.130')));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.registration', $result->diagnosticsLabel());
+    }
+
+    public function testWebsiteExhaustionDoesNotSpendRegistrationAccountBucket(): void
+    {
+        $enforcer = $this->enforcer();
+
+        for ($i = 0; $i < 30; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/home'))->isAllowed());
+        }
+
+        $blocked = $enforcer->check($this->request('/user/register', 'POST', [
+            'email' => 'global-victim@example.test',
+        ]));
+
+        self::assertFalse($blocked->isAllowed());
+        self::assertSame('security.rate.website_burst', $blocked->diagnosticsLabel());
+
+        for ($i = 0; $i < 3; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/user/register', 'POST', [
+                'email' => 'global-victim@example.test',
+            ], $this->server('203.0.113.'.(140 + $i))))->isAllowed());
+        }
+
+        $result = $enforcer->check($this->request('/user/register', 'POST', [
+            'email' => 'GLOBAL-VICTIM@EXAMPLE.TEST',
+        ], $this->server('203.0.113.150')));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.registration', $result->diagnosticsLabel());
+    }
+
+    public function testWebsiteExhaustionDoesNotSpendPasswordResetAccountBucket(): void
+    {
+        $enforcer = $this->enforcer();
+
+        for ($i = 0; $i < 30; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/home'))->isAllowed());
+        }
+
+        $blocked = $enforcer->check($this->request('/user/reset-password', 'POST', [
+            'email' => 'global-reset@example.test',
+        ]));
+
+        self::assertFalse($blocked->isAllowed());
+        self::assertSame('security.rate.website_burst', $blocked->diagnosticsLabel());
+
+        for ($i = 0; $i < 3; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/user/reset-password', 'POST', [
+                'email' => 'global-reset@example.test',
+            ], $this->server('203.0.113.'.(160 + $i))))->isAllowed());
+        }
+
+        $result = $enforcer->check($this->request('/user/reset-password', 'POST', [
+            'email' => 'GLOBAL-RESET@EXAMPLE.TEST',
+        ], $this->server('203.0.113.170')));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.password_reset', $result->diagnosticsLabel());
     }
 
     public function testOwnerIsExemptFromOrdinaryRateLimitRejection(): void
@@ -561,9 +649,9 @@ final class RateLimitEnforcerTest extends TestCase
             ['/api/v1/content/items', 'POST', [], 'security.rate.api_write', 16],
             ['/cron/run', 'POST', [], 'security.rate.scheduler', 2],
             ['/setup/review', 'POST', ['_setup_action' => 'apply'], 'security.rate.setup_apply', 3],
-            ['/admin/settings/security', 'POST', [], 'security.rate.admin_mutation', 8],
-            ['/admin/packages/upload', 'POST', [], 'security.rate.upload_archive', 6],
-            ['/admin/logs/download', 'GET', [], 'security.rate.download_diagnostics', 8],
+            ['/admin/settings/security', 'POST', [], 'security.rate.website_burst', 8],
+            ['/admin/packages/upload', 'POST', [], 'security.rate.website_burst', 6],
+            ['/admin/logs/download', 'GET', [], 'security.rate.website_burst', 8],
         ];
 
         foreach ($cases as [$path, $method, $parameters, $label, $attempts]) {

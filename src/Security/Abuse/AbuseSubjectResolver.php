@@ -140,8 +140,16 @@ final readonly class AbuseSubjectResolver
             return $this->submittedAccountSubject('registration_email', $request->request->get('email'), email: true);
         }
 
+        if (1 === preg_match('#^/user/invitation/([a-f0-9]{64})$#i', $path, $matches)) {
+            return $this->submittedAccountSubject('registration_token', $matches[1]);
+        }
+
         if ('/user/reset-password' === $path) {
             return $this->submittedAccountSubject('password_reset_email', $request->request->get('email'), email: true);
+        }
+
+        if (1 === preg_match('#^/user/reset-password/([a-f0-9]{64})$#i', $path, $matches)) {
+            return $this->submittedAccountSubject('password_reset_token', $matches[1]);
         }
 
         return null;

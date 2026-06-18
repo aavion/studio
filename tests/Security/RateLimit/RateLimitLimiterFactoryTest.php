@@ -50,6 +50,21 @@ final class RateLimitLimiterFactoryTest extends TestCase
         self::assertTrue($factory->consume($descriptor, 'login.failure:visitor:lock-test', 1));
         self::assertGreaterThanOrEqual(1, $lockFactory->createdLocks);
     }
+
+    public function testAcceptsChecksCapacityWithoutSpendingCredits(): void
+    {
+        $catalogue = new RateLimitPolicyCatalogue();
+        $descriptor = $catalogue->descriptor('scheduler.interval', RateLimitProfile::Standard);
+        self::assertInstanceOf(RateLimitBucketDescriptor::class, $descriptor);
+
+        $factory = new RateLimitLimiterFactory(new ArrayAdapter());
+        $subjectKey = 'scheduler.interval:visitor:accepts-test';
+
+        self::assertTrue($factory->accepts($descriptor, $subjectKey, 1));
+        self::assertTrue($factory->accepts($descriptor, $subjectKey, 1));
+        self::assertTrue($factory->consume($descriptor, $subjectKey, 1));
+        self::assertInstanceOf(\DateTimeImmutable::class, $factory->accepts($descriptor, $subjectKey, 1));
+    }
 }
 
 final class TrackingRateLimitLockFactory extends LockFactory
