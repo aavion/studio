@@ -15,8 +15,8 @@ use App\Form\FormTokenValidator;
 use App\Security\Abuse\SecuritySignalRecorder;
 use App\Security\AutoBan\ActiveAutoBan;
 use App\Security\AutoBan\AutoBanAdminBrowser;
+use App\Security\AutoBan\AutoBanResetService;
 use App\Security\AutoBan\AutoBanScoreCatalogue;
-use App\Security\AutoBan\AutoBanStore;
 use App\View\Alert\UiAlertDelivery;
 use App\View\Alert\UiAlertDispatcherInterface;
 use App\View\Alert\UiAlertTranslation;
@@ -33,7 +33,7 @@ final class AdminAutoBanController extends AbstractController
         private readonly BackendAccessGuard $accessGuard,
         private readonly AdminFeatureAccessPolicy $adminAcl,
         private readonly AutoBanAdminBrowser $browser,
-        private readonly AutoBanStore $store,
+        private readonly AutoBanResetService $resetService,
         private readonly SecuritySignalRecorder $signals,
         private readonly HttpErrorRenderer $httpError,
         private readonly FormTokenValidator $formTokenValidator,
@@ -87,8 +87,8 @@ final class AdminAutoBanController extends AbstractController
             return $this->httpError->resolve(Response::HTTP_FORBIDDEN, $request, context: ['auto_ban_key' => $key]);
         }
 
-        $ban = $this->store->activeByKey($key);
-        if ($ban instanceof ActiveAutoBan && $this->recordResetSignal($request, $key, $ban) && null !== $this->store->reset($key)) {
+        $ban = $this->resetService->releaseAndRecord($key, fn (ActiveAutoBan $released): bool => $this->recordResetSignal($request, $key, $released));
+        if ($ban instanceof ActiveAutoBan) {
             $this->auditReset($key, $ban->subjectType());
             $this->alerts->addAlert(UiAlertTranslation::success('admin.auto_bans.reset.saved'), UiAlertDelivery::Direct);
         } else {

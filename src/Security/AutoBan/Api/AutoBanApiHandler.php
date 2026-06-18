@@ -19,8 +19,8 @@ use App\Core\Message\MessageLevel;
 use App\Security\Abuse\SecuritySignalRecorder;
 use App\Security\AutoBan\ActiveAutoBan;
 use App\Security\AutoBan\AutoBanAdminBrowser;
+use App\Security\AutoBan\AutoBanResetService;
 use App\Security\AutoBan\AutoBanScoreCatalogue;
-use App\Security\AutoBan\AutoBanStore;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,7 +31,7 @@ final readonly class AutoBanApiHandler implements ApiEndpointHandlerInterface
 {
     public function __construct(
         private AutoBanAdminBrowser $browser,
-        private AutoBanStore $store,
+        private AutoBanResetService $resetService,
         private SecuritySignalRecorder $signals,
         private AccessRequestMetadata $requestMetadata,
         private AuditLoggerInterface $auditLogger,
@@ -75,25 +75,11 @@ final readonly class AutoBanApiHandler implements ApiEndpointHandlerInterface
             return $denied;
         }
 
-        $ban = $this->store->activeByKey($key);
-        if (null === $ban) {
+        $ban = $this->resetService->releaseAndRecord($key, fn (ActiveAutoBan $released): bool => $this->recordResetSignal($request, $endpoint, $key, $released));
+        if (!$ban instanceof ActiveAutoBan) {
             return $this->operationUnavailable($request, $endpoint->operationId(), [
                 'active_ban_key' => $key,
-                'reason' => 'active_ban_not_found',
-            ]);
-        }
-
-        if (!$this->recordResetSignal($request, $endpoint, $key, $ban)) {
-            return $this->operationUnavailable($request, $endpoint->operationId(), [
-                'active_ban_key' => $key,
-                'reason' => 'reset_signal_not_recorded',
-            ]);
-        }
-
-        if (null === $this->store->reset($key)) {
-            return $this->operationUnavailable($request, $endpoint->operationId(), [
-                'active_ban_key' => $key,
-                'reason' => 'active_ban_reset_failed',
+                'reason' => 'active_ban_reset_failed_or_signal_not_recorded',
             ]);
         }
 
