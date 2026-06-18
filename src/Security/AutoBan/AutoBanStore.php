@@ -18,6 +18,7 @@ final readonly class AutoBanStore
 {
     private const KEY_PREFIX = 'security.auto_ban.active.';
     private const INDEX_KEY = 'security.auto_ban.index.v1';
+    private const INDEX_LOCK_KEY = 'security.auto_ban.index.lock';
 
     public function __construct(
         private CacheItemPoolInterface $cache,
@@ -61,7 +62,11 @@ final readonly class AutoBanStore
                 return null;
             }
 
-            $this->upsertIndex($ban);
+            if (!$this->upsertIndex($ban)) {
+                $this->cache->deleteItem($this->cacheKey($ban->key()));
+
+                return null;
+            }
 
             return $ban;
         } catch (Throwable $error) {
@@ -161,22 +166,55 @@ final readonly class AutoBanStore
         return self::KEY_PREFIX.$key;
     }
 
-    private function upsertIndex(ActiveAutoBan $ban): void
+    private function upsertIndex(ActiveAutoBan $ban): bool
     {
-        $index = $this->index();
-        $index[$ban->key()] = [
-            'subject_type' => $ban->subjectType(),
-            'subject_label' => $ban->subjectLabel(),
-            'expires_at' => $ban->expiresAt()->format('Y-m-d H:i:s'),
-        ];
-        $this->saveIndex($index);
+        return $this->updateIndex(static function (array $index) use ($ban): array {
+            $index[$ban->key()] = [
+                'subject_type' => $ban->subjectType(),
+                'subject_label' => $ban->subjectLabel(),
+                'expires_at' => $ban->expiresAt()->format('Y-m-d H:i:s'),
+            ];
+
+            return $index;
+        }, 'index_upsert', ['active_ban_key' => $ban->key()]);
     }
 
-    private function removeIndex(string $key): void
+    private function removeIndex(string $key): bool
     {
-        $index = $this->index();
-        unset($index[$key]);
-        $this->saveIndex($index);
+        return $this->updateIndex(static function (array $index) use ($key): array {
+            unset($index[$key]);
+
+            return $index;
+        }, 'index_remove', ['active_ban_key' => $key]);
+    }
+
+    /**
+     * @param callable(array<string, mixed>): array<string, mixed> $mutator
+     * @param array<string, mixed>                                  $context
+     */
+    private function updateIndex(callable $mutator, string $operation, array $context = []): bool
+    {
+        $lock = $this->lockFactory->createLock(self::INDEX_LOCK_KEY, 5.0);
+
+        try {
+            if (!$lock->acquire(true)) {
+                $this->reportStorage($operation, new \RuntimeException('Auto-ban index lock unavailable.'), $context);
+
+                return false;
+            }
+
+            return $this->saveIndex($mutator($this->index()));
+        } catch (Throwable $error) {
+            $this->reportStorage($operation, $error, $context);
+
+            return false;
+        } finally {
+            try {
+                $lock->release();
+            } catch (Throwable $error) {
+                $this->reportStorage('index_lock_release', $error, $context);
+            }
+        }
     }
 
     /**
@@ -192,12 +230,13 @@ final readonly class AutoBanStore
     /**
      * @param array<string, mixed> $index
      */
-    private function saveIndex(array $index): void
+    private function saveIndex(array $index): bool
     {
         $item = $this->cache->getItem(self::INDEX_KEY);
         $item->set($index);
         $item->expiresAfter(604800);
-        $this->cache->save($item);
+
+        return $this->cache->save($item);
     }
 
     /**
