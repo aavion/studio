@@ -14,6 +14,7 @@ use App\Security\Abuse\AbuseRequestInspector;
 use App\Security\Abuse\AbuseSubjectType;
 use App\Security\Abuse\SecuritySignalRecorder;
 use App\Security\AutoBan\AutoBanPolicy;
+use App\Security\AutoBan\AutoBanRequestSubscriber;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Clock\NativeClock;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -70,7 +71,7 @@ final readonly class SessionVisitorBindingSubscriber implements EventSubscriberI
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest()) {
+        if (!$event->isMainRequest() || $event->hasResponse()) {
             return;
         }
 
@@ -81,6 +82,10 @@ final readonly class SessionVisitorBindingSubscriber implements EventSubscriberI
         }
 
         $request = $event->getRequest();
+        if ($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE)) {
+            return;
+        }
+
         $session = $this->session($request);
 
         if (null === $session) {
