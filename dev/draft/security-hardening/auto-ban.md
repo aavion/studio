@@ -33,18 +33,20 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 3. Treat suspicious probe responses and their generic `400` status as one connected risk action. The probe signal is the high-confidence source; the response-status signal may add context but must not double-count the same request as two independent actions.
 4. Add an auto-ban policy service that aggregates retained, non-reset Security signals over a one-hour scoring window by Visitor ID first and by stable client IP bucket/HMAC as a secondary source subject. Score aggregation runs only from the qualifying signal write path, reusing the active database connection after signal persistence; ordinary requests that do not create a scoreable signal must not perform database score lookups.
 5. Ensure scoreable request signals are persisted for every evaluated source subject, normally Visitor ID and IP bucket, with shared request/correlation context so Visitor and IP scoring can use indexed `subject_type`/`subject_identifier` reads instead of portable-unsafe JSON filtering.
-6. Add bounded Owner-gated Config/Settings defaults through the existing settings registry/default provider for auto-ban enablement, trusted-user minimum access level, score threshold, and any required bounded policy constants so missing databases use seeded defaults and do not cause Doctrine/DBAL throws during setup or degraded states.
+6. Add bounded Owner-gated Config/Settings defaults through the existing settings registry/default provider for auto-ban enablement, trusted-user minimum access level, score threshold, Owner alert delivery for newly decided bans, and any required bounded policy constants so missing databases use seeded defaults and do not cause Doctrine/DBAL throws during setup or degraded states.
 7. Add cache-flock-backed active ban state with TTL plus a cache-backed active-ban index for Admin list rendering. The ban store and index must be fail-open when cache/lock storage is unavailable and must never create an invisible permanent block.
 8. Emit a persistent `security_signal_event` record when a ban is triggered, including whether the effective subject was `visitor` or `ip`, the TTL/escalation context, score summary, and safe references needed for Admin review without exposing raw IPs, raw visitor-cookie tokens, headers, secrets, or raw credentials.
 9. Emit a Security signal when an Owner manually resets a ban. Reset signals invalidate earlier retained signals for that same subject and subject type for future score and escalation calculations, so the visitor/IP starts at zero after reset.
 10. Add enforcement early enough to run before controller/error-page rendering and before rate-limit buckets are consumed, but late enough that authenticated trusted users and trusted-user-owned API keys have been resolved and can bypass active Visitor/IP bans. Active temporary bans return the shared forced bare `403 Forbidden` response with `Retry-After`, generic message, and safe Request ID only.
-11. Add Owner-gated Security settings UI fields for auto-ban enablement, trusted-user minimum access level, and score threshold.
-12. Add the active-ban Admin list with subject type, safe subject label, created timestamp, TTL expiry, and detail link.
+11. Add Owner-gated Security settings UI fields for auto-ban enablement, trusted-user minimum access level, score threshold, and newly decided ban alerts.
+12. Add the active-ban Admin list with subject type, safe subject label, created timestamp, TTL expiry, and detail link. The list and detail views use the existing non-configurable `admin.settings.security` ACL gate instead of a separate auto-ban gate.
 13. Add the ban detail page with filtered Security signals explaining the decision and an Owner-gated manual reset button.
+14. Register Admin API endpoints for listing active bans, reading one ban with retained signal context, and resetting one active ban under `/api/v1/admin/security/auto-bans`, using the same `admin.settings.security` ACL gate as the browser UI.
 
 ## Public interfaces and data decisions
 
 - Auto-ban is enabled by default through a bounded Security setting.
+- Newly decided ban owner alerts are enabled by default through a bounded Security setting. Alerts use hidden warning delivery and link directly to the active-ban list so Owners can review current state before drilling into details.
 - Primary source scoring is by Visitor ID. Stable client IP evidence is evaluated separately to reduce header/cookie mutation bypasses, but IP-only thresholds use a fixed multiplier above the Visitor threshold so legitimate visitors behind NAT or untrusted proxies are less likely to be blocked. User accounts and API keys are context for trusted-user bypass decisions, not auto-ban subjects.
 - The initial scoring window is one hour.
 - First score defaults use a Visitor threshold of `100`, an IP threshold multiplier of `2` for an effective IP threshold of `200`, and a minimum of two qualifying signals before any ban can be created.
@@ -108,7 +110,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test subscriber ordering against existing probe, API authentication, browser session, ordinary rate-limit, and error-rendering hooks.
 - Test recovery-login bypass render despite active Visitor/IP bans, dedicated recovery-login bucket behavior, CSRF/credential/failure accounting, audit logging, and post-login re-evaluation.
 - Test bare browser `403` response shape, `Retry-After`, request ID, `no-store`, and redaction.
-- Test Admin active-ban list, detail filtering, and manual reset permissions/audit/signal creation.
+- Test Admin active-ban list, detail filtering, API list/detail/reset endpoints, and manual reset permissions/audit/signal creation.
+- Test that delegated non-Owner admins cannot access active-ban browser or API surfaces through the `admin.settings.security` ACL gate.
 - Test settings descriptors, default provider values, validation bounds, translations, and missing-database defaults.
 - Test migration/schema only if this branch changes existing Security signal fields; the preferred implementation should avoid new ban tables.
 - Test `php bin/console lint:container` after service/config changes.
@@ -117,8 +120,8 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 - Update Security policy defaults with final score weights, threshold default, multiplier, TTL escalation, trusted-user default, and response semantics.
 - Update Security settings documentation/manual notes once the UI lands.
-- Update Admin/security diagnostics notes for active-ban list, detail review, and manual reset semantics.
-- Update class map for the score catalogue, policy service, cache-flock store, enforcement subscriber, settings descriptors, Admin routes/controllers, and tests.
+- Update Admin/security diagnostics notes for active-ban list, detail review, owner alerts, API endpoints, and manual reset semantics.
+- Update class map for the score catalogue, policy service, cache-flock store, enforcement subscriber, settings descriptors, Admin routes/controllers/API handlers, and tests.
 - Record threshold and false-positive assumptions in the worklog.
 - Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 

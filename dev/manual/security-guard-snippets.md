@@ -1,7 +1,7 @@
 # Security guard snippets
 
 > **Status**: Draft  
-> **Updated**: 2026-05-31  
+> **Updated**: 2026-06-18  
 > **Owner**: Core  
 > **Purpose:** Collect implementation notes for filesystem, package, operation, and configuration guards before they become formal security documentation.  
 
@@ -55,6 +55,21 @@ Do not downgrade `failed` or `blocked` queues to `requires_review`.
 - Prefer generated secrets during setup.
 - Do not rotate `APP_SECRET` during normal maintenance. Treat a changed `APP_SECRET` as an emergency response to a confirmed or likely compromise because it invalidates secret-derived hashes and encrypted values.
 - The owner recovery flow after an `APP_SECRET` change is a failsafe only. Prefer direct operator recovery through `bin/setup --reset-password` when CLI access is available.
+
+## Auto-ban guardrails
+
+Auto-ban enforcement is temporary, source-subject based, and fail-open:
+
+- Score aggregation runs only after a scoreable `security_signal_event` write. Ordinary requests perform only the active cache-state check.
+- Active ban state lives in cache-backed TTL entries with a cache-backed Admin index. Retained Security signals explain trigger and reset history; there is no durable ban table.
+- Visitor ID is the primary source subject. IP bucket/HMAC is evaluated separately with a laxer threshold multiplier.
+- Trusted registered users at or above the configured trusted level, trusted-user-owned API keys, and the recovery login render path must bypass active Visitor/IP bans.
+- Owner review surfaces for active bans use the non-configurable `admin.settings.security` ACL gate. The browser list/detail views and `/api/v1/admin/security/auto-bans` endpoints must reject delegated non-Owner admins.
+- Newly decided ban alerts are configurable and enabled by default. When enabled, active Owner accounts receive a hidden warning with an action link to the active-ban list.
+- Disabling auto-ban stops score evaluation and active-ban enforcement immediately. Existing TTL cache entries may remain until they expire, but they must not block requests while the feature is disabled.
+- The Symfony `test` environment disables kernel-triggered auto-ban evaluation and enforcement unless a request explicitly opts in with `X-Auto-Ban-Testing: 1`, so broad controller suites that intentionally render many error responses do not poison shared test cache state.
+- Active ban responses use the forced bare `403` path with `Retry-After`, `no-store`, a generic message, and a safe Request ID only.
+- Manual reset clears active cache state, records a reset Security signal, and returns a success/error alert for the release workflow. Score and escalation queries ignore earlier evidence for the same subject after that reset.
 
 ## Web server notes
 
