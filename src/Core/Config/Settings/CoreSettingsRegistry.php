@@ -129,7 +129,7 @@ final readonly class CoreSettingsRegistry
             ], metadata: [
                 'access_feature' => 'admin.settings.security',
             ], sortOrder: 50),
-            new CoreSettingDefinition('security', DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, 'admin.settings.fields.security_signal_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.security_signal_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], metadata: [
+            new CoreSettingDefinition('security', DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, 'admin.settings.fields.security_signal_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.security_signal_retention_days.help', validation: ['min' => AutoBanPolicy::MAX_TTL_DAYS, 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], metadata: [
                 'access_feature' => 'admin.settings.security',
             ], sortOrder: 60),
             new CoreSettingDefinition('security', SuspiciousProbePathMatcher::PATTERNS_KEY, 'admin.settings.fields.security_probe_path_patterns.label', SuspiciousProbePathMatcher::defaultPatternText(), ConfigValueType::String, FormInputType::Textarea, help: 'admin.settings.fields.security_probe_path_patterns.help', validation: ['max_length' => 50000], metadata: [

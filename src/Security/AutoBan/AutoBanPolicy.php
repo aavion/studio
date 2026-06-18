@@ -25,6 +25,7 @@ final readonly class AutoBanPolicy
 
     /** @var list<int> */
     public const TTL_ESCALATION_SECONDS = [3600, 10800, 86400, 604800];
+    public const MAX_TTL_DAYS = 7;
 
     public function __construct(private Config $config)
     {

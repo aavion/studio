@@ -14,6 +14,7 @@ use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Log\DatabaseLogRetentionPolicy;
 use App\Form\FormSubmissionHandler;
+use App\Form\FormErrorKey;
 use App\Localization\TranslationLanguageCatalog;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\Security\AutoBan\AutoBanPolicy;
@@ -140,6 +141,35 @@ final class CoreSettingsFormHandlerTest extends TestCase
         self::assertFalse($result->isValid());
         self::assertSame(['admin.settings.form.errors.choice'], $result->errors()[RateLimitPolicyCatalogue::MODE_KEY]);
         self::assertNull($config->get(RateLimitPolicyCatalogue::MODE_KEY));
+    }
+
+    public function testItRejectsSecuritySignalRetentionBelowMaximumAutoBanTtl(): void
+    {
+        $config = new Config($this->connection());
+        $handler = new CoreSettingsFormHandler(
+            $this->registry(),
+            $config,
+            new FormSubmissionHandler(),
+            $this->createStub(EntityManagerInterface::class),
+        );
+
+        $result = $handler->submit('security', [
+            'security.captcha.enabled' => '0',
+            'security.captcha.provider' => 'none',
+            RateLimitPolicyCatalogue::MODE_KEY => RateLimitProfile::Strict->value,
+            AutoBanPolicy::ENABLED_KEY => '1',
+            AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY => (string) AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL,
+            AutoBanPolicy::SCORE_THRESHOLD_KEY => (string) AutoBanPolicy::DEFAULT_SCORE_THRESHOLD,
+            AutoBanPolicy::NEW_BAN_OWNER_ALERTS_KEY => '1',
+            ConfigAuditLogPolicy::ENABLED_KEY => '1',
+            ConfigAuditLogPolicy::EVENTS_KEY => ConfigAuditLogPolicy::DEFAULT_CATEGORIES,
+            DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY => (string) (AutoBanPolicy::MAX_TTL_DAYS - 1),
+            SuspiciousProbePathMatcher::PATTERNS_KEY => SuspiciousProbePathMatcher::defaultPatternText(),
+        ], 'test');
+
+        self::assertFalse($result->isValid());
+        self::assertSame([FormErrorKey::MIN], $result->errors()[DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY]);
+        self::assertNull($config->get(DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY));
     }
 
     private function registry(): CoreSettingsRegistry

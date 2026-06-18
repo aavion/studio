@@ -93,6 +93,7 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertSame(FormInputType::MultiSelect, $security[9]->formField()->inputType());
         self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $security[9]->defaultValue());
         self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, $security[10]->defaultValue());
+        self::assertSame(['min' => AutoBanPolicy::MAX_TTL_DAYS, 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], $security[10]->formField()->validation());
         self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $security[11]->defaultValue());
         self::assertSame(FormInputType::Textarea, $security[11]->formField()->inputType());
 
