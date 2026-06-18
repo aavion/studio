@@ -6,6 +6,7 @@ namespace App\Security\AutoBan\Api;
 
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointProviderInterface;
+use App\Core\Access\AccessLevel;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class AutoBanApiEndpointProvider implements ApiEndpointProviderInterface
@@ -65,6 +66,7 @@ final readonly class AutoBanApiEndpointProvider implements ApiEndpointProviderIn
             ['backend-admin', 'backend-admin-security'],
             parameters: $parameters,
             responseSchema: $responseSchema ?? ['type' => 'object'],
+            minimumAccessLevel: AccessLevel::OWNER,
             pathPattern: $pathPattern,
         );
     }

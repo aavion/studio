@@ -67,8 +67,9 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(403);
         $payload = $this->jsonPayload($client->getResponse()->getContent());
-        self::assertSame('admin.settings.security', $payload['error']['context']['feature']);
-        self::assertSame('feature_hidden', $payload['error']['context']['reason']);
+        self::assertSame(AccessLevel::OWNER, $payload['error']['context']['required_access_level']);
+        self::assertSame(AccessLevel::ADMIN, $payload['error']['context']['actor_access_level']);
+        self::assertSame('listAdminSecurityAutoBans', $payload['error']['context']['operation_id']);
     }
 
     public function testAdminSecurityAutoBansListDetailAndResetAreExposedByApi(): void
@@ -518,7 +519,7 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         self::assertSame(['backend-admin', 'backend-admin-scheduler'], $payload['paths']['/admin/scheduler']['get']['tags']);
         self::assertSame(['backend-admin', 'backend-admin-security'], $payload['paths']['/admin/security/auto-bans']['get']['tags']);
         self::assertSame('resetAdminSecurityAutoBan', $payload['paths']['/admin/security/auto-bans/{key}/reset']['post']['operationId']);
-        self::assertSame(AccessLevel::ADMIN, $payload['paths']['/admin/security/auto-bans']['get']['x-access']['required_access_level']);
+        self::assertSame(AccessLevel::OWNER, $payload['paths']['/admin/security/auto-bans']['get']['x-access']['required_access_level']);
         self::assertSame(['backend-admin', 'backend-admin-statistics'], $payload['paths']['/admin/statistics']['get']['tags']);
         self::assertSame(['backend-admin', 'backend-admin-themes'], $payload['paths']['/admin/themes']['get']['tags']);
         self::assertSame(
