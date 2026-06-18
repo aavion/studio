@@ -98,6 +98,7 @@
 - Registered `/api/v1/admin/security/auto-bans` list/detail/reset endpoints through the existing API endpoint registry. Browser and API auto-ban review/reset surfaces use the existing non-configurable `admin.settings.security` ACL gate, so delegated non-Owner admins cannot access the ban list.
 - Review-hardened active-ban enforcement so `/api/live/**` remains outside ordinary rate-limit `429` handling but no longer bypasses an already active auto-ban, and added a `request_id`/`reason_code` Security-signal index for the Visitor-over-IP ban dedupe query.
 - Verification: `php -l` on changed PHP entry points passed; `php bin/console lint:container` passed; focused AutoBan/API/settings/message PHPUnit groups passed; full `php bin/phpunit` passed with 1631 tests and 10708 assertions; `bin/lint --diff` plus explicit lint for new auto-ban files passed.
+- Addressed first Cloud Review round with separate reviewable commits: recovery login submissions can authenticate despite source bans; active-ban index updates are serialized and roll back unindexed active state; failed cache deletes make reset fail; reset success requires reset-signal persistence; concurrent evaluators emit trigger signals/Owner alerts only for newly created bans; detail views are newest-first while retaining history; auto-ban `403` responses do not create passive signals; and auto-ban API endpoints now advertise Owner-level access before the handler ACL gate.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
