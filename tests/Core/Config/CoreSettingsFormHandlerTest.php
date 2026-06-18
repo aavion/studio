@@ -163,7 +163,7 @@ final class CoreSettingsFormHandlerTest extends TestCase
             AutoBanPolicy::NEW_BAN_OWNER_ALERTS_KEY => '1',
             ConfigAuditLogPolicy::ENABLED_KEY => '1',
             ConfigAuditLogPolicy::EVENTS_KEY => ConfigAuditLogPolicy::DEFAULT_CATEGORIES,
-            DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY => (string) (AutoBanPolicy::MAX_TTL_DAYS - 1),
+            DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY => (string) (AutoBanPolicy::maxTtlDays() - 1),
             SuspiciousProbePathMatcher::PATTERNS_KEY => SuspiciousProbePathMatcher::defaultPatternText(),
         ], 'test');
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Log;
 
 use App\Core\Log\DatabaseLogBrowser;
+use App\Security\AutoBan\AutoBanPolicy;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Connection;
@@ -228,10 +229,10 @@ final class DatabaseLogBrowserTest extends TestCase
         $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(190) PRIMARY KEY NOT NULL, value CLOB NOT NULL)');
         $connection->insert('config_entry', [
             'config_key' => 'security.signals.retention_days',
-            'value' => '1',
+            'value' => (string) AutoBanPolicy::maxTtlDays(),
         ]);
         $this->insertSignal($connection, '99999999-0000-7000-8000-000000000001', '2026-06-16 12:00:00', '2026-06-23 12:00:00', 'current');
-        $this->insertSignal($connection, '99999999-0000-7000-8000-000000000002', '2026-06-14 12:00:00', '2026-06-23 12:00:00', 'expired_by_setting');
+        $this->insertSignal($connection, '99999999-0000-7000-8000-000000000002', '2026-06-08 11:59:59', '2026-06-23 12:00:00', 'expired_by_setting');
 
         $browser = new DatabaseLogBrowser($connection, clock: new MockClock('2026-06-16 12:00:00'));
         $view = $browser->browse([

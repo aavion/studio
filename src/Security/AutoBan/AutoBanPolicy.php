@@ -25,10 +25,13 @@ final readonly class AutoBanPolicy
 
     /** @var list<int> */
     public const TTL_ESCALATION_SECONDS = [3600, 10800, 86400, 604800];
-    public const MAX_TTL_DAYS = 7;
-
     public function __construct(private Config $config)
     {
+    }
+
+    public static function maxTtlDays(): int
+    {
+        return (int) ceil(max(self::TTL_ESCALATION_SECONDS) / 86400);
     }
 
     public function enabled(): bool
