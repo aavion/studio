@@ -50,7 +50,7 @@ final readonly class RateLimitEnforcer
             return $this->checkSuspiciousProbe($profile, $subjectResolution, $cost, $mode);
         }
 
-        if (!$stage->handlesCost($cost) || !$mode->consumesLimiterStorage() || !$cost->ordinaryEnforcement() || $this->isOwnerExempt($request, $profile, $subjectResolution, $cost, $stage)) {
+        if (!$mode->consumesLimiterStorage() || !$cost->ordinaryEnforcement() || $this->isOwnerExempt($request, $profile, $subjectResolution, $cost, $stage)) {
             return RateLimitCheckResult::allow();
         }
 
@@ -109,18 +109,34 @@ final readonly class RateLimitEnforcer
      */
     private function descriptors(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost, RateLimitProfile $mode, RateLimitEnforcementStage $stage): array
     {
-        $families = [$this->bucketFamily($cost, $subjects)];
+        $primaryFamily = $this->bucketFamily($cost, $subjects);
+        $families = [$primaryFamily];
 
-        if ($stage->consumesWebsiteFamily() && $this->shouldConsumeWebsiteFamily($profile, $families[0])) {
+        if ([] === $this->descriptorsForFamily($primaryFamily, $mode, $stage)) {
+            return [];
+        }
+
+        if ($stage->consumesWebsiteFamily() && $this->shouldConsumeWebsiteFamily($profile, $primaryFamily)) {
             $families[] = 'website';
         }
 
         $descriptors = [];
         foreach (array_values(array_unique($families)) as $family) {
-            array_push($descriptors, ...$this->catalogue->descriptorsForFamily($family, $mode));
+            array_push($descriptors, ...$this->descriptorsForFamily($family, $mode, $stage));
         }
 
         return $descriptors;
+    }
+
+    /**
+     * @return list<RateLimitBucketDescriptor>
+     */
+    private function descriptorsForFamily(string $family, RateLimitProfile $mode, RateLimitEnforcementStage $stage): array
+    {
+        return array_values(array_filter(
+            $this->catalogue->descriptorsForFamily($family, $mode),
+            static fn (RateLimitBucketDescriptor $descriptor): bool => $descriptor->handlesStage($stage),
+        ));
     }
 
     private function bucketFamily(ActionCost $cost, AbuseSubjectResolution $subjects): string

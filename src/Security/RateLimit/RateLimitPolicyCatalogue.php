@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security\RateLimit;
 
+use App\Security\Abuse\AbuseSubjectType;
 use App\Security\Abuse\ActionCostCatalogue;
 
 final readonly class RateLimitPolicyCatalogue
@@ -134,6 +135,8 @@ final readonly class RateLimitPolicyCatalogue
             $retryAfterFloorSeconds,
             $resettable,
             $minimumLimit,
+            $this->subjectPolicyForFamily($family),
+            $this->stagesForFamily($family),
         );
     }
 
@@ -158,5 +161,72 @@ final readonly class RateLimitPolicyCatalogue
         $actions = isset(self::SINGLE_ACTION_FLOOR_FAMILIES[$family]) ? 1 : self::MIN_ACTIONS_PER_DERIVED_PROFILE;
 
         return $actions * $minimumCost;
+    }
+
+    private function subjectPolicyForFamily(string $family): RateLimitSubjectPolicy
+    {
+        $apiSubjects = [
+            AbuseSubjectType::ApiKey,
+            AbuseSubjectType::User,
+            AbuseSubjectType::Visitor,
+            AbuseSubjectType::IpBucket,
+        ];
+        $defaultSubjects = [
+            AbuseSubjectType::User,
+            AbuseSubjectType::Visitor,
+            AbuseSubjectType::ApiKey,
+            AbuseSubjectType::ApiKeyPrefix,
+            AbuseSubjectType::IpBucket,
+        ];
+
+        if ('scheduler' === $family) {
+            return new RateLimitSubjectPolicy(
+                [AbuseSubjectType::SchedulerCredential, AbuseSubjectType::IpBucket, AbuseSubjectType::Visitor],
+                ipSecondary: true,
+                ipSecondaryWithAuthenticatedSubject: true,
+            );
+        }
+
+        return new RateLimitSubjectPolicy(
+            in_array($family, ['api_read', 'api_public_read', 'api_write', 'admin_mutation', 'upload_archive', 'download_diagnostics'], true)
+                ? $apiSubjects
+                : $defaultSubjects,
+            submittedAccountScope: in_array($family, ['login', 'recovery_login', 'registration', 'password_reset'], true),
+            ipSecondary: in_array($family, [
+                'website',
+                'website_form',
+                'login',
+                'recovery_login',
+                'registration',
+                'password_reset',
+                'captcha_failure',
+                'setup_apply',
+                'suspicious_probe',
+                'api_read',
+                'api_write',
+                'api_public_read',
+                'admin_mutation',
+                'upload_archive',
+                'download_diagnostics',
+            ], true),
+            authenticatedMultiplier: in_array($family, ['website', 'api_read', 'api_public_read'], true),
+        );
+    }
+
+    /**
+     * @return list<RateLimitEnforcementStage>
+     */
+    private function stagesForFamily(string $family): array
+    {
+        return match ($family) {
+            'suspicious_probe' => [RateLimitEnforcementStage::SuspiciousProbe],
+            'login' => [RateLimitEnforcementStage::AuthenticationFailure],
+            'recovery_login' => [RateLimitEnforcementStage::Ordinary],
+            'api_read', 'api_public_read', 'api_write', 'admin_mutation', 'upload_archive', 'download_diagnostics' => [
+                RateLimitEnforcementStage::Ordinary,
+                RateLimitEnforcementStage::AuthenticationFailure,
+            ],
+            default => [RateLimitEnforcementStage::Ordinary],
+        };
     }
 }

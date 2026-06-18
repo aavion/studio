@@ -6,6 +6,9 @@ namespace App\Security\RateLimit;
 
 final readonly class RateLimitBucketDescriptor
 {
+    /**
+     * @param list<RateLimitEnforcementStage> $stages
+     */
     public function __construct(
         private string $name,
         private string $bucketFamily,
@@ -16,6 +19,8 @@ final readonly class RateLimitBucketDescriptor
         private ?int $retryAfterFloorSeconds = null,
         private bool $resettable = false,
         private int $minimumLimit = 1,
+        private ?RateLimitSubjectPolicy $subjectPolicy = null,
+        private array $stages = [RateLimitEnforcementStage::All],
     ) {
     }
 
@@ -59,6 +64,18 @@ final readonly class RateLimitBucketDescriptor
         return $this->minimumLimit;
     }
 
+    public function subjectPolicy(): RateLimitSubjectPolicy
+    {
+        return $this->subjectPolicy ?? new RateLimitSubjectPolicy([]);
+    }
+
+    public function handlesStage(RateLimitEnforcementStage $stage): bool
+    {
+        return RateLimitEnforcementStage::All === $stage
+            || in_array(RateLimitEnforcementStage::All, $this->stages, true)
+            || in_array($stage, $this->stages, true);
+    }
+
     public function scaled(RateLimitProfile $profile): self
     {
         if (!$this->profileScalable || RateLimitProfile::Standard === $profile || RateLimitProfile::Off === $profile) {
@@ -77,6 +94,8 @@ final readonly class RateLimitBucketDescriptor
                 : max(1, (int) ceil($this->retryAfterFloorSeconds * $profile->retryAfterMultiplier())),
             $this->resettable,
             $this->minimumLimit,
+            $this->subjectPolicy,
+            $this->stages,
         );
     }
 
@@ -92,6 +111,8 @@ final readonly class RateLimitBucketDescriptor
             $this->retryAfterFloorSeconds,
             $this->resettable,
             $this->minimumLimit,
+            $this->subjectPolicy,
+            $this->stages,
         );
     }
 
@@ -111,6 +132,8 @@ final readonly class RateLimitBucketDescriptor
             $this->retryAfterFloorSeconds,
             $this->resettable,
             $this->minimumLimit * $multiplier,
+            $this->subjectPolicy,
+            $this->stages,
         );
     }
 }

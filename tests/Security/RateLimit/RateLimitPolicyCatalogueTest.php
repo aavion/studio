@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Security\RateLimit;
 
+use App\Security\Abuse\AbuseSubjectType;
+use App\Security\RateLimit\RateLimitEnforcementStage;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\RateLimit\RateLimitProfile;
 use PHPUnit\Framework\TestCase;
@@ -95,6 +97,60 @@ final class RateLimitPolicyCatalogueTest extends TestCase
         self::assertNotNull($apiWrite);
         self::assertSame(300, $apiWrite->limit());
         self::assertSame(10, $apiWrite->minimumLimit());
+    }
+
+    public function testDescriptorsOwnEnforcementStages(): void
+    {
+        $catalogue = new RateLimitPolicyCatalogue();
+
+        $login = $catalogue->descriptor('login.failure');
+        $recovery = $catalogue->descriptor('recovery.login.minute');
+        $apiWrite = $catalogue->descriptor('api.write');
+        $probe = $catalogue->descriptor('suspicious.probe');
+
+        self::assertNotNull($login);
+        self::assertTrue($login->handlesStage(RateLimitEnforcementStage::AuthenticationFailure));
+        self::assertFalse($login->handlesStage(RateLimitEnforcementStage::Ordinary));
+
+        self::assertNotNull($recovery);
+        self::assertTrue($recovery->handlesStage(RateLimitEnforcementStage::Ordinary));
+        self::assertFalse($recovery->handlesStage(RateLimitEnforcementStage::AuthenticationFailure));
+
+        self::assertNotNull($apiWrite);
+        self::assertTrue($apiWrite->handlesStage(RateLimitEnforcementStage::Ordinary));
+        self::assertTrue($apiWrite->handlesStage(RateLimitEnforcementStage::AuthenticationFailure));
+
+        self::assertNotNull($probe);
+        self::assertTrue($probe->handlesStage(RateLimitEnforcementStage::SuspiciousProbe));
+        self::assertFalse($probe->handlesStage(RateLimitEnforcementStage::Ordinary));
+    }
+
+    public function testDescriptorsOwnSubjectPolicy(): void
+    {
+        $catalogue = new RateLimitPolicyCatalogue();
+
+        $login = $catalogue->descriptor('login.failure');
+        $adminMutation = $catalogue->descriptor('admin.mutation');
+        $scheduler = $catalogue->descriptor('scheduler.interval');
+        $website = $catalogue->descriptor('website.deliberate.burst');
+
+        self::assertNotNull($login);
+        self::assertTrue($login->subjectPolicy()->submittedAccountScope());
+
+        self::assertNotNull($adminMutation);
+        self::assertSame([
+            AbuseSubjectType::ApiKey,
+            AbuseSubjectType::User,
+            AbuseSubjectType::Visitor,
+            AbuseSubjectType::IpBucket,
+        ], $adminMutation->subjectPolicy()->preferredTypes());
+
+        self::assertNotNull($scheduler);
+        self::assertTrue($scheduler->subjectPolicy()->ipSecondary());
+        self::assertTrue($scheduler->subjectPolicy()->ipSecondaryWithAuthenticatedSubject());
+
+        self::assertNotNull($website);
+        self::assertTrue($website->subjectPolicy()->authenticatedMultiplier());
     }
 
     public function testProfileScalingKeepsMinimumCostedActionsAvailable(): void

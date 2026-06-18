@@ -21,7 +21,7 @@ final class PathScopeMatcherTest extends TestCase
         yield 'segment sibling' => ['/cronjobs', '/cron', false];
         yield 'prefix without leading slash' => ['/build/app.js', 'build', true];
         yield 'root does not match every path' => ['/docs', '/', false];
-        yield 'root matches root' => ['/', '/', true];
+        yield 'root matches only root' => ['/', '/', true];
     }
 
     #[DataProvider('prefixCases')]
@@ -36,5 +36,14 @@ final class PathScopeMatcherTest extends TestCase
 
         self::assertTrue($matcher->matchesAnyPrefix('/_wdt/token', '/assets', '/_wdt'));
         self::assertFalse($matcher->matchesAnyPrefix('/_wdtfoo', '/assets', '/_wdt'));
+    }
+
+    public function testMatchesSegmentsPinsExplicitPathParts(): void
+    {
+        $matcher = new PathScopeMatcher();
+
+        self::assertTrue($matcher->matchesSegments('/api/v1/content', 'api', 'v1'));
+        self::assertFalse($matcher->matchesSegments('/api/v10/content', 'api', 'v1'));
+        self::assertFalse($matcher->matchesSegments('/de/api/v1/content', 'api', 'v1'));
     }
 }

@@ -56,7 +56,7 @@ final readonly class RateLimitSubjectSelector
             return 1;
         }
 
-        return in_array($descriptor->bucketFamily(), ['website', 'api_read', 'api_public_read'], true)
+        return $descriptor->subjectPolicy()->authenticatedMultiplier()
             ? RateLimitPolicyCatalogue::AUTHENTICATED_MULTIPLIER
             : 1;
     }
@@ -78,70 +78,23 @@ final readonly class RateLimitSubjectSelector
      */
     private function preferredTypes(RateLimitBucketDescriptor $descriptor): array
     {
-        if ('scheduler' === $descriptor->bucketFamily()) {
-            return [
-                AbuseSubjectType::SchedulerCredential,
-                AbuseSubjectType::IpBucket,
-                AbuseSubjectType::Visitor,
-            ];
-        }
-
-        if (str_starts_with($descriptor->bucketFamily(), 'api_')) {
-            return [
-                AbuseSubjectType::ApiKey,
-                AbuseSubjectType::User,
-                AbuseSubjectType::Visitor,
-                AbuseSubjectType::IpBucket,
-            ];
-        }
-
-        return [
-            AbuseSubjectType::User,
-            AbuseSubjectType::Visitor,
-            AbuseSubjectType::ApiKey,
-            AbuseSubjectType::ApiKeyPrefix,
-            AbuseSubjectType::IpBucket,
-        ];
+        return $descriptor->subjectPolicy()->preferredTypes();
     }
 
     private function includeIpSecondary(RateLimitBucketDescriptor $descriptor, AbuseSubjectResolution $subjects): bool
     {
-        if ('scheduler' === $descriptor->bucketFamily()) {
-            return true;
-        }
-
-        if ($subjects->first(AbuseSubjectType::User) instanceof AbuseSubject || $subjects->first(AbuseSubjectType::ApiKey) instanceof AbuseSubject) {
+        $policy = $descriptor->subjectPolicy();
+        if (!$policy->ipSecondary()) {
             return false;
         }
 
-        return in_array($descriptor->bucketFamily(), [
-            'website',
-            'website_form',
-            'login',
-            'recovery_login',
-            'registration',
-            'password_reset',
-            'captcha_failure',
-            'setup_apply',
-            'suspicious_probe',
-            'api_read',
-            'api_write',
-            'api_public_read',
-            'admin_mutation',
-            'upload_archive',
-            'download_diagnostics',
-            'scheduler',
-        ], true);
+        return $policy->ipSecondaryWithAuthenticatedSubject()
+            || (!$subjects->first(AbuseSubjectType::User) instanceof AbuseSubject && !$subjects->first(AbuseSubjectType::ApiKey) instanceof AbuseSubject);
     }
 
     private function usesSubmittedAccountScope(RateLimitBucketDescriptor $descriptor): bool
     {
-        return in_array($descriptor->bucketFamily(), [
-            'login',
-            'recovery_login',
-            'registration',
-            'password_reset',
-        ], true);
+        return $descriptor->subjectPolicy()->submittedAccountScope();
     }
 
     public function subjectKey(RateLimitBucketDescriptor $descriptor, AbuseSubject $subject): string

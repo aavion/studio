@@ -131,6 +131,20 @@ final readonly class AbuseSubjectResolver
     private function submittedAccount(Request $request): ?AbuseSubject
     {
         $path = rtrim($request->getPathInfo(), '/') ?: '/';
+        $route = $request->attributes->get('_route');
+        $token = $request->attributes->get('token');
+
+        if ('user_invitation_accept' === $route) {
+            return $this->submittedTokenSubject('registration_token', $token);
+        }
+
+        if ('user_password_reset_token' === $route) {
+            return $this->submittedTokenSubject('password_reset_token', $token);
+        }
+
+        if ('user_security_review' === $route) {
+            return $this->submittedTokenSubject('security_review_token', $token);
+        }
 
         if ('/user/login' === $path) {
             return $this->submittedAccountSubject('login', $request->request->get('username'));
@@ -152,7 +166,20 @@ final readonly class AbuseSubjectResolver
             return $this->submittedAccountSubject('password_reset_token', $matches[1]);
         }
 
+        if (1 === preg_match('#^/user/security-review/([a-f0-9]{64})$#i', $path, $matches)) {
+            return $this->submittedAccountSubject('security_review_token', $matches[1]);
+        }
+
         return null;
+    }
+
+    private function submittedTokenSubject(string $scope, mixed $token): ?AbuseSubject
+    {
+        if (!is_string($token) || 1 !== preg_match('/^[a-f0-9]{64}$/i', $token)) {
+            return null;
+        }
+
+        return $this->submittedAccountSubject($scope, $token);
     }
 
     private function submittedAccountSubject(string $scope, mixed $value, bool $email = false): ?AbuseSubject

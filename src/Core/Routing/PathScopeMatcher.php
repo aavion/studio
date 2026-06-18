@@ -8,9 +8,12 @@ final readonly class PathScopeMatcher
 {
     public function matchesPrefix(string $path, string $prefix): bool
     {
-        $prefix = $this->normalizedPrefix($prefix);
+        $prefixSegments = $this->segments($prefix);
+        if ([] === $prefixSegments) {
+            return '/' === $path;
+        }
 
-        return $path === $prefix || str_starts_with($path, $prefix.'/');
+        return $this->matchesSegments($path, ...$prefixSegments);
     }
 
     public function matchesAnyPrefix(string $path, string ...$prefixes): bool
@@ -24,10 +27,26 @@ final readonly class PathScopeMatcher
         return false;
     }
 
-    private function normalizedPrefix(string $prefix): string
+    public function matchesSegments(string $path, string ...$segments): bool
     {
-        $prefix = '/'.trim($prefix, '/');
+        $pathSegments = $this->segments($path);
+        foreach ($segments as $index => $segment) {
+            if (($pathSegments[$index] ?? null) !== trim($segment, '/')) {
+                return false;
+            }
+        }
 
-        return '//' === $prefix ? '/' : $prefix;
+        return [] !== $segments;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function segments(string $path): array
+    {
+        return array_values(array_filter(
+            explode('/', trim($path, '/')),
+            static fn (string $segment): bool => '' !== $segment,
+        ));
     }
 }
