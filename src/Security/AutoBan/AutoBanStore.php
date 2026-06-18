@@ -118,7 +118,24 @@ final readonly class AutoBanStore
     {
         try {
             $ban = $this->activeByKey($key);
-            $this->cache->deleteItem($this->cacheKey($key));
+            if (!$ban instanceof ActiveAutoBan) {
+                $this->removeIndex($key);
+
+                return null;
+            }
+
+            if (!$this->cache->deleteItem($this->cacheKey($key))) {
+                $this->reportStorage('reset_delete', new \RuntimeException('Active auto-ban cache delete failed.'), ['active_ban_key' => $key]);
+
+                return null;
+            }
+
+            if (null !== $this->activeByKey($key)) {
+                $this->reportStorage('reset_verify', new \RuntimeException('Active auto-ban cache entry remained after delete.'), ['active_ban_key' => $key]);
+
+                return null;
+            }
+
             $this->removeIndex($key);
 
             return $ban;
