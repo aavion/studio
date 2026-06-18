@@ -14,7 +14,8 @@ final readonly class AutoBanPolicy
     public const SCORE_THRESHOLD_KEY = 'security.auto_ban.score_threshold';
     public const NEW_BAN_OWNER_ALERTS_KEY = 'security.auto_ban.new_ban_owner_alerts';
 
-    public const DEFAULT_ENABLED = true;
+    public const DEFAULT_ENABLED = false;
+    public const SETUP_ENABLED = true;
     public const DEFAULT_NEW_BAN_OWNER_ALERTS = true;
     public const DEFAULT_TRUSTED_ACCESS_LEVEL = AccessLevel::MANAGER;
     public const DEFAULT_SCORE_THRESHOLD = 100;

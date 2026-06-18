@@ -85,7 +85,7 @@ final class CoreSettingsRegistryTest extends TestCase
             RateLimitProfile::Panic->value => 'admin.settings.options.rate_limit_mode.panic',
         ], $security[3]->formField()->options());
         self::assertSame('admin.settings.security', $security[3]->metadata()['access_feature']);
-        self::assertTrue($security[4]->defaultValue());
+        self::assertFalse($security[4]->defaultValue());
         self::assertSame(AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL, $security[5]->defaultValue());
         self::assertSame(FormInputType::Select, $security[5]->formField()->inputType());
         self::assertSame(AutoBanPolicy::DEFAULT_SCORE_THRESHOLD, $security[6]->defaultValue());
@@ -153,7 +153,7 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $provider->defaultValue(MaxMindGeoIpConfig::DATABASE_PATH_KEY));
         self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $provider->defaultValue(SuspiciousProbePathMatcher::PATTERNS_KEY));
         self::assertSame(RateLimitProfile::Standard->value, $provider->defaultValue(RateLimitPolicyCatalogue::MODE_KEY));
-        self::assertTrue($provider->defaultValue(AutoBanPolicy::ENABLED_KEY));
+        self::assertFalse($provider->defaultValue(AutoBanPolicy::ENABLED_KEY));
         self::assertSame(AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL, $provider->defaultValue(AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY));
         self::assertSame(AutoBanPolicy::DEFAULT_SCORE_THRESHOLD, $provider->defaultValue(AutoBanPolicy::SCORE_THRESHOLD_KEY));
         self::assertTrue($provider->defaultValue(AutoBanPolicy::NEW_BAN_OWNER_ALERTS_KEY));

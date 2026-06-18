@@ -7,6 +7,7 @@ namespace App\Tests\Security\AutoBan;
 use App\Content\Read\PublishedContentResolver;
 use App\Content\Render\ContentFieldsetRenderer;
 use App\Core\Config\Config;
+use App\Core\Config\ConfigValueType;
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Statistics\VisitorIdGenerator;
 use App\Entity\UserAccount;
@@ -169,6 +170,8 @@ final class AutoBanRequestSubscriberTest extends TestCase
     ): AutoBanRequestSubscriber {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL DEFAULT 0, modified_at DATETIME DEFAULT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
+        $config = new Config($connection);
+        $config->set(AutoBanPolicy::ENABLED_KEY, AutoBanPolicy::SETUP_ENABLED, ConfigValueType::Boolean);
 
         return new AutoBanRequestSubscriber(
             new AbuseRequestInspector(
@@ -176,7 +179,7 @@ final class AutoBanRequestSubscriberTest extends TestCase
                 new RequestIntentClassifier(),
                 new ActionCostCatalogue(),
             ),
-            new AutoBanPolicy(new Config($connection)),
+            new AutoBanPolicy($config),
             $store,
             $this->renderer(),
             new AccessRequestMetadata(),

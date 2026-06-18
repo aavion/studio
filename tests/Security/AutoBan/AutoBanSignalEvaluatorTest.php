@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Security\AutoBan;
 
 use App\Core\Config\Config;
+use App\Core\Config\ConfigValueType;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
 use App\Core\Log\DatabaseLogRetentionPolicy;
@@ -99,12 +100,14 @@ final class AutoBanSignalEvaluatorTest extends TestCase
     private function stack(): array
     {
         $connection = $this->connection();
+        $config = new Config($connection);
+        $config->set(AutoBanPolicy::ENABLED_KEY, AutoBanPolicy::SETUP_ENABLED, ConfigValueType::Boolean);
         $clock = new MockClock('2026-06-18 12:00:00');
         $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
         $evaluator = new AutoBanSignalEvaluator(
             $connection,
             new DatabaseLogRetentionPolicy($connection),
-            new AutoBanPolicy(new Config($connection)),
+            new AutoBanPolicy($config),
             new AutoBanScoreCatalogue(),
             $store,
             clock: $clock,
