@@ -48,9 +48,9 @@ final readonly class SecuritySignalRecorder
         string $route = self::PLACEHOLDER,
         ?int $httpStatus = null,
         array $context = [],
-    ): void {
+    ): bool {
         if (null !== $this->databaseReadyState && !$this->databaseReadyState->isReady()) {
-            return;
+            return false;
         }
 
         $now = $this->clock->now();
@@ -91,8 +91,10 @@ final readonly class SecuritySignalRecorder
             $this->connection->insert(self::TABLE, $row);
             $this->purgeExpired();
             $this->autoBanSignals?->afterSignalRecorded([...$row, ...$context]);
+
+            return true;
         } catch (Throwable) {
-            return;
+            return false;
         }
     }
 

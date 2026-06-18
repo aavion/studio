@@ -17,6 +17,7 @@ use App\Core\Log\AuditLoggerInterface;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Security\Abuse\SecuritySignalRecorder;
+use App\Security\AutoBan\ActiveAutoBan;
 use App\Security\AutoBan\AutoBanAdminBrowser;
 use App\Security\AutoBan\AutoBanScoreCatalogue;
 use App\Security\AutoBan\AutoBanStore;
@@ -74,7 +75,7 @@ final readonly class AutoBanApiHandler implements ApiEndpointHandlerInterface
             return $denied;
         }
 
-        $ban = $this->store->reset($key);
+        $ban = $this->store->activeByKey($key);
         if (null === $ban) {
             return $this->operationUnavailable($request, $endpoint->operationId(), [
                 'active_ban_key' => $key,
@@ -82,27 +83,20 @@ final readonly class AutoBanApiHandler implements ApiEndpointHandlerInterface
             ]);
         }
 
-        $this->signals->record(
-            'auto_ban',
-            AutoBanScoreCatalogue::SIGNAL_RESET,
-            $ban->subjectType(),
-            $ban->subjectIdentifier(),
-            ipDerived: 'ip_bucket' === $ban->subjectType(),
-            severity: 'NOTICE',
-            confidence: 100,
-            requestFamily: 'api',
-            requestIntent: 'settings_mutation',
-            requestId: $this->requestMetadata->requestId($request),
-            visitorId: 'n/a',
-            path: $this->requestMetadata->sanitizedPath($request),
-            route: 'api_v1_endpoint_dispatch',
-            context: [
+        if (!$this->recordResetSignal($request, $endpoint, $key, $ban)) {
+            return $this->operationUnavailable($request, $endpoint->operationId(), [
                 'active_ban_key' => $key,
-                'effective_subject_type' => 'ip_bucket' === $ban->subjectType() ? 'ip' : 'visitor',
-                'reset_by' => $this->actor($request)->userUid(),
-                'api_operation' => $endpoint->operationId(),
-            ],
-        );
+                'reason' => 'reset_signal_not_recorded',
+            ]);
+        }
+
+        if (null === $this->store->reset($key)) {
+            return $this->operationUnavailable($request, $endpoint->operationId(), [
+                'active_ban_key' => $key,
+                'reason' => 'active_ban_reset_failed',
+            ]);
+        }
+
         $this->auditReset($request, $key, $ban->subjectType());
 
         return $this->responder->data(
@@ -197,6 +191,31 @@ final readonly class AutoBanApiHandler implements ApiEndpointHandlerInterface
     private function actor(Request $request): AccessActor
     {
         return ApiRequestContext::fromRequest($request)?->actor() ?? AccessActor::anonymous();
+    }
+
+    private function recordResetSignal(Request $request, ApiEndpointDefinition $endpoint, string $key, ActiveAutoBan $ban): bool
+    {
+        return $this->signals->record(
+            'auto_ban',
+            AutoBanScoreCatalogue::SIGNAL_RESET,
+            $ban->subjectType(),
+            $ban->subjectIdentifier(),
+            ipDerived: 'ip_bucket' === $ban->subjectType(),
+            severity: 'NOTICE',
+            confidence: 100,
+            requestFamily: 'api',
+            requestIntent: 'settings_mutation',
+            requestId: $this->requestMetadata->requestId($request),
+            visitorId: 'n/a',
+            path: $this->requestMetadata->sanitizedPath($request),
+            route: 'api_v1_endpoint_dispatch',
+            context: [
+                'active_ban_key' => $key,
+                'effective_subject_type' => 'ip_bucket' === $ban->subjectType() ? 'ip' : 'visitor',
+                'reset_by' => $this->actor($request)->userUid(),
+                'api_operation' => $endpoint->operationId(),
+            ],
+        );
     }
 
     private function auditReset(Request $request, string $key, string $subjectType): void

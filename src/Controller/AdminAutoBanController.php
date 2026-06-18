@@ -13,6 +13,7 @@ use App\Core\Log\AuditLoggerInterface;
 use App\Entity\UserAccount;
 use App\Form\FormTokenValidator;
 use App\Security\Abuse\SecuritySignalRecorder;
+use App\Security\AutoBan\ActiveAutoBan;
 use App\Security\AutoBan\AutoBanAdminBrowser;
 use App\Security\AutoBan\AutoBanScoreCatalogue;
 use App\Security\AutoBan\AutoBanStore;
@@ -86,28 +87,8 @@ final class AdminAutoBanController extends AbstractController
             return $this->httpError->resolve(Response::HTTP_FORBIDDEN, $request, context: ['auto_ban_key' => $key]);
         }
 
-        $ban = $this->store->reset($key);
-        if (null !== $ban) {
-            $this->signals->record(
-                'auto_ban',
-                AutoBanScoreCatalogue::SIGNAL_RESET,
-                $ban->subjectType(),
-                $ban->subjectIdentifier(),
-                ipDerived: 'ip_bucket' === $ban->subjectType(),
-                severity: 'NOTICE',
-                confidence: 100,
-                requestFamily: 'admin',
-                requestIntent: 'settings_mutation',
-                requestId: $this->requestMetadata->requestId($request),
-                visitorId: 'n/a',
-                path: $this->requestMetadata->sanitizedPath($request),
-                route: 'backend_admin_auto_ban_reset',
-                context: [
-                    'active_ban_key' => $key,
-                    'effective_subject_type' => 'ip_bucket' === $ban->subjectType() ? 'ip' : 'visitor',
-                    'reset_by' => $this->actor()->userUid(),
-                ],
-            );
+        $ban = $this->store->activeByKey($key);
+        if ($ban instanceof ActiveAutoBan && $this->recordResetSignal($request, $key, $ban) && null !== $this->store->reset($key)) {
             $this->auditReset($key, $ban->subjectType());
             $this->alerts->addAlert(UiAlertTranslation::success('admin.auto_bans.reset.saved'), UiAlertDelivery::Direct);
         } else {
@@ -151,6 +132,30 @@ final class AdminAutoBanController extends AbstractController
     private function resetFormId(string $key): string
     {
         return 'admin-auto-ban-reset-'.$key;
+    }
+
+    private function recordResetSignal(Request $request, string $key, ActiveAutoBan $ban): bool
+    {
+        return $this->signals->record(
+            'auto_ban',
+            AutoBanScoreCatalogue::SIGNAL_RESET,
+            $ban->subjectType(),
+            $ban->subjectIdentifier(),
+            ipDerived: 'ip_bucket' === $ban->subjectType(),
+            severity: 'NOTICE',
+            confidence: 100,
+            requestFamily: 'admin',
+            requestIntent: 'settings_mutation',
+            requestId: $this->requestMetadata->requestId($request),
+            visitorId: 'n/a',
+            path: $this->requestMetadata->sanitizedPath($request),
+            route: 'backend_admin_auto_ban_reset',
+            context: [
+                'active_ban_key' => $key,
+                'effective_subject_type' => 'ip_bucket' === $ban->subjectType() ? 'ip' : 'visitor',
+                'reset_by' => $this->actor()->userUid(),
+            ],
+        );
     }
 
     private function auditReset(string $key, string $subjectType): void
