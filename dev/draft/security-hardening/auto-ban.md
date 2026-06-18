@@ -1,13 +1,13 @@
 # Auto-ban branch plan
 
 > **Status**: Draft  
-> **Updated**: 2026-06-15  
+> **Updated**: 2026-06-18  
 > **Owner**: Core  
 > **Purpose:** Define the `feat-security-auto-ban` implementation plan.  
 
 ## Goal
 
-Add TTL-based temporary bans for sustained suspicious anonymous/IP/visitor/API behavior, while keeping authenticated handling softer and preserving Owner recovery access.
+Add score-based temporary bans for sustained suspicious behavior across browser, API, auth, probe, and error-response surfaces, while preserving trusted-user recovery access and keeping ban decisions explainable through retained Security signals.
 
 Back to [security hardening implementation plan](../0.2.x-SecurityHardeningPlan.md).
 
@@ -20,80 +20,106 @@ Codex may create local commits for this branch when each commit has a clear them
 - `feat-security-abuse-foundation`.
 - `feat-security-rate-enforcement`.
 - [Security policy defaults](policy-defaults.md).
-- Existing Admin, audit, message, user-role, visitor identity, and API-key foundations.
+- Existing Security signal storage, Admin log browsing, Admin ACL, user-role/access-level, visitor identity, client-IP identity, Config default provider, error rendering, and rate-limit foundations.
 
 ## Legacy inspiration
 
-The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be reviewed for temporary-block workflows, ban-review ergonomics, and false-positive lessons. Current database-backed TTL records, authenticated soft handling, Owner recovery protection, and Admin audit requirements have priority. Do not copy legacy logic, thresholds, or persistence directly.
+The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be reviewed for temporary-block workflows, ban-review ergonomics, and false-positive lessons. Current score-based Security signals, cache-flock TTL enforcement, trusted-user recovery protection, and Admin review requirements have priority. Do not copy legacy logic, thresholds, persistence, or framework-specific shortcuts directly.
 
 ## Implementation sequence
 
-1. Add database-backed ban records with subject type, normalized subject key, reason code, source signal summary, status, created/expiry timestamps, actor context where available, and manual unban metadata.
-2. Add cleanup for expired bans through command and scheduler-ready task with a separate review-retention window for recently expired records.
-3. Add ban-decision checks to the abuse facade after request classification and before expensive workflow handling.
-4. Enforce by default for anonymous/IP/visitor/API probe abuse.
-5. Apply softer authenticated handling: throttle, captcha, or warning state before hard block unless account compromise signals are explicit.
-6. Add Owner safety checks so at least one active Owner retains login and recovery paths.
-7. Add compact Admin review/manual unban surface with audit entries.
+1. Add an `AutoBanScoreCatalogue` or similarly owned Security catalogue that assigns default score weights only to suspicious Security signal reasons.
+2. Extend passive signal recording so relevant `400`, `403`, `404`, and `429` responses emit low-weight error-hit Security signals, with probe, auth/rate, copied-session or copied-visitor-cookie risk, invalid API/CORS probing, setup-apply abuse, upload/archive validation abuse, diagnostic/export probing, and other explicit high-confidence abuse signals carrying stronger reason-specific weights. Ordinary login-required `401` responses are the explicit non-suspicious auth boundary and do not feed auto-ban scoring by status alone.
+3. Treat suspicious probe responses and their generic `400` status as one connected risk action. The probe signal is the high-confidence source; the response-status signal may add context but must not double-count the same request as two independent actions.
+4. Add an auto-ban policy service that aggregates retained, non-reset Security signals over a one-hour scoring window by Visitor ID first and by stable client IP bucket/HMAC as a secondary source subject. Score aggregation runs only from the qualifying signal write path, reusing the active database connection after signal persistence; ordinary requests that do not create a scoreable signal must not perform database score lookups.
+5. Ensure scoreable request signals are persisted for every evaluated source subject, normally Visitor ID and IP bucket, with shared request/correlation context so Visitor and IP scoring can use indexed `subject_type`/`subject_identifier` reads instead of portable-unsafe JSON filtering.
+6. Add bounded Owner-gated Config/Settings defaults through the existing settings registry/default provider for auto-ban enablement, trusted-user minimum access level, score threshold, and any required bounded policy constants so missing databases use seeded defaults and do not cause Doctrine/DBAL throws during setup or degraded states.
+7. Add cache-flock-backed active ban state with TTL plus a cache-backed active-ban index for Admin list rendering. The ban store and index must be fail-open when cache/lock storage is unavailable and must never create an invisible permanent block.
+8. Emit a persistent `security_signal_event` record when a ban is triggered, including whether the effective subject was `visitor` or `ip`, the TTL/escalation context, score summary, and safe references needed for Admin review without exposing raw IPs, raw visitor-cookie tokens, headers, secrets, or raw credentials.
+9. Emit a Security signal when an Owner manually resets a ban. Reset signals invalidate earlier retained signals for that same subject and subject type for future score and escalation calculations, so the visitor/IP starts at zero after reset.
+10. Add enforcement early enough to run before controller/error-page rendering and before rate-limit buckets are consumed, but late enough that authenticated trusted users and trusted-user-owned API keys have been resolved and can bypass active Visitor/IP bans. Active temporary bans return the shared forced bare `403 Forbidden` response with `Retry-After`, generic message, and safe Request ID only.
+11. Add Owner-gated Security settings UI fields for auto-ban enablement, trusted-user minimum access level, and score threshold.
+12. Add the active-ban Admin list with subject type, safe subject label, created timestamp, TTL expiry, and detail link.
+13. Add the ban detail page with filtered Security signals explaining the decision and an Owner-gated manual reset button.
 
 ## Public interfaces and data decisions
 
-- First implementation uses database-backed TTL records; cache may be added later as an optimization.
-- Auto-ban is enabled by default, with bounded configuration to disable it when the auto-ban branch introduces Security settings.
-- Ban subject types are IP bucket, visitor ID, API key, combined anonymous subject, and optional authenticated user only for explicit compromise cases.
-- Ban reasons use stable message/code catalogues.
-- Ban responses use HTML or JSON according to request family and never expose raw signal internals.
-- Suggested record fields are subject type/key, reason code, source signal digest, status, created at, expires at, lifted at, lifted by, lift reason, actor context hash, last matched at, match count, and audit reference.
-- Initial TTL defaults come from the Security policy defaults and must stay test-backed: short anonymous/probe bans first, longer repeat bans only after repeated signals within the review window, and no permanent bans.
-- Prefer Visitor-ID-backed bans for continuity. Add IP-bucket bans as a shorter secondary layer to reduce cookie-reset bypasses, and keep every IP-derived ban TTL below 30 days.
-- Ban keys come only from the shared subject/client-identity resolver. Raw IP strings, raw API keys, and raw forwarding headers must never be stored as ban keys.
-- Expiry and cleanup use an injectable clock/time boundary.
-- Ban decisions follow the Security policy enforcement order so Admin/Owner context and recovery-login rendering are resolved before visitor/IP bans can deny access.
-- Active temporary ban responses default to generic `403 Forbidden` with `Retry-After` when expiry is known, request-family-specific HTML/JSON bodies, redacted diagnostics, and `no-store`.
-- Browser ban responses should use the shared `HttpErrorRenderer` forced bare response path by default. The bare context may include the generic text `Request blocked due to suspicious activity. retry-after: <seconds>` when a retry delay is known; responses must still include only the safe Request ID/reference and must not expose score values, rule names, subject keys, Visitor IDs, IP buckets, raw IP data, paths, headers, or signal internals.
-- Auto-ban enablement, TTLs, and escalation windows should use named bounded policy descriptors. Disabling auto-ban must not disable passive signal recording, audit, manual review, or recovery protections.
-- Configurable escalation/review windows must not exceed the retention of the signals or log projections used to justify a ban. When evidence retention is shorter than a requested ban-decision window, validation must reject or clamp the setting and surface a clear diagnostic so bans are never based on unavailable historical evidence.
-- Invalid CORS/API probing, repeated failed setup apply attempts, upload/archive abuse, and repeated diagnostic/export probing may feed auto-ban decisions for anonymous or API subjects when the underlying signals are high confidence.
+- Auto-ban is enabled by default through a bounded Security setting.
+- Primary source scoring is by Visitor ID. Stable client IP evidence is evaluated separately to reduce header/cookie mutation bypasses, but IP-only thresholds use a fixed multiplier above the Visitor threshold so legitimate visitors behind NAT or untrusted proxies are less likely to be blocked. User accounts and API keys are context for trusted-user bypass decisions, not auto-ban subjects.
+- The initial scoring window is one hour.
+- First score defaults use a Visitor threshold of `100`, an IP threshold multiplier of `2` for an effective IP threshold of `200`, and a minimum of two qualifying signals before any ban can be created.
+- Initial signal weights are: error-hit `7`, suspicious probe path `100`, copied session or copied visitor-cookie `100`, and failed authentication `10`. That means roughly 15 error hits, one high-confidence probe plus another qualifying signal, one session-copy signal plus another qualifying signal, or 10 failed auth attempts can reach the Visitor threshold inside the one-hour window.
+- Triggered ban TTLs escalate globally as `1h`, `3h`, `24h`, and `7d`.
+- Escalation is derived from retained prior ban-triggered `security_signal_event` records for the same subject type. Visitor and IP escalation counts are separate because ban-trigger signals record whether the ban was for Visitor ID or IP.
+- When one incoming Security signal makes both Visitor and IP scores eligible, create at most one new active ban for that signal and prefer the Visitor ban. Create an IP ban only when the IP score crosses the laxer threshold and no Visitor ban is created for the same evaluation. This preserves the IP defense against cookie/header mutation without unnecessarily broadening NAT impact.
+- Scoreable request signals should be recorded per evaluated source subject, not only as a primary subject with the IP bucket hidden in JSON context. The same request may therefore create paired Visitor/IP signal rows with a shared request ID or correlation context, while Admin detail views deduplicate them for human review.
+- Score aggregation is write-triggered, not request-triggered. After a scoreable `security_signal_event` insert succeeds, the same DB connection may query retained rows for the affected Visitor/IP subjects using the existing `subject_type`, `subject_identifier`, and `occurred_at` index, apply the latest reset cutoff and one-hour window, and decide whether to write a ban-trigger signal plus cache-flock state. Requests with no new scoreable signal only perform the cheap active-ban cache check.
+- Security-signal retention resets escalation naturally. Once prior ban-trigger signals expire or are reset, later bans start from the lower escalation tier again.
+- Manual reset takes effect immediately by deleting/clearing active cache-flock ban state and recording a reset signal. Score and escalation queries ignore earlier signals at or before the latest reset signal for the same subject type/key.
+- Threshold changes apply immediately for new decisions only. Existing active bans are not lifted automatically. If a subject is now above a lowered threshold but is not currently banned, the next qualifying Security signal triggers evaluation and may create the ban. This policy is intentional and should be preserved in reviews.
+- Score thresholds and suspicious-action weights must be floored so at least one action always gets through and a ban cannot be created before the second qualifying signal for that subject type.
+- The first implementation uses stable code defaults in a score catalogue, with settings only for enablement, trusted-user minimum access level, and score threshold. Per-signal weight tuning may become configurable later only at the catalogue boundary with tests and policy updates.
+- The score is global per subject type/key, not separated into multiple buckets. Signal reasons decide weight; bucket family is diagnostic context only.
+- Evaluated Security signals are limited to source-risk signals. Routine access logs, ordinary successful requests, expected validation failures, and login-required `401` responses do not contribute. Normal `404`, `403`, and `429` responses can still be weak signals because repeated misses, denials, or limiter collisions in a short window are source risk.
+- Honeypot/probe signals may carry high scores because they represent high-confidence scanner behavior. Ordinary error-page and rate-limit hits must stay low enough that a single legitimate mistake is harmless while repeated hits can still cross the threshold.
+- Trusted registered users are never auto-banned. The trusted-user minimum access level is required, defaults to `6`/`MANAGER`, and cannot be empty. Because Owners have level `9`, the required setting also protects Owners from self-lockout through auto-ban. Valid API keys owned by trusted users inherit this bypass because the trusted user context has been resolved before active ban enforcement.
+- The recovery login render path `/{LANG}/users/login?bypass=1`, resolved through the shared `RequestPathResolver`, stays reachable despite active Visitor/IP bans. The bypass route keeps its separate strict rate limiting and does not bypass CSRF, credential validation, login-failure accounting, audit logging, or post-login policy re-evaluation.
+- Ban decisions follow the Security policy enforcement order so trusted-user context, trusted-user API-key context, active Admin/Owner session context, and recovery-login rendering are resolved before Visitor/IP bans can deny access, while active bans still run before error pages or rate-limit responses can be produced.
+- Config keys must be registered through the settings/default provider so setup, missing database, or unavailable database states read safe defaults without touching Doctrine/DBAL. When the database is unavailable, signal persistence and score evaluation cannot happen, so auto-ban degrades fail-open.
+- Active temporary ban responses use the shared `HttpErrorRenderer` forced bare response path: `403 Forbidden`, `Retry-After` when TTL is known, `Cache-Control: no-store`, safe Request ID/reference, and a generic message. They must not expose score values, rule names, subject keys, Visitor IDs, IP buckets, raw IP data, paths, headers, signal internals, or ban history.
+- Cache-flock state is the active enforcement state holder. Explainability and escalation come from retained `security_signal_event` records, including ban-trigger and reset records, not from a separate durable ban table.
+- The active-ban list is backed by the active ban store's cache index, while detail/reason evidence is backed by retained Security signals. If the cache index is unavailable or inconsistent, enforcement must fail open and the Admin UI should show a safe degraded-state diagnostic rather than inferring active bans from stale historical signals alone.
+- Ban-state keys come only from the shared subject/client-identity resolver and are limited to source subjects such as Visitor ID and stable IP bucket/HMAC. Raw IP strings, raw forwarding headers, raw API keys, credentials, usernames, emails, session IDs, visitor-cookie material, user IDs, and API-key identifiers must never become active auto-ban keys.
+- IP-derived evaluation and Admin review remain within existing IP-retention ceilings. IP ban TTLs must not exceed the seven-day maximum TTL and must never extend queryable IP-derived evidence beyond retention.
+- First implementation should use explicit subscriber priorities relative to existing security hooks: suspicious probe handling remains earliest, trusted-user/API-key context must be available before ordinary active-ban enforcement, and ordinary active-ban enforcement must run before `RateLimitRequestSubscriber::onKernelRequestOrdinary()` can consume buckets or return `429`. If a single priority cannot satisfy both browser-session and API-key context, split browser and API ban checks by request family while preserving this ordering.
 
 ## Edge cases
 
-- Expired bans must not block while cleanup is pending.
-- Visitor IDs and IP buckets that resolve to an active Admin or Owner session must not be banned.
-- API keys owned by an active Owner must not be banned or rate-limited by ordinary application buckets.
-- A recovery login route, for example `/user/login?bypass=1`, must render the normal login form even when the current Visitor ID or IP bucket is banned, then re-evaluate the ban after successful credential login under authenticated policies.
-- Owner accounts must not be locked out by IP/visitor bans without an alternate documented recovery path.
-- Shared IPs can be blocked only for clear anonymous abuse and should not permanently deny authenticated users.
-- Setup/install abuse happens before Owner identity may exist. Auto-ban must avoid turning setup into an unrecoverable installer lockout; allow documented manual/CLI recovery where no authenticated recovery path exists yet.
-- Invalid API keys may be banned by key fingerprint/prefix where safe, but raw submitted keys are never stored.
-- IP-derived bans must expire and be cleaned up before the 30-day IP retention limit; expired IP bans must not remain searchable as historical Admin records with recoverable IP material.
-- Manual unban must take effect immediately even if passive signals that created the ban still exist.
-- Concurrent ban creation, expiry cleanup, and manual unban must be idempotent and auditable.
-- Ban-store degradation must not create an invisible permanent block or lock out Owner recovery.
+- Expired cache-flock bans must stop blocking even if cleanup is delayed.
+- Missing or stale active-ban index entries must not create enforcement decisions by themselves; the authoritative active block is the per-subject cache-flock TTL state.
+- Trusted users at or above the configured minimum access level must not be banned by Visitor ID or IP source scoring; valid API keys owned by trusted users must bypass existing Visitor/IP bans under the trusted-user rule.
+- Owner sessions and Owner recovery must remain available even when the current Visitor ID or IP bucket is actively banned.
+- Setup/install states may have no database and no Owner. Auto-ban must no-op/fail open in those states except for DB-free probe/error rendering already handled by earlier branches.
+- Shared IPs can be blocked only after the laxer IP threshold is crossed and should not prevent trusted users from using the recovery/login path.
+- Concurrent signal recording, score evaluation, ban creation, TTL expiry, and manual reset must be idempotent. A reset racing with ban creation must not leave a hidden active ban.
+- Storage degradation in Security signal storage, cache, lock/flock, Config, or clock services must not hard-block the request or hide Owner recovery.
+- If a scoreable signal is recorded but the subsequent score query or cache-flock ban creation fails, the request remains allowed or proceeds with the response already selected by the owning workflow. The persisted signal can still support later review, but auto-ban does not retry synchronously on unrelated requests.
+- Status-code signals must be low-weight enough that ordinary content misses, permission denials, expected form validation, and occasional strict/panic `429` recovery paths do not create false positives, while repeated `400`/`403`/`404`/`429` hits in the scoring window still become source-risk evidence.
+- Probe handling must not double-count one request as both an independent probe action and an independent `400` error action.
+- Lowering the threshold must not retroactively unblock active bans; raising it must not retroactively erase retained evidence or escalation signals.
 
 ## Tests and validation
 
-- Test active, expired, manually revoked, and cleanup states.
-- Test anonymous enforcement and softer authenticated behavior.
-- Test Owner recovery protection.
-- Test active Admin/Owner session ban protection, Owner API-key protection, and recovery-login re-evaluation.
-- Test that recovery-login bypass does not bypass CSRF, credential validation, the dedicated recovery-login bucket, or audit logging.
-- Test HTML/JSON ban responses and redaction.
-- Test ban response status, retry metadata, cache headers, and route-existence redaction.
-- Test Admin manual unban writes audit entries.
-- Test repeat-ban TTL escalation stays bounded and does not create permanent bans.
-- Test escalation/review-window validation against the retention limits of the underlying signal, IP-derived, and projected-log evidence.
-- Test disabling auto-ban preserves passive signals, diagnostics, and recovery behavior.
-- Test IP-derived ban TTL validation rejects or clamps values at 30 days and cleanup removes expired IP-derived records from review/export surfaces.
-- Test trusted-proxy/client-identity behavior, ban-store degradation, and concurrent create/unban/cleanup behavior.
-- Test migration applies on SQLite.
+- Test score aggregation over the one-hour window by Visitor ID and by IP subject.
+- Test score floors so the first qualifying signal cannot trigger a ban and the second qualifying signal can trigger only when the configured threshold/weights justify it.
+- Test suspicious probe plus `400` response correlation without double-counting one request.
+- Test paired Visitor/IP source-signal persistence and Admin detail de-duplication so IP scoring does not depend on JSON-context filtering.
+- Test that score aggregation runs only after scoreable signal writes and that ordinary non-signal requests perform no database score lookup beyond the active cache-ban check.
+- Test that one evaluation creates at most one active ban and prefers Visitor over IP when both thresholds are crossed.
+- Test `400`, `403`, `404`, and `429` Security-signal creation as low-weight source-risk signals, with login-required `401` excluded from auto-ban scoring by status alone.
+- Test threshold changes: existing bans stay active, and newly over-threshold subjects are banned only after the next qualifying signal.
+- Test TTL escalation `1h`, `3h`, `24h`, `7d` from retained ban-trigger Security signals and separate Visitor/IP escalation counts.
+- Test retention expiry and manual reset signals invalidate earlier score/escalation evidence.
+- Test active, expired, and manually reset cache-flock ban states.
+- Test active-ban cache index list rendering, stale-index cleanup/degraded diagnostics, and that stale index entries do not block without active per-subject TTL state.
+- Test fail-open behavior when database, Config, cache, lock/flock, or signal storage is unavailable.
+- Test trusted registered users at and above the configured minimum access level are never auto-banned, with the default `MANAGER` level and Owner lockout protection covered.
+- Test valid trusted-user-owned API keys bypass active Visitor/IP bans after API-key authentication resolves the trusted user context, while non-trusted or invalid API-key requests remain subject to Visitor/IP source enforcement.
+- Test subscriber ordering against existing probe, API authentication, browser session, ordinary rate-limit, and error-rendering hooks.
+- Test recovery-login bypass render despite active Visitor/IP bans, dedicated recovery-login bucket behavior, CSRF/credential/failure accounting, audit logging, and post-login re-evaluation.
+- Test bare browser `403` response shape, `Retry-After`, request ID, `no-store`, and redaction.
+- Test Admin active-ban list, detail filtering, and manual reset permissions/audit/signal creation.
+- Test settings descriptors, default provider values, validation bounds, translations, and missing-database defaults.
+- Test migration/schema only if this branch changes existing Security signal fields; the preferred implementation should avoid new ban tables.
+- Test `php bin/console lint:container` after service/config changes.
 
 ## Documentation and tracking
 
-- Update Security draft with final subject types, statuses, and Owner protections.
-- Update Security policy defaults if implementation evidence changes ban TTLs, maximums, subject types, or authenticated/Owner handling.
-- Update Admin/security diagnostics notes for review UI.
-- Update class map for entity, repository, decision service, cleanup command/task, and Admin routes.
-- Record threshold and false-positive assumptions in worklog.
+- Update Security policy defaults with final score weights, threshold default, multiplier, TTL escalation, trusted-user default, and response semantics.
+- Update Security settings documentation/manual notes once the UI lands.
+- Update Admin/security diagnostics notes for active-ban list, detail review, and manual reset semantics.
+- Update class map for the score catalogue, policy service, cache-flock store, enforcement subscriber, settings descriptors, Admin routes/controllers, and tests.
+- Record threshold and false-positive assumptions in the worklog.
 - Complete the Security PR-readiness checklist from the master hardening plan before opening the PR.
 
 ## Non-goals
@@ -101,9 +127,12 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - No permanent invisible deny list.
 - No GeoIP/country blocking.
 - No machine-learning risk scoring.
+- No durable auto-ban table in the first implementation unless signal-store evidence proves cache-flock state is insufficient.
+- No per-signal Admin weight editor in this branch.
 
 ## Acceptance criteria
 
-- Clear bot/probe behavior can be blocked temporarily and reviewed.
-- Operators can understand and reverse bans.
-- Owner recovery remains available.
+- Clear suspicious behavior is scored across relevant Security signals and temporarily blocked only after repeated evidence.
+- Operators can understand active bans through filtered Security signals and can reset them immediately.
+- Trusted users and Owner recovery remain available.
+- Missing database or ban-store degradation fails open instead of creating lockout risk.
