@@ -12,7 +12,7 @@ final readonly class RequestPathResolver
     /**
      * @var list<string>
      */
-    private const LOCALE_PREFIX_SCOPED_SEGMENTS = ['admin', 'editor', 'user'];
+    private const LOCALE_PREFIX_SCOPED_SEGMENTS = ['admin', 'editor', 'user', 'users'];
 
     public function __construct(private ?ContentRouteLocalization $routeLocalization = null)
     {

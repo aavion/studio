@@ -19,6 +19,8 @@ final class SecurityController extends AbstractController
     }
 
     #[Route('/user/login', name: 'user_login', methods: ['GET', 'POST'])]
+    #[Route('/users/login', name: 'user_login_recovery_alias', methods: ['GET'])]
+    #[Route('/{_locale}/users/login', name: 'user_login_recovery_locale_alias', requirements: ['_locale' => '[A-Za-z]{2}(?:-[A-Za-z0-9]+)?'], methods: ['GET'])]
     public function login(AuthenticationUtils $authenticationUtils, Request $request): Response
     {
         return $this->render('@frontend/user/login.html.twig', [
