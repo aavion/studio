@@ -84,6 +84,36 @@ final class SchedulerControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
+    public function testTrustedCronRunErrorsDoNotCreateSourceScoredSignals(): void
+    {
+        $client = self::createClient();
+        $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+
+        $connection->executeStatement('DELETE FROM security_signal_event');
+        $client->request('GET', '/cron/run?job=system.missing', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
+            'REMOTE_ADDR' => '198.51.100.61',
+        ]);
+
+        self::assertResponseStatusCodeSame(404);
+        self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM security_signal_event'));
+
+        $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, true, ConfigValueType::Boolean);
+        try {
+            $connection->executeStatement('DELETE FROM security_signal_event');
+            $client->request('GET', '/cron/run?auth=test_seed_read_write_key&job=system.missing', server: [
+                'REMOTE_ADDR' => '198.51.100.62',
+            ]);
+
+            self::assertResponseStatusCodeSame(404);
+            self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM security_signal_event'));
+        } finally {
+            $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, false, ConfigValueType::Boolean);
+        }
+    }
+
     public function testCronRunRejectsMalformedJobIdentifierBeforeRegistryLookup(): void
     {
         $client = self::createClient();

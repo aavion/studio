@@ -9,7 +9,9 @@ use App\Core\Log\AccessRequestMetadata;
 use App\Core\Routing\IgnorableRequestPathMatcher;
 use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\AutoBan\AutoBanRequestSubscriber;
+use App\Security\AutoBan\TrustedApiKeyAutoBanBypass;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Throwable;
@@ -24,6 +26,7 @@ final readonly class PassiveAbuseSignalSubscriber implements EventSubscriberInte
         private AccessRequestMetadata $accessRequestMetadata,
         private ?AutoBanPolicy $autoBanPolicy = null,
         ?IgnorableRequestPathMatcher $ignorablePaths = null,
+        private ?TrustedApiKeyAutoBanBypass $trustedApiKeys = null,
     ) {
         $this->ignorablePaths = $ignorablePaths ?? new IgnorableRequestPathMatcher();
     }
@@ -47,6 +50,10 @@ final readonly class PassiveAbuseSignalSubscriber implements EventSubscriberInte
             $signal = $this->signalFor($profile, $event->getResponse()->getStatusCode());
 
             if (null === $signal) {
+                return;
+            }
+
+            if ($signal['source_scored'] && $this->trustedSchedulerCredential($event->getRequest(), $profile)) {
                 return;
             }
 
@@ -160,6 +167,12 @@ final readonly class PassiveAbuseSignalSubscriber implements EventSubscriberInte
         $level = $user->context()['access_level'] ?? AccessLevel::PUBLIC;
 
         return is_numeric($level) && (int) $level >= ($this->autoBanPolicy?->trustedAccessLevel() ?? AccessLevel::MANAGER);
+    }
+
+    private function trustedSchedulerCredential(Request $request, AbuseRequestProfile $profile): bool
+    {
+        return RequestIntent::SchedulerTrigger === $profile->intent()
+            && true === $this->trustedApiKeys?->allows($request, allowPrefixlessBearer: true, allowSchedulerQuery: true);
     }
 
     private function shouldSkip(string $path): bool
