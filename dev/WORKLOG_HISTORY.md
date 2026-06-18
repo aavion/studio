@@ -1,7 +1,7 @@
 # Developer Worklog History
 
 > **Status**: Active  
-> **Updated**: 2026-06-17  
+> **Updated**: 2026-06-18  
 > **Owner**: Core  
 > **Purpose:** Preserve compacted branch/PR history moved out of `dev/WORKLOG.md` at branch boundaries.
 
@@ -9,6 +9,11 @@
 Move completed branch or PR logs from `dev/WORKLOG.md` into this file when switching branches or after a PR is merged. Keep the active worklog focused on the current branch so reviewers can see the full PR context while older project history stays available.
 
 ## Archived Branches
+### 2026-06-17 to 2026-06-18 feat-security-rate-enforcement
+- Implemented the rate-enforcement slice: descriptor-backed Symfony RateLimiter facade, Owner-gated mode setting (`off`, `standard`, `strict`, `panic`), action-cost-derived policy catalogue, Website/API/Scheduler/Auth/Setup/Probe buckets, fail-open storage diagnostics through the Message layer, authenticated multipliers, Owner ordinary exemption, recovery-login handling, active-profile scoped resets, dormant captcha reset contract, and redacted HTML/JSON `429`/probe responses.
+- Hardened the branch through 39 resolved Cloud Review findings: unsafe-only workflow charging, authentication-failure ordering, generated/static exclusions, active-profile resets, recovery buckets, account/token subjects, API/CORS/read-only preflight handling, Owner and scheduler exceptions, exact technical path scopes, probe ordering before package/API/setup/maintenance gates, setup-final-apply safety, multi-bucket pre-check/commit semantics, website fallback for descriptor gaps, and segment-bound API/Cron guards.
+- Added shared path helpers, HTTP error-renderer bare/resolve behavior, `render:route` diagnostics hardening, rate-limit Security settings translations, future cache-panic documentation, worklog/class-map/draft updates, PR-readiness/review-fix project rules, and final review notes showing full `bin/phpunit`, `bin/jstest`, and `bin/lint` passed before merge.
+
 ### 2026-06-16 to 2026-06-17 feat-security-admin-acl-enforcement
 - Implemented the Admin ACL enforcement slice: domain-owned feature registry, denied/visible/mutable states, surface inference from feature keys, seeded Owner-configurable defaults, ACL-group override states, Owner-gated `Settings/ACL` matrix, dynamic active-package settings rows, and feature-matrix caching with explicit invalidation.
 - Wired Admin ACL feature checks through protected settings fields, Admin navigation/views, package/theme actions, package lifecycle and settings, GeoIP maintenance, operations continuations, scheduler, logs, statistics, users, user reviews, ACL group management, backup/status surfaces, and Admin API handlers while keeping visible-only controls rendered disabled where layout depends on them.
