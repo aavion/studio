@@ -36,6 +36,12 @@ final class DatabaseLogRetentionPolicyTest extends TestCase
         self::assertSame(1, (new DatabaseLogRetentionPolicy($connection))->retentionDaysForSource('message'));
     }
 
+    public function testDefaultSecuritySignalRetentionIsValidForAutoBanTtl(): void
+    {
+        self::assertGreaterThanOrEqual(AutoBanPolicy::maxTtlDays(), DatabaseLogRetentionPolicy::defaultSecuritySignalRetentionDays());
+        self::assertLessThanOrEqual(DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS, DatabaseLogRetentionPolicy::defaultSecuritySignalRetentionDays());
+    }
+
     private function connection(): Connection
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);

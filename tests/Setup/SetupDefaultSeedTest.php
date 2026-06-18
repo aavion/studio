@@ -39,7 +39,7 @@ final class SetupDefaultSeedTest extends TestCase
         self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $settings[MaxMindGeoIpConfig::DATABASE_PATH_KEY]);
         self::assertSame('', $settings[MaxMindGeoIpConfig::LICENSE_KEY_KEY]);
         self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $settings[DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY]);
-        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, $settings[DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY]);
+        self::assertSame(DatabaseLogRetentionPolicy::defaultSecuritySignalRetentionDays(), $settings[DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY]);
         self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $settings[SuspiciousProbePathMatcher::PATTERNS_KEY]);
         self::assertTrue($settings[AutoBanPolicy::ENABLED_KEY]);
         self::assertSame(AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL, $settings[AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY]);

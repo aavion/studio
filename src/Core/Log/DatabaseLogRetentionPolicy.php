@@ -39,9 +39,14 @@ final readonly class DatabaseLogRetentionPolicy
     {
         return $this->days(
             self::SECURITY_SIGNAL_RETENTION_DAYS_KEY,
-            self::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS,
+            self::defaultSecuritySignalRetentionDays(),
             AutoBanPolicy::maxTtlDays(),
         );
+    }
+
+    public static function defaultSecuritySignalRetentionDays(): int
+    {
+        return max(self::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, AutoBanPolicy::maxTtlDays());
     }
 
     private function days(string $key, int $default, int $min): int
