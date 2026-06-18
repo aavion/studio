@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security\Abuse;
 
 use App\Api\Http\ApiRequestContext;
+use App\Core\Routing\RequestPathResolver;
 use App\Core\Statistics\VisitorIdGenerator;
 use App\Core\Validation\EmailAddress;
 use App\Entity\UserAccount;
@@ -15,12 +16,15 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 final readonly class AbuseSubjectResolver
 {
     private const PLACEHOLDER = 'n/a';
+    private RequestPathResolver $paths;
 
     public function __construct(
         private VisitorIdGenerator $visitorIdGenerator,
         private TokenStorageInterface $tokenStorage,
         private string $secret,
+        ?RequestPathResolver $paths = null,
     ) {
+        $this->paths = $paths ?? new RequestPathResolver();
     }
 
     public function resolve(Request $request): AbuseSubjectResolution
@@ -104,8 +108,7 @@ final readonly class AbuseSubjectResolver
 
     private function submittedSchedulerCredential(Request $request): ?AbuseSubject
     {
-        $path = rtrim($request->getPathInfo(), '/') ?: '/';
-        if ('/cron/run' !== $path) {
+        if (!$this->paths->matchesExact($request, 'cron', 'run')) {
             return null;
         }
 
@@ -130,7 +133,7 @@ final readonly class AbuseSubjectResolver
 
     private function submittedAccount(Request $request): ?AbuseSubject
     {
-        $path = rtrim($request->getPathInfo(), '/') ?: '/';
+        $segments = $this->paths->segments($request);
         $route = $request->attributes->get('_route');
         $token = $request->attributes->get('token');
 
@@ -146,28 +149,28 @@ final readonly class AbuseSubjectResolver
             return $this->submittedTokenSubject('security_review_token', $token);
         }
 
-        if ('/user/login' === $path) {
+        if ($this->matchesExactSegments($segments, 'user', 'login')) {
             return $this->submittedAccountSubject('login', $request->request->get('username'));
         }
 
-        if ('/user/register' === $path) {
+        if ($this->matchesExactSegments($segments, 'user', 'register')) {
             return $this->submittedAccountSubject('registration_email', $request->request->get('email'), email: true);
         }
 
-        if (1 === preg_match('#^/user/invitation/([a-f0-9]{64})$#i', $path, $matches)) {
-            return $this->submittedAccountSubject('registration_token', $matches[1]);
+        if ($this->matchesSegments($segments, 'user', 'invitation') && null !== ($submittedToken = $this->tokenSegment($segments, 2))) {
+            return $this->submittedAccountSubject('registration_token', $submittedToken);
         }
 
-        if ('/user/reset-password' === $path) {
+        if ($this->matchesExactSegments($segments, 'user', 'reset-password')) {
             return $this->submittedAccountSubject('password_reset_email', $request->request->get('email'), email: true);
         }
 
-        if (1 === preg_match('#^/user/reset-password/([a-f0-9]{64})$#i', $path, $matches)) {
-            return $this->submittedAccountSubject('password_reset_token', $matches[1]);
+        if ($this->matchesSegments($segments, 'user', 'reset-password') && null !== ($submittedToken = $this->tokenSegment($segments, 2))) {
+            return $this->submittedAccountSubject('password_reset_token', $submittedToken);
         }
 
-        if (1 === preg_match('#^/user/security-review/([a-f0-9]{64})$#i', $path, $matches)) {
-            return $this->submittedAccountSubject('security_review_token', $matches[1]);
+        if ($this->matchesSegments($segments, 'user', 'security-review') && null !== ($submittedToken = $this->tokenSegment($segments, 2))) {
+            return $this->submittedAccountSubject('security_review_token', $submittedToken);
         }
 
         return null;
@@ -180,6 +183,38 @@ final readonly class AbuseSubjectResolver
         }
 
         return $this->submittedAccountSubject($scope, $token);
+    }
+
+    /**
+     * @param list<string> $segments
+     */
+    private function matchesSegments(array $segments, string ...$expected): bool
+    {
+        foreach ($expected as $index => $segment) {
+            if (($segments[$index] ?? null) !== $segment) {
+                return false;
+            }
+        }
+
+        return [] !== $expected;
+    }
+
+    /**
+     * @param list<string> $segments
+     */
+    private function matchesExactSegments(array $segments, string ...$expected): bool
+    {
+        return count($segments) === count($expected) && $this->matchesSegments($segments, ...$expected);
+    }
+
+    /**
+     * @param list<string> $segments
+     */
+    private function tokenSegment(array $segments, int $index): ?string
+    {
+        $token = $segments[$index] ?? null;
+
+        return is_string($token) && count($segments) === $index + 1 && 1 === preg_match('/^[a-f0-9]{64}$/i', $token) ? $token : null;
     }
 
     private function submittedAccountSubject(string $scope, mixed $value, bool $email = false): ?AbuseSubject

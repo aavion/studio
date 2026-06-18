@@ -6,15 +6,20 @@ namespace App\Security\Abuse;
 
 use App\Api\Security\ApiRequestMethodPolicy;
 use App\Content\Routing\ContentRouteLocalization;
+use App\Core\Routing\RequestPathResolver;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class RequestIntentClassifier
 {
+    private RequestPathResolver $paths;
+
     public function __construct(
         private SuspiciousProbePathMatcher $probePathMatcher = new SuspiciousProbePathMatcher(),
-        private ?ContentRouteLocalization $routeLocalization = null,
+        ?ContentRouteLocalization $routeLocalization = null,
         private ApiRequestMethodPolicy $apiMethods = new ApiRequestMethodPolicy(),
+        ?RequestPathResolver $paths = null,
     ) {
+        $this->paths = $paths ?? new RequestPathResolver($routeLocalization);
     }
 
     public function classify(Request $request): AbuseRequestProfile
@@ -228,35 +233,7 @@ final readonly class RequestIntentClassifier
 
     private function segments(Request $request): array
     {
-        $segments = array_values(array_filter(explode('/', trim($request->getPathInfo(), '/')), static fn (string $segment): bool => '' !== $segment));
-        $locale = $this->localePrefix($request);
-
-        if (is_string($locale) && '' !== $locale && ($segments[0] ?? null) === $locale) {
-            array_shift($segments);
-        }
-
-        return $segments;
-    }
-
-    private function localePrefix(Request $request): ?string
-    {
-        $segments = explode('/', trim($request->getPathInfo(), '/'));
-        $firstSegment = $segments[0] ?? '';
-
-        if ('' === $firstSegment || !$this->hasLocalizedReservedPath($segments)) {
-            return null;
-        }
-
-        $locale = $request->attributes->get('_locale');
-        if (is_string($locale) && $firstSegment === $locale) {
-            return $firstSegment;
-        }
-
-        if (null !== $this->routeLocalization && $this->routeLocalization->isEnabled() && in_array($firstSegment, $this->routeLocalization->availableLanguages(), true)) {
-            return $firstSegment;
-        }
-
-        return null;
+        return $this->paths->segments($request);
     }
 
     private function matchesSegments(array $pathSegments, string ...$segments): bool
@@ -293,8 +270,4 @@ final readonly class RequestIntentClassifier
             : $segments;
     }
 
-    private function hasLocalizedReservedPath(array $segments): bool
-    {
-        return in_array($segments[1] ?? '', ['admin', 'api', 'cron', 'editor', 'setup', 'user'], true);
-    }
 }

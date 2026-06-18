@@ -11,7 +11,7 @@ use App\Core\Config\Config;
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
-use App\Core\Routing\PathScopeMatcher;
+use App\Core\Routing\RequestPathResolver;
 use App\Core\Statistics\VisitorIdGenerator;
 use App\Security\Abuse\AbuseRequestInspector;
 use App\Security\Abuse\AbuseSubjectResolver;
@@ -96,10 +96,23 @@ final class RateLimitRequestSubscriberTest extends TestCase
     {
         $subscriber = (new ReflectionClass(RateLimitRequestSubscriber::class))->newInstanceWithoutConstructor();
         $paths = new \ReflectionProperty(RateLimitRequestSubscriber::class, 'paths');
-        $paths->setValue($subscriber, new PathScopeMatcher());
-        $method = new \ReflectionMethod(RateLimitRequestSubscriber::class, 'excludedPath');
+        $paths->setValue($subscriber, new RequestPathResolver());
+        $method = new \ReflectionMethod(RateLimitRequestSubscriber::class, 'excludedRequest');
 
-        self::assertSame($excluded, $method->invoke($subscriber, $path));
+        self::assertSame($excluded, $method->invoke($subscriber, Request::create($path)));
+    }
+
+    public function testExcludedRequestUsesLocalizedPathSegments(): void
+    {
+        $subscriber = (new ReflectionClass(RateLimitRequestSubscriber::class))->newInstanceWithoutConstructor();
+        $paths = new \ReflectionProperty(RateLimitRequestSubscriber::class, 'paths');
+        $paths->setValue($subscriber, new RequestPathResolver());
+        $method = new \ReflectionMethod(RateLimitRequestSubscriber::class, 'excludedRequest');
+        $localized = Request::create('/de/api/live/status');
+        $localized->attributes->set('_locale', 'de');
+
+        self::assertTrue($method->invoke($subscriber, $localized));
+        self::assertFalse($method->invoke($subscriber, Request::create('/de/api/live/status')));
     }
 
     public function testProbePriorityRunsBeforeResponseProducingGates(): void
@@ -174,6 +187,8 @@ final class RateLimitRequestSubscriberTest extends TestCase
     public function testSetupApplyRequestIsNotSkippedBeforeSetupCompletion(): void
     {
         $subscriber = (new ReflectionClass(RateLimitRequestSubscriber::class))->newInstanceWithoutConstructor();
+        $paths = new \ReflectionProperty(RateLimitRequestSubscriber::class, 'paths');
+        $paths->setValue($subscriber, new RequestPathResolver());
         $method = new \ReflectionMethod(RateLimitRequestSubscriber::class, 'setupApplyRequest');
 
         self::assertTrue($method->invoke($subscriber, Request::create('/setup/review', 'POST', [

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Log;
 
 use App\Content\Routing\ContentRouteLocalization;
+use App\Core\Routing\RequestPathResolver;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -18,9 +19,11 @@ final readonly class AccessRequestMetadata
     private const MIN_REQUEST_ID_LENGTH = 8;
     private const REQUEST_ID_PATTERN = '/\A[A-Za-z0-9][A-Za-z0-9._:-]*\z/';
     private const REDACTED_SEGMENT = '[redacted]';
+    private RequestPathResolver $paths;
 
-    public function __construct(private ?ContentRouteLocalization $routeLocalization = null)
+    public function __construct(?ContentRouteLocalization $routeLocalization = null, ?RequestPathResolver $paths = null)
     {
+        $this->paths = $paths ?? new RequestPathResolver($routeLocalization);
     }
 
     public function markStarted(Request $request): void
@@ -189,35 +192,7 @@ final readonly class AccessRequestMetadata
      */
     private function segments(Request $request): array
     {
-        $segments = array_values(array_filter(explode('/', trim($request->getPathInfo(), '/')), static fn (string $segment): bool => '' !== $segment));
-        $locale = $this->localePrefix($request);
-
-        if (is_string($locale) && '' !== $locale && ($segments[0] ?? null) === $locale) {
-            array_shift($segments);
-        }
-
-        return $segments;
-    }
-
-    private function localePrefix(Request $request): ?string
-    {
-        $segments = explode('/', trim($request->getPathInfo(), '/'));
-        $firstSegment = $segments[0] ?? '';
-
-        if ('' === $firstSegment || !$this->hasLocalizedReservedPath($segments)) {
-            return null;
-        }
-
-        $locale = $request->attributes->get('_locale');
-        if (is_string($locale) && $firstSegment === $locale) {
-            return $firstSegment;
-        }
-
-        if (null !== $this->routeLocalization && $this->routeLocalization->isEnabled() && in_array($firstSegment, $this->routeLocalization->availableLanguages(), true)) {
-            return $firstSegment;
-        }
-
-        return null;
+        return $this->paths->segments($request);
     }
 
     /**
@@ -232,14 +207,6 @@ final readonly class AccessRequestMetadata
         }
 
         return [] !== $segments;
-    }
-
-    /**
-     * @param list<string> $segments
-     */
-    private function hasLocalizedReservedPath(array $segments): bool
-    {
-        return in_array($segments[1] ?? '', ['admin', 'api', 'editor', 'setup'], true);
     }
 
     /**

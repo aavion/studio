@@ -174,6 +174,19 @@ final class AbuseSubjectResolverTest extends TestCase
         self::assertStringNotContainsString($token, json_encode($subject->toArray(), JSON_THROW_ON_ERROR));
     }
 
+    public function testItAddsSubmittedAccountSubjectsFromLocalizedPathSegments(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $request = Request::create('/de/user/login', 'POST', ['username' => 'Admin']);
+        $request->attributes->set('_locale', 'de');
+
+        $subject = $resolver->resolve($request)->first(AbuseSubjectType::SubmittedAccount);
+
+        self::assertNotNull($subject);
+        self::assertSame('login', $subject->context()['scope']);
+        self::assertNull($resolver->resolve(Request::create('/de/user/login', 'POST', ['username' => 'Admin']))->first(AbuseSubjectType::SubmittedAccount));
+    }
+
     public function testItDoesNotAddSubmittedAccountSubjectsForLookalikePaths(): void
     {
         $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');

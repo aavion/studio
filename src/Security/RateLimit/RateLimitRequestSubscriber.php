@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security\RateLimit;
 
-use App\Core\Routing\PathScopeMatcher;
+use App\Core\Routing\RequestPathResolver;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\Setup\SetupCompletionMarker;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -16,7 +16,7 @@ use Symfony\Component\HttpKernel\KernelEvents;
 final readonly class RateLimitRequestSubscriber implements EventSubscriberInterface
 {
     private SuspiciousProbePathMatcher $probePathMatcher;
-    private PathScopeMatcher $paths;
+    private RequestPathResolver $paths;
 
     public function __construct(
         private RateLimitEnforcer $enforcer,
@@ -25,10 +25,10 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
         private SetupCompletionMarker $setupCompletionMarker,
         private string $projectDir,
         ?SuspiciousProbePathMatcher $probePathMatcher = null,
-        ?PathScopeMatcher $paths = null,
+        ?RequestPathResolver $paths = null,
     ) {
         $this->probePathMatcher = $probePathMatcher ?? new SuspiciousProbePathMatcher(patterns: SuspiciousProbePathMatcher::DEFAULT_PATTERNS);
-        $this->paths = $paths ?? new PathScopeMatcher();
+        $this->paths = $paths ?? new RequestPathResolver();
     }
 
     public static function getSubscribedEvents(): array
@@ -72,7 +72,7 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
         }
 
         $request = $event->getRequest();
-        if (!$this->enabledForRequest($request->headers->get('X-Rate-Limit-Testing')) || $this->excludedPath($request->getPathInfo())) {
+        if (!$this->enabledForRequest($request->headers->get('X-Rate-Limit-Testing')) || $this->excludedRequest($request)) {
             return;
         }
 
@@ -103,16 +103,16 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
             : $this->responses->tooManyRequests($request, $result));
     }
 
-    private function excludedPath(string $path): bool
+    private function excludedRequest(Request $request): bool
     {
-        return $this->paths->matchesAnyPrefix($path, '/api/live', '/assets', '/build', '/_profiler', '/_wdt')
-            || in_array($path, ['/favicon.ico', '/robots.txt'], true);
+        return $this->paths->matchesAny($request, ['api', 'live'], ['assets'], ['build'], ['_profiler'], ['_wdt'])
+            || in_array($request->getPathInfo(), ['/favicon.ico', '/robots.txt'], true);
     }
 
     private function setupApplyRequest(Request $request): bool
     {
         return 'POST' === strtoupper($request->getMethod())
-            && '/setup/review' === $request->getPathInfo()
+            && $this->paths->matchesExact($request, 'setup', 'review')
             && 'apply' === (string) $request->request->get('_setup_action', '');
     }
 
