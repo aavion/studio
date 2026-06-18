@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security\Abuse;
 
+use App\Api\Security\ApiRequestMethodPolicy;
 use App\Content\Routing\ContentRouteLocalization;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -12,6 +13,7 @@ final readonly class RequestIntentClassifier
     public function __construct(
         private SuspiciousProbePathMatcher $probePathMatcher = new SuspiciousProbePathMatcher(),
         private ?ContentRouteLocalization $routeLocalization = null,
+        private ApiRequestMethodPolicy $apiMethods = new ApiRequestMethodPolicy(),
     ) {
     }
 
@@ -74,8 +76,8 @@ final readonly class RequestIntentClassifier
 
         if (RequestFamily::Api === $family) {
             if ('OPTIONS' === $method) {
-                if ($this->hasAuthorizationHeader($request)) {
-                    return $this->apiIntentForMethod($this->requestedPreflightMethod($request) ?? 'GET', $segments, $route);
+                if ($this->apiMethods->hasAuthorizationHeader($request)) {
+                    return $this->apiIntentForMethod($this->apiMethods->effectiveMethod($request), $segments, $route);
                 }
 
                 return RequestIntent::CorsPreflight;
@@ -175,20 +177,6 @@ final readonly class RequestIntentClassifier
         }
 
         return in_array($method, ['GET', 'HEAD', 'OPTIONS'], true) ? RequestIntent::ApiRead : RequestIntent::ApiWrite;
-    }
-
-    private function hasAuthorizationHeader(Request $request): bool
-    {
-        $authorization = $request->headers->get('Authorization');
-
-        return is_string($authorization) && '' !== trim($authorization);
-    }
-
-    private function requestedPreflightMethod(Request $request): ?string
-    {
-        $method = $request->headers->get('Access-Control-Request-Method');
-
-        return is_string($method) && '' !== trim($method) ? strtoupper(trim($method)) : null;
     }
 
     private function isPrefetch(Request $request): bool

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security\RateLimit;
 
 use App\Api\Http\ApiRequestContext;
+use App\Api\Security\ApiRequestMethodPolicy;
 use App\Core\Config\Config;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
@@ -29,6 +30,7 @@ final readonly class RateLimitEnforcer
         private RateLimitSubjectSelector $subjects,
         private RateLimitLimiterFactory $limiters,
         private MessageReporterInterface $messages,
+        private ApiRequestMethodPolicy $apiMethods = new ApiRequestMethodPolicy(),
     ) {
     }
 
@@ -161,36 +163,16 @@ final readonly class RateLimitEnforcer
             return false;
         }
 
-        if (RequestFamily::Api === $profile->family() && $this->apiWriteAttempt($request, $profile) && $this->readOnlyApiKey($request)) {
+        if (RequestFamily::Api === $profile->family() && !$this->apiMethods->isSafeEffectiveMethod($request) && $this->readOnlyApiKey($request)) {
             return false;
         }
 
         return $this->subjects->hasOwner($subjects);
     }
 
-    private function apiWriteAttempt(Request $request, AbuseRequestProfile $profile): bool
-    {
-        if (!$this->safeMethod($profile->method())) {
-            return true;
-        }
-
-        if ('OPTIONS' !== strtoupper($profile->method())) {
-            return false;
-        }
-
-        $requestedMethod = $request->headers->get('Access-Control-Request-Method');
-
-        return is_string($requestedMethod) && !$this->safeMethod($requestedMethod);
-    }
-
     private function readOnlyApiKey(Request $request): bool
     {
         return ApiKeyStatus::ReadOnly === ApiRequestContext::fromRequest($request)?->apiKeyStatus();
-    }
-
-    private function safeMethod(string $method): bool
-    {
-        return in_array(strtoupper($method), ['GET', 'HEAD', 'OPTIONS'], true);
     }
 
     private function reportDegradedConsume(AbuseRequestProfile $profile, RateLimitProfile $mode, \Throwable $exception): void

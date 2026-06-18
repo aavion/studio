@@ -18,8 +18,10 @@ final readonly class ApiCorsSubscriber implements EventSubscriberInterface
     private const ALLOWED_HEADERS = 'Authorization, Content-Type, Accept, Accept-Language, X-Correlation-ID, X-Request-ID';
     private const EXPOSED_HEADERS = 'X-Request-ID, X-Correlation-ID';
 
-    public function __construct(private ApiFeaturePolicy $apiFeaturePolicy)
-    {
+    public function __construct(
+        private ApiFeaturePolicy $apiFeaturePolicy,
+        private ApiRequestMethodPolicy $methodPolicy = new ApiRequestMethodPolicy(),
+    ) {
     }
 
     /**
@@ -40,11 +42,11 @@ final readonly class ApiCorsSubscriber implements EventSubscriberInterface
         }
 
         $request = $event->getRequest();
-        if (!$this->isApiRequest($request) || !$this->isPreflight($request)) {
+        if (!$this->methodPolicy->isApiV1Request($request) || !$this->methodPolicy->isCorsPreflight($request)) {
             return;
         }
 
-        if ($this->hasActualAuthorizationHeader($request)) {
+        if ($this->methodPolicy->hasAuthorizationHeader($request)) {
             return;
         }
 
@@ -65,7 +67,7 @@ final readonly class ApiCorsSubscriber implements EventSubscriberInterface
         }
 
         $request = $event->getRequest();
-        if (!$this->isApiRequest($request)) {
+        if (!$this->methodPolicy->isApiV1Request($request)) {
             return;
         }
 
@@ -75,23 +77,6 @@ final readonly class ApiCorsSubscriber implements EventSubscriberInterface
         }
 
         $this->applyHeaders($event->getResponse(), $origin);
-    }
-
-    private function isApiRequest(Request $request): bool
-    {
-        return str_starts_with($request->getPathInfo(), '/api/v1');
-    }
-
-    private function isPreflight(Request $request): bool
-    {
-        return $request->isMethod(Request::METHOD_OPTIONS)
-            && is_string($request->headers->get('Origin'))
-            && is_string($request->headers->get('Access-Control-Request-Method'));
-    }
-
-    private function hasActualAuthorizationHeader(Request $request): bool
-    {
-        return '' !== trim((string) $request->headers->get('Authorization', ''));
     }
 
     private function allowedOrigin(Request $request): ?string
