@@ -125,7 +125,7 @@ Limiter storage degradation is fail-open by policy. If limiter storage, locking,
 
 Symfony limiter storage keys must be isolated by the active descriptor shape, including profile-derived capacity/window values, so changing between `standard`, `strict`, and `panic` does not reuse stale fixed-window state. Cache-backed limiter consumption should use the configured Symfony lock factory so concurrent failed credentials or API requests cannot race through the same remaining budget.
 
-Multi-bucket requests must not partially spend earlier buckets when a later bucket rejects the request. The facade should pre-check all planned descriptor/subject candidates, then commit only when every candidate still has capacity. This preserves account-scoped workflow protection without letting a visitor that is already blocked by local or global website budgets poison other users' shared submitted-account buckets.
+Multi-bucket requests must not partially spend earlier buckets when a later bucket rejects the request. The facade should pre-check all planned descriptor/subject candidates, then commit only when every candidate still has capacity. This preserves account-scoped workflow protection without letting a visitor that is already blocked by local or global website budgets poison other users' shared submitted-account buckets. This policy deliberately avoids a cross-bucket transaction manager: concurrent requests can race between pre-check and commit, but Symfony per-key locking bounds that race to a timing-dependent request, and subsequent requests see the exhausted bucket during pre-check. That residual race is accepted as simpler and reviewable because it does not provide a practical way to repeatedly drain unrelated account buckets.
 
 ## Probe Path Policy
 
