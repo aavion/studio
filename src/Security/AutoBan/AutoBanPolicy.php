@@ -6,6 +6,7 @@ namespace App\Security\AutoBan;
 
 use App\Core\Access\AccessLevel;
 use App\Core\Config\Config;
+use App\Core\Config\ConfigValidationGuard;
 
 final readonly class AutoBanPolicy
 {
@@ -19,14 +20,18 @@ final readonly class AutoBanPolicy
     public const DEFAULT_NEW_BAN_OWNER_ALERTS = true;
     public const DEFAULT_TRUSTED_ACCESS_LEVEL = AccessLevel::MANAGER;
     public const DEFAULT_SCORE_THRESHOLD = 100;
+    public const MIN_SCORE_THRESHOLD = 2;
+    public const MAX_SCORE_THRESHOLD = 10000;
     public const IP_THRESHOLD_MULTIPLIER = 2;
     public const SCORE_WINDOW_SECONDS = 3600;
     public const MINIMUM_QUALIFYING_SIGNALS = 2;
 
     /** @var list<int> */
     public const TTL_ESCALATION_SECONDS = [3600, 10800, 86400, 604800];
-    public function __construct(private Config $config)
-    {
+    public function __construct(
+        private Config $config,
+        private ConfigValidationGuard $configValidation = new ConfigValidationGuard(),
+    ) {
     }
 
     public static function maxTtlDays(): int
@@ -53,9 +58,12 @@ final readonly class AutoBanPolicy
 
     public function visitorThreshold(): int
     {
-        $threshold = $this->config->get(self::SCORE_THRESHOLD_KEY, self::DEFAULT_SCORE_THRESHOLD);
-
-        return max(2, is_numeric($threshold) ? (int) $threshold : self::DEFAULT_SCORE_THRESHOLD);
+        return $this->configValidation->boundedInteger(
+            $this->config->get(self::SCORE_THRESHOLD_KEY, self::DEFAULT_SCORE_THRESHOLD),
+            self::DEFAULT_SCORE_THRESHOLD,
+            self::MIN_SCORE_THRESHOLD,
+            self::MAX_SCORE_THRESHOLD,
+        );
     }
 
     public function thresholdFor(string $subjectType): int

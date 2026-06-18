@@ -60,6 +60,18 @@ final class CoreSettingsRegistryTest extends TestCase
             'user.menu.enabled',
             'user.menu.sort_order',
         ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $users));
+        self::assertSame([
+            'min' => UserFlowConfig::MIN_ACCOUNT_LINK_TTL_HOURS,
+            'max' => UserFlowConfig::MAX_ACCOUNT_LINK_TTL_HOURS,
+        ], $users[3]->formField()->validation());
+        self::assertSame([
+            'min' => UserFlowConfig::MIN_DELETED_USER_RETENTION_DAYS,
+            'max' => UserFlowConfig::MAX_DELETED_USER_RETENTION_DAYS,
+        ], $users[6]->formField()->validation());
+        self::assertSame([
+            'min' => UserFlowConfig::MIN_MENU_SORT_ORDER,
+            'max' => UserFlowConfig::MAX_MENU_SORT_ORDER,
+        ], $users[8]->formField()->validation());
 
         self::assertSame([
             'security.captcha.enabled',
@@ -89,6 +101,11 @@ final class CoreSettingsRegistryTest extends TestCase
         self::assertSame(AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL, $security[5]->defaultValue());
         self::assertSame(FormInputType::Select, $security[5]->formField()->inputType());
         self::assertSame(AutoBanPolicy::DEFAULT_SCORE_THRESHOLD, $security[6]->defaultValue());
+        self::assertSame([
+            'required' => true,
+            'min' => AutoBanPolicy::MIN_SCORE_THRESHOLD,
+            'max' => AutoBanPolicy::MAX_SCORE_THRESHOLD,
+        ], $security[6]->formField()->validation());
         self::assertTrue($security[7]->defaultValue());
         self::assertSame(FormInputType::MultiSelect, $security[9]->formField()->inputType());
         self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $security[9]->defaultValue());
