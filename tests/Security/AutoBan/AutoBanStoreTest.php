@@ -38,6 +38,17 @@ final class AutoBanStoreTest extends TestCase
         self::assertNotNull($store->active($subject));
     }
 
+    public function testBanRollbackClearsActiveStateWhenIndexAndDeleteFail(): void
+    {
+        $cache = new IndexAndDeleteFailingAutoBanCache();
+        $store = new AutoBanStore($cache, new LockFactory(new InMemoryStore()), clock: new MockClock('2026-06-18 12:00:00'));
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, 'visitor-index-delete-failure');
+
+        self::assertNull($store->ban($subject, 3600));
+        self::assertNull($store->active($subject));
+        self::assertSame([], $store->activeBans());
+    }
+
     public function testCreateOrReturnActiveMarksExistingBanAsNotCreated(): void
     {
         $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: new MockClock('2026-06-18 12:00:00'));
@@ -68,6 +79,27 @@ final class IndexFailingAutoBanCache extends ArrayAdapter
 
 final class DeleteFailingAutoBanCache extends ArrayAdapter
 {
+    public function deleteItem(mixed $key): bool
+    {
+        if (is_string($key) && str_starts_with($key, 'security.auto_ban.active.')) {
+            return false;
+        }
+
+        return parent::deleteItem($key);
+    }
+}
+
+final class IndexAndDeleteFailingAutoBanCache extends ArrayAdapter
+{
+    public function save(CacheItemInterface $item): bool
+    {
+        if ('security.auto_ban.index.v1' === $item->getKey()) {
+            return false;
+        }
+
+        return parent::save($item);
+    }
+
     public function deleteItem(mixed $key): bool
     {
         if (is_string($key) && str_starts_with($key, 'security.auto_ban.active.')) {

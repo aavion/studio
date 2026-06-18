@@ -73,7 +73,7 @@ final readonly class AutoBanStore
             }
 
             if (!$this->upsertIndex($ban)) {
-                $this->cache->deleteItem($this->cacheKey($ban->key()));
+                $this->rollbackActiveState($ban);
 
                 return null;
             }
@@ -191,6 +191,27 @@ final readonly class AutoBanStore
     private function cacheKey(string $key): string
     {
         return self::KEY_PREFIX.$key;
+    }
+
+    private function rollbackActiveState(ActiveAutoBan $ban): void
+    {
+        $cacheKey = $this->cacheKey($ban->key());
+        if (!$this->cache->deleteItem($cacheKey)) {
+            $this->reportStorage('ban_rollback_delete', new \RuntimeException('Active auto-ban rollback cache delete failed.'), ['active_ban_key' => $ban->key()]);
+        }
+
+        if (null === $this->activeByKey($ban->key())) {
+            return;
+        }
+
+        $item = $this->cache->getItem($cacheKey);
+        $payload = $ban->toArray();
+        $payload['expires_at'] = $this->clock->now()->modify('-1 second')->format('Y-m-d H:i:s');
+        $item->set($payload);
+        $item->expiresAfter($ban->ttlSeconds());
+        if (!$this->cache->save($item) || null !== $this->activeByKey($ban->key())) {
+            $this->reportStorage('ban_rollback_verify', new \RuntimeException('Active auto-ban cache entry remained after rollback.'), ['active_ban_key' => $ban->key()]);
+        }
     }
 
     private function upsertIndex(ActiveAutoBan $ban): bool
