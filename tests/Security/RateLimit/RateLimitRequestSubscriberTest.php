@@ -11,6 +11,7 @@ use App\Core\Config\Config;
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
+use App\Core\Routing\IgnorableRequestPathMatcher;
 use App\Core\Routing\PathScopeMatcher;
 use App\Core\Statistics\VisitorIdGenerator;
 use App\Security\Abuse\AbuseRequestInspector;
@@ -84,6 +85,9 @@ final class RateLimitRequestSubscriberTest extends TestCase
         yield 'assets sibling' => ['/assets-preview', false];
         yield 'build child' => ['/build/app.js', true];
         yield 'build sibling' => ['/builder', false];
+        yield 'favicon' => ['/favicon.ico', true];
+        yield 'touch icon' => ['/apple-touch-icon.png', true];
+        yield 'well-known security' => ['/.well-known/security.txt', true];
         yield 'profiler root' => ['/_profiler', true];
         yield 'profiler child' => ['/_profiler/123', true];
         yield 'profiler sibling' => ['/_profilerfoo', false];
@@ -97,6 +101,8 @@ final class RateLimitRequestSubscriberTest extends TestCase
         $subscriber = (new ReflectionClass(RateLimitRequestSubscriber::class))->newInstanceWithoutConstructor();
         $paths = new \ReflectionProperty(RateLimitRequestSubscriber::class, 'paths');
         $paths->setValue($subscriber, new PathScopeMatcher());
+        $ignorablePaths = new \ReflectionProperty(RateLimitRequestSubscriber::class, 'ignorablePaths');
+        $ignorablePaths->setValue($subscriber, new IgnorableRequestPathMatcher());
         $method = new \ReflectionMethod(RateLimitRequestSubscriber::class, 'excludedRequest');
 
         self::assertSame($excluded, $method->invoke($subscriber, Request::create($path)));
@@ -107,6 +113,8 @@ final class RateLimitRequestSubscriberTest extends TestCase
         $subscriber = (new ReflectionClass(RateLimitRequestSubscriber::class))->newInstanceWithoutConstructor();
         $paths = new \ReflectionProperty(RateLimitRequestSubscriber::class, 'paths');
         $paths->setValue($subscriber, new PathScopeMatcher());
+        $ignorablePaths = new \ReflectionProperty(RateLimitRequestSubscriber::class, 'ignorablePaths');
+        $ignorablePaths->setValue($subscriber, new IgnorableRequestPathMatcher());
         $method = new \ReflectionMethod(RateLimitRequestSubscriber::class, 'excludedRequest');
         $localized = Request::create('/de/api/live/status');
         $localized->attributes->set('_locale', 'de');

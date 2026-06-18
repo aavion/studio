@@ -8,6 +8,7 @@ use App\Core\Access\AccessMessageKey;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
+use App\Core\Routing\IgnorableRequestPathMatcher;
 use App\Core\Statistics\AccessStatisticsRecorderInterface;
 use App\Core\Statistics\VisitorIdGenerator;
 use App\Database\DatabaseReadyState;
@@ -19,6 +20,8 @@ use Throwable;
 
 final readonly class AccessLogSubscriber implements EventSubscriberInterface
 {
+    private IgnorableRequestPathMatcher $ignorablePaths;
+
     public function __construct(
         private AccessLoggerInterface $accessLogger,
         private AccessStatisticsRecorderInterface $accessStatisticsRecorder,
@@ -26,7 +29,9 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
         private VisitorIdGenerator $visitorIdGenerator,
         private ?MessageReporterInterface $messageReporter = null,
         private ?DatabaseReadyState $databaseReadyState = null,
+        ?IgnorableRequestPathMatcher $ignorablePaths = null,
     ) {
+        $this->ignorablePaths = $ignorablePaths ?? new IgnorableRequestPathMatcher();
     }
 
     public static function getSubscribedEvents(): array
@@ -71,20 +76,14 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
 
     private function shouldSkipAccessLog(string $path): bool
     {
-        return str_starts_with($path, '/_profiler')
-            || str_starts_with($path, '/_wdt')
-            || str_starts_with($path, '/assets/')
-            || str_starts_with($path, '/build/');
+        return $this->ignorablePaths->matches($path);
     }
 
     private function shouldSkipStatistics(string $path): bool
     {
         return $this->databaseIsNotReady()
             || str_starts_with($path, '/setup')
-            || str_starts_with($path, '/_profiler')
-            || str_starts_with($path, '/_wdt')
-            || str_starts_with($path, '/assets/')
-            || str_starts_with($path, '/build/');
+            || $this->ignorablePaths->matches($path);
     }
 
     private function databaseIsNotReady(): bool

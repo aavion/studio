@@ -8,7 +8,7 @@ use App\Core\Access\AccessLevel;
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
-use App\Core\Routing\PathScopeMatcher;
+use App\Core\Routing\IgnorableRequestPathMatcher;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
 use App\Security\Abuse\AbuseRequestInspector;
@@ -30,7 +30,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
 {
     public const PASSIVE_SIGNAL_SKIP_ATTRIBUTE = '_system_auto_ban_response';
 
-    private PathScopeMatcher $paths;
+    private IgnorableRequestPathMatcher $ignorablePaths;
 
     public function __construct(
         private AbuseRequestInspector $inspector,
@@ -41,9 +41,9 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         private string $environment = 'prod',
         private ?MessageReporterInterface $messageReporter = null,
         private ClockInterface $clock = new NativeClock(),
-        ?PathScopeMatcher $paths = null,
+        ?IgnorableRequestPathMatcher $ignorablePaths = null,
     ) {
-        $this->paths = $paths ?? new PathScopeMatcher();
+        $this->ignorablePaths = $ignorablePaths ?? new IgnorableRequestPathMatcher();
     }
 
     public static function getSubscribedEvents(): array
@@ -144,8 +144,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
 
     private function excludedRequest(Request $request): bool
     {
-        return $this->paths->matchesAnyPrefix($request->getPathInfo(), '/assets', '/build', '/_profiler', '/_wdt')
-            || in_array($request->getPathInfo(), ['/favicon.ico', '/robots.txt'], true);
+        return $this->ignorablePaths->matches($request->getPathInfo());
     }
 
     private function enabledForRequest(Request $request): bool

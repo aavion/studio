@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security\RateLimit;
 
 use App\Core\Routing\PathScopeMatcher;
+use App\Core\Routing\IgnorableRequestPathMatcher;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\Setup\SetupCompletionMarker;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -17,6 +18,7 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
 {
     private SuspiciousProbePathMatcher $probePathMatcher;
     private PathScopeMatcher $paths;
+    private IgnorableRequestPathMatcher $ignorablePaths;
 
     public function __construct(
         private RateLimitEnforcer $enforcer,
@@ -26,9 +28,11 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
         private string $projectDir,
         ?SuspiciousProbePathMatcher $probePathMatcher = null,
         ?PathScopeMatcher $paths = null,
+        ?IgnorableRequestPathMatcher $ignorablePaths = null,
     ) {
         $this->probePathMatcher = $probePathMatcher ?? new SuspiciousProbePathMatcher(patterns: SuspiciousProbePathMatcher::DEFAULT_PATTERNS);
         $this->paths = $paths ?? new PathScopeMatcher();
+        $this->ignorablePaths = $ignorablePaths ?? new IgnorableRequestPathMatcher($this->paths);
     }
 
     public static function getSubscribedEvents(): array
@@ -101,8 +105,8 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
 
     private function excludedRequest(Request $request): bool
     {
-        return $this->paths->matchesAnyPrefix($request->getPathInfo(), '/api/live', '/assets', '/build', '/_profiler', '/_wdt')
-            || in_array($request->getPathInfo(), ['/favicon.ico', '/robots.txt'], true);
+        return $this->paths->matchesAnyPrefix($request->getPathInfo(), '/api/live')
+            || $this->ignorablePaths->matches($request->getPathInfo());
     }
 
     private function setupApplyRequest(Request $request): bool

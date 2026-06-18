@@ -6,6 +6,7 @@ namespace App\Security\Abuse;
 
 use App\Core\Access\AccessLevel;
 use App\Core\Log\AccessRequestMetadata;
+use App\Core\Routing\IgnorableRequestPathMatcher;
 use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\AutoBan\AutoBanRequestSubscriber;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -15,12 +16,16 @@ use Throwable;
 
 final readonly class PassiveAbuseSignalSubscriber implements EventSubscriberInterface
 {
+    private IgnorableRequestPathMatcher $ignorablePaths;
+
     public function __construct(
         private AbuseRequestInspector $inspector,
         private SecuritySignalRecorder $signalRecorder,
         private AccessRequestMetadata $accessRequestMetadata,
         private ?AutoBanPolicy $autoBanPolicy = null,
+        ?IgnorableRequestPathMatcher $ignorablePaths = null,
     ) {
+        $this->ignorablePaths = $ignorablePaths ?? new IgnorableRequestPathMatcher();
     }
 
     public static function getSubscribedEvents(): array
@@ -159,9 +164,6 @@ final readonly class PassiveAbuseSignalSubscriber implements EventSubscriberInte
 
     private function shouldSkip(string $path): bool
     {
-        return str_starts_with($path, '/_profiler')
-            || str_starts_with($path, '/_wdt')
-            || str_starts_with($path, '/assets/')
-            || str_starts_with($path, '/build/');
+        return $this->ignorablePaths->matches($path);
     }
 }

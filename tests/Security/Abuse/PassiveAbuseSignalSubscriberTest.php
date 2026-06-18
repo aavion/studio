@@ -96,6 +96,34 @@ final class PassiveAbuseSignalSubscriberTest extends TestCase
         self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM security_signal_event'));
     }
 
+    public function testItDoesNotRecordMissingWellKnownStaticPaths(): void
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) PRIMARY KEY NOT NULL, value CLOB NOT NULL, value_type VARCHAR(255) NOT NULL, sensitive BOOLEAN NOT NULL, modified_at DATETIME NOT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
+        $connection->executeStatement('CREATE TABLE security_signal_event (uid VARCHAR(36) PRIMARY KEY NOT NULL, occurred_at DATETIME NOT NULL, expires_at DATETIME NOT NULL, signal_type VARCHAR(80) NOT NULL, reason_code VARCHAR(120) NOT NULL, severity VARCHAR(16) NOT NULL, confidence INTEGER NOT NULL, subject_type VARCHAR(40) NOT NULL, subject_identifier VARCHAR(190) NOT NULL, ip_derived BOOLEAN NOT NULL, request_family VARCHAR(40) NOT NULL, request_intent VARCHAR(80) NOT NULL, request_id VARCHAR(64) NOT NULL, visitor_id VARCHAR(64) NOT NULL, path VARCHAR(1024) NOT NULL, route VARCHAR(190) NOT NULL, http_status INTEGER DEFAULT NULL, context CLOB NOT NULL)');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $subscriber = new PassiveAbuseSignalSubscriber(
+            new AbuseRequestInspector(
+                new AbuseSubjectResolver($visitorIds, new TokenStorage(), 'test-secret'),
+                new RequestIntentClassifier(),
+                new ActionCostCatalogue(),
+            ),
+            new SecuritySignalRecorder($connection, new DatabaseLogRetentionPolicy($connection)),
+            new AccessRequestMetadata(),
+        );
+
+        foreach (['/favicon.ico', '/apple-touch-icon.png', '/.well-known/security.txt'] as $path) {
+            $subscriber->onKernelResponse(new ResponseEvent(
+                new PassiveAbuseSignalTestKernel(),
+                Request::create($path, server: ['REMOTE_ADDR' => '203.0.113.10']),
+                HttpKernelInterface::MAIN_REQUEST,
+                new Response('', 404),
+            ));
+        }
+
+        self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM security_signal_event'));
+    }
+
     public function testItRecordsErrorStatusSignalsButExcludesLoginRequired401(): void
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
