@@ -1,7 +1,7 @@
 # Developer Worklog History
 
 > **Status**: Active  
-> **Updated**: 2026-06-15  
+> **Updated**: 2026-06-17  
 > **Owner**: Core  
 > **Purpose:** Preserve compacted branch/PR history moved out of `dev/WORKLOG.md` at branch boundaries.
 
@@ -9,6 +9,12 @@
 Move completed branch or PR logs from `dev/WORKLOG.md` into this file when switching branches or after a PR is merged. Keep the active worklog focused on the current branch so reviewers can see the full PR context while older project history stays available.
 
 ## Archived Branches
+### 2026-06-16 to 2026-06-17 feat-security-admin-acl-enforcement
+- Implemented the Admin ACL enforcement slice: domain-owned feature registry, denied/visible/mutable states, surface inference from feature keys, seeded Owner-configurable defaults, ACL-group override states, Owner-gated `Settings/ACL` matrix, dynamic active-package settings rows, and feature-matrix caching with explicit invalidation.
+- Wired Admin ACL feature checks through protected settings fields, Admin navigation/views, package/theme actions, package lifecycle and settings, GeoIP maintenance, operations continuations, scheduler, logs, statistics, users, user reviews, ACL group management, backup/status surfaces, and Admin API handlers while keeping visible-only controls rendered disabled where layout depends on them.
+- Hardened the slice through review rounds: separated ACL-group definition permissions from user group membership mutations, rechecked target-domain ACL for live-operation continuations, applied `admin.settings.security` to all Security settings fields including Captcha, gated the concrete Scheduler web controller, and documented policy decisions that pending account-token review actions use `admin.users.review` and trusted registered Scheduler tasks use `admin.scheduler`.
+- Closed the branch with updated translations, runtime catalogues, drafts, class map, worklog notes, focused regression coverage, full PHPUnit, JavaScript tests, lint, and container validation.
+
 ### 2026-06-16 feat-security-abuse-foundation
 - Implemented the Abuse Foundation slice: passive security-signal model and recording, request intent/action-cost classification, suspicious probe matching, visitor/IP-bucket evidence handling, configurable probe patterns, session/visitor mismatch signals, and database/file-backed Admin log browsing refinements.
 - Hardened the slice through review passes: retention-aware signal/log reads, portable database search, source-aware Admin Log filters and pagination, safe path/token sanitization, locale-aware route classification, cache invalidation for probe patterns, and clearer rate-enforcement handoff policy for future limiter/ban branches.

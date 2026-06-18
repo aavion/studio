@@ -23,6 +23,7 @@ final readonly class ApiEndpointPermissionSubscriber implements EventSubscriberI
         private ApiEndpointRegistry $endpoints,
         private ApiEndpointAccessPolicy $policy,
         private ApiResponder $responder,
+        private ApiRequestMethodPolicy $methodPolicy = new ApiRequestMethodPolicy(),
     ) {
     }
 
@@ -40,7 +41,7 @@ final readonly class ApiEndpointPermissionSubscriber implements EventSubscriberI
         }
 
         $request = $event->getRequest();
-        if (!str_starts_with($request->getPathInfo(), '/api/v1')) {
+        if (!$this->methodPolicy->isApiV1Request($request)) {
             return;
         }
 

@@ -18,8 +18,10 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 final readonly class ApiReadOnlyMethodSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private ApiResponder $responder)
-    {
+    public function __construct(
+        private ApiResponder $responder,
+        private ApiRequestMethodPolicy $methodPolicy = new ApiRequestMethodPolicy(),
+    ) {
     }
 
     public static function getSubscribedEvents(): array
@@ -42,7 +44,7 @@ final readonly class ApiReadOnlyMethodSubscriber implements EventSubscriberInter
             return;
         }
 
-        if ($this->isAllowedReadOnlyMethod($request)) {
+        if ($this->methodPolicy->isSafeEffectiveMethod($request)) {
             return;
         }
 
@@ -57,12 +59,4 @@ final readonly class ApiReadOnlyMethodSubscriber implements EventSubscriberInter
         ));
     }
 
-    private function isAllowedReadOnlyMethod(Request $request): bool
-    {
-        return in_array($request->getMethod(), [
-            Request::METHOD_GET,
-            Request::METHOD_HEAD,
-            Request::METHOD_OPTIONS,
-        ], true);
-    }
 }

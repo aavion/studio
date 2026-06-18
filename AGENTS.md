@@ -100,7 +100,21 @@
 - Translation changes must keep matching source catalogue files and keys synchronized across all locale directories under `translations/languages/`; runtime `translations/messages.*.yaml` files are generated from those sources.
 - Refactors before the first public `1.0.0` release may remove obsolete code instead of keeping compatibility shims, but callers, tests, docs, and class map entries must be updated immediately.
 - If a requested narrow change exposes unrelated drift, fix it only when it blocks the task; otherwise record the follow-up in `dev/WORKLOG.md`.
-- When addressing review findings, trace adjacent and analogous code paths that share the same policy, transition, or boundary, and apply or explicitly rule out the same fix there to avoid one-path-only hardening.
+
+### Review Finding Fixes
+- Before applying a fix for a review finding, trace the affected boundary from source to sink and inspect adjacent, related, and analogous code paths that share the same classifier, subscriber, guard, resolver, route family, subject selection, response behavior, storage boundary, or policy decision.
+- Prefer fixing the narrowest central boundary that covers all affected paths. Apply a path-local fix only when evidence shows the issue is truly path-specific.
+- Keep review fixes simple, modular, and minimally invasive. Do not broaden them into unrelated refactors, compatibility shims, or speculative redesigns.
+- While tracing the affected boundary, actively look for additional unreported edge cases, including bypasses, abuse paths, privacy leaks, performance regressions, setup/pre-auth behavior, disabled-feature fallbacks, response redaction, and cache/storage failure behavior.
+- Fix small in-scope adjacent issues directly when they share the same boundary and risk profile. Record larger or behavior-changing follow-ups in `dev/WORKLOG.md` instead of hiding them inside the review fix.
+- Add or update regression coverage for the reported finding and any adjacent paths changed by the fix. When an analogous path is inspected and intentionally not changed, make that reasoning clear in the worklog, final notes, or PR response where useful.
+
+### PR Readiness Audits
+- Before marking a branch, pull request, or feature slice ready for review, run the PR-readiness checklist as a real audit pass over the branch diff and the affected runtime surfaces. Do not treat checklist items as passive boxes to tick.
+- The audit must explicitly review security/privacy considerations; public entry points; authentication, authorization, sessions, secrets, browser storage, and response redaction; package/module boundaries; access levels; route/API/live endpoint scopes; naming and collision risks; setup/init/CI behavior; cross-platform behavior; disabled-feature fallbacks; process and environment handling; default seed coverage for implemented config keys; translations and user-facing copy; project-rule, architecture, naming, documentation, and performance drift; and captured follow-up tasks.
+- Use evidence from code inspection, focused tests, render checks, linting, documentation diffs, class map/worklog updates, and seed/default coverage as appropriate for the changed surface. If a checklist item is not applicable, record why instead of silently skipping it.
+- Fix small readiness issues directly when they are in scope and low risk. Record larger, behavior-changing, or separate-domain issues in `dev/WORKLOG.md` with a clear next action.
+- PR notes must summarize the readiness audit outcome, including verification commands, skipped checks or proof gaps, documentation/worklog/classmap status, translation status, security/privacy considerations, and remaining follow-ups.
 
 ## Build and Verification Commands
 - `bin/init` initializes the repository, refreshes dependencies and assets, locks referenced Symfony UX icons locally when possible, and is the preferred recovery path for broken or incomplete `vendor/` packages because it removes an existing `vendor/` tree before Composer runs.
@@ -183,6 +197,8 @@
 
 ## Review Mode
 - In code review, lead with findings ordered by severity and include file and line references.
+- Review-fix implementation must follow the Review Finding Fixes rules under Change Expectations before applying code changes.
+- PR-readiness sign-off must follow the PR Readiness Audits rules under Change Expectations instead of only copying checklist items.
 - Verify worklog, documentation, tests, class map, translations, screenshots, security notes, and PR checklist items when they are relevant to the reviewed change.
 - Check drift between code and feature drafts in `dev/draft/`; update it only when asked to make changes, otherwise report the drift.
 - Review translation coverage with `bin/lint <changed translation paths...>` when user-facing copy changed.

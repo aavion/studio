@@ -101,4 +101,106 @@ final class AbuseSubjectResolverTest extends TestCase
         self::assertSame('publicPrefix', $subject->identifier());
         self::assertStringNotContainsString('secret-token-material', json_encode($subject->toArray(), JSON_THROW_ON_ERROR));
     }
+
+    public function testItAddsRedactedSchedulerCredentialSubjects(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $bearer = Request::create('/cron/run', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer scheduler.secret-token-material',
+        ]);
+        $query = Request::create('/cron/run?auth=scheduler.secret-token-material');
+
+        $bearerSubject = $resolver->resolve($bearer)->first(AbuseSubjectType::SchedulerCredential);
+        $querySubject = $resolver->resolve($query)->first(AbuseSubjectType::SchedulerCredential);
+
+        self::assertNotNull($bearerSubject);
+        self::assertNotNull($querySubject);
+        self::assertSame($bearerSubject->identifier(), $querySubject->identifier());
+        self::assertStringNotContainsString('scheduler.secret-token-material', json_encode($bearerSubject->toArray(), JSON_THROW_ON_ERROR));
+    }
+
+    public function testItDoesNotAddSchedulerCredentialSubjectsForLocalizedCronLookalikes(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $request = Request::create('/de/cron/run?auth=scheduler.secret-token-material');
+        $request->attributes->set('_locale', 'de');
+
+        self::assertNull($resolver->resolve($request)->first(AbuseSubjectType::SchedulerCredential));
+    }
+
+    public function testItAddsRedactedSubmittedAccountSubjectsForAuthWorkflows(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $login = Request::create('/user/login', 'POST', ['username' => 'Admin']);
+        $reset = Request::create('/user/reset-password', 'POST', ['email' => 'ADMIN@Example.TEST']);
+
+        $loginSubject = $resolver->resolve($login)->first(AbuseSubjectType::SubmittedAccount);
+        $resetSubject = $resolver->resolve($reset)->first(AbuseSubjectType::SubmittedAccount);
+
+        self::assertNotNull($loginSubject);
+        self::assertNotNull($resetSubject);
+        self::assertSame('login', $loginSubject->context()['scope']);
+        self::assertSame('password_reset_email', $resetSubject->context()['scope']);
+        self::assertStringNotContainsString('Admin', json_encode($loginSubject->toArray(), JSON_THROW_ON_ERROR));
+        self::assertStringNotContainsString('ADMIN@Example.TEST', json_encode($resetSubject->toArray(), JSON_THROW_ON_ERROR));
+    }
+
+    public function testItAddsRedactedSubmittedTokenSubjectsForAccountTokenWorkflows(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $invitationToken = str_repeat('a', 64);
+        $resetToken = str_repeat('b', 64);
+        $reviewToken = str_repeat('c', 64);
+
+        $invitationSubject = $resolver->resolve(Request::create('/user/invitation/'.$invitationToken, 'POST'))->first(AbuseSubjectType::SubmittedAccount);
+        $resetSubject = $resolver->resolve(Request::create('/user/reset-password/'.$resetToken, 'POST'))->first(AbuseSubjectType::SubmittedAccount);
+        $reviewSubject = $resolver->resolve(Request::create('/user/security-review/'.$reviewToken, 'POST'))->first(AbuseSubjectType::SubmittedAccount);
+
+        self::assertNotNull($invitationSubject);
+        self::assertNotNull($resetSubject);
+        self::assertNotNull($reviewSubject);
+        self::assertSame('registration_token', $invitationSubject->context()['scope']);
+        self::assertSame('password_reset_token', $resetSubject->context()['scope']);
+        self::assertSame('security_review_token', $reviewSubject->context()['scope']);
+        self::assertStringNotContainsString($invitationToken, json_encode($invitationSubject->toArray(), JSON_THROW_ON_ERROR));
+        self::assertStringNotContainsString($resetToken, json_encode($resetSubject->toArray(), JSON_THROW_ON_ERROR));
+        self::assertStringNotContainsString($reviewToken, json_encode($reviewSubject->toArray(), JSON_THROW_ON_ERROR));
+    }
+
+    public function testItAddsSubmittedTokenSubjectsFromRouteAttributesForLocalizedAccountTokenWorkflows(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $token = str_repeat('d', 64);
+        $request = Request::create('/de/user/security-review/'.$token, 'POST');
+        $request->attributes->set('_route', 'user_security_review');
+        $request->attributes->set('_locale', 'de');
+        $request->attributes->set('token', $token);
+
+        $subject = $resolver->resolve($request)->first(AbuseSubjectType::SubmittedAccount);
+
+        self::assertNotNull($subject);
+        self::assertSame('security_review_token', $subject->context()['scope']);
+        self::assertStringNotContainsString($token, json_encode($subject->toArray(), JSON_THROW_ON_ERROR));
+    }
+
+    public function testItAddsSubmittedAccountSubjectsFromLocalizedPathSegments(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $request = Request::create('/de/user/login', 'POST', ['username' => 'Admin']);
+        $request->attributes->set('_locale', 'de');
+
+        $subject = $resolver->resolve($request)->first(AbuseSubjectType::SubmittedAccount);
+
+        self::assertNotNull($subject);
+        self::assertSame('login', $subject->context()['scope']);
+        self::assertNull($resolver->resolve(Request::create('/de/user/login', 'POST', ['username' => 'Admin']))->first(AbuseSubjectType::SubmittedAccount));
+    }
+
+    public function testItDoesNotAddSubmittedAccountSubjectsForLookalikePaths(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $request = Request::create('/user/login-extra', 'POST', ['username' => 'Admin']);
+
+        self::assertNull($resolver->resolve($request)->first(AbuseSubjectType::SubmittedAccount));
+    }
 }

@@ -36,7 +36,7 @@ final readonly class HttpErrorSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $response = $this->renderer->render($exception->getStatusCode(), $event->getRequest(), $exception);
+        $response = $this->renderer->resolve($exception->getStatusCode(), $event->getRequest(), exception: $exception);
         $response->headers->add($exception->getHeaders());
         $event->setResponse($response);
     }

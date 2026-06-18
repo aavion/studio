@@ -769,6 +769,40 @@ admin:
         required: 'Dieses Feld ist erforderlich.'
         save_failed: 'Die Einstellungen konnten nicht gespeichert werden.'
         default_acl_group_unavailable: 'Trage eine bestehende ACL-Gruppe mit Mindestrolle User oder niedriger ein oder lasse das Feld leer.'
+    fields:
+      captcha_enabled:
+        label: 'Captcha aktivieren'
+      captcha_provider:
+        label: 'Captcha-Provider'
+      captcha_preview:
+        label: 'Captcha-Vorschau'
+      rate_limit_mode:
+        label: 'Ratenbegrenzung'
+      audit_enabled:
+        label: 'Audit-Logging aktivieren'
+      audit_events:
+        label: 'Audit-Ereigniskategorien'
+      security_signal_retention_days:
+        label: 'Retention für Security-Signale'
+        help: 'Retention für passive Security-Signale in Tagen. Werte über 30 Tagen sind nicht erlaubt, weil Signale Request-bezogene Identifier enthalten können.'
+      security_probe_path_patterns:
+        label: 'Pfadmuster für verdächtige Probes'
+        help: 'Ein regulärer Ausdruck pro Zeile. Quoted-CSV-Imports werden akzeptiert. Ungültige oder leere Listen fallen auf die geschützten Defaults zurück.'
+    options:
+      captcha:
+        none: 'Kein Captcha-Provider'
+      rate_limit_mode:
+        off: 'Aus'
+        standard: 'Standard'
+        strict: 'Streng'
+        panic: 'Panik'
+      audit:
+        authentication: 'Authentifizierungsereignisse'
+        backend_actions: 'Backend-Wartungsaktionen'
+        operations: 'Operations-Wartungsaktionen'
+        packages: 'Paket-Lifecycle-Aktionen'
+        settings: 'Einstellungsänderungen'
+        other: 'Weitere zukünftige Audit-Ereignisse'
   acl:
     actions:
       save: 'ACL-Matrix speichern'
@@ -908,6 +942,8 @@ admin:
         label: 'Captcha-Provider'
       captcha_preview:
         label: 'Captcha-Vorschau'
+      rate_limit_mode:
+        label: 'Ratenbegrenzung'
       audit_enabled:
         label: 'Audit-Logging aktivieren'
       audit_events:
@@ -974,6 +1010,11 @@ admin:
         setup_warnings: 'Setup-Warnungen'
       captcha:
         none: 'Kein Captcha-Provider'
+      rate_limit_mode:
+        off: 'Aus'
+        standard: 'Standard'
+        strict: 'Streng'
+        panic: 'Panik'
       audit:
         authentication: 'Authentifizierungsereignisse'
         backend_actions: 'Backend-Wartungsaktionen'

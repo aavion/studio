@@ -23,6 +23,7 @@ use App\Core\Package\PackageScope;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\AclGroup;
 use App\Entity\ExtensionPackage;
+use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\Setup\SetupCompletionMarker;
@@ -1161,6 +1162,7 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Security settings');
         self::assertSelectorExists('form#admin-settings-security');
         self::assertSelectorExists('select[name="security.captcha.provider"]');
+        self::assertSelectorExists(sprintf('select[name="%s"]', RateLimitPolicyCatalogue::MODE_KEY));
         self::assertSelectorExists(sprintf('input[name="%s"]', ConfigAuditLogPolicy::ENABLED_KEY));
         self::assertSelectorExists(sprintf('input[name="%s[]"]', ConfigAuditLogPolicy::EVENTS_KEY));
         self::assertSelectorExists('input[name="security.signals.retention_days"]');

@@ -4,15 +4,26 @@ declare(strict_types=1);
 
 namespace App\Security\Abuse;
 
+use App\Api\Security\ApiRequestMethodPolicy;
 use App\Content\Routing\ContentRouteLocalization;
+use App\Core\Routing\PathScopeMatcher;
+use App\Core\Routing\RequestPathResolver;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class RequestIntentClassifier
 {
+    private RequestPathResolver $paths;
+    private PathScopeMatcher $rawPaths;
+
     public function __construct(
         private SuspiciousProbePathMatcher $probePathMatcher = new SuspiciousProbePathMatcher(),
-        private ?ContentRouteLocalization $routeLocalization = null,
+        ?ContentRouteLocalization $routeLocalization = null,
+        private ApiRequestMethodPolicy $apiMethods = new ApiRequestMethodPolicy(),
+        ?RequestPathResolver $paths = null,
+        ?PathScopeMatcher $rawPaths = null,
     ) {
+        $this->paths = $paths ?? new RequestPathResolver($routeLocalization);
+        $this->rawPaths = $rawPaths ?? new PathScopeMatcher();
     }
 
     public function classify(Request $request): AbuseRequestProfile
@@ -21,13 +32,13 @@ final readonly class RequestIntentClassifier
         $path = $request->getPathInfo();
         $segments = $this->segments($request);
         $route = $this->route($request);
-        $family = $this->family($segments);
+        $family = $this->family($request, $segments);
         $prefetch = $this->isPrefetch($request);
         $suspiciousProbe = $this->probePathMatcher->isProbe($path);
 
         return new AbuseRequestProfile(
             $family,
-            $this->intent($method, $segments, $route, $family, $prefetch, $suspiciousProbe),
+            $this->intent($request, $method, $segments, $route, $family, $prefetch, $suspiciousProbe),
             $method,
             substr($path, 0, 1024),
             $route,
@@ -36,16 +47,15 @@ final readonly class RequestIntentClassifier
         );
     }
 
-    /**
-     * @param list<string> $segments
-     */
-    private function family(array $segments): RequestFamily
+    private function family(Request $request, array $segments): RequestFamily
     {
+        $rawPath = $request->getPathInfo();
+
         return match (true) {
-            $this->matchesSegments($segments, 'api', 'live') => RequestFamily::LiveApi,
-            $this->matchesSegments($segments, 'api') => RequestFamily::Api,
-            $this->matchesSegments($segments, 'cron') => RequestFamily::Scheduler,
-            $this->matchesSegments($segments, 'setup') => RequestFamily::Setup,
+            $this->rawPaths->matchesSegments($rawPath, 'api', 'live') => RequestFamily::LiveApi,
+            $this->rawPaths->matchesSegments($rawPath, 'api') => RequestFamily::Api,
+            $this->rawPaths->matchesSegments($rawPath, 'cron') => RequestFamily::Scheduler,
+            $this->rawPaths->matchesSegments($rawPath, 'setup') => RequestFamily::Setup,
             $this->matchesSegments($segments, 'admin') => RequestFamily::Admin,
             $this->matchesSegments($segments, 'editor') => RequestFamily::Editor,
             default => RequestFamily::Browser,
@@ -53,6 +63,7 @@ final readonly class RequestIntentClassifier
     }
 
     private function intent(
+        Request $request,
         string $method,
         array $segments,
         string $route,
@@ -64,12 +75,10 @@ final readonly class RequestIntentClassifier
             return RequestIntent::SuspiciousProbe;
         }
 
-        if ('OPTIONS' === $method) {
-            return RequestIntent::CorsPreflight;
-        }
-
         if (RequestFamily::Scheduler === $family) {
-            return RequestIntent::SchedulerTrigger;
+            return $this->schedulerTrigger($request)
+                ? RequestIntent::SchedulerTrigger
+                : RequestIntent::BrowserNavigation;
         }
 
         if (RequestFamily::LiveApi === $family) {
@@ -77,32 +86,74 @@ final readonly class RequestIntentClassifier
         }
 
         if (RequestFamily::Api === $family) {
+            if ('OPTIONS' === $method) {
+                if ($this->apiMethods->hasAuthorizationHeader($request)) {
+                    return $this->apiIntentForMethod($this->apiMethods->effectiveMethod($request), $segments, $route);
+                }
+
+                return RequestIntent::CorsPreflight;
+            }
+
             if ($this->matchesSegments($segments, 'api', 'v1', 'admin') && !$this->safeMethod($method)) {
                 return $this->adminMutationIntent($this->apiAdminSegments($segments), $route);
             }
 
-            return in_array($method, ['GET', 'HEAD'], true) ? RequestIntent::ApiRead : RequestIntent::ApiWrite;
+            return $this->apiIntentForMethod($method, $segments, $route);
         }
 
-        if ($prefetch && 'GET' === $method) {
-            return RequestIntent::TurboPrefetch;
+        if ('OPTIONS' === $method) {
+            return RequestIntent::CorsPreflight;
         }
 
         if (RequestFamily::Setup === $family && !$this->safeMethod($method)) {
-            return RequestIntent::SetupApply;
+            return $this->setupApply($request, $segments)
+                ? RequestIntent::SetupApply
+                : RequestIntent::BrowserNavigation;
+        }
+
+        $adminReadIntent = RequestFamily::Admin === $family ? $this->adminReadIntent($segments, $route) : null;
+        if ($adminReadIntent instanceof RequestIntent) {
+            return $adminReadIntent;
         }
 
         if (RequestFamily::Admin === $family && !$this->safeMethod($method)) {
             return $this->adminMutationIntent($segments, $route);
         }
 
+        if ($this->recoveryLogin($request, $method, $segments, $route)) {
+            return RequestIntent::RecoveryLogin;
+        }
+
+        if ($prefetch && 'GET' === $method) {
+            return RequestIntent::TurboPrefetch;
+        }
+
         return match (true) {
-            $this->routeIs($route, 'user_login') || $this->matchesSegments($segments, 'user', 'login') => RequestIntent::Login,
-            $this->routeIs($route, 'user_register', 'user_invitation_accept') || $this->matchesSegments($segments, 'user', 'register') || $this->matchesSegments($segments, 'user', 'invitation') => RequestIntent::Registration,
-            $this->routeIs($route, 'user_reset_password', 'user_password_reset_token', 'user_security_review') || $this->matchesSegments($segments, 'user', 'password-reset') || $this->matchesSegments($segments, 'user', 'reset-password') || $this->matchesSegments($segments, 'user', 'security-review') => RequestIntent::PasswordReset,
+            !$this->safeMethod($method) && ($this->routeIs($route, 'user_login') || $this->matchesSegments($segments, 'user', 'login')) => RequestIntent::Login,
+            !$this->safeMethod($method) && ($this->routeIs($route, 'user_register', 'user_invitation_accept') || $this->matchesSegments($segments, 'user', 'register') || $this->matchesSegments($segments, 'user', 'invitation')) => RequestIntent::Registration,
+            !$this->safeMethod($method) && ($this->routeIs($route, 'user_reset_password', 'user_password_reset_token', 'user_security_review') || $this->matchesSegments($segments, 'user', 'password-reset') || $this->matchesSegments($segments, 'user', 'reset-password') || $this->matchesSegments($segments, 'user', 'security-review')) => RequestIntent::PasswordReset,
             !$this->safeMethod($method) => RequestIntent::FormSubmit,
             default => RequestIntent::BrowserNavigation,
         };
+    }
+
+    private function recoveryLogin(Request $request, string $method, array $segments, string $route): bool
+    {
+        return 'GET' === $method
+            && $this->matchesSegments($segments, 'user', 'login')
+            && $this->routeIs($route, 'user_login', 'n/a')
+            && '1' === (string) $request->query->get('bypass', '');
+    }
+
+    private function setupApply(Request $request, array $segments): bool
+    {
+        return $this->matchesExactSegments($segments, 'setup', 'review')
+            && 'apply' === (string) $request->request->get('_setup_action', '');
+    }
+
+    private function schedulerTrigger(Request $request): bool
+    {
+        return $this->rawPaths->matchesExactSegments($request->getPathInfo(), 'cron', 'run');
     }
 
     private function adminMutationIntent(array $segments, string $route): RequestIntent
@@ -110,14 +161,33 @@ final readonly class RequestIntentClassifier
         return match (true) {
             $this->matchesSegments($segments, 'admin', 'settings') || $this->routeHasToken($route, 'settings') => RequestIntent::SettingsMutation,
             $this->matchesSegments($segments, 'admin', 'users') || $this->routeHasToken($route, 'users') || $this->routeHasToken($route, 'acl') => RequestIntent::UserAclMutation,
-            $this->matchesSegments($segments, 'admin', 'packages') || $this->routeHasToken($route, 'package') || $this->routeHasToken($route, 'packages') => RequestIntent::PackageAdminOperation,
             $this->hasSegment($segments, 'upload', 'archive', 'media') || $this->routeHasAnyToken($route, 'upload', 'archive', 'media') => RequestIntent::UploadArchiveValidation,
             $this->hasSegment($segments, 'export', 'download') || $this->routeHasAnyToken($route, 'export', 'download') => RequestIntent::ExportDownload,
+            $this->matchesSegments($segments, 'admin', 'packages') || $this->routeHasToken($route, 'package') || $this->routeHasToken($route, 'packages') => RequestIntent::PackageAdminOperation,
             $this->hasSegment($segments, 'import') || $this->routeHasToken($route, 'import') => RequestIntent::ImportOperation,
             $this->hasSegment($segments, 'backup', 'restore') || $this->routeHasAnyToken($route, 'backup', 'restore') => RequestIntent::BackupRestore,
             $this->hasSegment($segments, 'diagnostic', 'diagnostics', 'support') || $this->routeHasAnyToken($route, 'diagnostic', 'diagnostics', 'support') => RequestIntent::DiagnosticsSupport,
             default => RequestIntent::AdminOperation,
         };
+    }
+
+    private function adminReadIntent(array $segments, string $route): ?RequestIntent
+    {
+        return match (true) {
+            $this->hasSegment($segments, 'export', 'download') || $this->routeHasAnyToken($route, 'export', 'download') => RequestIntent::ExportDownload,
+            $this->hasSegment($segments, 'diagnostic', 'diagnostics', 'support') || $this->routeHasAnyToken($route, 'diagnostic', 'diagnostics', 'support') => RequestIntent::DiagnosticsSupport,
+            default => null,
+        };
+    }
+
+    private function apiIntentForMethod(string $method, array $segments, string $route): RequestIntent
+    {
+        $method = strtoupper($method);
+        if ($this->matchesSegments($segments, 'api', 'v1', 'admin') && !$this->safeMethod($method)) {
+            return $this->adminMutationIntent($this->apiAdminSegments($segments), $route);
+        }
+
+        return in_array($method, ['GET', 'HEAD', 'OPTIONS'], true) ? RequestIntent::ApiRead : RequestIntent::ApiWrite;
     }
 
     private function isPrefetch(Request $request): bool
@@ -159,9 +229,6 @@ final readonly class RequestIntentClassifier
         return [] !== array_intersect($tokens, $this->routeTokens($route));
     }
 
-    /**
-     * @return list<string>
-     */
     private function routeTokens(string $route): array
     {
         return array_values(array_filter(
@@ -170,45 +237,11 @@ final readonly class RequestIntentClassifier
         ));
     }
 
-    /**
-     * @return list<string>
-     */
     private function segments(Request $request): array
     {
-        $segments = array_values(array_filter(explode('/', trim($request->getPathInfo(), '/')), static fn (string $segment): bool => '' !== $segment));
-        $locale = $this->localePrefix($request);
-
-        if (is_string($locale) && '' !== $locale && ($segments[0] ?? null) === $locale) {
-            array_shift($segments);
-        }
-
-        return $segments;
+        return $this->paths->segments($request);
     }
 
-    private function localePrefix(Request $request): ?string
-    {
-        $segments = explode('/', trim($request->getPathInfo(), '/'));
-        $firstSegment = $segments[0] ?? '';
-
-        if ('' === $firstSegment || !$this->hasLocalizedReservedPath($segments)) {
-            return null;
-        }
-
-        $locale = $request->attributes->get('_locale');
-        if (is_string($locale) && $firstSegment === $locale) {
-            return $firstSegment;
-        }
-
-        if (null !== $this->routeLocalization && $this->routeLocalization->isEnabled() && in_array($firstSegment, $this->routeLocalization->availableLanguages(), true)) {
-            return $firstSegment;
-        }
-
-        return null;
-    }
-
-    /**
-     * @param list<string> $pathSegments
-     */
     private function matchesSegments(array $pathSegments, string ...$segments): bool
     {
         foreach ($segments as $index => $segment) {
@@ -220,9 +253,11 @@ final readonly class RequestIntentClassifier
         return [] !== $segments;
     }
 
-    /**
-     * @param list<string> $pathSegments
-     */
+    private function matchesExactSegments(array $pathSegments, string ...$segments): bool
+    {
+        return count($pathSegments) === count($segments) && $this->matchesSegments($pathSegments, ...$segments);
+    }
+
     private function hasSegment(array $pathSegments, string ...$segments): bool
     {
         foreach ($segments as $segment) {
@@ -234,11 +269,6 @@ final readonly class RequestIntentClassifier
         return false;
     }
 
-    /**
-     * @param list<string> $segments
-     *
-     * @return list<string>
-     */
     private function apiAdminSegments(array $segments): array
     {
         return $this->matchesSegments($segments, 'api', 'v1', 'admin')
@@ -246,11 +276,4 @@ final readonly class RequestIntentClassifier
             : $segments;
     }
 
-    /**
-     * @param list<string> $segments
-     */
-    private function hasLocalizedReservedPath(array $segments): bool
-    {
-        return in_array($segments[1] ?? '', ['admin', 'api', 'cron', 'editor', 'setup', 'user'], true);
-    }
 }

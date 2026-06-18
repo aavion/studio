@@ -17,6 +17,7 @@ enum RequestIntent: string
     case CaptchaRefresh = 'captcha_refresh';
     case CaptchaFailure = 'captcha_failure';
     case Login = 'login';
+    case RecoveryLogin = 'recovery_login';
     case Registration = 'registration';
     case PasswordReset = 'password_reset';
     case Contact = 'contact';

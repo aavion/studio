@@ -37,7 +37,23 @@ final class ContentRouteGuardTest extends TestCase
 
     public function testItRejectsReservedPathPrefixes(): void
     {
-        foreach (['system', 'user', 'setup', 'cron', 'admin', 'editor', 'packages'] as $prefix) {
+        foreach ([
+            'system',
+            'user',
+            'setup',
+            'cron',
+            'admin',
+            'editor',
+            'api',
+            'assets',
+            'build',
+            '_profiler',
+            'profiler',
+            '_wdt',
+            'packages',
+            'media',
+            'files',
+        ] as $prefix) {
             try {
                 (new ContentRouteGuard())->assertPathAllowed(sprintf('/%s/example', $prefix));
                 self::fail(sprintf('Expected prefix "%s" to be reserved.', $prefix));

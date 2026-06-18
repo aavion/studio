@@ -68,7 +68,7 @@ final class BackendController extends AbstractController
             return $access;
         }
         if (!$this->adminAcl->isVisible('admin.logs', $this->actor())) {
-            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
                 'feature' => 'admin.logs',
                 'required_state' => 'visible',
             ]);
@@ -77,7 +77,7 @@ final class BackendController extends AbstractController
         $source = $request->query->get('source', 'message');
         $source = is_string($source) ? $source : 'message';
         if (in_array($source, ['audit', 'security_signal'], true) && !$this->adminAcl->isMutable('admin.logs', $this->actor())) {
-            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
                 'feature' => 'admin.logs',
                 'required_state' => 'mutable',
                 'source' => $source,
@@ -125,7 +125,7 @@ final class BackendController extends AbstractController
         $decision = $this->accessGuard->decide($area, $this->getUser());
 
         if (!$decision->isGranted()) {
-            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
                 'area' => $area->value,
                 'access_decision' => $decision->toArray(),
             ]);
@@ -139,7 +139,7 @@ final class BackendController extends AbstractController
         $view = $result->view();
 
         if (null !== $view && !$this->viewAllows($view, $actor)) {
-            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
                 'area' => $area->value,
                 'view' => $view->uid(),
             ]);
@@ -173,7 +173,7 @@ final class BackendController extends AbstractController
             return null;
         }
 
-        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
             'area' => BackendArea::Admin->value,
             'access_decision' => $decision->toArray(),
         ]);
@@ -279,7 +279,7 @@ final class BackendController extends AbstractController
         }
 
         if (!$result instanceof FormSubmissionResult) {
-            return $this->httpError->render(Response::HTTP_METHOD_NOT_ALLOWED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_METHOD_NOT_ALLOWED, $request, context: [
                 'area' => $view->area()->value,
                 'view' => $view->uid(),
             ]);
@@ -312,7 +312,7 @@ final class BackendController extends AbstractController
             return null;
         }
 
-        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
             'area' => $view->area()->value,
             'view' => $view->uid(),
             'access_feature' => $feature,

@@ -226,6 +226,9 @@ ui:
     403:
       title: 'Zugriff verweigert'
       message: 'Diese Route ist geschützt oder nicht für direkten Zugriff verfügbar.'
+    400:
+      title: 'Ungültige Anfrage'
+      message: 'Die Anfrage konnte nicht akzeptiert werden.'
     404:
       title: 'Seite nicht gefunden'
       message: 'Die angefragte Seite wurde nicht gefunden oder ist nicht veröffentlicht.'

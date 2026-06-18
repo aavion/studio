@@ -46,6 +46,36 @@ final class ApiReadOnlyMethodSubscriberTest extends TestCase
         self::assertFalse($event->hasResponse());
     }
 
+    public function testItBlocksUnsafePreflightMethodsForReadOnlyKeys(): void
+    {
+        $request = Request::create('/api/v1/admin/settings/general', 'OPTIONS', server: [
+            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+        ]);
+        $this->context(ApiKeyStatus::ReadOnly)->attachTo($request);
+        $event = new RequestEvent($this->kernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber()->onKernelRequest($event);
+
+        self::assertTrue($event->hasResponse());
+        self::assertSame(Response::HTTP_FORBIDDEN, $event->getResponse()->getStatusCode());
+        $payload = json_decode((string) $event->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('api_key.permission_write_required', $payload['error']['code']);
+        self::assertSame('OPTIONS', $payload['error']['context']['method']);
+    }
+
+    public function testItAllowsSafePreflightMethodsForReadOnlyKeys(): void
+    {
+        $request = Request::create('/api/v1/status', 'OPTIONS', server: [
+            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'GET',
+        ]);
+        $this->context(ApiKeyStatus::ReadOnly)->attachTo($request);
+        $event = new RequestEvent($this->kernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber()->onKernelRequest($event);
+
+        self::assertFalse($event->hasResponse());
+    }
+
     public function testItAllowsMutatingRequestsForReadWriteKeys(): void
     {
         $request = Request::create('/api/v1/status', 'POST');

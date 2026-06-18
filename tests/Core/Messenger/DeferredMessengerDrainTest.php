@@ -139,6 +139,31 @@ final class DeferredMessengerDrainTest extends TestCase
         $this->removeDirectory($projectDir);
     }
 
+    public function testSubscriberDoesNotSkipSchedulerLookalikeRequests(): void
+    {
+        $projectDir = $this->createTemporaryProjectDirectory('messenger-drain-scheduler-lookalike');
+        $connection = $this->connectionWithMessengerTable();
+        $starter = new RecordingDeferredMessengerStarter();
+        $settings = $this->schedulerSettings($connection, true);
+        $drain = new DeferredMessengerDrain($connection, $starter, $projectDir, 'test', schedulerSettings: $settings);
+        $request = Request::create('/cron/runaway');
+
+        (new DeferredMessengerDrainSubscriber($drain))->onKernelTerminate(new TerminateEvent(
+            new class implements HttpKernelInterface {
+                public function handle(Request $request, int $type = self::MAIN_REQUEST, bool $catch = true): Response
+                {
+                    return new Response();
+                }
+            },
+            $request,
+            new Response(),
+        ));
+
+        self::assertCount(1, $starter->starts);
+
+        $this->removeDirectory($projectDir);
+    }
+
     public function testItLogsDispatchFailureWhenDetachedStartFails(): void
     {
         $projectDir = $this->createTemporaryProjectDirectory('messenger-drain-scheduler-failure');

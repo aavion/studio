@@ -11,6 +11,8 @@ use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Entity\ApiKey;
 use App\Security\ApiKeyStatus;
 use App\Security\ApiKeyVault;
+use App\Security\RateLimit\RateLimitPolicyCatalogue;
+use App\Security\RateLimit\RateLimitProfile;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -183,6 +185,7 @@ final class ApiSettingsControllerTest extends WebTestCase
             'values' => [
                 'security.captcha.enabled' => false,
                 'security.captcha.provider' => 'none',
+                RateLimitPolicyCatalogue::MODE_KEY => RateLimitProfile::Panic->value,
             ],
         ], JSON_THROW_ON_ERROR));
 
@@ -203,6 +206,7 @@ final class ApiSettingsControllerTest extends WebTestCase
                 'values' => [
                     'security.captcha.enabled' => true,
                     'security.captcha.provider' => 'none',
+                    RateLimitPolicyCatalogue::MODE_KEY => RateLimitProfile::Strict->value,
                 ],
             ], JSON_THROW_ON_ERROR));
 
@@ -210,6 +214,7 @@ final class ApiSettingsControllerTest extends WebTestCase
             $payload = $this->jsonPayload($client->getResponse()->getContent());
             self::assertContains('security.captcha.enabled', $payload['meta']['updated_keys']);
             self::assertContains('security.captcha.provider', $payload['meta']['updated_keys']);
+            self::assertContains(RateLimitPolicyCatalogue::MODE_KEY, $payload['meta']['updated_keys']);
         } finally {
             $this->removeApiKeyUser('apisetsecown');
         }

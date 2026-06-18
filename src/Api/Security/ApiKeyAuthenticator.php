@@ -27,12 +27,13 @@ final class ApiKeyAuthenticator extends AbstractAuthenticator
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiKeyVault $apiKeyVault,
         private readonly ApiSecurityHandler $securityHandler,
+        private readonly ApiRequestMethodPolicy $methodPolicy = new ApiRequestMethodPolicy(),
     ) {
     }
 
     public function supports(Request $request): ?bool
     {
-        return str_starts_with($request->getPathInfo(), '/api/v1')
+        return $this->methodPolicy->isApiV1Request($request)
             && $this->hasBearerAuthorizationScheme($request);
     }
 

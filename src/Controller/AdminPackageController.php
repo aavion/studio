@@ -137,7 +137,7 @@ final class AdminPackageController extends AbstractController
         }
 
         if (!$this->adminAcl->isVisible(self::PACKAGE_LIFECYCLE_FEATURE, $this->actor())) {
-            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
                 'area' => BackendArea::Admin->value,
                 'package' => $packageName,
                 'feature' => self::PACKAGE_LIFECYCLE_FEATURE,
@@ -149,7 +149,7 @@ final class AdminPackageController extends AbstractController
                 return $this->backendActionResponder->respond($request, $this->getUser());
             }
 
-            return $this->httpError->render(Response::HTTP_METHOD_NOT_ALLOWED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_METHOD_NOT_ALLOWED, $request, context: [
                 'area' => BackendArea::Admin->value,
                 'package' => $packageName,
             ]);
@@ -158,7 +158,7 @@ final class AdminPackageController extends AbstractController
         $package = $this->packageLifecycleAdmin->package($packageName);
 
         if (null === $package) {
-            return $this->httpError->render(Response::HTTP_NOT_FOUND, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_NOT_FOUND, $request, context: [
                 'area' => BackendArea::Admin->value,
                 'package' => $packageName,
             ]);
@@ -183,7 +183,7 @@ final class AdminPackageController extends AbstractController
         $lifecycleState = $this->adminAcl->state(self::PACKAGE_LIFECYCLE_FEATURE, $this->actor());
 
         if (!$lifecycleState->isVisible()) {
-            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
                 'area' => BackendArea::Admin->value,
                 'package' => $packageName,
                 'action' => $action,
@@ -198,7 +198,7 @@ final class AdminPackageController extends AbstractController
         $review = $this->packageLifecycleAdmin->review($packageName, $action);
 
         if (null === $review['package']) {
-            return $this->httpError->render(Response::HTTP_NOT_FOUND, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_NOT_FOUND, $request, context: [
                 'area' => BackendArea::Admin->value,
                 'package' => $packageName,
                 'action' => $action,

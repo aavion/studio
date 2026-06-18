@@ -286,7 +286,7 @@ final class AdminAclGroupController extends AbstractController
     private function startAclGroupLiveOperation(Request $request, AclGroup $group, string $action, array $payload = []): Response
     {
         if (!$this->adminFeatureAccessPolicy->isMutable(self::FEATURE, $this->adminContext->actor($this->getUser()))) {
-            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
                 'feature' => self::FEATURE,
                 'required_state' => 'mutable',
             ]);
@@ -324,7 +324,7 @@ final class AdminAclGroupController extends AbstractController
             return null;
         }
 
-        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
             'feature' => self::FEATURE,
             'required_state' => $mutable ? 'mutable' : 'visible',
         ]);

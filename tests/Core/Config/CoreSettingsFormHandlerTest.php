@@ -16,6 +16,8 @@ use App\Core\Log\DatabaseLogRetentionPolicy;
 use App\Form\FormSubmissionHandler;
 use App\Localization\TranslationLanguageCatalog;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
+use App\Security\RateLimit\RateLimitPolicyCatalogue;
+use App\Security\RateLimit\RateLimitProfile;
 use App\View\SystemPackageMetadataProvider;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
@@ -93,6 +95,7 @@ final class CoreSettingsFormHandlerTest extends TestCase
         $result = $handler->submit('security', [
             'security.captcha.enabled' => '0',
             'security.captcha.provider' => 'none',
+            RateLimitPolicyCatalogue::MODE_KEY => RateLimitProfile::Strict->value,
             ConfigAuditLogPolicy::ENABLED_KEY => '1',
             ConfigAuditLogPolicy::EVENTS_KEY => ConfigAuditLogPolicy::DEFAULT_CATEGORIES,
             DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY => '7',
@@ -100,8 +103,34 @@ final class CoreSettingsFormHandlerTest extends TestCase
         ], 'test');
 
         self::assertTrue($result->isValid());
+        self::assertSame(RateLimitProfile::Strict->value, $config->get(RateLimitPolicyCatalogue::MODE_KEY));
         self::assertTrue((new SuspiciousProbePathMatcher($config, cache: $cache))->isProbe('/new-probe'));
         self::assertFalse((new SuspiciousProbePathMatcher($config, cache: $cache))->isProbe('/old-probe'));
+    }
+
+    public function testItRejectsInvalidRateLimitModes(): void
+    {
+        $config = new Config($this->connection());
+        $handler = new CoreSettingsFormHandler(
+            $this->registry(),
+            $config,
+            new FormSubmissionHandler(),
+            $this->createStub(EntityManagerInterface::class),
+        );
+
+        $result = $handler->submit('security', [
+            'security.captcha.enabled' => '0',
+            'security.captcha.provider' => 'none',
+            RateLimitPolicyCatalogue::MODE_KEY => 'forever',
+            ConfigAuditLogPolicy::ENABLED_KEY => '1',
+            ConfigAuditLogPolicy::EVENTS_KEY => ConfigAuditLogPolicy::DEFAULT_CATEGORIES,
+            DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY => '7',
+            SuspiciousProbePathMatcher::PATTERNS_KEY => SuspiciousProbePathMatcher::defaultPatternText(),
+        ], 'test');
+
+        self::assertFalse($result->isValid());
+        self::assertSame(['admin.settings.form.errors.choice'], $result->errors()[RateLimitPolicyCatalogue::MODE_KEY]);
+        self::assertNull($config->get(RateLimitPolicyCatalogue::MODE_KEY));
     }
 
     private function registry(): CoreSettingsRegistry

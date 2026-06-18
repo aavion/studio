@@ -306,7 +306,7 @@ final class AdminUserController extends AbstractController
             return null;
         }
 
-        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
             'feature' => self::FEATURE,
             'required_state' => $mutable ? 'mutable' : 'visible',
         ]);

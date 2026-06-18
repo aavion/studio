@@ -14,8 +14,10 @@ final readonly class ActionCostCatalogue
             RequestIntent::CorsPreflight => new ActionCost('api_preflight', 0, false),
             RequestIntent::SuspiciousProbe => new ActionCost('suspicious_probe', 10),
             RequestIntent::Login => new ActionCost('login', 1),
+            RequestIntent::RecoveryLogin => new ActionCost('recovery_login', 1),
             RequestIntent::Registration => new ActionCost('registration', 5),
             RequestIntent::PasswordReset => new ActionCost('password_reset', 3),
+            RequestIntent::CaptchaFailure => new ActionCost('captcha_failure', 1),
             RequestIntent::Contact => new ActionCost('contact', 3),
             RequestIntent::SchedulerTrigger => new ActionCost('scheduler', 1),
             RequestIntent::SetupApply => new ActionCost('setup_apply', 8),
@@ -35,6 +37,35 @@ final readonly class ActionCostCatalogue
         };
     }
 
+    /**
+     * @return array<string, int>
+     */
+    public function uniqueCreditsByBucketFamily(): array
+    {
+        $credits = [];
+        $mixedFamilies = [];
+
+        foreach (RequestIntent::cases() as $intent) {
+            $cost = $this->costFor($this->sampleProfile($intent));
+            if (!$cost->ordinaryEnforcement() || $cost->credits() < 1) {
+                continue;
+            }
+
+            $family = $cost->bucketFamily();
+            if (isset($credits[$family]) && $credits[$family] !== $cost->credits()) {
+                $mixedFamilies[$family] = true;
+                unset($credits[$family]);
+                continue;
+            }
+
+            if (!isset($mixedFamilies[$family])) {
+                $credits[$family] = $cost->credits();
+            }
+        }
+
+        return $credits;
+    }
+
     private function defaultBucket(RequestFamily $family): string
     {
         return match ($family) {
@@ -43,5 +74,32 @@ final readonly class ActionCostCatalogue
             RequestFamily::Setup => 'setup',
             default => 'website',
         };
+    }
+
+    private function sampleProfile(RequestIntent $intent): AbuseRequestProfile
+    {
+        return new AbuseRequestProfile(
+            match ($intent) {
+                RequestIntent::ApiRead, RequestIntent::ApiWrite, RequestIntent::CorsPreflight, RequestIntent::LiveApi => RequestFamily::Api,
+                RequestIntent::SchedulerTrigger => RequestFamily::Scheduler,
+                RequestIntent::SetupApply => RequestFamily::Setup,
+                RequestIntent::PackageAdminOperation,
+                RequestIntent::SettingsMutation,
+                RequestIntent::UserAclMutation,
+                RequestIntent::UploadArchiveValidation,
+                RequestIntent::ExportDownload,
+                RequestIntent::ImportOperation,
+                RequestIntent::BackupRestore,
+                RequestIntent::DiagnosticsSupport,
+                RequestIntent::AdminOperation => RequestFamily::Admin,
+                default => RequestFamily::Browser,
+            },
+            $intent,
+            'GET',
+            '/',
+            'test',
+            RequestIntent::TurboPrefetch === $intent,
+            RequestIntent::SuspiciousProbe === $intent,
+        );
     }
 }

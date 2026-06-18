@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Api\Http;
 
+use App\Api\Security\ApiRequestMethodPolicy;
 use App\Core\Log\AccessRequestMetadata;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
@@ -11,8 +12,10 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 final readonly class ApiTraceHeaderSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private AccessRequestMetadata $accessRequestMetadata)
-    {
+    public function __construct(
+        private AccessRequestMetadata $accessRequestMetadata,
+        private ApiRequestMethodPolicy $methodPolicy = new ApiRequestMethodPolicy(),
+    ) {
     }
 
     /**
@@ -27,7 +30,7 @@ final readonly class ApiTraceHeaderSubscriber implements EventSubscriberInterfac
 
     public function onKernelResponse(ResponseEvent $event): void
     {
-        if (!$event->isMainRequest() || !str_starts_with($event->getRequest()->getPathInfo(), '/api/v1')) {
+        if (!$event->isMainRequest() || !$this->methodPolicy->isApiV1Request($event->getRequest())) {
             return;
         }
 
