@@ -111,6 +111,7 @@
 - Addressed the next Cloud Review round with separate reviewable commits: the auto-ban qualifying floor now counts distinct request IDs instead of scoreable rows, trusted scheduler credentials no longer create passive Visitor/IP source signals when scheduler responses are `403`/`404`, and Security signal retention settings below the maximum auto-ban TTL are rejected instead of allowing active bans to outlive their retained trigger evidence.
 - Added a reusable config validation guard for effective runtime bounds so already-persisted `security.signals.retention_days` values are floored to the current maximum auto-ban TTL and capped at the global 30-day retention maximum, while ordinary log-retention settings keep their existing one-day minimum.
 - Extended the config validation guard to other small bounded runtime settings that already had form validation: user menu sort order, account-link TTL hours, deleted-user retention days, and the auto-ban score threshold now normalize already-persisted out-of-range values to their effective runtime bounds.
+- Addressed the latest Cloud Review round with separate reviewable commits: CSRF-marked recovery login submissions now only pass the post-auth active-ban recheck when authentication established a trusted user context, and valid trusted-user-owned scheduler credentials skip request-phase suspicious payload source scoring for both Bearer and enabled `?auth=` scheduler calls.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).
