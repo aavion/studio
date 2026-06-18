@@ -101,6 +101,31 @@ final class AccessLogSubscriberTest extends TestCase
             ['path' => '/missing', 'status' => Response::HTTP_FORBIDDEN],
         ], $statisticsRecorder->records);
     }
+
+    public function testItLogsAutoBanForbiddenResponsesForIgnorablePaths(): void
+    {
+        $accessLogger = new RecordingAccessLogger();
+        $statisticsRecorder = new RecordingAccessStatisticsRecorder();
+        $request = Request::create('/favicon.ico', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $request->attributes->set(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE, true);
+        $request->attributes->set(AccessRequestMetadata::FORCE_ACCESS_LOG_ATTRIBUTE, true);
+        $response = new Response('blocked', Response::HTTP_FORBIDDEN);
+
+        (new AccessLogSubscriber(
+            $accessLogger,
+            $statisticsRecorder,
+            new AccessRequestMetadata(),
+            new VisitorIdGenerator('test-secret'),
+        ))->onKernelResponse(new ResponseEvent(
+            new AccessSubscriberTestKernel(),
+            $request,
+            HttpKernelInterface::MAIN_REQUEST,
+            $response,
+        ));
+
+        self::assertSame(['/favicon.ico'], $accessLogger->paths);
+        self::assertSame([], $statisticsRecorder->records);
+    }
 }
 
 final class RecordingAccessLogger implements AccessLoggerInterface

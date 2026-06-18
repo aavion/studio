@@ -13,6 +13,7 @@ use App\Core\Statistics\AccessStatisticsRecorderInterface;
 use App\Core\Statistics\VisitorIdGenerator;
 use App\Database\DatabaseReadyState;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -44,7 +45,7 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest() || $this->shouldSkipAccessLog($event->getRequest()->getPathInfo())) {
+        if (!$event->isMainRequest() || $this->shouldSkipAccessLog($event->getRequest())) {
             return;
         }
 
@@ -53,7 +54,7 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
 
     public function onKernelResponse(ResponseEvent $event): void
     {
-        if (!$event->isMainRequest() || $this->shouldSkipAccessLog($event->getRequest()->getPathInfo())) {
+        if (!$event->isMainRequest() || $this->shouldSkipAccessLog($event->getRequest())) {
             return;
         }
 
@@ -74,9 +75,10 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
         }
     }
 
-    private function shouldSkipAccessLog(string $path): bool
+    private function shouldSkipAccessLog(Request $request): bool
     {
-        return $this->ignorablePaths->matches($path);
+        return !$request->attributes->getBoolean(AccessRequestMetadata::FORCE_ACCESS_LOG_ATTRIBUTE)
+            && $this->ignorablePaths->matches($request->getPathInfo());
     }
 
     private function shouldSkipStatistics(string $path): bool

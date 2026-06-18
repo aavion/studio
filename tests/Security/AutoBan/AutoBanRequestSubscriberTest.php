@@ -64,6 +64,7 @@ final class AutoBanRequestSubscriberTest extends TestCase
         self::assertStringContainsString('Request blocked due to suspicious activity.', (string) $response->getContent());
         self::assertStringContainsString('request-ban', (string) $response->getContent());
         self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+        self::assertTrue($request->attributes->getBoolean(AccessRequestMetadata::FORCE_ACCESS_LOG_ATTRIBUTE));
     }
 
     public function testActiveVisitorBanOverridesEarlierProbeResponseAndSkipsPassiveSignals(): void

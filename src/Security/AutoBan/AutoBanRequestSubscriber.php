@@ -281,6 +281,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
     private function banResponse(Request $request, ActiveAutoBan $ban): Response
     {
         $retryAfter = $ban->retryAfterSeconds($this->clock->now());
+        $request->attributes->set(AccessRequestMetadata::FORCE_ACCESS_LOG_ATTRIBUTE, true);
 
         return $this->httpError->bare(Response::HTTP_FORBIDDEN, $request, [
             'request_id' => $this->requestMetadata->requestId($request),

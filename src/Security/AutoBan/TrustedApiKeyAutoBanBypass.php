@@ -12,6 +12,8 @@ use Throwable;
 
 final readonly class TrustedApiKeyAutoBanBypass
 {
+    private const MAX_SCHEDULER_QUERY_TOKEN_LENGTH = 128;
+
     public function __construct(
         private ApiKeyCredentialResolver $credentials,
         private AutoBanPolicy $policy,
@@ -28,8 +30,9 @@ final readonly class TrustedApiKeyAutoBanBypass
 
             if (null === $apiKey && $allowSchedulerQuery && $this->schedulerSettings->getAuthEnabled()) {
                 $auth = $request->query->get('auth');
-                $apiKey = is_string($auth) && '' !== trim($auth)
-                    ? $this->credentials->resolvePlainKeyHmac(trim($auth))
+                $token = is_string($auth) ? trim($auth) : '';
+                $apiKey = $this->acceptableSchedulerQueryToken($token)
+                    ? $this->credentials->resolvePlainKeyHmac($token)
                     : null;
             }
 
@@ -46,5 +49,12 @@ final readonly class TrustedApiKeyAutoBanBypass
         }
 
         return $apiKey->user()->accessLevel() >= $this->policy->trustedAccessLevel();
+    }
+
+    private function acceptableSchedulerQueryToken(string $token): bool
+    {
+        return '' !== $token
+            && strlen($token) <= self::MAX_SCHEDULER_QUERY_TOKEN_LENGTH
+            && 1 === preg_match('/^[^\s\x00-\x1F\x7F]+$/', $token);
     }
 }

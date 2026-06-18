@@ -14,6 +14,7 @@ final readonly class AccessRequestMetadata
     public const REQUEST_ID_ATTRIBUTE = '_access_request_id';
     public const CORRELATION_ID_ATTRIBUTE = '_access_correlation_id';
     public const STARTED_AT_ATTRIBUTE = '_access_started_at';
+    public const FORCE_ACCESS_LOG_ATTRIBUTE = '_access_force_log';
     private const GENERATED_REQUEST_ID_BYTES = 12;
     private const MAX_REQUEST_ID_LENGTH = 64;
     private const MIN_REQUEST_ID_LENGTH = 8;

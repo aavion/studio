@@ -157,6 +157,11 @@ final class SchedulerControllerTest extends WebTestCase
             $this->banIpBucketFor('/cron/run?auth=test_seed_read_write_key', '198.51.100.44');
             $client->request('GET', '/cron/run?auth=test_seed_read_write_key', server: $this->server('198.51.100.44'));
             self::assertResponseIsSuccessful();
+
+            $oversizedToken = str_repeat('a', 129);
+            $this->banIpBucketFor('/cron/run?auth='.$oversizedToken, '198.51.100.45');
+            $client->request('GET', '/cron/run?auth='.$oversizedToken, server: $this->server('198.51.100.45'));
+            self::assertResponseStatusCodeSame(403);
         } finally {
             $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, false, ConfigValueType::Boolean);
         }
