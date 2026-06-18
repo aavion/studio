@@ -85,18 +85,20 @@ final class SuspiciousPayloadSignalSubscriberTest extends TestCase
     {
         $connection = $this->connection();
         $visitorIds = new VisitorIdGenerator('test-secret');
+        $content = json_encode([
+            'filter' => [
+                'query' => "x' UNION SELECT password FROM users --",
+            ],
+        ], JSON_THROW_ON_ERROR);
         $request = Request::create(
             '/api/v1/search',
             'POST',
             server: [
                 'CONTENT_TYPE' => 'application/json',
+                'CONTENT_LENGTH' => (string) strlen($content),
                 'REMOTE_ADDR' => '203.0.113.10',
             ],
-            content: json_encode([
-                'filter' => [
-                    'query' => "x' UNION SELECT password FROM users --",
-                ],
-            ], JSON_THROW_ON_ERROR),
+            content: $content,
         );
 
         $this->subscriber($connection, $visitorIds, new AccessRequestMetadata())->onKernelRequest(new RequestEvent(
@@ -158,16 +160,18 @@ final class SuspiciousPayloadSignalSubscriberTest extends TestCase
     {
         $connection = $this->connection();
         $visitorIds = new VisitorIdGenerator('test-secret');
+        $content = json_encode([
+            'custom_twig' => '<script type="application/json">{{ schema|json_encode }}</script>',
+        ], JSON_THROW_ON_ERROR);
         $request = Request::create(
             '/admin/content/schemas',
             'POST',
             server: [
                 'CONTENT_TYPE' => 'application/json',
+                'CONTENT_LENGTH' => (string) strlen($content),
                 'REMOTE_ADDR' => '203.0.113.10',
             ],
-            content: json_encode([
-                'custom_twig' => '<script type="application/json">{{ schema|json_encode }}</script>',
-            ], JSON_THROW_ON_ERROR),
+            content: $content,
         );
 
         $this->subscriber($connection, $visitorIds, new AccessRequestMetadata())->onKernelRequest(new RequestEvent(

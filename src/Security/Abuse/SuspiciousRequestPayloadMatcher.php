@@ -76,7 +76,11 @@ final readonly class SuspiciousRequestPayloadMatcher
             return [];
         }
 
-        $content = mb_substr($request->getContent(), 0, self::MAX_BODY_LENGTH);
+        $content = $this->boundedBody($request, self::MAX_BODY_LENGTH);
+        if (null === $content) {
+            return [];
+        }
+
         if ('' === trim($content)) {
             return [];
         }
@@ -101,9 +105,44 @@ final readonly class SuspiciousRequestPayloadMatcher
             return true;
         }
 
-        $content = ltrim(mb_substr($request->getContent(), 0, 32));
+        $content = $this->boundedBody($request, 32);
+        if (null === $content) {
+            return false;
+        }
+
+        $content = ltrim($content);
 
         return str_starts_with($content, '{') || str_starts_with($content, '[');
+    }
+
+    private function boundedBody(Request $request, int $limit): ?string
+    {
+        $length = $this->declaredContentLength($request);
+        if (null === $length || $length > self::MAX_BODY_LENGTH) {
+            return null;
+        }
+
+        $content = $request->getContent();
+        if (strlen($content) > self::MAX_BODY_LENGTH) {
+            return null;
+        }
+
+        return substr($content, 0, max(0, $limit));
+    }
+
+    private function declaredContentLength(Request $request): ?int
+    {
+        $length = $request->headers->get('Content-Length') ?? $request->server->get('CONTENT_LENGTH');
+        if (!is_string($length) && !is_int($length)) {
+            return null;
+        }
+
+        $length = trim((string) $length);
+        if ('' === $length || 1 !== preg_match('/^\d+$/', $length)) {
+            return null;
+        }
+
+        return (int) $length;
     }
 
     /**

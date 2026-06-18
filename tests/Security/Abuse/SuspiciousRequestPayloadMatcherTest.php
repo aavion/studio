@@ -44,15 +44,16 @@ final class SuspiciousRequestPayloadMatcherTest extends TestCase
 
     public function testItDetectsJsonBodyAttackSignaturesWithoutReturningRawPayloads(): void
     {
+        $content = json_encode([
+            'filter' => [
+                'query' => "x' UNION SELECT password FROM users --",
+            ],
+        ], JSON_THROW_ON_ERROR);
         $match = (new SuspiciousRequestPayloadMatcher())->match(Request::create(
             '/api/v1/search',
             'POST',
-            server: ['CONTENT_TYPE' => 'application/json'],
-            content: json_encode([
-                'filter' => [
-                    'query' => "x' UNION SELECT password FROM users --",
-                ],
-            ], JSON_THROW_ON_ERROR),
+            server: ['CONTENT_TYPE' => 'application/json', 'CONTENT_LENGTH' => (string) strlen($content)],
+            content: $content,
         ));
 
         self::assertIsArray($match);
@@ -64,11 +65,12 @@ final class SuspiciousRequestPayloadMatcherTest extends TestCase
 
     public function testItDetectsJsonLikeRawBodyAttackSignatures(): void
     {
+        $content = '{"query":"../../etc/passwd"';
         $match = (new SuspiciousRequestPayloadMatcher())->match(Request::create(
             '/api/v1/search',
             'POST',
-            server: ['CONTENT_TYPE' => 'application/json'],
-            content: '{"query":"../../etc/passwd"',
+            server: ['CONTENT_TYPE' => 'application/json', 'CONTENT_LENGTH' => (string) strlen($content)],
+            content: $content,
         ));
 
         self::assertIsArray($match);
@@ -76,5 +78,19 @@ final class SuspiciousRequestPayloadMatcherTest extends TestCase
         self::assertSame('raw_body', $match['parameters'][0]['source']);
         self::assertSame('body', $match['parameters'][0]['name']);
         self::assertStringNotContainsString('/etc/passwd', json_encode($match, JSON_THROW_ON_ERROR));
+    }
+
+    public function testItSkipsOversizedJsonBodiesBeforePayloadScanning(): void
+    {
+        $content = '{"query":"../../etc/passwd","padding":"'.str_repeat('x', 9000).'"}';
+
+        $match = (new SuspiciousRequestPayloadMatcher())->match(Request::create(
+            '/api/v1/search',
+            'POST',
+            server: ['CONTENT_TYPE' => 'application/json', 'CONTENT_LENGTH' => (string) strlen($content)],
+            content: $content,
+        ));
+
+        self::assertNull($match);
     }
 }
