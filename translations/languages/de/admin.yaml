@@ -654,6 +654,29 @@ admin:
       context: 'Kontext'
       no_context: 'Es ist kein strukturierter Kontext verfügbar.'
       raw: 'Rohzeile'
+  auto_bans:
+    active:
+      title: 'Aktive Auto-Bans'
+      empty: 'Keine aktiven Auto-Bans.'
+      open: 'Prüfen'
+      open_list: 'Aktive Auto-Bans öffnen'
+      disabled: 'Auto-Ban-Enforcement ist deaktiviert. Bestehende TTL-States bleiben bis zum Ablauf erhalten, werden aber nicht durchgesetzt.'
+    columns:
+      subject: 'Subjekt'
+      created_at: 'Erstellt'
+      expires_at: 'Läuft ab'
+      ttl: 'TTL-Sekunden'
+      details: 'Details'
+    detail:
+      title: 'Auto-Ban-Detail'
+      signals: 'Zugehörige Security-Signale'
+      no_signals: 'Für diesen aktiven Bann sind keine aufbewahrten Signale verfügbar.'
+    reset:
+      submit: 'Auto-Ban zurücksetzen'
+      saved: 'Auto-Ban zurückgesetzt.'
+      failed: 'Auto-Ban konnte nicht zurückgesetzt werden.'
+    alerts:
+      triggered: 'Auto-Ban für %subject% erstellt.'
   statistics:
     title: 'Statistiken'
     access_title: 'Zugriffsstatistiken'
@@ -778,6 +801,18 @@ admin:
         label: 'Captcha-Vorschau'
       rate_limit_mode:
         label: 'Ratenbegrenzung'
+      auto_ban_enabled:
+        label: 'Auto-Ban aktivieren'
+        help: 'Blockiert wiederholt verdächtige Visitor/IP-Aktivität vorübergehend. Trusted User bleiben ausgenommen.'
+      auto_ban_trusted_access_level:
+        label: 'Trusted-User-Level'
+        help: 'Registrierte Benutzer ab diesem Access-Level werden nie automatisch gebannt.'
+      auto_ban_score_threshold:
+        label: 'Auto-Ban-Score-Schwelle'
+        help: 'Score, der innerhalb einer Stunde erreicht werden muss, bevor ein neuer Visitor-Bann entstehen kann. Reine IP-Banns verwenden intern eine höhere Schwelle.'
+      auto_ban_new_ban_owner_alerts:
+        label: 'Alerts für neue Auto-Bans aktivieren'
+        help: 'Stellt Owner-Accounts eine versteckte Warnung zu, wenn ein neuer aktiver Auto-Ban erzeugt wird.'
       audit_enabled:
         label: 'Audit-Logging aktivieren'
       audit_events:
@@ -796,6 +831,11 @@ admin:
         standard: 'Standard'
         strict: 'Streng'
         panic: 'Panik'
+      access_level:
+        manager: 'Manager'
+        director: 'Director'
+        admin: 'Admin'
+        owner: 'Owner'
       audit:
         authentication: 'Authentifizierungsereignisse'
         backend_actions: 'Backend-Wartungsaktionen'
@@ -944,6 +984,18 @@ admin:
         label: 'Captcha-Vorschau'
       rate_limit_mode:
         label: 'Ratenbegrenzung'
+      auto_ban_enabled:
+        label: 'Auto-Ban aktivieren'
+        help: 'Blockiert wiederholt verdächtige Visitor/IP-Aktivität vorübergehend. Trusted User bleiben ausgenommen.'
+      auto_ban_trusted_access_level:
+        label: 'Trusted-User-Level'
+        help: 'Registrierte Benutzer ab diesem Access-Level werden nie automatisch gebannt.'
+      auto_ban_score_threshold:
+        label: 'Auto-Ban-Score-Schwelle'
+        help: 'Score, der innerhalb einer Stunde erreicht werden muss, bevor ein neuer Visitor-Bann entstehen kann. Reine IP-Banns verwenden intern eine höhere Schwelle.'
+      auto_ban_new_ban_owner_alerts:
+        label: 'Alerts für neue Auto-Bans aktivieren'
+        help: 'Stellt Owner-Accounts eine versteckte Warnung zu, wenn ein neuer aktiver Auto-Ban erzeugt wird.'
       audit_enabled:
         label: 'Audit-Logging aktivieren'
       audit_events:
@@ -1015,6 +1067,11 @@ admin:
         standard: 'Standard'
         strict: 'Streng'
         panic: 'Panik'
+      access_level:
+        manager: 'Manager'
+        director: 'Director'
+        admin: 'Admin'
+        owner: 'Owner'
       audit:
         authentication: 'Authentifizierungsereignisse'
         backend_actions: 'Backend-Wartungsaktionen'

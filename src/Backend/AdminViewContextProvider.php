@@ -18,6 +18,7 @@ use App\Core\Log\AdminLogBrowser;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Statistics\AccessStatisticsSnapshotProvider;
 use App\Entity\UserAccount;
+use App\Security\AutoBan\AutoBanPolicy;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -35,6 +36,7 @@ final readonly class AdminViewContextProvider
         private AdminFeatureRegistry $adminFeatureRegistry,
         private AdminFeatureAccessPolicy $adminFeatureAccessPolicy,
         private AdminFeatureOverrideStore $adminFeatureOverrideStore,
+        private AutoBanPolicy $autoBanPolicy,
     ) {
     }
 
@@ -63,6 +65,9 @@ final readonly class AdminViewContextProvider
                     'can_update' => [] !== $this->backendActions->definitions([BackendActions::GEOIP_DATABASE_UPDATE], $this->actor()),
                     'status' => $this->geoIpResolver->status()->toSafeArray(),
                 ],
+            ],
+            'backend-admin-settings-security' => [
+                'auto_ban_enabled' => $this->autoBanPolicy->enabled(),
             ],
             'backend-admin-settings-acl' => [
                 'acl_matrix' => $this->aclMatrix(),

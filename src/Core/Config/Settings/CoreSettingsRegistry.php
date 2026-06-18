@@ -14,6 +14,7 @@ use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
+use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\RateLimit\RateLimitProfile;
 use App\Security\UserFlowConfig;
@@ -94,6 +95,27 @@ final readonly class CoreSettingsRegistry
             ], validation: ['required' => true], metadata: [
                 'access_feature' => 'admin.settings.security',
             ], sortOrder: 35),
+            new CoreSettingDefinition('security', AutoBanPolicy::ENABLED_KEY, 'admin.settings.fields.auto_ban_enabled.label', AutoBanPolicy::DEFAULT_ENABLED, ConfigValueType::Boolean, help: 'admin.settings.fields.auto_ban_enabled.help', metadata: [
+                'access_feature' => 'admin.settings.security',
+                'minimum_access_level' => AccessLevel::OWNER,
+            ], sortOrder: 36),
+            new CoreSettingDefinition('security', AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY, 'admin.settings.fields.auto_ban_trusted_access_level.label', AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL, ConfigValueType::Integer, FormInputType::Select, help: 'admin.settings.fields.auto_ban_trusted_access_level.help', options: [
+                (string) AccessLevel::MANAGER => 'admin.settings.options.access_level.manager',
+                (string) AccessLevel::DIRECTOR => 'admin.settings.options.access_level.director',
+                (string) AccessLevel::ADMIN => 'admin.settings.options.access_level.admin',
+                (string) AccessLevel::OWNER => 'admin.settings.options.access_level.owner',
+            ], validation: ['required' => true, 'min' => AccessLevel::MANAGER, 'max' => AccessLevel::OWNER], metadata: [
+                'access_feature' => 'admin.settings.security',
+                'minimum_access_level' => AccessLevel::OWNER,
+            ], sortOrder: 37),
+            new CoreSettingDefinition('security', AutoBanPolicy::SCORE_THRESHOLD_KEY, 'admin.settings.fields.auto_ban_score_threshold.label', AutoBanPolicy::DEFAULT_SCORE_THRESHOLD, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.auto_ban_score_threshold.help', validation: ['required' => true, 'min' => 2, 'max' => 10000], metadata: [
+                'access_feature' => 'admin.settings.security',
+                'minimum_access_level' => AccessLevel::OWNER,
+            ], sortOrder: 38),
+            new CoreSettingDefinition('security', AutoBanPolicy::NEW_BAN_OWNER_ALERTS_KEY, 'admin.settings.fields.auto_ban_new_ban_owner_alerts.label', AutoBanPolicy::DEFAULT_NEW_BAN_OWNER_ALERTS, ConfigValueType::Boolean, help: 'admin.settings.fields.auto_ban_new_ban_owner_alerts.help', metadata: [
+                'access_feature' => 'admin.settings.security',
+                'minimum_access_level' => AccessLevel::OWNER,
+            ], sortOrder: 39),
             new CoreSettingDefinition('security', ConfigAuditLogPolicy::ENABLED_KEY, 'admin.settings.fields.audit_enabled.label', true, ConfigValueType::Boolean, metadata: [
                 'access_feature' => 'admin.settings.security',
             ], sortOrder: 40),

@@ -1,0 +1,43 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.auto_bans.active.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        <a href="{{ path('backend_admin_route', {path: 'settings/security'}) }}">{{ 'admin.navigation.security_settings'|trans }}</a>
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.settings.security.title'|trans,
+        title: 'admin.auto_bans.active.title'|trans,
+    } only %}
+
+    <section class="system-panel">
+        {% if active_auto_bans|default([]) is empty %}
+            <p class="system-muted">{{ 'admin.auto_bans.active.empty'|trans }}</p>
+        {% else %}
+            <table class="system-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'admin.auto_bans.columns.subject'|trans }}</th>
+                        <th>{{ 'admin.auto_bans.columns.created_at'|trans }}</th>
+                        <th>{{ 'admin.auto_bans.columns.expires_at'|trans }}</th>
+                        <th>{{ 'admin.auto_bans.columns.details'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ban in active_auto_bans %}
+                        <tr>
+                            <td>{{ ban.subject_type }}<br><span class="system-muted">{{ ban.subject_label }}</span></td>
+                            <td>{{ ban.created_at }}</td>
+                            <td>{{ ban.expires_at }}</td>
+                            <td><a href="{{ path('backend_admin_auto_ban_detail', {key: ban.key}) }}">{{ 'admin.auto_bans.active.open'|trans }}</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
+{% endblock %}

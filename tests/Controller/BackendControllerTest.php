@@ -23,6 +23,8 @@ use App\Core\Package\PackageScope;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\AclGroup;
 use App\Entity\ExtensionPackage;
+use App\Security\AutoBan\AutoBanPolicy;
+use App\Security\AutoBan\AutoBanStore;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
@@ -1166,6 +1168,22 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists(sprintf('input[name="%s"]', ConfigAuditLogPolicy::ENABLED_KEY));
         self::assertSelectorExists(sprintf('input[name="%s[]"]', ConfigAuditLogPolicy::EVENTS_KEY));
         self::assertSelectorExists('input[name="security.signals.retention_days"]');
+        self::assertSelectorExists(sprintf('input[name="%s"]', AutoBanPolicy::ENABLED_KEY));
+        self::assertSelectorExists(sprintf('select[name="%s"]', AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY));
+        self::assertSelectorExists(sprintf('input[name="%s"]', AutoBanPolicy::SCORE_THRESHOLD_KEY));
+        self::assertSelectorExists(sprintf('input[name="%s"]', AutoBanPolicy::NEW_BAN_OWNER_ALERTS_KEY));
+        self::assertSelectorExists('a[href="/admin/security/auto-bans"]');
+
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+        $config->set(AutoBanPolicy::ENABLED_KEY, false, ConfigValueType::Boolean);
+        $client->request('GET', '/admin/settings/security');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('button.system-button[disabled]');
+        self::assertSelectorNotExists('a[href="/admin/security/auto-bans"]');
+        self::assertStringContainsString('Auto-ban enforcement is disabled.', (string) $client->getResponse()->getContent());
+        $config->set(AutoBanPolicy::ENABLED_KEY, true, ConfigValueType::Boolean);
 
         $client->request('GET', '/admin/settings/logging');
 
@@ -1176,8 +1194,6 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('input[name="logging.database.audit_retention_days"]');
         self::assertSelectorExists('input[name="logging.database.access_retention_days"]');
 
-        $config = self::getContainer()->get(Config::class);
-        self::assertInstanceOf(Config::class, $config);
         $config->set('statistics.geoip.maxmind.license_key', '', ConfigValueType::String, sensitive: true);
 
         $this->loginUserWithLevel($client, AccessLevel::OWNER);
@@ -1229,12 +1245,34 @@ final class BackendControllerTest extends WebTestCase
         self::assertStringNotContainsString('$_SERVER', (string) $client->getResponse()->getContent());
     }
 
+    public function testAutoBanListRendersAsDedicatedSecurityView(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
+        $store = self::getContainer()->get(AutoBanStore::class);
+        self::assertInstanceOf(AutoBanStore::class, $store);
+        foreach ($store->activeBans() as $ban) {
+            $store->reset($ban->key());
+        }
+
+        $client->request('GET', '/admin/security/auto-bans');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Active auto-bans');
+        self::assertSelectorTextContains('.system-muted', 'No active auto-bans.');
+        self::assertSelectorExists('a[href="/admin/settings/security"]');
+    }
+
     public function testSecuritySettingsSectionIsHiddenAndRejectsPostsForDelegatedAdmins(): void
     {
         $client = self::createClient();
         $this->loginUserWithLevel($client, AccessLevel::ADMIN);
 
         $client->request('GET', '/admin/settings/security');
+
+        self::assertResponseStatusCodeSame(401);
+
+        $client->request('GET', '/admin/security/auto-bans');
 
         self::assertResponseStatusCodeSame(401);
 

@@ -654,6 +654,29 @@ admin:
       context: 'Context'
       no_context: 'No structured context is available.'
       raw: 'Raw line'
+  auto_bans:
+    active:
+      title: 'Active auto-bans'
+      empty: 'No active auto-bans.'
+      open: 'Review'
+      open_list: 'Open active auto-bans'
+      disabled: 'Auto-ban enforcement is disabled. Existing TTL states are retained until expiry but are not enforced.'
+    columns:
+      subject: 'Subject'
+      created_at: 'Created'
+      expires_at: 'Expires'
+      ttl: 'TTL seconds'
+      details: 'Details'
+    detail:
+      title: 'Auto-ban detail'
+      signals: 'Related security signals'
+      no_signals: 'No retained signals are available for this active ban.'
+    reset:
+      submit: 'Reset auto-ban'
+      saved: 'Auto-ban reset.'
+      failed: 'Auto-ban could not be reset.'
+    alerts:
+      triggered: 'Auto-ban created for %subject%.'
   statistics:
     title: 'Statistics'
     access_title: 'Access statistics'
@@ -778,6 +801,18 @@ admin:
         label: 'Captcha preview'
       rate_limit_mode:
         label: 'Rate limiting'
+      auto_ban_enabled:
+        label: 'Enable auto-ban'
+        help: 'Temporarily blocks repeated suspicious Visitor/IP activity. Trusted users remain exempt.'
+      auto_ban_trusted_access_level:
+        label: 'Trusted user level'
+        help: 'Registered users at or above this access level are never auto-banned.'
+      auto_ban_score_threshold:
+        label: 'Auto-ban score threshold'
+        help: 'Score required within one hour before a new Visitor ban can be created. IP-only bans use a higher internal threshold.'
+      auto_ban_new_ban_owner_alerts:
+        label: 'Enable alerts for newly decided auto-bans'
+        help: 'Queues a hidden warning for Owner accounts when a new active auto-ban is created.'
       audit_enabled:
         label: 'Enable audit logging'
       audit_events:
@@ -796,6 +831,11 @@ admin:
         standard: 'Standard'
         strict: 'Strict'
         panic: 'Panic'
+      access_level:
+        manager: 'Manager'
+        director: 'Director'
+        admin: 'Admin'
+        owner: 'Owner'
       audit:
         authentication: 'Authentication events'
         backend_actions: 'Backend maintenance actions'
@@ -944,6 +984,18 @@ admin:
         label: 'Captcha preview'
       rate_limit_mode:
         label: 'Rate limiting'
+      auto_ban_enabled:
+        label: 'Enable auto-ban'
+        help: 'Temporarily blocks repeated suspicious Visitor/IP activity. Trusted users remain exempt.'
+      auto_ban_trusted_access_level:
+        label: 'Trusted user level'
+        help: 'Registered users at or above this access level are never auto-banned.'
+      auto_ban_score_threshold:
+        label: 'Auto-ban score threshold'
+        help: 'Score required within one hour before a new Visitor ban can be created. IP-only bans use a higher internal threshold.'
+      auto_ban_new_ban_owner_alerts:
+        label: 'Enable alerts for newly decided auto-bans'
+        help: 'Queues a hidden warning for Owner accounts when a new active auto-ban is created.'
       audit_enabled:
         label: 'Enable audit logging'
       audit_events:
@@ -1015,6 +1067,11 @@ admin:
         standard: 'Standard'
         strict: 'Strict'
         panic: 'Panic'
+      access_level:
+        manager: 'Manager'
+        director: 'Director'
+        admin: 'Admin'
+        owner: 'Owner'
       audit:
         authentication: 'Authentication events'
         backend_actions: 'Backend maintenance actions'

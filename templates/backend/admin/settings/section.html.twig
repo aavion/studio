@@ -60,5 +60,14 @@
                 class: 'system-settings-actions',
             } only %}
         {% endif %}
+        {% if settings_section == 'security' %}
+            <h3>{{ 'admin.auto_bans.active.title'|trans }}</h3>
+            {% if auto_ban_enabled|default(false) %}
+                <a class="system-button" href="{{ path('backend_admin_auto_bans') }}">{{ 'admin.auto_bans.active.open_list'|trans }}</a>
+            {% else %}
+                <button type="button" class="system-button" disabled>{{ 'admin.auto_bans.active.open_list'|trans }}</button>
+                <p class="system-muted">{{ 'admin.auto_bans.active.disabled'|trans }}</p>
+            {% endif %}
+        {% endif %}
     </section>
 {% endblock %}
